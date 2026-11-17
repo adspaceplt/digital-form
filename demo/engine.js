@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -289,6 +289,13 @@
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
     hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
     hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
+    hiring_unlock: 'p_code', hiring_docs_of: 'p_id', hiring_doc_save: 'p_candidate p_doc p_kind p_terms p_expected',
+    hiring_doc_pay_set: 'p_doc p_basic p_probation p_token', hiring_doc_pay_get: 'p_doc p_token', hiring_doc_send: 'p_doc',
+    hiring_doc_withdraw: 'p_doc p_restore', hiring_doc_mark: 'p_doc p_route p_on p_path', hiring_doc_send_back: 'p_doc p_note',
+    hiring_doc_confirm: 'p_doc p_stamp_no p_stamp_path', hiring_doc_signed: 'p_doc p_token', hiring_doc_seal: 'p_doc p_path p_sha p_pages_sha',
+    hiring_doc_void: 'p_doc p_note', hiring_doc_replace: 'p_doc', hiring_doc_delete: 'p_doc p_serial', hiring_doc_record: 'p_doc',
+    hiring_doc_mail_prepare: 'p_doc', hiring_doc_mail_done: 'p_doc p_status p_error',
+    careers_doc_open: 'p_key p_doc p_code p_device', careers_doc_read: 'p_key p_doc p_view', careers_doc_answer: 'p_key p_doc p_view p_answer p_payload',
     supplier_get: 'p_id', supplier_client_set: 'p_id p_client', client_suppliers: 'p_client',
     supplier_create: 'p_code p_name',
     supplier_link: 'p_id p_reset',
@@ -304,6 +311,7 @@
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
+    code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -594,6 +602,8 @@
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
+    bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
+    quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -613,6 +623,7 @@
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
     quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
+    quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
     quotation_submit: 'p_id p_reviewer p_company',
@@ -2329,7 +2340,8 @@ function cardSlugFree(name, self, email) {
       return { found: true, serial: qt.ref, kind: 'Quotation', issued_at: qt.issued_at,
         signed_at: qt.signed_at || null, confirmed_at: qt.reviewed_at || null,
         document_id: qt.seal_key ? qt.id : null, sealed: !!qt.seal_key,
-        state: qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
+        withdrawn_on: qt.withdrawn_on || null,
+        state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
           : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
     }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
@@ -5032,7 +5044,8 @@ function cardSlugFree(name, self, email) {
     invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices'],
     'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
     'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
-    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link']
+    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
+    code: ['name', 'code', 'minutes', 'purpose']
   };
   function tplCheck(text, kind) {
     var re = /\{\s*([^{}]*?)\s*\}/g, m, list = TPL_FIELDS[kind] || [];
@@ -11468,7 +11481,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -12081,8 +12094,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'quote_seal_key') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_seal_key' } });
         var ssq = /^[a-z0-9]{8}$/.test(String(args.p_key || '')) && sealOf(args.p_key);
         if (!ssq) return qtOk({ error: 'not-found' });
-        if (!ssq.reviewed_at) return qtOk({ confirmed: false });
-        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key });
+        if (!ssq.reviewed_at) return qtOk({ confirmed: false, declined: !!ssq.declined_at, declined_at: ssq.declined_at || null });
+        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key,
+          withdrawn: !!ssq.withdrawn_at, withdrawn_on: ssq.withdrawn_on || null });
       }
       if (name === 'quotation_record' || name === 'quotation_seal_key') {
         if (!qtMe || !opsAllowed('clients.quotes', 'view')) return qtOk({ error: 'denied' });
@@ -12112,10 +12126,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (rq.submitted_at) steps.push({ step: 'submitted', at: rq.submitted_at, team: true, by: rq.submitted_by, to: rq.reviewer_name });
         if (rq.returned_at) steps.push({ step: 'returned', at: rq.returned_at, team: true, by: rq.returned_by, note: rq.return_note });
         if (rq.reviewed_at) steps.push({ step: 'confirmed', at: rq.reviewed_at, team: true, by: rq.reviewed_by, role: rq.reviewed_role });
+        if (rq.withdrawn_at) steps.push({ step: 'withdrawn', at: rq.withdrawn_at, team: true, by: rq.withdrawn_by,
+          note: 'From ' + (window.ADspaceClock ? ADspaceClock.date(rq.withdrawn_on) : rq.withdrawn_on) + ' · ' + rq.withdrawn_reason });
         if (rq.sealed_at) steps.push({ step: 'sealed', at: rq.sealed_at, team: true, by: rq.sealed_by, note: rq.seal_sha });
         steps.sort(function (a, b) { return (Date.parse(a.at) - Date.parse(b.at)) || String(a.step).localeCompare(String(b.step)); });
         return qtOk({ id: rq.id, ref: rq.ref, brand: rq.brand, company: sg && sg.company ? sg.company.legal_name : null,
-          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at,
+          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at, withdrawn: !!rq.withdrawn_at, declined: !!rq.declined_at,
           seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
       }
       if (name === 'quotation_seal') {
@@ -12130,6 +12146,58 @@ function opsCodeRange(cid, period, ty, src, seq) {
         Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
         qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
         return qtOk({ ok: true, sha: args.p_sha });
+      }
+
+      if (name === 'quote_decline') {
+        if (!/^[a-z0-9]{8}$/.test(String(args.p_key || ''))) return qtOk({ error: 'not-found' });
+        var dr = String(args.p_reason || '').trim() || null;
+        if (dr && dr.length > 300) return qtOk({ error: 'too-long' });
+        var dq = sealOf(args.p_key);
+        if (!dq || dq.removed_at) return qtOk({ error: 'not-found' });
+        if (dq.declined_at) return qtOk({ ok: true, again: true });
+        if (dq.signed_at) return qtOk({ error: 'signed' });
+        if (dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+        if (dq.source === 'website' && !dq.released_at) return qtOk({ error: 'unsent' });
+        if (dq.valid_until < qtToday) return qtOk({ error: 'expired' });
+        Object.assign(dq, { status: 'not_proceeding', declined_at: qtNow.toISOString(), decline_reason: dr });
+        DB.signing_steps = DB.signing_steps || [];
+        DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: dq.id, step: 'declined', at: qtNow.toISOString(), ip: window.__callerIp || '203.0.113.24', country: window.__country || 'MY' });
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: dq.brand,
+          detail: dq.ref + ' declined on the quotation link' + (dr ? ' · ' + dr : ''), created_at: qtNow.toISOString() });
+        var dc = DB.clients.filter(function (c) { return c.id === dq.client_id; })[0];
+        var dwho = [qsMember(dq.made_by), qsMember(dc && dc.owner)].filter(Boolean).map(function (m) { return m.id; });
+        if (!dwho.length) qtTell(dq.client_id, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id + ':declined');
+        else qsNotify(dwho, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id, dq.client_id);
+        return qtOk({ ok: true });
+      }
+      if (name === 'quotation_withdraw' || name === 'quotation_withdraw_undo') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'manage')) return qtOk({ error: 'denied' });
+        var xq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var xc = xq && DB.clients.filter(function (c) { return c.id === xq.client_id; })[0];
+        if (!xq || (xc && !scopeRowOk(xc.stage, xc.owner, 'manage', xc.sales_by))) return qtOk({ error: 'not-found' });
+        if (name === 'quotation_withdraw_undo') {
+          if (!xq.withdrawn_at) return qtOk({ error: 'not-withdrawn' });
+          (xq.withdrawn_lines || []).forEach(function (l) {
+            (DB.client_services || []).forEach(function (sv) { if (sv.id === l.id && sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'to_quote') sv.state = l.state; });
+          });
+          Object.assign(xq, { withdrawn_at: null, withdrawn_on: null, withdrawn_reason: null, withdrawn_by: null, withdrawn_lines: null });
+          qtLog(xq.brand, xq.ref + ' withdrawal undone');
+          return qtOk({ ok: true });
+        }
+        if (!xq.signed_at) return qtOk({ error: 'not-signed' });
+        if (xq.withdrawn_at) return qtOk({ error: 'withdrawn' });
+        var sday = new Date(Date.parse(xq.signed_at) + 8 * 3600e3).toISOString().slice(0, 10);
+        if (!args.p_on || args.p_on < sday || args.p_on > qtToday) return qtOk({ error: 'bad-date' });
+        var xr = String(args.p_reason || '').trim();
+        if (xr.length < 3 || xr.length > 300) return qtOk({ error: 'bad-reason' });
+        var moved = [];
+        if (args.p_lines) (DB.client_services || []).forEach(function (sv) {
+          if (sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'confirmed') { moved.push({ id: sv.id, state: sv.state }); sv.state = 'to_quote'; }
+        });
+        Object.assign(xq, { withdrawn_at: qtNow.toISOString(), withdrawn_on: args.p_on, withdrawn_reason: xr, withdrawn_by: qtMe.name, withdrawn_lines: moved });
+        qtLog(xq.brand, xq.ref + ' withdrawn from ' + (window.ADspaceClock ? ADspaceClock.date(args.p_on) : args.p_on) + ' · ' + xr +
+          (moved.length ? ' · ' + moved.length + (moved.length === 1 ? ' service line' : ' service lines') + ' returned to To quote' : ''));
+        return qtOk({ ok: true, lines: moved.length });
       }
       if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
@@ -13470,6 +13538,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
+
+    if (name === 'code_email_template_get' || name === 'code_email_template_save') {
+      var ceNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return ceNo(window.__refuseRpc[name]);
+      if (!opsMe() || !opsGranted('team.settings', 'work')) return ceNo('denied');
+      DB.code_email_template = DB.code_email_template || { subject: 'Your ADspace verification code {purpose}',
+        body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
+        foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.' };
+      var ce = DB.code_email_template;
+      if (name === 'code_email_template_get') return Promise.resolve({ data: { subject: ce.subject, body: ce.body, foot: ce.foot }, error: null });
+      var ceS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), ceB = String(args.p_body || '').replace(/\r/g, '').trim(), ceF = String(args.p_foot || '').replace(/\r/g, '').trim();
+      if (ceS.length < 2 || ceS.length > 200) return ceNo('bad-subject');
+      if (ceB.length < 2 || ceB.length > 5000) return ceNo('bad-body');
+      if (ceF.length > 1000) return ceNo('foot-long');
+      if (/\{\s*code\s*\}/i.test(ceS)) return ceNo('code-in-subject');
+      if (!/\{\s*code\s*\}/i.test(ceB)) return ceNo('no-code');
+      var ceBad = tplCheck(ceS + '\n' + ceB + '\n' + ceF, 'code');
+      if (ceBad) return tplNo(ceBad);
+      var ceMv = [];
+      if (ce.subject !== ceS) ceMv.push('Subject: ' + ce.subject + ' → ' + ceS);
+      if (ce.body !== ceB) ceMv.push('Message');
+      if (ce.foot !== ceF) ceMv.push('Fine print');
+      if (ceMv.length) { ce.subject = ceS; ce.body = ceB; ce.foot = ceF; logAct('team.changed', 'Email templates', 'Verification code · ' + ceMv.join(' · ')); persist(); }
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'meeting_message_get' || name === 'meeting_message_save') {
       var mmMe = opsMe();
       var mmNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
@@ -13587,7 +13680,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
-    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku') {
+    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku' || /^quotation_invoice/.test(name) || name === 'client_ad_debtor_set') {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return bkNo(window.__refuseRpc[name]);
@@ -13621,7 +13714,127 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,
           field_creator: DB.bukku_settings.field_creator || null, bill_account: DB.bukku_settings.bill_account || null,
           bill_account_name: DB.bukku_settings.bill_account_name || null, bill_item_sku: bkBillSet().bill_item_sku || null,
-          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null });
+          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null,
+          budget_account_code: DB.bukku_settings.budget_account_code || null });
+      }
+
+      var qiQ = function (id) { return (DB.quotations || []).filter(function (x) { return x.id === id; })[0]; };
+      var qiStart = function (id) {
+        var ds = (DB.client_services || []).filter(function (x) { return x.quotation_id === id && !x.archived_at && x.start_on; })
+          .map(function (x) { return String(x.start_on).length === 7 ? x.start_on + '-01' : String(x.start_on).slice(0, 10); }).sort();
+        return ds[0] || null;
+      };
+      var qiAdd = function (day, n) {
+        var p = day.split('-').map(Number), y = p[0], m = p[1] - 1 + n, d = p[2];
+        y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+        var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+        return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0');
+      };
+      var qiMinus = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 1); return t.toISOString().slice(0, 10); };
+      var qiLines = function (q, cyc, kind) {
+        var tot = q.totals || {}, out = [];
+        if (kind === 'budget') {
+          (tot.ads || []).forEach(function (e) {
+            var mo = (e.freq || 'monthly') === 'monthly', n = Math.max(1, Number(e.months || 1));
+            if ((mo && cyc <= n) || (!mo && cyc === 1)) {
+              var u = Math.round(Number(e.budget != null ? e.budget : e.amount || 0) * 100) / 100;
+              if (u > 0) out.push({ label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other'), qty: 1, unit: u, sst: 0 });
+            }
+          });
+          return out;
+        }
+        (q.lines || []).forEach(function (e) {
+          if (e.in_plan) return;
+          var mo = e.basis === 'month', n = Math.max(1, Number(e.months || tot.term || 1));
+          if (!((mo && cyc <= n) || (!mo && cyc === 1))) return;
+          var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
+          var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
+          out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
+            sst: Number(e.sst != null ? e.sst : (tot.sst_pct || 0)), sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null });
+        });
+        return out;
+      };
+      var qiCycles = function (q) {
+        var t = q.totals || {}, m = Number(t.term || 1);
+        (q.lines || []).forEach(function (e) { if (e.basis === 'month') m = Math.max(m, Number(e.months || 1)); });
+        (t.ads || []).forEach(function (e) { if ((e.freq || 'monthly') === 'monthly') m = Math.max(m, Number(e.months || 1)); });
+        return Math.min(36, Math.max(1, m));
+      };
+      DB.quotation_invoices = DB.quotation_invoices || [];
+      DB.client_ad_debtors = DB.client_ad_debtors || [];
+      if (name === 'quotation_invoices_of') {
+        if (!bkMe || !opsAllowed('clients.billing', 'view')) return bkNo('denied');
+        var iq = qiQ(args.p_id);
+        if (!iq || !scopeSeen(iq.client_id, 'view')) return bkNo('not-found');
+        if (!iq.reviewed_at) return bkNo('not-reviewed');
+        var ist = qiStart(iq.id), irows = [];
+        for (var ic = 1; ic <= qiCycles(iq); ic++) {
+          ['service', 'budget'].forEach(function (k) {
+            var ls = qiLines(iq, ic, k);
+            if (!ls.length) return;
+            var made = DB.quotation_invoices.filter(function (x) { return x.quotation_id === iq.id && x.cycle === ic && x.kind === k; })[0];
+            var dd = ist ? qiAdd(ist, ic - 1) : null;
+            irows.push({ cycle: ic, kind: k, date: dd, until: ist ? qiMinus(qiAdd(ist, ic)) : null,
+              amount: ls.reduce(function (t, l) { return t + Math.round(l.qty * l.unit * 100) / 100; }, 0),
+              number: made && made.number || undefined, bukku_id: made && made.bukku_id || undefined });
+          });
+        }
+        var idb = DB.client_ad_debtors.filter(function (x) { return x.client_id === iq.client_id; })[0];
+        return bkOk({ ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows,
+          debtor: idb ? { contact_id: idb.contact_id, code: idb.code, name: idb.name } : null, budget_account: DB.bukku_settings.budget_account_code || null });
+      }
+      if (name === 'quotation_invoice_prep') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var pq = qiQ(args.p_id), pk = args.p_kind, pc = Number(args.p_cycle);
+        if (!/^(service|budget)$/.test(String(pk)) || !(pc >= 1 && pc <= 36)) return bkNo('bad-request');
+        if (!pq || !scopeSeen(pq.client_id, 'work')) return bkNo('not-found');
+        if (!pq.reviewed_at) return bkNo('not-reviewed');
+        if (pq.withdrawn_at) return bkNo('withdrawn');
+        var pst = qiStart(pq.id);
+        if (!pst) return bkNo('no-start');
+        var pls = qiLines(pq, pc, pk);
+        if (!pls.length) return bkNo('nothing');
+        if (pk === 'budget' && !DB.bukku_settings.budget_account_code) return bkNo('no-budget-account');
+        var pdb = pk === 'budget' ? DB.client_ad_debtors.filter(function (x) { return x.client_id === pq.client_id; })[0] : null;
+        var plk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'client' && l.record_id === pq.client_id; })[0];
+        var pcon = pdb ? pdb.contact_id : plk ? plk.contact_id : null;
+        if (!pcon) return bkNo('not-linked');
+        var pr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === pq.id && x.cycle === pc && x.kind === pk; })[0];
+        if (pr && pr.number) return bkNo('invoiced', { number: pr.number });
+        if (pr && pr.claimed_at && Date.now() - Date.parse(pr.claimed_at) < 600000) return bkNo('creating');
+        if (!pr) { pr = { quotation_id: pq.id, cycle: pc, kind: pk }; DB.quotation_invoices.push(pr); }
+        pr.claimed_at = new Date().toISOString();
+        var pday = qiAdd(pst, pc - 1);
+        return bkOk({ contact_id: pcon, ref: (pq.ref + ' · ' + pday + (pk === 'budget' ? ' · Ads' : '')).slice(0, 50), date: pday, kind: pk, lines: pls,
+          currency: (pq.totals || {}).currency === 'SGD' ? 'SGD' : 'MYR', fx: 1, account_code: pk === 'budget' ? DB.bukku_settings.budget_account_code : undefined,
+          description: pq.brand + ' · ' + pq.ref });
+      }
+      if (name === 'quotation_invoice_done') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var dr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === args.p_id && x.cycle === Number(args.p_cycle) && x.kind === args.p_kind; })[0];
+        if (!dr) return bkOk();
+        dr.claimed_at = null;
+        if (args.p_number && !dr.number) {
+          dr.number = String(args.p_number); dr.bukku_id = args.p_bukku || null; dr.amount = args.p_amount; dr.made_at = new Date().toISOString();
+          var dq = qiQ(args.p_id);
+          DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'client.billing', subject: dq ? dq.brand : '', detail: (dq ? dq.ref : '') + ' · ' +
+            (args.p_kind === 'budget' ? 'Advertising budget invoice ' : 'Invoice ') + dr.number + ' created in Bukku as a draft · Month ' + dr.cycle, created_at: new Date().toISOString() });
+        }
+        return bkOk();
+      }
+      if (name === 'client_ad_debtor_set') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        if (!scopeSeen(args.p_client, 'work')) return bkNo('not-found');
+        DB.client_ad_debtors = DB.client_ad_debtors.filter(function (x) { return x.client_id !== args.p_client; });
+        if (args.p_contact) DB.client_ad_debtors.push({ client_id: args.p_client, contact_id: Number(args.p_contact), code: args.p_code || null, name: args.p_name || null });
+        return bkOk();
+      }
+      if (name === 'bukku_invoice_set') {
+        if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
+        var bic = args.p_budget_code ? String(args.p_budget_code).trim() : null;
+        if (bic && !/^[A-Za-z0-9._\/-]{1,30}$/.test(bic)) return bkNo('bad-account');
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { budget_account_code: bic });
+        return bkOk();
       }
 
       if (name === 'bukku_bill_set') {
@@ -14094,7 +14307,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool)$/.test(name)) {
+    if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool|doc_open|doc_read|doc_answer)$/.test(name)) {
       var hOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var hNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return hNo(window.__refuseRpc[name]);
@@ -14165,7 +14378,76 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         if (cc.stage === 'pool' || cc.stage === 'closed') civ = null;
         var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;
-        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool }, error: null });
+        var cdocs = cc.stage === 'offer' || cc.stage === 'hired' ? (DB.hiring_docs || []).filter(function (d) { return d.candidate_id === cc.id && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })
+          .map(function (d) { return { id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state, sent_at: d.sent_at, reply_by: d.reply_by, signed_at: d.signed_at || undefined }; }) : undefined;
+        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool, docs: cdocs }, error: null });
+      }
+
+      DB.hiring_docs = DB.hiring_docs || []; DB.hiring_doc_pay = DB.hiring_doc_pay || []; DB.hiring_doc_views = DB.hiring_doc_views || [];
+      DB.signing_steps = DB.signing_steps || [];
+      var hdOf = function (key, id) {
+        var c = DB.hiring_candidates.filter(function (x) { return x.link_key === String(key || '') && !x.removed_at; })[0];
+        if (!c || Date.parse(c.last_step_at) + hDays * 864e5 <= Date.now()) return null;
+        return DB.hiring_docs.filter(function (d) { return d.id === id && d.candidate_id === c.id && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })[0] || null;
+      };
+      var hdJson = function (d) {
+        var c = hFind(d.candidate_id), p = DB.hiring_doc_pay.filter(function (x) { return x.doc_id === d.id; })[0] || {};
+        var t = (DB.team_members || []).filter(function (m) { return m.id === d.sent_by; })[0] || {};
+        return { ok: true, id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state,
+          sent_at: d.sent_at, reply_by: d.reply_by, terms: JSON.parse(JSON.stringify(d.terms)), returned_note: d.state === 'sent' ? d.returned_note || undefined : undefined,
+          name: c.name, signed_at: d.signed_at || undefined, signed_name: d.signed && d.signed.name || undefined,
+          signatory: { name: t.name, designation: t.designation }, pay: { basic: p.basic, probation: p.probation == null ? undefined : p.probation } };
+      };
+      var hdView = function (id, v) { return DB.hiring_doc_views.filter(function (x) { return x.doc_id === id && x.view === v && x.until > Date.now(); })[0]; };
+      if (name === 'careers_doc_open') {
+        var od = hdOf(args.p_key, args.p_doc);
+        if (!od) return hNo('not_found');
+        var oc = (window.__hireCodes || {})[od.id];
+        if (!oc || oc.used) return hNo('no-code');
+        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
+        oc.used = true;
+        var ov = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+        DB.hiring_doc_views.push({ doc_id: od.id, view: ov, email: oc.email, until: Date.now() + 30 * 60000 });
+        DB.signing_steps.push({ doc_kind: 'hiring_doc', doc_id: od.id, step: 'opened', at: hNowIso, email: oc.email, ip: '203.0.113.7', country: 'MY', device: args.p_device || null });
+        persist();
+        return Promise.resolve({ data: Object.assign(hdJson(od), { view: ov }), error: null });
+      }
+      if (name === 'careers_doc_read') {
+        var rd = hdOf(args.p_key, args.p_doc);
+        if (!rd) return hNo('not_found');
+        if (!hdView(rd.id, args.p_view)) return hNo('code-needed');
+        return Promise.resolve({ data: hdJson(rd), error: null });
+      }
+      if (name === 'careers_doc_answer') {
+        var ad = hdOf(args.p_key, args.p_doc);
+        if (!ad) return hNo('not_found');
+        var av = hdView(ad.id, args.p_view);
+        if (!av) return hNo('code-needed');
+        if (ad.state !== 'sent') return hNo('answered');
+        if (Date.parse(ad.reply_by) <= Date.now()) return hNo('expired');
+        var ap = args.p_payload || {}, ac = hFind(ad.candidate_id);
+        if (args.p_answer === 'decline') {
+          if (ad.kind !== 'offer') return hNo('bad-request');
+          ad.state = 'declined'; ad.answered_at = hNowIso; ad.decline_note = String(ap.note || '').trim() || null;
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document', detail: ad.serial + ' declined', created_at: hNowIso });
+          hTell(ac, 'hiring.declined', 'A candidate declined an offer', ad.serial + '.');
+          return hOk({});
+        }
+        if ((args.p_answer === 'accept') !== (ad.kind === 'offer') || ['accept', 'sign'].indexOf(args.p_answer) < 0) return hNo('bad-request');
+        var an = String(ap.name || '').trim();
+        if (an.length < 2 || an.length > 120) return hNo('bad-name');
+        if (String(ap.agree) !== 'true') return hNo('bad-agree');
+        if (ad.kind === 'contract') {
+          if (!/^([0-9]{6}-[0-9]{2}-[0-9]{4}|[A-Z0-9]{6,20})$/.test(String(ap.id_no || '').toUpperCase())) return hNo('bad-id');
+          if (!/^[MLQCZmlqcz0-9 .,-]+$/.test(String(ap.signature || '')) || String(ap.signature).length < 8) return hNo('bad-signature');
+        }
+        ad.state = 'signed'; ad.signed_at = hNowIso; ad.answered_at = hNowIso;
+        ad.signed = { via: 'online', name: an, id_no: ad.kind === 'contract' ? String(ap.id_no).toUpperCase() : undefined, signature: ad.kind === 'contract' ? ap.signature : undefined,
+          record: { at: hNowIso, email: av.email, ip: '203.0.113.7', country: 'MY', device: ap.device || null, fingerprint: 'A1B2C3D4E5F60718' } };
+        DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document',
+          detail: ad.serial + (ad.kind === 'offer' ? ' accepted' : ' signed') + ' on the candidate page', created_at: hNowIso });
+        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', ad.serial + '. Open the candidate to confirm it.');
+        return hOk({});
       }
       var hMe = opsMe();
       if (!hMe) return hNo('denied');
@@ -14304,6 +14586,212 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var before = DB.hiring_files_gone.length;
         DB.hiring_files_gone = DB.hiring_files_gone.filter(function (x) { return (args.p_paths || []).indexOf(x.path) < 0; });
         return hOk({ done: before - DB.hiring_files_gone.length });
+      }
+
+      if (/^hiring_(unlock|docs_of|doc_)/.test(name)) {
+        var dWord = function (k) { return k === 'offer' ? 'Employment Offer' : 'Employment Contract'; };
+        var dTok = function (t) {
+          if (!hAdmin) return 'denied';
+          var u = (DB.perf_unlocks || []).filter(function (x) { return x.token === t && x.team_member_id === hMe.id && x.expires > Date.now(); })[0];
+          if (!u) return 'code-needed';
+          u.expires = Date.now() + 15 * 60000; return null;
+        };
+        var dRow = function (d) {
+          var nm = function (id) { var t = (DB.team_members || []).filter(function (m) { return m.id === id; })[0]; return t || {}; };
+          var o = JSON.parse(JSON.stringify(d));
+          delete o.history; o.made_by = nm(d.made_by).name; o.sent_by = d.sent_by ? nm(d.sent_by).name : undefined; o.sent_role = d.sent_by ? nm(d.sent_by).designation : undefined;
+          o.confirmed_by = d.confirmed_by ? nm(d.confirmed_by).name : undefined;
+          o.expired = d.state === 'sent' && Date.parse(d.reply_by) <= Date.now();
+          o.signed = d.signed ? { via: d.signed.via, name: d.signed.name, on: d.signed.on, has_scan: !!d.signed.path, path: d.signed.path, email: d.signed.record && d.signed.record.email } : undefined;
+          o.pay_set = DB.hiring_doc_pay.some(function (x) { return x.doc_id === d.id; });
+          return o;
+        };
+        if (name === 'hiring_unlock') {
+          if (!hAdmin) return hNo('denied');
+          if (args.p_code !== DB.perf_code) return hNo('wrong-code', { left: 4 });
+          var tk = 'tok' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+          DB.perf_unlocks = DB.perf_unlocks || [];
+          DB.perf_unlocks.push({ token: tk, team_member_id: hMe.id, expires: Date.now() + 15 * 60000 });
+          persist();
+          return Promise.resolve({ data: { token: tk, expires_at: new Date(Date.now() + 15 * 60000).toISOString() }, error: null });
+        }
+        if (name === 'hiring_docs_of') {
+          var r0 = hRole(args.p_id);
+          if (!r0) return hNo('not-found');
+          if (r0 !== 'admin' && r0 !== 'owner') return hNo('denied');
+          return hOk({ rows: DB.hiring_docs.filter(function (d) { return d.candidate_id === args.p_id; }).sort(function (a, b) { return a.made_at < b.made_at ? 1 : -1; }).map(dRow) });
+        }
+        var dTerms = function (k, t) {
+          t = t || {};
+          var pos = String(t.position || '').trim(), type = t.type, prob = Number(t.probation_months || 0), reply = Number(t.reply_days || (k === 'offer' ? 3 : 7));
+          if (pos.length < 2 || pos.length > 80) return { error: 'bad-position' };
+          if (['permanent', 'contract', 'intern', 'part_time'].indexOf(type) < 0) return { error: 'bad-type' };
+          if (!(prob >= 0 && prob <= 12)) return { error: 'bad-probation' };
+          if (!(reply >= 1 && reply <= 14)) return { error: 'bad-reply' };
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(t.start || ''))) return { error: 'bad-start' };
+          if ((type === 'contract' || type === 'intern') && !(t.end && t.end > t.start)) return { error: 'bad-end' };
+          if (k === 'offer' && String(t.scope || '').trim().length < 2) return { error: 'bad-scope' };
+          if (k === 'contract' && String(t.duties || '').trim().length < 2) return { error: 'bad-duties' };
+          var o = { position: pos, type: type, probation_months: prob, reply_days: reply, start: t.start };
+          if ((type === 'contract' || type === 'intern') && t.end) o.end = t.end;
+          ['scope', 'duties', 'place'].forEach(function (f) { if (String(t[f] || '').trim()) o[f] = String(t[f]).trim(); });
+          return { terms: o };
+        };
+        if (name === 'hiring_doc_save') {
+          var sr = hRole(args.p_candidate), sc = hFind(args.p_candidate);
+          if (!sr || !sc) return hNo('not-found');
+          if (sr !== 'admin' && sr !== 'owner') return hNo('denied');
+          if (args.p_doc) {
+            var ed = DB.hiring_docs.filter(function (d) { return d.id === args.p_doc; })[0];
+            if (!ed) return hNo('gone');
+            if (ed.state !== 'draft') return hNo('not-draft');
+            if (args.p_expected && ed.updated_at !== args.p_expected) return hNo('stale', { row: dRow(ed) });
+            var et = dTerms(ed.kind, args.p_terms); if (et.error) return hNo(et.error);
+            ed.terms = et.terms; ed.updated_at = new Date().toISOString();
+            hLog(sc.id, 'candidate.document', dWord(ed.kind) + ' draft edited');
+            return hOk({ row: dRow(ed) });
+          }
+          if (sc.stage !== 'offer') return hNo('not-offer');
+          if (args.p_kind === 'contract' && !DB.hiring_docs.some(function (d) { return d.candidate_id === sc.id && d.kind === 'offer' && d.state === 'confirmed'; })) return hNo('offer-first');
+          if (DB.hiring_docs.some(function (d) { return d.candidate_id === sc.id && d.kind === args.p_kind && ['draft', 'sent', 'signed', 'confirmed'].indexOf(d.state) > -1 && !d.replaces; })) return hNo('exists');
+          var nt = dTerms(args.p_kind, args.p_terms); if (nt.error) return hNo(nt.error);
+          var nd = { id: nid('hd'), candidate_id: sc.id, kind: args.p_kind, state: 'draft', serial: null, terms: nt.terms, made_by: hMe.id, made_at: new Date().toISOString(), updated_at: new Date().toISOString(), history: [] };
+          DB.hiring_docs.push(nd);
+          hLog(sc.id, 'candidate.document', dWord(nd.kind) + ' drafted');
+          return hOk({ row: dRow(nd) });
+        }
+        var hd = DB.hiring_docs.filter(function (d) { return d.id === args.p_doc; })[0];
+        if (!hd) return hNo(name === 'hiring_doc_delete' ? 'gone' : 'gone');
+        var dr = hRole(hd.candidate_id), dc = hFind(hd.candidate_id);
+        if (!dr) return hNo('not-found');
+        var keepsD = dr === 'admin' || dr === 'owner', nowD = new Date().toISOString();
+        if (name === 'hiring_doc_pay_set' || name === 'hiring_doc_pay_get' || name === 'hiring_doc_signed') {
+          var te = dTok(args.p_token); if (te) return hNo(te);
+          if (name === 'hiring_doc_signed') return hOk({ signed: hd.signed || null });
+          var py = DB.hiring_doc_pay.filter(function (x) { return x.doc_id === hd.id; })[0];
+          if (name === 'hiring_doc_pay_get') return hOk({ basic: py ? py.basic : null, probation: py ? py.probation : null });
+          if (hd.state !== 'draft') return hNo('not-draft');
+          var bs = Number(args.p_basic);
+          if (!(bs > 0 && bs < 1e6)) return hNo('bad-basic');
+          if (args.p_probation != null && !(Number(args.p_probation) > 0)) return hNo('bad-probation-pay');
+          if (py) { py.basic = bs; py.probation = args.p_probation == null ? null : Number(args.p_probation); }
+          else DB.hiring_doc_pay.push({ doc_id: hd.id, basic: bs, probation: args.p_probation == null ? null : Number(args.p_probation) });
+          hd.updated_at = nowD; hLog(dc.id, 'candidate.document', 'Salary changed');
+          return hOk({});
+        }
+        if (name === 'hiring_doc_record') {
+          if (!keepsD) return hNo('denied');
+          var st = [{ step: 'issued', at: hd.made_at, team: true, by: hName(hd.made_by) }];
+          if (hd.sent_at) st.push({ step: 'sent', at: hd.sent_at, team: true, via: 'page', by: hName(hd.sent_by) });
+          DB.signing_steps.filter(function (g) { return g.doc_kind === 'hiring_doc' && g.doc_id === hd.id; }).forEach(function (g) {
+            st.push({ step: g.step, at: g.at, team: false, party: 'Candidate', email: g.email, ip: g.ip, country: g.country, device: g.device });
+          });
+          (hd.history || []).forEach(function (h) {
+            st.push({ step: 'signed', at: h.at, team: false, party: 'Candidate', by: h.signed.name, via: h.signed.via === 'online' ? 'online' : 'paper', email: h.signed.record && h.signed.record.email });
+            st.push({ step: 'returned', at: h.returned_at, team: true, by: h.returned_by, note: h.note });
+          });
+          if (hd.signed) st.push({ step: 'signed', at: hd.signed_at, team: false, party: 'Candidate', by: hd.signed.name || dc.name, via: hd.signed.via === 'online' ? 'online' : 'paper',
+            email: hd.signed.record && hd.signed.record.email, ip: hd.signed.record && hd.signed.record.ip, country: hd.signed.record && hd.signed.record.country,
+            device: hd.signed.record && hd.signed.record.device, entered_by: hd.signed.via !== 'online' ? hd.signed.record && hd.signed.record.by : undefined });
+          if (hd.confirmed_at) st.push({ step: 'confirmed', at: hd.confirmed_at, team: true, by: hName(hd.confirmed_by) });
+          if (hd.stamp_no) st.push({ step: 'stamped', at: hd.confirmed_at, team: true, by: hName(hd.confirmed_by), note: hd.stamp_no });
+          if (hd.sealed_at) st.push({ step: 'sealed', at: hd.sealed_at, team: true, by: hd.sealed_by, note: hd.seal_sha });
+          return hOk({ id: hd.id, ref: hd.serial, steps: st, signed: !!hd.signed, confirmed: !!hd.confirmed_at, withdrawn: hd.state === 'void',
+            seal: hd.seal_sha ? { sha: hd.seal_sha, pages_sha: hd.seal_pages_sha, at: hd.sealed_at } : undefined });
+        }
+        if (name === 'hiring_doc_mail_prepare') {
+          if (!keepsD) return hNo('denied');
+          if (hd.state !== 'sent') return hNo('not-sent');
+          return Promise.resolve({ data: { id: hd.id, kind: 'doc', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
+            reply_by: hd.reply_by, returned: !!hd.returned_note, sender: hMe.name, reply_to: hMe.email }, error: null });
+        }
+        if (name === 'hiring_doc_mail_done') {
+          if (!keepsD) return hNo('denied');
+          hd.mail = args.p_status; hd.mail_at = nowD;
+          hLog(dc.id, 'candidate.email', hd.serial + (args.p_status === 'sent' ? ' emailed' : ' not emailed'));
+          return hOk({});
+        }
+        var partOnly = ['hiring_doc_confirm', 'hiring_doc_void'].indexOf(name) > -1;
+        if (partOnly ? !hAdmin : !keepsD) return hNo('denied');
+        if (name === 'hiring_doc_send') {
+          if (hd.state !== 'draft') return hNo('not-draft');
+          if (!DB.hiring_doc_pay.some(function (x) { return x.doc_id === hd.id; })) return hNo('no-pay');
+          if (dc.stage !== 'offer') return hNo('not-offer');
+          var ser;
+          if (hd.replaces) {
+            var old = DB.hiring_docs.filter(function (d) { return d.id === hd.replaces; })[0];
+            ser = old.serial; old.state = 'void'; old.void_note = 'Replaced'; old.voided_at = nowD; old.voided_by = hMe.name;
+          } else {
+            var yymm = (window.ADspaceClock ? window.ADspaceClock.today() : nowD.slice(0, 10)).slice(2, 7).replace('-', '');
+            var pre = 'ADHR/' + (hd.kind === 'offer' ? 'OFR' : 'EMP') + yymm;
+            var nmax = DB.hiring_docs.filter(function (d) { return String(d.serial || '').indexOf(pre) === 0; }).map(function (d) { return Number(d.serial.slice(-3)); });
+            ser = pre + ('00' + ((nmax.length ? Math.max.apply(null, nmax) : 0) + 1)).slice(-3);
+          }
+          Object.assign(hd, { state: 'sent', serial: ser, sent_by: hMe.id, sent_at: nowD, reply_by: new Date(Date.now() + (hd.terms.reply_days || 3) * 864e5).toISOString(), mail: null, mail_at: null, updated_at: nowD });
+          dc.last_step_at = nowD; hLog(dc.id, 'candidate.document', dWord(hd.kind) + ' ' + ser + ' sent');
+          return hOk({ row: dRow(hd) });
+        }
+        if (name === 'hiring_doc_withdraw') {
+          if (args.p_restore) { if (hd.state !== 'withdrawn') return hOk({ same: true }); if (Date.parse(hd.reply_by) <= Date.now()) return hNo('expired'); hd.state = 'sent'; }
+          else { if (hd.state !== 'sent') return hNo('not-sent'); hd.state = 'withdrawn'; }
+          hd.updated_at = nowD; hLog(dc.id, 'candidate.document', hd.serial + (args.p_restore ? ' restored' : ' withdrawn'));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_mark') {
+          if (['sent', 'withdrawn'].indexOf(hd.state) < 0) return hNo('not-sent');
+          if (!new RegExp('^' + dc.id + '/[0-9]{10,16}-[A-Za-z0-9._ -]{1,120}\\.pdf$').test(String(args.p_path || ''))) return hNo('bad-file');
+          Object.assign(hd, { state: 'signed', signed_at: nowD, answered_at: nowD, signed: { via: args.p_route, on: args.p_on, path: args.p_path, record: { by: hMe.name, at: nowD } }, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + (args.p_route === 'scan' ? ' signed by scan' : ' signed on paper'));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_send_back') {
+          if (hd.state !== 'signed') return hNo('not-signed');
+          var note = String(args.p_note || '').trim(); if (note.length < 2) return hNo('bad-note');
+          hd.history = (hd.history || []).concat([{ signed: hd.signed, at: hd.signed_at, returned_at: nowD, returned_by: hMe.name, note: note }]);
+          Object.assign(hd, { state: 'sent', signed: null, signed_at: null, answered_at: null, returned_at: nowD, returned_by: hMe.name, returned_note: note,
+            reply_by: new Date(Date.now() + (hd.terms.reply_days || 3) * 864e5).toISOString(), updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' sent back: ' + note);
+          return hOk({});
+        }
+        if (name === 'hiring_doc_confirm') {
+          if (hd.state !== 'signed') return hNo('not-signed');
+          var stp = String(args.p_stamp_no || '').trim();
+          if (stp && !/^[A-Za-z0-9/-]{4,40}$/.test(stp)) return hNo('bad-stamp');
+          Object.assign(hd, { state: 'confirmed', confirmed_by: hMe.id, confirmed_at: nowD, stamp_no: stp || null, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' confirmed' + (stp ? ' · stamped' : ''));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_seal') {
+          if (hd.state !== 'confirmed') return hNo('not-confirmed');
+          if (hd.seal_path) return hOk({ kept: true, path: hd.seal_path });
+          if (String(args.p_path || '') !== dc.id + '/sealed-' + hd.id + '.pdf' && !new RegExp('^' + dc.id + '/sealed-[0-9a-z-]+\\.pdf$').test(String(args.p_path || ''))) return hNo('bad-file');
+          if (!/^[0-9a-f]{64}$/.test(String(args.p_sha || '')) || !/^[0-9a-f]{64}$/.test(String(args.p_pages_sha || ''))) return hNo('bad-sha');
+          Object.assign(hd, { seal_path: args.p_path, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: nowD, sealed_by: hMe.name, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' sealed');
+          return hOk({ path: hd.seal_path });
+        }
+        if (name === 'hiring_doc_void') {
+          if (['draft', 'void'].indexOf(hd.state) > -1) return hNo('bad-state');
+          var vn = String(args.p_note || '').trim(); if (vn.length < 2) return hNo('bad-note');
+          Object.assign(hd, { state: 'void', void_note: vn, voided_at: nowD, voided_by: hMe.name, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' voided: ' + vn);
+          return hOk({});
+        }
+        if (name === 'hiring_doc_replace') {
+          if (['sent', 'withdrawn', 'declined', 'signed'].indexOf(hd.state) < 0) return hNo('bad-state');
+          if (DB.hiring_docs.some(function (d) { return d.replaces === hd.id && d.state === 'draft'; })) return hNo('exists');
+          var rp = { id: nid('hd'), candidate_id: dc.id, kind: hd.kind, state: 'draft', serial: null, terms: JSON.parse(JSON.stringify(hd.terms)), replaces: hd.id, made_by: hMe.id, made_at: nowD, updated_at: nowD, history: [] };
+          DB.hiring_docs.push(rp); hLog(dc.id, 'candidate.document', 'Replacement for ' + hd.serial + ' drafted');
+          return hOk({ row: dRow(rp) });
+        }
+        if (name === 'hiring_doc_delete') {
+          if (hd.state === 'void') { if (!hAdmin) return hNo('denied'); if (String(args.p_serial || '').trim() !== hd.serial) return hNo('bad-serial'); }
+          else if (hd.state !== 'draft') return hNo('bad-state');
+          DB.hiring_docs = DB.hiring_docs.filter(function (d) { return d.id !== hd.id; });
+          hLog(dc.id, 'candidate.document', (hd.serial || dWord(hd.kind) + ' draft') + ' deleted');
+          return hOk({});
+        }
+        return hNo('bad-request');
       }
       var hr = hRole(args.p_id);
       var hc = hFind(args.p_id);
@@ -15980,6 +16468,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return rpc('hiring_outcome_mail_done', { p_id: ho.candidateId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
           });
         }
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'code') {
+
+          var hcb = opts.body;
+          DB.hiring_docs = DB.hiring_docs || [];
+          var hcd = DB.hiring_docs.filter(function (d) { return d.id === hcb.docId && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })[0];
+          var hcc = hcd && (DB.hiring_candidates || []).filter(function (x) { return x.id === hcd.candidate_id && x.link_key === hcb.key && !x.removed_at; })[0];
+          if (!hcd || !hcc) return Promise.resolve({ data: { error: 'not_found' }, error: null });
+          if (window.__mail === false) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          window.__hireCodes = window.__hireCodes || {};
+          window.__hireCodes[hcd.id] = { code: '482915', email: hcc.email, tries: 0 };
+          DB.signing_steps = DB.signing_steps || [];
+          DB.signing_steps.push({ doc_kind: 'hiring_doc', doc_id: hcd.id, step: 'code', at: new Date().toISOString(), email: hcc.email, ip: '198.51.100.4', country: 'MY', device: hcb.device || null });
+          persist();
+          window.__hireMail = (window.__hireMail || []).concat([{ to: hcc.email, kind: 'code', ref: hcd.serial }]);
+          return Promise.resolve({ data: { ok: true }, error: null });
+        }
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'doc') {
+          var hdb = opts.body;
+          return rpc('hiring_doc_mail_prepare', { p_doc: hdb.docId }).then(function (r) {
+            var m = r.data || {};
+            if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
+            if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: 'doc', ref: m.ref, doc: m.doc }]);
+            return rpc('hiring_doc_mail_done', { p_doc: hdb.docId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
+          });
+        }
         if (name === 'hiring-mail') {
           var hm = (opts && opts.body) || {};
           return rpc('hiring_mail_prepare', { p_interview: hm.interviewId, p_kind: hm.kind }).then(function (r) {
@@ -16188,6 +16702,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return rpc('bukku_config', {}).then(function (r) {
               if (r.data && r.data.error) return { data: r.data, error: null };
               return { data: { ok: true, accounts: bkAccounts() }, error: null };
+            });
+          }
+
+          if (bkb.action === 'invoicecreate') {
+            return rpc('quotation_invoice_prep', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind }).then(function (r) {
+              var p = r.data || {};
+              if (p.error) return { data: p, error: null };
+              var fin = function (num) { return rpc('quotation_invoice_done', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind, p_bukku: num ? 7000 : null, p_number: num, p_amount: 0 }); };
+              if (window.__bukkuDown) return fin(null).then(function () { return { data: { error: 'bukku-unreachable' }, error: null }; });
+              var nosku = bkb.kind === 'service' && (p.lines || []).filter(function (l) { return !l.sku; })[0];
+              if (nosku) return fin(null).then(function () { return { data: { error: 'no-sku', line: nosku.label }, error: null }; });
+              window.__bukkuInvoices = window.__bukkuInvoices || [];
+              var num = 'IV-' + String(9000 + window.__bukkuInvoices.length).padStart(5, '0');
+              window.__bukkuInvoices.push({ number: num, number2: p.ref, contact_id: p.contact_id, lines: p.lines, status: 'draft' });
+              return fin(num).then(function () { return { data: { ok: true, made: num }, error: null }; });
             });
           }
           if (bkb.action === 'createbill') {

@@ -88,3 +88,33 @@ export async function resend(msg: Record<string, unknown>, key: string, apiKey: 
   }
   return { status, provider, error };
 }
+
+/* The Verification code email (VERIFICATION CODE TEMPLATE, 2026-11-17): the
+   one template every code the portal sends goes out in, its words the
+   team's (Settings, Messages, Email templates, Sign-in and codes). {name},
+   {minutes} and {purpose} are filled as words; {code} stands in the shaded
+   box where it has a paragraph of its own, else as its digits. The code is
+   never in the subject or the preview line a lock screen shows. */
+export const CODE_WORDS = {
+  subject: 'Your ADspace verification code {purpose}',
+  body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
+  foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
+};
+export function codeEmail(t: { subject?: string; body?: string; foot?: string } | null,
+  v: { name: string; code: string; minutes: number | string; purpose: string }): { subject: string; html: string; text: string } {
+  const w = { subject: (t && t.subject) || CODE_WORDS.subject, body: (t && t.body) || CODE_WORDS.body, foot: t && typeof t.foot === 'string' ? t.foot : CODE_WORDS.foot };
+  const fill = (s: string) => s.replace(/\{\s*name\s*\}/gi, () => v.name).replace(/\{\s*minutes\s*\}/gi, () => String(v.minutes))
+    .replace(/\{\s*purpose\s*\}/gi, () => v.purpose).replace(/\s+([.,:;])/g, '$1');
+  const subject = fill(w.subject.replace(/\{\s*code\s*\}/gi, '')).replace(/\s+/g, ' ').trim();
+  const body = fill(w.body);
+  const foot = fill(w.foot).trim();
+  const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:10px;margin:4px 0 24px;"><tr><td align="center" style="padding:16px 24px 16px 28px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1a1a1a;">' + esc(v.code) + '</td></tr></table>';
+  const own = paras(body).some((p) => /^\{\s*code\s*\}$/i.test(p));
+  const html = layout({
+    heading: 'Your verification code', preheader: subject + '.', block: own ? box : undefined,
+    body: own ? body.replace(/\{\s*code\s*\}/i, '{invoices}').replace(/\{\s*code\s*\}/gi, () => v.code) : body.replace(/\{\s*code\s*\}/gi, () => v.code),
+    foot: foot || undefined
+  });
+  const text = body.replace(/\{\s*code\s*\}/gi, () => v.code) + (foot ? '\n\n' + foot : '');
+  return { subject, html, text };
+}

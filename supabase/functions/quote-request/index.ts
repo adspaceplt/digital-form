@@ -24,6 +24,8 @@
  * client typed and never answered to the page, which is told only where
  * it went. The page then signs with `quote_sign_finish` (anon), which
  * records the time, address, country and device as the database saw them.
+ * The code goes out in the Verification code template's words
+ * (`code_email_template_read`, the service role's; 2026-11-17).
  *
  * Deploy:  supabase functions deploy quote-request (with ../_shared/cors.ts
  *          and ../_shared/mail.ts)
@@ -35,7 +37,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, layout, resend } from '../_shared/mail.ts';
+import { codeEmail, resend } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
@@ -107,25 +109,14 @@ Deno.serve(async (req) => {
     }
     const d = (r.data || {}) as Record<string, string>;
     if (d.error) return json({ error: d.error }, 200, origin);
-    /* The sign-in email's own words and code box (docs/SIGN-IN-EMAILS.md,
-       2026-11-03: the two read alike): the code in the shaded box, never in
-       the subject or the preview line a lock screen shows. The box is the
-       layout's one server-built block, set where `{invoices}` stands. */
-    const heading = 'Your signing code';
-    const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:10px;margin:4px 0 24px;"><tr><td align="center" style="padding:16px 24px 16px 28px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1a1a1a;">' + esc(d.code) + '</td></tr></table>';
-    const msg = {
-      from: CLIENT_FROM(), to: [d.email],
-      subject: 'Your ADspace signing code for quotation ' + d.ref,
-      html: layout({
-        heading, preheader: 'Your signing code for quotation ' + d.ref + '.', block: box,
-        body: 'Dear ' + d.name + ',\n\nPlease enter the following code to sign quotation ' + d.ref + ':\n\n{invoices}\n\n' +
-          'The code expires in 15 minutes.\n\nYours sincerely,\nADspace',
-        foot: 'The code may be used once. If you did not request to sign this quotation, please disregard this email; nothing is signed without the code.'
-      }),
-      text: 'Dear ' + d.name + ',\n\nPlease enter the following code to sign quotation ' + d.ref + ': ' + d.code +
-        '\n\nThe code expires in 15 minutes.\n\nYours sincerely,\nADspace' +
-        '\n\nThe code may be used once. If you did not request to sign this quotation, please disregard this email; nothing is signed without the code.'
-    };
+    /* The Verification code template's words (Settings, Email templates,
+       Sign-in and codes; VERIFICATION CODE TEMPLATE, 2026-11-17), else the
+       words it was seeded with: the code in the shaded box, never in the
+       subject or the preview line a lock screen shows. */
+    const tpl = await admin.rpc('code_email_template_read');
+    const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
+      { name: d.name, code: d.code, minutes: 15, purpose: 'to sign quotation ' + d.ref });
+    const msg = { from: CLIENT_FROM(), to: [d.email], subject: mail.subject, html: mail.html, text: mail.text };
     const sent = await resend(msg, String(d.id), secret('RESEND_API_KEY'));
     if (sent.status === 'failed') {
       console.error('quote-request: signing code not sent', sent.error);

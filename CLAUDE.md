@@ -304,18 +304,19 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `careers/`, the HIRING, HIRING INTERVIEWS and HIRING OUTCOMES sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `hrdocs.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES and HIRING OFFERS AND CONTRACTS sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
-| `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
+| `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED and VERIFICATION CODE TEMPLATE sections | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| Quotation invoices (the QUOTATION INVOICES section, `bukku-sync` `invoicecreate`, `#qiSheet`) | quotes, bukkufn, sql, settings, then `ui` |
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
 | `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
-| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey`, the VERIFY SEALED FILES section | seal, docs, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
+| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey`, the VERIFY SEALED FILES and QUOTATION WAYS OUT sections | seal, menus, docs, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -678,7 +679,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
-  creator emails), each saved through its own function, and one editor
+  creator emails; Sign-in and codes: Verification code, the one email every
+  code the portal sends goes out in (`code_email_template`, its fields
+  {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
+  `code_email_template_save` at `team.settings`, read by `quote-request` and `hiring-mail`
+  through `_shared/mail.ts` `codeEmail`; 2026-11-17, SEAL-SPEC decision 9),
+  and Supabase's Sign-in code and Invitation listed with no Edit), each saved through its own function, and one editor
   (`#mtEdSheet`): the words at the left, the email as it reads at the right
   (stacked under 720), the sender's fields from `template_fields_all()` as
   chips inserting at the caret, a field it cannot fill marked as it is
@@ -3081,6 +3087,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     uploaded, its SHA-256 asked of `verify_file` (anon), Matches the sealed
     copy or Does not match: this file has been altered. Both functions take
     one count (`verify_count()`, no caller's; `2026-11-17-verify-sealed-files.sql`).
+    A quotation withdrawn after signing reads Withdrawn with the day
+    (QUOTATION WAYS OUT).
   - Anyone the team does not hold is answered 30 lookups an hour a
     connection (`verify_tries` by `request_ip()`, RLS on, no policy, no
     grant), then `locked` with the minutes left before any reference is
@@ -3376,10 +3384,27 @@ Each line is a rule that broke once. Its reason is in the archive.
   main Download then gone.
 - /verify/ answers a sealed quotation with its Document ID and checks a
   file against the whole file's SHA-256 (Documents, `/verify/`).
+- Ways out (`2026-11-17-quotation-ways-out.sql`, decision 8): before
+  signing the team cancels (Cancel) and the client declines on the link
+  (Decline, under Accept, an optional reason of 300: `quote_decline`, anon,
+  the quotation then Cancelled to the team and Declined to the client and
+  on the row, the Declined step in its record, who prepared it and the
+  person in charge told, `quote.declined`); once signed it is never
+  deleted: the ⋯'s Mark withdrawn (Clients: Quotations Full Access;
+  `quotation_withdraw`, a day from its signing to today and a reason, the
+  lines its approval confirmed back to To quote where ticked, each line's
+  state kept; `not-signed`, `withdrawn`, `bad-date`, `bad-reason`) with Undo
+  where it happened (`quotation_withdraw_undo`), the sealed copy kept, its
+  record, /verify/, the Register and the client's link reading Withdrawn
+  from that day.
+- Documents lists every quotation sent out or signed as its first family,
+  Quotations, read from `quotations` (no copy): the reference, its state as
+  the record says it, the brand, the company that signed, the day; its ⋯
+  Download (the sealed copy, where sealed) and Open client record.
 
-### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
+### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
-  steps A to C built. Hiring is Team's tab, never a rail section (the user,
+  steps A to D built. Hiring is Team's tab, never a rail section (the user,
   2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
   opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
   away) with Back to the list, an older `?s=hiring` address opening it.
@@ -3456,6 +3481,48 @@ Each line is a rule that broke once. Its reason is in the archive.
   days, and a closed or removed candidate after `hiring_keep_months` (12),
   PDPA 2010; their CV files wait in `hiring_files_gone` for the part's
   console to take out of Storage once a visit.
+- Offer and contract (step D, decisions 4, 5, 10, 14): the record's Offer
+  tab (the part and the Owner alone) drafts the Employment Offer once the
+  candidate is to proceed, and the Employment Contract once an offer is
+  confirmed, one live of each (`hiring_doc_save`: position, employment
+  type, commencement, an end for a contract or internship, probation
+  months, days to reply prefilled 3 and 7, the offer's scope, the
+  contract's nature of works and place). The salary is `hiring_doc_pay`'s
+  alone (RLS on, no policy, no grant), set and read only by the part
+  behind the master code (`hiring_unlock`, the Performance unlock's token,
+  15 minutes) and the caution step (Sensitive information follows /
+  Proceed with caution., Continue); the record reads it Set, never a
+  figure, and no list, notice, email, history or search holds it. Send
+  numbers it (`ADHR/OFR{YYMM}{NNN}`, `ADHR/EMP{YYMM}{NNN}`, under the
+  kind's lock) and emails the candidate (`hiring-mail` `doc`: the
+  reference and the day to reply, never the terms). The candidate's page
+  lists each by its reference; Read asks a six-digit code emailed to the
+  candidate (`hiring-mail` `code`, no sign-in; `hiring_doc_code`, the
+  service role's, hashed, 15 minutes, five an hour, the address
+  Cloudflare saw), then the caution step, then the terms and salary for
+  30 minutes (`careers_doc_open`, a view token hashed); an offer is
+  accepted (name typed, the confirmation ticked) or declined (a reason
+  optional), a contract signed (name, NRIC or passport number, a
+  signature drawn in a 300 by 100 box), the code's email, address,
+  country, device and the document's fingerprint kept
+  (`careers_doc_answer`), the Owners told. Signed outside the page: Mark
+  signed (by scan or on paper, the PDF in the candidate's private folder,
+  `hiring_doc_mark`); Send back with a reason keeps the signing in its
+  history; Withdraw / Restore while the days run; Replace drafts a copy
+  that takes the reference on Send, the earlier one void; Void (the
+  part, a reason); Delete a draft, or a void one with its reference typed
+  back. Confirm (countersign) is the part's (`hiring_doc_confirm`, a stamp
+  certificate number optional), and the confirmed copy is drawn once
+  behind the master code with its Record of this Document
+  (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
+  `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
+  (`hiring_doc_seal`), never drawn again. The PDF (`js/hrdocs.js`) is the
+  user's templates word for word, their typos put right (SOCSO, your,
+  absent), the salary in words and figures, the intern and part-time
+  paragraphs only for those types, no NRIC in the greeting. Its
+  documents' files are queued for the console to take out of Storage when
+  it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
+  HR document's reference yet (step E).
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 
@@ -3681,6 +3748,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   `invoice_recipient_options` does not hold (`bad-recipient`, `bad-copy`)
   and greets the contact chosen (the finance email Sir or Madam); every
   copy is sent (`cc_list`) and filed in `cc_email`, comma separated.
+- Quotation invoices (`2026-11-17-quotation-invoices.sql`; the user,
+  2026-11-17, option B): an approved quotation's row act Invoices
+  (Clients: Billing View) opens `#qiSheet`, a row a billing cycle of the
+  term from the day its confirmed lines start (`quotation_start`; the 16th
+  runs to the 15th, never pro-rated) and a row a cycle for the advertising
+  budget; Create in Bukku (Billing Work) asks `quotation_invoice_prep` as
+  the caller (`not-reviewed`, `no-start`, `not-linked`, `invoiced`,
+  `creating` for ten minutes, `no-budget-account`, `no-tax-code`), then
+  `bukku-sync` `invoicecreate` searches Bukku for an invoice holding the
+  reference (`{ref} · {cycle day}`, ` · Ads`) and makes none twice, else
+  makes one draft: each line on the Bukku product of its Rate Card SKU
+  (`no-sku`, `no-product` name the line), its income account the
+  product's, its rate after the line's own term percentage, its tax code
+  Bukku's; the budget on the account code set in Settings, Money, Bukku
+  (`bukku_invoice_set`), no tax, to the contact chosen for the client
+  (`client_ad_debtor_set`), else the client's own; filed by
+  `quotation_invoice_done` (`client.billing`). `quotation_invoices` and
+  `client_ad_debtors` have RLS on, no policy, no grant.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four

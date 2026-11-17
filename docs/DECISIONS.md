@@ -10725,6 +10725,10 @@ The user approved specs/SEAL-SPEC.md and its mockup on 2026-11-17: a signed and 
 
 ### 2026-11-17 · /verify/ checks a sealed file
 SEAL-SPEC decision 6, built as the seal's step 2. A quotation is answered only once it left ADspace (sent out or signed): a draft or an unreleased website quotation is Not found, as an unissued letter is. Expired is added beside Valid, Void and Replaced because an unsigned quotation past its validity no longer stands; Withdrawn waits for step 3's Mark withdrawn. The count of lookups moved into `verify_count()` so the file check and the reference share one limit of 30 an hour a connection; a file check is a lookup. The file is hashed on the page with `ADspaceSeal.sha256` (the one hash) and only its SHA-256 goes to the database, so the file never leaves the visitor's device.
+
+### 2026-11-17 · Quotations in Documents, Decline and Mark withdrawn
+SEAL-SPEC decisions 7 and 8, the seal's step 3. The Register reads quotations from their own table as its first family, the way Letters of Offer are read from `client_documents`, so nothing is copied; its ⋯ downloads only the sealed copy (an unsealed quotation is drawn on the client's record, where its context is loaded). A declined quotation is stored as the team's Cancelled (`status` not_proceeding) with `declined_at` beside it, so every rule that holds a cancelled quotation holds a declined one, and the client and the row read Declined. Withdrawal after signing never deletes and never alters the sealed file (its hash would no longer match); it is a mark on the record, /verify/ and the link. Putting the lines back moves them from Confirmed to To quote and keeps each line's state, so Undo can return them through the confirm guard, which a security-definer function passes. The stand-in's link lookup answers only the `quote_` names its gate lists, which the suite found when Decline answered without writing; the gate now names `decline`. The suite's first selector filled the desk's date box (a text box, DD/MM/YYYY) with the reason: a suite fills a question's field by its own selector, never by a list.
+
 ## 2026-11-17 · Access security fixes: groups an admin's, Own clients by id
 
 The user, deciding the access restructure's question 6 ("6 ok"): two holes
@@ -10762,3 +10766,53 @@ plan: Sensitive details on only where a group read billing or payments
 already, Members' Content sets taken back to Edit. Delete requests at Edit
 (step 5) and the clean-up of the old parts (step 6) follow as their own
 releases.
+### 2026-11-17 · An approved quotation's invoices made in Bukku as drafts
+Finance retyped each approved quotation into Bukku every month. The user
+chose option B: the portal prepares each billing cycle's invoice from the
+quotation and makes it in Bukku as a draft, finance approving it there.
+Decided by the user: draft only; a line's product found by its Rate Card
+SKU, whose Bukku product carries the income account; the advertising budget
+its own invoice to a debtor contact, with no SST; a cycle starts on the day
+the services start and runs a full month (the 16th to the 15th), the first
+never pro-rated; Clients: Billing at Work makes them. Decided by me under
+the user's authorisation (2026-11-17, "anything that needs my decision, you
+may proceed"): the budget's account is a typed code in Settings, Money,
+Bukku (the accounts list Bukku answers holds expense accounts alone); the
+debtor contact is chosen a client, else the client's own contact; a custom
+line with no SKU is refused by name rather than guessed; due dates are left
+to Bukku's contact terms; the reference `{quotation ref} · {cycle day}`
+(` · Ads`) is searched before any invoice is made, so a second press or one
+made by hand is never doubled.
+
+
+- **2026-11-17, Sign-in and codes (SEAL-SPEC decision 9).** The signing code
+  quote-request emailed had its words in the function, the one email the
+  team could not read or change in Email templates. It is now Verification
+  code, one template (`code_email_template`) every code the portal sends
+  goes out in (the Employment Contract's code next), its fields {name},
+  {code}, {minutes} and {purpose}; {code} is refused in the subject, since a
+  phone shows the subject on its lock screen, and required in the message.
+  The two emails Supabase sends are listed beside it with no Edit: their
+  words live in Supabase's dashboard (docs/SIGN-IN-EMAILS.md). Found on the
+  phone screenshot: Sign-in and codes, a fourth small segment option, ran
+  past the sheet's edge, since a small segment's options never shrink and
+  `fit` measured only each option's own words; a track wider than its row
+  now wraps (`js/form.js`, `.seg.is-sm.is-wrap`).
+2026-11-17 — Hiring step D: offers and contracts (release H2). The part or a
+   candidate's Owner drafts the Employment Offer, then the Employment
+   Contract once the offer is confirmed; the salary is stored apart
+   (`hiring_doc_pay`) and set, read and drawn only by the part behind the
+   master code and a caution step, never shown as a figure on the record,
+   in a notice, an email or the history (HR-SPEC.md decision 10). The
+   candidate reads a document on their page behind a six-digit code emailed
+   to them (no account, decision 1) and the same caution step, then accepts,
+   declines or signs it with a drawn signature, the code's email, address
+   and device kept (decision 14). The part confirms; the confirmed copy is
+   sealed once with its Record of this Document and SHA-256, as a quotation
+   is (decision 15), stored in the private `hiring` bucket. Found while
+   building: an `if` condition holding `case … then … end then` does not
+   parse in PL/pgSQL (the case's own THEN ends the condition); the case is
+   parenthesised. A question's field is required unless marked
+   `required: false`, so an optional stamp number held Confirm back until
+   it was marked. Deferred to step E: /verify/ answering an HR document's
+   reference and file, Documents' HR Letters listing them.

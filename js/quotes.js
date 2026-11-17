@@ -96,6 +96,9 @@
      past its day. */
   function stateOf(q, live) {
     if (q.removed_at) return ['Removed', 'is-off'];
+    /* Withdrawn after signing (QUOTATION WAYS OUT, 2026-11-17): kept, its
+       sealed copy too, never deleted. */
+    if (q.withdrawn_at) return ['Withdrawn', 'is-off', 'From ' + window.ADspaceClock.date(q.withdrawn_on).replace(/ \d{4}$/, '')];
     /* Signed on its link or on paper, then checked, submitted and reviewed
        (QUOTATION SIGNING, 2026-10-31): the signing outranks the date, since
        a signed quotation is held to as signed. */
@@ -107,7 +110,7 @@
     }
     var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
     if (held) return ['Letter of Offer issued', 'is-ok', held];
-    if (q.status === 'not_proceeding') return ['Cancelled', 'is-off'];
+    if (q.status === 'not_proceeding') return q.declined_at ? ['Declined', 'is-off', 'By the client'] : ['Cancelled', 'is-off'];
     /* A later quotation made from this one revises it; the prospect's link
        shows that one (2026-10-26). */
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
@@ -158,7 +161,7 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -272,6 +275,9 @@
             acts.push('<button class="btn btn-sm" data-a="check" type="button">Submit</button>');
           }
           if (maySet && !q.removed_at && mayReview(q)) acts.push('<button class="btn btn-sm" data-a="review" type="button">Review</button>');
+          /* An approved quotation's invoices, made in Bukku as drafts a
+             billing cycle (QUOTATION INVOICES, 2026-11-17). */
+          if (!q.removed_at && q.reviewed_at && ctx.may('clients.billing', 'view')) acts.push('<button class="btn btn-sm" data-a="invoices" type="button">Invoices</button>');
           /* No Letter of Offer is issued from a quotation (2026-10-31): the
              client signs the quotation itself, which is the contract. */
           if (maySet && !q.removed_at) {
@@ -321,6 +327,11 @@
               items.push('<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
             }
             if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            /* Once signed it is withdrawn from a day, never deleted (QUOTATION
+               WAYS OUT, 2026-11-17), at Full Access. */
+            if (q.signed_at && !q.withdrawn_at && ctx.may('clients.quotes', 'manage')) {
+              items.push('<button class="kmenu-item" data-g="5" data-a="withdraw" data-need="clients.quotes:manage" type="button" role="menuitem">Mark withdrawn</button>');
+            }
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           /* The signed document's record (SIGNED DOCUMENT SEAL, 2026-11-17):
@@ -622,6 +633,7 @@
       });
       return;
     }
+    if (a === 'invoices') { openInvoices(q, ctx, btn); return; }
     if (a === 'record') {
       window.ADspaceSeal.open({ title: 'Record of this Document', sub: 'Quotation ' + q.ref, opener: btn, verifyUrl: verifyUrl(q),
         load: function () {
@@ -727,6 +739,7 @@
         body: 'The Quotation ready message, with the link to ' + q.ref + ', will be sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
+    if (a === 'withdraw') { withdraw(q, ctx); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */
@@ -738,6 +751,46 @@
       ctx.undo(q.ref + (a === 'remove' ? ' removed.' : ' cancelled.'), function () {
         set(q, back, ctx, function () {});
       }, $('qtMsg'));
+    });
+  }
+  /* Mark withdrawn (QUOTATION WAYS OUT, 2026-11-17): a signed quotation
+     stops from a day, with a reason; its sealed copy is kept and reads
+     Withdrawn; the service lines its approval confirmed go back to To
+     quote where asked. Undo where it happened puts it all back. */
+  var OUT_SAID = {
+    denied: 'You do not have permission to withdraw quotations. Please ask an admin.',
+    'not-signed': 'Only a signed quotation can be withdrawn. Cancel this one instead.',
+    withdrawn: 'This quotation is already withdrawn.',
+    'bad-date': 'Choose a date between the signing date and today.',
+    'bad-reason': 'Enter a reason.'
+  };
+  function withdraw(q, ctx) {
+    var today = window.ADspaceClock.today(), signedDay = window.ADspaceClock.day(q.signed_at);
+    var fields = [{ name: 'on', label: 'Withdrawn from', type: 'date', required: true, value: today, min: signedDay, max: today },
+      { name: 'reason', label: 'Reason', required: true }];
+    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Return its confirmed service lines to To quote', tick: true, value: 'on' });
+    window.ADspaceConfirm.ask({
+      title: 'Mark withdrawn?',
+      body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
+      fields: fields, go: 'Mark withdrawn', tone: 'warn',
+      check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a date between the signing date and today.' : ''; },
+      wait: true
+    }, function (v) {
+      return ctx.db.rpc('quotation_withdraw', { p_id: q.id, p_on: v.on, p_reason: v.reason, p_lines: v.lines === 'on' }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return OUT_SAID[d.error] || said(r.error || d.error);
+        var n = d.lines || 0;
+        ctx.reload(function () {
+          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' returned to To quote.' : ''), function () {
+            ctx.db.rpc('quotation_withdraw_undo', { p_id: q.id }).then(function (u) {
+              var e = u.error || (u.data && u.data.error);
+              if (e) { ctx.msg('qtMsg', said(e), 'err'); return; }
+              ctx.reload(function () { ctx.msg('qtMsg', 'Undone.', 'ok'); });
+            }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+          }, $('qtMsg'));
+        });
+        return '';
+      }).catch(function (e) { return said(e); });
     });
   }
   function set(q, what, ctx, ok) {
@@ -1108,6 +1161,137 @@
       ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' marked signed. Submit it for review.', 'ok'); });
     }).catch(function (e) { go.disabled = false; sheetMsg('qsgPaperMsg', said(e), 'err'); });
   }
+  /* A quotation's invoices (QUOTATION INVOICES, 2026-11-17; the user: a
+     Bukku draft a billing cycle, finance approving it there). One row a
+     cycle and kind, from the day the services start, each made by Create in
+     Bukku at Clients: Billing Work; the advertising budget its own draft to
+     the contact chosen for it, with no tax. */
+  var QI = null;
+  var QI_SAID = {
+    'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date when approving the quotation.',
+    'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
+    creating: 'This invoice is being created. Refresh in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Money, Bukku.',
+    nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Money, Tax codes.',
+    'no-fx': 'Set the Singapore dollar rate in Settings, Money, Tax and terms.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
+    'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Money, Bukku.',
+    'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
+    withdrawn: 'This quotation has been withdrawn. No further invoices are made from it.',
+    'bad-request': 'This invoice could not be read. Refresh the page.'
+  };
+  function qiSaid(d) {
+    var e = d && (d.error || d);
+    var k = String((e && e.message) || e || '');
+    var w = QI_SAID[k] || said(k);
+    if (k === 'no-sku' && d.line) w = d.line + ' has no SKU on the Rate Card. Add its SKU in Services.';
+    if (k === 'no-product' && d.sku) w = 'Bukku has no product with SKU ' + d.sku + (d.line ? ' (' + d.line + ')' : '') + '. Add it in Bukku first.';
+    if (k === 'invoiced' && d.number) w = 'Invoice ' + d.number + ' has already been created in Bukku.';
+    return w;
+  }
+  function openInvoices(q, ctx, opener) {
+    if (!$('qiSheet')) return;
+    QI = { q: q, ctx: ctx };
+    $('qiFor').textContent = q.ref + ' · ' + q.brand;
+    $('qiBody').innerHTML = '';
+    sheetMsg('qiMsg', '');
+    window.ADspaceSheet.show($('qiSheet'), { opener: opener || null, onClose: function () { QI = null; } });
+    loadInvoices();
+  }
+  function loadInvoices() {
+    if (!QI) return;
+    var me = QI, q = me.q, ctx = me.ctx;
+    window.ADspaceState.skeleton($('qiBody'), 3);
+    ctx.db.rpc('quotation_invoices_of', { p_id: q.id }).then(function (r) {
+      if (QI !== me) return;
+      var d = r.data || {};
+      if (r.error) { window.ADspaceState.failLine($('qiBody'), 'The invoices', said(r.error), loadInvoices); return; }
+      if (d.error) { $('qiBody').innerHTML = ''; sheetMsg('qiMsg', qiSaid(d), 'err'); return; }
+      paintInvoices(d);
+    }).catch(function (e) { if (QI === me) window.ADspaceState.failLine($('qiBody'), 'The invoices', said(e), loadInvoices); });
+  }
+  function qiDay(v) { return v ? window.ADspaceClock.date(String(v).slice(0, 10)) : ''; }
+  function paintInvoices(d) {
+    var me = QI, ctx = me.ctx, work = ctx.may('clients.billing', 'work');
+    var money = function (n) { return d.currency === 'SGD' ? 'S$ ' + rm(n) : 'RM ' + rm(n); };
+    var rows = d.rows || [];
+    var budget = rows.some(function (x) { return x.kind === 'budget'; });
+    var h = '<dl class="ovfacts">' +
+      '<dt>Starts</dt><dd>' + (d.start ? esc(qiDay(d.start)) : 'Not set') + '</dd>' +
+      '<dt>Months billed</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>' +
+      (budget ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
+        (work ? ' <button class="linkbtn" data-qi="debtor" type="button">Change</button>' : '') + '</dd>' : '') +
+      '</dl>';
+    if (!d.start) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-start']) + '</p>';
+    if (budget && !d.budget_account) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-budget-account']) + '</p>';
+    if (!rows.length) h += '<p class="emptyline">Nothing to invoice.</p>';
+    else h += '<div class="qi-list">' + rows.map(function (x) {
+      var made = !!x.number;
+      return '<div class="qi-row" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '">' +
+        '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : 'Month ' + x.cycle) + '</b>' +
+          '<small>' + (x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set') + '</small></span>' +
+        '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' +
+        '<span class="qi-state">' + (made ? '<span class="chip-state is-ok">Draft ' + esc(x.number) + '</span>'
+          : x.creating ? '<span class="chip-state is-warn">Creating</span>' : '<span class="chip-state is-off">Not created</span>') + '</span>' +
+        '<span class="qi-act">' + (!made && work && d.start ? '<button class="btn btn-sm" data-qi="make" type="button">Create in Bukku</button>' : '') + '</span>' +
+        '</div>';
+    }).join('') + '</div>';
+    $('qiBody').innerHTML = h;
+  }
+  function qiMake(btn) {
+    if (!QI) return;
+    var me = QI, row = btn.closest('.qi-row');
+    btn.disabled = true;
+    sheetMsg('qiMsg', '');
+    me.ctx.db.functions.invoke('bukku-sync', { body: { action: 'invoicecreate', quotation: me.q.id, cycle: Number(row.getAttribute('data-cycle')), kind: row.getAttribute('data-kind') } })
+      .then(function (r) {
+        if (QI !== me) return;
+        var d = r.data || {};
+        if (r.error && !r.data) { btn.disabled = false; sheetMsg('qiMsg', said(r.error), 'err'); return; }
+        if (d.error && d.error !== 'in-bukku') { btn.disabled = false; sheetMsg('qiMsg', qiSaid(d), 'err'); return; }
+        sheetMsg('qiMsg', d.error === 'in-bukku' ? 'Invoice ' + d.number + ' was already in Bukku. It is now shown here.' : 'Draft ' + (d.made || '') + ' created in Bukku.', 'ok');
+        loadInvoices();
+      }).catch(function (e) { if (QI === me) { btn.disabled = false; sheetMsg('qiMsg', said(e), 'err'); } });
+  }
+  /* The contact the advertising budget is invoiced to: a Bukku customer
+     found by name, or the client's own contact. */
+  function qiDebtor() {
+    if (!QI) return;
+    var me = QI, ctx = me.ctx;
+    window.ADspaceConfirm.ask({ title: 'Bill the advertising budget to', go: 'Find', wait: true,
+      fields: [{ name: 'q', label: 'Bukku contact', placeholder: 'Name or Business Registration No.', required: false,
+        note: 'Leave empty to bill the client\'s own contact.' }] }, function (v) {
+      var term = String(v.q || '').trim();
+      if (!term) {
+        return ctx.db.rpc('client_ad_debtor_set', { p_client: me.q.client_id, p_contact: null, p_code: null, p_name: null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) return qiSaid(r.error || d);
+          loadInvoices();
+          return '';
+        });
+      }
+      return ctx.db.functions.invoke('bukku-sync', { body: { action: 'contacts', q: term } }).then(function (r) {
+        var d = r.data || {};
+        if (r.error && !r.data) return said(r.error);
+        if (d.error) return window.ADspaceBukku ? window.ADspaceBukku.said(d) : said(d.error);
+        var list = d.contacts || [];
+        if (!list.length) return 'No Bukku contact matches. Check the name, or ask an admin who sees every client.';
+        setTimeout(function () {
+          window.ADspaceConfirm.ask({ title: 'Choose the contact', go: 'Save', wait: true,
+            fields: [{ name: 'c', label: 'Bukku contact', choices: list.map(function (c) { return [String(c.id), (c.code ? c.code + ' · ' : '') + c.name]; }), value: String(list[0].id), required: true }] },
+            function (w) {
+              var c = list.filter(function (x) { return String(x.id) === w.c; })[0];
+              if (!c) return 'Choose a contact.';
+              return ctx.db.rpc('client_ad_debtor_set', { p_client: me.q.client_id, p_contact: Number(c.id), p_code: c.code || null, p_name: c.name || null }).then(function (r2) {
+                var d2 = r2.data || {};
+                if (r2.error || d2.error) return qiSaid(r2.error || d2);
+                loadInvoices();
+                return '';
+              });
+            });
+        }, 0);
+        return '';
+      });
+    });
+  }
   function wireSign() {
     if (wireSign.done || !$('qsgCheckSheet')) return;
     wireSign.done = true;
@@ -1123,6 +1307,15 @@
     $('qsgPaperSave').addEventListener('click', savePaper);
     $('qsgPaperCancel').addEventListener('click', function () { window.ADspaceSheet.close(); PP = null; });
     $('qsgPaperClose').addEventListener('click', function () { $('qsgPaperCancel').click(); });
+    if ($('qiSheet')) {
+      $('qiClose').addEventListener('click', function () { window.ADspaceSheet.close(); QI = null; });
+      $('qiBody').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-qi]');
+        if (!b) return;
+        if (b.getAttribute('data-qi') === 'make') qiMake(b);
+        else if (b.getAttribute('data-qi') === 'debtor') qiDebtor(b);
+      });
+    }
   }
 
   /* The Overview's section: three rows, read only. */
