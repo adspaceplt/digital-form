@@ -153,11 +153,15 @@
   var lang = 'en';
   function t() { return T[lang]; }
   var LANG_KEY = 'adspace.portal.lang';
-  try { var saved = localStorage.getItem(LANG_KEY); if (saved && T[saved]) lang = saved; } catch (e) {}
+  /* A choice made on this browser (the 中文 switch) wins; until one is made
+     the page opens in the signed-in contact's own language (get_portal
+     `me.lang`, 2026-11-17), never stored as if it were chosen. */
+  var langChosen = false;
+  try { var saved = localStorage.getItem(LANG_KEY); if (saved && T[saved]) { lang = saved; langChosen = true; } } catch (e) {}
 
-  function setLang(next) {
+  function setLang(next, keep) {
     lang = next;
-    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    if (keep) { langChosen = true; try { localStorage.setItem(LANG_KEY, lang); } catch (e) {} }
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if ($('kicker')) $('kicker').textContent = t().kicker;
@@ -172,7 +176,7 @@
     if ($('cpSide')) $('cpSide').setAttribute('aria-label', t().sideLabel);
     if (feed) build(); else if (shownState) showState.apply(null, shownState);
   }
-  if ($('langToggle')) $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
+  if ($('langToggle')) $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en', true); });
 
   // ---- Helpers -------------------------------------------------------------
   function msg(id, text, kind) {
@@ -546,6 +550,8 @@
       if (d.error) { showState('fail', d.error); return; }
       feed = d;
       shownState = null;
+      var own = d.me && (d.me.lang === 'zh' ? 'zh' : d.me.lang === 'en' ? 'en' : '');
+      if (!langChosen && own && own !== lang) { setLang(own); return; }
       build();
     }).catch(function (e) { showState('fail', (e && e.message) || String(e)); });
   }
