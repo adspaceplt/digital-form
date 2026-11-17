@@ -662,6 +662,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   with no way back, and `ADspaceDocs`' viewer draws PDFs alone (found
   2026-11-17 by the Hiring gate fixes, which do not touch Personnel).
 
+- `perfui`: "and it starts at No Access: granted, never inherited" (the
+  group sheet's Performance reviews part) and a click that times out after
+  the Activity record's Performance steps fail on main without any change
+  (found 2026-11-17 by the console tone check, which does not touch them).
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

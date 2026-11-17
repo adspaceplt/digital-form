@@ -220,7 +220,7 @@
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
                 ['reports', 'Reports'], ['whatsapp', 'Messages'], ['register', 'Documents'],
                 /* An HR letter's history, read with HR Letters too (S5). */
-                ['hr', 'HR letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
+                ['hr', 'HR Letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -237,7 +237,7 @@
        team's queue and Report the team's figures, so those two are granted. */
     ops:       [['list', 'List view'], ['board', 'Board view'], ['calendar', 'Calendar view'],
                 ['all', 'The whole team\'s tasks'], ['reports', 'Team figures on the Dashboard'],
-                ['workflows', 'Templates and recurring tasks'], ['time', 'Another person\'s time records'],
+                ['workflows', 'Templates and repeating tasks'], ['time', 'Another person\'s time records'],
                 /* What an admin alone did before (2026-10-07): an admin's by
                    itself, any other group's once set. */
                 ['numbering', 'Task numbering'], ['override', 'Move anyone\'s task and due date']],
@@ -246,7 +246,7 @@
        Granted like the four above, because administering the team is not
        reading its scores, and the master code is asked for on top. */
     team:      [['performance', 'Performance reviews'],
-                ['perfadmin', 'Performance company figures, settings and removals'],
+                ['perfadmin', 'Revenue and profit, Performance settings and deleting reviews'],
                 ['settings', 'Business settings'], ['upgrade', 'Upgrade mode'],
                 ['invite', 'Send invitation'], ['handbook', 'Handbook files'], ['announce', 'Announcements'],
                 /* A notice to all colleagues or to those chosen (2026-10-09). */
@@ -445,7 +445,7 @@
   var AB_WORD = { waiting: ['is-warn', 'Waiting'], approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'],
                   ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
   var AB_SAID = { denied: 'Only an admin can decide overseas access. Please ask an admin.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request was already decided.',
-                  'not-approved': 'That access has already ended.', 'too-long': 'Keep the note to 300 characters.' };
+                  'not-approved': 'That access has already ended.', 'too-long': 'Enter a note of 300 characters at most.' };
   function abroadGroup(m) {
     var rows = abroadOf(m.id);
     if (!rows.length) return '';
@@ -707,8 +707,8 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Your own access date is set by another admin. Please ask one to change it.';
-    if (/expired-date/.test(t)) return 'Move the access date first.';
+    if (/own-expiry/.test(t)) return 'Only another admin can change your own access date. Please ask one.';
+    if (/expired-date/.test(t)) return 'Set Access until to today or a later date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
     if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin. Please ask the super admin.';
@@ -1012,7 +1012,7 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Your own account is removed by another admin. Please ask one to remove it.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    own: 'Only another admin can remove your own account. Please ask one.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
     'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
@@ -1028,7 +1028,7 @@
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
         /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
         body: m.name + ' loses access permanently.' + (fields.length ? ' Choose who takes their work.' : '') +
-          ' Past work, HR letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in email and health check-ins. This cannot be undone.',
+          ' Past work, HR Letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in email and health check-ins. This cannot be undone.',
         fields: fields.concat([
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Erase personal details']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
@@ -1356,11 +1356,11 @@
     'campaigns.campaigns': 'Campaigns, bookings and drafts.',
     'campaigns.creators': 'The Creators List.',
     'campaigns.finance': 'The invoice number and its PDF.',
-    'register.documents': 'Client letters and other documents.',
-    'register.hr': 'HR letters and downloaded performance records.',
+    'register.documents': 'Client Letters and other documents.',
+    'register.hr': 'HR Letters and downloaded performance records.',
     'suppliers.pay': 'A supplier\'s NRIC and bank details.',
     'team.personnel': 'Each colleague\'s employee record, their salary behind the master code, and the AutoCount HRMS download.',
-    'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
+    'campaigns.pay': 'A creator\'s NRIC, Passport Number or Business Registration Number (BRN) and account number, and approving their payment details.',
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'
@@ -1625,7 +1625,7 @@
       /* The team's figures (the Dashboard's My Work tiles and charts)
          are a grant of their own (2026-10-03). */
       if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
-        d.textContent += ' Team figures on the Dashboard need their part in Customise.';
+        d.textContent += ' Team figures on the Dashboard are turned on under Customise.';
       }
       var diff = (PARTS[s[0]] || []).filter(function (p) { var k = s[0] + '.' + p[0]; return !TOOL[k] && (k in access); })
         .map(function (p) { var k = s[0] + '.' + p[0]; return p[1] + ': ' + valueWord(k, access[k]); });
@@ -1807,7 +1807,7 @@
     state.editing = r || null;
     groupOpener = opener || null;
     $('grTitle').textContent = r ? 'Edit group' : 'New group';
-    $('grSave').textContent = r ? 'Save' : 'Add';
+    $('grSave').textContent = r ? 'Save' : 'Create';
     $('grName').value = r ? r.name : '';
     $('grPresetNote').setAttribute('aria-expanded', 'false');
     /* Only an admin makes a group admin (`team_roles_admin_guard`), so
@@ -2732,7 +2732,7 @@
     var work = may('register.hr', 'work') && R;
     var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add existing document</button>' +
       '<button class="btn btn-sm" type="button" data-r="issue">Issue document</button></span>' : '';
-    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR letters', '<div id="mrecDocs"></div>', act) + '</div></div>';
+    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR Letters', '<div id="mrecDocs"></div>', act) + '</div></div>';
     var box = host.querySelector('#mrecDocs');
     UI().skeleton(box, 2);
     var again = function () { if (rec.id === m.id && rec.pane === 'documents') paintPane(m); };
