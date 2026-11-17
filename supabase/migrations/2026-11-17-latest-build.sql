@@ -79,7 +79,7 @@ begin
         set_by = excluded.set_by, set_at = excluded.set_at;
   insert into public.activity_log (actor, action, subject, detail)
   values (coalesce(v_who, 'admin'), 'team.changed', 'Portal',
-          'Latest build required: ' || public.build_word(v_was ->> 'commit', (v_was ->> 'built')::timestamptz)
+          'Latest version required: ' || public.build_word(v_was ->> 'commit', (v_was ->> 'built')::timestamptz)
           || ' → ' || public.build_word(v_commit, case when v_commit is not null then p_built end));
   return jsonb_build_object('ok', true, 'min', public.build_min(), 'was', v_was);
 end $$;

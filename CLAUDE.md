@@ -766,7 +766,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Pages (no metered line); a build newer than the page's draws `#buildBar`
   (laid as `.upgradebar`: A new version is available., Refresh), and five
   minutes on the console refreshes by itself once idle. Settings, Portal:
-  Require latest build (`team.upgrade`) stores the live build
+  Require latest version (`team.upgrade`) stores the live build
   (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`,
   filed `team.changed` under Portal from and to, Undo putting the one before
   back); `page_pulse` answers it to the console as `build`, and a console

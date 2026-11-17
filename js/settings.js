@@ -262,7 +262,7 @@
         may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
         /* Require latest build (2026-11-17): every open console below the
            live build refreshes once nothing is open in it (js/admin.js). */
-        may('team.upgrade') && { id: 'build', name: 'Require latest build', kind: 'act', act: 'Require', meta: line('build'),
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
           open: function (btn) { requireBuild(btn); } },
         may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
           open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
@@ -667,10 +667,10 @@
     var tell = rowSay('build');
     fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (v) {
       var ok = v && !/[{}%]/.test(String(v.commit) + String(v.built)) && /^[0-9a-f]{7,40}$/i.test(String(v.commit)) && !isNaN(Date.parse(v.built));
-      if (!ok) { tell('The live build could not be read. Refresh the page and try again.', 'err'); return; }
+      if (!ok) { tell('The live version could not be read. Refresh the page and try again.', 'err'); return; }
       var live = { commit: String(v.commit).toLowerCase(), built: v.built };
-      window.ADspaceConfirm.ask({ title: 'Require the latest build?', go: 'Require',
-        body: 'Every open console older than ' + buildWord(live) + ' will refresh within a minute once no form is open in it.' }, function () {
+      window.ADspaceConfirm.ask({ title: 'Require the latest version?', go: 'Require',
+        body: 'Every console open on a version older than ' + buildWord(live) + ' will refresh within a minute, once no form is open.' }, function () {
         btn.disabled = true;
         send(live.commit, live.built).then(function (d) {
           tell('');
@@ -685,8 +685,8 @@
         var d = r.data || {};
         if (r.error || d.error) {
           throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
-            : d.error === 'denied' ? 'You do not have permission to require a build. Please ask an admin.'
-            : d.error === 'bad-build' ? 'The live build could not be read. Refresh the page and try again.' : 'Not saved. The database refused the request.');
+            : d.error === 'denied' ? 'You do not have permission to require a version. Please ask an admin.'
+            : d.error === 'bad-build' ? 'The live version could not be read. Refresh the page and try again.' : 'Not saved. Please try again, or contact an admin.');
         }
         fillLine('build', buildLine(d.min));
         if (bridge.buildMin) bridge.buildMin(d.min || null);

@@ -12919,7 +12919,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.app_flags = (DB.app_flags || []).filter(function (x) { return x.key !== 'build:min'; });
       DB.app_flags.push({ key: 'build:min', on_now: !!bmC, note: bmC, starts_at: bmC ? new Date(bmB).toISOString() : null, set_by: whoNow(), set_at: new Date().toISOString() });
       DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Portal',
-        detail: 'Latest build required: ' + bmWord(bmWas && bmWas.commit, bmWas && bmWas.built) + ' → ' + bmWord(bmC, bmC ? new Date(bmB).toISOString() : null),
+        detail: 'Latest version required: ' + bmWord(bmWas && bmWas.commit, bmWas && bmWas.built) + ' → ' + bmWord(bmC, bmC ? new Date(bmB).toISOString() : null),
         created_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify({ ok: true, min: bmRow(), was: bmWas })), error: null });
