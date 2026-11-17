@@ -2119,12 +2119,14 @@
      readable. The list stays the way in; Back returns to it. */
   var rec = { id: null, pane: 'overview', seq: 0 };
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
-  var PANES = [['overview', 'Overview'], ['work', 'Work'], ['personnel', 'Personnel'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
+  var PANES = [['overview', 'Overview'], ['work', 'Work'], ['personnel', 'Personnel'], ['onboarding', 'Onboarding'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
   function paneOk(k) {
     if (k === 'work') return may('team', 'manage');
     if (k === 'documents') return may('register.hr', 'view');
     /* The employee record (2026-11-16): the granted part alone. */
     if (k === 'personnel') return may('team.personnel', 'work') && Boolean(window.ADspacePersonnel);
+    /* Onboarding (2026-11-17, release H2 step E1): the Hiring or Personnel part. */
+    if (k === 'onboarding') return (may('team.personnel', 'work') || may('team.hiring', 'work')) && Boolean(window.ADspaceOnboard);
     if (k === 'performance') return may('team.performance', 'view');
     if (k === 'health') return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin());
     return true;
@@ -2246,6 +2248,7 @@
     if (rec.pane === 'work') return paneWork(m, host, live);
     if (rec.pane === 'documents') return paneDocs(m, host, live);
     if (rec.pane === 'personnel') return window.ADspacePersonnel.paneTeam(m, host, live, state.rows || []);
+    if (rec.pane === 'onboarding') return window.ADspaceOnboard.paneTeam(m, host, live);
     if (rec.pane === 'performance') return panePerf(m, host);
     if (rec.pane === 'health') return paneHealth(m, host, live);
     paneOverview(m, host);

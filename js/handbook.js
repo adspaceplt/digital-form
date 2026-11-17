@@ -314,6 +314,20 @@
       });
       return;
     }
+    /* The Welcome Kit comes first for a colleague made from a candidate
+       (2026-11-17, release H2 step E1; js/onboard.js), then the files. */
+    var kit = bridge.welcomeDue ? bridge.welcomeDue() : null;
+    if (kit && window.ADspaceOnboard) {
+      var secK = $('sectionHandbook');
+      if (secK) secK.classList.add('is-onboard');
+      var files = dueList().length;
+      window.ADspaceOnboard.kit(box, kit, { step: 1, total: 1 + files, done: function () {
+        if (bridge.welcomeDone) bridge.welcomeDone();
+        if (dueList().length) { paintGate(); window.scrollTo(0, 0); }
+        else if (bridge.handbookCleared) { box.hidden = true; box.innerHTML = ''; if (secK) secK.classList.remove('is-onboard'); bridge.handbookCleared(); }
+      } });
+      return;
+    }
     var due = dueList();
     if (due.length && !gateIds) gateIds = due.map(function (x) { return x.id; });
     var sec = $('sectionHandbook');

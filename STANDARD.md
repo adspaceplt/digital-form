@@ -619,6 +619,11 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- `demo`: "each client page opens on its sample link … the sample agency's
+  name alone" fails on the creator's page since #1189 wrote "ADspace will
+  review your submission." into `js/creator.js`'s status lines, which the
+  demo does not swap for the sample agency's name (found 2026-11-17 by the
+  Hiring E1 release, which does not touch `creator.js`).
 - `mailfn`: "every browser-called function takes its CORS from
   _shared/cors.ts (21)" fails on main (found 2026-11-17, same release).
 - `hiringsql`: "the schema's anon list names careers_read" reads the anon
