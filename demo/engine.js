@@ -8803,6 +8803,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         headline: null, intro: null, insights: {}, rank_metric: 'views', status: 'draft', version_no: 1, return_note: null,
         submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null, created_by: me.id, created_at: now, updated_at: now,
         brand_id: crBrand, brand_name: crB ? crB.name : null, label_client: crB ? a.p_client : null, on_request: crAsked };
+
+      nr.lang = (DB.client_contacts || []).some(function (c) { return c.client_id === a.p_client && c.is_primary && !c.archived_at && c.lang === 'zh'; }) ? 'zh' : 'en';
       var prev = DB.sm_reports.filter(function (x) { return x.client_id === a.p_client && (x.kind || 'social') === kind && x.period_start < a.p_start && (x.brand_id || null) === crBrand && (crAsked || !x.on_request); })
         .sort(function (x, y) { return y.period_start.localeCompare(x.period_start); })[0];
       if (kind === 'ads' && crAsked) prev = null;
