@@ -95,6 +95,14 @@
       });
     },
     delreq: function () { return window.ADspaceDelReq ? window.ADspaceDelReq.waiting() : Promise.resolve(''); },
+    /* The latest build required (2026-11-17): the build in force, else
+       Not set. */
+    build: function () {
+      return db.rpc('build_state').then(function (r) {
+        if (r.error || !r.data || r.data.error) throw r.error || new Error('build');
+        return buildLine(r.data.min);
+      });
+    },
     /* Page availability (2026-10-29): which pages show their notice page
        now, and which are set for later (2026-10-31: "2 covered" read as
        nothing to the user). */
@@ -252,6 +260,10 @@
       ['Pages and notices', [
         /* Page availability (2026-10-29): Upgrade mode a page at a time. */
         may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
+        /* Require latest build (2026-11-17): every open console below the
+           live build refreshes once nothing is open in it (js/admin.js). */
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
+          open: function (btn) { requireBuild(btn); } },
         may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
           open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
         may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
@@ -449,6 +461,8 @@
     var next = nextLine(r.id);
     var ctl = r.kind === 'switch'
       ? '<button class="switch" type="button" role="switch" aria-checked="' + (r.on ? 'true' : 'false') + '" aria-label="' + esc(r.name) + '" data-a="' + r.id + '"></button>'
+      : r.kind === 'act'
+        ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '">' + esc(r.act) + '</button>'
       : r.kind === 'edit'
         ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Edit ' + esc(r.name) + '">' + PEN + 'Edit</button>'
         : '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Open ' + esc(r.name) + '">Open' + CHEV + '</button>';
@@ -639,6 +653,48 @@
   /* A switch unset reads On, as the database seeds it. */
   function autoOn(key) { var v = num(key); return v == null || v === 1; }
   function flipAuto(sw, id, kind, word) { flipOwn(sw, id, 'auto_send_set', word, { p_kind: kind }); }
+  /* ---- Require latest build (2026-11-17) ---------------------------------
+     The build Pages serves now (/version.json, read at the press) becomes
+     the build every console must run (`build_require`, team.upgrade);
+     Undo puts back the one before. */
+  function buildWord(m) {
+    if (!m || !m.commit || !m.built) return '';
+    var t = Date.parse(m.built);
+    return isNaN(t) ? '' : 'v' + new Date(t + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' \u00b7 ' + String(m.commit).slice(0, 7);
+  }
+  function buildLine(m) { return buildWord(m) || 'Not set'; }
+  function requireBuild(btn) {
+    var tell = rowSay('build');
+    fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (v) {
+      var ok = v && !/[{}%]/.test(String(v.commit) + String(v.built)) && /^[0-9a-f]{7,40}$/i.test(String(v.commit)) && !isNaN(Date.parse(v.built));
+      if (!ok) { tell('The live version could not be read. Refresh the page and try again.', 'err'); return; }
+      var live = { commit: String(v.commit).toLowerCase(), built: v.built };
+      window.ADspaceConfirm.ask({ title: 'Require the latest version?', go: 'Require',
+        body: 'Every console open on a version older than ' + buildWord(live) + ' will refresh within a minute, once no form is open.' }, function () {
+        btn.disabled = true;
+        send(live.commit, live.built).then(function (d) {
+          tell('');
+          var was = d.was || null;
+          bridge.undoHere('Required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
+            document.querySelector('#setList .stg-row[data-row="build"]'));
+        }).catch(function (e) { btn.disabled = false; tell(String((e && e.message) || e), 'err'); });
+      });
+    });
+    function send(commit, built) {
+      return db.rpc('build_require', { p_commit: commit || null, p_built: commit ? built : null }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
+            : d.error === 'denied' ? 'You do not have permission to require a version. Please ask an admin.'
+            : d.error === 'bad-build' ? 'The live version could not be read. Refresh the page and try again.' : 'Not saved. Please try again, or contact an admin.');
+        }
+        fillLine('build', buildLine(d.min));
+        if (bridge.buildMin) bridge.buildMin(d.min || null);
+        return d;
+      });
+    }
+  }
+
   function flipPortal(sw, id, key, word) { flipOwn(sw, id, 'portal_switch_set', word, { p_key: key }); }
   function flipOwn(sw, id, fn, word, extra) {
     var to = sw.getAttribute('aria-checked') !== 'true';
@@ -1819,6 +1875,7 @@
     if (b) b.focus();
   }
   window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint,
+    buildChanged: function (m) { fillLine('build', buildLine(m)); },
     pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow,
     /* A row's line read again after its sheet saved (AutoCount HRMS, 2026-11-16). */
     refresh: function (id) { readLine(id); } };

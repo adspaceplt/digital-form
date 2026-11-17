@@ -11073,3 +11073,30 @@ Location, and the offer's opening off naming the employer twice.
 - 2026-11-17 · A ⋯ of one item beside another act (the user, on a user group's row: "seriously who taught this design.. menu only sit one option, edit stays outside?"). DESIGN.md §5 Menus rule 8 allowed a ⋯ of one item where it was a lifecycle or destroy act or sat in a command bar, so a group's Edit stood beside a ⋯ of Delete alone, a client request's Reply beside a ⋯ of Delete, and five bars (Short Links' Bulk import, Team's Compare groups, My Work's Select tasks, Reports' Select reports, Documents' and Services' on a phone) held one item behind a ⋯. The rule now never allows a ⋯ of one item beside another act: that act joins it, and a bar's lone item is its own button (`cmdbar.js` `.cmd-solo`; `ADspaceMenu.solo` for a section's own ⋯). `tests/menus.js` fails any ⋯ of one item with another act beside it, the bars' exception gone. The group row went to the Team session, which owns `js/team.js`.
 
 - 2026-11-17 · The ads report's creative pictures cut, and Next batch's Create task pressed twice (the user's two screenshots). The PDF draws each picture whole in its frame; the cut was in the picture kept: for a lead ad or a dynamic creative Meta names the image by its hash alone (no `image_url`), so `meta-import`'s creative reader fell through to Meta's 1080 thumbnail, which Meta crops square, and a 4:5 poster lost its top and foot. The reader now asks the ad account's images for the hash's own address before the thumbnail. Pictures kept before stay as kept: Pictures from Meta with Replace on a draft reads them again. Create task opened Add task and left the button as it was, so a suggestion could make a task twice; a suggestion now reads the client's task of its title (one request a visit) and offers Open task #WT… once one stands.
+
+### 2026-11-17 · Everyone on the same merged build
+The user approved ("ok build it") a way for every open console to end up on
+the build just merged: a console left open for a day ran yesterday's code
+against today's database. Each minute the console's check runs it now also
+reads `/version.json` from Pages (no line Supabase meters); a newer build
+draws a bar with Refresh, and five minutes on the console refreshes by itself
+the first moment nothing is open in it. An admin can require the live build
+(Settings, Portal: Require latest build, `build_require`), which `page_pulse`
+hands every console; one below it refreshes within the minute once idle.
+"Idle" reuses what each page already guards: every `beforeunload` listener
+(a held file, an upload, a script being edited, a draft being written) is
+asked with a probe event, so a new guard joins without touching this code.
+Builds are compared by their build time, never by commit, so a CDN edge
+serving an older `/version.json` never reads as newer; a tab refreshes by
+itself at most once in three minutes, so a stale edge cannot loop it.
+Client pages are untouched; nobody is signed out (Refresh app keeps the
+session). `tests/buildsync.js` holds it on Playwright's clock.
+
+### 2026-11-17 · Offers and contracts verified and listed
+HR-SPEC decisions 4 and 15: an Employment Offer's or Contract's reference
+(ADHR/OFR…, ADHR/EMP…) is answered on /verify/ as every HR letter is (HR
+Letter and its state, never the candidate), a sealed one checked against its
+file, and the confirmed ones listed in Documents under HR Letters and on the
+colleague's Documents tab. Declined joins the verify page's state words. The
+sealed file stays in the private `hiring` bucket; HR Letters at View reads
+that one file and nothing else of the candidate's folder.

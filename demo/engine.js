@@ -256,6 +256,7 @@
     new_link_key: '',
     ops_add_business_days: 'p_from p_days',
     page_pulse: 'p_audience p_bell',
+    build_state: '', build_require: 'p_commit p_built',
     video_script_new: 'p_client p_period p_kind p_from p_idem',
     video_script_save: 'p_id p_head p_scenes p_version',
     video_script_share: 'p_ids p_on',
@@ -666,7 +667,7 @@
     team_member_remove: 'p_erase p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha'
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2350,6 +2351,17 @@ function cardSlugFree(name, self, email) {
         withdrawn_on: qt.withdrawn_on || null,
         state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
           : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
+    }
+
+    var hd = (DB.hiring_docs || []).filter(function (x) {
+      return x.serial && same(x.serial) && x.sent_at && x.state !== 'draft';
+    }).sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
+    if (hd) {
+      return { found: true, serial: hd.serial, kind: 'HR Letter', issued_at: hd.sent_at,
+        signed_at: hd.signed_at || null, confirmed_at: hd.confirmed_at || null,
+        document_id: hd.seal_sha ? hd.id : null, sealed: !!hd.seal_sha,
+        state: hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
+          : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid' };
     }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
 
@@ -9305,6 +9317,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (bad) return { data: null, error: bad.error };
         var out = { maintenance: rs[0].data, pages: rs[2].data };
         if (puAud) out.announcements = rs[1].data || [];
+        if (puArgs.p_audience === 'team') return rpc('build_state', {}).then(function (b) { out.build = (b && b.data && b.data.min) || null; return out; });
+        return out;
+      }).then(function (out) {
+        if (!out || out.error) return out;
 
         var seenMe = puArgs.p_audience === 'team' && opsMe();
         if (seenMe) {
@@ -10189,7 +10205,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var vq = (DB.quotations || []).filter(function (x) {
         return x.seal_key && x.ref && (x.ref.toUpperCase() === vs || x.ref.toUpperCase().replace(/\//g, '-') === vs.replace(/\//g, '-'));
       })[0];
-      return Promise.resolve({ data: vq ? { match: vq.seal_sha === vh } : { none: true }, error: null });
+      var vsha = vq ? vq.seal_sha : null;
+      if (!vsha) {
+        var vd = (DB.hiring_docs || []).filter(function (x) {
+          return x.seal_sha && x.serial && (x.serial.toUpperCase() === vs || x.serial.toUpperCase().replace(/\//g, '-') === vs.replace(/\//g, '-'));
+        }).sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
+        vsha = vd ? vd.seal_sha : null;
+      }
+      return Promise.resolve({ data: vsha ? { match: vsha === vh } : { none: true }, error: null });
+    }
+
+    if (name === 'hiring_register') {
+      if (!opsAllowed('register.hr', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var hrRows = (DB.hiring_docs || []).filter(function (x) { return x.confirmed_at && x.serial; }).map(function (x) {
+        var hc = (DB.hiring_candidates || []).filter(function (c) { return c.id === x.candidate_id; })[0] || {};
+        return { id: x.id, serial: x.serial, kind: x.kind, name: hc.name || '', member_id: hc.member_id || null,
+          sent_at: x.sent_at, confirmed_at: x.confirmed_at, sealed: !!x.seal_path, seal_path: x.seal_path || null,
+          voided_at: x.voided_at || null };
+      }).sort(function (a2, b2) { return String(b2.confirmed_at).localeCompare(String(a2.confirmed_at)); });
+      return Promise.resolve({ data: { rows: JSON.parse(JSON.stringify(hrRows)) }, error: null });
     }
 
     var CR_DELIVER = ['pending_draft', 'changes'];
@@ -12891,6 +12925,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: dmState(), error: null });
     }
 
+    if (name === 'build_state' || name === 'build_require') {
+      var bmRow = function () {
+        if (window.__buildMin && !(DB.app_flags || []).some(function (x) { return x.key === 'build:min'; })) {
+          DB.app_flags = (DB.app_flags || []).concat([{ key: 'build:min', on_now: true, note: window.__buildMin.commit, starts_at: window.__buildMin.built }]);
+        }
+        var f = (DB.app_flags || []).filter(function (x) { return x.key === 'build:min'; })[0];
+        return f && f.on_now && f.note && f.starts_at ? { commit: f.note, built: f.starts_at, set_by: f.set_by || null, set_at: f.set_at || null } : null;
+      };
+      var bmWord = function (c, b) { return c && b ? 'v' + new Date(Date.parse(b) + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' · ' + c.slice(0, 7) : 'not set'; };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
+      if (name === 'build_state') {
+        if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify({ min: bmRow() })), error: null });
+      }
+      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var bmC = String(args.p_commit || '').trim().toLowerCase() || null, bmB = args.p_built ? Date.parse(args.p_built) : NaN;
+      if (bmC && (!/^[0-9a-f]{7,40}$/.test(bmC) || isNaN(bmB) || bmB < Date.parse('2023-08-14T00:00:00+08:00') || bmB > Date.now() + 6e5)) {
+        return Promise.resolve({ data: { error: 'bad-build' }, error: null });
+      }
+      var bmWas = bmRow();
+      DB.app_flags = (DB.app_flags || []).filter(function (x) { return x.key !== 'build:min'; });
+      DB.app_flags.push({ key: 'build:min', on_now: !!bmC, note: bmC, starts_at: bmC ? new Date(bmB).toISOString() : null, set_by: whoNow(), set_at: new Date().toISOString() });
+      DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Portal',
+        detail: 'Latest version required: ' + bmWord(bmWas && bmWas.commit, bmWas && bmWas.built) + ' → ' + bmWord(bmC, bmC ? new Date(bmB).toISOString() : null),
+        created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ ok: true, min: bmRow(), was: bmWas })), error: null });
+    }
     if (name === 'maintenance_state' || name === 'maintenance_set' || /^page_(states|states_all|set)$/.test(name)) {
       var mtNow = Date.now();
       var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'];
@@ -16567,6 +16629,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (opsGranted('team.hiring', 'work')) return true;
       if (!c || c.removed_at) return false;
       var p = (DB.hiring_people || []).filter(function (x) { return x.candidate_id === id && x.team_member_id === me.id; })[0];
+      if (!p && !write && opsAllowed('register.hr', 'view')) {
+
+        return (DB.hiring_docs || []).some(function (x) { return x.candidate_id === id && x.seal_path === path && x.confirmed_at; });
+      }
       return !!p && (!write || p.role === 'owner');
     };
     return {
