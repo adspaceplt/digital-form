@@ -1618,8 +1618,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `whatsapp_on`, `sensitive_on`, copied onto each colleague by
     `team_role_defaults`, an admin holding all; Use AI, Send email, Send
     WhatsApp, Sensitive details, with Clients they see and Reports to
-    (`reports_to`, never round to itself, `reports-loop`) under For the
-    whole group), then the section, then a tab, which never exceeds its
+    (`reports_to`, never round to itself, `reports-loop`) under Main
+    settings), then the section, then a tab, which never exceeds its
     section in `allowed()` and the page's `level()` alike (a granted part
     aside). AI off answers `ai_cap` 0; a send off refuses `send-off`
     (`send_ok`, `send_ok_of`, `wa_may_send`, each email's prepare or begin,

@@ -1642,7 +1642,7 @@
       /* The team's figures (the Dashboard's My Work tiles and charts)
          are a grant of their own (2026-10-03). */
       if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
-        d.textContent += ' Team figures on the Dashboard are turned on under Advanced.';
+        d.textContent += ' Team figures on the Dashboard are off. Turn them on under Advanced.';
       }
       /* What its Advanced holds that differs: a part set apart from its
          section, an admin tool on, its line of the Activity record. */
