@@ -29,7 +29,7 @@
   var bypass = false;        /* an admin's approval makes the call itself */
   var LINE = {
     title: 'Request delete',
-    body: 'An admin approves the request before anything is deleted.',
+    body: 'An admin will review the request before anything is deleted.',
     reason: 'Reason',
     done: 'Delete requested. An admin will decide.',
     withdrawn: 'Request withdrawn.'
@@ -106,10 +106,10 @@
     return ({
       'bad-reason': 'Enter a reason of 3 to 500 characters.',
       already: 'A request to delete this is already waiting for an admin.',
-      'too-many': 'Thirty requests have been made today. Try again tomorrow.',
-      'not-found': 'This record no longer exists.',
+      'too-many': 'You have made 30 requests in the last 24 hours. Try again later.',
+      'not-found': 'This item no longer exists.',
       denied: 'You do not have permission to request this. Please ask an admin.',
-      'may-delete': 'Reload the page to delete it.'
+      'may-delete': 'You can now delete this yourself. Refresh the page, then press Delete.'
     })[c] || 'Not requested. Please try again.';
   }
 
@@ -195,11 +195,11 @@
       }
     } finally { bypass = false; }
     return Promise.resolve(run).then(function (r) {
-      if (r && r.error) return { ok: false, why: r.error.message || 'Refused.' };
+      if (r && r.error) return { ok: false, why: 'Not deleted. Please try again.' };
       var d = r && r.data;
       if (p[0] === 'table') return Array.isArray(d) && d.length ? { ok: true } : { ok: false, why: 'Not deleted. The database refused the request.' };
-      if (d && d.error) return { ok: false, why: String(d.error) };
-      if (d === false) return { ok: false, why: 'Not deleted.' };
+      if (d && d.error) return { ok: false, why: 'Not deleted. Please try again.' };
+      if (d === false) return { ok: false, why: 'Not deleted. Please try again.' };
       return { ok: true };
     });
   }
@@ -239,12 +239,25 @@
   }
   var STATE = { open: ['Waiting', 'is-warn'], approving: ['Waiting', 'is-warn'], approved: ['Deleted', 'is-ok'],
     declined: ['Declined', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
+  function failed(host) {
+    var S = window.ADspaceState;
+    if (S && S.failLine) S.failLine(host, 'The requests', '', paint);
+    else host.innerHTML = '<p class="emptyline">Could not load the requests.</p>';
+  }
+  /* What waits, for the Settings row. */
+  function waiting() {
+    return Promise.resolve(db.rpc('delete_requests_list')).then(function (r) {
+      var d = r && r.data; if (!d || !d.ok) return '';
+      var n = (d.rows || []).filter(function (x) { return x.state === 'open' || x.state === 'approving'; }).length;
+      return n ? n + ' waiting' : 'None waiting';
+    }).catch(function () { return ''; });
+  }
   function paint() {
     var host = document.getElementById('delReqList');
     host.innerHTML = '<p class="emptyline">Loading…</p>';
     Promise.resolve(db.rpc('delete_requests_list')).then(function (r) {
       var d = r && r.data;
-      if (r && r.error || !d || !d.ok) { host.innerHTML = '<p class="emptyline">Could not load the requests.</p>'; return; }
+      if (r && r.error || !d || !d.ok) { failed(host); return; }
       rows = d.rows || [];
       if (!rows.length) { host.innerHTML = '<p class="emptyline">No requests.</p>'; return; }
       host.innerHTML = rows.map(function (x) {
@@ -262,7 +275,7 @@
             '<p class="msg dr-msg" hidden></p></div>' +
           '<div class="dr-end"><span class="chip chip-state ' + st[1] + '">' + st[0] + '</span>' + acts + '</div></div>';
       }).join('');
-    }).catch(function () { host.innerHTML = '<p class="emptyline">Could not load the requests.</p>'; });
+    }).catch(function () { failed(host); });
   }
   function say(btn, text) {
     var m = btn.closest('.dr-row').querySelector('.dr-msg');
@@ -282,13 +295,13 @@
         field: { label: 'Note', rows: 2, need: 'Enter a note.' } }, function (note) {
         Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: false, p_note: note })).then(function (r) {
           var d = r && r.data;
-          if (!d || !d.ok) say(btn, 'Not saved. Please try again.');
+          if (!d || !d.ok) say(btn, 'Not declined. Please try again.');
           else paint();
         });
       });
       return;
     }
-    C.ask({ title: 'Delete?', body: x.word + ' · ' + x.label + '. Requested by ' + (x.by || 'a colleague') + ': ' + x.reason + ' This cannot be undone.',
+    C.ask({ title: 'Delete?', body: x.word + ' · ' + x.label + '. Requested by ' + (x.by || 'a colleague') + ': ' + x.reason + (/[.!?]$/.test(x.reason) ? '' : '.') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger' }, function () {
       Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: true, p_note: null })).then(function (r) {
         var d = r && r.data;
@@ -310,6 +323,7 @@
     body: function (b) { return (b ? b.replace(/\s*This cannot be undone\.?\s*$/, '').replace(/\s*There is no restore\.?\s*$/, '') + ' ' : '') + LINE.body; },
     go: function () { return LINE.title; },
     reason: function (v) { if (armed && v) armed.reason = v; },
-    open: function () { show(true); }
+    open: function () { show(true); },
+    waiting: waiting
   };
 }());

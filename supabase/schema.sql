@@ -126408,7 +126408,7 @@ begin
   end if;
   update public.delete_requests set state = 'approved', decided_by = me.id, decided_at = now() where id = r.id;
   insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
-  values (r.requested_by, 'delete.approved', 'Delete approved · ' || r.label, me.name,
+  values (r.requested_by, 'delete.approved', 'Deleted · ' || r.label, me.name,
           r.client_id, 'delreq:' || r.id || ':approved')
   on conflict (dedupe_key) do nothing;
   insert into public.activity_log (actor, action, subject, detail)
