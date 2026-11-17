@@ -2762,7 +2762,7 @@
     $('campFacts').innerHTML = [
       ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
       ['Deliverable',       c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
-      ['Slots',             c.slots ? String(c.slots) + (Number(c.slots) === 1 ? ' creator' : ' creators') : ''],
+      ['Creators',          c.slots ? String(c.slots) : ''],
       ['Backups',           c.backups_open ? 'Client may mark backups' : 'Not offered']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>';
@@ -3163,7 +3163,7 @@
     var r = rs[rs.length - 1];
     if (!r) return '';
     var team = (r.source || 'client') === 'team';
-    return '<p class="kapproved">' + esc((team ? 'Approved internally by ' : 'Approved by ') +
+    return '<p class="kapproved">' + esc((team ? 'Confirmed internally by ' : 'Approved by ') +
       (r.reviewer || (team ? 'the team' : 'the client')) +
       (r.created_at ? ' \u00b7 ' + niceStamp(r.created_at) : '')) + '</p>';
   }
@@ -3379,7 +3379,7 @@
       c.state = want;
       if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
       else log('campaign.stage', c.title, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
-        (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · every slot booked' : ' · a creator reopened'));
+        (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · all creators booked' : ' · a creator reopened'));
       paintCampState(c);
     });
   }
@@ -5282,7 +5282,7 @@
           }).select('id');
         }).then(function (w) {
           if (w.error) throw new Error(w.error.message);
-          if (!(w.data || []).length) throw new Error('the database refused the record');
+          if (!(w.data || []).length) throw new Error('the database refused the request');
           log('campaign.file_added', logSubject(), (o.creators || {}).name + ' · ' + file.name + ' · uploaded by ' + (who() || 'team'));
         });
       });
@@ -5426,7 +5426,7 @@
     var FILE_SAID = {
       denied: 'You do not have permission to change this file. Please ask an admin.',
       'client-scope': 'This client is not one of your clients.',
-      'not-approved': 'A file is hidden once the client has approved it.',
+      'not-approved': 'Only a file the client has approved can be hidden. Remove this file instead.',
       'not-found': 'The file is no longer on this booking.',
       'not-hidden': 'Hide the file first.'
     };
@@ -5780,7 +5780,7 @@
       db.rpc('campaign_proceed', { p_option: o.id }).then(function (r) {
         var d = (r && r.data) || {};
         if (r.error || d.error) { cardSay(o, reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
-        log('campaign.review', logSubject(), name + ' \u00b7 Approved internally');
+        log('campaign.review', logSubject(), name + ' \u00b7 Confirmed internally');
         cardSay(o, name + ': ' + wordFor('scheduled') + '.', 'ok');
         loadOptions();
       }).catch(function (e) { cardSay(o, reviewSaid((e && e.message) || String(e)), 'err'); });
@@ -5793,7 +5793,7 @@
     'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Only a submitted draft can be sent back.',
     'not-changes': 'There is no request to take back.',
-    'not-reviewing': 'Only a draft at Client review can be confirmed.',
+    'not-reviewing': 'Only a draft in Reviewing can be confirmed internally.',
     'not-scheduled': 'There is no approval to take back.',
     'note-required': 'Enter the changes.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
@@ -6148,7 +6148,7 @@
 
   /* Every refusal in the team's own words, never the database's. */
   var SAID_QC = {
-    denied: 'You do not have permission to release this.',
+    denied: 'You do not have permission to release this draft. Please ask an admin.',
     'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Nothing handed in for this booking.',
     'qc-required': 'Complete the quality check, then release to the client.'
@@ -6300,7 +6300,7 @@
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
           if (badFig) { badFig.focus(); return no('Enter a whole number of 0 or more.'); }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Count to must be after Count from.');
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Enter a Count to date after Count from.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
