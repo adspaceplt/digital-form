@@ -11192,6 +11192,16 @@ layer and stay English; no translation was built. Caption writing's language
 list is the output language and keeps Malay. The portal suite had crashed
 since Reply joined the request row's ⋯ (MENU-8); it now opens the ⋯.
 
+### 2026-11-17 · Delete requests have their own mark
+Delete requests waited only as a row inside Settings, Portal, so an admin saw
+one only by opening Settings. They now have a mark at the rail's foot after
+Settings' (in More's foot on a phone), an admin's alone, with the tab bar's
+red dot while any waits; More carries the dot too and the Settings row reads
+the count in red. The count reads the list the sheet already reads, so no
+new database function. Building it, a helper named `tell` in js/delreq.js
+replaced the file's own `tell` (its Undo line) and broke the request's Undo
+bar; `delreq` caught it before merge.
+
 ### 2026-11-17 · My Work's calendar shows the content months
 The user: "my work calendar didnt show the content month schedule", choosing
 all three. The calendar now reads the content months around the one on show,

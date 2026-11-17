@@ -1367,7 +1367,7 @@
     /* The rail's foot (the Handbook's mark, Settings', the Activity
        record's) is reached through More, so More is drawn whenever one
        of them is (2026-11-11). */
-    var foot = ['handbookOpen', 'settingsOpen', 'activityOpen'].some(function (id) { var m = $(id); return m && !m.hidden; });
+    var foot = ['handbookOpen', 'settingsOpen', 'delReqOpen', 'activityOpen'].some(function (id) { var m = $(id); return m && !m.hidden; });
     var room = main.length < open.length || foot ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
     tabRoom = room;
     var tabs = main.slice(0, room);
@@ -1398,6 +1398,7 @@
     paintTabOn();
     paintTabDot();
     paintPayWaiting();
+    setDelReq(delReqWaiting);
   }
   /* The chosen tab's fill is one surface (`.tabbar-thumb`) laid on the tab
      chosen, sliding there as the choice moves (the user, 2026-10-11: "allow
@@ -3014,6 +3015,11 @@
     $('activityOpen').hidden = !maySeeActivity;
     if ($('settingsOpen')) $('settingsOpen').hidden = !(meLoaded && sectionAllowed('settings'));
     if ($('handbookOpen')) $('handbookOpen').hidden = !(meLoaded && sectionAllowed('handbook'));
+    if ($('delReqOpen')) {
+      var drWas = $('delReqOpen').hidden;
+      $('delReqOpen').hidden = !(meLoaded && isAdminMe() && window.ADspaceDelReq);
+      if (drWas && !$('delReqOpen').hidden) readDelReq();
+    }
     if (meLoaded) paintTabbar();
   }
 
@@ -3162,6 +3168,27 @@
     visitSection('handbook');
   });
   if ($('noAccessHandbook')) $('noAccessHandbook').addEventListener('click', function () { visitSection('handbook'); });
+  /* Delete requests (2026-11-17): a mark at the rail's foot for an admin,
+     red while any request waits; read with the sign-in reads and again
+     after each decision (js/delreq.js hands the count back). */
+  var delReqWaiting = 0;
+  function readDelReq() {
+    if (window.ADspaceDelReq && window.ADspaceDelReq.count) window.ADspaceDelReq.count().then(setDelReq);
+  }
+  function setDelReq(n) {
+    delReqWaiting = Number(n) || 0;
+    var b = $('delReqOpen'), d = b && b.querySelector('.railfoot-dot');
+    var word = delReqWaiting ? ', ' + delReqWaiting + ' waiting' : '';
+    if (d) { d.hidden = !delReqWaiting; d.querySelector('.sr').textContent = word; }
+    var more = $('tabMore'), md = more && more.querySelector('.tabbar-dot');
+    if (more && delReqWaiting && !md) { md = document.createElement('span'); md.className = 'tabbar-dot'; md.innerHTML = '<span class="sr"></span>'; more.appendChild(md); }
+    if (md && !delReqWaiting) md.remove();
+    else if (md) md.querySelector('.sr').textContent = ', Delete requests' + word;
+  }
+  if ($('delReqOpen')) $('delReqOpen').addEventListener('click', function () {
+    if (rail && rail.isOpen && rail.isOpen()) rail.shut();
+    window.ADspaceDelReq.open();
+  });
   $('activityOpen').addEventListener('click', function () {
     $('activitySheet').hidden = false;
     loadActivity();
@@ -6286,6 +6313,7 @@
     counts: counts,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
+    delReqWaiting: function (n) { setDelReq(n); },
     /* The Creators List's payment details standing, for the rail's count. */
     payStates: setPayWaiting,
     payWaiting: readPayWaiting,

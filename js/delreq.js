@@ -244,13 +244,18 @@
     if (S && S.failLine) S.failLine(host, 'The requests', '', paint);
     else host.innerHTML = '<p class="emptyline">Could not load the requests.</p>';
   }
-  /* What waits, for the Settings row. */
-  function waiting() {
+  /* What waits: the rail's mark, its dot and the Settings row, read from
+     the one list, and handed back to the mark at each read. */
+  function waitingOf(list) { return (list || []).filter(function (x) { return x.state === 'open' || x.state === 'approving'; }).length; }
+  function handBack(n) { var a = A(); if (a && a.delReqWaiting) a.delReqWaiting(n); }
+  function count() {
     return Promise.resolve(db.rpc('delete_requests_list')).then(function (r) {
-      var d = r && r.data; if (!d || !d.ok) return '';
-      var n = (d.rows || []).filter(function (x) { return x.state === 'open' || x.state === 'approving'; }).length;
-      return n ? n + ' waiting' : 'None waiting';
-    }).catch(function () { return ''; });
+      var d = r && r.data; if (!d || !d.ok) return null;
+      var n = waitingOf(d.rows); handBack(n); return n;
+    }).catch(function () { return null; });
+  }
+  function waiting() {
+    return count().then(function (n) { return n == null ? '' : n ? n + ' waiting' : 'None waiting'; });
   }
   function paint() {
     var host = document.getElementById('delReqList');
@@ -259,6 +264,7 @@
       var d = r && r.data;
       if (r && r.error || !d || !d.ok) { failed(host); return; }
       rows = d.rows || [];
+      handBack(waitingOf(rows));
       if (!rows.length) { host.innerHTML = '<p class="emptyline">No requests.</p>'; return; }
       host.innerHTML = rows.map(function (x) {
         var st = STATE[x.state] || ['', ''];
@@ -324,6 +330,7 @@
     go: function () { return LINE.title; },
     reason: function (v) { if (armed && v) armed.reason = v; },
     open: function () { show(true); },
-    waiting: waiting
+    waiting: waiting,
+    count: count
   };
 }());

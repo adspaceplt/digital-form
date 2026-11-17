@@ -1675,7 +1675,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `may-delete` at Full control, `bad-kind`, `bad-reason`, `already`,
     `too-many` past 30 a day, `not-found` outside client scope), the record
     left and every admin told (`delete.request`), Undo where it happened
-    withdrawing it. An admin decides in Settings, Portal: Delete requests
+    withdrawing it. An admin decides in Settings, Portal: Delete requests,
+    or from its own mark at the rail's foot (`#delReqOpen`, an admin's
+    alone, after Settings'; in More's foot on a phone), which carries the
+    red dot while any request waits (More too), the Settings row reading
+    n waiting in red; the count is `delete_requests_list` read with the
+    sign-in reads and again at each read of the list (2026-11-17)
     (`delete_request_decide`): Approve asks first, then the page makes that
     same call as the admin and closes it (`delete_request_done`; refused,
     the request waits again with the refusal); Decline asks a note. The
