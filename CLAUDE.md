@@ -6373,7 +6373,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     any version; a client's contact only the version the portal shows),
     never a link; a version with no file is drawn from its own snapshot and
     kept then, and a kept file that does not open is drawn again with
-    "Drawn again: the kept file did not open.". The head's ⋯ Versions
+    "The saved PDF could not be opened, so it was generated again.". The head's ⋯ Versions
     (`#rpVerSheet`) lists every version newest first (published when and
     by whom; On the client portal, or Unpublished and why) with its own
     Download, and its ⋯ Restore and Delete (the user, 2026-10-25,

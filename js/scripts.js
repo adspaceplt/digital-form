@@ -143,7 +143,7 @@
     'bad-duration': 'Choose a duration between 5 minutes and 24 hours.',
     'bad-date': 'Choose a date from 14 Aug 2023.',
     'too-long': 'A field is too long. Shorten it, then save again.',
-    'too-many': 'A month can have up to 99 scripts, and a script up to 60 scenes.',
+    'too-many': 'A month can have up to 99 scripts, and a script up to 60 scenes. Delete a script or a scene first.',
     'bad-scenes': 'The scenes could not be saved. Please try again.',
     'bad-time': 'Enter each scene\'s time in whole seconds from 0 to 600, the end after the start.',
     'bad-aspect': 'Choose the aspect ratio.',
@@ -153,7 +153,7 @@
     'bad-review': 'The AI review could not be saved. Write with AI again.',
     stale: 'Not saved. This script was changed by someone else. The latest version is now shown. Please enter your change again.',
     'denied-delete': 'You do not have permission to delete scripts. Please ask an admin.',
-    name: 'The name does not match.'
+    name: 'The title does not match.'
   };
   function said(e) {
     var m = String((e && (e.message || e.error)) || e || '');
@@ -371,7 +371,7 @@
         say($('vsListMsg'), 'That script is no longer available.', 'warn');
         return;
       }
-      UI.failLine($('vsRecBody'), 'The script', said(e), function () { openScript(id, false, false, month); });
+      UI.failLine($('vsRecBody'), 'The script', (e && e.message) || '', function () { openScript(id, false, false, month); });
     });
   }
   function readScript(id) {
@@ -1372,7 +1372,7 @@
       title: 'Delete',
       body: label(s) + ', its scenes and their clip numbers will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger',
-      field: { label: 'Type ' + (s.title ? 'the title' : nm) + ' to confirm', match: nm, mismatch: 'The name does not match.' }
+      field: { label: 'Type ' + (s.title ? 'the title' : nm) + ' to confirm', match: nm, mismatch: s.title ? 'The title does not match.' : 'The code does not match.' }
     }, function (typed) {
       rpc('video_script_delete', { p_id: s.id, p_typed: typed }).then(function () {
         /* The month's next script opens in its place; the last one gone,
@@ -1925,7 +1925,7 @@
       }).catch(function (e) {
         btn.disabled = false;
         if (window.ADspaceDocs.shut) window.ADspaceDocs.shut(tab);
-        say(m, 'The PDF could not be generated. ' + said(e));
+        say(m, 'The PDF could not be generated. ' + ((e && e.message) || 'Please try again.'));
       });
     };
     if (!many) { go(month); return; }
