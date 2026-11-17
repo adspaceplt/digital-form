@@ -4897,7 +4897,6 @@ body > .shell { width: 100%; }
 .team-who small { font-size: 12px; color: var(--ink-mute); }
 .permchunk > .fsec-h { margin: 0 0 4px; }
 /* The Dashboard's one row stands above the chunks, with no heading (2026-10-11). */
-.permdash > .permsec { border-top: 0; padding-top: 0; padding-bottom: 0; }
 /* A row with nothing in it takes no room: the Dashboard's block holds no
    Customise, and an empty line stood 44px over Work (2026-10-27, TEAM-7). */
 .permsec-desc:empty { display: none; }
@@ -4910,9 +4909,6 @@ body > .shell { width: 100%; }
    level whole (Team audit, 2026-10-03); narrower still, the segment's own
    measure wraps it into two columns. */
 .is-narrow .permsec .seg-opt { padding: 0 4px; }
-/* Admin tools: one fold, its switches in the Settings page's groups. */
-.permtools .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name tog" "diff diff" "parts parts"; border-top: 0; padding-top: 0; }
-.permtool-group + .permtool-group { margin-top: 8px; }
 /* The fold names how many differ; it clears the control floor with the
    negative block margin the ⋯ uses, so its line keeps the words' height. */
 .permsec-toggle {
@@ -4928,14 +4924,7 @@ body > .shell { width: 100%; }
   margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk);
   font-size: 13.5px; line-height: 1.5; color: var(--ink);
 }
-.permpreset-note::after {
-  content: ""; width: 6px; height: 6px; margin-left: 2px; flex: 0 0 auto;
-  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: translateY(-2px) rotate(45deg); transition: transform var(--t) var(--ease);
-}
-.permpreset-note[aria-expanded="true"]::after { transform: translateY(1px) rotate(-135deg); }
 /* What separates the panel from the role it is nearest. */
-.permchanges { margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
 /* Every part select under a fold is one width and ends on one right edge, so
    the levels read down a single column (2026-09-24). */
 .permpart .select { width: 200px; flex: 0 0 auto; }

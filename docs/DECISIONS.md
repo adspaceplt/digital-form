@@ -11017,6 +11017,45 @@ is a foreign key. Now every group but Admin carries Delete in its ⋯; one
 holding colleagues asks Move its n members to, and `team_role_delete` moves
 them and deletes the group in one transaction, keeping the admin-only,
 super-only and last-admin checks. `scope` and `team` hold it.
+### 2026-11-17 · Database wording (tone check, part 3, release 5)
+Fresh reviewers read the lines the database puts in front of a person
+against DESIGN.md §6. Five changed, words only, in one band
+(`2026-11-17-database-wording.sql`, mirrored in schema.sql): grades D and E
+read Needs support and Improvement plan (`perf_grade_word`; they read Needs
+Guidance and Performance Review against §6's vocabulary); one service line
+reverted reads in the singular (`letter_set_void`); a creator cleared to post
+is told "Draft approved for posting" (`campaign_options_push`); the Person in
+charge refusal says who can change it (`clients_owner_guard`, hint
+owner-change unchanged); the extension notice dates the day by
+`register_day` and names "A colleague" where the asker has no name
+(`ops_request_due_change`). No key, tag, argument or refusal code moved.
+Found: `sql`'s push check runs the 2026-09-27 migration, never the schema's
+last word, so the new title is checked by running this band's function on a
+re-subscribed creator device. `sql`, `perf`, `ops`, `lettersql`, `policies`
+pass; `demo` fails on the creator's page as already logged (#1189).
+
+
+### 2026-11-17 · The group panel in two parts
+The user: "whole sections control > each section deeper control > and the
+details together with admin tools, to make it consolidate. now too many too
+complex and very hard to understand. need to both merge old and new into just
+main settings, and sections access (with advanced sections control)". The
+panel had For the whole group, a separate Dashboard block, Work and Internal
+chunks with a Customise fold each, an Admin tools block grouped like Settings,
+and a Custom changes fold. It is now Main settings (Start from, Dashboard, the
+four switches, Clients they see, Reports to) and Section access, one row a
+section whose single Advanced fold holds its parts, the admin tools acting on
+it (the portal's under Team) and its Activity record line. Stored keys and
+checks unchanged; `perms`, `scope`, `team` hold it.
+
+### 2026-11-17 · A colleague's record holds one layout across its tabs
+The user, with screenshots of a removed colleague: "sudden jumping and
+missing". The rail's Their work block left on the Work tab, so the strip and
+head widened there and narrowed again on Overview. The rail now keeps its
+blocks on every tab, the counts alone beside the Work pane (its Hand over
+work said once). The ⋯ on a removed colleague whose details were erased held
+nothing that still applied; Delete permanently (the next release) fills it.
+`teamrec` measures the strip and head across the two tabs.
 
 ### 2026-11-17 · HR documents speak as ADspace
 
