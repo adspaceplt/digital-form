@@ -10863,6 +10863,16 @@ sessions that own them: Hiring (matrix's strip and overflow at 320,
 pwapdf's hiring.js) and Personnel (menus, growth, settings, pwapdf's
 personnel.js). perfui's margin stays logged.
 
+### 2026-11-17 · Settings: Portal switches
+The portal's switches for AI, email and WhatsApp (group switches release,
+#1180) had no control on a screen. They are now three switches under a
+part of their own in Settings' Portal group, Portal switches, saved at the
+press through `portal_switch_set` with Undo under the row. A fourth row,
+User groups, takes an admin to Team's Groups tab, where each group's own
+switches are. The user asked for them at the head of Company. Company
+already held six rows, and a card holds five at most, so they stand under
+their own heading directly above it. The copy review renamed Team access
+to User groups, the name Team already uses.
 ### 2026-11-17 · Tone check of the console, n to z, release 1: Team, Performance, Documents
 
 The user asked for the whole repository to be held to DESIGN.md §6 (tone
