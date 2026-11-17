@@ -98,14 +98,19 @@
     var f = {
       pipeline: { lead: [], contacted: [], proposal: [] },
       newLeads: [], won: [], lost: [], churned: [], completed: [], paused: [], resumed: [], winback: [],
-      pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: [],
+      pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, bySales: {}, reasons: {}, months: [],
       /* When each client made the move it is counted for (the Dashboard's
          Clients who moved, 2026-11-12), by kind and client id. */
       at: { newLeads: {}, won: {}, lost: {}, churned: {}, completed: {}, paused: {}, resumed: {}, winback: {} }
     };
-    var person = function (c) {
-      var k = c.owner || 'No person in charge';
-      return f.byPerson[k] || (f.byPerson[k] = { name: k, newLeads: [], won: [], lost: [], churned: [] });
+    /* A lead is sold, so its new leads, wins and losses go to the
+       colleague it is Sales by (`sales_by`, an id); a client kept or lost
+       after it is Active goes to its Person in charge (the user,
+       2026-11-17: "the leads are only by sales by"). */
+    var person = function (c, kind) {
+      var sold = kind !== 'churned', k = sold ? (c.sales_by || '') : (c.owner || '');
+      var map = sold ? f.bySales : f.byPerson;
+      return map[k] || (map[k] = { key: k, name: sold ? '' : k, newLeads: [], won: [], lost: [], churned: [] });
     };
     clients.forEach(function (c) {
       var mv = movesOf(c), first = mv[0];
@@ -115,7 +120,7 @@
       if (c.stage === 'paused') f.pausedNow.push(c);
       if (c.stage === 'active') f.activeNow.push(c);
       if (LEADS[first.to] && within(first.at, r)) {
-        f.newLeads.push(c); person(c).newLeads.push(c); f.at.newLeads[c.id] = first.at;
+        f.newLeads.push(c); person(c, 'newLeads').newLeads.push(c); f.at.newLeads[c.id] = first.at;
         var src = c.source || 'Not recorded';
         (f.bySource[src] = f.bySource[src] || []).push(c);
       }
@@ -139,7 +144,7 @@
         if (LEAVES[e.kind] && !counted(e, last)) return;
         seen[e.kind] = true;
         f[e.kind].push(c); f.at[e.kind][c.id] = e.at;
-        if (e.kind === 'won' || e.kind === 'lost' || e.kind === 'churned') person(c)[e.kind].push(c);
+        if (e.kind === 'won' || e.kind === 'lost' || e.kind === 'churned') person(c, e.kind)[e.kind].push(c);
       });
     });
     /* Active clients at each month's end inside the period (the last at

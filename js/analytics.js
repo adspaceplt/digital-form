@@ -200,7 +200,7 @@
       return API.readPages(function () {
         /* The Dashboard's own columns too, so the Operations and Sales cards
            it draws here read this list, never every client again (audit 2026-11-15). */
-        return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, industry, bill_sgd, ' +
+        return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, industry, bill_sgd, ' +
           'restricted_platform, restricted_since, restricted_note').order('id');
       }).then(rows).then(function (l) { return l || []; });
     });
