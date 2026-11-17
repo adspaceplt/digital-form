@@ -31,16 +31,15 @@
  *          and ../_shared/mail.ts)
  * Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (the platform's);
  *          TURNSTILE_SECRET (required, above); RESEND_API_KEY and
- *          MAIL_CLIENT_FROM (unset: ADspace <noreply-client@sc.adspace.me>)
+ *          the clients' sender (EVERY EMAIL IN MESSAGES: Settings, Messages: Reply-to mailboxes)
  *          for the signing code.
  * Verify JWT: OFF. It is called by somebody who has no account.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { codeEmail, resend } from '../_shared/mail.ts';
+import { codeEmail, resend, sender } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
 
 async function human(token: string, ip: string | null): Promise<boolean> {
   const secret = Deno.env.get('TURNSTILE_SECRET');
@@ -116,7 +115,8 @@ Deno.serve(async (req) => {
     const tpl = await admin.rpc('code_email_template_read');
     const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
       { name: d.name, code: d.code, minutes: 15, purpose: 'to sign the quotation ' + d.ref });
-    const msg = { from: CLIENT_FROM(), to: [d.email], subject: mail.subject, html: mail.html, text: mail.text };
+    const who = await sender('clients');
+    const msg = { from: who.from, reply_to: who.reply_to, to: [d.email], subject: mail.subject, html: mail.html, text: mail.text };
     const sent = await resend(msg, String(d.id), secret('RESEND_API_KEY'));
     if (sent.status === 'failed') {
       console.error('quote-request: signing code not sent', sent.error);

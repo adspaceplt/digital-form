@@ -11215,3 +11215,31 @@ no colour of their own; the key names them. Whose work holds: a colleague's
 own view shows the months they manage or that hold a task on their list. The
 `work` suite had crashed since the bar's ⋯ of one item became Select tasks'
 own button (MENU-8); its checks now read that button.
+
+### 2026-11-17 · Every email in Messages, and replies to a company mailbox
+The user: "The email sent out from Hiring did not log inside Messages. All
+outgoing WhatsApp messages and emails should be logged inside." The Email log
+read five logs (supplier, client document, invoice, New email, creator) and
+the signing codes; hiring-mail filed its sends only on the candidate's own
+history, and invite-member filed nothing, so both never reached Messages.
+WhatsApp was already whole: every send goes through `wa-send`, which files it
+in `wa_outbox` before Meta is asked. Rather than a log a sender, the senders
+with none now file into one table, `system_emails`, once Resend answers,
+through the service role (`system_email_file`), read by `mail_log` at the
+access of the record it is about. A code's or a sign-in link's words are never
+kept. Resend's word reaches it through the same webhook.
+The user also asked that replies go only to a general mailbox: hiring-mail
+replied to the colleague who pressed Send, Send by email and New email to
+the sender, overdue reminders to einvoice@. The senders and their mailboxes
+moved out of edge function secrets into the database (`mail_senders`,
+`mail_boxes`), the four mailboxes a Settings row, each function reading its
+section's through `_shared/mail.ts` `sender()`. The scheme is one name a
+section, plural: noreply-clients, -suppliers, -creators, -careers, -finance,
+-team (invitations were noreply@, the client and supplier senders singular).
+Audit of the user's principle (documents in Documents, messages in Messages,
+links in Short Links), left for the user: a published report's PDF and a
+video script's PDF are not listed in Documents; push notifications and the
+bell's notices are not in Messages; Supabase's sign-in codes are sent by
+Supabase and cannot be logged by the portal. Every hi.adspace.me address the
+host answers is already listed in Short Links.
+

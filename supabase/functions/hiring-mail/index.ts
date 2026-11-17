@@ -27,18 +27,19 @@
  * the candidate's Owner); the address, the words' facts and the link are the
  * database's, never the page's. The outcome is filed by `hiring_mail_done`.
  * Sent through Resend in the portal's one layout (_shared/mail.ts), from
- * MAIL_CAREERS_FROM (unset: ADspace <noreply-careers@sc.adspace.me>),
- * replying to the colleague who sends it. No candidate data goes to AI.
+ * Careers' sender, replying to its company mailbox (`mail_sender('careers')`,
+ * Settings, Messages: Reply-to mailboxes; never a colleague's own address),
+ * and filed for Messages' Email log (`system_email_file`; a code's words never
+ * kept). No candidate data goes to AI.
  *
- * Secrets: RESEND_API_KEY, optionally MAIL_CAREERS_FROM. Verify JWT off: the
+ * Secrets: RESEND_API_KEY. Verify JWT off: the
  * function asks the caller's own token of the database.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, esc, FONT, codeEmail } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, codeEmail, sender, fileSent, callerEmail } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const FROM = () => secret('MAIL_CAREERS_FROM') || 'ADspace <noreply-careers@sc.adspace.me>';
 const PAGE = 'https://digital.adspace.me/careers/?k=';
 const OFFICE = '61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor';
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -144,9 +145,12 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
   const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
     { name: m.name, code: m.code, minutes: 15, purpose: 'to open your ' + title + ' ' + m.ref });
-  const { status } = await resend({
-    from: FROM(), to: [m.email], subject: mail.subject, html: mail.html, text: mail.text
+  const who = await sender('careers');
+  const { status, provider, error } = await resend({
+    from: who.from, reply_to: who.reply_to, to: [m.email], subject: mail.subject, html: mail.html, text: mail.text
   }, 'hire-code-' + doc + '-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
+  await fileSent({ kind: 'hiring_code', ref: doc, to: m.email, to_name: m.name, subject: mail.subject, reference: m.ref,
+    status, provider, error });
   return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
 }
 
@@ -175,17 +179,19 @@ Deno.serve(async (req) => {
   if (!EMAIL.test(String(m.to || ''))) return json({ error: 'bad-email' }, 200, origin);
 
   const w = words(m);
+  const who = await sender('careers');
   const msg: Record<string, unknown> = {
-    from: FROM(), to: [m.to], subject: w.subject,
+    from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
     html: layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
     text: w.body.replace('{invoices}', PAGE + m.key)
   };
-  if (EMAIL.test(String(m.reply_to || ''))) msg.reply_to = m.reply_to;
   /* A decision's key carries the decision's kind, so a reopened candidate
      decided again is emailed again. */
   /* A document's key carries its sending, so a document sent back is
      emailed again. */
-  const { status, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : ''), secret('RESEND_API_KEY'));
+  const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : ''), secret('RESEND_API_KEY'));
+  await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
+    body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error });
   if (isDoc) await db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: status, p_error: error || null });
   else if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
   else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });

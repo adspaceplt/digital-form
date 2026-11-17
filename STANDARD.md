@@ -624,6 +624,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   review your submission." into `js/creator.js`'s status lines, which the
   demo does not swap for the sample agency's name (found 2026-11-17 by the
   Hiring E1 release, which does not touch `creator.js`).
+- `portal`: the request row's Reply is looked for on the row, but #1210
+  moved it into the row's ⋯ (no lone ⋯ item beside another act); the suite
+  times out at `scrollIntoViewIfNeeded` (found 2026-11-17 by the Every
+  email in Messages release, which does not touch `crm.js`).
 - `mailfn`: "every browser-called function takes its CORS from
   _shared/cors.ts (21)" fails on main (found 2026-11-17, same release).
 - `hiringsql`: "the schema's anon list names careers_read" reads the anon

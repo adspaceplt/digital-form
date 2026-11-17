@@ -25,15 +25,25 @@ up yet. Tell an admin." and nothing is sent.
 3. Copy the signing secret (`whsec_…`) into Supabase as
    `RESEND_WEBHOOK_SECRET`.
 
-## Optional
-- `MAIL_FROM` replaces `ADspace <noreply-supplier@sc.adspace.me>`.
-- `MAIL_REPLY_TO` replaces `ap@adspacestudios.com`.
-- `MAIL_CLIENT_FROM` replaces `ADspace <noreply-client@sc.adspace.me>`, the
-  sender of a client's document. Its replies go to the colleague who sends
-  it. Any address on the verified `sc.adspace.me` domain sends with the
-  same API key; nothing is added in Resend.
-- `MAIL_CLIENT_REPLY_TO` replaces `marketing@adspacestudios.com`, where a
-  client's document goes to when the colleague who sends has no email.
+## Senders and replies
+Every email the portal sends goes from its section's sender and replies to
+a company mailbox, never a colleague's own address (2026-11-17). They live
+in the database (`mail_senders`, `mail_boxes`), not in secrets; the
+`MAIL_*_FROM` and `MAIL_*_REPLY_TO` secrets are no longer read.
+
+| Section | From | Replies to |
+|---|---|---|
+| clients (quotations, letters, New email, signing codes) | `ADspace <noreply-clients@sc.adspace.me>` | General, advertise@adspacestudios.com |
+| suppliers | `ADspace <noreply-suppliers@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
+| creators | `ADspace <noreply-creators@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
+| careers (hiring) | `ADspace <noreply-careers@sc.adspace.me>` | General, advertise@adspacestudios.com |
+| finance (invoices, overdue reminders) | `ADspace Finance <noreply-finance@sc.adspace.me>` | Finance, finance@adspacestudios.com |
+| team (invitations) | `ADspace Digital Portal <noreply-team@sc.adspace.me>` | General, advertise@adspacestudios.com |
+
+e-Invoice, einvoice@adspacestudios.com, is kept for e-invoice submissions
+alone. The four mailboxes are edited in Settings, Messages: Reply-to
+mailboxes. Any address on the verified `sc.adspace.me`, `br.adspace.me` or
+`rs.adspace.me` domains sends with the same API key.
 
 The function runs with Verify JWT off: Resend calls it with no session, and
 a send is checked as the colleague by the database.

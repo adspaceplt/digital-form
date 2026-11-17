@@ -658,6 +658,7 @@
         tpl.dispatchEvent(new Event('change'));
         prepare();
       });
+    if (window.ADspaceDocMail) window.ADspaceDocMail.showSender('suppliers', $('supMailFrom'), $('supMailReply'));
     $('supMailSheet').hidden = false;
   }
   function prepare() {

@@ -118,3 +118,38 @@ export function codeEmail(t: { subject?: string; body?: string; foot?: string } 
   const text = body.replace(/\{\s*code\s*\}/gi, () => v.code) + (foot ? '\n\n' + foot : '');
   return { subject, html, text };
 }
+/* Who an email is from and where its replies go (EVERY EMAIL IN MESSAGES,
+   2026-11-17): Settings, Messages: Reply-to mailboxes, a company mailbox
+   for each section (`mail_senders`, `mail_boxes`), never a colleague's own
+   address. Read as the service role; a database that cannot answer sends
+   from the section's own noreply address replying to the general mailbox. */
+async function rpcAsService(fn: string, args: Record<string, unknown>): Promise<unknown> {
+  const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+  const res = await fetch(url + '/rest/v1/rpc/' + fn, {
+    method: 'POST', headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  return res.ok ? await res.json().catch(() => null) : null;
+}
+export async function sender(key: string): Promise<{ from: string; reply_to: string }> {
+  try {
+    const d = await rpcAsService('mail_sender', { p_key: key }) as Record<string, string> | null;
+    if (d && d.from && d.reply_to) return { from: d.from, reply_to: d.reply_to };
+  } catch (_e) { /* the fallback below */ }
+  return { from: 'ADspace <noreply-' + key + '@sc.adspace.me>', reply_to: 'advertise@adspacestudios.com' };
+}
+/* An email no other log keeps, filed for Messages' Email log once Resend
+   has answered (`system_email_file`). Never a code or a sign-in link's
+   words. A filing that fails never fails the send. */
+export async function fileSent(row: Record<string, unknown>): Promise<void> {
+  try { await rpcAsService('system_email_file', { p: row }); } catch (_e) { /* the email has gone either way */ }
+}
+/* The email the caller signed in with, from their token (already checked
+   by the database's own reads before any email is sent). */
+export function callerEmail(auth: string): string {
+  try {
+    const part = (auth.replace(/^Bearer\s+/i, '').split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+    return String(JSON.parse(atob(part + '==='.slice((part.length + 3) % 4))).email || '');
+  } catch (_e) { return ''; }
+}

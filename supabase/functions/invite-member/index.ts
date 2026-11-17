@@ -13,8 +13,8 @@
  *
  * Secrets: SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are
  * provided by the platform; RESEND_API_KEY sends the invitation to an
- * address that already has a login (MAIL_INVITE_FROM, else the sign-in
- * emails' sender).
+ * address that already has a login, from the team's sender (Settings,
+ * Messages: Reply-to mailboxes). Every invitation is filed for Messages.
  *
  * Turn OFF "Verify JWT" for this function in the dashboard, for the same
  * reason as sign-upload: the browser's preflight carries no Authorization
@@ -22,7 +22,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, layout, resend, FONT } from '../_shared/mail.ts';
+import { esc, layout, resend, FONT, sender, fileSent } from '../_shared/mail.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
@@ -32,7 +32,6 @@ const SIGN_IN_PAGE = 'https://digital.adspace.me/admin/';
 const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
 /* The invitation an address with a login is sent by the portal itself,
    from the sender Supabase's own sign-in emails use. */
-const FROM = () => Deno.env.get('MAIL_INVITE_FROM') || 'ADspace Digital Portal <noreply@sc.adspace.me>';
 
 /* The invitation as Supabase's Invite user template words it
    (docs/SIGN-IN-EMAILS.md), for an address that already has a login, which
@@ -126,6 +125,12 @@ Deno.serve(async (req) => {
      and whole name, said once, as a client letter does (contact_greeting);
      a colleague by their whole name; nobody named, Sir or Madam. */
   let greeting = greetingOf('', name);
+  let clientId = '';
+  /* Filed for Messages' Email log (EVERY EMAIL IN MESSAGES, 2026-11-17),
+     never the sign-in link it carries. */
+  const file = (o: Record<string, unknown>) => fileSent(Object.assign({ kind: kind === 'client' ? 'invite_client' : 'invite_team',
+    client: clientId || null, to: email, to_name: greeting, by: user.email || '',
+    subject: kind === 'client' ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal' }, o));
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
@@ -144,9 +149,10 @@ Deno.serve(async (req) => {
     if (!isAdmin && may !== true) return json({ error: 'not_admin' }, 403, origin);
     // Only an address the console has marked for portal access is invited.
     const { data: contact } = await asCaller.from('client_contacts')
-      .select('id, name, salutation').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
+      .select('id, name, salutation, client_id').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
     greeting = greetingOf(contact.salutation, contact.name || name);
+    clientId = contact.client_id || '';
   }
 
   // A team login is made only for an address an active colleague holds, so
@@ -201,11 +207,13 @@ Deno.serve(async (req) => {
         return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);
       }
       const mail = invitation(kind, greeting, href);
-      const sent = await resend({ from: FROM(), to: [email], subject: mail.subject, html: mail.html },
+      const who = await sender('team');
+      const sent = await resend({ from: who.from, reply_to: who.reply_to, to: [email], subject: mail.subject, html: mail.html },
         /* A key of its own: each press is a new link, so the same key a
            minute refused the second email as a repeat while its link had
            already replaced the first (audit 2026-11-11). */
         'invite:' + kind + ':' + email + ':' + crypto.randomUUID(), apiKey);
+      await file({ status: sent.status, provider: sent.provider, error: sent.error });
       if (sent.status === 'failed') {
         console.error('invite-member: send failed', sent.error);
         return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);
@@ -214,5 +222,7 @@ Deno.serve(async (req) => {
     }
     return json({ error: 'invite_failed', detail: error.message }, 500, origin);
   }
+  /* Supabase's own invitation: its delivery is not reported back. */
+  if (notify) await file({ status: 'sent' });
   return json({ ok: true, already: false, sent: notify, id: data.user?.id ?? null }, 200, origin);
 });

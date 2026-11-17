@@ -343,14 +343,23 @@
      signing code's own state (its delivery is not reported back). */
   var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
     approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
-    creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved' };
+    creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved',
+    hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_pool: 'Talent pool', hiring_not: 'Application outcome',
+    hiring_doc: 'Employment document', hiring_code: 'Verification code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };
   var ML_STATE = { queued: ['Queued', 'is-warn'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
     requested: ['Code sent', 'is-live'], used: ['Signed', 'is-ok'], expired: ['Expired', 'is-off'] };
-  var ML_FROM = { supplier: 'ADspace <noreply-supplier@sc.adspace.me>', client: 'ADspace <noreply-client@sc.adspace.me>',
-    invoice: 'ADspace Finance <noreply-finance@sc.adspace.me>', signing: 'ADspace <noreply-client@sc.adspace.me>',
-    creator: 'ADspace <noreply-creator@sc.adspace.me>' };
+  /* Who each email is from: the sender of its section (EVERY EMAIL IN
+     MESSAGES, 2026-11-17), as mail_log answers them (`senders`). */
+  function mlFrom(x) {
+    var key = x.source === 'supplier' || (x.source === 'manual' && x.supplier_id) ? 'suppliers'
+      : x.source === 'invoice' ? 'finance' : x.source === 'creator' ? 'creators'
+      : /^hiring/.test(x.kind) ? 'careers' : /^invite/.test(x.kind) ? 'team' : 'clients';
+    return ((ml.data || {}).senders || {})[key] || '';
+  }
+  /* Kept without its words: a code or a sign-in link. */
+  function mlNoWords(x) { return x.source === 'signing' || x.kind === 'hiring_code' || /^invite/.test(x.kind); }
   var ml = { month: monthNow(), data: null, wired: false };
   function mlState(x) { return ML_STATE[x.status] || [x.status || '', '']; }
   function mlWire() {
@@ -475,7 +484,7 @@
       /* A New email leads with its subject, its file under it. */
       '<span class="wam-tpl"><span>' + esc(x.source === 'manual' ? x.subject : ML_KIND[x.kind] || 'Email') + '</span>' +
         '<small class="wam-tplline"><span class="wam-tplname">' + esc(x.source === 'manual' ? x.reference || 'Email' : x.reference || x.subject || '') + '</span></small></span>' +
-      '<span class="wam-by">' + esc(x.source === 'signing' ? 'Client' : x.sent_by || 'Automatic') + '</span>' +
+      '<span class="wam-by">' + esc(x.source === 'signing' ? 'Client' : x.kind === 'hiring_code' ? 'Candidate' : x.sent_by || 'Automatic') + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>' +
         '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
     row.addEventListener('click', function () { mlOpen(x, row); });
@@ -495,18 +504,18 @@
     $('emlSheetBody').innerHTML =
       '<dl class="ovfacts eml-facts">' +
         fact('Type', ML_KIND[x.kind] || 'Email') +
-        fact('From', x.source === 'manual' ? ML_FROM[x.supplier_id ? 'supplier' : 'client'] : ML_FROM[x.source]) +
+        fact('From', mlFrom(x)) +
         fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : window.ADspaceWords.line.addrGoneWhen) +
         fact('Copy', x.cc_email) +
         fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
         fact(x.source === 'manual' ? 'Attachment' : 'Reference', x.reference) +
-        (x.source === 'signing' ? fact('Requested by', 'Client') : fact('Sent by', x.sent_by || 'Automatic')) +
+        (x.source === 'signing' ? fact('Requested by', 'Client') : x.kind === 'hiring_code' ? fact('Requested by', 'Candidate') : fact('Sent by', x.sent_by || 'Automatic')) +
         fact('Status', '<span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>', true) +
         steps.map(function (t) { return fact(t[0], whenOf(t[1])); }).join('') +
         fact('Reason', x.error && /failed|bounced|unknown/.test(x.status) ? String(x.error).replace(/^[a-z ]+:\s*/i, '') : '') +
       '</dl>' +
       (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
-        : x.source === 'signing' ? '<p class="emptyline">The message is not kept, as it contained a signing code.</p>'
+        : mlNoWords(x) ? '<p class="emptyline">The message is not kept, as it contained ' + (/^invite/.test(x.kind) ? 'a sign-in link' : x.source === 'signing' ? 'a signing code' : 'a code') + '.</p>'
         : '<p class="emptyline">' + window.ADspaceWords.line.bodyGone + '</p>') +
       /* A New email sent again opens filled, its file to attach again. */
       (x.source === 'manual' && x.to_email && may('whatsapp', 'work')

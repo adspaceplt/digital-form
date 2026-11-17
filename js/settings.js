@@ -400,6 +400,11 @@
         /* Every email's wording, by recipient, in one editor (2026-11-10). */
         (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
+        /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
+           company mailbox each section's emails reply to, never a
+           colleague's own address. */
+        biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, Accounts payable, Finance, e-Invoice',
+          open: function () { openMailboxes(); } },
         /* Sent again (2026-10-14): the same message sent within the window
            asks again before it goes, WhatsApp and emails alike (SET2-1). */
         biz && { id: 'resend', name: 'Sent again', kind: 'edit',
@@ -755,6 +760,43 @@
     var hit = null;
     groups().forEach(function (g) { g.rows.forEach(function (r) { if (r.id === id) hit = r; }); });
     return hit;
+  }
+
+  /* ---- Reply-to mailboxes (2026-11-17) ---------------------------------
+     The four company mailboxes; each section's sender replies to one of
+     them (Clients, Careers and invitations General; Suppliers and Creators
+     Accounts payable; invoices and reminders Finance). */
+  var BOX_NOTE = { general: 'Replies to client, careers and invitation emails, and all other enquiries.',
+    payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
+    einvoice: 'Receives e-Invoice submissions alone.' };
+  function openMailboxes() {
+    db.rpc('mail_senders_read').then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { rowSay('mailboxes')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load. Try again.', 'err'); return; }
+      var boxes = d.boxes || [];
+      window.ADspaceConfirm.ask({
+        title: 'Reply-to mailboxes', go: 'Save', wait: true,
+        fields: boxes.map(function (b) { return { name: b.key, label: b.label, type: 'email', required: true, value: b.address, note: BOX_NOTE[b.key] || '' }; }),
+        check: function (v) {
+          for (var i = 0; i < boxes.length; i++) {
+            if (!window.ADspaceWords.emailOk(String(v[boxes[i].key] || '').trim())) return boxes[i].label + ': Enter a valid email address.';
+          }
+          return '';
+        }
+      }, function (v) {
+        var vals = {};
+        boxes.forEach(function (b) { vals[b.key] = String(v[b.key] || '').trim().toLowerCase(); });
+        return db.rpc('mail_boxes_set', { p_values: vals }).then(function (r2) {
+          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message)
+            : r2.data && r2.data.error ? (r2.data.error === 'denied' ? window.ADspaceWords.line.noSettings
+              : r2.data.error === 'bad-email' ? (boxes.filter(function (b) { return b.key === r2.data.field; })[0] || { label: 'A mailbox' }).label + ': Enter a valid email address.'
+              : 'Not saved. Try again.') : '';
+          if (e) return e;
+          rowSay('mailboxes')('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('mailboxes')('Could not load. Try again.', 'err'); });
   }
 
   /* ---- Demo access (2026-10-27) ----------------------------------------
