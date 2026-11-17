@@ -3738,7 +3738,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   run: creators' bills first to 35 seconds, months' invoices to 60, then the
   links, the oldest read first, in what is left; the run writes its beat,
   `job_beat('bukku-nightly')`, which `jobs_watch` reads; audit 2026-11-15). An entity is the same inside its fold.
-  Suppliers keep Send to Bukku as before. Creators brought in from the
+  Suppliers keep Send to Bukku as before. A colleague is a Bukku employee
+  contact (kind `member`, `2026-11-17-bukku-employee.sql`, its SQL Editor
+  part turning it on; HR-SPEC decision 12): the band on their Onboarding
+  at `team.personnel`, sent with the name as per NRIC, the company email,
+  the mobile and the home address, never an NRIC, a bank account or a
+  salary, no Bukku field holding the Employee ID; filed `team.edited`;
+  `bukku_member_ready()` keeps the band away until `bukku_links.kind` takes
+  `member`. Creators brought in from the
   AP01 form are matched to their Bukku contacts by `bukku-sync`
   `match-creators` (the wake secret alone, read only: ID number, else one
   contact of the legal name, a contact another record links said as
