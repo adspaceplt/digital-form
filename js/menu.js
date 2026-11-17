@@ -83,9 +83,15 @@
           return !i.hidden && getComputedStyle(i).display !== 'none';
         });
         one = shown.length === 1 ? shown[0] : null;
-        proxy.hidden = !one;
-        btn.hidden = !!one;
-        if (one) { proxy.textContent = one.textContent.trim(); menu.hidden = true; }
+        /* Written only where it changes: a write here is a mutation the
+           page's own observers hear, and they call this again. */
+        if (proxy.hidden !== !one) proxy.hidden = !one;
+        if (btn.hidden !== !!one) btn.hidden = !!one;
+        if (one) {
+          var w = one.textContent.trim();
+          if (proxy.textContent !== w) proxy.textContent = w;
+          if (!menu.hidden) menu.hidden = true;
+        }
       }
       proxy.addEventListener('click', function () { if (one) one.click(); });
       if (window.MutationObserver) {

@@ -483,9 +483,12 @@
     function syncMore() {
       var shown = [];
       pairs.forEach(function (pr) {
-        pr[1].hidden = pr[0].hidden;
-        pr[0].classList.remove('cmd-solo');
+        if (pr[1].hidden !== pr[0].hidden) pr[1].hidden = pr[0].hidden;
         if (!pr[1].hidden && getComputedStyle(pr[1]).display !== 'none') shown.push(pr);
+      });
+      pairs.forEach(function (pr) {
+        var solo = shown.length === 1 && shown[0] === pr;
+        if (pr[0].classList.contains('cmd-solo') !== solo) pr[0].classList.toggle('cmd-solo', solo);
       });
       if (shown.length === 1) {
         var b = shown[0][0];
@@ -499,9 +502,8 @@
             }
           });
         }
-        b.classList.add('cmd-solo');
       }
-      wrap.hidden = shown.length < 2;
+      if (wrap.hidden !== (shown.length < 2)) wrap.hidden = shown.length < 2;
       if (shown.length < 2) shutMore();
     }
     if (window.MutationObserver) {
