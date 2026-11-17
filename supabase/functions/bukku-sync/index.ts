@@ -90,11 +90,9 @@
  *                                             (`invoice_email_begin`,
  *                                             `invoice_email_done`), sent
  *                                             through Resend (_shared/mail.ts)
- *                                             from MAIL_FINANCE_FROM (unset:
- *                                             ADspace Finance
- *                                             <noreply-finance@sc.adspace.me>),
- *                                             replies to MAIL_FINANCE_REPLY_TO
- *                                             (unset: einvoice@adspacestudios.com).
+ *                                             from the finance sender, replying
+ *                                             to the finance mailbox (Settings,
+ *                                             Messages: Reply-to mailboxes).
  *
  * What is sent is the database's answer as the colleague (`bukku_prepare`),
  * never the page's. An update reads the contact first and changes only the
@@ -118,7 +116,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, FONT, layout, resend } from '../_shared/mail.ts';
+import { esc, FONT, layout, resend, sender } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
@@ -1135,8 +1133,6 @@ export function invoiceTable(lines: any[]): string {
     : '';
   return table + one;
 }
-const FIN_FROM = () => secret('MAIL_FINANCE_FROM') || 'ADspace Finance <noreply-finance@sc.adspace.me>';
-const FIN_REPLY = () => secret('MAIL_FINANCE_REPLY_TO') || 'einvoice@adspacestudios.com';
 
 /* A contact counts for a client where it is the client's own, or its
    company bills that client (`clients`, BUKKU BY ENTITY). */
@@ -1256,7 +1252,8 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     fine: [String(b.legal || ''), String(b.disclaimer || '')] });
   const text = String(b.body || '').replace(/\{\s*invoices\s*\}/i, lines.map((l) => l.number + '  ' + money(l.amount, l.currency) +
     '  due ' + day(l.due) + (l.link ? '  ' + l.link : '')).join('\n'));
-  const msg: Record<string, unknown> = { from: FIN_FROM(), to: [String(b.to || '')], reply_to: FIN_REPLY(),
+  const who = await sender('finance');
+  const msg: Record<string, unknown> = { from: who.from, to: [String(b.to || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text };
   const ccs = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : (b.cc ? [String(b.cc)] : []);
   if (ccs.length) msg.cc = ccs;

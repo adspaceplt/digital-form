@@ -152,7 +152,7 @@
       }).join('');
       sel.value = d.to.id;
       sel.disabled = (d.contacts || []).length < 2;
-      $('dmReply').textContent = d.reply_to || (window.ADSPACE_CONFIG || {}).accountEmail || '';
+      showSender('clients', $('dmFrom'), $('dmReply'));
       $('dmCcLine').hidden = !d.cc;
       $('dmCcWord').textContent = 'Copy the finance email' + (d.cc ? ' (' + d.cc + ')' : '');
       /* Words the colleague changed stay as typed when another contact is
@@ -251,5 +251,22 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceDocMail = { may: may, compose: compose, lines: lines, forget: forget, KIND: KIND };
+  /* Who each email is from and where replies go (EVERY EMAIL IN MESSAGES,
+     2026-11-17): a section's sender and its company mailbox, read once a
+     visit, drawn on `fromEl` and `replyEl` (Send by email, a supplier's
+     Send email). */
+  var sendersRead = null;
+  function showSender(key, fromEl, replyEl) {
+    if (!sendersRead) sendersRead = db().rpc('mail_senders_read').then(function (r) {
+      if (r.error || !r.data || r.data.error) { sendersRead = null; return {}; }
+      return r.data.senders || {};
+    }).catch(function () { sendersRead = null; return {}; });
+    sendersRead.then(function (all) {
+      var s = all && all[key];
+      if (!s) return;
+      if (fromEl) fromEl.textContent = String(s.from).replace(/\s*<([^>]+)>$/, ' · $1');
+      if (replyEl) replyEl.textContent = s.reply_to;
+    });
+  }
+  window.ADspaceDocMail = { showSender: showSender, may: may, compose: compose, lines: lines, forget: forget, KIND: KIND };
 })();

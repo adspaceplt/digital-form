@@ -31,8 +31,7 @@
  *                          and the reply-to (the colleague who sends) are
  *                          `client_email_begin`'s answer; the PDF is the
  *                          page's drawing and must name the record's own
- *                          reference. From MAIL_CLIENT_FROM (unset:
- *                          ADspace <noreply-client@sc.adspace.me>).
+ *                          reference. From the clients' sender.
  *
  *   POST { manual: true, audience, client, supplier, template, to, ccs,
  *          subject, body, key, file }
@@ -43,18 +42,18 @@
  *                          fills the words and files it before it goes, one
  *                          key a sheet. A file is optional, 10 MB at most, of
  *                          the kinds ATTACH names, a PDF that is a PDF. From
- *                          MAIL_CLIENT_FROM, a supplier's from MAIL_FROM;
+ *                          the clients' sender, a supplier's the suppliers';
  *                          replies to the colleague who sends.
  *
  * The email is the portal's one layout (_shared/mail.ts, the sign-in
  * emails' white card on the light grey page, docs/SIGN-IN-EMAILS.md): the subject as its heading,
  * then the message the colleague wrote in the Send email sheet, word for
  * word as plain paragraphs, escaped; nothing else is added but a document's
- * verify line (the user, 2026-10-27: one content box, sent as it was typed). From MAIL_FROM (unset: ADspace <noreply-supplier@sc.adspace.me>),
- * replies to MAIL_REPLY_TO (unset: ap@adspacestudios.com).
+ * verify line (the user, 2026-10-27: one content box, sent as it was typed). From the suppliers' sender,
+ * replying to its company mailbox (EVERY EMAIL IN MESSAGES: Settings, Messages: Reply-to mailboxes).
  *
  * Secrets: RESEND_API_KEY, RESEND_WEBHOOK_SECRET (the webhook's signing
- *          secret, whsec_…), optionally MAIL_FROM and MAIL_REPLY_TO, plus the
+ *          secret, whsec_…), plus the
  *          platform's SUPABASE_URL, SUPABASE_ANON_KEY and
  *          SUPABASE_SERVICE_ROLE_KEY. docs/SUPPLIER-EMAIL-SETUP.md.
  *
@@ -64,16 +63,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { pdfFrom, namesRef } from '../_shared/pdfref.ts';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend } from '../_shared/mail.ts';
+import { layout, resend, sender } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const FROM = () => secret('MAIL_FROM') || 'ADspace <noreply-supplier@sc.adspace.me>';
-const REPLY_TO = () => secret('MAIL_REPLY_TO') || 'ap@adspacestudios.com';
-const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
-/* A client email with no colleague's address to reply to goes to the
-   account manager's (MAIL_CLIENT_REPLY_TO, unset: js/config.js's
-   accountEmail). */
-const CLIENT_REPLY_TO = () => secret('MAIL_CLIENT_REPLY_TO') || 'marketing@adspacestudios.com';
+/* Who each email is from and where its replies go (EVERY EMAIL IN
+   MESSAGES, 2026-11-17): the suppliers' and the clients' senders, each
+   replying to its company mailbox, never a colleague's own address. */
 // ---- The document's PDF, as wa-send reads a letter's ----------------------
 function b64Of(b: Uint8Array): string {
   let s = '';
@@ -180,8 +175,9 @@ Deno.serve(async (req) => {
     foot: doc ? 'Verify this document at digital.adspace.me/verify.' : '',
     preheader: String(b.subject || '')
   });
+  const who = await sender('suppliers');
   const msg: Record<string, unknown> = {
-    from: FROM(), to: [String((b.to || {}).email || '')], reply_to: REPLY_TO(),
+    from: who.from, to: [String((b.to || {}).email || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text: String(b.body || '')
   };
   if (b.cc) msg.cc = [String(b.cc)];
@@ -228,8 +224,9 @@ async function clientMail(req: Request, body: Record<string, any>, origin: strin
     foot: kind === 'quotation' ? '' : 'Verify this document at digital.adspace.me/verify.',
     preheader: String(b.subject || '')
   });
+  const who = await sender('clients');
   const msg: Record<string, unknown> = {
-    from: CLIENT_FROM(), to: [String((b.to || {}).email || '')], reply_to: String(b.reply_to || '') || CLIENT_REPLY_TO(),
+    from: who.from, to: [String((b.to || {}).email || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text: String(b.body || ''), attachments: [attach]
   };
   if (b.cc) msg.cc = [String(b.cc)];
@@ -286,9 +283,9 @@ async function manualMail(req: Request, body: Record<string, any>, origin: strin
   const b = (begun.data || {}) as Record<string, any>;
   if (b.error) return json(b, 200, origin);
   const html = layout({ heading: String(b.subject || ''), body: String(b.body || ''), preheader: String(b.subject || '') });
+  const who = await sender(audience === 'supplier' ? 'suppliers' : 'clients');
   const msg: Record<string, unknown> = {
-    from: audience === 'supplier' ? FROM() : CLIENT_FROM(), to: [String(b.to || '')],
-    reply_to: String(b.reply_to || '') || (audience === 'supplier' ? REPLY_TO() : CLIENT_REPLY_TO()),
+    from: who.from, to: [String(b.to || '')], reply_to: who.reply_to,
     subject: String(b.subject || ''), html, text: String(b.body || '')
   };
   const cc = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : [];

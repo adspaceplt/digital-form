@@ -119,7 +119,7 @@ window.ADSPACE_CONFIG = {
   supportEmail: 'advertise@adspacestudios.com',
 
   // Reply-to on anything the portal sends on the team's behalf.
-  accountEmail: 'marketing@adspacestudios.com',
+  accountEmail: 'advertise@adspacestudios.com',
 
   /* The host a new short link is written under. It was typed into js/admin.js
      and again into the console's markup, so changing it meant finding both.

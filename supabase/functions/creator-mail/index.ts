@@ -42,18 +42,16 @@
  * https://digital.adspace.me). The other emails ask nothing of the creator
  * and carry none.
  *
- * From MAIL_CREATOR_FROM (unset: ADspace <noreply-creator@sc.adspace.me>),
- * replies to MAIL_CREATOR_REPLY_TO (unset: ap@adspacestudios.com).
+ * From the creators' sender, replying to its company mailbox
+ * (EVERY EMAIL IN MESSAGES: Settings, Messages: Reply-to mailboxes).
  * Secrets: RESEND_API_KEY, plus the platform's SUPABASE_URL and
  * SUPABASE_SERVICE_ROLE_KEY. Verify JWT is off: pg_net calls with no session.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { layout, resend, esc, FONT } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, sender } from '../_shared/mail.ts';
 import { cors, json as cjson } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-const FROM = () => secret('MAIL_CREATOR_FROM') || 'ADspace <noreply-creator@sc.adspace.me>';
-const REPLY_TO = () => secret('MAIL_CREATOR_REPLY_TO') || 'ap@adspacestudios.com';
 const PORTAL = () => (secret('PORTAL_URL') || 'https://digital.adspace.me').replace(/\/+$/, '');
 /* The emails that end in a way to the creator's page, and its words. */
 const ACTIONS: Record<string, string> = { posted: 'View booking', paid: 'View payment' };
@@ -245,6 +243,7 @@ Deno.serve(async (req) => {
   const apiKey = secret('RESEND_API_KEY');
   let sent = 0, failed = 0;
   const began = Date.now();
+  const who = await sender('creators');
   for (let round = 0; apiKey && round < ROUNDS; round++) {
     if (Date.now() - began > BUDGET) break;
     const { data: batch, error } = await db.rpc('creator_mail_claim', { p_n: 1 });
@@ -254,7 +253,7 @@ Deno.serve(async (req) => {
     for (const r of rows) {
       const act = await pageOf(db, r).catch(() => null);
       const out = await resend({
-        from: FROM(), to: [r.to_email], reply_to: REPLY_TO(), subject: r.subject,
+        from: who.from, to: [r.to_email], reply_to: who.reply_to, subject: r.subject,
         html: act ? layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: buttonOf(act) })
                   : layout({ heading: r.subject, body: r.body }),
         text: act ? r.body + '\n\n' + act.label + ': ' + act.url : r.body
