@@ -192,7 +192,7 @@
     not_admin: 'You do not have permission to do this. Please ask an admin.',
     not_team: 'This email is not on the team list. Sign in with your team email.',
     bad_email: 'Enter a valid email address.',
-    not_portal_contact: 'This feature is not available yet. Please contact an admin.',
+    not_portal_contact: 'This contact does not have portal access. Enable access first.',
     not_team_member: 'Only a colleague on the team list can be invited.',
     too_many: 'Twenty invitations a day is the limit. Try again tomorrow.'
   };
