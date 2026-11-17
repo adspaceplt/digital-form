@@ -143,6 +143,8 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_senders_read: '',
+    mail_boxes_set: 'p_values',
     wa_recipients: '',
     wa_compose_prepare: 'p_to_kind p_to p_purpose p_ref',
     wa_sent_recently: 'p_to_kind p_to p_purpose p_ref p_template',
@@ -13182,6 +13184,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return emOk();
       }
     }
+    function mailBoxes() {
+      DB.mail_boxes = DB.mail_boxes || [{ key: 'general', label: 'General', address: 'advertise@adspacestudios.com' },
+        { key: 'payables', label: 'Accounts payable', address: 'ap@adspacestudios.com' }, { key: 'finance', label: 'Finance', address: 'finance@adspacestudios.com' },
+        { key: 'einvoice', label: 'e-Invoice', address: 'einvoice@adspacestudios.com' }];
+      return DB.mail_boxes;
+    }
+    function mailSendersFull() {
+      var box = {}; mailBoxes().forEach(function (b) { box[b.key] = b.address; });
+      var S = { clients: ['ADspace', 'general'], suppliers: ['ADspace', 'payables'], creators: ['ADspace', 'payables'], careers: ['ADspace', 'general'],
+        finance: ['ADspace Finance', 'finance'], team: ['ADspace Digital Portal', 'general'] }, o = {};
+      Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <noreply-' + k + '@sc.adspace.me>', reply_to: box[S[k][1]] }; });
+      return o;
+    }
+    function mailSenders() { var f = mailSendersFull(), o = {}; Object.keys(f).forEach(function (k) { o[k] = f[k].from; }); return o; }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -13238,8 +13254,38 @@ function opsCodeRange(cid, period, ty, src, seq) {
         mlItems.push(Object.assign(mlBase(e), { source: 'creator', kind: 'creator_' + e.purpose, cc_email: null, sent_by: null, client_id: null, client: null,
           supplier_id: null, supplier: null, supplier_code: null, reference: crq ? crq.ref : null, to_name: crw ? crw.name : null }));
       });
+
+      (DB.system_emails || []).filter(mlIn).forEach(function (e) {
+        var meS = opsMe();
+        var ok = /^hiring/.test(e.kind) ? (opsGranted('team.hiring', 'work') || (DB.hiring_people || []).some(function (x) { return x.candidate_id === e.candidate_id && meS && x.team_member_id === meS.id; }))
+          : e.kind === 'invite_team' ? opsAllowed('team', 'view')
+          : e.kind === 'invite_client' ? opsAllowed('clients.contacts', 'view') && !!e.client_id && scopeOk('clients', (DB.clients || []).filter(function (c) { return c.id === e.client_id; })[0] || {}, 'view') : false;
+        if (!ok) return;
+        mlItems.push(Object.assign(mlBase(e), { source: 'system', kind: e.kind, cc_email: null, sent_by: mlWho(e.sent_by), client_id: e.client_id || null,
+          client: e.client_id ? mlCl(e.client_id) : null, supplier_id: null, supplier: null, supplier_code: null, reference: e.reference || null, to_name: e.to_name || null }));
+      });
       mlItems.sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
-      return Promise.resolve({ data: JSON.parse(JSON.stringify({ month: mlFrom, items: mlItems.slice(0, 2000) })), error: null });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ month: mlFrom, senders: mailSenders(), items: mlItems.slice(0, 2000) })), error: null });
+    }
+    if (name === 'mail_senders_read') {
+      if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ boxes: mailBoxes(), senders: mailSendersFull() })), error: null });
+    }
+    if (name === 'mail_boxes_set') {
+      var mbMe = opsMe();
+      if (!mbMe || !opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mbVals = args.p_values || {}, mbBad = null, mbSaid = [];
+      mailBoxes().forEach(function (b) {
+        var v = String(mbVals[b.key] == null ? b.address : mbVals[b.key]).trim().toLowerCase();
+        if (!/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(v)) mbBad = mbBad || b.key;
+      });
+      if (mbBad) return Promise.resolve({ data: { error: 'bad-email', field: mbBad }, error: null });
+      DB.mail_boxes.forEach(function (b) {
+        var v = String(mbVals[b.key] == null ? b.address : mbVals[b.key]).trim().toLowerCase();
+        if (v !== b.address) { mbSaid.push(b.label + ': ' + b.address + ' → ' + v); b.address = v; }
+      });
+      if (mbSaid.length) (DB.activity_log = DB.activity_log || []).unshift({ id: nid('al'), actor: mbMe.name, action: 'team.changed', subject: 'Email addresses', detail: mbSaid.join(' · '), created_at: new Date().toISOString() });
+      return Promise.resolve({ data: { ok: true }, error: null });
     }
     if (/^wa_/.test(name)) {
       var waNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
