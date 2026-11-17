@@ -11147,3 +11147,31 @@ now a group of their own, Hiring, after Performance: Candidates (the figures
 and the scorecards) and New colleagues (the Welcome Kit). The scorecards row
 states what it holds, the Standard's criteria and how many positions have
 their own, as every Open row does.
+
+### 2026-11-17 · Two ad accounts add up, the figures are checked against themselves, and the comparison is chosen
+Reported by the user on Huna's 16 Oct to 15 Nov Advertising Report, run from
+two ad accounts. Step 1 read RM 1,542.54 spent, 40,480 reached and 57,386
+impressions while its objectives added up to RM 1,988.48. Read on the live
+database: those were account …4429's figures alone (its four ads to the
+sen). The import filled Step 1 only where it was empty, so the second
+account's row was kept aside as a typed figure. Step 1 now keeps each ad
+account's own figures (`ads_totals.accounts`), an import writes its own
+account's, and with two accounts or more impressions and spend are their
+sum. Reach is never added across accounts (Meta counts a person once in
+each): Step 1, the PDF (a By ad account table, each account by Meta's name)
+and `report-draft` give each account's own. A report from before is read
+as the account whose ads its figures cover, which Combine ad accounts
+uses.
+The Report audit said nothing because its Meta part had not run, and no
+part read the report against itself. Check and submit's Figures add up
+needs no Meta: Step 1 never below its ads, the accounts added up, the
+previous period's objectives within its spend, and the previous period as
+its published report gave it; each holds Submit and Publish with a
+one-press fix. Step 1 above its ads is allowed, since an import leaves out
+an ad with no results.
+The previous period was taken from the latest report before, whatever it
+was; a report asked for in between could become the comparison. A new
+Advertising Report now takes the latest published one not asked for that
+ends before it starts, from the version the client was shown, names it
+(`prev_from`), and Step 1's Compare with offers every published one or
+typed figures.

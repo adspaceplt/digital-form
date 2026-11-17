@@ -136,6 +136,7 @@ Every figure comes from the data given. Never invent a number, a cause, an audie
 
 READING THE FIGURES
 by_objective holds each objective's spend, results and cost_per_result for the period, every ad counted: a cost per result for an objective is said only from it (or previous.by_objective for the period before), never worked out from the ads. Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the lowest cost; out of ads_in_group), worked out for you: say an ad had the lowest or the second-lowest cost per result only from it, and never name an ad the highest cost; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so. A Sales ad may carry purchase_value and roas (its purchase value over its amount spent, both as Meta reports them) with roas_rank (1 is the highest, out of ads_with_roas): for a Sales objective the return is the measure the client reads first, so say what the ads returned (a ROAS of 3.25x, written with the x) and which returned most only from roas_rank; give a Sales objective's own ROAS as its purchase values added up over what those ads spent; never add ROAS across objectives or platforms, never work out a ROAS the data does not give, and where purchase values are given say once that they are as Meta reports them.
+Where the account figures hold by_ad_account, the ads ran from several ad accounts: impressions and spend are their sum, reach is each account's own, so never add reach across ad accounts or state one total reach.
 Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
@@ -637,6 +638,13 @@ Deno.serve(async (req) => {
     const t = (r.ads_totals || {}) as Record<string, unknown>;
     data.first_month = !!r.first_month;
     data.account = { reach: num(t.reach), impressions: num(t.impressions), spend: num(t.spend) };
+    // Two ad accounts or more (2026-11-17): impressions and spend are their
+    // sum, and reach is each account's own, never added across accounts.
+    const accts = (t.accounts || {}) as Record<string, Record<string, unknown>>;
+    if (Object.keys(accts).length > 1) {
+      data.account = { impressions: num(t.impressions), spend: num(t.spend),
+        by_ad_account: Object.keys(accts).map((k) => ({ reach: num(accts[k].reach), impressions: num(accts[k].impressions), spend: num(accts[k].spend) })) };
+    }
     if (!r.first_month && t.prev_start) {
       data.previous = { start: t.prev_start, end: t.prev_end, reach: num(t.prev_reach),
         impressions: num(t.prev_impressions), spend: num(t.prev_spend), by_objective: t.prev_groups || null };

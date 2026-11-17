@@ -619,6 +619,10 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- `reports`: after "at 390 a published row reads Sent or Not sent", the
+  click on the Reports bar's ⋯ (`#rhMoreBtn`) times out, the button hidden
+  (found on main 2026-11-17 by the ad-accounts release, which does not touch
+  the Reports bar); every check after it is hidden.
 - `demo`: "each client page opens on its sample link … the sample agency's
   name alone" fails on the creator's page since #1189 wrote "ADspace will
   review your submission." into `js/creator.js`'s status lines, which the
