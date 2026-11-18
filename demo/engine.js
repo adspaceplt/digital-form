@@ -13227,7 +13227,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var box = {}; mailBoxes().forEach(function (b) { box[b.key] = b.address; });
       var S = { clients: ['ADspace', 'general'], suppliers: ['ADspace', 'payables'], creators: ['ADspace', 'payables'], careers: ['ADspace', 'general'],
         finance: ['ADspace Finance', 'finance'], team: ['ADspace Digital Portal', 'general'] }, o = {};
-      Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <portal@sc.adspace.me>', reply_to: box[S[k][1]] }; });
+      Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <noreply-' + k + '@sc.adspace.me>', reply_to: box[S[k][1]] }; });
       return o;
     }
     function mailSenders() { var f = mailSendersFull(), o = {}; Object.keys(f).forEach(function (k) { o[k] = f[k].from; }); return o; }
@@ -18222,17 +18222,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
       },
 
       verifyOtp: function (o) {
-
-        if (o && o.token_hash) {
-          window.__linkProof = (window.__linkProof || []).concat([{ token_hash: o.token_hash, type: o.type }]);
-          var m = /^link:(.+@.+)$/.exec(String(o.token_hash));
-          if (!m || !/^(email|invite)$/.test(String(o.type))) {
-            return Promise.resolve({ data: {}, error: { message: 'Email link is invalid or has expired' } });
-          }
-          session = mkSession(m[1], [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]);
-          if (listener) listener('SIGNED_IN', session);
-          return Promise.resolve({ data: { session: session, user: session.user }, error: null });
-        }
         if (!o || String(o.token) !== '12345678') {
           return Promise.resolve({ data: {}, error: { message: 'Token has expired or is invalid' } });
         }

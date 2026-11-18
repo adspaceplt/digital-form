@@ -237,6 +237,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
 | A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name at 500, never bold; the user, 2026-10-09) and a close mark |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
+| A list row on a phone | `.prow` (the end of `css/console.css`; 2026-11-18, the user: every list's phone layout from one component, never written by hand again): the row's cells take its slots, `.pr-lead` (a tick, a ring, a mark), `.pr-main` (the title over its meta), `.pr-state` and `.pr-act` (the ⋯) on the title's line at the right edge, `.pr-end` (a date, a figure) under them on the meta's line; a row without a lead or a ⋯ closes that column, every other cell hidden on the phone. A new list is built on it; a list's own phone grid is never written again (`tests/phonerow.js`, its baseline only shrinking) |
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
 | Counts and money | `.tallies` > `.tallygroup` > `.tally` > `.tally-cell` (`is-total`, `is-warn`); no cell alone on the last row: on a desk five cells read three over two and six three over three until all fit one row |
@@ -332,7 +333,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - On a phone the last column is a right edge: the cell stretches and aligns
   right. An empty action cell gives up its track on a phone only.
 - A phone list row is a two-column table, top aligned: who over meta on the
-  left, state over age on the right. Two or three lines, never a stack of
+  left, state over age on the right, drawn by the phone row (`.prow`, §4). Two or three lines, never a stack of
   fields. Cells on one line share its baseline: a record beside an outlined
   chip reads on the chip's text (`.cr-record`). The right column's lines stand on
   the left's, line for line (the same line heights), never centred over a

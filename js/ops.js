@@ -2697,7 +2697,7 @@
     var picking = !elsewhere && state.selecting;
     var picked = picking && state.picked[t.id];
     var dl = deadlineOf(t);
-    el.className = 'svc-row task-row' + (fin ? ' is-off' : '') + (picked ? ' is-picked' : '') + prioClass(dl);
+    el.className = 'svc-row task-row prow' + (fin ? ' is-off' : '') + (picked ? ' is-picked' : '') + prioClass(dl);
     el.setAttribute('data-task', t.id);
     var over = isLate(t) || (!fin && dueLead(t) && daysAway(dueOf(t)) < 0);
     var work = may('ops', 'work');
@@ -2721,10 +2721,10 @@
     var dueEdit = work && !fin && !dueLead(t);
     var dueHtml = '<span class="due-long">' + esc(dc.long) + '</span><span class="due-short">' + esc(dc.short) + '</span>';
     el.innerHTML =
-      '<span class="trow-check">' + check + '</span>' +
+      '<span class="trow-check pr-lead">' + check + '</span>' +
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
-      '<button class="task-open" type="button">' + (!elsewhere && t.client_id && window.ADspaceAdmin && window.ADspaceAdmin.clientMark
+      '<button class="task-open pr-main" type="button">' + (!elsewhere && t.client_id && window.ADspaceAdmin && window.ADspaceAdmin.clientMark
         ? '<span class="task-mark">' + window.ADspaceAdmin.clientMark(t.clients || {}, t.client_id) + '</span>' : '') +
         '<span class="task-text"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
         (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
@@ -2734,7 +2734,7 @@
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
           esc(ctx) + '</small>' +
         (fin ? '' : '<span class="task-facts">' + fmtTag(t) + checkBar(t) + remCount(t) + '</span>') + '</span></button>' +
-      '<span class="trow-meta">' +
+      '<span class="trow-meta pr-end">' +
       '<span class="task-owner">' + (canOwn
         ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
             avatar(who) + (who ? '<span class="tname">' + esc(who) + '</span>' : '<span class="mute">Assign</span>') + '</button>'
@@ -2747,11 +2747,15 @@
         ? '<button class="tinline" type="button" data-a="due" aria-label="' + esc(dc.label) + '. Change">' + dueHtml + '</button>'
         : '<span aria-label="' + esc(fin ? 'Finished ' + niceDate(t.completed_at || t.cancelled_at) : dc.label) + '">' +
             (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>') +
-      '<span class="task-stage">' + (!elsewhere && takeable(t)
-        ? '<button class="btn btn-sm task-take" type="button" data-a="take" aria-label="Take ' + esc(t.title) + '">Take</button>'
-        : statusCell(t)) + '</span>' +
       '</span>' +
-      '<span class="team-act">' + (work ? rowMenu(t, !elsewhere && takeable(t)) : '') + '</span>';
+      /* The stage stands outside the meta group: at a desk the group lays
+         its cells into the row (display: contents), so the columns are as
+         before; on a phone the stage is the state on the title's line
+         (2026-11-18, the phone row). */
+      '<span class="task-stage pr-state">' + (!elsewhere && takeable(t)
+        ? '<button class="btn btn-sm task-take" type="button" data-a="take" aria-label="Take ' + esc(t.title) + '">Take</button>'
+        : rowStage(t)) + '</span>' +
+      '<span class="team-act pr-act">' + (work ? rowMenu(t, !elsewhere && takeable(t)) : '') + '</span>';
     el.querySelector('.task-open').addEventListener('click', function () {
       if (elsewhere) openDrawer(t.id, { from: 'client' }); else openDrawer(t.id);
     });
@@ -2835,6 +2839,17 @@
     return stepWord(s, t.engagement_id) || s.label;
   }
   function statusCell(t) { return stageCell(t); }
+  /* A row's stage: the select, and over it on a phone its word as a status
+     (the dot and its word), the select laid unseen over the word so a press
+     still opens the stages (2026-11-18, the user: the stage on the title's
+     line). */
+  function rowStage(t) {
+    var cell = stageCell(t);
+    if (cell.indexOf('<select') !== 0) return cell;
+    var here = stageOf(t), every = isEveryday(t);
+    var tone = every ? PLAIN[plainOf(t)].tone : stageTone(t);
+    return '<span class="tstage-pick"><span class="tone ' + tone + ' tstage-word" aria-hidden="true">' + esc(here ? stageWordOf(t, here) : labelOfStage(t, t.stage_key)) + '</span>' + cell + '</span>';
+  }
   function stageCell(t) {
     var every = isEveryday(t);
     var here = stageOf(t);
