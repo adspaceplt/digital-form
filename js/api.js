@@ -352,7 +352,7 @@
      The namecard's, here so the client portal needs no namecard script. */
   function phoneWord(raw) {
     const d = waNumber(raw);
-    if (!d) return '';
+    if (!d) return String(raw == null ? '' : raw).trim();
     let m;
     if ((m = /^60(1[0-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
     if ((m = /^60([3-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
