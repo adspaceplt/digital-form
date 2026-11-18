@@ -13246,7 +13246,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.creator_emails.push({ id: caId, purpose: caE.purpose, creator_id: caE.creator_id, request_id: caE.request_id || null, option_id: caE.option_id || null,
         to_email: caE.to_email, subject: caE.subject, body: caE.body, status: 'queued', error: null, sent_by: caMe.id, again_of: caE.id,
         created_at: new Date().toISOString() });
-      logAct('email.sent', ((DB.creators || []).filter(function (c) { return c.id === caE.creator_id; })[0] || {}).name || 'Creator', caE.subject + ' · emailed again');
+      logAct('email.sent', ((DB.creators || []).filter(function (c) { return c.id === caE.creator_id; })[0] || {}).name || 'Creator', caE.subject + ' · sent again');
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }

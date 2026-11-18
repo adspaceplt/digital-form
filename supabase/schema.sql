@@ -130879,7 +130879,7 @@ begin
   returning id into v_id;
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'email.sent', coalesce((select c.name from public.creators c where c.id = e.creator_id), 'Creator'),
-          e.subject || ' · emailed again');
+          e.subject || ' · sent again');
   perform public.creator_mail_kick();
   return jsonb_build_object('ok', true, 'id', v_id);
 end $$;
