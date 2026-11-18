@@ -622,6 +622,7 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop).
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
