@@ -5613,6 +5613,10 @@ body > .shell { width: 100%; }
    not as a second line of it. */
 .rec-id-meta { margin: 0; font-size: 12px; color: var(--ink-mute); min-width: 0; }
 .rec-id-meta[hidden] { display: none; }
+/* A part of the meta line that opens something (a script's month) reads as
+   its words: the line's size, its target given back on both sides, so it
+   stands on the line's edge and its dot keeps one space (2026-11-18). */
+.rec-id-meta > .linkbtn { font-size: inherit; font-weight: inherit; padding: 0 8px; margin-inline: -8px; vertical-align: baseline; }
 .rec-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; align-self: center; }
 /* The shared .chip rule pins every chip to the top of its flex row, which is
    right in a card head where it sits beside a name; beside a 38px ⋯ (44px

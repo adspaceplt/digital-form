@@ -3359,8 +3359,12 @@ button.vs-row {
   gap: 2px 10px; padding: 12px 15px; align-items: start;
 }
 .is-narrow .vs-row > .vs-c-name { grid-area: name; }
-.is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; padding-left: 44px; }
-@media (max-width: 760px) { .is-narrow .vs-row > .vs-c-shoot { padding-left: 38px; } }
+.is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; }
+/* The list's rows lead with the client's logo, so the date stands on the
+   name's edge; a month's rows hold no logo and keep theirs (2026-11-18: the
+   shoot date stood 44px in on a phone). */
+.is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 44px; }
+@media (max-width: 760px) { .is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 38px; } }
 .is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
 .is-narrow .vs-row > .crm-c-go { display: none; }
 
