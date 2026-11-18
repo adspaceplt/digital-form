@@ -15898,7 +15898,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   .sort(function (p, q) { return p.position - q.position; })
                   .map(function (sc) { return { id: sc.id, position: sc.position, visual: sc.visual, line: sc.line, t_from: sc.t_from == null ? null : sc.t_from,
                     t_to: sc.t_to == null ? null : sc.t_to, shot_size: sc.shot_size || null, angle: sc.angle || null, camera_move: sc.camera_move || null,
-                    on_screen: sc.on_screen || null, sound: sc.sound || null }; })
+                    on_screen: sc.on_screen || null, sound: sc.sound || null,
+
+                    photo_thumb: sc.photo_thumb || null, ai_thumb: sc.ai_thumb || null, ai_frame: sc.ai_frame || null }; })
               };
             })
           })), error: null });

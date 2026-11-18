@@ -246,14 +246,32 @@
       return '<div><dt>' + esc(x[1]) + '</dt><dd>' + esc(p[x[0]]) + '</dd></div>';
     }).join('') + '</dl></section>';
   }
+  /* A scene's picture (2026-11-18; the user: "it should show the
+     drawings"): the console's best picture, the photo's small copy, else
+     the frame drawn with AI, else a picture drawn before, else the sketch
+     from its shot (js/frames.js); white in both themes. */
+  var FR = window.ADspaceFrames;
+  function picOf(sc, aspect) {
+    var img = function (src) { return '<span class="vs-pic-box"><img src="' + esc(src) + '" alt="" loading="lazy" decoding="async"></span>'; };
+    if (/^data:image\//.test(sc.photo_thumb || '')) return img(sc.photo_thumb);
+    var drawn = sc.ai_frame && FR ? FR.draw(sc.ai_frame, aspect) : '';
+    if (drawn) return '<span class="vs-pic-box">' + drawn + '</span>';
+    if (/^data:image\//.test(sc.ai_thumb || '')) return img(sc.ai_thumb);
+    var f = FR ? FR.svg(sc, aspect) : '';
+    return f ? '<span class="vs-pic-box">' + f + '</span>' : '';
+  }
   function scenesOf(s) {
     var two = s.kind === 'scenes';
-    var head = '<div class="crm-head vs-scene"><span>#</span><span>' + (two ? 'Visual' : 'Scene') + '</span>' +
+    var pics = s.scenes.map(function (sc) { return picOf(sc, s.aspect); });
+    var any = pics.some(Boolean);
+    var head = '<div class="crm-head vs-scene"><span>#</span>' + (any ? '<span>Picture</span>' : '') + '<span>' + (two ? 'Visual' : 'Scene') + '</span>' +
       (two ? '<span>Script</span>' : '') + '</div>';
     return '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' +
-      '<div class="crm-table vs-scenes is-read' + (two ? ' is-two' : '') + '">' + head +
+      '<div class="crm-table vs-scenes is-read' + (two ? ' is-two' : '') + (any ? ' has-pics' : '') + '">' + head +
       (s.scenes.length ? s.scenes.map(function (sc, i) {
-        return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span><span class="vs-text vs-vis">' + shotCell(sc) + '</span>' +
+        return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span>' +
+          (any ? '<span class="vs-pic">' + pics[i] + '</span>' : '') +
+          '<span class="vs-text vs-vis">' + shotCell(sc) + '</span>' +
           (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') + '</div>';
       }).join('') : '<p class="vs-empty">No scenes.</p>') + '</div></section>';
   }
