@@ -134,7 +134,10 @@
       out.plan = qm.term; out.planMonth = r2(pex + by(mtaxOf) + once + otax); out.planOnce = once > 0;
     }
     var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
-    var mtot = month ? by(function (b) { return cents(b.span * (1 + qm.pct / 100) * (1 + b.r / 100)); }) : 0;
+    /* The term's total is its parts added, as quote_totals works it (TERM
+       TOTAL FROM ITS PARTS, 2026-11-17): each rate's span with its
+       adjustment to the sen, then its SST to the sen. */
+    var mtot = month ? by(function (b) { var se = cents(b.span * (1 + qm.pct / 100)); return se + cents(se * b.r / 100); }) : 0;
     out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
     out.each = r2(mex + once); out.eachTotal = r2(mtot + once + otax); out.eachTax = r2(out.eachTotal - out.each);
     out.once = 0; out.onceTax = 0; out.onceTotal = 0;

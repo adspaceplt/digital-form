@@ -11315,3 +11315,18 @@ colleague when the team read failed; the card now fails with Try again.
 `buildsync` still asked the build in Settings' old words
 (`v26.11.17 · ccccccc`) since #1222 shortened it (`261117.ccccccc`), and
 fails on main; its expectations take the shorter words.
+
+### 2026-11-18 · The S3 report held to its time, and a letter's term total
+The jobs notice of 18 Nov read "the S3 report was filed as failed": the
+in-use check read every text column whole, 13.8 seconds against the call's
+8, two thirds of it a published report's snapshot (23 MB of ads' and
+posts' pictures held as data) and the thumbnail columns. It now reads a
+snapshot's report part alone, the one part that names a file, and skips
+`thumb_data` (data:image by its check): 3.2 seconds, and the run made by
+hand the same morning filed its report. The `lettersql` defect another
+session logged the same night was this release's own: TERM TOTAL FROM ITS
+PARTS changed the database's span total, but the letter page's copy
+(`quotePrice`, js/documents.js) still rounded SST over the span in one
+step, so a quoted letter totalled a sen under the quotation and was refused
+`stale`. The page now adds the parts the same way. `affected.json` names
+`s3_keys_in_use` for the S3 suites, which the runner had not reached.
