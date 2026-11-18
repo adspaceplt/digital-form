@@ -135,6 +135,28 @@
   let client = null;
   if (configured && window.supabase) {
     client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { global: { fetch: steadyFetch } });
+    signInFromLink(client);
+  }
+
+  /* A sign-in link at the portal's own address (2026-11-18, Resend's check:
+     a button pointing at supabase.co reads to an inbox as a link that does
+     not match its sender). The emails carry `?token_hash=…&type=email` (or
+     `invite`) on the page they open; the page proves it here, takes the
+     words out of the address at once, and any read of the session waits
+     for the proof, so the page draws signed in from its first gate. A
+     link already used or expired leaves the page signed out, as before. */
+  function signInFromLink(c) {
+    let q;
+    try { q = new URLSearchParams(location.search); } catch (e) { return; }
+    const hash = q.get('token_hash'), type = q.get('type');
+    if (!hash || !/^(email|magiclink|invite|signup)$/.test(type || '')) return;
+    q.delete('token_hash'); q.delete('type');
+    const rest = q.toString();
+    try { history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) { /* the proof runs either way */ }
+    const proof = c.auth.verifyOtp({ token_hash: hash, type: type === 'magiclink' ? 'email' : type })
+      .then(function () {}, function () {});
+    const getSession = c.auth.getSession.bind(c.auth);
+    c.auth.getSession = function () { return proof.then(getSession); };
   }
 
   /* Demo content is for a copy with no database configured, never a
@@ -330,7 +352,7 @@
      The namecard's, here so the client portal needs no namecard script. */
   function phoneWord(raw) {
     const d = waNumber(raw);
-    if (!d) return '';
+    if (!d) return String(raw == null ? '' : raw).trim();
     let m;
     if ((m = /^60(1[0-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
     if ((m = /^60([3-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];

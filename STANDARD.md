@@ -641,6 +641,11 @@ verification loop).
   quotation record, add request, void letter, delete letter), then the walk
   crashes waiting for Qiao Rou's row in Team; every screen after it unwalked.
 
+- `seenpage` (found 2026-11-18 on main 9ff2fe6, reproduced there): "A
+  request answered over a Withdraw" presses a request's Reply, now an item
+  of its row's ⋯ (a ⋯ of one item stands beside nothing since #1221), so
+  the press waits on a hidden item and the suite stops there.
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

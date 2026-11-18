@@ -239,6 +239,7 @@
     if (k === 'kind') return v === 'individual' ? 'Individual' : v === 'company' ? 'Company' : '';
     if (k === 'currency') return v === 'SGD' ? 'SGD / S$' : v === 'MYR' ? 'MYR / RM' : '';
     if (k === 'bank_name') return window.ADspaceWords.bank(v);
+    if (k === 'phone' || k === 'mobile') return window.ADspaceAPI.phoneWord(v);
     return v == null ? '' : String(v);
   }
   function factsOf(s, items) {

@@ -88,8 +88,7 @@
   function kit(box, k, opts) {
     opts = opts || {};
     var first = String(k.name || '').trim().split(/\s+/)[0];
-    var dm = k.dm ? k.dm.name + (k.dm.mobile && window.ADspaceCard && window.ADspaceCard.phone ? ' · ' + window.ADspaceCard.phone(k.dm.mobile)
-      : k.dm.mobile ? ' · ' + k.dm.mobile : '') : '';
+    var dm = k.dm ? k.dm.name + (k.dm.mobile ? ' · ' + window.ADspaceAPI.phoneWord(k.dm.mobile) : '') : '';
     var f = function (label, value, mute) { return '<div><dt>' + esc(label) + '</dt><dd' + (mute ? ' class="is-empty"' : '') + '>' + esc(value || 'Not set') + '</dd></div>'; };
     var mine = f('First day', longDay(k.first_day)) + f('Employee ID', k.staff_code) + f('Department', k.department) +
       f('Position', k.designation) + f('Direct manager', dm) + f('Company email', k.email) +

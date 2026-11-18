@@ -259,7 +259,7 @@
     var ended = c.link_ends && Date.parse(c.link_ends) <= Date.now();
     var panes = {
       overview: '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><dl class="ovfacts">' +
-          fact('Email', esc(c.email)) + fact('Phone', c.phone ? esc(c.phone) : '') + fact('Position', esc(c.position)) +
+          fact('Email', esc(c.email)) + fact('Phone', c.phone ? esc(window.ADspaceAPI.phoneWord(c.phone)) : '') + fact('Position', esc(c.position)) +
           fact('Source', esc(SOURCE[c.source] || '')) + fact('Added', esc(day(c.created_at))) + fact('CV', cv) +
           fact('Note', c.note ? esc(c.note) : '', 'is-pre') + '</dl></section>' +
         (keeps && !removed ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Candidate page</h4></div>' +

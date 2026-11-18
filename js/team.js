@@ -2437,7 +2437,7 @@
         pick('role_family', 'Role standard', map(ROLE_STD), m.role_family || '', ROLE_STD[m.role_family]) +
         word('capacity_minutes_week', 'Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
       group('Namecard', '<dl class="ovfacts">' +
-        word('mobile', 'Mobile', m.mobile ? (window.ADspaceCard && window.ADspaceCard.phone ? window.ADspaceCard.phone(m.mobile) : m.mobile) : '') +
+        word('mobile', 'Mobile', window.ADspaceAPI.phoneWord(m.mobile)) +
         pick('card_mobile', 'Mobile on card', [['show', 'Show'], ['hide', 'Hide']], m.card_mobile === false ? 'hide' : 'show', m.card_mobile === false ? 'Hide' : 'Show') +
         word('card_slug', 'Short link', link) +
         pick('card_on', 'Card', [['on', 'On'], ['off', 'Off']], m.card_on === false ? 'off' : 'on', m.card_on === false ? 'Off' : 'On') + '</dl>') +

@@ -52,8 +52,12 @@ function invitation(kind: string, greeting: string, link: string) {
     : [dear, 'ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.', '{invoices}',
        'After this first visit, you may sign in at any time with a code sent to this email address.', 'Yours sincerely,\nADspace'];
   const subject = client ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal';
+  /* The plain copy beside the HTML (2026-11-18): an email of HTML alone
+     reads to Gmail as bulk mail. */
+  const foot = 'This link may be used once and expires shortly.\nIf you were not expecting this invitation, please disregard this email.';
   return {
     subject,
+    text: body.join('\n\n').replace('{invoices}', (client ? 'Open Client Portal' : 'Sign in') + ': ' + link) + '\n\n' + foot,
     html: layout({
       heading: subject, body: body.join('\n\n'), block: button,
       preheader: client ? 'Your invitation to the ADspace Client Portal.' : 'You have been given access to the ADspace Digital Portal.',
@@ -200,7 +204,11 @@ Deno.serve(async (req) => {
       const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
         type: 'magiclink', email, options: { redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE }
       });
-      const href = link?.properties?.action_link;
+      /* The button opens the portal's own page with the link's proof, never
+         supabase.co: a link off the sender's domain reads to an inbox as
+         spam (2026-11-18, Resend's check); the page proves it (js/api.js). */
+      const hashed = link?.properties?.hashed_token;
+      const href = hashed ? (kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE) + '?token_hash=' + encodeURIComponent(hashed) + '&type=email' : '';
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (linkErr || !href || !apiKey) {
         console.error('invite-member: no link or key', linkErr?.message ?? '', !!apiKey);
@@ -208,7 +216,7 @@ Deno.serve(async (req) => {
       }
       const mail = invitation(kind, greeting, href);
       const who = await sender('team');
-      const sent = await resend({ from: who.from, reply_to: who.reply_to, to: [email], subject: mail.subject, html: mail.html },
+      const sent = await resend({ from: who.from, reply_to: who.reply_to, to: [email], subject: mail.subject, html: mail.html, text: mail.text },
         /* A key of its own: each press is a new link, so the same key a
            minute refused the second email as a repeat while its link had
            already replaced the first (audit 2026-11-11). */

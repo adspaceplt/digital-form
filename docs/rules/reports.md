@@ -402,8 +402,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     that account's import (its account row) or typed in Step 1 a section an
     account; with two accounts or more Step 1's impressions and amount
     spent are their sum and its reach is each account's own, never added
-    (`withAccounts`; the PDF's By ad account table naming each by Meta's
-    name, `report-draft`'s `by_ad_account`); a report from before reads its
+    (`withAccounts`; the PDF's By ad account table naming each Ad account
+    1, 2 … in Step 1's order, never Meta's name or Account ID, which are
+    the agency's own and may name another client (the user, 2026-11-18),
+    `report-draft`'s `by_ad_account` sending figures alone); a report from before reads its
     Step 1 figures as the one account whose ads they cover, to the sen
     (`legacyAccounts`).
   - Figures add up (2026-11-17; the user: "whats the purpose of the audit

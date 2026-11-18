@@ -256,7 +256,7 @@
         var via = c.via, bill = c.bill;
         return {
           id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
-          meta: via ? [via.name, via.email || via.phone] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : [stageOf(c.stage)],
+          meta: via ? [via.name, via.email || window.ADspaceAPI.phoneWord(via.phone)] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : [stageOf(c.stage)],
           open: function () {
             go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill ? '&tab=billing' : ''), 'clients');
           }

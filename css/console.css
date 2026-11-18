@@ -1468,6 +1468,13 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    Edit sheet uses, one hairline between groups. */
 .readgroups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 4px; }
 .readgroup { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+/* A padded card's last group gives back its own step: the card's padding
+   is the bottom edge, as it is the top's (2026-11-18, the user: the hiring
+   record's Offer, People and Activity cards stood a wide margin under
+   their last line). An empty line in a group stands on the heading's edge
+   with no padding of its own. */
+.panel > .readgroups > .readgroup:last-child { padding-bottom: 0; }
+.readgroup > .emptyline { padding: 0; }
 /* The labels are longer than a contact's, so the track is too; on a phone
    the label sits over its value. */
 .readgroups .ovfacts > div { grid-template-columns: 190px minmax(0, 1fr); }
@@ -2219,6 +2226,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   padding: 5px 0; border-top: 1px solid var(--line-soft);
 }
 .reclist.is-wide .recline:first-child { border-top: 0; }
+.reclist.is-wide .recline:last-child { padding-bottom: 0; }
 .reclist.is-wide .rl-who { display: none; }
 .reclist.is-wide .recline.is-open .rl-body { display: block; overflow-wrap: anywhere; }
 .reclist.is-wide .recline.is-open .rl-head { max-width: none; white-space: normal; }
@@ -4296,6 +4304,7 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .hir-people { display: flex; flex-direction: column; }
 .hir-person { display: grid; grid-template-columns: minmax(0, 1fr) auto 36px; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .hir-person:first-child { border-top: 0; }
+.hir-person:last-child { padding-bottom: 0; }
 .hir-person-who { display: flex; flex-direction: column; min-width: 0; }
 .hir-person-who b { font-weight: 500; }
 .hir-person-who small { font-size: 12.5px; color: var(--ink-mute); }
