@@ -1620,7 +1620,7 @@
     return '<div class="tl-figs">' +
       fig('On time or early', rate == null ? '—' : rate + '%', rate == null ? esc('Target ' + T.pct + '%') : dot(s.lowRate, 'Target ' + T.pct + '%'), s.lowRate ? 'late' : '') +
       fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target under ' + tlDays(T.late)) : dot(s.slowLate, 'Target under ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
-      fig('Average lead', lead == null ? '—' : tlDays(lead), esc('Before the due date'), '') +
+      fig('Average days early', lead == null ? '—' : tlDays(lead), esc('Before the due date'), '') +
       fig('Turnaround', turn == null ? '—' : tlDays(turn), p90 == null ? esc('Median') : esc('Slowest 10%: ' + tlDays(p90)), '') +
       '</div>';
   }

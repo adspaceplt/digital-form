@@ -130672,7 +130672,8 @@ alter table public.mail_senders add constraint mail_senders_address_check
 --     by colleague and the most delayed work at My Work: All tasks.
 --     Video scripts and Content Review have no tasks and are not counted.
 --   * Settings `timely_pct` (85) and `timely_late_days` (1), seeded once and
---     taken by `app_settings_set` (On time target, %; Lateness target, days).
+--     taken by `app_settings_set` (On time or early target, %; Average lateness
+--     target, days).
 --
 -- ORDER: this file (connector), then the pages. An open page calls nothing
 -- new until it is refreshed. Safe to run twice.
@@ -130788,7 +130789,7 @@ begin
         when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
         when 'quote_reply_days' then 'Contact within'
         when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
-        when 'timely_pct' then 'On time target' when 'timely_late_days' then 'Lateness target'
+        when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
         when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
         when 'wa_repeat_hours' then 'WhatsApp sent again'
         when 'quote_wa_day' then 'Website quotations on WhatsApp'

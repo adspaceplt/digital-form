@@ -69,7 +69,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   read a period (`R.timely`) at My Work: Reports and All tasks: four
   figures two across (On time or early against the On time target,
   Average lateness over all the work due against the Lateness target,
-  each red with its dot where it misses; Average lead; Turnaround, the
+  each red with its dot where it misses; Average days early; Turnaround, the
   median with the slowest 10%), then a row a colleague (the system
   account left out): their work early, on the day and late as one bar
   (ink, the control grey, red; its key under the rows), On time, Lateness,

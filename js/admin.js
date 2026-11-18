@@ -6129,8 +6129,8 @@
       ['creator_pay_days_other', 'Payment time in other currencies (working days after the post)', 'pay', '', 'Other currencies', per('working day')]] },
     /* Delivery against the due date (2026-11-18): the Dashboard's and
        Analytics' targets for work on time or early and its lateness. */
-    timely: { title: 'Delivery targets', keys: [['timely_pct', 'On time or early (% of work delivered)', 'share', '', 'On time', pctOf],
-      ['timely_late_days', 'Average lateness (days, at most)', 'lateby', '', 'Late under', per('day')]] },
+    timely: { title: 'Delivery targets', keys: [['timely_pct', 'On time or early (% of work due)', 'share', '', 'On time', pctOf],
+      ['timely_late_days', 'Average lateness (days, at most)', 'lateby', '', 'Average lateness', per('day')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask before sending again within (hours, 0 turns this off)', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */

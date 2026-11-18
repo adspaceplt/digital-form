@@ -372,7 +372,7 @@
             num('task_start_days') === 0 ? 'Not started: Off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
         meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
-          'Late under ' + plural(num('timely_late_days'), 'day', 'days') + ' on average']) },
+          'Average lateness under ' + plural(num('timely_late_days'), 'day', 'days')]) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
