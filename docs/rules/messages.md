@@ -309,3 +309,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   service role's alone) before touching a queue, else 401; `wa_kick` and
   `push_kick` send it, once a transaction, so a statement queueing forty
   rows wakes each sender once (`2026-10-19-wake-calls-carry-a-secret.sql`).
+- Every email goes with a plain-text copy beside its HTML, and the sending
+  domain (`sc.adspace.me`) has Resend's click tracking off: an email of HTML
+  alone, or links rewritten through a tracker, reads to Gmail as bulk mail
+  (2026-11-18; `tests/mailfn.js`). Open tracking stays on for the Email
+  log's Opened.
