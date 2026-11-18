@@ -632,6 +632,15 @@ verification loop).
   Links bar's ⋯ it presses is no longer drawn (a bar's ⋯ of one item is its
   button since #1221).
 
+- `seo` (found 2026-11-18 on main 51937b4): "its preview is the photograph"
+  fails: the front door's og:image stamp reads `?v=20261117zzzf`, which the
+  check's `\d+[a-z]?` does not take.
+- `uxaudit` (found 2026-11-18 on main 51937b4, snapshot run): a client's
+  quotation rows (`qt-row has-acts`) drift 11px in cells 2 and 3 at 1280 on
+  eight screens (client services, Build quote, removed quotations, a
+  quotation record, add request, void letter, delete letter), then the walk
+  crashes waiting for Qiao Rou's row in Team; every screen after it unwalked.
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
