@@ -4462,8 +4462,9 @@
   function nbKey(t) { return String(t || '').trim().toLowerCase(); }
   /* A suggestion's task is the one made from it, kept on the suggestion by
      its id (review 2026-11-17: a task of the same title, made for another
-     month, read as this one's). One made before the id was kept is still
-     found by its title. */
+     month, read as this one's). One made before the id was kept, or on a
+     report past its draft, is found by its title among the tasks made
+     after the report's period ended, never an earlier month's. */
   function nbTaskOf(it) {
     var m = st.nbTasks || {};
     return it && it.task_id ? m['id:' + it.task_id] || null : m[nbKey(it && it.title)] || null;
@@ -4474,16 +4475,16 @@
     var key = (st.open && st.open.id) + '|' + ids.join('|') + '|' + titles.join('|');
     if ((!titles.length && !ids.length) || st.nbTasksFor === key || !(bridge.may && bridge.may('ops', 'view'))) return;
     st.nbTasksFor = key;
-    var q = db.from('ops_tasks').select('id, task_no, title').eq('client_id', st.client.id).is('cancelled_at', null);
-    q = ids.length && titles.length ? q.or('id.in.(' + ids.join(',') + '),title.in.(' + titles.map(function (t) { return '"' + String(t).replace(/["\\]/g, '\\$&') + '"'; }).join(',') + ')')
-      : ids.length ? q.in('id', ids) : q.in('title', titles);
-    q.then(function (r) {
-        if (r.error) return;
+    var after = String((st.open && st.open.period_end) || '');
+    var base = function () { return db.from('ops_tasks').select('id, task_no, title, created_at').eq('client_id', st.client.id).is('cancelled_at', null); };
+    var none = Promise.resolve({ data: [] });
+    Promise.all([ids.length ? base().in('id', ids) : none, titles.length ? base().in('title', titles) : none]).then(function (rs) {
+        if (rs[0].error || rs[1].error) return;
         st.nbTasks = st.nbTasks || {};
         var was = Object.keys(st.nbTasks).length;
-        (r.data || []).forEach(function (t) {
-          if (ids.indexOf(t.id) >= 0) st.nbTasks['id:' + t.id] = t;
-          if (titles.length && !st.nbTasks[nbKey(t.title)]) st.nbTasks[nbKey(t.title)] = t;
+        (rs[0].data || []).forEach(function (t) { st.nbTasks['id:' + t.id] = t; });
+        (rs[1].data || []).forEach(function (t) {
+          if (!st.nbTasks[nbKey(t.title)] && String(t.created_at || '').slice(0, 10) > after) st.nbTasks[nbKey(t.title)] = t;
         });
         if (Object.keys(st.nbTasks).length !== was && st.host.querySelector('.rp-next')) paintNext();
       }).catch(function () { /* the button stays; the read is a convenience */ });
