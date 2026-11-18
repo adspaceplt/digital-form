@@ -895,7 +895,15 @@
     var r = st.open || {}, out = [];
     if (r.kind !== 'ads') return { issues: out, pending: false };
     var t = r.ads_totals || {}, ids = acctIdsOf(), ok = function (v) { return v != null && v !== '' && !isNaN(Number(v)); };
-    var under = function (held, ads) { return ok(held) && Number(held) < ads - 0.005; };
+    /* A total held against the sum of its parts: each part is rounded to
+       the sen on its own (an ad's, an objective's spend), so the sum may
+       stand up to half a sen a part above the account's own total, which
+       Meta rounds once (2026-11-18: Laman Waringin's previous period read
+       RM 3,401.38 against three objectives adding up to RM 3,401.40, and
+       the report could not be submitted). `parts` is how many were added;
+       the total is rounded once too, so the two stand at most half a sen
+       for each part and half for the total apart. */
+    var under = function (held, sum, parts) { return ok(held) && Number(held) < sum - 0.005 * ((parts || 0) + 1) - 1e-9; };
     var differs = function (a, b, money) { return ok(a) !== ok(b) || (ok(a) && Math.abs(Number(a) - Number(b)) > (money ? 0.005 : 0.5)); };
     var put = function (words, label, nt) { out.push({ words: words, fix: nt ? { label: label, totals: nt } : null }); };
     var su = acctSums(null);
@@ -908,7 +916,7 @@
     if (ids.length > 1) {
       var accts = t.accounts || {};
       if (!Object.keys(accts).length) {
-        if (under(t.spend, su.spend) || under(t.impressions, su.impressions)) {
+        if (under(t.spend, su.spend, su.n) || under(t.impressions, su.impressions)) {
           put('Amount spent reads ' + money2(t.spend) + ' and impressions ' + fmt(t.impressions) + '; the ads from ' + ids.length +
             ' ad accounts add up to ' + money2(su.spend) + ' and ' + fmt(su.impressions) + ' impressions.', 'Combine ad accounts', fill(legacyAccounts(t, ids)));
         }
@@ -916,7 +924,7 @@
         ids.forEach(function (id) {
           var a = accts[id], s0 = acctSums(id);
           if (!a) { put(acctName(id) + ' has no figures in ' + step + '.', 'Fill from its ads', fill(accts)); return; }
-          if (under(a.spend, s0.spend) || under(a.impressions, s0.impressions)) {
+          if (under(a.spend, s0.spend, s0.n) || under(a.impressions, s0.impressions)) {
             var a2 = Object.assign({}, accts); a2[id] = Object.assign({}, a, { spend: Math.max(Number(a.spend) || 0, s0.spend), impressions: Math.max(Number(a.impressions) || 0, s0.impressions) });
             put(acctName(id) + ' reads ' + money2(a.spend) + ' spent and ' + fmt(a.impressions) + ' impressions; its ads add up to ' + money2(s0.spend) + ' and ' + fmt(s0.impressions) + ' impressions.', 'Use its ads\' totals', withAccounts(t, a2));
           }
@@ -926,7 +934,7 @@
           put('Amount spent reads ' + money2(t.spend) + '; its ad accounts add up to ' + money2(nt.spend) + '.', 'Combine ad accounts', nt);
         }
       }
-    } else if (under(t.spend, su.spend) || under(t.impressions, su.impressions)) {
+    } else if (under(t.spend, su.spend, su.n) || under(t.impressions, su.impressions)) {
       put('Amount spent reads ' + money2(t.spend) + ' and impressions ' + fmt(t.impressions) + '; the ads add up to ' + money2(su.spend) + ' and ' + fmt(su.impressions) + ' impressions.',
         'Use the ads\' totals', Object.assign({}, t, { spend: Math.max(Number(t.spend) || 0, su.spend), impressions: Math.max(Number(t.impressions) || 0, su.impressions) }));
     }
@@ -935,7 +943,7 @@
       var ts = { spend: 0, impressions: 0 };
       tkAds.forEach(function (a) { ts.spend += Number(a.spend) || 0; ts.impressions += Number(a.impressions) || 0; });
       ts.spend = Math.round(ts.spend * 100) / 100;
-      if (under(tk.spend, ts.spend) || under(tk.impressions, ts.impressions)) {
+      if (under(tk.spend, ts.spend, tkAds.length) || under(tk.impressions, ts.impressions)) {
         put('TikTok\'s amount spent reads ' + money2(tk.spend) + '; its ads add up to ' + money2(ts.spend) + '.', 'Use the ads\' totals',
           Object.assign({}, t, { tiktok: Object.assign({}, tk, { spend: Math.max(Number(tk.spend) || 0, ts.spend), impressions: Math.max(Number(tk.impressions) || 0, ts.impressions) }) }));
       }
@@ -944,9 +952,9 @@
     var src = st.prevSrc && st.prevSrc.id === r.id && st.prevSrc.key === prevKey(r) ? st.prevSrc : null;
     var take = src && src.pv ? Object.assign({}, t, src.pv, { prev_from: src.from, tiktok: src.pv.tiktok || t.tiktok ? Object.assign({}, t.tiktok || {}, src.pv.tiktok || {}) : undefined }) : null;
     if (take && !take.tiktok) delete take.tiktok;
-    var gs = 0, anyG = false;
-    Object.keys(t.prev_groups || {}).forEach(function (k) { var g = t.prev_groups[k] || {}; if (ok(g.spend)) { gs += Number(g.spend); anyG = true; } });
-    if (anyG && under(t.prev_spend, gs)) {
+    var gs = 0, gn = 0;
+    Object.keys(t.prev_groups || {}).forEach(function (k) { var g = t.prev_groups[k] || {}; if (ok(g.spend)) { gs += Number(g.spend); gn++; } });
+    if (gn && under(t.prev_spend, gs, gn)) {
       put('The previous period\'s objectives add up to ' + money2(gs) + '; its amount spent is ' + money2(t.prev_spend) + '.', 'Use that report\'s figures', take);
     }
     if (src && src.pv) {
@@ -4722,10 +4730,10 @@
     return (linked && linked.name) || held.name || 'Ad account ending\u00a0' + String(id).slice(-4);
   }
   function acctSums(id) {
-    var out = { spend: 0, impressions: 0 };
+    var out = { spend: 0, impressions: 0, n: 0 };
     st.ads.forEach(function (a) {
       if (adPlat(a) !== 'meta' || (id != null && String(a.ad_account || '') !== String(id))) return;
-      out.spend += Number(a.spend) || 0; out.impressions += Number(a.impressions) || 0;
+      out.spend += Number(a.spend) || 0; out.impressions += Number(a.impressions) || 0; out.n++;
     });
     out.spend = Math.round(out.spend * 100) / 100;
     return out;

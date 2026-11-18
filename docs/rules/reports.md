@@ -408,7 +408,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     published report it names or shares its dates with (`sumIssues`), each
     a row with its one-press fix (Combine ad accounts, Use that report's
     figures) and Undo where it happened. Step 1 above its ads is not held:
-    an import leaves out an ad with no results.
+    an import leaves out an ad with no results. A total held against the
+    sum of its lines (ads, objectives) allows only the rounding Meta makes,
+    each line rounded to the sen alone and the total once: half a sen a
+    line and half for the total, never a percentage (2026-11-18, Laman
+    Waringin: RM 3,401.38 against objectives adding up to 3,401.40 could
+    not be submitted); a figure compared with its published report is
+    held to the sen.
   - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
     under Cost per result in every table, never Per 1,000 reached; the
     console's row and the PDF read one rule (`ADspaceSmReport.cprOf`,
