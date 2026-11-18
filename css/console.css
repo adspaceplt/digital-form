@@ -5960,12 +5960,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    to portal.css. */
 .is-narrow .prow {
   display: grid; align-items: start; column-gap: 8px; row-gap: 2px;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto var(--ctl-h);
   grid-template-areas: "lead main state act" "lead main end end";
   /* The first line is the title's (22px), so the end stands on the meta's line. */
   grid-template-rows: 22px auto;
 }
-.is-narrow .prow:not(:has(> .pr-lead)) { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "main state act" "main end end"; }
+.is-narrow .prow:not(:has(> .pr-lead)) { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "main state act" "main end end"; }
 .is-narrow .prow:not(:has(> .pr-act)) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "lead main state" "lead main end"; }
 .is-narrow .prow:not(:has(> .pr-lead)):not(:has(> .pr-act)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main state" "main end"; }
 .is-narrow .prow > .pr-lead { grid-area: lead; }
@@ -5976,6 +5976,8 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prow > :not(.pr-lead):not(.pr-main):not(.pr-state):not(.pr-act):not(.pr-end) { display: none; }
 .is-narrow .prow.crm-head { display: none; }
 /* The lead, the state and the ⋯ stand on the title's line, their targets
-   given back to it, so the right column's lines stand on the left's. */
+   given back to it, so the right column's lines stand on the left's. The ⋯
+   column is the control's width, so an end wider than the state and the ⋯
+   widens the state's column alone and every state ends at one edge. */
 .is-narrow .prow > :is(.pr-lead, .pr-state, .pr-act) { min-height: 22px; display: flex; align-items: center; }
 .is-narrow .prow > .pr-act { height: 22px; }
