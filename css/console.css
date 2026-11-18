@@ -3365,6 +3365,12 @@ button.vs-row {
    shoot date stood 44px in on a phone). */
 .is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 44px; }
 @media (max-width: 760px) { .is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 38px; } }
+/* A month's row is two lines (2026-11-18, the user): the script over its
+   kind at the left, its state over its shoot date at the right, line for
+   line. */
+.is-narrow .vs-mtable .vs-row { grid-template-areas: "name state" "name shoot"; grid-template-rows: auto 1fr; row-gap: 2px; }
+.is-narrow .vs-mtable .vs-row > .vs-c-state { align-self: start; }
+.is-narrow .vs-mtable .vs-row > .vs-c-shoot { text-align: right; font-size: 12.5px; }
 .is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
 .is-narrow .vs-row > .crm-c-go { display: none; }
 
