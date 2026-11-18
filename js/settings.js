@@ -97,6 +97,15 @@
       });
     },
     delreq: function () { return window.ADspaceDelReq ? window.ADspaceDelReq.waiting() : Promise.resolve(''); },
+    /* Usage and limits (2026-11-18): the database against its plan and
+       this month's AI cost, from one read. */
+    usage: function () {
+      return db.rpc('usage_report').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error || !d.db) throw r.error || new Error(d.error || 'usage');
+        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
+      });
+    },
     /* The latest build required (2026-11-17): the build in force, else
        Not set. */
     build: function () {
@@ -322,7 +331,10 @@
           { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]]]);
+            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
+      /* Usage and limits (2026-11-18, the user: "the usage, the limits,
+         the charges"): what the portal uses against its plans. */
+      ['Plan', [biz && { id: 'usage', name: 'Usage and limits', kind: 'open', meta: line('usage'), open: openUsage }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', 'clients', [
       ['Clients', [
@@ -1759,6 +1771,49 @@
       taxMsg(n + (n === 1 ? ' code' : ' codes') + ' offered from Bukku.', 'ok');
     });
   }
+  /* USAGE AND LIMITS (2026-11-18): the database against the plan, this
+     month's use against last month's, and the files the last S3 report
+     counted; read only. The admins are told on the 1st and when the
+     database nears its plan (`usage_watch`). */
+  function mb(b) { return (Math.round(Number(b || 0) / 1048576 * 10) / 10).toLocaleString('en-GB') + ' MB'; }
+  function usd(n) { return Number(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function count(n) { return Number(n || 0).toLocaleString('en-GB'); }
+  function openUsage(opener) {
+    var host = $('useBody');
+    $('useCancel').onclick = function () { window.ADspaceSheet.close(); };
+    $('useClose').onclick = function () { $('useCancel').click(); };
+    window.ADspaceSheet.show($('useSheet'), { opener: opener });
+    var paint = function () {
+      window.ADspaceState.skeleton(host, 3);
+      db.rpc('usage_report').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error || !d.db) {
+          window.ADspaceState.failLine(host, 'Usage', r.error && /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.'
+            : d.error === 'denied' ? 'You do not have permission to see usage. Please ask an admin.' : 'Usage could not be read.', paint);
+          return;
+        }
+        var t = d['this'] || {}, l = d.last || {}, db1 = d.db, s3 = d.s3;
+        var month = window.ADspaceClock ? window.ADspaceClock.month(d.month) : d.month;
+        var fact = function (k, v) { return '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>'; };
+        var pair = function (a, b) { return a + ' · last month ' + b; };
+        host.innerHTML =
+          '<section class="fsec"><h4 class="fsec-h">Database</h4><dl class="ovfacts">' +
+            fact('Size', mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB (' + db1.pct + '%)') +
+            fact('Admins alerted at', db1.alert_pct + '%') + '</dl></section>' +
+          '<section class="fsec"><h4 class="fsec-h">' + esc(month) + ' to date</h4><dl class="ovfacts">' +
+            fact('AI cost', pair('US$ ' + usd(t.ai_usd), 'US$ ' + usd(l.ai_usd))) +
+            fact('AI runs', pair(count(t.ai_runs), count(l.ai_runs))) +
+            fact('AI tokens', pair(count(Number(t.ai_tokens_in || 0) + Number(t.ai_tokens_out || 0)), count(Number(l.ai_tokens_in || 0) + Number(l.ai_tokens_out || 0)))) +
+            fact('Emails sent', pair(count(t.emails), count(l.emails))) +
+            fact('WhatsApp sent', pair(count(t.whatsapp), count(l.whatsapp))) + '</dl></section>' +
+          (s3 ? '<section class="fsec"><h4 class="fsec-h">Files</h4><dl class="ovfacts">' +
+            fact('Stored on S3', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
+            fact('Counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
+        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI US$ ' + usd(t.ai_usd) + ' this month']));
+      }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be read.', paint); });
+    };
+    paint();
+  }
   function openTax(opener) {
     if (!biz() || !$('taxSheet')) return;
     taxMsg('');
@@ -1932,6 +1987,7 @@
   }
   window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint,
     buildChanged: function (m) { fillLine('build', buildLine(m)); },
+    openUsage: openUsage,
     pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow,
     /* A row's line read again after its sheet saved (AutoCount HRMS, 2026-11-16). */
     refresh: function (id) { readLine(id); } };
