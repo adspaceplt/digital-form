@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
   // 3. What they want. kind "client" invites a client contact to /client/
   //    (anyone on the team who works the Clients section may do that); a team
   //    invite is Team: Send invitation.
-  let body: { email?: string; name?: string; kind?: string; notify?: boolean } = {};
+  let body: { email?: string; name?: string; kind?: string; notify?: boolean; againOf?: string } = {};
   try { body = await req.json(); } catch { /* handled below */ }
   const email = String(body.email ?? '').trim().toLowerCase();
   const name = String(body.name ?? '').trim();
@@ -132,8 +132,11 @@ Deno.serve(async (req) => {
   let clientId = '';
   /* Filed for Messages' Email log (EVERY EMAIL IN MESSAGES, 2026-11-17),
      never the sign-in link it carries. */
+  /* Sent again from Messages' Email log (SEND AGAIN, 2026-11-18): filed as
+     sending that invitation again. */
+  const againOf = /^[0-9a-f-]{36}$/.test(String(body.againOf || '')) ? String(body.againOf) : '';
   const file = (o: Record<string, unknown>) => fileSent(Object.assign({ kind: kind === 'client' ? 'invite_client' : 'invite_team',
-    client: clientId || null, to: email, to_name: greeting, by: user.email || '',
+    client: clientId || null, to: email, to_name: greeting, by: user.email || '', again_of: againOf || undefined,
     subject: kind === 'client' ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal' }, o));
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
