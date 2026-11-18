@@ -5745,6 +5745,32 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .ovw-lead > .ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { margin-top: 8px; padding-top: 6px; padding-bottom: 6px; }
 .ovw-lead > .ovw-kpi.has-mark .ovw-kpi-mark { top: 8px; right: 8px; }
 
+/* Delivery against the due date (2026-11-18): the team's four figures on
+   shaded tiles, each colleague's work early, on the day and late as one
+   bar, the most delayed work two lines a row. */
+.tl-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.tl-fig { display: grid; gap: 2px; align-content: start; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--sunk); min-width: 0; }
+.tl-fig-l { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.tl-fig-v { font-size: 20px; font-weight: 500; line-height: 26px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tl-fig-v.is-late { color: var(--err); }
+.tl-fig-s { font-size: 12.5px; color: var(--ink-soft); min-width: 0; }
+.tl-key { margin: 12px 0 0; }
+.tl-key .is-early::before, .tl-mix i.is-early { background: var(--ink-soft); }
+.tl-key .is-day::before, .tl-mix i.is-day { background: var(--line-ctl); }
+.tl-key .is-late::before { background: var(--dot-late); }
+.ovw-tr.is-tl { grid-template-columns: minmax(0, 1fr) 56px 72px 84px 72px; }
+.is-narrow .ovw-tr.is-tl { grid-template-columns: minmax(0, 1fr) 52px 64px; }
+.is-tl > span:not(:first-child) { text-align: right; }
+.ovw-tr.is-tl .ovw-who-t { flex: 1; }
+.ovw-tr.is-tl .chip-state { white-space: nowrap; }
+.ovw-tr.is-delay { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.ovw-tr.is-delay .ovw-who-t b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-delay-end { display: grid; justify-items: end; text-align: right; }
+.ovw-delay-end b { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ovw-delay-end b.is-late { color: var(--err); }
+.ovw-delay-end small { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+@media (hover: hover) { button.ovw-tr.is-delay:hover .ovw-who-t b { color: var(--action-ink); } }
+
 /* A task's ring: the time used outside, the checklist done inside. */
 .ovw-ring { display: inline-flex; flex: none; width: 30px; height: 30px; }
 .ovw-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }

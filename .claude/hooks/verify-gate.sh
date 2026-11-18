@@ -15,6 +15,11 @@ msg=$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).
 sid=$(printf '%s' "$input" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).session_id||"x")}catch(e){process.stdout.write("x")}})')
 head=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
 log=/tmp/verify-gate.log
+# A merge never carries a conflict marker, in any file (2026-11-18: the
+# phone row release took one into docs/DECISIONS.md; the schema's own check
+# never read the docs). Held in every mode but off.
+marks=$(git -C "$dir" grep -n -I -E '^(<<<<<<< |>>>>>>> |=======$)' HEAD -- . ':(exclude)*.png' 2>/dev/null | head -3)
+if [ -n "$marks" ]; then echo "$(date -u +%FT%TZ) $mode $head held: conflict marker" >> $log; echo "A conflict marker stands in the commit: $marks" >&2; exit 2; fi
 stamp="$(date -u +%FT%TZ) $mode $head"
 if [ -n "$head" ] && [ -f "/tmp/affected-pass/$head" ]; then echo "$stamp passed" >> $log; exit 0; fi
 # A pass on an earlier commit stands where everything since is docs or the

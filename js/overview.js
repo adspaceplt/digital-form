@@ -233,6 +233,19 @@
         }).then(rows).then(function (l) { return l || []; });
       });
     },
+    /* Delivery against the due date (2026-11-18): the period's work early,
+       on the day or late, its lateness and turnaround, for the team, each
+       kind, each month and, at All tasks, each colleague with the most
+       delayed work; one request a period. */
+    timely: function () {
+      var r = rangeOf(period);
+      return once('tl:' + r.from.toISOString() + ':' + r.to.toISOString(), function () {
+        return db.rpc('ops_timeliness', { p_from: r.from.toISOString(), p_to: r.to.toISOString() }).then(rows).then(function (d) {
+          if (!d || !d.team) throw new Error('This feature is not available yet. Please contact an admin.');
+          return d;
+        });
+      });
+    },
     owed: function () {
       return once('owed', function () {
         return db.rpc('sm_reports_owed', { p_period: lastMonth().key }).then(rows).then(function (d) { return (d && d.items) || []; });
@@ -972,6 +985,48 @@
         });
       } }
       ],
+      /* Delivery against the due date over Analytics' period (2026-11-18):
+         on time or early each month against its target, and each kind of
+         work's mix and turnaround. */
+      [
+      { key: 'tlmonth', title: 'On time or early by month', can: canFigures,
+        all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+        return R.timely().then(function (d) {
+          var T = tlTarget(d), ms = (d.months || []).filter(function (m) { return Number(m.n) > 0; });
+          if (!ms.length) return { empty: 'No work was due ' + periodName(period) + '.' };
+          var cats = ms.map(function (m) {
+            var p = CK.parts(m.month + '-01');
+            return { label: MON[p.mo], long: LONG[p.mo] + ' ' + p.y, values: [tlRate(m), T.pct], m: m };
+          });
+          return { kind: 'line', max: 100, none: 'Nothing due', cats: cats,
+            series: [{ label: 'On time or early' }, { label: 'Target', tone: 'mute', dash: true }],
+            fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
+            table: { heads: ['Month', 'On time or early', 'Early', 'On the day', 'Late', 'Lateness'], rows: cats.map(function (c) {
+              var m = c.m;
+              return [c.long, tlRate(m) + '% (' + ((Number(m.early) || 0) + (Number(m.on_day) || 0)) + ' of ' + m.n + ')', String(m.early || 0), String(m.on_day || 0),
+                      String(m.late || 0), tlNum(m.lateness) == null ? '—' : tlDays(m.lateness)];
+            }) } };
+        });
+      } },
+      { key: 'tlkind', title: 'Delivery by kind of work', can: canFigures,
+        all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+        return R.timely().then(function (d) {
+          var T = tlTarget(d), ks = (d.kinds || []).filter(function (k) { return Number(k.n) > 0 || Number(k.delivered) > 0; });
+          if (!ks.length) return { empty: 'No work was due ' + periodName(period) + '.' };
+          return { kind: 'bars', markLabel: 'Target ' + T.pct + '%', rows: ks.map(function (k) {
+              var r = tlRate(k);
+              return { label: TL_KIND[k.kind] || k.kind, value: r == null ? 0 : r, mark: T.pct,
+                       note: tlNum(k.turn_days) == null ? '' : 'Turnaround ' + tlDays(k.turn_days) };
+            }), fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
+            table: { heads: ['Kind', 'On time or early', 'Lateness', 'Turnaround', 'Slowest 10%'], rows: ks.map(function (k) {
+              var r = tlRate(k);
+              return [TL_KIND[k.kind] || k.kind, r == null ? '—' : r + '% (' + ((Number(k.early) || 0) + (Number(k.on_day) || 0)) + ' of ' + k.n + ')',
+                      tlNum(k.lateness) == null ? '—' : tlDays(k.lateness), tlNum(k.turn_days) == null ? '—' : tlDays(k.turn_days),
+                      tlNum(k.turn_p90) == null ? '—' : tlDays(k.turn_p90)];
+            }) } };
+        });
+      } }
+      ],
       [
       { key: 'ontimeby', title: 'On time by person', can: canFigures,
         all: ['My Work', '/admin/?s=work', 'work'], load: function () {
@@ -1524,6 +1579,52 @@
       '</svg></span>';
   }
 
+  /* Delivery against the due date: its words and figures, one copy for
+     the Dashboard and Analytics. */
+  var TL_KIND = { content: 'Content task', task: 'Everyday task', ads: 'Advertising Report', social: 'Social Media Report' };
+  function tlNum(v) { return v == null || v === '' || isNaN(Number(v)) ? null : Number(v); }
+  function tlDays(v) { v = Math.round(Number(v) * 10) / 10; return v === 1 ? '1 day' : v + ' days'; }
+  function tlLate(n) { return n === 1 ? '1 day late' : n + ' days late'; }
+  function tlTarget(d) {
+    var t = d.target || {};
+    return { pct: tlNum(t.pct) == null ? 85 : tlNum(t.pct), late: tlNum(t.late_days) == null ? 1 : tlNum(t.late_days) };
+  }
+  function tlRate(x) {
+    var n = Number(x.n) || 0;
+    return n ? Math.round(((Number(x.early) || 0) + (Number(x.on_day) || 0)) / n * 100) : null;
+  }
+  /* Under a target: on time or early below its share, or its lateness
+     over all the work due (a day early counts nought) above its days. */
+  function tlState(x, T) {
+    var rate = tlRate(x), late = tlNum(x.lateness), lowRate = rate != null && rate < T.pct, slowLate = late != null && late > T.late;
+    return { rate: rate, lowRate: lowRate, slowLate: slowLate, below: lowRate || slowLate };
+  }
+  function tlBar(x) {
+    var n = Number(x.n) || 0;
+    if (!n) return '<span class="ovw-pbar" aria-hidden="true"></span>';
+    var w = function (k) { return ((Number(x[k]) || 0) / n * 100).toFixed(1); };
+    return '<span class="ovw-pbar tl-mix" aria-hidden="true"><i class="is-early" style="width:' + w('early') + '%"></i>' +
+      '<i class="is-day" style="width:' + w('on_day') + '%"></i><i class="is-late" style="width:' + w('late') + '%"></i></span>';
+  }
+  function tlKey() {
+    return '<p class="ovw-stage-key tl-key"><span class="is-early">Early</span><span class="is-day">On the day</span><span class="is-late">Late</span></p>';
+  }
+  function tlFigs(t, T) {
+    var rate = tlRate(t), late = tlNum(t.lateness), lead = tlNum(t.lead_days), turn = tlNum(t.turn_days), p90 = tlNum(t.turn_p90);
+    var s = tlState(t, T);
+    var fig = function (label, value, line, tone) {
+      return '<div class="tl-fig"><span class="tl-fig-l">' + esc(label) + '</span><b class="tl-fig-v' + (tone === 'late' ? ' is-late' : '') + '">' + esc(value) + '</b>' +
+        '<span class="tl-fig-s">' + line + '</span></div>';
+    };
+    var dot = function (bad, words) { return '<span class="chip-state ' + (bad ? 'is-danger' : 'is-ok') + '">' + esc(words) + '</span>'; };
+    return '<div class="tl-figs">' +
+      fig('On time or early', rate == null ? '—' : rate + '%', rate == null ? esc('Target ' + T.pct + '%') : dot(s.lowRate, 'Target ' + T.pct + '%'), s.lowRate ? 'late' : '') +
+      fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target under ' + tlDays(T.late)) : dot(s.slowLate, 'Target under ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
+      fig('Average days early', lead == null ? '—' : tlDays(lead), esc('Before the due date'), '') +
+      fig('Turnaround', turn == null ? '—' : tlDays(turn), p90 == null ? esc('Median') : esc('Slowest 10%: ' + tlDays(p90)), '') +
+      '</div>';
+  }
+
   var TEAM = (function () {
     function card(host, id, title, to) {
       var c = document.createElement('section');
@@ -1720,7 +1821,78 @@
       };
       run();
     }
-    return { people: people, clients: clients, stages: stages };
+    /* Delivery against the due date (the user, 2026-11-18: "gauge team
+       members … what's done early or late"; targets 85% and 1 day): the
+       team's four figures, then each colleague's work early, on the day and
+       late as one bar, how much was on time or early, their lateness and
+       turnaround against the targets; whoever is under a target first,
+       its figures red, the slowest turnaround red beside the team's slowest
+       10%. A row opens the colleague's Work. */
+    function timely(host) {
+      if (!canTeamWork()) return;
+      var body = card(host, 'ovwTimely', 'Delivery against due date', ['My Work', '/admin/?s=work', 'work']);
+      var run = function () {
+        UI.skeleton(body, 4);
+        R.timely().then(function (d) {
+          var T = tlTarget(d), t = d.team || {};
+          if (!Number(t.n) && !Number(t.delivered)) { body.innerHTML = ''; UI.emptyLine(body, 'No work was due ' + periodName(period) + '.'); return; }
+          var slow = tlNum(t.turn_p90);
+          var A0 = window.ADspaceAdmin, list = (d.people || []).filter(function (p) {
+            return p.team_member_id && !(A0 && A0.isSystem && A0.isSystem(p.team_member_id)) && (Number(p.n) || Number(p.delivered));
+          }).map(function (p) {
+            var s = tlState(p, T);
+            return { p: p, s: s };
+          }).sort(function (a, b) {
+            return (b.s.below - a.s.below) || ((a.s.rate == null ? 101 : a.s.rate) - (b.s.rate == null ? 101 : b.s.rate)) || String(a.p.name).localeCompare(String(b.p.name));
+          });
+          var open = may('team', 'view');
+          body.innerHTML = tlFigs(t, T) +
+            (list.length ? '<div class="ovw-tr ovw-th is-tl"><span>Colleague</span><span>On time</span><span>Lateness</span><span class="ovw-hide-n">Turnaround</span><span class="ovw-hide-n">Target</span></div>' : '') +
+            list.map(function (x) {
+              var p = x.p, s = x.s, A = window.ADspaceAdmin, disc = A && A.avatar ? A.avatar(p.name) : '';
+              var turn = tlNum(p.turn_days), isSlow = turn != null && slow != null && list.length > 1 && turn > slow;
+              var cells = '<span class="ovw-who">' + disc + '<span class="ovw-who-t"><b>' + esc(p.name) + '</b>' + tlBar(p) + '</span></span>' +
+                '<span class="ovw-n' + (s.lowRate ? ' is-late' : '') + '">' + (s.rate == null ? '—' : s.rate + '%') + '</span>' +
+                '<span class="ovw-n' + (s.slowLate ? ' is-late' : '') + '">' + (tlNum(p.lateness) == null ? '—' : tlDays(p.lateness)) + '</span>' +
+                '<span class="ovw-n ovw-hide-n' + (isSlow ? ' is-late' : '') + '">' + (turn == null ? '—' : tlDays(turn)) + '</span>' +
+                '<span class="ovw-n ovw-hide-n">' + (s.rate == null ? '—' : '<span class="chip-state ' + (s.below ? 'is-danger' : 'is-ok') + '">' + (s.below ? 'Below' : 'Met') + '</span>') + '</span>';
+              var say = p.name + ': ' + (s.rate == null ? 'nothing due' : s.rate + '% on time or early') + (s.below ? ', below target' : '');
+              return open ? '<button class="ovw-tr is-tl' + (s.below ? ' is-below' : '') + '" type="button" aria-label="' + esc(say) + '" data-go="/admin/?s=team&member=' + esc(encodeURIComponent(p.team_member_id)) + '&mtab=work">' + cells + '</button>'
+                : '<div class="ovw-tr is-tl' + (s.below ? ' is-below' : '') + '">' + cells + '</div>';
+            }).join('') + (list.length ? tlKey() : '');
+          Array.prototype.forEach.call(body.querySelectorAll('[data-go]'), function (b) {
+            b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'team'); });
+          });
+        }).catch(function (e) { fail(body, 'Delivery against due date', e, run); });
+      };
+      run();
+    }
+    /* Most delayed: the period's work delivered latest, or still not
+       delivered past its due date, most days late first; a row opens the
+       task. */
+    function delays(host) {
+      if (!canTeamWork()) return;
+      var body = card(host, 'ovwDelays', 'Most delayed', ['My Work', '/admin/?s=work', 'work']);
+      var run = function () {
+        UI.skeleton(body, 4);
+        R.timely().then(function (d) {
+          var list = (d.worst || []).slice(0, 6);
+          if (!list.length) { body.innerHTML = ''; UI.emptyLine(body, 'No late work ' + periodName(period) + '.'); return; }
+          body.innerHTML = list.map(function (x) {
+            var meta = [x.client, x.owner || 'Unassigned', TL_KIND[x.kind] || ''].filter(Boolean).join(' · ');
+            var days = Number(x.days) || 0, end = x.open ? 'Not delivered' : 'Due ' + CK.date(x.due, { year: false });
+            return '<button class="ovw-tr is-delay" type="button" data-go="/admin/?s=work&open=' + esc(encodeURIComponent(x.task_id)) + '">' +
+              '<span class="ovw-who-t"><b>' + esc(x.title || 'Untitled task') + '</b><small>' + esc(meta) + '</small></span>' +
+              '<span class="ovw-delay-end"><b class="is-late">' + esc(tlLate(days)) + '</b><small>' + esc(end) + '</small></span></button>';
+          }).join('');
+          Array.prototype.forEach.call(body.querySelectorAll('[data-go]'), function (b) {
+            b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'work'); });
+          });
+        }).catch(function (e) { fail(body, 'Most delayed', e, run); });
+      };
+      run();
+    }
+    return { people: people, clients: clients, stages: stages, timely: timely, delays: delays };
   })();
 
   function redraw() { build(true); }
@@ -2103,6 +2275,7 @@
         else if (pr.children.length === 1) pr.classList.add('is-one');
       };
       TEAM.stages(box);
+      pairOf(function (pr) { TEAM.timely(pr); TEAM.delays(pr); });
       pairOf(function (pr) {
         TEAM.people(pr);
         var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];

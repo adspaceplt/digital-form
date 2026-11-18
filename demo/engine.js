@@ -391,6 +391,7 @@
     ops_report: 'p_to p_from',
     ops_report_of: 'p_from p_to p_light',
     ops_reports: 'p_ranges',
+    ops_timeliness: 'p_from p_to',
     ops_request_due_change: 'p_version p_value p_note p_reason p_task p_kind',
     ops_save_template: 'p_payload p_id',
     ops_scope_error: 'p_scope p_client',
@@ -3034,7 +3035,7 @@ function cardSlugFree(name, self, email) {
     var r = on.length ? on[on.length - 1] : rows[0];
     return r ? Number(r.value) : null;
   }
-  var APP_SEED = { lead_followup_hours: 48, proposal_followup_days: 21, sst_pct: 8, term_1_3: 25, term_4_5: 15,
+  var APP_SEED = { timely_pct: 85, timely_late_days: 1, lead_followup_hours: 48, proposal_followup_days: 21, sst_pct: 8, term_1_3: 25, term_4_5: 15,
     term_6_11: 0, term_12_23: -5, term_18_23: -5, term_24: -10, report_due_days: 7, revision_due_days: 1, ai_price_in: 4, ai_price_out: 20, ai_price_search: 10,
 
     meta_checks: 1, reach_allowance_pct: 0.5,
@@ -3579,6 +3580,7 @@ function cardSlugFree(name, self, email) {
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
+          (k === 'timely_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'timely_late_days' && (v < 0 || v > 30 || Math.round(v * 10) / 10 !== v)) ||
           (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
           (k === 'bench_reels_share' && (v < 0 || v > 100)) || (k === 'bench_ad_spend_pct' && (v < 1 || v > 100)) ||
           (k === 'bench_cpl_rise' && (v < -100 || v > 100)) ||
@@ -7044,6 +7046,104 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return (Array.isArray(args.p_ranges) ? args.p_ranges : []).slice(0, 12).map(function (r, i) {
         return opsRpcInner('ops_report', { p_from: r && r.from, p_to: r && r.to, __light: i > 1 });
       });
+    }
+
+    if (name === 'ops_timeliness') {
+      if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
+      var tf = args.p_from ? new Date(args.p_from).getTime() : NaN, tt = args.p_to ? new Date(args.p_to).getTime() : NaN;
+      if (isNaN(tf) || isNaN(tt) || tt <= tf || tt - tf > 800 * 864e5) return { error: 'bad-range' };
+      var myDay = function (v) { return new Date(new Date(v).getTime() + 8 * 36e5).toISOString().slice(0, 10); };
+      var dDiff = function (a, b) { return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5); };
+      var tToday = myDay(Date.now()), vFrom = myDay(tf), vTo = myDay(tt - 1), live = tt >= Date.now() - 6e5;
+      var all = opsGranted('ops.all', 'view');
+      var items = DB.ops_tasks.filter(function (t) {
+        return !t.cancelled_at && !t.archived_at && new Date(t.created_at).getTime() < tt &&
+          (!t.completed_at || new Date(t.completed_at).getTime() >= tf - 120 * 864e5) &&
+          (scopeTaskMine(t) || scopeSeen(t.client_id, 'view'));
+      }).map(function (t) {
+        var wf = DB.ops_workflows.filter(function (w) { return w.id === t.workflow_id; })[0] || {};
+        var kind = t.source_type === 'report_ads' ? 'ads' : t.source_type === 'report_social' ? 'social' : wf.key === 'task' ? 'task' : 'content';
+        var owners = DB.ops_task_assignees.filter(function (a) { return a.task_id === t.id && a.responsibility === 'owner'; })
+          .sort(function (a, b) { return (a.ended_at ? 1 : 0) - (b.ended_at ? 1 : 0) || String(b.assigned_at || '').localeCompare(String(a.assigned_at || '')); });
+        var rev = null;
+        DB.ops_task_events.forEach(function (e) {
+          if (e.task_id !== t.id || e.event_type !== 'stage_changed') return;
+          var w = opsStage(t.workflow_id, e.to_value && e.to_value.stage_key);
+          if (w && w.stage_group === 'client_review' && (rev === null || e.created_at < rev)) rev = e.created_at;
+        });
+        var done = null, start = null;
+        if (kind === 'ads' || kind === 'social') {
+          var e = DB.ops_engagements.filter(function (x) { return x.id === t.engagement_id; })[0], sent = null;
+          if (e) {
+            var dd = Math.max(1, Math.min(28, Number(e.start_day) || 1)), y = Number(e.period.slice(0, 4)), mo = Number(e.period.slice(5, 7));
+            var s0 = new Date(Date.UTC(y, mo - 1, dd)).toISOString().slice(0, 10), s1 = new Date(Date.UTC(y, mo, dd) - 864e5).toISOString().slice(0, 10);
+            start = s1;
+            (DB.sm_reports || []).forEach(function (r) {
+              if (r.client_id === t.client_id && r.kind === kind && !r.brand_id && !r.on_request && r.sent_on &&
+                  r.period_end >= s0 && r.period_end <= s1 && (sent === null || r.sent_on < sent)) sent = r.sent_on;
+            });
+          }
+          done = sent || (t.completed_at ? myDay(t.completed_at) : null);
+        } else {
+          done = rev || t.completed_at ? myDay(rev || t.completed_at) : null;
+          start = myDay(t.created_at);
+        }
+        return { t: t, kind: kind, owner: owners[0] ? owners[0].team_member_id : null,
+                 due: t.current_final_due_at ? myDay(t.current_final_due_at) : null, done: done, start: start };
+      });
+      var meas = [];
+      items.forEach(function (i) {
+        if (i.done && i.done >= vFrom && i.done <= vTo) meas.push({ i: i, diff: i.due ? dDiff(i.done, i.due) : null, open: false });
+        else if (!i.done && i.due && i.due < tToday && ((i.due >= vFrom && i.due <= vTo) || live)) meas.push({ i: i, diff: dDiff(tToday, i.due), open: true });
+      });
+      meas.forEach(function (m) {
+        m.said = m.diff === null ? null : m.diff < 0 ? 'early' : m.diff === 0 ? 'day' : 'late';
+        m.mon = (m.i.done || m.i.due).slice(0, 7);
+        m.turn = !m.open && m.i.start ? Math.max(dDiff(m.i.done, m.i.start), 0) : null;
+      });
+      var r1 = function (v) { return v === null ? null : Math.round(v * 10) / 10; };
+      var avg = function (l) { return l.length ? l.reduce(function (a, b) { return a + b; }, 0) / l.length : null; };
+      var pct = function (l, q) {
+        if (!l.length) return null;
+        l = l.slice().sort(function (a, b) { return a - b; });
+        var at = (l.length - 1) * q, lo = Math.floor(at), hi = Math.ceil(at);
+        return l[lo] + (l[hi] - l[lo]) * (at - lo);
+      };
+      var figs = function (l) {
+        var due = l.filter(function (m) { return m.said; }), turns = l.filter(function (m) { return m.turn !== null; }).map(function (m) { return m.turn; });
+        return { n: due.length,
+                 early: l.filter(function (m) { return m.said === 'early'; }).length,
+                 on_day: l.filter(function (m) { return m.said === 'day'; }).length,
+                 late: l.filter(function (m) { return m.said === 'late'; }).length,
+                 late_open: l.filter(function (m) { return m.said === 'late' && m.open; }).length,
+                 delivered: l.filter(function (m) { return !m.open; }).length,
+                 late_days: r1(avg(l.filter(function (m) { return m.said === 'late'; }).map(function (m) { return m.diff; }))),
+                 lateness: r1(avg(due.map(function (m) { return Math.max(m.diff, 0); }))),
+                 lead_days: r1(avg(l.filter(function (m) { return m.said === 'early'; }).map(function (m) { return -m.diff; }))),
+                 turn_days: r1(pct(turns, 0.5)), turn_p90: r1(pct(turns, 0.9)) };
+      };
+      var group = function (key) {
+        var by = {};
+        meas.forEach(function (m) { var k = key(m); (by[k] = by[k] || []).push(m); });
+        return Object.keys(by).sort().map(function (k) { return { k: k, f: figs(by[k]) }; });
+      };
+      var nameOf = function (id) { var m = DB.team_members.filter(function (x) { return x.id === id; })[0]; return m ? m.name : null; };
+      var tl = DB.app_settings ? appSet('timely_pct', tToday) : null, tld = DB.app_settings ? appSet('timely_late_days', tToday) : null;
+      return { from: args.p_from, to: args.p_to,
+               target: { pct: tl == null ? 85 : tl, late_days: tld == null ? 1 : tld },
+               team: figs(meas),
+               kinds: group(function (m) { return m.i.kind; }).map(function (g) { return Object.assign(g.f, { kind: g.k }); }),
+               months: group(function (m) { return m.mon; }).map(function (g) { return Object.assign(g.f, { month: g.k }); }),
+               people: all ? group(function (m) { return m.i.owner || ''; }).map(function (g) {
+                 return Object.assign(g.f, { team_member_id: g.k || null, name: (g.k && nameOf(g.k)) || 'Unassigned' });
+               }).sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }) : null,
+               worst: all ? meas.filter(function (m) { return m.said === 'late'; })
+                 .sort(function (a, b) { return b.diff - a.diff || (a.i.due < b.i.due ? -1 : 1); }).slice(0, 8).map(function (m) {
+                   var c = DB.clients.filter(function (x) { return x.id === m.i.t.client_id; })[0];
+                   return { task_id: m.i.t.id, task_no: m.i.t.task_no, title: m.i.t.title, client: c ? c.name : null,
+                            owner: nameOf(m.i.owner), owner_id: m.i.owner, kind: m.i.kind, due: m.i.due, delivered: m.i.done,
+                            open: m.open, days: m.diff };
+                 }) : null };
     }
     if (name === 'ops_report') {
       if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
@@ -13227,7 +13327,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var box = {}; mailBoxes().forEach(function (b) { box[b.key] = b.address; });
       var S = { clients: ['ADspace', 'general'], suppliers: ['ADspace', 'payables'], creators: ['ADspace', 'payables'], careers: ['ADspace', 'general'],
         finance: ['ADspace Finance', 'finance'], team: ['ADspace Digital Portal', 'general'] }, o = {};
-      Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <noreply-' + k + '@sc.adspace.me>', reply_to: box[S[k][1]] }; });
+      Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <portal@sc.adspace.me>', reply_to: box[S[k][1]] }; });
       return o;
     }
     function mailSenders() { var f = mailSendersFull(), o = {}; Object.keys(f).forEach(function (k) { o[k] = f[k].from; }); return o; }
@@ -18222,6 +18322,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       },
 
       verifyOtp: function (o) {
+
+        if (o && o.token_hash) {
+          window.__linkProof = (window.__linkProof || []).concat([{ token_hash: o.token_hash, type: o.type }]);
+          var m = /^link:(.+@.+)$/.exec(String(o.token_hash));
+          if (!m || !/^(email|invite)$/.test(String(o.type))) {
+            return Promise.resolve({ data: {}, error: { message: 'Email link is invalid or has expired' } });
+          }
+          session = mkSession(m[1], [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]);
+          if (listener) listener('SIGNED_IN', session);
+          return Promise.resolve({ data: { session: session, user: session.user }, error: null });
+        }
         if (!o || String(o.token) !== '12345678') {
           return Promise.resolve({ data: {}, error: { message: 'Token has expired or is invalid' } });
         }

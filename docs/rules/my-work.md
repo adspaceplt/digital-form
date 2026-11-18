@@ -752,3 +752,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - `ops_delete_engagement` (a reason; its tasks stay, its untouched report
     tasks cancelled).
 - The task sheets live in `#workSheets`, outside the section.
+- Delivery against the due date (`ops_timeliness(p_from, p_to)`,
+  `2026-11-18-delivery-against-due.sql`; My Work: Reports, client scope;
+  by colleague and the most delayed at All tasks): a content or everyday
+  task is delivered the Malaysian day it first reached client review,
+  else the day it was done; a month's report task the day its report was
+  marked sent (the first version sent of the month's own report), else
+  the day it was done; work past its due date and not delivered is late by
+  the days so far. Lateness is over all the work due (a day early counts
+  nought); turnaround runs from the day a task was made, or a report's
+  period ended. The targets are Business settings (`timely_pct` 85,
+  `timely_late_days` 1; Settings, My Work: Delivery targets).

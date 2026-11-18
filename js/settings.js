@@ -370,6 +370,9 @@
         meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
           : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
             num('task_start_days') === 0 ? 'Not started: Off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
+      biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
+        meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
+          'Average lateness under ' + plural(num('timely_late_days'), 'day', 'days')]) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
