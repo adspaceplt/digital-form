@@ -127,7 +127,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   each report it owes on its due day (span end plus `report_due_days`;
   client · Accounts Report due, opening the report once made, else its
   report task, which it replaces on the day) and where it starts and ends
-  (`.cal-mark`, a quiet line, never a chip; the user, 2026-11-17).
+  (`.cal-mark`, a quiet line, never a chip; the user, 2026-11-17). A
+  read of them that fails reads its fail line with Try again over the
+  month, never an empty month, and a month or a meeting saved reads them
+  again (`calStale`; review 2026-11-17).
 - Months view (`view=months&wc=`, the tab named Months) is one bar, as every
   view (2026-10-22, WRK-M1): the view strip, the client (`#workClient`,
   `data-nofilter`, kept in the bar on a phone), the search, Filters, the

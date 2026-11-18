@@ -2331,7 +2331,11 @@
      meeting, the reports it owes on their due day, and where it starts and
      ends. The months around the one on show are read once, with the
      reports made for them, under their own policies; never a read a day. */
-  var calMonths = { key: null, engs: [], reps: [], asked: null };
+  /* The calendar's months and reports, read once a month shown; a read that
+     fails is never kept as an empty month, but says so with Try again, and
+     a month or a meeting saved reads them again (review 2026-11-17). */
+  var calMonths = { key: null, engs: [], reps: [], asked: null, failed: null };
+  function calStale() { calMonths = { key: null, engs: [], reps: [], asked: null, failed: null }; }
   function loadCalMonths(m) {
     if (calMonths.key === m) return Promise.resolve(calMonths);
     if (calMonths.asked && calMonths.askedFor === m) return calMonths.asked;
@@ -2340,18 +2344,19 @@
     calMonths.asked = db.from('ops_engagements')
       .select('id, client_id, period, status, start_day, reports, meeting_at, meeting_na, manager_id, clients(name, slug)')
       .in('period', ps).then(function (r) {
-        var engs = (!r.error && r.data) || [];
+        if (r.error) throw r.error;
+        var engs = r.data || [];
         engs = engs.filter(function (e) { return e.status !== 'cancelled'; });
         var ids = engs.map(function (e) { return e.client_id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
         var reps = !ids.length || !may('reports', 'view') ? Promise.resolve([])
           : db.from('sm_reports').select('id, kind, client_id, period_end, brand_id, on_request')
               .in('client_id', ids).gte('period_end', CK.addMonths(m, -3).slice(0, 7) + '-01')
-              .then(function (x) { return (!x.error && x.data) || []; }, function () { return []; });
+              .then(function (x) { if (x.error) throw x.error; return x.data || []; });
         return reps.then(function (rs) {
           calMonths = { key: m, engs: engs, reps: rs.filter(function (x) { return !x.brand_id && !x.on_request; }), asked: null };
           return calMonths;
         });
-      }, function () { calMonths = { key: m, engs: [], reps: [], asked: null }; return calMonths; });
+      }).catch(function () { calMonths = { key: null, engs: [], reps: [], asked: null, failed: m }; return calMonths; });
     return calMonths.asked;
   }
   function openClientMonths(slug) {
@@ -2386,8 +2391,8 @@
        Whose work (theirs: a month they manage or one holding a task on the
        list; the team's: every month). A report the month owes takes its
        report task's place on its due day. */
-    if (calMonths.key !== m) loadCalMonths(m).then(function () { if ($('workCal') && !$('workCal').closest('[hidden]') && state.view === 'calendar') paintCalendar(rows); });
-    else {
+    if (calMonths.key !== m && calMonths.failed !== m) loadCalMonths(m).then(function () { if ($('workCal') && !$('workCal').closest('[hidden]') && state.view === 'calendar') paintCalendar(rows); });
+    else if (calMonths.key === m) {
       var meId = (bridge.me && bridge.me() || {}).id, withTask = {}, repTask = {};
       rows.forEach(function (t) {
         if (t.engagement_id) withTask[t.engagement_id] = 1;
@@ -2493,8 +2498,12 @@
        with none said nothing at all under its bar (the user, 2026-10-04:
        "the entire calendar is missing"). It says so, with the way to the
        month that has some. */
-    box.innerHTML = html + '<div class="cal' + (held || holHeld ? '' : ' is-blank') + '">' + cells + '</div>' +
+    box.innerHTML = html + (calMonths.failed === m ? '<div class="cal-fail"></div>' : '') +
+      '<div class="cal' + (held || holHeld ? '' : ' is-blank') + '">' + cells + '</div>' +
       (held ? '' : '<div class="cal-none"></div>');
+    if (calMonths.failed === m) UI.failLine(box.querySelector('.cal-fail'), 'The month\'s meetings and reports', null, function () {
+      calStale(); paintCalendar(rows);
+    });
     if (!held) UI.emptyLine(box.querySelector('.cal-none'), 'No tasks this month.');
     box.querySelector('[data-cal="prev"]').addEventListener('click', function () {
       state.month = CK.addMonths(m, -1); paintCalendar(rows);
@@ -6078,6 +6087,7 @@
         return;
       }
       msg(msgId, '');
+      if (/^ops_engagement/.test(fn)) calStale();
       /* A write made while the drawer is open changes a row the list drew. */
       if (state.drawer) state.drawerDirty = true;
       if (then) then(d);
@@ -7540,6 +7550,7 @@
         said(r.error ? ((r.error && r.error.message) || 'Not saved.') : (SAID[d.error] || d.message || 'Not saved.'), 'err');
         return;
       }
+      calStale();
       readClientWork();
     }).catch(function (x) { said((x && x.message) || String(x), 'err'); });
   }
@@ -7782,6 +7793,7 @@
       if (r.error) { say(dbWord(r.error.message)); if (onFail) onFail(); return; }
       var d = r.data;
       if (d && d.error) { say(said(d.error, null, d)); if (onFail) onFail(); return; }
+      if (/^ops_engagement/.test(fn)) calStale();
       if (then) then(d);
     }).catch(function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
   }

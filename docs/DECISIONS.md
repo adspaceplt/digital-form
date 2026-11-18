@@ -11297,6 +11297,25 @@ merge also left one `=======` line in `schema.sql`, caught by `sql`'s
 conflict check before the merge; the release's band then needed its blank
 line back to match its migration byte for byte.
 
+### 2026-11-17 · Console pages held to what they read
+The review of the releases since #1134, findings 3 and 12 to 14 (the user:
+"Ok fix all"). A newer build refreshed the console by itself five minutes
+on once idle, and idle read only the page's `beforeunload` guards: a
+Commentary step typed into and not saved has none, so the words went with
+the refresh. A newer build now only draws its bar; a required one
+refreshes a console on screen, once for that build; and the Commentary
+step guards what it holds unsaved. Next batch found a suggestion's task by
+its title, so a task of the same title made for another month read as
+made; the task made from a suggestion is now kept on it by its id. My
+Work's calendar kept a failed read of the months as an empty month for the
+whole visit and never read a month or meeting saved since; it now says the
+read failed with Try again and reads again after a save. The Dashboard's
+Sales by colleague and Clients who moved read every name as Former
+colleague when the team read failed; the card now fails with Try again.
+`buildsync` still asked the build in Settings' old words
+(`v26.11.17 · ccccccc`) since #1222 shortened it (`261117.ccccccc`), and
+fails on main; its expectations take the shorter words.
+
 ### 2026-11-18 · The S3 report held to its time, and a letter's term total
 The jobs notice of 18 Nov read "the S3 report was filed as failed": the
 in-use check read every text column whole, 13.8 seconds against the call's

@@ -206,14 +206,16 @@
         }).then(rows).then(function (l) { return l || []; });
       });
     },
-    /* Colleagues' names by id, leavers included: Sales by is an id. */
+    /* Colleagues' names by id, leavers included: Sales by is an id. A read
+       that fails fails its card, with Try again, never every name read as
+       Former colleague (review 2026-11-17). */
     team: function () {
       return once('team', function () {
         return db.from('team_members').select('id, name').then(rows).then(function (l) {
           var by = {};
           (l || []).forEach(function (m) { by[m.id] = m.name; });
           return by;
-        }).catch(function () { return {}; });
+        });
       });
     },
     lines: function () {

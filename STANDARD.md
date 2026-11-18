@@ -626,6 +626,11 @@ verification loop).
   ADspaceDocs" names `js/register.js:417` (`window.open('', '_blank')`, the
   HR document's sealed copy, #1209); found 2026-11-18 by the term total
   release, which does not touch it.
+- `run` (found 2026-11-18 on main 724f1aa, before the console pages
+  release): "Settings is a mark of the same size just before it" fails since
+  the Delete requests mark joined the rail's foot (#1217), and the Short
+  Links bar's ⋯ it presses is no longer drawn (a bar's ⋯ of one item is its
+  button since #1221).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
