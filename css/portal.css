@@ -4548,30 +4548,26 @@ body > .shell { width: 100%; }
    never does, and on a list a phone's width (tight) the stage takes a line
    of its own on every row instead. 170px is the desk stage track; 200px is
    `Performance review` at 16px. */
-.is-narrow .task-row {
-  grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
-  grid-template-areas: "check name act" ". meta meta";
-  row-gap: 4px; column-gap: 8px; align-items: center;
-}
-.is-narrow .task-row > .trow-meta {
-  grid-area: meta; display: flex; flex-wrap: nowrap; align-items: center; gap: 4px 12px; min-width: 0;
-}
-.is-narrow .trow-meta > .task-owner { flex: 0 1 auto; min-width: 0; max-width: 34%; }
+.is-narrow .task-row > .trow-meta { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* On the phone row a task's colleague is their disc, the due date beside
+   it at the right edge. */
+.is-narrow .trow-meta > .task-owner { flex: 0 0 auto; }
+.is-narrow .trow-meta > .task-owner .tname { display: none; }
 .is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
-.is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; display: flex; justify-content: flex-end; }
-.is-narrow .trow-meta .state-select { width: 170px; max-width: 100%; }
-/* Under a finger the stage is 13.5px, and `Performance review` needs 176px
-   with its chevron at that size. */
-@media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 180px; } }
-.is-narrow .trow-meta .task-take { width: 170px; max-width: 100%; }
-@media (pointer: coarse) { .is-narrow .trow-meta .task-take { width: 180px; } }
-.is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
-.is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
-/* The ring, the title with its priority chip, and the ⋯ share one centre:
-   the title line's (22px). The 44px target overflows that line evenly
-   instead of pushing the ⋯ 12px below it (2026-09-28). */
-.is-narrow .task-row > .team-act,
-.is-narrow .task-row > .trow-check { height: 22px; display: flex; align-items: center; }
+/* The client, the format and the checklist read as one meta line under the
+   title, wrapping between parts. */
+.is-narrow .task-row > .task-open { justify-content: flex-start; }
+.is-narrow .task-row .task-text { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 2px; }
+.is-narrow .task-row .task-facts { margin-top: 0; }
+.is-narrow .task-row .task-text > .task-top { flex: 0 0 100%; }
+.is-narrow .task-row .task-text > .task-facts { display: inline-flex; }
+/* The stage on the title's line reads as a status, its select laid unseen
+   over the word, so a press still opens the stages. */
+.tstage-pick > .tstage-word { display: none; }
+.is-narrow .task-row .tstage-pick { position: relative; display: inline-flex; align-items: center; }
+.is-narrow .task-row .tstage-pick > .tstage-word { display: inline-flex; white-space: nowrap; }
+.is-narrow .task-row .tstage-pick > select { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; opacity: 0; }
+.is-narrow .task-row .tstage-pick:focus-within { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: 6px; }
 .is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tstage-row { grid-template-columns: minmax(0, 1fr) 56px 96px; }
 /* What happened owns the first line; when and who share the second, which is

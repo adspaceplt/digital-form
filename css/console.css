@@ -897,12 +897,9 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    outlined chips the edge is the ink, so the row's own padding stands. */
 .is-narrow .reg-row > .reg-who { grid-area: who; }
 .is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .trow-check { grid-area: check; align-self: start; }
-.is-narrow .task-row > .task-open { grid-area: name; }
 /* In your own list every owner is you, so a phone spends that width on the
    date and the status instead. */
 .is-narrow .is-mine .trow-meta > .task-owner { display: none; }
-.is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-narrow .task-row > .team-act { margin-top: 0; }
 /* The ⋯ keeps its full target and stops setting the first line's height:
    its 38px box pushed a row carrying a 22px name to 100px. The negative
@@ -3365,12 +3362,8 @@ button.vs-row {
    shoot date stood 44px in on a phone). */
 .is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 44px; }
 @media (max-width: 760px) { .is-narrow #vsList .vs-row > .vs-c-shoot { padding-left: 38px; } }
-/* A month's row is two lines (2026-11-18, the user): the script over its
-   kind at the left, its state over its shoot date at the right, line for
-   line. */
-.is-narrow .vs-mtable .vs-row { grid-template-areas: "name state" "name shoot"; grid-template-rows: auto 1fr; row-gap: 2px; }
-.is-narrow .vs-mtable .vs-row > .vs-c-state { align-self: start; }
-.is-narrow .vs-mtable .vs-row > .vs-c-shoot { text-align: right; font-size: 12.5px; }
+/* A month's row is the phone row (`.prow`, css/portal.css). */
+.is-narrow .vs-mtable .vs-row > .vs-c-shoot { font-size: 12.5px; padding-left: 0; }
 .is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
 .is-narrow .vs-row > .crm-c-go { display: none; }
 
@@ -5954,3 +5947,35 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* Delete requests (js/delreq.js) are laid as Settings' other lists
    (`.ann-row`); a refusal says itself under its row. */
 .dr-msg { margin: 6px 0 0; }
+
+/* THE PHONE ROW (2026-11-18, the user: every list's phone layout from one
+   component, never written by hand again). On a narrow pane a list row that
+   carries `.prow` is two columns, top aligned: its lead (a tick, a ring, a
+   mark) beside the main slot (the title over its meta), the state and the ⋯
+   on the title's line at the right edge, the end (a date, a figure) under
+   them on the meta's line. A row without a lead or a ⋯ closes that column,
+   so nothing stands indented without a mark. Every other cell is hidden on
+   the phone (`tests/phonerow.js`). Last in the console's sheet, so a list's
+   own rules never outweigh it; a client page's list joins it by moving it
+   to portal.css. */
+.is-narrow .prow {
+  display: grid; align-items: start; column-gap: 8px; row-gap: 2px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "lead main state act" "lead main end end";
+  /* The first line is the title's (22px), so the end stands on the meta's line. */
+  grid-template-rows: 22px auto;
+}
+.is-narrow .prow:not(:has(> .pr-lead)) { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "main state act" "main end end"; }
+.is-narrow .prow:not(:has(> .pr-act)) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "lead main state" "lead main end"; }
+.is-narrow .prow:not(:has(> .pr-lead)):not(:has(> .pr-act)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main state" "main end"; }
+.is-narrow .prow > .pr-lead { grid-area: lead; }
+.is-narrow .prow > .pr-main { grid-area: main; min-width: 0; }
+.is-narrow .prow > .pr-state { grid-area: state; justify-self: end; text-align: right; }
+.is-narrow .prow > .pr-act { grid-area: act; justify-self: end; }
+.is-narrow .prow > .pr-end { grid-area: end; justify-self: end; text-align: right; min-width: 0; }
+.is-narrow .prow > :not(.pr-lead):not(.pr-main):not(.pr-state):not(.pr-act):not(.pr-end) { display: none; }
+.is-narrow .prow.crm-head { display: none; }
+/* The lead, the state and the ⋯ stand on the title's line, their targets
+   given back to it, so the right column's lines stand on the left's. */
+.is-narrow .prow > :is(.pr-lead, .pr-state, .pr-act) { min-height: 22px; display: flex; align-items: center; }
+.is-narrow .prow > .pr-act { height: 22px; }

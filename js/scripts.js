@@ -712,10 +712,10 @@
   function paintMonth() {
     $('vsNextVideo').hidden = !may('work');
     var rows = st.series.map(function (x) {
-      return '<button class="crm-row vs-row vs-mrow" type="button" data-v="' + esc(x.id) + '">' +
-        '<span class="vs-c-name"><b>' + esc(codeOf(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
-        '<span class="vs-c-shoot">' + (x.shoot_on ? esc(dayWord(x.shoot_on)) : '<span class="mute">Not set</span>') + '</span>' +
-        '<span class="vs-c-state">' + chip(stateOf(x)) + '</span>' + GO + '</button>';
+      return '<button class="crm-row vs-row vs-mrow prow" type="button" data-v="' + esc(x.id) + '">' +
+        '<span class="vs-c-name pr-main"><b>' + esc(codeOf(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
+        '<span class="vs-c-shoot pr-end">' + (x.shoot_on ? esc(dayWord(x.shoot_on)) : '<span class="mute">Not set</span>') + '</span>' +
+        '<span class="vs-c-state pr-state">' + chip(stateOf(x)) + '</span>' + GO + '</button>';
     }).join('');
     $('vsMonthRows').innerHTML = '<div class="crm-table vs-mtable"><div class="crm-head vs-row"><span>Script</span><span>Shoot</span><span>State</span><span></span></div>' + rows + '</div>';
     Array.prototype.forEach.call($('vsMonthRows').querySelectorAll('[data-v]'), function (r) {
