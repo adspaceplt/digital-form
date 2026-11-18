@@ -204,7 +204,11 @@ Deno.serve(async (req) => {
       const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
         type: 'magiclink', email, options: { redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE }
       });
-      const href = link?.properties?.action_link;
+      /* The button opens the portal's own page with the link's proof, never
+         supabase.co: a link off the sender's domain reads to an inbox as
+         spam (2026-11-18, Resend's check); the page proves it (js/api.js). */
+      const hashed = link?.properties?.hashed_token;
+      const href = hashed ? (kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE) + '?token_hash=' + encodeURIComponent(hashed) + '&type=email' : '';
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (linkErr || !href || !apiKey) {
         console.error('invite-member: no link or key', linkErr?.message ?? '', !!apiKey);

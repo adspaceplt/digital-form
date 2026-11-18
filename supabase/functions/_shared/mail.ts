@@ -126,7 +126,7 @@ export function codeEmail(t: { subject?: string; body?: string; foot?: string } 
    2026-11-17): Settings, Messages: Reply-to mailboxes, a company mailbox
    for each section (`mail_senders`, `mail_boxes`), never a colleague's own
    address. Read as the service role; a database that cannot answer sends
-   from the section's own noreply address replying to the general mailbox. */
+   from portal@sc.adspace.me replying to the general mailbox. */
 async function rpcAsService(fn: string, args: Record<string, unknown>): Promise<unknown> {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) return null;
@@ -141,7 +141,7 @@ export async function sender(key: string): Promise<{ from: string; reply_to: str
     const d = await rpcAsService('mail_sender', { p_key: key }) as Record<string, string> | null;
     if (d && d.from && d.reply_to) return { from: d.from, reply_to: d.reply_to };
   } catch (_e) { /* the fallback below */ }
-  return { from: 'ADspace <noreply-' + key + '@sc.adspace.me>', reply_to: 'advertise@adspacestudios.com' };
+  return { from: 'ADspace <portal@sc.adspace.me>', reply_to: 'advertise@adspacestudios.com' };
 }
 /* An email no other log keeps, filed for Messages' Email log once Resend
    has answered (`system_email_file`). Never a code or a sign-in link's
