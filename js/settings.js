@@ -1789,7 +1789,7 @@
         var d = r.data || {};
         if (r.error || d.error || !d.db) {
           window.ADspaceState.failLine(host, 'Usage', r.error && /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.'
-            : d.error === 'denied' ? 'You do not have permission to see usage. Please ask an admin.' : 'Usage could not be read.', paint);
+            : d.error === 'denied' ? 'You do not have permission to see usage. Please ask an admin.' : 'Usage could not be loaded.', paint);
           return;
         }
         var t = d['this'] || {}, l = d.last || {}, db1 = d.db, s3 = d.s3;
@@ -1799,7 +1799,7 @@
         host.innerHTML =
           '<section class="fsec"><h4 class="fsec-h">Database</h4><dl class="ovfacts">' +
             fact('Size', mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB (' + db1.pct + '%)') +
-            fact('Admins alerted at', db1.alert_pct + '%') + '</dl></section>' +
+            fact('Alert at', db1.alert_pct + '%') + '</dl></section>' +
           '<section class="fsec"><h4 class="fsec-h">' + esc(month) + ' to date</h4><dl class="ovfacts">' +
             fact('AI cost', pair('US$ ' + usd(t.ai_usd), 'US$ ' + usd(l.ai_usd))) +
             fact('AI runs', pair(count(t.ai_runs), count(l.ai_runs))) +
@@ -1807,10 +1807,10 @@
             fact('Emails sent', pair(count(t.emails), count(l.emails))) +
             fact('WhatsApp sent', pair(count(t.whatsapp), count(l.whatsapp))) + '</dl></section>' +
           (s3 ? '<section class="fsec"><h4 class="fsec-h">Files</h4><dl class="ovfacts">' +
-            fact('Stored on S3', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
-            fact('Counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
+            fact('Stored', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
+            fact('Last counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
         fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI US$ ' + usd(t.ai_usd) + ' this month']));
-      }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be read.', paint); });
+      }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be loaded.', paint); });
     };
     paint();
   }

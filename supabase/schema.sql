@@ -130585,7 +130585,7 @@ begin
       'AI ' || (v_last ->> 'ai_runs') || case when (v_last ->> 'ai_runs')::int = 1 then ' run' else ' runs' end
             || ', about US$ ' || to_char((v_last ->> 'ai_usd')::numeric, 'FM999,990.00'),
       (v_last ->> 'emails') || case when (v_last ->> 'emails')::int = 1 then ' email' else ' emails' end,
-      (v_last ->> 'whatsapp') || ' WhatsApp') || '.';
+      (v_last ->> 'whatsapp') || case when (v_last ->> 'whatsapp')::int = 1 then ' WhatsApp message' else ' WhatsApp messages' end) || '.';
     insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
     select t.id, 'usage.month', 'Usage for ' || (array['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'])[extract(month from (v_m - interval '1 month'))::int] || ' ' || extract(year from (v_m - interval '1 month'))::int, v_words,
            'usage.month.' || to_char(v_m, 'YYYY-MM') || '.' || t.id
@@ -130596,8 +130596,8 @@ begin
   end if;
   if v_pct >= v_alert then
     insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
-    select t.id, 'usage.limit', 'Database near its limit',
-           'The database holds ' || round(v_size / 1048576.0) || ' MB of the plan''s ' || v_limit || ' MB (' || v_pct || '%).',
+    select t.id, 'usage.limit', 'Database nearly full',
+           'The database holds ' || round(v_size / 1048576.0) || ' MB of the database plan''s ' || v_limit || ' MB (' || v_pct || '%). Upgrade the plan or remove data that is no longer needed.',
            'usage.limit.' || to_char(v_m, 'YYYY-MM') || '.' || t.id
       from public.team_members t
      where t.active and t.is_admin
