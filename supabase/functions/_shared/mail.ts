@@ -59,6 +59,10 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>' +
     '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>' +
     fine +
+    /* The portal's own line (the user, 2026-11-18), a row under the fine
+       print in its light grey: the year is Malaysia's at the send. */
+    '<p style="margin:24px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">&copy; ' +
+      new Date(Date.now() + 8 * 3600e3).getUTCFullYear() + ' ADSPACE PLT. All Rights Reserved.</p>' +
     '</td></tr></table></td></tr></table></body></html>';
 }
 

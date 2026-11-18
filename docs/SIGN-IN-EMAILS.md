@@ -14,7 +14,10 @@ Both bodies are the portal's one email layout, as `supplier-mail` draws it
 on the light grey page, the ADspace wordmark, the wordmark 26px high as in the portal's bar, the heading (24px, 21 on a
 phone), the words in 16px in full ink, a button at least 116px wide and
 44px high, then the company's registration, address and
-the confidentiality line under the card. Every gap is on the design
+the confidentiality line under the card, and a row under it the
+copyright line (`© {year} ADSPACE PLT. All Rights Reserved.`, the same light
+grey; the user, 2026-11-18: the dashboard's templates hold the year as
+typed, changed each January). Every gap is on the design
 system's spacing scale (4 to 32), the card's words and the lines under it
 share one left edge, and every grey holds 4.5:1 or more but the
 confidentiality line, which is fine print in the brand's light grey
@@ -59,6 +62,7 @@ Body (HTML):
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
 (60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>
 <p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
+<p style="margin:24px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">&copy; 2026 ADSPACE PLT. All Rights Reserved.</p>
 </td></tr></table></td></tr></table></body></html>
 ```
 
@@ -103,5 +107,6 @@ Body (HTML):
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
 (60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>
 <p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
+<p style="margin:24px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">&copy; 2026 ADSPACE PLT. All Rights Reserved.</p>
 </td></tr></table></td></tr></table></body></html>
 ```
