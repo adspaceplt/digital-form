@@ -928,15 +928,19 @@
     if ($('vsPlay')) $('vsPlay').addEventListener('click', function () { openPlay($('vsPlay')); });
     if ($('vsPrompts')) $('vsPrompts').addEventListener('click', function () { openPrompts($('vsPrompts')); });
   }
-  /* Is the picture writer set up? Asked once a visit, counting nothing. */
+  /* Is the picture writer set up? Asked once a visit, counting nothing; a
+     check that failed (no answer, an error) is asked again as the next
+     script opens, never leaving Draw with AI away for the visit
+     (2026-11-18: a colleague met no Draw with AI after one failed check). */
   function pingDraw() {
     if (!may('work') || st.drawAsked) return Promise.resolve();
     st.drawAsked = true;
     return db.functions.invoke('script-pictures', { body: { ping: true } }).then(function (r) {
-      st.drawReady = Boolean(r && r.data && r.data.ready);
+      if (!r || r.error || !r.data) { st.drawAsked = false; st.drawReady = false; return null; }
+      st.drawReady = Boolean(r.data.ready);
       if (!st.drawReady) return null;
       return rpc('ai_picture_left', {}).then(function (d) { st.drawLeft = d.left; }).catch(function () {});
-    }).catch(function () { st.drawReady = false; });
+    }).catch(function () { st.drawAsked = false; st.drawReady = false; });
   }
   function drawWithAi(btn) {
     var s = st.open;
