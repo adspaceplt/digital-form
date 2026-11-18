@@ -3051,11 +3051,13 @@
      check runs (js/maintenance.js `often`), it also reads /version.json:
      Pages answers it, so it is no line Supabase meters. A build newer than
      the one this page loaded draws #buildBar (A new version is available.,
-     Refresh), and five minutes on the console refreshes by itself the first
-     moment it is idle. The build an admin requires (`build_require`,
-     Settings: Portal, answered by `page_pulse` as `build`) is stricter: a
-     console below it refreshes within the minute once idle, its bar saying
-     so with Refresh now. Idle is nothing open over the page (a sheet, a
+     Refresh) and nothing more: the colleague refreshes when they choose
+     (review 2026-11-17: an unsaved commentary was lost to a refresh made
+     by itself). The build an admin requires (`build_require`, Settings:
+     Portal, answered by `page_pulse` as `build`) is stricter: a console
+     below it, on screen, refreshes within the minute once idle, once for
+     that build (a page still below it after one refresh waits for Refresh
+     now), its bar saying so. Idle is nothing open over the page (a sheet, a
      question, a menu, a popover, the finder, the guide), no field holding
      the caret, no request out, and nothing the page would warn about on
      leaving (each page's own beforeunload guard, asked with a probe: a
@@ -3063,8 +3065,7 @@
      Read raw (no build in version.json), nothing happens. A refresh is
      Refresh app's (js/refresh.js), so the installed app takes its new
      files too, and nobody is signed out. */
-  var build = { loaded: null, live: null, min: null, seenAt: 0, timer: null };
-  var BUILD_WAIT = 5 * 60000;
+  var build = { loaded: null, live: null, min: null, timer: null };
   function buildOf(v) {
     if (!v || /[{}%]/.test(String(v.commit) + String(v.built))) return null;
     var t = Date.parse(v.built), c = String(v.commit || '').toLowerCase();
@@ -3087,19 +3088,21 @@
     try { probe = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(probe); } catch (e) { return false; }
     return !probe.defaultPrevented;
   }
-  function buildRefresh() {
+  function buildRefresh(auto) {
     try {
       var last = Number(sessionStorage.getItem('adspace-build-reload')) || 0;
       if (Date.now() - last < 3 * 60000) return;
+      /* One refresh by itself for each build required, never a loop. */
+      if (auto && sessionStorage.getItem('adspace-build-for') === build.min.commit) return;
       sessionStorage.setItem('adspace-build-reload', String(Date.now()));
+      if (auto) sessionStorage.setItem('adspace-build-for', build.min.commit);
     } catch (e) {}
     var b = $('appVersion');
     if (b && !b.hidden) { b.click(); return; }
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
   }
   function buildCheck() {
-    var due = buildBelow() || (buildNewer() && Date.now() - build.seenAt >= BUILD_WAIT);
-    if (due && consoleIdle()) buildRefresh();
+    if (buildBelow() && document.visibilityState === 'visible' && consoleIdle()) buildRefresh(true);
   }
   function paintBuild() {
     var bar = $('buildBar');
@@ -3111,9 +3114,9 @@
                                          : 'A new version is available.';
       $('buildGo').textContent = below ? 'Refresh now' : 'Refresh';
     }
-    if (on && !build.timer) build.timer = setInterval(buildCheck, 5000);
-    if (!on && build.timer) { clearInterval(build.timer); build.timer = null; }
-    if (on) buildCheck();
+    if (below && !build.timer) build.timer = setInterval(buildCheck, 5000);
+    if (!below && build.timer) { clearInterval(build.timer); build.timer = null; }
+    if (below) buildCheck();
   }
   function readBuild() {
     if (!build.loaded || !window.fetch) return;
@@ -3121,7 +3124,6 @@
       var b = buildOf(v);
       if (!b) return;
       build.live = b;
-      if (buildNewer() && !build.seenAt) build.seenAt = Date.now();
       paintBuild();
     }).catch(function () {});
   }

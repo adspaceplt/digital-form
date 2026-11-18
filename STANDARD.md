@@ -627,6 +627,11 @@ verification loop).
   a 41.09 one-off reads a commitment of 10,497.15 since TERM TOTAL FROM ITS
   PARTS (#1225), while the letter issued from it totals 10,497.14 and is
   refused `stale`; the letter's total and the term's must sum the same way.
+- `run` (found 2026-11-18 on main 724f1aa, before the console pages
+  release): "Settings is a mark of the same size just before it" fails since
+  the Delete requests mark joined the rail's foot (#1217), and the Short
+  Links bar's ⋯ it presses is no longer drawn (a bar's ⋯ of one item is its
+  button since #1221).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
