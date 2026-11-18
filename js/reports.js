@@ -5083,6 +5083,7 @@
       /* Laid as the fields they stand in for, each a value read at the
          field's height (as This period · All ad accounts reads). */
       var cell = function (k, val) { return '<div><span class="field-label">' + esc(k) + '</span><div class="readfield">' + esc(val) + '</div></div>'; };
+      var pk = f.tiktok || (tk ? { prev_reach: numIn($('rpKPReach').value), prev_impressions: numIn($('rpKPImpr').value), prev_spend: numIn($('rpKPSpend').value) } : null);
       $('rpPFacts').innerHTML = '<div class="row">' + cell('Period', f.prev_start ? periodWord(f.prev_start, f.prev_end) : '\u2014') + '</div>' +
         '<div class="row fgrid-3 fgrid">' + cell(tk ? 'Meta reach' : 'Reach', fmt(f.prev_reach)) + cell(tk ? 'Meta impressions' : 'Impressions', fmt(f.prev_impressions)) +
           cell(tk ? 'Meta amount spent' : 'Amount spent', money2(f.prev_spend)) + '</div>' +
