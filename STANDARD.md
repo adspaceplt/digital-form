@@ -622,6 +622,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop).
+- `pwapdf`: "no script opens a blank window for a PDF but through
+  ADspaceDocs" names `js/register.js:417` (`window.open('', '_blank')`, the
+  HR document's sealed copy, #1209); found 2026-11-18 by the term total
+  release, which does not touch it.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
