@@ -383,7 +383,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `ads_totals.prev_from`; `2026-11-17-ads-report-compares-with.sql`; the
     user, 2026-11-17: a report asked for in between became Huna's
     comparison), and Step 1's Compare with offers every published one ending
-    before it, or Typed figures (`prev_typed`). A new report is never a
+    before it; the one chosen stands as read values, never fields (the
+    user, 2026-11-18: what the client was sent is not touched; a correction
+    is a new version of that report, published and sent). Typed figures
+    (`prev_typed`) are offered only where no published report ends before
+    it, or the report already holds them. An objective's results line
+    leaves out a part counting nothing (an ad with no result reads no
+    0 Results). A new report is never a
     first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
     clients advertised before the portal); with no earlier report the period
     before is prefilled (the previous calendar month, else the same length
