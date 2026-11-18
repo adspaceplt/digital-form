@@ -62,7 +62,23 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   time by month, then Clients this month (`#ovwClientsMonth`: each client
   whose content month is this month, its posts done green, late red and
   open grey on one bar, its report and its meeting) beside Needs
-  attention. Open tasks and Open work by person are today's figures, so
+  attention. Delivery against due date (`#ovwTimely`, 2026-11-18; the
+  user: "gauge team members … what's done early or late", "highlight
+  those slowest and most delays") stands beside Most delayed
+  (`#ovwDelays`) after Work by stage, both from one `ops_timeliness`
+  read a period (`R.timely`) at My Work: Reports and All tasks: four
+  figures two across (On time or early against the On time target,
+  Average lateness over all the work due against the Lateness target,
+  each red with its dot where it misses; Average lead; Turnaround, the
+  median with the slowest 10%), then a row a colleague (the system
+  account left out): their work early, on the day and late as one bar
+  (ink, the control grey, red; its key under the rows), On time, Lateness,
+  Turnaround and Target (Met or Below); whoever is under either target
+  first, the figure that misses red, a turnaround past the team's
+  slowest 10% red; a row opens their Work. Most delayed lists the six
+  pieces of work most days late, still undelivered ones included (Not
+  delivered), each opening its task. Video scripts and Content Review
+  have no tasks and are not counted. Open tasks and Open work by person are today's figures, so
   Team's alone, never Analytics' (phase 4). Team detail's charts,
   the Sales and Operations tiles and Active clients by month moved to
   Analytics (phase 3, 2026-11-13); a tile with clients behind it (New

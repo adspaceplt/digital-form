@@ -13,7 +13,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`ADspaceOverview.forAnalytics`, New leads by source drawn once), and
   Operations (`tab=ops`) Open tasks, On time, Delivered, Reports
   published and the Operations charts, each card at its own access and on
-  Analytics' period. Only the AI analysis asks the granted part
+  Analytics' period; On time or early by month (`tlmonth`, its target a
+  dashed line) and Delivery by kind of work (`tlkind`, a bar a kind with
+  the target marked and its turnaround) follow Where work waits
+  (`ops_timeliness`, 2026-11-18). Only the AI analysis asks the granted part
   `team.analytics` (an admin's by itself; `2026-10-25-analytics-admin-tool.sql`
   adds it to `team_roles_admin_guard`, so only an admin grants it), with
   both trends readable. Never the start page, never a tab of the phone's bar (under More). The data is

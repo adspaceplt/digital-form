@@ -6029,7 +6029,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -6127,6 +6127,10 @@
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
     creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Payment time in MYR (working days after the post)', 'pay', '', 'MYR', per('working day')],
       ['creator_pay_days_other', 'Payment time in other currencies (working days after the post)', 'pay', '', 'Other currencies', per('working day')]] },
+    /* Delivery against the due date (2026-11-18): the Dashboard's and
+       Analytics' targets for work on time or early and its lateness. */
+    timely: { title: 'Delivery targets', keys: [['timely_pct', 'On time or early (% of work delivered)', 'share', '', 'On time', pctOf],
+      ['timely_late_days', 'Average lateness (days, at most)', 'lateby', '', 'Late under', per('day')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask before sending again within (hours, 0 turns this off)', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */

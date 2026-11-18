@@ -610,7 +610,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics; Creators: Creator and
   campaign IDs, Creator payments, Creator payments sheet), My Work (Due
-  dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
+  dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Money (Tax
   and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
   Messages (Email: Automatic emails, Send by email, Email templates, Sent
@@ -1575,9 +1575,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   line per table, never in a `do $$` loop.
 - A comparison of two copies (a migration and its schema section; the
   `ACTION_LABEL` map and `activity_section()`) is enforced by a suite.
-- A merge leaves no conflict marker in the schema or a migration
-  (2026-10-18: a `=======` line from #491 stood in `schema.sql`;
-  `tests/sql.js`).
+- A merge leaves no conflict marker in any file (2026-10-18: a `=======`
+  line from #491 stood in `schema.sql`, `tests/sql.js`; 2026-11-18: one
+  reached `docs/DECISIONS.md` through #1238): the merge check
+  (`verify-gate.sh`) holds a commit carrying one in every mode but off.
 - Two releases restating one function merge in turn: the later one's
   restatement holds the other's change and its band follows the other's in
   `schema.sql` (2026-11-06: #925 restated `app_settings_set` without
