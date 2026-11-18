@@ -4930,6 +4930,11 @@
         by[w] += Number(a.results) || 0;
       });
       var parts = order.map(function (w) { return [w, by[w]]; });
+      /* A part that counts nothing is left out of a mix (2026-11-18, the
+         user: "What does it mean by 0 results"): an ad that spent and had no
+         result reads no 0 Results; its spend stays in the amount. */
+      var some = parts.filter(function (x) { return x[1]; });
+      if (some.length && some.length < parts.length) parts = some;
       return {
         total: parts.reduce(function (n, x) { return n + x[1]; }, 0), spent: spent,
         type: parts.length === 1 ? parts[0][0] : 'Results',
@@ -4993,6 +4998,10 @@
         '<div class="row"><div><label class="field-label" for="rpPFrom">Compare with</label><select class="select" id="rpPFrom" data-nofind>' +
           '<option value="">Typed figures</option>' + (t.prev_from ? '<option value="' + esc(t.prev_from) + '">' + esc(fromWord || 'Published report') + '</option>' : '') +
         '</select></div></div>' +
+        /* A published report's figures are read, never typed (2026-11-18,
+           the user: what the client was sent is not touched; a correction
+           is a new version of that report, published and sent). */
+        '<div id="rpPFacts" hidden></div><div id="rpPFields">' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPStart">Start</label><input class="input" id="rpPStart" type="date"></div>' +
         '<div><label class="field-label" for="rpPEnd">End</label><input class="input" id="rpPEnd" type="date"></div></div>' +
         /* With TikTok held each field names its platform, so the rows keep
@@ -5003,6 +5012,7 @@
         (tk ? '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpKPReach">TikTok reach</label><input class="input" id="rpKPReach" data-num="int" type="text" inputmode="numeric"></div>' +
           '<div><label class="field-label" for="rpKPImpr">TikTok impressions</label><input class="input" id="rpKPImpr" data-num="int" type="text" inputmode="numeric"></div>' +
           '<div><label class="field-label" for="rpKPSpend">TikTok amount spent</label><input class="input" id="rpKPSpend" data-num="money" type="text" inputmode="decimal"></div></div>' : '') +
+        '</div>' +
       '</section>' +
       (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>' + on('Results by objective') + '</summary>' +
         objs.map(function (o) {
@@ -5062,9 +5072,28 @@
     var from = t.prev_from || null, fromGroups = t.prev_groups || null, filling = false, typed = !!t.prev_typed;
     var pick = $('rpPFrom');
     pick.value = from || '';
+    /* Chosen from a published report, its figures stand as read; typed
+       figures are the fields. */
+    var held = function (pv) {
+      var on = !!from;
+      $('rpPFields').hidden = on; $('rpPFacts').hidden = !on;
+      if (!on) return;
+      var f = pv || { prev_start: $('rpPStart').value, prev_end: $('rpPEnd').value, prev_reach: numIn($('rpPReach').value),
+                      prev_impressions: numIn($('rpPImpr').value), prev_spend: numIn($('rpPSpend').value), tiktok: null };
+      /* Laid as the fields they stand in for, each a value read at the
+         field's height (as This period · All ad accounts reads). */
+      var cell = function (k, val) { return '<div><span class="field-label">' + esc(k) + '</span><div class="readfield">' + esc(val) + '</div></div>'; };
+      $('rpPFacts').innerHTML = '<div class="row">' + cell('Period', f.prev_start ? periodWord(f.prev_start, f.prev_end) : '\u2014') + '</div>' +
+        '<div class="row fgrid-3 fgrid">' + cell(tk ? 'Meta reach' : 'Reach', fmt(f.prev_reach)) + cell(tk ? 'Meta impressions' : 'Impressions', fmt(f.prev_impressions)) +
+          cell(tk ? 'Meta amount spent' : 'Amount spent', money2(f.prev_spend)) + '</div>' +
+        (tk && pk ? '<div class="row fgrid-3 fgrid">' + cell('TikTok reach', fmt(pk.prev_reach)) + cell('TikTok impressions', fmt(pk.prev_impressions)) +
+          cell('TikTok amount spent', money2(pk.prev_spend)) + '</div>' : '');
+    };
     loadPrevChoices(r, function (list) {
       if (!pick.isConnected) return;
-      pick.innerHTML = '<option value="">Typed figures</option>' + list.map(function (x) {
+      /* Typed figures only where no published report ends before this one
+         (or the report already holds typed ones, kept until changed). */
+      pick.innerHTML = (list.length && !typed ? '' : '<option value="">Typed figures</option>') + list.map(function (x) {
         return '<option value="' + esc(x.id) + '">' + esc(prevWordOf(x.id)) + '</option>';
       }).join('') + (from && !list.some(function (x) { return x.id === from; }) ? '<option value="' + esc(from) + '">' + esc(fromWord || 'Published report') + '</option>' : '');
       pick.value = from || '';
@@ -5072,7 +5101,7 @@
     });
     pick.addEventListener('change', function () {
       var id = pick.value;
-      if (!id) { from = null; typed = true; return; }
+      if (!id) { from = null; typed = true; held(); return; }
       pick.disabled = true;
       prevOfReport(id).then(function (pv) {
         pick.disabled = false;
@@ -5083,12 +5112,11 @@
         numFields(box);
         filling = false;
         from = id; fromGroups = pv.prev_groups; typed = false;
+        held(pv);
         say(m, '');
       });
     });
-    ['rpPStart', 'rpPEnd', 'rpPReach', 'rpPImpr', 'rpPSpend', 'rpKPReach', 'rpKPImpr', 'rpKPSpend'].forEach(function (k) {
-      if ($(k)) $(k).addEventListener('input', function () { if (!filling && from) { from = null; typed = true; pick.value = ''; } });
-    });
+    held();
     var showPrev = function () { $('rpPrevSec').hidden = $('rpFirst').checked; };
     $('rpFirst').onchange = showPrev; showPrev();
     if (window.ADspaceForm) window.ADspaceForm.scan(box);
