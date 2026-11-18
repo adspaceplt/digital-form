@@ -17805,6 +17805,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'script-pictures') {
           var sp0 = (opts && opts.body) || {};
           window.__picturesAsked = JSON.parse(JSON.stringify(sp0));
+
+          if (sp0.ping && window.__aiPictures && window.__aiPictures.pingFail > 0) { window.__aiPictures.pingFail--; return Promise.resolve({ data: null, error: { message: 'Failed to send a request to the Edge Function' } }); }
           if (sp0.ping) return Promise.resolve({ data: { ready: Boolean(window.__aiPictures) }, error: null });
           if (!window.__aiPictures) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, error: null });
           if (window.__aiPictures.error) return Promise.resolve({ data: { error: window.__aiPictures.error }, error: null });
