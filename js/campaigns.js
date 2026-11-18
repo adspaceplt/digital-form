@@ -620,7 +620,7 @@
         (c.active === false ? fact('Inactive reason', c.inactive_reason) : '') +
         word('name', 'Name', c.name) +
         word('client_rate', 'Client rate', c.client_rate != null && c.client_rate !== '' ? money(c.client_rate) : '') +
-        word('whatsapp', 'WhatsApp', c.whatsapp) +
+        word('whatsapp', 'WhatsApp', window.ADspaceAPI.phoneWord(c.whatsapp)) +
         word('notes', 'Notes', c.notes) + '</dl>') +
       crGroup('Profiles', '<div class="crr-profs">' + (profs || '<p class="emptyline">No profile links.</p>') + '</div>' +
           '<details class="crr-hist" id="crrHist"><summary class="btn btn-quiet btn-sm">Link history</summary>' +
@@ -1037,7 +1037,7 @@
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
           fact('Account holder', cur.payee) +
           fact('Email', cur.email) +
-          fact('WhatsApp', cur.whatsapp) +
+          fact('WhatsApp', window.ADspaceAPI.phoneWord(cur.whatsapp)) +
           sheetFact(cur.id) +
         '</dl></section>';
       if (rows.length > 1) {
@@ -1754,7 +1754,7 @@
           (was && how(was) !== how(cur) ? fact('Before', how(was)) : '') +
           fact(acct, cur.account || 'Ending ' + cur.account_end) +
           fact('Account holder', cur.payee) + '</dl></section>' +
-        '<section class="fsec"><h4 class="fsec-h">Contact</h4><dl class="ovfacts">' + fact('Email', cur.email) + fact('WhatsApp', cur.whatsapp) + '</dl></section>' +
+        '<section class="fsec"><h4 class="fsec-h">Contact</h4><dl class="ovfacts">' + fact('Email', cur.email) + fact('WhatsApp', window.ADspaceAPI.phoneWord(cur.whatsapp)) + '</dl></section>' +
         (jobs.length ? '<section class="fsec"><h4 class="fsec-h">Bookings waiting on these details</h4><dl class="ovfacts">' +
           jobs.map(function (j) { return '<div><dt class="cpq-mono">' + esc(j.job) + '</dt><dd>' + esc(j.campaign + (j.posted_on ? ' · Posted ' + cpqDay(j.posted_on) : '')) + '</dd></div>'; }).join('') + '</dl></section>' : '') +
         '<p class="msg" id="cpqSheetMsg" role="status"></p>';

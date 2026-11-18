@@ -897,7 +897,7 @@
     return '<section class="fsec"><h4 class="fsec-h">Company</h4><dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +
       '<section class="fsec"><h4 class="fsec-h">Billing contact</h4><dl class="ovfacts qsg-facts">' +
         fact('Name', esc(window.ADspaceWords.person ? window.ADspaceWords.person(ct.salutation, ct.name) : ct.name || '')) +
-        (ct.phone ? fact('Phone', esc(ct.phone)) : '') + (ct.email ? fact('Email', esc(ct.email)) : '') + '</dl></section>' +
+        (ct.phone ? fact('Phone', esc(window.ADspaceAPI.phoneWord(ct.phone))) : '') + (ct.email ? fact('Email', esc(ct.email)) : '') + '</dl></section>' +
       '<section class="fsec"><h4 class="fsec-h">Signature</h4><dl class="ovfacts qsg-facts">' +
         fact('Signed by', esc(sg.name || '') + (sg.designation ? '<small>' + esc(sg.designation) + '</small>' : ''), 'qsg-who') +
         fact('Date', esc(s.via === 'paper' ? window.ADspaceClock.date(q.signed_at) : when(q.signed_at))) +

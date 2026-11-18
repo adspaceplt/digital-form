@@ -1120,6 +1120,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADSPACE_CONFIG.signCodeDigits` boxes (8, Supabase's Email OTP length), so
   a paste, the iPhone's code from Mail and a screen reader meet a plain
   field; a whole code arriving presses the field's Enter, which signs in.
+- `ADspaceAPI.phoneWord` (`js/api.js`) is how every phone number reads,
+  on every page (+60 12-345 6789, +60 7-123 4567, +65 8123 4567), whatever
+  was typed (2026-11-18, the user: one portal showed 60167690532,
+  0127106561 and +60 16-776 6878); a `tel:` link dials `+{waNumber}`. The
+  stored value keeps what was typed; no page draws it raw (`tests/phones.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,

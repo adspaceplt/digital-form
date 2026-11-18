@@ -1406,7 +1406,7 @@
     // Website, phone and the social pages, as things to open rather than read.
     var links = [];
     if (c.website) links.push(linkChip(c.website, 'Website', true));
-    if (c.phone)   links.push(linkChip('tel:' + c.phone, c.phone, false));
+    if (c.phone)   links.push(linkChip('tel:+' + window.ADspaceAPI.waNumber(c.phone), window.ADspaceAPI.phoneWord(c.phone), false));
     /* The field holds a handle now, not a link, so where to open it is
        derived per platform: `https://` + a handle gives `https://starliving`,
        which is nothing. rednote addresses a profile by id, so a display name
@@ -1826,7 +1826,7 @@
       /* A button, not a word run against the number with nothing between them:
          it is a thing to press and it is the same `.plink` the contact row
          and the client's own page already draw. */
-      rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:' + esc(m.phone) + '">' + reachGlyph('phone') + esc(m.phone) + '</a>' +
+      rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:+' + esc(window.ADspaceAPI.waNumber(m.phone)) + '">' + reachGlyph('phone') + esc(window.ADspaceAPI.phoneWord(m.phone)) + '</a>' +
         (mUser || mWa ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
     }
     if (mWa) {
@@ -3767,7 +3767,7 @@
           return '<div' + (same ? '' : ' class="df-moved"') + '><dt>' + esc(r[1]) + '</dt><dd' + (r[0] === 'billing_address' ? ' class="is-pre"' : '') + '>' +
             (same ? esc(sent) : esc(held) + ' → ' + esc(sent)) + '</dd></div>';
         }).join('') +
-        '<div><dt>Billing contact</dt><dd>' + esc(who) + '<br>' + esc(a.contact_phone || '') + '<br>' + esc(a.contact_email || '') + '</dd></div></dl>' +
+        '<div><dt>Billing contact</dt><dd>' + esc(who) + '<br>' + esc(window.ADspaceAPI.phoneWord(a.contact_phone)) + '<br>' + esc(a.contact_email || '') + '</dd></div></dl>' +
         (work && !inC && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
         '<div class="msg" id="crmDfMsg"></div>';
     }
@@ -3943,7 +3943,7 @@
       '" target="_blank" rel="noopener">' + esc(c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '')) + '</a>' : '';
     var logo = c.logo_url ? '<span class="readlogo"><img src="' + esc(c.logo_url) + '" alt="" onerror="this.remove()"></span>Set' : '';
     box.innerHTML =
-      readGroup('Website and office', [['Website', site], ['Office phone', c.phone ? esc(c.phone) : '']]) +
+      readGroup('Website and office', [['Website', site], ['Office phone', c.phone ? esc(window.ADspaceAPI.phoneWord(c.phone)) : '']]) +
       readGroup('Social handles', [
         ['Instagram', handle('handle_ig')], ['Facebook', handle('handle_fb')],
         ['TikTok', handle('handle_tiktok')], ['rednote', c.handle_xhs ? esc(c.handle_xhs) : '']
@@ -5001,7 +5001,7 @@
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
-        (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + reachGlyph('phone') + esc(ct.phone) + '</a>' : '') +
+        (ct.phone ? '<a class="plink" href="tel:+' + esc(window.ADspaceAPI.waNumber(ct.phone)) + '">' + reachGlyph('phone') + esc(window.ADspaceAPI.phoneWord(ct.phone)) + '</a>' : '') +
         waLink(ct.whatsapp || ct.phone, (state.client || {}).market) +
         (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + reachGlyph('mail') + esc(ct.email) + '</a>' : '') +
       '</span>' +

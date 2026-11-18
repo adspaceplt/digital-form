@@ -157,11 +157,7 @@
     var w = String(t || '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
     return w ? w.charAt(0).toUpperCase() + w.slice(1) : '';
   }
-  function phone(n) {
-    var C = window.ADspaceCard;
-    if (!n) return '';
-    return C && C.phone ? C.phone(n) : '+' + String(n).replace(/\D/g, '');
-  }
+  function phone(n) { return n ? window.ADspaceAPI.phoneWord(n) : ''; }
   /* A moment as Malaysia reads it, from Malaysia's clock as the rest of
      the console reads one: `9 Oct, 2:05pm` (2026-10-22, WA-2). */
   var CK = window.ADspaceClock;

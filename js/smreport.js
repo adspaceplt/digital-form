@@ -633,10 +633,12 @@
     };
     t.freq = t.reach && t.impressions !== null ? t.impressions / t.reach : null;
     /* Two ad accounts or more (2026-11-17): each account's own figures,
-       named as Meta names the account; reach stays each account's own. */
+       reach each account's own. Named Ad account 1, 2 …, never by Meta's
+       name, which is the agency's own and may name another client
+       (2026-11-18, the user). */
     var AC = T0.accounts || {}, accIds = Object.keys(AC);
     var accounts = accIds.length > 1 ? accIds.map(function (k, i) {
-      var a = AC[k] || {}, o = { name: words(a.name).trim() || 'Ad account ' + (i + 1), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend) };
+      var a = AC[k] || {}, o = { name: 'Ad account ' + (i + 1), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend) };
       o.freq = o.reach && o.impressions !== null ? o.impressions / o.reach : null;
       o.share = mt.spend ? (o.spend || 0) / mt.spend : null;
       return o;
