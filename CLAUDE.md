@@ -2397,6 +2397,11 @@ learned about an area is written in its file, never here.
   (refused without, served with, is a browser fault). The media pass broke
   this way twice (2026-10-12, 2026-10-15).
 - Partial work is labelled partial, never reported as done.
+- Every change adds value the portal keeps (the user, 2026-11-18: "every
+  changes, every fixes must add new values … else … waste of usage, waste
+  of limits, waste of time"): a fix goes to its cause in the shared
+  mechanism, so the same fault cannot recur elsewhere, never a patch on the
+  one screen reported; a change with no lasting gain is not made.
 - A change asked of one list or screen is made on every one of the same
   shape in the same push (2026-11-10, the user: "why need me to point out
   one by one": the client logo asked of Content Review was owed to Video

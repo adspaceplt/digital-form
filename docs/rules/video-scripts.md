@@ -87,7 +87,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (Add photo, the camera on a phone; Remove with Undo), else the frame
   Draw with AI drew, else a picture Gemini drew before, else the frame
   `ADspaceFrames.svg` draws from its shot size, angle and move; the client
-  link shows none. A photo is stored in the client's folder through
+  link shows the same best picture beside each scene's words (over them on
+  a phone), with no tag or act, from what `get_scripts` answers: the small
+  copies (`photo_thumb`, `ai_thumb`) and the drawing (`ai_frame`), never the
+  stored file or who added it (the user, 2026-11-18: "it should show the
+  drawings"). A photo is stored in the client's folder through
   `sign-upload` (`purpose` script) and kept by `video_script_picture` with a
   360px JPEG data URL (`photo_thumb`): the CDN serves no read across
   origins, so the PDF draws the thumbnail. Draw with AI (drawn where

@@ -258,7 +258,7 @@
     new_link_key: '',
     ops_add_business_days: 'p_from p_days',
     page_pulse: 'p_audience p_bell',
-    build_state: '', build_require: 'p_commit p_built',
+    build_state: '', build_require: 'p_commit p_built', usage_report: 'p_month',
     video_script_new: 'p_client p_period p_kind p_from p_idem',
     video_script_save: 'p_id p_head p_scenes p_version',
     video_script_share: 'p_ids p_on',
@@ -12951,6 +12951,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: dmState(), error: null });
     }
 
+    if (name === 'usage_report') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
+      if (!opsGranted('team.settings', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var uNow = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 7) + '-01';
+      var uM = function (from) { var a = (DB.ai_drafts || []).filter(function (d) { return String(d.created_at || '').slice(0, 7) === from.slice(0, 7); });
+        return { ai_runs: a.length, ai_tokens_in: a.reduce(function (t, d) { return t + (d.input_tokens || 0); }, 0),
+                 ai_tokens_out: a.reduce(function (t, d) { return t + (d.output_tokens || 0); }, 0), ai_usd: 0,
+                 emails: (DB.client_emails || []).length, whatsapp: (DB.wa_outbox || []).length }; };
+      var uOut = window.__usage || { month: uNow, 'this': uM(uNow), last: uM(new Date(Date.parse(uNow) - 864e5).toISOString().slice(0, 10)),
+        db: { bytes: 95420416, limit_mb: 500, alert_pct: 80, pct: 18.2, tables: [] }, s3: { ran_at: '2026-11-17T19:17:00Z', files: 274, bytes: 7505000000 } };
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(uOut)), error: null });
+    }
     if (name === 'build_state' || name === 'build_require') {
       var bmRow = function () {
         if (window.__buildMin && !(DB.app_flags || []).some(function (x) { return x.key === 'build:min'; })) {
@@ -15898,7 +15910,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   .sort(function (p, q) { return p.position - q.position; })
                   .map(function (sc) { return { id: sc.id, position: sc.position, visual: sc.visual, line: sc.line, t_from: sc.t_from == null ? null : sc.t_from,
                     t_to: sc.t_to == null ? null : sc.t_to, shot_size: sc.shot_size || null, angle: sc.angle || null, camera_move: sc.camera_move || null,
-                    on_screen: sc.on_screen || null, sound: sc.sound || null }; })
+                    on_screen: sc.on_screen || null, sound: sc.sound || null,
+
+                    photo_thumb: sc.photo_thumb || null, ai_thumb: sc.ai_thumb || null, ai_frame: sc.ai_frame || null }; })
               };
             })
           })), error: null });

@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261117zzzi">
-<link rel="stylesheet" href="/css/console.css?v=20261117zzzj">
+<link rel="stylesheet" href="/css/portal.css?v=20261118c">
+<link rel="stylesheet" href="/css/console.css?v=20261118d">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -6098,6 +6098,20 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<div class="sheet" id="useSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="useHead">
+    <div class="sheet-head">
+      <h3 id="useHead">Usage and limits</h3>
+      <button class="iconbtn" id="useClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body"><div id="useBody"></div></div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="useCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="depSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="depHead">
     <div class="sheet-head">
@@ -6727,7 +6741,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261117zzzf"></script>
 <script src="/js/ratecardpdf.js?v=20261117zzzf"></script>
 <script src="/js/campaigns.js?v=20261117zzzf"></script>
-<script src="/js/ops.js?v=20261118"></script>
+<script src="/js/ops.js?v=20261118e"></script>
 <script src="/js/perf.js?v=20261117zzzf"></script>
 <script src="/js/health.js?v=20261117zzzf"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>
@@ -6736,6 +6750,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261117zzzf"></script>
 <script src="/js/overview.js?v=20261118"></script>
 <script src="/js/analytics.js?v=20261117zzzf"></script>
-<script src="/js/settings.js?v=20261117zzzk"></script>
+<script src="/js/settings.js?v=20261118g"></script>
 </body>
 </html>

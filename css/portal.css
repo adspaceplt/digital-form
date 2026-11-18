@@ -5613,6 +5613,10 @@ body > .shell { width: 100%; }
    not as a second line of it. */
 .rec-id-meta { margin: 0; font-size: 12px; color: var(--ink-mute); min-width: 0; }
 .rec-id-meta[hidden] { display: none; }
+/* A part of the meta line that opens something (a script's month) reads as
+   its words: the line's size, its target given back on both sides, so it
+   stands on the line's edge and its dot keeps one space (2026-11-18). */
+.rec-id-meta > .linkbtn { font-size: inherit; font-weight: inherit; padding: 0 8px; margin-inline: -8px; vertical-align: baseline; }
 .rec-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; align-self: center; }
 /* The shared .chip rule pins every chip to the top of its flex row, which is
    right in a card head where it sits beside a name; beside a 38px ⋯ (44px
@@ -9306,6 +9310,47 @@ body.is-maint { overflow: hidden; }
 .is-narrow .vs-scenes.is-read .vs-scene, .is-narrow .vs-scenes.is-read.is-two .vs-scene {
   grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line";
 }
+/* A scene's picture (moved from console.css, 2026-11-18: the client's
+   script shows the drawings too; the user: "else it will just be a tons of
+   words"): the box, its photo or drawing, white in both themes. */
+.vs-pic-box {
+  display: grid; place-items: center; width: 90px; overflow: hidden;
+  border-radius: var(--radius-ctl-sm); background: var(--sunk); color: var(--ink-soft);
+}
+.vs-pic-box img { display: block; width: 90px; height: auto; max-height: 160px; object-fit: cover; }
+.vs-pic-box svg { display: block; width: 90px; height: auto; max-height: 160px; }
+/* A frame Claude drew (2026-11-06, js/frames.js `draw`): its tones in the
+   box's own colours, light in both themes as the post mockups are, and its
+   camera's move played once as the scene is shown. */
+.vs-pic-box:has(> .vf) { background: #ffffff; }
+.vf .vf-ink { fill: none; stroke: #1a1a1a; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.vf .vf-light { fill: none; stroke: #8e8e8e; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
+.vf .vf-fill { fill: #e6e6e6; stroke: none; }
+.vf .vf-paper { fill: #ffffff; stroke: #1a1a1a; stroke-width: 1.6; stroke-linejoin: round; }
+.vf .vf-edge { fill: none; stroke: #1a1a1a; stroke-width: 1.2; }
+.vf-shot { transform-box: view-box; transform-origin: 50% 50%; animation: 4s var(--ease) 1 both; }
+.vf-shot.vf-push { animation-name: vf-push; }
+.vf-shot.vf-pull { animation-name: vf-pull; }
+.vf-shot.vf-panr { animation-name: vf-panr; }
+.vf-shot.vf-panl { animation-name: vf-panl; }
+.vf-shot.vf-tiltu { animation-name: vf-tiltu; }
+.vf-shot.vf-tiltd { animation-name: vf-tiltd; }
+@keyframes vf-push { from { transform: scale(1); } to { transform: scale(1.15); } }
+@keyframes vf-pull { from { transform: scale(1.15); } to { transform: scale(1); } }
+@keyframes vf-panr { from { transform: scale(1.12) translateX(4%); } to { transform: scale(1.12) translateX(-4%); } }
+@keyframes vf-panl { from { transform: scale(1.12) translateX(-4%); } to { transform: scale(1.12) translateX(4%); } }
+@keyframes vf-tiltu { from { transform: scale(1.12) translateY(-4%); } to { transform: scale(1.12) translateY(4%); } }
+@keyframes vf-tiltd { from { transform: scale(1.12) translateY(4%); } to { transform: scale(1.12) translateY(-4%); } }
+@media (prefers-reduced-motion: reduce) { .vf-shot { animation: none; } }
+/* The client's read: the picture between the number and the words; on a
+   narrow page over the words. */
+.vs-scenes.is-read.has-pics .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr); }
+.vs-scenes.is-read.has-pics.is-two .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr) minmax(0, 1fr); }
+.is-narrow .vs-scenes.is-read.has-pics .vs-scene, .is-narrow .vs-scenes.is-read.has-pics.is-two .vs-scene {
+  grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n pic" "n text" "n line";
+}
+.vs-scenes.is-read .vs-pic { display: block; min-width: 0; }
+.is-narrow .vs-scenes.is-read .vs-scene > .vs-pic { grid-area: pic; }
 .vs-monthhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .vs-monthhead .btn { flex: 0 0 auto; }
 .vs-pos { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }

@@ -8976,6 +8976,13 @@
        decided (2026-10-24; the user: approval sits on each colleague's
        record): the request its key names, else the waiting request whose
        colleague the title names, else the Team list. A decision told to the colleague opens nothing. */
+    /* A usage notice opens Usage and limits in Settings (2026-11-18). */
+    if (!x.task_id && /^usage\./.test(x.kind || '')) {
+      history.replaceState(null, '', '/admin/?s=settings');
+      if (bridge.show) bridge.show('settings');
+      setTimeout(function () { if (window.ADspaceSettings && window.ADspaceSettings.openUsage) window.ADspaceSettings.openUsage(); }, 0);
+      return;
+    }
     /* A delete request opens the list it waits in (js/delreq.js). */
     if (!x.task_id && /^delete\./.test(x.kind || '')) {
       if (window.ADspaceDelReq) window.ADspaceDelReq.open();
