@@ -515,7 +515,11 @@
         : '<p class="emptyline">' + window.ADspaceWords.line.bodyGone + '</p>') +
       /* A New email sent again opens filled, its file to attach again. */
       (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
-        ? '<div class="row acts"><button class="btn" type="button" data-a="again">Send again</button></div>' : '');
+        ? '<div class="row acts"><button class="btn" type="button" data-a="again">Send again</button></div>'
+        : mlCanAgain(x) ? '<div class="row acts"><button class="btn" type="button" data-a="resend">Send again</button></div>' +
+            '<p class="msg" id="emlMsg" role="status" hidden></p>' : '');
+    var rs = $('emlSheetBody').querySelector('[data-a="resend"]');
+    if (rs) rs.addEventListener('click', function () { mlResend(x, rs); });
     var ag = $('emlSheetBody').querySelector('[data-a="again"]');
     if (ag) ag.addEventListener('click', function () {
       var aud = x.client_id ? 'client' : x.supplier_id ? 'supplier' : 'other';
@@ -539,6 +543,77 @@
     });
     emlSheetWire();
     window.ADspaceSheet.show($('emlSheet'), { opener: opener || null });
+  }
+  /* Send again (2026-11-18, the user: "maybe a resend button? so failed
+     email could be resent"): an email that did not arrive goes again
+     through its own sender, drawn as the first was: a creator email queued
+     again in its first words (`creator_email_again`), a hiring email and an
+     invitation sent afresh by hiring-mail and invite-member, each filed as
+     sent again (`again_of`). An email carrying a document is sent again
+     from its record, where its PDF is drawn. Once sent again it offers no
+     second. */
+  var AGAIN_SAID = {
+    denied: 'You do not have permission to send this email. Please ask an admin.',
+    not_admin: 'You do not have permission to send this email. Please ask an admin.',
+    'send-off': window.ADspaceWords.line.emailSendOff,
+    'not-found': 'This email no longer exists.',
+    'not-failed': 'This email has already been sent. Refresh the page to see it.',
+    gone: 'This email\'s address and message have been deleted, so it cannot be sent again.',
+    already: 'This email has already been sent again. Refresh the page to see it.',
+    'not-open': 'The interview times have changed. Send the invitation from the candidate\'s record.',
+    'not-confirmed': 'The interview is no longer confirmed. Send the email from the candidate\'s record.',
+    'no-meet': 'The interview has no Google Meet link. Add one on the candidate\'s record first.',
+    'no-email': 'The candidate\'s decision has changed. Send the email from the candidate\'s record.',
+    'not-sent': 'Not sent. The email service did not accept the email. Please try again later.',
+    unknown: 'The email service did not confirm delivery. Check the Email tab before sending it again.',
+    'bad-email': 'The address is not a valid email address. Correct it on the record first.',
+    bad_email: 'The address is not a valid email address. Correct it on the record first.'
+  };
+  var AGAIN_STATES = { failed: 1, bounced: 1, unknown: 1 };
+  var HIRE_KIND = { hiring_invite: ['invite', 'interviewId'], hiring_confirm: ['confirm', 'interviewId'],
+    hiring_pool: ['outcome', 'candidateId'], hiring_not: ['outcome', 'candidateId'], hiring_doc: ['doc', 'docId'] };
+  function mlCanAgain(x) {
+    if (!AGAIN_STATES[x.status] || !x.to_email || !may('whatsapp', 'work') || !may('send.email', 'work')) return false;
+    var later = ((ml.data || {}).items || []).some(function (y) { return y.again_of === x.id && !/^(failed|bounced)$/.test(y.status); });
+    if (later) return false;
+    if (x.source === 'creator') return Boolean(x.body) && may('campaigns.creators', 'work');
+    if (x.source !== 'system') return false;
+    if (HIRE_KIND[x.kind]) return Boolean(x.ref_id);
+    if (x.kind === 'invite_team') return may('team.invite', 'work');
+    if (x.kind === 'invite_client') return may('clients.contacts', 'work');
+    return false;
+  }
+  function mlResend(x, btn) {
+    var msg = $('emlMsg');
+    var say = function (t, tone) { msg.hidden = !t; msg.className = 'msg' + (tone ? ' ' + tone : ''); msg.textContent = t || ''; };
+    window.ADspaceConfirm.ask({ title: 'Send again?', go: 'Send again',
+      body: 'The email will be sent to ' + (x.to_name ? x.to_name + ' (' + x.to_email + ')' : x.to_email) + ' again.' }, function () {
+      btn.disabled = true;
+      if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(btn, true);
+      var fn = function (name, body) {
+        return db().functions.invoke(name, { body: body }).then(function (res) {
+          var d = res && res.data;
+          if (!d && res && res.error) return API.fnRefusal(res).then(function (code) { throw { code: code || 'not-sent' }; });
+          if (!d || d.error) throw { code: (d && d.error) || 'not-sent' };
+          return d;
+        });
+      };
+      var hk = HIRE_KIND[x.kind], body;
+      if (hk) { body = { kind: hk[0], againOf: x.id }; body[hk[1]] = x.ref_id; }
+      var go = x.source === 'creator' ? rpc('creator_email_again', { p_id: x.id })
+        : hk ? fn('hiring-mail', body)
+        : fn('invite-member', { email: x.to_email, name: x.to_name || '', kind: x.kind === 'invite_client' ? 'client' : 'team', againOf: x.id });
+      go.then(function () {
+        if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(btn, false);
+        btn.hidden = true;
+        say('Sent again.', 'ok');
+        mlLoad();
+      }).catch(function (e) {
+        if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(btn, false);
+        btn.disabled = false;
+        say(AGAIN_SAID[e && e.code] || (e && e.message && /function|schema cache|does not exist/i.test(e.message) ? SAID['needs-update'] : AGAIN_SAID['not-sent']), 'err');
+      });
+    });
   }
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
