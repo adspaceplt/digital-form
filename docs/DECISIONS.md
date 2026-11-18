@@ -11331,3 +11331,12 @@ step, so a quoted letter totalled a sen under the quotation and was refused
 `stale`. The page now adds the parts the same way. `affected.json` names
 `s3_keys_in_use` for the S3 suites, which the runner had not reached.
 - 2026-11-18 · Figures add up held a report over Meta's own rounding (the user, urgent: Laman Waringin's report could not be submitted). The previous period, 16 Sept to 15 Oct 2026, read RM 3,401.38 spent, Meta's account total; its three objectives, each rounded to the sen by Meta, add up to RM 3,401.40. Figures add up compared the two with a fixed half sen, so a correct report stood held with no fix that could clear it (Use that report's figures wrote the same figures back). The comparison of a total with its lines now allows half a sen for each line and half for the total, the most rounding can make; a 10 sen gap is still held, and a previous period is still held to its published report to the sen (the user: no tolerance on money spent; none is given on a figure, only on the sum of lines Meta rounds one by one). It reads nothing from Meta: Meta checks has been off since 13 Oct 2026. `tests/adsaccounts.js` holds both cases.
+
+### 2026-11-18 · The copyright line on every email
+The user, 2026-11-18: the portal's foot carries © {year} ADSPACE PLT. All
+Rights Reserved., and the emails did not. `_shared/mail.ts` `layout()` now
+ends a row (24px) under the fine print with that line in the fine print's
+light grey (#a1a1a1, 11px), the year Malaysia's at the send; a preview was
+approved first ("Ok approve"). Every function that imports the layout was
+deployed again. The two Supabase dashboard templates in
+`docs/SIGN-IN-EMAILS.md` carry it with the year as typed, pasted by hand.
