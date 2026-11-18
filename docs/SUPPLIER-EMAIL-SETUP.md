@@ -33,12 +33,12 @@ in the database (`mail_senders`, `mail_boxes`), not in secrets; the
 
 | Section | From | Replies to |
 |---|---|---|
-| clients (quotations, letters, New email, signing codes) | `ADspace <noreply-clients@sc.adspace.me>` | General, advertise@adspacestudios.com |
-| suppliers | `ADspace <noreply-suppliers@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
-| creators | `ADspace <noreply-creators@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
-| careers (hiring) | `ADspace <noreply-careers@sc.adspace.me>` | General, advertise@adspacestudios.com |
-| finance (invoices, overdue reminders) | `ADspace Finance <noreply-finance@sc.adspace.me>` | Finance, finance@adspacestudios.com |
-| team (invitations) | `ADspace Digital Portal <noreply-team@sc.adspace.me>` | General, advertise@adspacestudios.com |
+| clients (quotations, letters, New email, signing codes) | `ADspace <portal@sc.adspace.me>` | General, advertise@adspacestudios.com |
+| suppliers | `ADspace <portal@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
+| creators | `ADspace <portal@sc.adspace.me>` | Accounts payable, ap@adspacestudios.com |
+| careers (hiring) | `ADspace <portal@sc.adspace.me>` | General, advertise@adspacestudios.com |
+| finance (invoices, overdue reminders) | `ADspace Finance <portal@sc.adspace.me>` | Finance, finance@adspacestudios.com |
+| team (invitations) | `ADspace Digital Portal <portal@sc.adspace.me>` | General, advertise@adspacestudios.com |
 
 e-Invoice, einvoice@adspacestudios.com, is kept for e-invoice submissions
 alone. The four mailboxes are edited in Settings, Messages: Reply-to

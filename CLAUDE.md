@@ -1965,6 +1965,13 @@ learned about an area is written in its file, never here.
   console asks `portal-login` before the code, which makes a login for a
   live portal contact or an active colleague not removed or erased, and for
   nobody else, answering alike either way.
+- A sign-in email's button opens the portal's own page, never supabase.co
+  (2026-11-18, Resend's check: a link off the sending domain reads as
+  spam): `?token_hash=…&type=email` (an invitation `invite`) on the page
+  asked from, proved by `js/api.js` before any read of the session, the two
+  words taken out of the address; the dashboard's templates
+  (`docs/SIGN-IN-EMAILS.md`) and invite-member's own invitation
+  (`hashed_token`) alike (`tests/signin.js`, `tests/invitefn.js`).
 - `/admin/` signs in with the emailed link or the code (`#authCode`, 6 to 10
   digits, `verifyOtp` type `email`), or with a passkey (supabase-js 2.117.2 on
   `/admin/` only).
@@ -2363,10 +2370,12 @@ learned about an area is written in its file, never here.
   adspacestudios.com. The bank line is blank.
 - Emails:  - support and issuer: advertise@adspacestudios.com (the client portal's
     contact line too);
-  - every email the portal sends goes from its section's sender,
-    `noreply-{section}@sc.adspace.me` (clients, suppliers, creators,
-    careers, finance, team; `mail_senders`, `mail_sender(p_key)` through
-    `_shared/mail.ts` `sender`), and replies to a company mailbox, never a
+  - every email the portal sends goes from `portal@sc.adspace.me` under its
+    section's name (clients, suppliers, creators, careers, finance, team;
+    `mail_senders`, `mail_sender(p_key)` through `_shared/mail.ts` `sender`;
+    never a no-reply address, 2026-11-18, `2026-11-18-portal-sender.sql`;
+    Supabase's own sign-in emails from the same address, set in its SMTP
+    settings), and replies to a company mailbox, never a
     colleague's own address (the user, 2026-11-17): General
     advertise@ (clients, careers, invitations, all else), Accounts payable
     ap@ (suppliers, creators), Finance finance@ (invoices and reminders),

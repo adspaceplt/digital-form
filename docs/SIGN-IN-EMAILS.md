@@ -23,6 +23,14 @@ share one left edge, and every grey holds 4.5:1 or more but the
 confidentiality line, which is fine print in the brand's light grey
 (`#a1a1a1`, as in `_shared/mail.ts`; the user, 2026-11-11). A change to that layout is made in both places.
 
+The button opens the portal's own page, never supabase.co (2026-11-18,
+Resend's deliverability check: a link off the sending domain reads as
+spam): the page the person asked from (`.RedirectTo`, the console's
+otherwise; an invitation by its kind) with `token_hash` and `type`, which
+the page proves itself (`js/api.js`). The sender is set in **Authentication
+→ SMTP Settings → Sender email**: `portal@sc.adspace.me`, name ADspace
+Digital Portal, never a no-reply address.
+
 | Template | Sent when |
 |---|---|
 | **Magic Link** | Every sign-in: a colleague signing in to the console, a client signing in to the client portal, and a colleague unlocking My records. It carries the code (`{{ .Token }}`, typed on the page) and the link. |
@@ -54,7 +62,7 @@ Body (HTML):
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Please enter the following code to sign in to the ADspace Digital Portal:</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:10px;margin:4px 0 24px;"><tr><td align="center" style="padding:16px 24px 16px 28px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1a1a1a;">{{ .Token }}</td></tr></table>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Alternatively, you may sign in on this device using the button below.</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">Sign in</a></td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ if .RedirectTo }}{{ .RedirectTo }}{{ else }}https://digital.adspace.me/admin/{{ end }}?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">Sign in</a></td></tr></table>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Yours sincerely,<br>ADspace</p>
 <p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">The code and the link may be used once and expire shortly.<br>If you did not request to sign in, please disregard this email; your account remains secure.</p>
 </td></tr>
@@ -98,7 +106,7 @@ Body (HTML):
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Dear {{ if .Data.greeting }}{{ .Data.greeting }}{{ else }}Sir or Madam{{ end }},</p>
 {{ if eq .Data.kind "client" }}<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services and resources with ADspace all in one place.</p>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Please use the button below to open your Client Portal.</p>{{ else }}<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.</p>{{ end }}
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">{{ if eq .Data.kind "client" }}Open Client Portal{{ else }}Sign in{{ end }}</a></td></tr></table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ if eq .Data.kind "client" }}https://digital.adspace.me/client/{{ else }}https://digital.adspace.me/admin/{{ end }}?token_hash={{ .TokenHash }}&amp;type=invite" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">{{ if eq .Data.kind "client" }}Open Client Portal{{ else }}Sign in{{ end }}</a></td></tr></table>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">After this first visit, you may sign in at any time with a code sent to this email address.{{ if eq .Data.kind "client" }} Should you have any questions, please contact your ADspace account manager.{{ end }}</p>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Yours sincerely,<br>ADspace</p>
 <p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">This link may be used once and expires shortly.<br>If you were not expecting this invitation, please disregard this email.</p>
