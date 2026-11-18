@@ -14,6 +14,8 @@
  *                                     on the candidate's page (step D):
  *                                     the reference and the day to answer,
  *                                     never the salary or the terms;
+ *   againOf (with any of the four)    the Email log's Send again: the same
+ *                                     email drawn afresh, filed as sent again
  *   { key, docId, kind: 'code', device }  the candidate's own press on their
  *                                     page, with no sign-in: a six-digit
  *                                     code to read that document, made by
@@ -189,9 +191,15 @@ Deno.serve(async (req) => {
      decided again is emailed again. */
   /* A document's key carries its sending, so a document sent back is
      emailed again. */
-  const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : ''), secret('RESEND_API_KEY'));
+  /* Sent again from Messages' Email log (SEND AGAIN, 2026-11-18): a key of
+     its own, so Resend never answers it with the first send, and filed as
+     sending that email again. */
+  const again = /^[0-9a-f-]{36}$/.test(String(b.againOf || '')) ? String(b.againOf) : '';
+  const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
+    (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
-    body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error });
+    body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
+    again_of: again || undefined });
   if (isDoc) await db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: status, p_error: error || null });
   else if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
   else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });

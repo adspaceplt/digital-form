@@ -71,6 +71,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   email in the log opens it filled as it went (its file attached afresh);
   an address the record no longer lists is not chosen in its place
   (Choose an address).
+  Send again (`2026-11-18-send-again.sql`; the user, 2026-11-18: "so failed
+  email could be resent"): an email in the log that did not arrive (Not
+  sent, Bounced, Not confirmed) goes again through its own sender, drawn
+  as the first was, at Messages Work with Send email on: a creator email
+  queued again in its first words as the colleague's
+  (`creator_email_again`, Creator Campaigns: Creators at Work; `already`,
+  `not-failed`, `gone`), never held by Automatic emails off; a hiring email
+  by hiring-mail for the record it was about (`system_emails.ref_id`), an
+  invitation by invite-member, each with `againOf`, filed on the email it
+  sends again (`again_of`). Asked first (Send again?), said in place (Sent
+  again.), offered once. A document's or a reminder's email is sent again
+  from its record, where its PDF is drawn (`tests/sendagain.js`).
   An email's addresses and words are cleared 12 months on, its subject,
   status and times kept (`mail_retention`, pg_cron `mail-retention`, the
   2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
