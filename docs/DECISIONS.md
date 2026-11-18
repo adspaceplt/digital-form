@@ -11296,3 +11296,18 @@ build time ahead of now (ten minutes allowed) was accepted. Release B's
 merge also left one `=======` line in `schema.sql`, caught by `sql`'s
 conflict check before the merge; the release's band then needed its blank
 line back to match its migration byte for byte.
+
+### 2026-11-18 · The S3 report held to its time, and a letter's term total
+The jobs notice of 18 Nov read "the S3 report was filed as failed": the
+in-use check read every text column whole, 13.8 seconds against the call's
+8, two thirds of it a published report's snapshot (23 MB of ads' and
+posts' pictures held as data) and the thumbnail columns. It now reads a
+snapshot's report part alone, the one part that names a file, and skips
+`thumb_data` (data:image by its check): 3.2 seconds, and the run made by
+hand the same morning filed its report. The `lettersql` defect another
+session logged the same night was this release's own: TERM TOTAL FROM ITS
+PARTS changed the database's span total, but the letter page's copy
+(`quotePrice`, js/documents.js) still rounded SST over the span in one
+step, so a quoted letter totalled a sen under the quotation and was refused
+`stale`. The page now adds the parts the same way. `affected.json` names
+`s3_keys_in_use` for the S3 suites, which the runner had not reached.
