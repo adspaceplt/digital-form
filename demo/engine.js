@@ -670,6 +670,8 @@
     team_set_expiry_at: 'p_time p_until',
     team_work_held: 'p_member',
     team_member_seen: 'p_id',
+    team_member_sessions: 'p_id',
+    team_session_end: 'p_id p_session',
     team_hand_over: 'p_member p_to',
     team_member_remove: 'p_erase p_member p_name',
     team_member_purge: 'p_member p_name',
@@ -5121,7 +5123,7 @@ function cardSlugFree(name, self, email) {
   function sendOk(channel) { var m = opsMe(); return Boolean(m) && portalOn(channel + '_on') && swOf(m, channel + '_on'); }
   var GRANTED_KEYS = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'ops.numbering': 1, 'ops.override': 1,
     'team.performance': 1, 'team.perfadmin': 1, 'team.settings': 1, 'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1,
-    'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'reports.whitelabel': 1,
+    'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1, 'reports.whitelabel': 1,
     'reports.transfer': 1, 'reports.ai': 1, 'reports.meta': 1, 'register.types': 1, 'campaigns.files_delete': 1, 'clients.vic': 1 };
   var SENSITIVE_KEYS = { 'clients.billing': 1, 'campaigns.pay': 2, 'suppliers.pay': 2 };
   function opsAccess(m) {
@@ -5134,7 +5136,7 @@ function cardSlugFree(name, self, email) {
   var GRANTED_PARTS = ['ops.all', 'ops.reports', 'ops.workflows', 'ops.time', 'ops.numbering', 'ops.override',
     'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite', 'team.handbook', 'team.announce',
     'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai', 'reports.meta', 'register.types',
-    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay', 'team.personnel', 'team.hiring'];
+    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay', 'team.personnel', 'team.hiring', 'team.sessions'];
 
   function notePush(row) {
     if (row && row.kind !== 'jobs.failed' && (DB.team_members || []).some(function (m) { return m.id === row.team_member_id && m.system; })) return;
@@ -9694,6 +9696,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var smInv = (DB.team_invites || []).filter(function (i) { return String(i.email || '').toLowerCase() === smEmail && i.kind === 'team'; })
         .map(function (i) { return i.created_at; }).sort().pop() || null;
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
+    }
+
+    if (name === 'team_member_sessions' || name === 'team_session_end') {
+      args = args || {};
+      var ssNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (!opsGranted('team.sessions', 'work')) return ssNo('denied');
+      var ssRow = DB.team_members.filter(function (t) { return t.id === args.p_id && !t.erased_at; })[0];
+      if (!ssRow) return ssNo('not-found');
+      var ssKey = String(ssRow.email || '').toLowerCase(), ssAll = (window.__sessions = window.__sessions || {});
+      var ssList = ssAll[ssKey] || [];
+      if (name === 'team_member_sessions') {
+        return Promise.resolve({ data: { sessions: JSON.parse(JSON.stringify(ssList.slice().sort(function (a, b) { return a.last_at < b.last_at ? 1 : -1; })
+          .map(function (x) { return { id: x.id, device: x.device, created_at: x.created_at, last_at: x.last_at, mine: x.id === window.__sessionMine }; }))) }, error: null });
+      }
+      var ssMe = opsMe();
+      if (ssRow.system && (!ssMe || ssMe.id !== ssRow.id)) return ssNo('system-account');
+      if (args.p_session === window.__sessionMine) return ssNo('own-session');
+      var ssHit = ssList.filter(function (x) { return x.id === args.p_session; })[0];
+      if (!ssHit) return ssNo('not-found');
+      ssAll[ssKey] = ssList.filter(function (x) { return x !== ssHit; });
+      DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
+        detail: ssRow.name + ': signed out on ' + ssHit.device + ' (' + String(ssHit.id).slice(0, 6) + ')', created_at: new Date().toISOString() });
+      return Promise.resolve({ data: { ok: true }, error: null });
     }
 
     if (name === 'client_entities_removed' || name === 'client_entity_delete') {
