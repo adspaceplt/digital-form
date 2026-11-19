@@ -59,7 +59,7 @@
     ops_settings: 'key value updated_at',
     ops_task_assignees: 'id task_id team_member_id responsibility assigned_by assigned_at ended_at',
     ops_task_checklist_items: 'id task_id label position required completed_at completed_by created_at',
-    ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at',
+    ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at recorded_at',
     ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id script_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
     ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
@@ -411,6 +411,8 @@
     ops_task_json: 'p_task',
     ops_title: 't',
     ops_transition_task: 'p_note p_assignee p_task p_skip_reason p_next p_version',
+    ops_transition_task_on: 'p_note p_assignee p_task p_skip_reason p_next p_version p_on',
+    ops_task_move_redate: 'p_event p_on',
     ops_update_link: 'p_url p_link p_kind p_label p_version',
     ops_update_task: 'p_payload p_task p_version',
     ops_withdraw_due_change: 'p_request',
@@ -3054,6 +3056,8 @@ function cardSlugFree(name, self, email) {
 
     task_past_days: 30,
 
+    stage_back_days: 7,
+
     quote_valid_days: 30, details_form_days: 14,
 
     wa_repeat_hours: 24,
@@ -3078,7 +3082,7 @@ function cardSlugFree(name, self, email) {
     ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
-    task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
+    task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Stage moves dated back', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
     health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], hiring_invite_days: ['Interview times within', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
@@ -3580,7 +3584,7 @@ function cardSlugFree(name, self, email) {
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
-          (k === 'timely_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'timely_late_days' && (v < 0 || v > 30 || Math.round(v * 10) / 10 !== v)) ||
+          (k === 'timely_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'stage_back_days' && (v < 0 || v > 30 || v % 1)) || (k === 'timely_late_days' && (v < 0 || v > 30 || Math.round(v * 10) / 10 !== v)) ||
           (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
           (k === 'bench_reels_share' && (v < 0 || v > 100)) || (k === 'bench_ad_spend_pct' && (v < 1 || v > 100)) ||
           (k === 'bench_cpl_rise' && (v < -100 || v > 100)) ||
@@ -5185,7 +5189,7 @@ function cardSlugFree(name, self, email) {
       from_value: before || null, to_value: after || null,
       detail: Object.assign(note ? { note: note } : {}, more || {}),
       actor_id: me ? me.id : null, actor_email: me ? me.email : null,
-      source: 'portal', created_at: nowIso()
+      source: 'portal', created_at: nowIso(), recorded_at: nowIso()
     });
     var own = opsOwner(task);
 
@@ -5487,6 +5491,75 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       return lv !== 'work' && lv !== 'manage';
     };
+
+    if (name === 'ops_transition_task_on' || name === 'ops_task_move_redate') {
+      var myDay = function (t) { return new Date((t ? Date.parse(t) : Date.now()) + 8 * 3600e3).toISOString().slice(0, 10); };
+      var tdy = myDay(), onDay = args.p_on;
+      var bk = DB.app_settings ? Number(appSet('stage_back_days', tdy)) : 7;
+      if (!isFinite(bk)) bk = 7;
+      var minus = function (d, n) { var x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() - n); return x.toISOString().slice(0, 10); };
+      var dayAt = function (d) { return new Date(Date.parse(d + 'T18:00:00+08:00')).toISOString(); };
+      var stageEvs = function (id) { return DB.ops_task_events.filter(function (e) { return e.task_id === id && e.event_type === 'stage_changed'; }); };
+      var bound = function (task, after, windowed) {
+        if (onDay > tdy) return { error: 'future-day' };
+        if (windowed && onDay < minus(tdy, bk)) return { error: 'too-early', days: bk };
+        var floor = [task.created_at, after].filter(Boolean).sort().pop();
+        if (floor && onDay < myDay(floor)) return { error: 'before-last', day: myDay(floor) };
+        var at = dayAt(onDay);
+        if (floor && at <= floor) at = new Date(Date.parse(floor) + 1000).toISOString();
+        return { at: at };
+      };
+      var STAMPS = ['first_draft_submitted_at', 'delivered_at', 'completed_at', 'cancelled_at'];
+      var FOLLOW = ['stage_changed', 'stage_skipped', 'delivered', 'completed'];
+      if (name === 'ops_transition_task_on') {
+        var plain = Object.assign({}, args); delete plain.p_on;
+        if (!onDay || onDay === tdy) return opsRpcInner('ops_transition_task', plain);
+        if (!opsMe()) return { error: 'not-team' };
+        var tk = opsTask(args.p_task);
+        if (!tk) return { error: 'not-found' };
+        var last = stageEvs(tk.id).map(function (e) { return e.created_at; }).sort().pop() || null;
+        var bd = bound(tk, last, true);
+        if (bd.error) return bd;
+        var n0 = DB.ops_task_events.length, was = {};
+        STAMPS.forEach(function (k) { was[k] = tk[k] || null; });
+        var out = opsRpcInner('ops_transition_task', plain);
+        if (out && (out.error || out.__raise)) return out;
+        DB.ops_task_events.slice(n0).forEach(function (e) {
+          if (e.task_id !== tk.id || FOLLOW.indexOf(e.event_type) < 0) return;
+          e.created_at = bd.at;
+          if (e.event_type === 'stage_changed') e.detail = Object.assign({}, e.detail || {}, { dated: onDay });
+        });
+        var t2 = opsTask(tk.id);
+        STAMPS.forEach(function (k) { if (t2[k] && t2[k] !== was[k]) t2[k] = bd.at; });
+        return Object.assign({}, t2);
+      }
+      var me2 = opsMe();
+      if (!me2) return { error: 'not-team' };
+      var ev = DB.ops_task_events.filter(function (e) { return e.id === args.p_event && e.event_type === 'stage_changed'; })[0];
+      if (!ev) return { error: 'not-found' };
+      var tk2 = opsTask(ev.task_id);
+      if (!tk2 || !opsAllowed('ops', 'work')) return { error: 'denied' };
+      var admin = opsGranted('ops.override', 'work');
+      if (!admin && (ev.actor_id !== me2.id || myDay(ev.recorded_at || ev.created_at) < minus(tdy, bk))) return { error: 'not-yours' };
+      var evs = stageEvs(tk2.id).map(function (e) { return e.created_at; }).sort();
+      var prev = evs.filter(function (x) { return x < ev.created_at; }).pop() || null;
+      var next = evs.filter(function (x) { return x > ev.created_at; })[0] || null;
+      var bd2 = bound(tk2, prev, !admin);
+      if (bd2.error) return bd2;
+      var at2 = bd2.at;
+      if (next && at2 >= next) {
+        if (onDay > myDay(next)) return { error: 'after-next', day: myDay(next) };
+        at2 = new Date(Date.parse(next) - 1000).toISOString();
+      }
+      var old = ev.created_at, rec = ev.recorded_at;
+      STAMPS.forEach(function (k) { if (tk2[k] && Date.parse(tk2[k]) === Date.parse(old)) tk2[k] = at2; });
+      DB.ops_task_events.forEach(function (e) {
+        if (e.task_id === tk2.id && e.created_at === old && e.recorded_at === rec && FOLLOW.indexOf(e.event_type) >= 0) e.created_at = at2;
+      });
+      ev.detail = Object.assign({}, ev.detail || {}, { dated: onDay });
+      opsLog(tk2.id, 'move_dated', { at: old, event: ev.id }, { at: at2, stage_key: (ev.to_value || {}).stage_key }, null);
+      return Object.assign({}, tk2);
+    }
     if (name === 'ops_transition_task') {
       if (noTasks(args.p_assignee)) return { __raise: 'no-tasks' };
       if (!opsAllowed('ops', 'work')) return { error: 'denied' };
@@ -5576,6 +5649,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       t.stage_key = args.p_next;
       t.version = (t.version || 1) + 1;
       t.updated_at = now;
+
+      if ((nxt.is_review || nxt.stage_group === 'client_review' || nxt.stage_group === 'internal_review') && !t.first_draft_submitted_at) t.first_draft_submitted_at = now;
       if (args.p_next === 'delivered') t.delivered_at = now;
       if (nxt.is_terminal && args.p_next !== 'cancelled') t.completed_at = now;
       if (args.p_next === 'cancelled') t.cancelled_at = now;
