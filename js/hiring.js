@@ -368,8 +368,9 @@
     });
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
+        '<span class="readgroup-acts">' +
         (people.length && isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-h="ivpdf">Download</button>' : '') +
-        (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Open sheet</button>' : '') + '</div>' +
+        (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Open sheet</button>' : '') + '</span></div>' +
       '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 per criterion</p>' +
       (people.length ? (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' : '') +
         '<div class="hir-scores">' + people.map(function (p) {

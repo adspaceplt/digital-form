@@ -1,4 +1,4 @@
-<!-- triggers: js/bukku.js js/invoices.js supabase/functions/bukku-sync -->
+<!-- triggers: js/bukku.js js/invoices.js js/payments.js supabase/functions/bukku-sync -->
 # Bukku (`js/bukku.js`, `bukku-sync`, `2026-10-18-bukku-contacts.sql`, `docs/BUKKU-SETUP.md`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
@@ -116,8 +116,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   and files `client.billing` naming the fields (Read from Bukku by Bukku,
   Saved to Bukku, Took Bukku's details); every held link is read again at
   00:30 MYT (pg_cron `bukku-read-nightly`, the wake secret, 100 seconds a
-  run: creators' bills first to 35 seconds, months' invoices to 60, then the
-  links, the oldest read first, in what is left; the run writes its beat,
+  run: creators' bills first to 35 seconds, months' invoices to 60, the
+  payment history (Payments, below) to 80, then the links, the oldest read first, in what is left; the run writes its beat,
   `job_beat('bukku-nightly')`, which `jobs_watch` reads; audit 2026-11-15). An entity is the same inside its fold.
   Suppliers keep Send to Bukku as before. A colleague is a Bukku employee
   contact (kind `member`, `2026-11-17-bukku-employee.sql`, its SQL Editor
@@ -200,6 +200,41 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   when it is not). No Bukku branding; WhatsApp
   reminders are not built (the user, 2026-10-28: "dont build the whatsapp
   first").
+- Payments (`js/payments.js`, `2026-11-19-payment-patterns.sql`; the user,
+  2026-11-19: each client's and entity's payment patterns, "act like you are
+  those CFO metrics … estimate and predicts the payments inwards outwards"):
+  Clients' third view (`#crmViews` Payments, `view=payments`, `#pynView`), at
+  Clients: Billing Full control alone (`payment_analysis` refuses `denied`
+  below it; Sensitive details off shuts it with Billing), held as Overdue
+  invoices are (`invoice_scope()`). Unlike Overdue invoices it is read from
+  a copy: `bukku_docs` holds Bukku's sales invoices of the last 24 months and
+  suppliers' purchase bills (kind `invoice`, `bill`), written only by
+  `bukku-sync` through `bukku_docs_take` (the service role's; RLS on, no
+  policy, no grant, as `bukku_doc_marks`, the history's reach): the nightly
+  run (to 80 seconds, after the months' invoices; a failure is the beat's
+  detail) and Read from Bukku (25 seconds, asked as the caller first), each
+  reading the last 62 days and every invoice owing, then whole the ones
+  whose due date or paid day is not known or that stopped owing (24 a run;
+  one Bukku no longer holds marked gone, never deleted), then one month
+  further back until 24 months are held; nothing is written to Bukku. A due
+  date is the last instalment's, else the invoice's date; the paid day is
+  the latest payment applied (`paidOn`). One currency at a time (the
+  Currency pill, never added across). The figures: days sales outstanding
+  (open against the last 90 days' invoicing), and over the invoices paid in
+  the last 12 months days to pay (invoice to paid), days paid late (due to
+  paid, early counting none) and paid on time, each judged against the 12
+  months before by `ADspaceSales.judge`; the open receivables by age (Not
+  due, 1 to 30, 31 to 60, 61 to 90, Over 90 days); 13 weeks from this
+  Monday of money in (each open invoice at its due date moved by its
+  payer's average days from due to paid over 12 months, else everyone's,
+  never before today) and out (creators' unpaid bills, `creator_bills`, by
+  their booking's Pay by, else their date, and suppliers' by their due
+  date; a creator's held to its campaign's client, a supplier's to its
+  client, one with no client only for a colleague seeing every client); a
+  row a payer (a Bukku contact, named by the company billed, else its
+  client, else as Bukku holds it), the most owed first, a linked one
+  opening the client's Billing (`tests/payan.js`, `payanfn.js`,
+  `payansql.js`).
 - Send invoice (`2026-11-04-invoices-sent-by-email.sql`; the user,
   2026-11-04: "send invoice (pulled data and pdf from bukku) send to
   clients email", approved "attach link for now"): each unpaid invoice on

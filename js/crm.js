@@ -1327,6 +1327,7 @@
     /* A record stands alone: Clients' view strip and the overdue invoices
        give way to it (2026-10-28). */
     if (window.ADspaceInvoices) window.ADspaceInvoices.hide();
+    if (window.ADspacePayments) window.ADspacePayments.hide();
     $('crmViewsBox').hidden = true;
     $('crmWork').hidden = false;
     $('crmClientName').textContent = c.name || '';
@@ -8418,6 +8419,8 @@
       if (o.tab && ck && (TABS[pane] || TABS[GROUP_OF[pane]] || []).indexOf('checklists') > -1) o.list = ck;
       /* Clients' second view, the overdue invoices (2026-10-28). */
       if (!o.client && window.ADspaceInvoices && window.ADspaceInvoices.on()) o.view = 'overdue';
+      /* The third, Payments (2026-11-19). */
+      if (!o.client && window.ADspacePayments && window.ADspacePayments.on()) o.view = 'payments';
       return o;
     },
     byKey: clientByKey,
@@ -8448,6 +8451,10 @@
         $('crmWork').hidden = true;
         if (window.ADspaceInvoices.show(true)) return;
       }
+      if (params.get('view') === 'payments' && window.ADspacePayments && window.ADspacePayments.may()) {
+        $('crmWork').hidden = true;
+        if (window.ADspacePayments.show(true)) return;
+      }
       showList();
     },
     showList: function () { showList(); },
@@ -8469,6 +8476,7 @@
   function showList() {
     $('crmWork').hidden = true;
     if (window.ADspaceInvoices) window.ADspaceInvoices.hide();
+    if (window.ADspacePayments) window.ADspacePayments.hide();
     $('crmListView').hidden = false;
     setUrl();
     loadClients(function () { loadDue(); restoreScroll(); });
