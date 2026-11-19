@@ -201,7 +201,7 @@
     'not-owner': 'Only the person it is assigned to, or an admin, can move it.',
     /* The day a stage move happened (2026-11-19). */
     'future-day': 'Choose today or an earlier date.',
-    'not-yours': 'Only an admin can change the date of this move.',
+    'not-yours': 'You do not have permission to change the date of this move. Please ask an admin.',
     'not-open': 'This task is no longer open to take.',
     'already-yours': 'This task is already assigned to you.',
     'finished': 'This task is finished.',
@@ -5485,7 +5485,7 @@
 
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
-    task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed', move_dated: 'Move dated',
+    task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed', move_dated: 'Move date changed',
     assignment_changed: 'Reassigned', handover: 'Handed on', offered: 'Offered to the team',
     offer_withdrawn: 'Offer withdrawn', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',

@@ -131227,7 +131227,7 @@ grant execute on function public.ops_timeliness(timestamptz, timestamptz) to aut
 --     them is restated. Rows before this file are taken as recorded when
 --     they happened.
 --   * Setting `stage_back_days` (7; 0 to 30, 0 turns dating back off),
---     taken by `app_settings_set` (Stage moves dated back, days).
+--     taken by `app_settings_set` (Past dates on stage moves, days).
 --   * `ops_transition_task_on(p_task, p_next, p_on, …)`: a move on a day
 --     before today (Malaysia). Today's, or none, is `ops_transition_task`
 --     itself. The day is `future-day` past today, `too-early` before the
@@ -131368,7 +131368,7 @@ begin
         when 'quote_reply_days' then 'Contact within'
         when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
         when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
-        when 'stage_back_days' then 'Stage moves dated back'
+        when 'stage_back_days' then 'Past dates on stage moves'
         when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
         when 'wa_repeat_hours' then 'WhatsApp sent again'
         when 'quote_wa_day' then 'Website quotations on WhatsApp'
