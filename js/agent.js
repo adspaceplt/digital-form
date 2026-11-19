@@ -265,7 +265,7 @@
     },
     waiting_on_me: function () {
       var m = me();
-      if (!m) return Promise.resolve(noAccess('what waits on you', 'Dashboard'));
+      if (!m) return Promise.resolve(noAccess('Waiting for you', 'Dashboard'));
       var out = {}, jobs = [];
       if (may('ops')) jobs.push(db.from('ops_due_requests').select('id, task_id, wants_at, reason, asked_by, asked_at')
         .eq('decider_id', m.id).eq('state', 'asked').limit(20).then(function (r) {
@@ -403,7 +403,7 @@
   var PLATFORM_WORD = { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
   var PLATFORM_KEY = { xhs: 'xhs', rednote: 'xhs', '小红书': 'xhs', red: 'xhs', instagram: 'instagram', ig: 'instagram',
     tiktok: 'tiktok', tt: 'tiktok', facebook: 'facebook', fb: 'facebook' };
-  var DOC_FAMILY = { quote_cover: 'Quotation cover', client: 'Client letter', hr: 'HR Letter', other: 'Other document' };
+  var DOC_FAMILY = { quote_cover: 'Quotation Cover', client: 'Client letter', hr: 'HR Letter', other: 'Other document' };
   var HB_CAT = { handbook: 'Employee Handbook', sop: 'SOPs', policy: 'Policies', template: 'Templates and forms', other: 'Other' };
   var MAIL_STATE = { queued: 'Queued', sending: 'Sending', sent: 'Sent', delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced',
     complained: 'Marked as spam', failed: 'Not sent', unknown: 'Not confirmed' };
@@ -452,7 +452,7 @@
         var missing = (Array.isArray(b.missing) ? b.missing : Array.isArray(b.billing_missing) ? b.billing_missing : []).map(words2);
         return { client: c.name, stage: STAGE[c.stage] || c.stage, registered_company_name: b.legal_name || null,
           billed_in: c.market === 'SG' && c.bill_sgd ? 'S$' : 'RM', sst_applies: c.sst_applies !== false,
-          billing: g[1].error ? 'could not be read' : missing.length ? 'Incomplete' : 'Complete', missing: missing };
+          billing: g[1].error ? 'Unable to load' : missing.length ? 'Incomplete' : 'Complete', missing: missing };
       });
     },
     /* Quotations and where each stands, as the client's Quotations reads
@@ -710,10 +710,10 @@
     /* Messages: the WhatsApp and Email logs, a month at a time, never a
        number or an address. */
     message_log: function (a) {
-      if (!may('whatsapp')) return Promise.resolve(noAccess('the message logs', 'Messages'));
+      if (!may('whatsapp')) return Promise.resolve(noAccess('messages sent', 'Messages'));
       var month = monthKey(a.month), email = a.channel === 'email', q = clean(a.query || '').toLowerCase();
       return db.rpc(email ? 'mail_log' : 'wa_messages', { p_month: month }).then(function (r) {
-        var g = fnData(r, 'the message logs', 'Messages');
+        var g = fnData(r, 'messages sent', 'Messages');
         if (g.refused) return g.refused;
         var items = g.data.items || [];
         var list = email ? items.map(function (x) {
