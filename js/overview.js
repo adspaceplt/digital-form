@@ -2332,7 +2332,11 @@
     var sec = $('sectionOverview');
     if (sec && !sec.hidden && !document.hidden) greet();
   }, 60000);
+  /* A period as the Dashboard reads it, and who may read its work and lead
+     figures, for the Assistant (2026-11-19): one copy of each rule. */
+  function span(p) { return { now: rangeOf(p), prev: prevOf(p), name: periodName(p), prevName: prevWord(p) }; }
   window.ADspaceOverview = { enter: enter, urlState: urlState, any: any, greetWord: greetWord,
-    groupCan: groupCan, forAnalytics: forAnalytics, focusCard: focusCard };
+    groupCan: groupCan, forAnalytics: forAnalytics, focusCard: focusCard,
+    span: span, can: { figures: canFigures, leads: canLeads }, PERIODS: PERIODS };
   if (bridge.overviewReady) bridge.overviewReady();
 })();

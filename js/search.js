@@ -522,6 +522,25 @@
       } }
   ];
   function allowed() { return SOURCES.filter(function (s) { return s.can(); }); }
+  /* The same search answered as data (the Assistant, 2026-11-19): every
+     section the person may read, the reads and rows above, a section that
+     fails leaving the rest; each row keeps its `open`. */
+  function find(raw) {
+    var q = clean(raw);
+    if (q.length < MIN) return Promise.resolve({ groups: [], failed: [] });
+    return Promise.all(allowed().map(function (s) {
+      var p;
+      try { p = s.read(q); } catch (e) { p = Promise.resolve({ error: e }); }
+      return p.then(function (r) { return { src: s, r: r }; }, function (e) { return { src: s, r: { error: e } }; });
+    })).then(function (answers) {
+      return {
+        failed: answers.filter(function (a) { return a.r.error; }).map(function (a) { return a.src.head; }),
+        groups: answers.filter(function (a) { return !a.r.error && (a.r.rows || []).length; }).map(function (a) {
+          return { head: a.src.head, rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return a.src.row(x, q); }) };
+        })
+      };
+    });
+  }
 
   /* ---- Drawing -----------------------------------------------------------
      The match is marked with weight, never colour. */
@@ -702,5 +721,5 @@
      can be searched. */
   function access() { btn.hidden = !(bridge.me && bridge.me()) || !allowed().length; }
   access();
-  window.ADspaceSearch = { access: access, open: function () { open(btn); } };
+  window.ADspaceSearch = { access: access, open: function () { open(btn); }, find: find };
 })();

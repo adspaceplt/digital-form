@@ -6500,6 +6500,8 @@
     restore: function () { restoreView(); },
     /* ===== end console search ===== */
     may: may,
+    /* Whether a route opens for this person (the Assistant's Open, 2026-11-19). */
+    sectionAllowed: function (name) { return sectionAllowed(name); },
     upgradeState: function () { return upgrade; },
     upgradeWindow: upgradeWindow, upgradeRead: function () { readUpgrade(); },
     parts: PARTS
