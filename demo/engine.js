@@ -7282,9 +7282,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
       var tf = args.p_from ? new Date(args.p_from).getTime() : NaN, tt = args.p_to ? new Date(args.p_to).getTime() : NaN;
       if (isNaN(tf) || isNaN(tt) || tt <= tf || tt - tf > 800 * 864e5) return { error: 'bad-range' };
-      var myDay = function (v) { return new Date(new Date(v).getTime() + 8 * 36e5).toISOString().slice(0, 10); };
+      var mdOf = function (v) { return new Date(new Date(v).getTime() + 8 * 36e5).toISOString().slice(0, 10); };
       var dDiff = function (a, b) { return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5); };
-      var tToday = myDay(Date.now()), vFrom = myDay(tf), vTo = myDay(tt - 1), live = tt >= Date.now() - 6e5;
+      var tToday = mdOf(Date.now()), vFrom = mdOf(tf), vTo = mdOf(tt - 1), live = tt >= Date.now() - 6e5;
       var all = opsGranted('ops.all', 'view');
       var items = DB.ops_tasks.filter(function (t) {
         return !t.cancelled_at && !t.archived_at && new Date(t.created_at).getTime() < tt &&
@@ -7313,13 +7313,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   r.period_end >= s0 && r.period_end <= s1 && (sent === null || r.sent_on < sent)) sent = r.sent_on;
             });
           }
-          done = sent || (t.completed_at ? myDay(t.completed_at) : null);
+          done = sent || (t.completed_at ? mdOf(t.completed_at) : null);
         } else {
-          done = rev || t.completed_at ? myDay(rev || t.completed_at) : null;
-          start = myDay(t.created_at);
+          done = rev || t.completed_at ? mdOf(rev || t.completed_at) : null;
+          start = mdOf(t.created_at);
         }
         return { t: t, kind: kind, owner: owners[0] ? owners[0].team_member_id : null,
-                 due: t.current_final_due_at ? myDay(t.current_final_due_at) : null, done: done, start: start };
+                 due: t.current_final_due_at ? mdOf(t.current_final_due_at) : null, done: done, start: start };
       });
       var meas = [];
       items.forEach(function (i) {
