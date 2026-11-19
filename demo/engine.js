@@ -3425,6 +3425,12 @@ function cardSlugFree(name, self, email) {
     if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
     if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
     var pay = opsGranted('campaigns.pay', 'view');
+
+    DB.creator_fees = DB.creator_fees || [];
+    (DB.creator_bills || []).forEach(function (b) {
+      if (b.option_id && !b.gone && b.amount != null && ['MYR', 'SGD'].indexOf(b.currency || 'MYR') > -1 && !DB.creator_fees.some(function (f) { return f.option_id === b.option_id; }))
+        DB.creator_fees.push({ option_id: b.option_id, amount: Number(b.amount), currency: b.currency || 'MYR', source: 'bill', set_at: new Date().toISOString() });
+    });
     var group = function (rows, cur, amt, n) {
       var by = {};
       rows.forEach(function (r) { var k = cur(r); by[k] = by[k] || { currency: k, amount: 0 }; by[k].amount = Math.round((by[k].amount + Number(amt(r) || 0)) * 100) / 100; by[k][n] = (by[k][n] || 0) + 1; });
