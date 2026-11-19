@@ -92,10 +92,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   2026-10-12); every turn slides (a still copy of the page left moving out
   as the new page comes in from the side moved toward, Detail from the
   right, `--t-slow`, the bar holding still, the copy clipped below it). The bar's right holds
-  the period (`#ovwPeriod`, a select of This month, Last month, This
-  quarter, Last quarter, This year: five, so never a segment; `p=`, This
-  month left out; each measured on the period before it the same days long,
-  Last quarter on the quarter before, This year on last year), with the
+  the period (`#ovwPeriod`, a select of Today, Yesterday, Last 7 days,
+  Last 14 days, This month, Last month, This quarter, Last quarter, This
+  year, never a segment; `p=`, This month left out; each measured on the
+  period before it the same days long, Last quarter on the quarter before,
+  This year on last year; Today from its start to now, on the same hours of
+  yesterday; Yesterday and a run of days end at today's start, so today is
+  never in them (the user, 2026-11-19: "last 7 days (excl today)"), each
+  measured on as many days before, said `on the day before` or `on the previous
+  7 days`), with the
   span and the time read beside it; both pages read the one period.
   - Summary, in this order (the revamp, 2026-11-12, "go as recommended",
     replacing the order of 2026-10-22): four figures lead (`#ovwLead`:

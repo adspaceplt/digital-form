@@ -91,10 +91,15 @@
      the reviews are last month's whatever it is, as their titles say. Each
      period is [from, to): every one but Last month runs to now, and the one
      before it is the same length on the same days. */
-  /* Last quarter and This year joined on the user's word (2026-10-12):
-     five choices, so a select, never a segment. */
-  var PERIODS = [['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'],
+  /* Last quarter and This year joined on the user's word (2026-10-12),
+     then the days (2026-11-19, the user: "can add, today, yesterday, last 7
+     days (excl today), last 14 days"): a select, never a segment. A run of
+     days ends at today's start, so today is never part of it. */
+  var PERIODS = [['today', 'Today'], ['yday', 'Yesterday'], ['d7', 'Last 7 days'], ['d14', 'Last 14 days'],
+                 ['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'],
                  ['lastq', 'Last quarter'], ['year', 'This year']];
+  /* How many days a period of days is, measured on the as many before it. */
+  var DAYS = { today: 1, yday: 1, d7: 7, d14: 14 };
   var period = 'month';
   /* The same Malaysian day and time n months on, the day held to the
      month's last. */
@@ -110,6 +115,8 @@
   function rangeOf(p) {
     if (p && typeof p === 'object') return { from: p.from, to: p.to };
     var now = new Date(), t = CK.today(), m0 = CK.start(t.slice(0, 7) + '-01');
+    if (p === 'today') return { from: CK.start(t), to: now };
+    if (DAYS[p]) return { from: CK.start(CK.addDays(t, -DAYS[p])), to: CK.start(t) };
     if (p === 'last') return { from: CK.start(CK.addMonths(t, -1) + '-01'), to: m0 };
     var qKey = t.slice(0, 4) + '-' + pad2(Math.floor((Number(t.slice(5, 7)) - 1) / 3) * 3 + 1);
     var q0 = CK.start(qKey + '-01');
@@ -120,6 +127,8 @@
   }
   function prevOf(p) {
     if (p && typeof p === 'object') return p.prev;
+    /* Malaysia keeps no daylight saving, so a day is 24 hours. */
+    if (DAYS[p]) { var q = rangeOf(p), ms = DAYS[p] * 864e5; return { from: new Date(q.from.getTime() - ms), to: new Date(q.to.getTime() - ms) }; }
     var r = rangeOf(p), n = p === 'quarter' || p === 'lastq' ? 3 : p === 'year' ? 12 : 1;
     return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
   }
@@ -127,6 +136,8 @@
   // What a change is measured against, in a word: "on Sept", "on last quarter".
   function prevWord(p) {
     if (p && typeof p === 'object') return p.prevName;
+    if (p === 'today' || p === 'yday') return 'the day before';
+    if (DAYS[p]) return 'the previous ' + DAYS[p] + ' days';
     if (p === 'quarter') return 'last quarter';
     if (p === 'lastq') return quarterWord(prevOf(p).from);
     if (p === 'year') return 'last year';
@@ -137,11 +148,15 @@
     var a = CK.parts(r.from), b = CK.parts(r.to.getTime() - 1), z = CK.parts(r.to);
     var whole = a.d === 1 && z.d === 1 && z.h === 0 && z.mi === 0;
     if (whole && a.mo === b.mo) return MON[a.mo] + ' ' + a.y;
+    if (a.d === b.d && a.mo === b.mo && a.y === b.y) return a.d + ' ' + MON[a.mo] + ' ' + a.y;
     if (a.mo === b.mo) return a.d + ' to ' + b.d + ' ' + MON[a.mo] + ' ' + a.y;
     return a.d + ' ' + MON[a.mo] + ' to ' + b.d + ' ' + MON[b.mo] + ' ' + b.y;
   }
   function periodName(p) {
     if (p && typeof p === 'object') return p.name;
+    if (p === 'today') return 'today';
+    if (p === 'yday') return 'yesterday';
+    if (DAYS[p]) return 'in the last ' + DAYS[p] + ' days';
     return p === 'last' ? MON[CK.parts(rangeOf('last').from).mo] : p === 'quarter' ? 'this quarter'
       : p === 'lastq' ? quarterWord(rangeOf('lastq').from) : p === 'year' ? 'this year' : 'this month';
   }
