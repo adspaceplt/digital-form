@@ -135,3 +135,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   and refuses every question past them (2026-11-13; `tests/agent.js` reads
   the function's tool list and counts them). The stand-in never sends the
   schemas to Claude, so only a live question proves them.
+- What a read answers is decided by the colleague's group access alone
+  (the user, 2026-11-19: "team group permissions is the master control
+  access"): a creator's default rate at Creators List access, as the list
+  shows it; Dashboard figures only by the Dashboard's own rules (no work
+  figures, their own included, without `ops.reports`). How many rows a
+  read lists (25 to 40) and the Activity record's days (14, up to 90) are
+  display bounds in `js/agent.js`, not settings (the user, 2026-11-19).
