@@ -26,7 +26,7 @@
   var C = window.ADspaceClock;
 
   var SAID = {
-    denied: 'You do not have permission to view payment patterns. Please ask an admin.',
+    denied: 'You do not have permission to view Payments. Please ask an admin.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
@@ -120,7 +120,7 @@
       st.reading = false;
       b.disabled = false;
       if (d.error) { msg.textContent = said(d); msg.className = 'msg err'; return; }
-      msg.textContent = d.more ? 'Read from Bukku. Earlier months are still to be read. Press Read from Bukku again.' : 'Read from Bukku.';
+      msg.textContent = d.more ? 'Read from Bukku. Earlier months were not read. Press Read from Bukku again.' : 'Read from Bukku.';
       msg.className = 'msg ok';
       load();
     });
@@ -134,7 +134,7 @@
     if (st.err) {
       cur.hidden = true;
       $('pynCount').textContent = '';
-      UI.failLine(body, 'The payment patterns', said(st.err), function () { load(); });
+      UI.failLine(body, 'Payments', said(st.err), function () { load(); });
       return;
     }
     var d = st.d;
@@ -162,8 +162,8 @@
   }
   function noteOf(d) {
     var parts = ['Invoices from ' + day(d.from)];
-    if (d.back_to && d.back_to > d.from) parts.push('read from Bukku back to ' + day(d.back_to));
-    if (d.read_at) parts.push('last read ' + C.date(d.read_at) + ', ' + C.clock(d.read_at));
+    if (d.back_to && d.back_to > d.from) parts.push('Bukku history from ' + day(d.back_to));
+    if (d.read_at) parts.push('Last read ' + C.date(d.read_at) + ', ' + C.clock(d.read_at));
     return parts.join(' · ') + '.';
   }
   function paintTiles(d) {
@@ -183,12 +183,12 @@
     };
     var was = function (before, f) { return before == null ? '' : 'Was ' + f(before); };
     var tiles = [
-      tile('Days sales outstanding', s.dso == null ? '—' : days(s.dso), money(s.open, d.currency) + ' open'),
+      tile('Days sales outstanding', s.dso == null ? '—' : days(s.dso), money(s.open, d.currency) + ' unpaid'),
       tile('Days to pay', days(s.days_to_pay), was(s.days_to_pay_before, days) || plural(s.paid || 0, 'invoice paid', 'invoices paid'),
         trendOf(s.days_to_pay, s.days_to_pay_before, 'down')),
-      tile('Days paid late', days(s.days_late), was(s.days_late_before, days) || 'After the due date',
+      tile('Days paid late', days(s.days_late), was(s.days_late_before, days) || '',
         trendOf(s.days_late, s.days_late_before, 'down')),
-      tile('Paid on time', pct(s.on_time), was(s.on_time_before, pct) || 'By the due date',
+      tile('Paid on time', pct(s.on_time), was(s.on_time_before, pct) || '',
         trendOf(s.on_time, s.on_time_before, 'up'))
     ];
     var box = $('pynTiles');
@@ -201,7 +201,7 @@
     /* The weeks are an estimate: whole ringgit, so the scale reads at a glance. */
     var whole = function (v) { return money(v, cur, 0); };
     CH.draw($('pynAging'), {
-      kind: 'bars', title: 'Open receivables by age', fmt: fmt, valueHead: 'Open',
+      kind: 'bars', title: 'Unpaid invoices by age', fmt: fmt, valueHead: 'Unpaid',
       rows: [
         { label: 'Not due', value: Number(a.current) || 0 },
         { label: '1 to 30 days', value: Number(a.d30) || 0 },
@@ -209,7 +209,7 @@
         { label: '61 to 90 days', value: Number(a.d90) || 0 },
         { label: 'Over 90 days', value: Number(a.over90) || 0, tone: Number(a.over90) > 0 ? 'err' : '' }
       ],
-      empty: 'Nothing open.'
+      empty: 'No unpaid invoices.'
     });
     var weeks = d.weeks || [];
     CH.draw($('pynWeeks'), {
@@ -250,7 +250,7 @@
         var t = document.createElement('div');
         t.className = 'crm-table softpanel pyn-table';
         t.innerHTML = '<div class="pyn-row crm-head prow"><span>Payer</span><span class="pyn-n">Days to pay</span><span class="pyn-n">Days late</span>' +
-          '<span class="pyn-n">On time</span><span class="pyn-n">Open</span><span>Trend</span></div>';
+          '<span class="pyn-n">On time</span><span class="pyn-n">Unpaid</span><span>Trend</span></div>';
         G.more(t, rows, 30, '', rowOf);
         return t;
       }
