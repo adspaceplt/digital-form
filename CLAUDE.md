@@ -146,8 +146,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A `?v=` stamp is eight digits and any letters after (`zzzf` follows
     `z`); a suite reading one never caps the letters (2026-11-18: `seo`).
   - A walk that ends a step inside a record leaves it by its Back before
-    the next step: a press on the open section keeps its record open
-    (2026-11-18: uxaudit waited on Team's Members inside a candidate).
+    it moves on, never counting on the rail to (2026-11-18: uxaudit waited
+    on Team's Members inside a candidate).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
@@ -2361,7 +2361,13 @@ learned about an area is written in its file, never here.
   list's own scroll, and a refresh restores the record's. A list opens at
   its top on a visit or a refresh; a section reached from the rail is a
   visit, at its top however far its list was scrolled before
-  (`visitSection`; the user, 2026-10-09; `tests/visit.js`); only Back and
+  (`visitSection`; the user, 2026-10-09; `tests/visit.js`); a press on
+  the section already open (the rail, the tab bar, a mark at the rail's
+  foot) goes back to its list, as an iPhone's tab bar does: the open
+  record is left by its own Back, one at a time, never pressed twice, and
+  a press on the list takes it to its top; the bell and search still open
+  the record whose address they wrote (`railPress`; the user, 2026-11-19:
+  "return to the list like iPhone"); only Back and
   Forward restore its scroll, and nothing is saved until the person scrolls (`bootScroll`,
   `personScrolled` in `js/admin.js`: bars drawn above a list while it
   loaded once saved a lower place each visit).

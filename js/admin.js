@@ -1620,7 +1620,7 @@
       shrink(false);
       if (name === 'more') { rail.isOpen() ? rail.shut() : rail.open(); return; }
       if (rail.isOpen()) rail.shut();
-      visitSection(name);
+      railPress(name);
     }
     bar.addEventListener('click', function (e) {
       if (swallow) { e.preventDefault(); e.stopPropagation(); return; }
@@ -2320,8 +2320,31 @@
     window.scrollTo(0, 0);
     showSection(name);
   }
+  /* A press on the section already open, from the rail, the tab bar or a
+     mark at the rail's foot, goes back to its list, as an iPhone's tab bar
+     does (the user, 2026-11-19: "return to the list like iPhone"): the
+     record open is left by its own Back, a record inside a record one Back
+     at a time, so each keeps what its Back asks first (unsaved work); on
+     the list already, the list goes to its top. Only a person's press
+     does this: the bell and search, which write the address of a record
+     before they open the section, still open that record. */
+  function railPress(name) {
+    if (!meLoaded || name !== section) { visitSection(name); return; }
+    var main = document.querySelector('.console-main'), last = null;
+    for (var i = 0; i < 4; i++) {
+      var back = main && [].filter.call(main.querySelectorAll('button.backlink'), function (b) {
+        return b.offsetParent && !b.disabled && !b.closest('.sheet');
+      })[0];
+      /* A Back still on screen after its press asked something first, or
+         answers later: it is never pressed twice. */
+      if (!back || back === last) break;
+      last = back;
+      back.click();
+    }
+    if (!i) window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
   navItems().forEach(function (b) {
-    b.addEventListener('click', function () { visitSection(b.getAttribute('data-section')); });
+    b.addEventListener('click', function () { railPress(b.getAttribute('data-section')); });
   });
 
   /* A tab that has been in the background long enough is thrown away by the
@@ -3162,13 +3185,13 @@
 
   if ($('settingsOpen')) $('settingsOpen').addEventListener('click', function () {
     if (rail && rail.isOpen && rail.isOpen()) rail.shut();
-    visitSection('settings');
+    railPress('settings');
   });
   /* The Handbook is a mark at the rail's foot (2026-11-11), beside
      Settings', not a section of the rail. */
   if ($('handbookOpen')) $('handbookOpen').addEventListener('click', function () {
     if (rail && rail.isOpen && rail.isOpen()) rail.shut();
-    visitSection('handbook');
+    railPress('handbook');
   });
   if ($('noAccessHandbook')) $('noAccessHandbook').addEventListener('click', function () { visitSection('handbook'); });
   /* Delete requests (2026-11-17): a mark at the rail's foot for an admin,
