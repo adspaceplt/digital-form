@@ -112,6 +112,12 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     read date literals and `current_date` in MYT (2026-10-21).
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
+  - A function body is parsed only where a suite makes it with bodies
+    checked: `auditfix` loads the whole schema as the live database does and
+    fails a syntax error or a function the schema makes that never got
+    made, and every schema change runs it (2026-11-19: `public.ops_me().id`
+    passed `sql`, which sets `check_function_bodies` off, and the live
+    database refused the whole migration).
   - uxaudit and matrix have an hour each (`gate.sh`); a suite measuring
     what a page refits a frame later waits for the frames, never a fixed
     time (2026-10-30: geom read 144 segments 400ms after unhiding them).
