@@ -24,10 +24,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
   drawn where its section is at Full Access: Sales (Clients and Leads),
   Clients (Clients); no tab for a section until it holds a trend's history
-  (2026-10-25, review 7). The period (`p=`: Last 12 months by default, 6,
-  24, This year, Last year) is measured on the same span before it, ending
+  (2026-10-25, review 7). The period (`p=`: Last 12 months by default; Today,
+  Yesterday, Last 7 days and Last 14 days, the Dashboard's own spans and
+  words through `ADspaceOverview.span`; 6, 24, This year, Last year) is
+  measured on the same span before it, ending
   at the same moment of its month, and a month a figure is divided by is
-  the share of it passed (`prevOf`, `monthsIn`; review 2). A group at Own
+  the share of it passed (`prevOf`, `monthsIn`; review 2). Over days
+  every figure reads the days against as many before (a count, never a
+  month's rate: New leads, not per month; no churn rate a quarter), while
+  the charts by month keep the last 12 months and no tile draws a month's
+  trend (the user, 2026-11-19: the days for the Dashboard and Analytics
+  both). A group at Own
   clients only reads one line, Your clients only., under the bar
   (`.anl-own`; review 4).
 - Sales and Clients read every client once a visit (`readPages`, the stage
