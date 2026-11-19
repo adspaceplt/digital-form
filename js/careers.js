@@ -31,16 +31,55 @@
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed',
     offer: 'Offer to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
-  function when(iso) { return window.ADspaceClock.date(iso, { long: true }) + ', ' + window.ADspaceClock.clock(iso); }
+  /* An interview's time with its weekday, Malaysia's day (2026-11-19, the
+     user: "also add day, eg. Monday Tuesday"): Friday, 20 November 2026,
+     2:00pm. */
+  var WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  function when(iso) {
+    if (!iso) return '';
+    var C = window.ADspaceClock, wd = C.weekday(C.day(iso));
+    /* Each part held whole (21\u00a0November\u00a02026): a line breaks after a
+       comma, never inside a date. */
+    return (wd == null ? '' : WEEKDAY[wd] + ', ') + C.date(iso, { long: true }).replace(/ /g, '\u00a0') + ', ' + C.clock(iso);
+  }
   var ORG = window.ADSPACE_ORG || {};
   /* The interview (step B, HR-SPEC.md decision 2): the times offered to
      choose from, or other times asked for; once confirmed, when and where. */
+  /* Where the interview is held, the same rows in every state (2026-11-19,
+     the user: the office's details were missing): the office with its
+     address and Get directions, or Google Meet with its link once the time
+     is confirmed. The time, where known, leads; Length closes. */
+  /* The address a line a part, each line's last two words held together, so
+     a phone never leaves 2A alone on a line. */
+  function addrLines() {
+    return String(ORG.address || '').split('\n').map(function (l) { return esc(l).replace(/ (\S+)$/, '&nbsp;$1'); }).join('\n');
+  }
+  /* The meeting's address as words, its code held whole after the last
+     slash (meet.google.com/ then abc-defg-hij), never broken at a hyphen. */
+  function meetWord(u) {
+    var t = String(u || '').replace(/^https?:\/\//, ''), k = t.lastIndexOf('/');
+    return k < 0 ? '<span class="cr-meet-code">' + esc(t) + '</span>'
+      : esc(t.slice(0, k + 1)) + '<wbr><span class="cr-meet-code">' + esc(t.slice(k + 1)) + '</span>';
+  }
+  function place(i, confirmed) {
+    var I = window.ADspaceIcons;
+    var where = i.mode === 'online'
+      ? 'Google Meet' + (confirmed && i.link
+        ? '<span class="cr-meet">' + meetWord(i.link) + '</span>'
+        : confirmed ? '' : '<span class="cr-where-note">The meeting link will be shared once the time is confirmed.</span>')
+      : 'ADspace office<span class="cr-addr">' + addrLines() + '</span>' +
+        (ORG.map ? '<a class="btn btn-sm cr-map" href="' + esc(ORG.map) + '" target="_blank" rel="noopener">' +
+          (I ? I.svg('pin') : '') + 'Get directions' + (I ? I.svg('out') : '') + '</a>' : '');
+    return '<div><dt>Location</dt><dd class="cr-where">' + where + '</dd></div>' +
+      '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
+  }
   function interview(i) {
     if (!i) return '';
     var head = '<h2 class="qs-sec-h">Interview</h2>';
     if (i.state === 'invited') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head +
-        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'on Google Meet' : 'at the ADspace office') + '. Please choose a time. All times are Malaysia time.</p>' +
+        '<dl class="ovfacts cr-facts">' + place(i, false) + '</dl>' +
+        '<p class="cr-next">Please choose a time' + (i.reply_by ? ' by ' + esc(when(i.reply_by)) : '') + '. All times are Malaysia time.</p>' +
         (i.note ? '<p class="cr-note">' + esc(i.note) + '</p>' : '') +
         '<fieldset class="cr-picks" aria-label="Interview time">' + (i.slots || []).map(function (t, n) {
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
@@ -52,16 +91,17 @@
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
     }
     if (i.state === 'picked') return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) +
-      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Location</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At the ADspace office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+      '</dd></div>' + place(i, false) + '</dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+    /* An invitation not answered by its reply-by date (2026-11-19, the user:
+       "Expire, tell the team"): choosing closes, the team is told. */
+    if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
+      'ADspace will contact you by email if another time can be arranged.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     if (i.state === 'confirmed') {
-      var where = i.mode === 'online'
-        ? (i.link ? '<a class="btn btn-primary" href="' + esc(i.link) + '" target="_blank" rel="noopener">Join Google Meet</a>' : '')
-        : '<a class="btn" href="' + esc(ORG.map || '#') + '" target="_blank" rel="noopener">Get directions</a>';
+      var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
+        ? '<a class="btn btn-primary" href="' + esc(window.ADspaceWords.absUrl(i.link)) + '" target="_blank" rel="noopener">Join Google Meet</a>' : '';
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
-        '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>' +
-        '<div><dt>Location</dt><dd class="is-pre">' + (i.mode === 'online' ? 'Google Meet' : esc((ORG.name || 'ADSPACE PLT') + '\n' + (ORG.address || ''))) + '</dd></div></dl>' +
-        (where ? '<div class="qs-foot">' + where + '</div>' : '') + '</section>';
+        place(i, true) + '</dl>' + (join ? '<div class="qs-foot">' + join + '</div>' : '') + '</section>';
     }
     return '';
   }

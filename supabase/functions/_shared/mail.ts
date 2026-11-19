@@ -50,14 +50,14 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
     '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1a1a1a;">' +
-    '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">' +
+    '<a href="https://adspace.me" style="display:inline-block;text-decoration:none;border:0;"><img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>' +
     '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">' + esc(o.heading) + '</h1>' +
     ps +
     (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">' + esc(o.foot) + '</p>' : '') +
     '</td></tr>' +
     '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#515151;">' +
     'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>' +
-    '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>' +
+    '(60)18 762 5233 · <a href="https://adspace.me" style="color:#515151;text-decoration:none;">adspace.me</a>' +
     fine +
     /* The portal's own line (the user, 2026-11-18), a row under the fine
        print in its light grey: the year is Malaysia's at the send. */

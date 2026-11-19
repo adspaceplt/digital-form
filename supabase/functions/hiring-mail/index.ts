@@ -44,6 +44,7 @@ import { layout, resend, esc, FONT, codeEmail, sender, fileSent, callerEmail } f
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const PAGE = 'https://digital.adspace.me/careers/?k=';
 const OFFICE = '61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor';
+const MAP = 'https://hi.adspace.me/map';
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function button(label: string, href: string): string {
@@ -101,13 +102,16 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         'Thank you for your application for the position of ' + m.position + '. ADspace would like to invite you to an interview of ' +
         m.minutes + ' minutes ' + where + ' at one of the following times:\n\n' + times + '\n\n' +
         (m.note ? m.note + '\n\n' : '') +
-        'Please choose a time on your application page. If none of these times suits you, please say so on the same page.\n\n{invoices}\n\n' +
+        'Please choose a time on your application page' + (m.reply_by ? ' by ' + m.reply_by + ' (Malaysia time)' : '') +
+        '. If none of these times suits you, please say so on the same page.\n\n{invoices}\n\n' +
         'Yours sincerely,\n' + m.sender + '\nADspace',
       block: button('Choose a time', PAGE + m.key)
     };
   }
+  /* The office as the candidate's page names it, with its directions on our
+     own short link, the sending domain's (2026-11-19). */
   const place = m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + m.link
-    : 'The interview will be held at the ADspace office:\nADSPACE PLT\n' + OFFICE;
+    : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP;
   return {
     subject: 'Interview confirmed: ' + m.position,
     heading: 'Interview confirmed',

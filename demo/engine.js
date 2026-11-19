@@ -3072,7 +3072,7 @@ function cardSlugFree(name, self, email) {
 
     health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2,
 
-    hiring_invite_days: 14, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
+    hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
 
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
   var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
@@ -3084,7 +3084,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], hiring_invite_days: ['Interview times within', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
@@ -3591,7 +3591,7 @@ function cardSlugFree(name, self, email) {
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
-          (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
+          (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
@@ -15049,6 +15049,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hFind = function (id) { return DB.hiring_candidates.filter(function (x) { return x.id === id; })[0]; };
       DB.hiring_interviews = DB.hiring_interviews || [];
       var hWhen = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso) : iso; };
+
+      var hIvState = function (i) { return i.state === 'invited' && i.reply_by && Date.parse(i.reply_by) <= Date.now() ? 'expired' : i.state; };
       var hIvOf = function (cid) { return DB.hiring_interviews.filter(function (i) { return i.candidate_id === cid && i.state !== 'replaced'; })
         .sort(function (a, b) { return a.invited_at < b.invited_at ? 1 : -1; }); };
       var hTell = function (c, kind, title, body) {
@@ -15077,6 +15079,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (Date.parse(pc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
         var pi = hIvOf(pc.id).filter(function (i) { return i.state === 'invited'; })[0];
         if (!pi) return hNo('not-open');
+        if (pi.reply_by && Date.parse(pi.reply_by) <= Date.now()) return hNo('reply-passed');
         if (name === 'careers_pick') {
           var n = Number(args.p_slot);
           if (!(n >= 1 && n <= pi.slots.length)) return hNo('bad-slot');
@@ -15101,9 +15104,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (Date.parse(cc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
         var ci = hIvOf(cc.id)[0], civ = null;
         if (ci && ci.state !== 'cancelled') {
-          civ = { state: ci.state, minutes: ci.minutes, mode: ci.mode };
+          civ = { state: hIvState(ci), minutes: ci.minutes, mode: ci.mode };
           if (ci.note) civ.note = ci.note;
-          if (ci.state === 'invited') civ.slots = ci.slots.slice();
+          if (civ.state === 'invited') { civ.slots = ci.slots.slice(); if (ci.reply_by) civ.reply_by = ci.reply_by; }
           if (ci.picked) civ.at = ci.slots[ci.picked - 1];
           if (ci.state === 'confirmed' && ci.meeting_link) civ.link = ci.meeting_link;
         }
@@ -15269,12 +15272,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'hiring_mail_prepare') {
           if (!sendOk('email')) return hNo('send-off');
           var mk = args.p_kind;
-          if (mk === 'invite' && ['invited', 'none'].indexOf(iv.state) < 0) return hNo('not-open');
+          if (mk === 'invite' && ['invited', 'none'].indexOf(hIvState(iv)) < 0) return hNo('not-open');
           if (mk === 'confirm' && iv.state !== 'confirmed') return hNo('not-confirmed');
           if (mk === 'confirm' && iv.mode === 'online' && !iv.meeting_link) return hNo('no-meet');
           return Promise.resolve({ data: { id: iv.id, kind: mk, to: icand.email, name: icand.name, position: icand.position, key: icand.link_key, mode: iv.mode,
             minutes: iv.minutes, note: iv.note || null, link: iv.meeting_link || null, times: iv.slots.map(hWhen),
-            when: iv.picked ? hWhen(iv.slots[iv.picked - 1]) : null, sender: hMe.name, reply_to: hMe.email }, error: null });
+            when: iv.picked ? hWhen(iv.slots[iv.picked - 1]) : null, reply_by: mk === 'invite' && iv.state === 'invited' && iv.reply_by ? hWhen(iv.reply_by) : null,
+            sender: hMe.name, reply_to: hMe.email }, error: null });
         }
         if (name === 'hiring_mail_done') {
           iv[args.p_kind + '_mail'] = args.p_status; iv[args.p_kind + '_mail_at'] = hNowIso;
@@ -15635,6 +15639,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!hr || !hc) return hNo('not-found');
         return hOk({ rows: hIvOf(hc.id).map(function (i) {
           var o = JSON.parse(JSON.stringify(i));
+          o.state = hIvState(i);
           o.invited_by = hName(i.invited_by); o.approved_by = i.approved_by ? hName(i.approved_by) : undefined;
           delete o.candidate_id; delete o.idem; delete o.meeting_event_id;
           return o;
@@ -15661,7 +15666,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (String(args.p_note || '').length > 500) return hNo('too-long');
         DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && ['invited', 'picked', 'none'].indexOf(i.state) > -1) i.state = 'replaced'; });
         var ni = { id: nid('hi'), candidate_id: hc.id, round: hIvOf(hc.id).length + 1, slots: sl, minutes: Number(args.p_minutes), mode: args.p_mode,
-          note: String(args.p_note || '').trim() || null, state: 'invited', idem: args.p_idem, invited_by: hMe.id, invited_at: hNowIso };
+          note: String(args.p_note || '').trim() || null, state: 'invited', idem: args.p_idem, invited_by: hMe.id, invited_at: hNowIso,
+          reply_by: new Date(Math.min(Date.parse(hNowIso) + (Number(appSet('hiring_reply_days', appToday())) || 3) * 864e5, Date.parse(sl[sl.length - 1]))).toISOString() };
         DB.hiring_interviews.push(ni);
         if (['new', 'pool', 'invited'].indexOf(hc.stage) > -1) hc.stage = 'invited';
         hc.last_step_at = hNowIso;

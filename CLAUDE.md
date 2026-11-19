@@ -2418,6 +2418,10 @@ learned about an area is written in its file, never here.
     mailboxes), the pages reading them through `mail_senders_read`
     (`ADspaceDocMail.showSender`) and the Email log's From through
     `mail_log` `senders`;
+  - every link an email carries is on adspace.me (the sending domain,
+    `sc.adspace.me`), the foot's website `adspace.me` in its words too,
+    and the wordmark at the head opens it (2026-11-19, Resend's check: a
+    link off the sending domain reads as spam);
   - admin login: adspacestudios@gmail.com.
 - Google Drive import uses the browser key (restricted to
   `digital.adspace.me/*`, Drive API only).
