@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261119">
-<link rel="stylesheet" href="/css/console.css?v=20261119a">
+<link rel="stylesheet" href="/css/console.css?v=20261119d">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -161,7 +161,7 @@
 <script src="/js/mailtpl.js?v=20261117zzzf"></script>
 <script src="/js/docmail.js?v=20261117zzzj"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
-<script src="/js/money.js?v=20261117zzzf"></script>
+<script src="/js/money.js?v=20261119d"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
 <script src="/js/mockups.js?v=20261117zzzf"></script>
 </head>
@@ -3547,6 +3547,10 @@
                 <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Reviewer</label>
                 <select class="select select-sm" id="dwHandTo" aria-label="Assign to" hidden></select>
               </div>
+              <div class="qhand" id="dwOnRow" hidden>
+                <label class="qhand-lab" for="dwOn">Date</label>
+                <input class="input input-sm qhand-day" id="dwOn" type="date">
+              </div>
               <div class="qnext-acts" id="dwActs"></div>
               <div class="qrate" id="dwRate" hidden></div>
               <div class="msg" id="dwMsg"></div>
@@ -3708,6 +3712,12 @@
               <div class="field">
                 <label class="field-label" for="stepDate" id="stepDateLabel">Date</label>
                 <input class="input" id="stepDate" type="date">
+              </div>
+            </div>
+            <div class="row" id="stepOnRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepOn">Date</label>
+                <input class="input" id="stepOn" type="date">
               </div>
             </div>
             <div class="row" id="stepWhyRow" hidden>
@@ -6713,7 +6723,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261119"></script>
+<script src="/js/admin.js?v=20261119d"></script>
 <script src="/js/documents.js?v=20261118a"></script>
 <script src="/js/letters.js?v=20261117zzzf"></script>
 <script src="/js/smreport.js?v=20261118n"></script>
@@ -6741,7 +6751,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261117zzzf"></script>
 <script src="/js/ratecardpdf.js?v=20261117zzzf"></script>
 <script src="/js/campaigns.js?v=20261118o"></script>
-<script src="/js/ops.js?v=20261118p"></script>
+<script src="/js/ops.js?v=20261119d"></script>
 <script src="/js/perf.js?v=20261117zzzf"></script>
 <script src="/js/health.js?v=20261117zzzf"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>
@@ -6750,6 +6760,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261117zzzf"></script>
 <script src="/js/overview.js?v=20261119c"></script>
 <script src="/js/analytics.js?v=20261117zzzf"></script>
-<script src="/js/settings.js?v=20261118q"></script>
+<script src="/js/settings.js?v=20261119d"></script>
 </body>
 </html>
