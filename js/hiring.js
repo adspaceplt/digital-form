@@ -427,7 +427,7 @@
       }
       if (a.remarks) rows.push(['Remarks', a.remarks]);
       qs.forEach(function (q) { if (a[q[0]]) rows.push([q[1], a[q[0]]]); });
-      sections.push({ h: p.name, rows: rows.length ? rows : [['Sheet', 'Not filled in']] });
+      sections.push({ h: p.name, rows: rows.length ? rows : [['Interview sheet', 'Not filled in']] });
     });
     return { title: 'Interview Sheet', who: c.name, ref: c.position || '', sections: sections };
   }

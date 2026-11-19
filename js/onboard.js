@@ -260,7 +260,7 @@
     var items = [
       kn('Employment Offer', k.offer, 'Confirmed', 'Not confirmed'),
       kn('Employment Contract', k.contract, 'Confirmed', 'Not confirmed'),
-      kn('Employee record form', k.record, 'Declared', 'Not declared'),
+      kn('Employee Record Form', k.record, 'Declared', 'Not declared'),
       kn('NRIC (front and back)', k.nric, 'Uploaded', 'Not uploaded'),
       kn('Welcome Kit', k.welcome, 'Acknowledged', k.welcome_due ? 'Not acknowledged' : 'Not required'),
       ['Handbook files', hbTotal ? hbDone + ' of ' + hbTotal + ' acknowledged' : 'None required']
@@ -283,7 +283,7 @@
     var rows = [
       known('Employment Offer', k.offer, 'Confirmed', 'Not confirmed'),
       known('Employment Contract', k.contract, 'Confirmed', 'Not confirmed'),
-      known('Employee record form', k.record, 'Declared', 'Not declared'),
+      known('Employee Record Form', k.record, 'Declared', 'Not declared'),
       known('NRIC (front and back)', k.nric, 'Uploaded', 'Not uploaded'),
       known('Welcome Kit', k.welcome, 'Acknowledged', k.welcome_due ? 'Not acknowledged' : 'Not required'),
       '<div class="onb-row is-known"><span class="onb-mark' + (hbTotal && hbDone >= hbTotal ? ' is-on' : '') + '" aria-hidden="true"></span>' +

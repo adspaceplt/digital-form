@@ -32,7 +32,7 @@
   var SAID = {
     denied: 'You do not have permission to download this form. Please ask an admin.',
     'not-team': 'You do not have permission to download this form. Please ask an admin.',
-    'bad-kind': 'This form cannot be downloaded.'
+    'bad-kind': 'This form cannot be downloaded. Please contact an admin.'
   };
   function said(d) {
     if (d && d.code === 'PGRST202') return 'This feature is not available yet. Please contact an admin.';
