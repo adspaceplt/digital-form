@@ -4348,6 +4348,20 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .railseen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13px; color: var(--ink); }
 .mrec-none { margin: 0; font-size: 13px; }
 .mrec-railacts { display: flex; gap: 8px; margin-top: 12px; }
+/* Devices (2026-11-20): a sign-in a row, the device over when it was
+   active and signed in and its session's code, Sign out at the right edge;
+   rows a hairline apart. */
+.mrec-devs { list-style: none; margin: 0; padding: 0; }
+.mrec-dev { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.mrec-dev + .mrec-dev { border-top: 1px solid var(--line-soft); }
+.mrec-dev:first-child { padding-top: 0; }
+.mrec-dev-what { display: grid; gap: 2px; min-width: 0; font-size: 13px; }
+.mrec-dev-what b { font-weight: 500; }
+.mrec-dev-what small { font-size: 12.5px; color: var(--ink-mute); }
+.mrec-dev-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--ink-mute); }
+.mrec-dev > .btn { flex: 0 0 auto; }
+.mrec-devmore { margin-top: 8px; }
+#mrecDevMsg:empty { display: none; }
 .mrec-railacts > .btn { flex: 1 1 50%; min-width: 0; }
 /* Overseas access on the record (2026-10-24): the earlier requests under
    the one in hand, a row each, its state at the right. */

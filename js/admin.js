@@ -1060,7 +1060,7 @@
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice', 'analytics', 'personnel', 'hiring'],
+    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice', 'analytics', 'personnel', 'hiring', 'sessions'],
     /* White label (2026-10-07): granted like the ones above, so an admin
        holds it and any other group only once it is set. So is every act an
        admin alone could take before (2026-10-07, ADMIN PARTS): task
@@ -1077,7 +1077,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws

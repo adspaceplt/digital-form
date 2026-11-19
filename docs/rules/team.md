@@ -58,6 +58,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   read through `team_rows()` at Team Full Access (null below), cleared on
   erasure (`team_members_erased_seen`;
   `2026-10-24-colleague-last-seen.sql`).
+- Devices (`2026-11-20-sign-in-sessions.sql`; the user, 2026-11-20: each
+  session as a code, "A ok admins", no new writes or rows): a rail block
+  after Access at `team.sessions` (granted, an admin's by itself), read
+  from what Supabase keeps (`auth.sessions`) through
+  `team_member_sessions(p_id)`: a sign-in a row, the device in words
+  (`session_device`, the one reading of a browser's description), Active
+  … from the session's last renewal (about hourly), Signed in, its code
+  (the session id's first six), This device on the reader's own; five,
+  then Show all. Sign out (`team_session_end`) asks, ends that one
+  sign-in (the device signs out within the hour its access lasts), never
+  the reader's own (`own-session`) or the system account's
+  (`system-account`), filed `team.changed` under Sign-in sessions. No IP
+  address is read; nothing is written but the sign-out.
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
 - Add member, Set access expiry, a member's values and Set inactive are
