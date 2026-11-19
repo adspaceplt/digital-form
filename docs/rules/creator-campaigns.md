@@ -374,7 +374,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (posted in the portal, no live bill; Create bill as the creator's page,
   Link to Bukku opening their Payment pane where they are not linked),
   Draft in Bukku, Awaiting payment (past Pay by in red, the card counting
-  it) and Paid, a bill paid within the period (`#cpqPeriod`: Last 3 days,
+  it) and Paid, a bill paid within the period, Open in Bukku on its row as
+  an awaiting bill's; a card none of whose rows holds an act gives up the
+  act's track, so its figures end on the card's edge (2026-11-19) (`#cpqPeriod`: Last 3 days,
   Last 7 days, This month and last month by default, Last month, Last 3
   months, This year; kept in this browser, `adspace-cpq-period`); the tab
   counts in red what waits (details to review, bookings ready to bill);
@@ -480,7 +482,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     last shoot) and Totals (`creator_totals`, read once a visit and again
     after Read from Bukku; 2026-11-12): Billed to clients, each booking's
     client rate from Confirmed on in its client's billing currency, and Paid
-    to creator, the bills Bukku reads paid, at `campaigns.pay` View alone,
+    to creator, the paid bills of the bookings Agreed counts, so Agreed is
+    Paid and Outstanding together, then Earlier payments, the paid bills no
+    booking holds, drawn only where there is one (`earlier`,
+    `2026-11-19-creator-totals-add-up.sql`), at `campaigns.pay` View alone,
     a line a currency, never added across. New creator is the one sheet left and opens the new
     creator's page.
   - Rate bands: Up to RM 300, RM 301 to 500, RM 501 to 800, Above RM 800, On

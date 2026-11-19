@@ -3425,6 +3425,12 @@ function cardSlugFree(name, self, email) {
     if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
     if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
     var pay = opsGranted('campaigns.pay', 'view');
+
+    DB.creator_fees = DB.creator_fees || [];
+    (DB.creator_bills || []).forEach(function (b) {
+      if (b.option_id && !b.gone && b.amount != null && ['MYR', 'SGD'].indexOf(b.currency || 'MYR') > -1 && !DB.creator_fees.some(function (f) { return f.option_id === b.option_id; }))
+        DB.creator_fees.push({ option_id: b.option_id, amount: Number(b.amount), currency: b.currency || 'MYR', source: 'bill', set_at: new Date().toISOString() });
+    });
     var group = function (rows, cur, amt, n) {
       var by = {};
       rows.forEach(function (r) { var k = cur(r); by[k] = by[k] || { currency: k, amount: 0 }; by[k].amount = Math.round((by[k].amount + Number(amt(r) || 0)) * 100) / 100; by[k][n] = (by[k][n] || 0) + 1; });
@@ -3442,7 +3448,12 @@ function cardSlugFree(name, self, email) {
         return billMarket(DB.clients.filter(function (x) { return x.id === m.client_id; })[0]) === 'SG' ? 'SGD' : 'MYR';
       }, function (o) { return o.rate; }, 'bookings');
     }
-    var paid = pay ? group((DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && b.status === 'paid' && !b.gone; }),
+
+    var bookedOpt = function (id) { return (DB.campaign_options || []).some(function (o) { return o.id === id && BOOKED_OUT.indexOf(o.state) < 0 && (DB.creator_fees || []).some(function (f) { return f.option_id === o.id; }); }); };
+    var paidBills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && b.status === 'paid' && !b.gone; });
+    var paid = pay ? group(paidBills.filter(function (b) { return b.option_id && bookedOpt(b.option_id); }),
+      function (b) { return b.currency || 'MYR'; }, function (b) { return b.amount; }, 'bills') : null;
+    var earlier = pay ? group(paidBills.filter(function (b) { return !(b.option_id && bookedOpt(b.option_id)); }),
       function (b) { return b.currency || 'MYR'; }, function (b) { return b.amount; }, 'bills') : null;
 
     var feeOf = function (o) { return (DB.creator_fees || []).filter(function (f) { return f.option_id === o.id; })[0]; };
@@ -3458,7 +3469,7 @@ function cardSlugFree(name, self, email) {
     var owed = pay ? group(booked.filter(function (o) { return !paidOpt(o); }), fcur, famt, 'bookings') : null;
     var margin = pay && opsAllowed('campaigns.campaigns', 'view') && opsGranted('team.perfadmin', 'work') ? group(booked.filter(function (o) { return cliCur(o) === feeOf(o).currency; }), fcur,
       function (o) { return Number(o.rate) - Number(feeOf(o).amount); }, 'bookings') : null;
-    return { ok: true, pay: pay, billed: billed, agreed: agreed, owed: owed, margin: margin, paid: paid };
+    return { ok: true, pay: pay, billed: billed, agreed: agreed, owed: owed, margin: margin, paid: paid, earlier: earlier };
   }
   function creatorBillsList(creator) {
     if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
