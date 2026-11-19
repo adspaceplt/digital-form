@@ -626,6 +626,7 @@
     personnel_file_remove: 'p_member p_kind', personnel_file_key: 'p_member p_kind', personnel_unlock: 'p_code',
     personnel_salary_get: 'p_token p_member', personnel_salary_set: 'p_token p_member p_probation p_confirmed',
     personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
+    hr_form_pass: 'p_kind p_name',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
     team_role_delete: 'p_slug p_to',
@@ -10168,6 +10169,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hout = healthRpc(name, args || {}, hFresh);
       persist();
       return Promise.resolve({ data: hout, error: null });
+    }
+
+    if (name === 'hr_form_pass') {
+      var hfr = window.__refuseRpc && window.__refuseRpc[name];
+      if (hfr) return Promise.resolve({ data: null, error: { message: hfr } });
+      var hm = opsMe(), HF = { record: 'Employee Record Form', sheet: 'Interview Sheet', onboarding: 'Onboarding Checklist', kit: 'Welcome Kit' };
+      var hfOut;
+      if (!hm) hfOut = { error: 'not-team' };
+      else if (!hm.is_admin) hfOut = { error: 'denied' };
+      else if (!HF[args && args.p_kind]) hfOut = { error: 'bad-kind' };
+      else if (!(session && session.amr || []).some(function (x) {
+        return ['otp', 'magiclink'].indexOf(x.method) > -1 && x.timestamp >= Math.floor(Date.now() / 1000) - 900;
+      })) hfOut = { error: 'code-needed', email: hm.email };
+      else {
+        logAct('team.changed', String((args.p_name || '').trim() || HF[args.p_kind]).slice(0, 120), 'Downloaded as PDF: ' + HF[args.p_kind]);
+        hfOut = { ok: true };
+      }
+      persist();
+      return Promise.resolve({ data: hfOut, error: null });
     }
     if (/^personnel_/.test(name) || name === 'department_ac_code_set') {
       var prr = window.__refuseRpc && window.__refuseRpc[name];

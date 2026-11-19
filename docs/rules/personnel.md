@@ -45,3 +45,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   notice's key carries the colleague's id alone and opens their Personnel
   behind the caution and the unlock. A colleague erased empties their
   record and salary (trigger `team_members_erased_personnel`).
+- An HR form downloads as a PDF for an admin alone (`js/hrforms.js`,
+  `2026-11-19-hr-form-downloads.sql`; the user, 2026-11-19: "admins and
+  requires verification code to download"): Download on the employee
+  record (the Employee Record Form: the terms, the answers by section, the
+  declaration, the photograph and the NRIC copies, never the salary) and on
+  Onboarding (the Onboarding Checklist). `hr_form_pass(p_kind, p_name)`
+  refuses anyone but an admin (`denied`) and a session with no emailed code
+  proved in fifteen minutes (`code-needed` with the sign-in address, the
+  page sending the code and asking it back), and files each download
+  `team.changed` under whom it is about. Drawn in the browser on the
+  letterhead and never stored (`tests/hrforms.js`).

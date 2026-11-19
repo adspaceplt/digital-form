@@ -131,6 +131,7 @@
     if (!box) return;
     if (wk.err) { UI.failLine(box, 'The Welcome Kit', said(wk.err), wkRead); return; }
     if (!wk.rows) { UI.skeleton(box, 3); return; }
+    $('wkPdf').hidden = !(wk.rows.length && isAdminMe() && window.ADspaceHrForms);
     $('wkCount').textContent = wk.rows.length + (wk.rows.length === 1 ? ' section' : ' sections');
     box.innerHTML = wk.rows.map(function (s, i) {
       var line = String(s.body || '').split('\n').filter(function (x) { return x.trim(); })[0] || '';
@@ -179,6 +180,13 @@
       $('wkCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
       $('wkClose').addEventListener('click', function () { $('wkCancel').click(); });
       $('wkAdd').addEventListener('click', function () { msg('wkMsg', ''); if (wk.rows) wkAsk(null); });
+      $('wkPdf').addEventListener('click', function () {
+        if (!wk.rows) return;
+        window.ADspaceHrForms.download($('wkPdf'), 'kit', 'Welcome Kit', function () {
+          return Promise.resolve({ title: 'Welcome Kit', who: '', ref: wk.at ? 'Last changed ' + day(wk.at) : '',
+            sections: wk.rows.map(function (s) { return { h: s.title, lines: String(s.body || '').split(/\n+/).filter(Boolean) }; }) });
+        }, $('wkMsg'));
+      });
       $('wkList').addEventListener('click', function (e) {
         var b = e.target.closest('[data-k]'), row = b && b.closest('.ind-row');
         if (!row) return;
@@ -242,6 +250,31 @@
     return '<input class="onb-tick" type="checkbox" id="' + id + '" data-side="' + side + '" data-key="' + key + '"' + (t ? ' checked' : '') +
       ' aria-label="' + esc(words || label) + (who ? ', ticked by ' + esc(who) : '') + '"' + (who ? ' title="' + esc(who) + '"' : '') + '>';
   }
+  /* The Onboarding Checklist as the paper reads it (js/hrforms.js). */
+  function isAdminMe() { var A = window.ADspaceAdmin; return Boolean(A && A.isAdmin && A.isAdmin()); }
+  function checklistForm() {
+    var r = team.rec, m = team.m, k = r.known || {}, ticks = r.ticks || {};
+    var hbTotal = Number(k.handbook_total) || 0, hbDone = Number(k.handbook_done) || 0;
+    var kn = function (label, at, word, note) { return [label, at ? word + ' ' + day(at) : note]; };
+    var by = function (t) { return t ? day(t.at) + (t.by ? ', ' + t.by : '') : ''; };
+    var items = [
+      kn('Employment Offer', k.offer, 'Confirmed', 'Not confirmed'),
+      kn('Employment Contract', k.contract, 'Confirmed', 'Not confirmed'),
+      kn('Employee record form', k.record, 'Declared', 'Not declared'),
+      kn('NRIC (front and back)', k.nric, 'Uploaded', 'Not uploaded'),
+      kn('Welcome Kit', k.welcome, 'Acknowledged', k.welcome_due ? 'Not acknowledged' : 'Not required'),
+      ['Handbook files', hbTotal ? hbDone + ' of ' + hbTotal + ' acknowledged' : 'None required']
+    ].concat(DOCS.map(function (x) { var t = ticks['doc:' + x[0]]; return [x[1], t ? 'Received ' + by(t) : 'Not received']; }));
+    var sections = [{ h: 'Checklist', table: { cols: ['Item', 'Status'], rows: items } }];
+    var assets = r.assets || [];
+    sections.push(assets.length ? { h: 'Assets', table: { cols: ['Item', 'Detail', 'Issued', 'Returned'],
+      rows: assets.map(function (a) { return [kindWord(a.kind), a.detail, day(a.issued), a.returned ? day(a.returned) : '']; }) } }
+      : { h: 'Assets', lines: ['No assets.'] });
+    sections.push({ h: 'Entry and exit', table: { cols: ['Item', 'Entry', 'Exit'], rows: STEPS.map(function (x) {
+      return [x[1], by(ticks['entry:' + x[0]]), by(ticks['exit:' + x[0]])];
+    }) } });
+    return { title: 'Onboarding Checklist', who: m.name, ref: [m.staff_code, m.designation].filter(Boolean).join(' · '), sections: sections };
+  }
   function paint() {
     var box = $('onbBox'), r = team.rec;
     if (!box || !r) return;
@@ -270,7 +303,8 @@
       return '<section class="readgroup' + (cls ? ' ' + cls : '') + '"><div class="readgroup-head"><h4 class="fsec-h">' + title + '</h4>' + (act || '') + '</div>' + inner + '</section>';
     };
     box.innerHTML = '<div class="onb-grid"><div class="onb-main readgroups">' +
-      grp('Checklist <span class="tab-n">' + done + ' of ' + all + '</span>', '<div class="onb-list">' + rows.join('') + '</div>') +
+      grp('Checklist <span class="tab-n">' + done + ' of ' + all + '</span>', '<div class="onb-list">' + rows.join('') + '</div>',
+        isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" id="onbPdf">Download</button>' : '') +
       grp('Assets', assets.length ? '<div class="onb-assets">' +
           '<div class="onb-asset is-head" aria-hidden="true"><span>Item</span><span>Detail</span><span>Issued</span><span>Returned</span><span></span></div>' +
           assets.map(function (a, i) {
@@ -306,6 +340,9 @@
       });
     });
     if (window.ADspaceBukku && $('onbBukku')) window.ADspaceBukku.group($('onbBukku'), 'member', team.m.id);
+    if ($('onbPdf')) $('onbPdf').addEventListener('click', function () {
+      window.ADspaceHrForms.download($('onbPdf'), 'onboarding', team.m.name, function () { return Promise.resolve(checklistForm()); }, $('onbMsg'));
+    });
     $('onbAddAsset').addEventListener('click', function () { msg('onbMsg', ''); askAsset(null); });
     Array.prototype.forEach.call(box.querySelectorAll('.onb-asset[data-i]'), function (row) {
       var i = Number(row.getAttribute('data-i'));

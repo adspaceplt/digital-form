@@ -368,6 +368,7 @@
     });
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
+        (people.length && isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-h="ivpdf">Download</button>' : '') +
         (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Open sheet</button>' : '') + '</div>' +
       '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 per criterion</p>' +
       (people.length ? (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' : '') +
@@ -396,6 +397,40 @@
      as it is left (`hiring_sheet_save`); the scorecard and the
      recommendation at its foot, saved by Save (`hiring_score_save`). The
      keys are the database's `hiring_sheet_keys()` (tests/hiringsql.js). */
+  /* The Interview Sheet as the paper reads it (js/hrforms.js): the
+     decision, the averages, then each colleague's sheet and scores. */
+  function isAdminMe() { var A = window.ADspaceAdmin; return Boolean(A && A.isAdmin && A.isAdmin()); }
+  function sheetForm(c) {
+    var o = state.outcome, out = o.outcome || {}, crit = o.scorecard.criteria || [], qs = sheetQs(c);
+    var people = [];
+    o.scores.forEach(function (x) { people.push({ id: x.id, name: x.name, score: x }); });
+    (state.sheets || []).forEach(function (x) {
+      var p = people.filter(function (y) { return y.id === x.id; })[0];
+      if (p) p.sheet = x; else people.push({ id: x.id, name: x.name, sheet: x });
+    });
+    var sections = [{ h: 'Candidate', rows: [['Position', c.position], ['Email', c.email],
+      ['Scorecard', o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard']] },
+      { h: 'Decision', rows: out.outcome ? [['Decision', (OUTCOME[out.outcome] || [])[0]],
+        ['Decided by', [out.by, out.at ? when(out.at) : ''].filter(Boolean).join(' · ')]].concat(out.note ? [['Note', out.note]] : [])
+        : [['Decision', 'Not decided']] }];
+    if (o.scores.length) sections.push({ h: 'Average scores', rows: crit.map(function (k) {
+      var v = o.scores.map(function (x) { return Number((x.scores || {})[k]); }).filter(function (n) { return n > 0; });
+      return [k, v.length ? (Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10).toFixed(1) : ''];
+    }) });
+    people.forEach(function (p) {
+      var x = p.score, sh = p.sheet || {}, a = sh.answers || {}, rows = [];
+      if (sh.rating) rows.push(['Rating', sh.rating + ' of 10']);
+      if (x) {
+        rows.push(['Total', Number(x.total).toFixed(1)], ['Recommendation', REC[x.recommend] || '']);
+        crit.forEach(function (k) { rows.push([k, (x.scores || {})[k] || '']); });
+        if (x.note) rows.push(['Note', x.note]);
+      }
+      if (a.remarks) rows.push(['Remarks', a.remarks]);
+      qs.forEach(function (q) { if (a[q[0]]) rows.push([q[1], a[q[0]]]); });
+      sections.push({ h: p.name, rows: rows.length ? rows : [['Sheet', 'Not filled in']] });
+    });
+    return { title: 'Interview Sheet', who: c.name, ref: c.position || '', sections: sections };
+  }
   function sheetQs(c) {
     return [['mbti', 'MBTI'], ['why_role', 'Why do you want the ' + (c.position || 'this') + ' role?'],
       ['about', 'About self and family background'], ['academics', 'Academics and languages'], ['experience', 'Experience'],
@@ -1300,6 +1335,7 @@
     });
     on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
     on('score', score);
+    on('ivpdf', function (b) { window.ADspaceHrForms.download(b, 'sheet', c.name, function () { return Promise.resolve(sheetForm(c)); }, $('hirRecMsg')); });
     on('decide', function (b) { decide(b.getAttribute('data-o')); });
     on('outmail', function (b) { b.disabled = true; outcomeMail().then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
     on('reopen', function () {
