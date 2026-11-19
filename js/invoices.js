@@ -141,14 +141,17 @@
 
   /* ---- The view --------------------------------------------------------- */
   function mayView() { return may('clients.billing', 'view') && Boolean(window.ADspaceAPI && API.client); }
+  /* `on`: true for Overdue invoices, else the view's key (`payments`, the
+     third view, 2026-11-19), else the list. */
   function strip(on) {
     var box = $('crmViewsBox');
     if (!box) return;
     box.hidden = !mayView();
     /* The strip answers from the list too, before the view has been shown. */
     if (!box.hidden) wire();
+    var view = on === true ? 'overdue' : on || 'list';
     Array.prototype.forEach.call(document.querySelectorAll('#crmViews .acttab'), function (b) {
-      var me = b.getAttribute('data-cv') === (on ? 'overdue' : 'list');
+      var me = b.getAttribute('data-cv') === view;
       b.classList.toggle('is-on', me);
       b.setAttribute('aria-pressed', String(me));
     });
@@ -160,8 +163,13 @@
     $('crmViews').addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('.acttab');
       if (!b) return;
-      if (b.getAttribute('data-cv') === 'overdue') { if (!st.on) show(); }
-      else if (st.on) { hide(); if (window.ADspaceCRM && window.ADspaceCRM.showList) window.ADspaceCRM.showList(); }
+      var v = b.getAttribute('data-cv'), P = window.ADspacePayments;
+      if (v === 'overdue') { if (P && P.on()) P.hide(); if (!st.on) show(); }
+      else if (v === 'payments') { if (P && !P.on()) P.show(); }
+      else if (st.on || (P && P.on())) {
+        hide(); if (P) P.hide();
+        if (window.ADspaceCRM && window.ADspaceCRM.showList) window.ADspaceCRM.showList();
+      }
     });
     $('odFind').addEventListener('input', function () { st.q = this.value.trim().toLowerCase(); paint(); });
     $('odRead').addEventListener('click', function () { load(true); });

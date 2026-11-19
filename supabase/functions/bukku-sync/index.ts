@@ -69,6 +69,14 @@
  *                                             client, that client's unpaid
  *                                             invoices, those not yet due
  *                                             too (its Billing).
+ *   POST { action: 'payments' }               Clients' Payments view's Read
+ *                                             from Bukku (2026-11-19): asked
+ *                                             as the caller
+ *                                             (`payment_analysis`), the 24
+ *                                             months' invoices and suppliers'
+ *                                             bills read for 25 seconds and
+ *                                             kept (`bukku_docs_take`); the
+ *                                             nightly run reads them too.
  *   POST { action: 'bills', creator }        a creator's Bukku bills (2026-11-09,
  *                                             CREATOR PAYMENTS): read from the
  *                                             creator's linked contact, kept
@@ -577,6 +585,18 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
       if (halt(e)) break;
     }
   }
+  /* Payment patterns (2026-11-19): the invoices' and suppliers' bills'
+     history, up to 80 seconds. */
+  let history = '';
+  for (const kind of ['invoice', 'bill'] as const) {
+    if (stop) break;
+    try { const h = await payHistory(kind, began + (kind === 'invoice' ? 74000 : 80000)); if (h.error) history = h.error; }
+    catch (e) {
+      console.error('bukku-sync: nightly history', kind, String((e as Error).message || e));
+      history = 'failed';
+      if (halt(e)) break;
+    }
+  }
   /* Every held link read again, the oldest first, in the time left. */
   const list = await svc.rpc('bukku_held_links');
   const rows = (list.data || []) as any[];
@@ -595,10 +615,11 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
       if (halt(e)) break;
     }
   }
-  const bad = stop || (list.error || due.error || mdue.error ? 'the database did not answer' : '');
+  const bad = stop || (list.error || due.error || mdue.error ? 'the database did not answer' : '') ||
+    (history ? 'the payment history was not kept' : '');
   await svc.rpc('job_beat', { p_job: 'bukku-nightly', p_ok: !bad, p_detail: bad || null });
   if (list.error) return json({ error: 'needs-update' }, 200, origin);
-  return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months }, 200, origin);
+  return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months, history: history || 'ok' }, 200, origin);
 }
 
 // ---- Creators to their Bukku contacts (2026-11-11) --------------------------
@@ -680,10 +701,11 @@ export function billOf(x: any) {
     draft: String(x.status || '') === 'draft' };
 }
 /* The latest date among the payments, credits and refunds Bukku applied
-   to a bill (its `linked_items` that are not bills), else null. */
-export function paidOn(bill: any): string | null {
+   to a bill (its `linked_items` that are not bills), else null. A sales
+   invoice's the same, `self` naming what is no payment (2026-11-19). */
+export function paidOn(bill: any, self: RegExp = /bill/): string | null {
   const ds = ((bill && bill.linked_items) || [])
-    .filter((l: any) => l && !/bill/.test(String(l.type || '')) && /^\d{4}-\d{2}-\d{2}$/.test(String(l.date || '')))
+    .filter((l: any) => l && !self.test(String(l.type || '')) && /^\d{4}-\d{2}-\d{2}$/.test(String(l.date || '')))
     .map((l: any) => String(l.date)).sort();
   return ds.length ? ds[ds.length - 1] : null;
 }
@@ -1104,6 +1126,135 @@ async function manyInvoices(ids: number[]): Promise<(any | null)[]> {
   for (let i = 0; i < ids.length; i += 5) out.push(...await Promise.all(ids.slice(i, i + 5).map((id) => oneInvoice(id))));
   return out;
 }
+// ---- Payment patterns (2026-11-19) -------------------------------------------
+/* What Clients' Payments view reads (`payment_analysis`): Bukku's sales
+   invoices of the last 24 months and suppliers' purchase bills, kept in
+   `bukku_docs` by the service role (`bukku_docs_take`), never written back.
+   Each run, in the time it is given: the documents dated in the last 62
+   days and every invoice still owing (the new and the moving), then a whole
+   read of those whose due date or paid day is not yet known and of those
+   that stopped owing since (paid, else voided: let go), twenty-four a run,
+   then one month further back until 24 months are held. Bukku keeps a
+   paid day nowhere in its lists: a document read alone lists what was
+   applied to it, and the latest is the day it was paid (`paidOn`). */
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+export function addDay(d: string, n: number): string {
+  return new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+}
+/* The first day of the month `back` months before the one holding d. */
+export function monthStart(d: string, back = 0): string {
+  const y = Number(d.slice(0, 4)), m = Number(d.slice(5, 7)) - 1 - back;
+  return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+}
+/* A document as `bukku_docs_take` keeps it. Its due date is its last
+   instalment's, else (read whole, with no instalments) its date; a list row
+   with no instalments leaves the one held. A paid day only from a whole
+   read. */
+export function docOf(x: any, whole = false): any | null {
+  if (!x || !x.id || !x.contact_id) return null;
+  const date = String(x.date || '').slice(0, 10);
+  if (!DAY_RE.test(date)) return null;
+  const terms = (Array.isArray(x.term_items) ? x.term_items : []).map((t: any) => String((t && t.date) || ''))
+    .filter((t: string) => DAY_RE.test(t)).sort();
+  const bal = x.balance == null || x.balance === '' ? null : cents(x.balance);
+  return { id: Number(x.id), contact: Number(x.contact_id), name: String(x.contact_name || '').slice(0, 200),
+    number: String(x.number || '').slice(0, 60), date, due: terms.length ? terms[terms.length - 1] : whole ? date : null,
+    amount: cents(x.amount), balance: bal, currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+    paid_on: whole && bal != null && bal <= 0 ? paidOn(x, /invoice|bill|quot|order|deliver/) : null, gone: false };
+}
+const liveDoc = (x: any) => !!x && !['draft', 'void', 'voided', 'cancelled'].includes(String(x.status || ''));
+async function listDocs(kind: string, query: string, keep: (c: number) => boolean, until: number): Promise<{ rows: any[]; done: boolean }> {
+  const base = kind === 'invoice' ? '/sales/invoices' : '/purchases/bills';
+  const out: any[] = [];
+  for (let page = 1; page <= 60; page++) {
+    if (Date.now() > until) return { rows: out, done: false };
+    const r = await bukku('GET', `${base}?${query}&page=${page}&page_size=100`);
+    const rows = (r && r.transactions) || [];
+    for (const x of rows) if (liveDoc(x) && keep(Number(x.contact_id))) out.push(x);
+    const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+    const total = Number(r && r.paging && r.paging.total) || 0;
+    if (!rows.length || page * per >= total || rows.length < per) break;
+  }
+  return { rows: out, done: true };
+}
+export async function payHistory(kind: 'invoice' | 'bill', until: number): Promise<any> {
+  const svc = svcDb();
+  const today = todayMY(), from = monthStart(today, 24);
+  let keep = (_c: number) => true;
+  if (kind === 'bill') {
+    /* A supplier's bills alone: a creator's are `creator_bills`. */
+    const sl = await svc.from('bukku_links').select('contact_id').eq('kind', 'supplier');
+    if (sl.error) return { error: 'needs-update' };
+    const set = new Set(((sl.data || []) as any[]).map((l) => Number(l.contact_id)));
+    if (!set.size) return { ok: true, kept: 0, more: false };
+    keep = (c: number) => set.has(c);
+  }
+  const take = async (rows: any[], back?: string) => {
+    const t = await svc.rpc('bukku_docs_take', { p_kind: kind, p_rows: rows, p_back_to: back || null });
+    if (t.error) throw new Error('not kept: ' + t.error.message);
+    return Number((t.data && t.data.kept) || 0);
+  };
+  let kept = 0;
+  /* The new and the moving: the last 62 days, and every invoice still owing. */
+  const recent = await listDocs(kind, `date_from=${addDay(today, -62)}&date_to=${today}`, keep, until);
+  const owing = new Set<number>();
+  const fresh = new Map<number, any>();
+  const add = (x: any) => { const d = docOf(x); if (d) fresh.set(d.id, d); };
+  recent.rows.forEach(add);
+  if (kind === 'invoice') {
+    for (const ps of ['OUTSTANDING', 'OVERDUE']) {
+      const o = await listDocs(kind, `payment_status=${ps}`, keep, until);
+      for (const x of o.rows) { owing.add(Number(x.id)); add(x); }
+    }
+  }
+  if (fresh.size) kept += await take(Array.from(fresh.values()));
+  /* Read whole what is not yet known, or stopped owing, twenty-four a run. */
+  const held: any[] = [];
+  for (let at = 0; at < 20000; at += 1000) {
+    const r = await svc.from('bukku_docs').select('doc_id, balance, paid_on, due_date').eq('kind', kind).eq('gone', false)
+      .gte('doc_date', from).order('doc_id', { ascending: true }).range(at, at + 999);
+    if (r.error) return { error: 'needs-update' };
+    held.push(...(r.data || []));
+    if ((r.data || []).length < 1000) break;
+  }
+  const settle = held.filter((h) => h.due_date == null || (Number(h.balance) <= 0 && !h.paid_on) ||
+    (Number(h.balance) > 0 && (kind === 'bill' ? !fresh.has(Number(h.doc_id)) : !owing.has(Number(h.doc_id)))))
+    .slice(0, 24);
+  const base = kind === 'invoice' ? '/sales/invoices/' : '/purchases/bills/';
+  const whole: any[] = [], gone: number[] = [];
+  for (let i = 0; i < settle.length && Date.now() < until; i += 4) {
+    const got = await Promise.all(settle.slice(i, i + 4).map((h) => bukku('GET', base + Number(h.doc_id))
+      .then((r: any) => ({ h, x: (r && r.transaction) || null }))
+      .catch((e: unknown) => { if (e instanceof BukkuError && e.status === 404) return { h, x: null }; throw e; })));
+    for (const g of got) {
+      if (!liveDoc(g.x)) { gone.push(Number(g.h.doc_id)); continue; }
+      const d = docOf(g.x, true);
+      if (d) whole.push(d);
+    }
+  }
+  /* A document voided or gone from Bukku keeps its row, marked gone. */
+  if (gone.length) {
+    const g = await svc.from('bukku_docs').update({ gone: true }).eq('kind', kind).in('doc_id', gone);
+    if (g.error) throw new Error('not kept: ' + g.error.message);
+  }
+  if (whole.length) kept += await take(whole);
+  /* One month further back at a time, until 24 months are held: the month
+     before the one read last, the current month first. */
+  const mk = await svc.from('bukku_doc_marks').select('back_to').eq('kind', kind).maybeSingle();
+  let back: string | null = (mk.data && mk.data.back_to) || null;
+  let months = 0;
+  while (Date.now() < until && (!back || back > from) && months < 25) {
+    const start = back ? monthStart(back, 1) : monthStart(today);
+    const end = back ? addDay(back, -1) : today;
+    const got = await listDocs(kind, `date_from=${start}&date_to=${end}`, keep, until);
+    if (!got.done) break;
+    kept += await take(got.rows.map((x) => docOf(x)).filter(Boolean), start);
+    back = start; months++;
+  }
+  return { ok: true, kept, settled: whole.length + gone.length, back_to: back,
+    more: !back || back > from || settle.length >= 24 };
+}
+
 const money = (n: number, cur: string) => (cur === 'MYR' ? 'RM ' : cur === 'SGD' ? 'S$ ' : cur + ' ') +
   cents(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -1483,6 +1634,20 @@ Deno.serve(async (req) => {
       return url ? json({ ok: true, url }, 200, origin) : json({ error: 'not-found' }, 200, origin);
     }
     if (action === 'invoices' || action === 'remind' || action === 'deliver') return await invoiceAction(action, body, db, origin);
+    /* Payments' Read from Bukku (2026-11-19): asked as the caller first
+       (`payment_analysis`: Clients: Billing at Full control), then the
+       history read for 25 seconds, kept by the service role. */
+    if (action === 'payments') {
+      const may = await db.rpc('payment_analysis', { p_currency: null });
+      if (may.error) return json({ error: 'needs-update' }, 200, origin);
+      if (may.data && may.data.error) return json({ error: may.data.error }, 200, origin);
+      const at = Date.now();
+      const inv = await payHistory('invoice', at + 20000);
+      if (inv.error) return json({ error: inv.error }, 200, origin);
+      const bill = await payHistory('bill', at + 25000);
+      if (bill.error) return json({ error: bill.error }, 200, origin);
+      return json({ ok: true, kept: (inv.kept || 0) + (bill.kept || 0), more: !!(inv.more || bill.more) }, 200, origin);
+    }
     /* A completed month's invoice (2026-11-10): asked as the caller, read
        from Bukku, kept by the service role. */
     if (action === 'month') {

@@ -4658,6 +4658,45 @@ span.inv-amt { font-weight: 600; }
 .is-narrow .inv-who small { white-space: normal; }
 .inv-part { white-space: nowrap; }
 
+/* Payments (2026-11-19, js/payments.js): Clients' third view. Four figures
+   (the Clients list's tiles), the open receivables by age beside thirteen
+   weeks of money in and out (1 : 1.618, one over the other in a narrow
+   pane), then a card of payers whose phone row is `.prow`. */
+#pynView { display: grid; gap: 12px; }
+#pynView > .msg { margin: 0; }
+#pynView > .msg:empty { display: none; }
+#pynBody { display: grid; gap: 12px; min-width: 0; }
+#pynBody > .crm-tiles { margin-bottom: 0; }
+.pyn-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); gap: 12px; align-items: stretch; min-width: 0; }
+#pynBody.is-narrow .pyn-charts { grid-template-columns: minmax(0, 1fr); }
+.pyn-charts > div { display: grid; min-width: 0; }
+.pyn-charts .chartcard { margin: 0; }
+/* The scale reads whole money (RM 20,000), wider than a count: its column
+   holds it, never the plot beside it. */
+.pyn-charts .cc-axis { min-width: 68px; }
+.pyn-sum { margin-top: 12px; }
+.pyn-sum > div { grid-template-columns: 120px minmax(0, 1fr); }
+.pyn-sum dd { font-variant-numeric: tabular-nums; }
+.pyn-sum dd.is-late { color: var(--err); }
+.pyn-note { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.pyn-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1.6fr) 96px 96px 80px 160px 96px; }
+.crm-head.pyn-row { padding: 12px 15px 8px; }
+button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
+.pyn-row:last-child { border-bottom: 0; }
+.pyn-who { display: grid; gap: 2px; min-width: 0; }
+.pyn-who b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pyn-who small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pyn-m { display: none; }
+.pyn-n { font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.pyn-n.is-late, .pyn-open .is-late { color: var(--err); }
+.pyn-open { display: grid; justify-items: end; font-weight: 500; }
+.pyn-open small { font-weight: 400; font-size: 12px; }
+.pyn-trend { min-width: 0; }
+.pyn-trend .anl-verdict { margin-right: 0; }
+.is-narrow .pyn-row { padding: 12px 15px; }
+.is-narrow .pyn-m { display: inline; }
+.is-narrow .pyn-who small { white-space: normal; }
+
 .sheet-card.formsheet.inv-sheet { width: min(880px, 100%); }
 .sheet-body.inv-rv { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 0; padding: 0; }
 .inv-rv-list { display: grid; align-content: start; gap: 2px; padding: 8px; border-right: 1px solid var(--line-soft); }

@@ -320,6 +320,7 @@
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
     code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
+    payment_analysis: 'p_currency', bukku_docs_take: 'p_kind p_rows p_back_to',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
@@ -697,6 +698,35 @@
       if (Object.prototype.hasOwnProperty.call(args, k) && (' ' + have + ' ').indexOf(' ' + k + ' ') < 0) bad = true;
     }
     return bad ? { code: 'PGRST202', message: 'Could not find the function public.' + name + '(' + Object.keys(args || {}).join(', ') + ') in the schema cache' } : null;
+  }
+
+  function payDocsSeed() {
+    var DAY = 864e5, now = new Date().toISOString(), today = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+    var add = function (d, n) { return new Date(Date.parse(d + 'T00:00:00Z') + n * DAY).toISOString().slice(0, 10); };
+    var payers = [
+      { id: 701, name: 'BLUE HARBOUR SDN BHD', amt: 4800, late: function () { return -2; } },
+      { id: 702, name: 'MERIDIAN HOMES SDN BHD', amt: 12500, late: function () { return 9; } },
+      { id: 703, name: 'KITE AND CO PLT', amt: 2600, late: function () { return 34; } },
+      { id: 704, name: 'ORCHID LANE ENTERPRISE', amt: 3900, late: function (m) { return m < 12 ? 25 : 3; } },
+      { id: 705, name: 'NORTHWIND TRADING', amt: 7200, cur: 'SGD', late: function (m) { return m < 12 ? 1 : 20; } }];
+    var out = [], n = 0;
+    var doc = function (kind, contact, name, date, due, amt, bal, cur, paid) {
+      n++;
+      out.push({ kind: kind, doc_id: (kind === 'bill' ? 8600 : 8000) + n, contact_id: contact, contact_name: name,
+        number: (kind === 'bill' ? 'PI-' : 'IV-') + String(8000 + n), doc_date: date, due_date: due, amount: amt, balance: bal,
+        currency: cur || 'MYR', paid_on: paid, gone: false, read_at: now });
+    };
+    payers.forEach(function (p) {
+      for (var m = 23; m >= 0; m--) {
+        var date = add(today, -m * 30 - 5), due = add(date, 30), paid = add(due, p.late(m));
+        var open = paid > today;
+        doc('invoice', p.id, p.name, date, due, p.amt, open ? p.amt : 0, p.cur, open ? null : paid);
+      }
+    });
+    doc('invoice', 703, 'KITE AND CO PLT', add(today, -140), add(today, -110), 1850, 1850, 'MYR', null);
+    doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -20), add(today, 10), 2300, 2300, 'MYR', null);
+    doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -5), add(today, 40), 1650, 1650, 'MYR', null);
+    return out;
   }
 
   var DB = window.__demoSeed();
@@ -3274,6 +3304,119 @@ function cardSlugFree(name, self, email) {
         (ent !== mainEnt(cid) || !(r && r.email))) return entRecipient(ent, cid);
     return r;
   }
+
+  function payAnalysis(sc, want) {
+    var D = DB, DAY = 864e5;
+    var today = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+    var ms = function (d) { return Date.parse(d + 'T00:00:00Z'); };
+    var diff = function (a, b) { return Math.round((ms(a) - ms(b)) / DAY); };
+    var addD = function (d, n) { return new Date(ms(d) + n * DAY).toISOString().slice(0, 10); };
+    var back = function (d, k) {
+      var y = Number(d.slice(0, 4)), mo = Number(d.slice(5, 7)) - 1 - k, dd = Number(d.slice(8, 10));
+      var first = new Date(Date.UTC(y, mo, 1)), last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+      return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(dd, last))).toISOString().slice(0, 10);
+    };
+
+    var rnd = function (v, k) { if (v == null) return null; var f = Math.pow(10, k || 0); return Math.sign(v) * Math.round(Math.abs(v) * f + 1e-9) / f; };
+    var cents = function (v) { return Math.round(v * 100) / 100; };
+    var avg = function (xs) { return xs.length ? xs.reduce(function (a, b) { return a + b; }, 0) / xs.length : null; };
+    var from = back(today, 24), y1 = back(today, 12), y2 = from;
+    var wd = new Date(ms(today)).getUTCDay(), wk0 = addD(today, -((wd + 6) % 7));
+    var links = {};
+    (sc.links || []).forEach(function (l) { links[Number(l.contact)] = l; });
+    var docs = (D.bukku_docs || []).filter(function (d) {
+      return d.kind === 'invoice' && !d.gone && d.doc_date >= from && (links[Number(d.contact_id)] || sc.all === true);
+    }).map(function (d) {
+      var l = links[Number(d.contact_id)] || null;
+      return { contact: Number(d.contact_id), date: d.doc_date, due: d.due_date || d.doc_date, amount: Number(d.amount), balance: Number(d.balance),
+        currency: d.currency || 'MYR', paid_on: d.paid_on || null, client: l ? l.client : null, client_name: l ? l.name : null,
+        slug: l ? l.slug : null, code: l ? l.code : null, payer: (l && (l.company || l.name)) || d.contact_name || 'Bukku contact' };
+    });
+    var count = {};
+    docs.forEach(function (x) { count[x.currency] = (count[x.currency] || 0) + 1; });
+    var curs = Object.keys(count).sort(function (a, b) { return (a !== 'MYR') - (b !== 'MYR') || count[b] - count[a] || (a < b ? -1 : 1); });
+    var cur = want && curs.indexOf(want) > -1 ? want : curs.indexOf('MYR') > -1 || !curs.length ? 'MYR' : curs[0];
+    var mine = docs.filter(function (x) { return x.currency === cur; });
+    var paid12 = function (x) { return x.balance <= 0 && x.paid_on && x.paid_on > y1; };
+    var paid0 = function (x) { return x.balance <= 0 && x.paid_on && x.paid_on > y2 && x.paid_on <= y1; };
+    var figs = function (xs) {
+      var p = xs.filter(paid12), q = xs.filter(paid0);
+      return {
+        days_to_pay: rnd(avg(p.map(function (x) { return diff(x.paid_on, x.date); })), 1),
+        days_late: rnd(avg(p.map(function (x) { return Math.max(0, diff(x.paid_on, x.due)); })), 1),
+        on_time: p.length ? rnd(100 * p.filter(function (x) { return x.paid_on <= x.due; }).length / p.length) : null,
+        days_to_pay_before: rnd(avg(q.map(function (x) { return diff(x.paid_on, x.date); })), 1),
+        late_before: rnd(avg(q.map(function (x) { return Math.max(0, diff(x.paid_on, x.due)); })), 1),
+        on_time_before: q.length ? rnd(100 * q.filter(function (x) { return x.paid_on <= x.due; }).length / q.length) : null,
+        lag: avg(p.map(function (x) { return diff(x.paid_on, x.due); })),
+        paid12: p.length, paid0: q.length
+      };
+    };
+    var sum = function (xs, f) { return cents(xs.reduce(function (a, x) { return a + (f ? f(x) : x.balance); }, 0)); };
+    var open = mine.filter(function (x) { return x.balance > 0; });
+    var age = function (lo, hi) { return sum(open.filter(function (x) { var k = diff(today, x.due); return k >= lo && k <= hi; })); };
+    var inv90 = sum(mine.filter(function (x) { return x.date > addD(today, -90); }), function (x) { return x.amount; });
+    var all = figs(mine);
+    var summary = { open: sum(open), overdue: sum(open.filter(function (x) { return x.due < today; })), open_count: open.length,
+      aging: { current: sum(open.filter(function (x) { return x.due >= today; })), d30: age(1, 30), d60: age(31, 60), d90: age(61, 90), over90: age(91, 1e9) },
+      invoiced_90: inv90, dso: inv90 > 0 ? rnd(sum(open) / inv90 * 90) : null,
+      paid: all.paid12, days_to_pay: all.days_to_pay, days_late: all.days_late, on_time: all.on_time,
+      paid_before: all.paid0, days_to_pay_before: all.days_to_pay_before, days_late_before: all.late_before, on_time_before: all.on_time_before,
+      invoices: mine.length };
+    var groups = {}, order = [];
+    mine.forEach(function (x) { if (!groups[x.contact]) { groups[x.contact] = []; order.push(x.contact); } groups[x.contact].push(x); });
+    var lags = {};
+    var payers = order.map(function (k) {
+      var xs = groups[k], f = figs(xs), o = xs.filter(function (x) { return x.balance > 0; });
+      lags[k] = f.lag;
+      var names = xs.map(function (x) { return x.payer; }).sort();
+      var lastPaid = xs.map(function (x) { return x.paid_on; }).filter(Boolean).sort().pop() || null;
+      return { contact: k, name: names[0], client: xs[0].client, client_name: xs[0].client_name, slug: xs[0].slug, code: xs[0].code,
+        invoices: xs.length, paid: xs.filter(function (x) { return x.balance <= 0; }).length,
+        days_to_pay: f.days_to_pay, days_late: f.days_late, on_time: f.on_time, late_before: f.late_before,
+        open: sum(o), overdue: sum(o.filter(function (x) { return x.due < today; })), last_paid: lastPaid };
+    }).sort(function (a, b) { return b.open - a.open || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0); });
+    var ins = open.map(function (x) {
+      var lag = lags[x.contact] != null ? lags[x.contact] : all.lag != null ? all.lag : 0;
+      var at = addD(x.due, rnd(lag)); return { at: at < today ? today : at, amt: x.balance };
+    });
+    var seen = function (cid) { var c = D.clients.filter(function (y) { return y.id === cid; })[0]; return !!c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by); };
+    var outs = [];
+    (D.creator_bills || []).forEach(function (b) {
+      var amt = b.balance != null ? Number(b.balance) : Number(b.amount);
+      if (b.gone || ['draft', 'processing'].indexOf(b.status) < 0 || !(amt > 0) || (b.currency || 'MYR') !== cur) return;
+      var o = (D.campaign_options || []).filter(function (x) { return x.id === (b.option_id || b.made_for); })[0] || null;
+      var m = o ? (D.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] : null;
+      var due = (o && o.pay_by) || b.bill_date;
+      if (!due || !(sc.all === true || (m && m.client_id && seen(m.client_id)))) return;
+      outs.push({ at: due < today ? today : due, amt: amt, source: 'creator' });
+    });
+    (D.bukku_docs || []).forEach(function (d) {
+      if (d.kind !== 'bill' || d.gone || !(Number(d.balance) > 0) || (d.currency || 'MYR') !== cur) return;
+      var ok = sc.all === true || (D.bukku_links || []).some(function (l) {
+        if (l.kind !== 'supplier' || Number(l.contact_id) !== Number(d.contact_id)) return false;
+        var s0 = (D.suppliers || []).filter(function (y) { return y.id === l.record_id; })[0];
+        return !!(s0 && s0.client_id && seen(s0.client_id));
+      });
+      if (!ok) return;
+      var due = d.due_date || d.doc_date;
+      outs.push({ at: due < today ? today : due, amt: Number(d.balance), source: 'supplier' });
+    });
+    var inWeek = function (xs, a, b, src) { return cents(xs.filter(function (x) { return x.at >= a && x.at < b && (!src || x.source === src); }).reduce(function (t, x) { return t + x.amt; }, 0)); };
+    var weeks = [];
+    for (var g = 0; g < 13; g++) {
+      var a = addD(wk0, g * 7), b = addD(wk0, g * 7 + 7);
+      weeks.push({ start: a, in: inWeek(ins, a, b), out: inWeek(outs, a, b), creators: inWeek(outs, a, b, 'creator'), suppliers: inWeek(outs, a, b, 'supplier') });
+    }
+    var end = addD(wk0, 91);
+    var marks = D.bukku_doc_marks || [];
+    var mi = marks.filter(function (x) { return x.kind === 'invoice' && x.back_to; }).map(function (x) { return x.back_to; }).sort()[0] || null;
+    var ra = marks.map(function (x) { return x.read_at; }).filter(Boolean).sort().pop() || null;
+    return JSON.parse(JSON.stringify({ ok: true, today: today, from: from, currency: cur, currencies: curs, all: sc.all === true,
+      lag: all.lag == null ? null : rnd(all.lag, 1), summary: summary, payers: payers, weeks: weeks,
+      later: { in: inWeek(ins, end, '9999-12-31'), out: inWeek(outs, end, '9999-12-31') }, back_to: mi, read_at: ra }));
+  }
+
   function invScopeAll() {
     var m = opsMe(); if (!m) return false;
     var a = opsAccess(m); if (a.admin) return true;
@@ -13998,6 +14141,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       return Promise.resolve({ data: { ok: true }, error: null });
     }
+
+    if (name === 'bukku_docs_take') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function bukku_docs_take' } });
+    if (name === 'payment_analysis') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      if (!opsMe() || !opsAllowed('clients.billing', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      return rpc('invoice_scope', {}).then(function (sr) {
+        var sc = sr.data || {};
+        if (sr.error || sc.error) return { data: { error: sc.error || 'failed' }, error: null };
+        return { data: payAnalysis(sc, (args || {}).p_currency || null), error: null };
+      });
+    }
     if (/^invoice_/.test(name)) {
       var ivOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var ivNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
@@ -17509,6 +17663,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bkb = (opts && opts.body) || {};
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
           if (window.__bukkuOff) return bkR({ error: 'bukku-not-set-up' });
+
+          if (bkb.action === 'payments') {
+            return rpc('payment_analysis', { p_currency: null }).then(function (pr) {
+              if (pr.error) return { data: { error: 'needs-update' }, error: null };
+              if (pr.data && pr.data.error) return { data: { error: pr.data.error }, error: null };
+              if (window.__bukkuDown) return { data: { error: 'bukku-unreachable' }, error: null };
+              DB.bukku_docs = DB.bukku_docs || [];
+              var kept = 0;
+              (window.__bukkuHistory || []).forEach(function (x) {
+                var kind = x.kind || 'invoice', bal = x.balance == null ? Number(x.amount) : Number(x.balance);
+                var terms = (x.term_items || []).map(function (t) { return t.date; }).sort();
+                var row = DB.bukku_docs.filter(function (y) { return y.kind === kind && y.doc_id === Number(x.id); })[0];
+                if (!row) { row = { kind: kind, doc_id: Number(x.id) }; DB.bukku_docs.push(row); }
+                Object.assign(row, { contact_id: Number(x.contact_id), contact_name: x.contact_name || row.contact_name || null, number: x.number || '',
+                  doc_date: x.date, due_date: terms.length ? terms[terms.length - 1] : (row.due_date || x.date), amount: Number(x.amount), balance: bal,
+                  currency: x.currency_code || 'MYR', paid_on: bal > 0 ? null : (x.paid_on || row.paid_on || null), gone: false, read_at: new Date().toISOString() });
+                kept++;
+              });
+              DB.bukku_doc_marks = (DB.bukku_doc_marks || []).filter(function (m) { return m.kind !== 'invoice'; });
+              DB.bukku_doc_marks.push({ kind: 'invoice', back_to: null, read_at: new Date().toISOString() });
+              persist();
+              return { data: { ok: true, kept: kept, more: false }, error: null };
+            });
+          }
 
           if (bkb.action === 'month') {
             var mE = (DB.ops_engagements || []).filter(function (x) { return x.id === bkb.engagement; })[0];
