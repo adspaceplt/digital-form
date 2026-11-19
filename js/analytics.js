@@ -137,19 +137,25 @@
      Dashboard and Analytics both): their spans are the Dashboard's own
      (`ADspaceOverview.span`), one copy of each rule. */
   var PERIODS = [['today', 'Today'], ['yday', 'Yesterday'], ['d7', 'Last 7 days'], ['d14', 'Last 14 days'],
+                 ['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'], ['lastq', 'Last quarter'],
                  ['12', 'Last 12 months'], ['6', 'Last 6 months'], ['24', 'Last 24 months'],
                  ['year', 'This year'], ['lastyear', 'Last year']];
   var DAYS = { today: 1, yday: 1, d7: 7, d14: 14 };
+  /* The Dashboard's months and quarters too (2026-11-20, the user: "also
+     add similar to analytics"): read from its spans, each on the one
+     before it as the Dashboard reads it. */
+  var SHORT = { today: 1, yday: 1, d7: 1, d14: 1, month: 1, last: 1, quarter: 1, lastq: 1 };
+  function isShort(p) { return !!SHORT[p == null ? period : p]; }
   var period = '12', tab = 'sales';
   function isDays(p) { return !!DAYS[p == null ? period : p]; }
   function daySpan(p) { return window.ADspaceOverview.span(p); }
   /* A trend is read in months: under a period of days, the charts by month
      and the tiles' trends keep the last 12 months, while every figure reads
      the days. */
-  function trendRange() { return rangeOf(isDays() ? '12' : period); }
+  function trendRange() { return rangeOf(isShort() ? '12' : period); }
   function monthStart(key) { return CK.start(key.slice(0, 7) + '-01'); }
   function rangeOf(p) {
-    if (isDays(p)) { var d = daySpan(p).now; return { from: d.from, to: d.to, open: p === 'today', days: true }; }
+    if (isShort(p)) { var d = daySpan(p).now; return { from: d.from, to: d.to, open: p === 'today' || p === 'month' || p === 'quarter', days: isDays(p) }; }
     var now = new Date(), t = CK.today();
     if (p === 'year') return { from: monthStart(t.slice(0, 4) + '-01'), to: now, open: true };
     if (p === 'lastyear') {
@@ -162,7 +168,7 @@
   /* The period before: the same months a span earlier (Last year the year
      before it, This year the same days of last year). */
   function prevOf(p) {
-    if (isDays(p)) { var d = daySpan(p).prev; return { from: d.from, to: d.to, days: true }; }
+    if (isShort(p)) { var d = daySpan(p).prev; return { from: d.from, to: d.to, days: isDays(p) }; }
     var r = rangeOf(p), n = p === 'year' || p === 'lastyear' ? 12 : Number(p) || 12;
     /* The span before ends at the same moment of its own month: a period
        running to now is read against one running to now's day n months
@@ -186,7 +192,7 @@
     return ks.length - 1 + Math.max(0, Math.min(1, (r.to.getTime() - a) / (b - a)));
   }
   function prevWord(p) {
-    if (isDays(p)) return daySpan(p).prevName;
+    if (isShort(p)) return daySpan(p).prevName;
     if (p === 'year') return 'the same months last year';
     if (p === 'lastyear') return 'the year before';
     return 'the ' + (Number(p) || 12) + ' months before';
@@ -311,7 +317,7 @@
       el.querySelector('.ovw-kpi-fig').textContent = t.fig;
       el.querySelector('.ovw-kpi-sub').innerHTML = verdictHtml(t.verdict) + esc(t.sub || '');
       /* A month's trend under a figure of days would read as theirs. */
-      if (t.spark && t.spark.length > 1 && !isDays()) el.querySelector('.ovw-kpi-trend').innerHTML = CH.spark(t.spark);
+      if (t.spark && t.spark.length > 1 && !isShort()) el.querySelector('.ovw-kpi-trend').innerHTML = CH.spark(t.spark);
       grid.appendChild(el);
     });
   }
@@ -641,7 +647,7 @@
     var lt = lostTile(f, fp, ch, keys, per);
     lt.key = 'left'; lt.label = 'Clients left';
     tiles(box, [
-      { key: 'active', label: 'Active clients', fig: plain(f.activeEnd), sub: plain(f.activeStart) + ' at the start of ' + (r.days ? dayWord(r.from) : monthLong(keys[0])),
+      { key: 'active', label: 'Active clients', fig: plain(f.activeEnd), sub: plain(f.activeStart) + ' at the start of ' + (r.days ? dayWord(r.from) : monthLong(keysOf(r)[0])),
         verdict: judge(f.activeEnd, f.activeStart, 'up', 2),
         spark: keys.map(function (k) { return per(k, 'active'); }) },
       { key: 'joined', label: 'Clients joined', fig: plain(f.won.length), sub: plain(fp.won.length) + ' in ' + prevWord(period),
@@ -1064,7 +1070,7 @@
           var r = rangeOf(period), word = PERIODS.filter(function (p) { return p[0] === period; })[0][1];
           O().forAnalytics(page, tab === 'sales' ? 'Sales' : 'Operations', {
             from: r.from, to: r.to, prev: prevOf(period), prevName: prevWord(period),
-            name: isDays() ? daySpan(period).name : period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
+            name: isShort() ? daySpan(period).name : period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
             cl && tab === 'sales' ? ['sources'] : [], cl);
         }
         /* A Dashboard tile pressed for its clients lands on its card. */
