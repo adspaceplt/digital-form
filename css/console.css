@@ -6015,6 +6015,10 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    ring's width (18px), so its title stands on the same edge as the rows
    beside it; it began 18px left of them (2026-11-19, the day's gate). */
 .is-narrow .prow > .pr-lead { min-width: 18px; }
+/* A tick in the lead is drawn at a ring's 18px and its target overflows the
+   slot evenly, as a tick on a checklist row does: at its control's width it
+   set a report task's title 18px right of a content task's (2026-11-19). */
+.is-narrow .prow > .pr-lead > .tcheck { margin-inline: calc((18px - var(--ctl-h)) / 2); }
 .is-narrow .prow > .pr-main { grid-area: main; min-width: 0; }
 .is-narrow .prow > .pr-state { grid-area: state; justify-self: end; text-align: right; }
 .is-narrow .prow > .pr-act { grid-area: act; justify-self: end; }
