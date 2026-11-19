@@ -3820,6 +3820,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .qt-row > .qt-name { grid-area: name; }
 .is-narrow .qt-row > .qt-amt { grid-area: amt; text-align: right; }
 .is-narrow .qt-row > .qt-state { grid-area: state; align-items: flex-end; }
+/* The figure and the state are a right edge: their track is sized by each
+   row alone (`auto`), so laid at its start they began wherever that row's
+   figure was widest, 11px apart (2026-11-18, the day's gate). */
+.is-narrow .qt-row > .qt-amt, .is-narrow .qt-row > .qt-state { justify-self: end; }
 .is-narrow .qt-row > .team-act { grid-area: act; }
 /* The ⋯ stands on the reference's line, its target overflowing it evenly
    (2026-10-31: it hung between the first two lines on a phone). */

@@ -20,7 +20,8 @@
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
     letter: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
     out: '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
-    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>'
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+    go: '<path d="m9 6 6 6-6 6"/>'
   };
   /* [the words, the mark, after the words] */
   var ACTS = [
@@ -31,8 +32,15 @@
     [/^(Preview|Preview PDF)$/, 'out', true],
     [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus'],
     [/^Issue Letter of Offer$/, 'letter'],
-    /* An invoice and a reminder sent by email (2026-11-04). */
-    [/^Send (invoice|reminders?)$/, 'mail']
+    /* What goes out by email from a screen: an invoice and a reminder
+       (2026-11-04), a candidate's interview invitation and an email of
+       one's own (2026-11-19, the user: Invite drawn as words alone). */
+    [/^(Send (invoice|reminders?|email)|Invite|Email the candidate)$/, 'mail'],
+    /* A way out to another system opens a tab of its own (the leaving
+       mark after); a way to another console page takes the chevron after
+       (DESIGN.md §5; 2026-11-19). */
+    [/^Open in Bukku$/, 'out', true],
+    [/^Open (Work|Months|Handbook|reviews)$/, 'go', true]
   ];
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {

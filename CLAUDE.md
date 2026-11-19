@@ -138,6 +138,16 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A suite follows a record by its id, never by being the first card: a
     list's order moves when the order rules do (2026-11-04: `prod` read
     another booking once a posted one sank to the end).
+  - A suite that only needs an act pressed presses it through
+    `tests/press.js` (`press(scope, sel, word)`: its own button where
+    drawn, else the item of its words in the ⋯ beside it); one asserting
+    where an act stands checks that itself (2026-11-18: `run` and
+    `seenpage` waited on buttons the menu standard moved into a ⋯).
+  - A `?v=` stamp is eight digits and any letters after (`zzzf` follows
+    `z`); a suite reading one never caps the letters (2026-11-18: `seo`).
+  - A walk that ends a step inside a record leaves it by its Back before
+    the next step: a press on the open section keeps its record open
+    (2026-11-18: uxaudit waited on Team's Members inside a candidate).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
@@ -1091,7 +1101,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   pending state (the user, 2026-10-10): every console `.btn` whose words are
   an act carries its mark (Publish the plane, Unpublish the struck eye,
   Edit the pen, Download the file, Copy the copy mark, Preview and Preview
-  PDF the leaving mark after the words, Add and New the plus, Issue Letter of Offer the letter), given as the
+  PDF the leaving mark after the words, Add and New the plus, Issue Letter of Offer the letter, Invite and an email sent the envelope, Open in Bukku the leaving mark after, Open {a console page} the chevron after), given as the
   button is drawn where a screen wrote words alone; a form's own commit
   stays words. A press whose write disables its button shows, after 150ms,
   a turning ring in the button's ink at the button's width until it is let
@@ -1125,6 +1135,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   was typed (2026-11-18, the user: one portal showed 60167690532,
   0127106561 and +60 16-776 6878); a `tel:` link dials `+{waNumber}`. The
   stored value keeps what was typed; no page draws it raw (`tests/phones.js`).
+- `ADspaceAPI.openStored(bucket, path, secs)` (`js/api.js`) is the one way
+  a file kept in Supabase Storage opens: the tab at the press, a signed
+  link, no opener, the tab shut on a refusal (the Handbook, a candidate's CV
+  and documents, an HR document's sealed copy; 2026-11-19: Documents held a
+  fourth copy, `tests/pwapdf.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,

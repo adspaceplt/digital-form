@@ -621,30 +621,7 @@ Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
-verification loop).
-- `pwapdf`: "no script opens a blank window for a PDF but through
-  ADspaceDocs" names `js/register.js:417` (`window.open('', '_blank')`, the
-  HR document's sealed copy, #1209); found 2026-11-18 by the term total
-  release, which does not touch it.
-- `run` (found 2026-11-18 on main 724f1aa, before the console pages
-  release): "Settings is a mark of the same size just before it" fails since
-  the Delete requests mark joined the rail's foot (#1217), and the Short
-  Links bar's ⋯ it presses is no longer drawn (a bar's ⋯ of one item is its
-  button since #1221).
-
-- `seo` (found 2026-11-18 on main 51937b4): "its preview is the photograph"
-  fails: the front door's og:image stamp reads `?v=20261117zzzf`, which the
-  check's `\d+[a-z]?` does not take.
-- `uxaudit` (found 2026-11-18 on main 51937b4, snapshot run): a client's
-  quotation rows (`qt-row has-acts`) drift 11px in cells 2 and 3 at 1280 on
-  eight screens (client services, Build quote, removed quotations, a
-  quotation record, add request, void letter, delete letter), then the walk
-  crashes waiting for Qiao Rou's row in Team; every screen after it unwalked.
-
-- `seenpage` (found 2026-11-18 on main 9ff2fe6, reproduced there): "A
-  request answered over a Withdraw" presses a request's Reply, now an item
-  of its row's ⋯ (a ⋯ of one item stands beside nothing since #1221), so
-  the press waits on a hidden item and the suite stops there.
+verification loop); the five found on 2026-11-18 fixed 2026-11-19.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside

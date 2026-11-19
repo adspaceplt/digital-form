@@ -412,16 +412,8 @@
     var b = el.querySelector('[data-a="sealed"]');
     if (b) b.addEventListener('click', function () {
       shutMenus();
-      /* As the candidate's record opens it: a link of 60 seconds made at the
-         press, the tab opened first. */
-      var tab = window.open('', '_blank');
-      db.storage.from('hiring').createSignedUrl(d.seal_path, 60).then(function (x) {
-        if (x.error || !x.data) throw new Error('unread');
-        if (tab) tab.location.href = x.data.signedUrl; else location.href = x.data.signedUrl;
-      }).catch(function () {
-        if (tab) try { tab.close(); } catch (x) {}
-        say(SIGNED_FAIL, 'err');
-      });
+      /* As the candidate's record opens it: a link of 60 seconds. */
+      API.openStored('hiring', d.seal_path, 60).catch(function () { say(SIGNED_FAIL, 'err'); });
     });
     return el;
   }

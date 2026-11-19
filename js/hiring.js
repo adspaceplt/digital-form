@@ -1019,11 +1019,9 @@
   }
   function openPath(path, b) {
     if (!path) return;
-    var tab = window.open('', '_blank');
-    db.storage.from(BUCKET).createSignedUrl(path, SIGN_SECS).then(function (x) {
-      if (x.error || !x.data) { if (tab) tab.close(); msg('hirRecMsg', 'The file could not be opened. Please try again.', 'err'); return; }
-      if (tab) tab.location.href = x.data.signedUrl; else location.href = x.data.signedUrl;
-    }, function () { if (tab) tab.close(); });
+    API.openStored(BUCKET, path, SIGN_SECS).catch(function () {
+      msg('hirRecMsg', 'The file could not be opened. Please try again.', 'err');
+    });
   }
   function docRecord(d, b) {
     if (!window.ADspaceSeal) return;
@@ -1342,20 +1340,12 @@
       });
     });
   }
-  /* The tab is opened at the press, or a browser blocks a window opened
-     after the signed link comes back (as the Handbook opens a file). */
   function openCv(btn) {
-    var w = window.open('', '_blank');
     btn.disabled = true;
-    db.storage.from(BUCKET).createSignedUrl(state.rec.cv_path, SIGN_SECS).then(function (r) {
+    API.openStored(BUCKET, state.rec.cv_path, SIGN_SECS).then(function () {
       btn.disabled = false;
-      var url = r && r.data && (r.data.signedUrl || r.data.signedURL);
-      if (r.error || !url) throw r.error || new Error('no-url');
-      if (w) { try { w.opener = null; } catch (e) { /* cross-origin */ } w.location.href = url; }
-      else location.href = url;
     }).catch(function () {
       btn.disabled = false;
-      if (w) w.close();
       msg('hirRecMsg', 'The CV could not be opened. Please try again.', 'err');
     });
   }
