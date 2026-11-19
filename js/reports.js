@@ -3387,7 +3387,7 @@
           var line = titled ? (FORMAT_WORD[p.content_type] && p.content_type ? FORMAT_WORD[p.content_type] : '') : firstLine(p.caption);
           return '<div class="crm-row rp-post-row' + (pick && pick[p.id] ? ' is-picked' : '') + '" data-id="' + esc(p.id) + '">' +
             (pick ? tick(p.id, 'Select ' + postName(p), !!pick[p.id]) : '') +
-            '<span class="rp-thumb' + (p.thumb_data ? '' : ' is-empty') + '">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
+            '<span class="rp-thumb' + (p.thumb_data ? '' : ' is-empty') + '">' + thumbImg(p.thumb_data) + '</span>' +
             '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([linkOf(p.id) ? taskCode(linkOf(p.id)) : '', line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
             '<span class="rp-date">' + esc(dayWord(p.posted_on)) + '</span>' +
             '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) + unit(String(METRIC_WORD[m[0]] || '').toLowerCase()) : '') + '</span>' +
@@ -3521,9 +3521,10 @@
     });
   }
 
-  /* A thumbnail is kept in the row as a small JPEG, 320px on its longer
-     side: the PDF is drawn in the browser, and a picture on the CDN cannot
-     be read back into the file across origins. */
+  /* A thumbnail is a small JPEG, 320px on its longer side, kept on S3
+     under the report's client's `private/…/thumbs/` (2026-11-20; a data URL
+     in the row before) and read back through an hour's signed S3 link, which
+     the PDF drawn in the browser can fetch across origins. */
   function shrink(file) {
     return new Promise(function (ok, bad) {
       var img = new Image();
@@ -3541,6 +3542,48 @@
       };
       img.onerror = function () { URL.revokeObjectURL(url); bad(new Error('That file is not an image this browser can read.')); };
       img.src = url;
+    });
+  }
+
+  /* A picture shrunk to its data URL goes to S3 before the row is written,
+     and the row keeps its key; the picture is held here so it draws at once.
+     A key, or nothing, passes as it is. A refused upload writes nothing. */
+  function keepThumb(data) {
+    if (!data || !/^data:image\//.test(data)) return Promise.resolve(data || null);
+    var r = st.open, s3 = (window.ADSPACE_CONFIG || {}).s3;
+    if (!r || !bridge.putToS3) return Promise.reject(new Error(THUMB_NOT_SAVED));
+    var bin = atob(data.split(',')[1] || ''), buf = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    var blob = new Blob([buf], { type: 'image/jpeg' });
+    return db.functions.invoke((s3 && s3.functionName) || 'sign-upload', {
+      body: { ext: 'jpg', clientId: r.client_id, size: blob.size, private: true, purpose: 'thumb', reportId: r.id }
+    }).then(function (res) {
+      var d = res.data || {};
+      if (res.error || !d.uploadUrl || !d.key) throw new Error(THUMB_NOT_SAVED);
+      return bridge.putToS3(d.uploadUrl, blob, d.contentType || 'image/jpeg').then(function () {
+        if (SM() && SM().thumbSeed) SM().thumbSeed(d.key, data);
+        return d.key;
+      });
+    }).catch(function () { throw new Error(THUMB_NOT_SAVED); });
+  }
+  var THUMB_NOT_SAVED = 'The picture could not be saved. Try again.';
+  /* A picture drawn: a data URL as it is; a key from its signed link, the
+     links of every key drawn in one paint asked in one call. */
+  var thumbWait = null;
+  function thumbImg(v) {
+    var M = SM();
+    if (!v) return '';
+    if (!(M && M.isThumbKey && M.isThumbKey(v))) return '<img src="' + esc(v) + '" alt="">';
+    if (!thumbWait) thumbWait = setTimeout(fillThumbs, 0);
+    return '<img data-thumb-key="' + esc(v) + '" alt="">';
+  }
+  function fillThumbs() {
+    thumbWait = null;
+    var imgs = Array.prototype.slice.call(document.querySelectorAll('img[data-thumb-key]:not([src])'));
+    var r = st.open, M = SM();
+    if (!imgs.length || !r || !M || !M.thumbsFor) return;
+    M.thumbsFor(r.id, imgs.map(function (i) { return i.getAttribute('data-thumb-key'); })).then(function (m) {
+      imgs.forEach(function (i) { var u = m[i.getAttribute('data-thumb-key')]; if (u) i.src = u; });
     });
   }
 
@@ -3572,7 +3615,7 @@
     acc.value = p ? p.platform_id : (st.lastAcc && st.platforms.some(function (a) { return a.id === st.lastAcc; }) ? st.lastAcc : st.platforms[0].id);
     var thumb = p ? p.thumb_data : null;
     var showThumb = function () {
-      $('rpPostThumbShow').innerHTML = thumb ? '<img src="' + esc(thumb) + '" alt="">' : '';
+      $('rpPostThumbShow').innerHTML = thumbImg(thumb);
       $('rpPostThumbX').hidden = !thumb;
     };
     var figs = function () {
@@ -3622,9 +3665,12 @@
       if (badFig) { say(sm, 'Enter whole numbers for the figures.', 'err'); badFig.focus(); return; }
       if (!row.posted_on) { say(sm, 'Enter a date.', 'err'); $('rpPostDate').focus(); return; }
       go.disabled = true;
-      var q = p ? db.from('sm_report_posts').update(row).eq('id', p.id).select('*')
-                : db.from('sm_report_posts').insert(Object.assign({ report_id: st.open.id, position: st.posts.length + 1 }, row)).select('*');
-      q.then(function (res) {
+      keepThumb(row.thumb_data).then(function (key) {
+        row.thumb_data = key;
+        return p ? db.from('sm_report_posts').update(row).eq('id', p.id).select('*')
+                 : db.from('sm_report_posts').insert(Object.assign({ report_id: st.open.id, position: st.posts.length + 1 }, row)).select('*');
+      }).catch(function (e) { go.disabled = false; say(sm, e.message, 'err'); return null; }).then(function (res) {
+        if (!res) return;
         go.disabled = false;
         if (res.error || !(res.data || []).length) { say(sm, said(res.error || 'The database refused the change.'), 'err'); return; }
         var saved = res.data[0];
@@ -4507,7 +4553,7 @@
     var rows = items.map(function (it, i) {
       var a = nbAd(it), k = NB_KIND[it.kind] || NB_KIND.idea;
       return '<div class="nb-row" data-i="' + i + '">' +
-        '<span class="rp-thumb nb-thumb' + (a && a.thumb_data ? '' : ' is-empty') + '">' + (a && a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
+        '<span class="rp-thumb nb-thumb' + (a && a.thumb_data ? '' : ' is-empty') + '">' + (a ? thumbImg(a.thumb_data) : '') + '</span>' +
         '<div class="nb-body"><span class="chip-state ' + k[1] + '">' + esc(nbKindWord(it)) + '</span>' +
           '<h4 class="nb-title">' + esc(it.title) + '</h4>' +
           (it.evidence ? '<p class="nb-ev">' + esc(it.evidence) + '</p>' : '') +
@@ -5239,7 +5285,7 @@
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
-            '<span class="rp-thumb' + (a.thumb_data ? '' : ' is-empty') + '">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
+            '<span class="rp-thumb' + (a.thumb_data ? '' : ' is-empty') + '">' + thumbImg(a.thumb_data) + '</span>' +
             '<span class="rp-name"><span class="rp-line">' + (ed && !pick
               ? '<button class="rp-adname" type="button" data-a="editad" data-id="' + esc(a.id) + '">' + esc(adName(a.name)) + '</button>'
               : '<b>' + esc(adName(a.name)) + '</b>') + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
@@ -5568,7 +5614,7 @@
     $('rpAdObj').onchange = function () { fillResult(); paintRoas(); }; fillResult(); paintRoas();
     $('rpAdPv').addEventListener('input', paintRoas); $('rpAdSpend').addEventListener('input', paintRoas);
     var thumb = a.thumb_data || null;
-    var showThumb = function () { $('rpAdThumbShow').innerHTML = thumb ? '<img src="' + esc(thumb) + '" alt="">' : ''; $('rpAdThumbX').hidden = !thumb; };
+    var showThumb = function () { $('rpAdThumbShow').innerHTML = thumbImg(thumb); $('rpAdThumbX').hidden = !thumb; };
     $('rpAdThumb').value = ''; showThumb();
     var sm = box.querySelector('[data-m="sheet"]'); say(sm, '');
     $('rpAdThumb').onchange = function () {
@@ -5616,9 +5662,12 @@
       if (row.starts_on && row.ends_on && row.ends_on < row.starts_on) { say(sm, 'The ad must end on or after the day it starts.', 'err'); return; }
       go.disabled = true;
       var editing = a.id && !copy;
-      var q = editing ? db.from('sm_report_ads').update(row).eq('id', a.id).select('*')
-                      : db.from('sm_report_ads').insert(Object.assign({ report_id: st.open.id, position: st.ads.length + 1 }, row)).select('*');
-      q.then(function (res) {
+      keepThumb(row.thumb_data).then(function (key) {
+        row.thumb_data = key;
+        return editing ? db.from('sm_report_ads').update(row).eq('id', a.id).select('*')
+                       : db.from('sm_report_ads').insert(Object.assign({ report_id: st.open.id, position: st.ads.length + 1 }, row)).select('*');
+      }).catch(function (e) { go.disabled = false; say(sm, e.message, 'err'); return null; }).then(function (res) {
+        if (!res) return;
         go.disabled = false;
         if (res.error || !(res.data || []).length) { say(sm, said(res.error || 'The database refused the change.'), 'err'); return; }
         var saved = res.data[0];
@@ -6012,6 +6061,11 @@
       }).catch(function () { /* this batch is left without */ }).then(function () { return batch(i + 6); });
     };
     return batch(0).then(function () {
+      /* Each picture goes to S3 once, however many rows take it. */
+      return Promise.all(Object.keys(got).map(function (u) {
+        return keepThumb(got[u]).then(function (k) { got[u] = k; }).catch(function () { delete got[u]; });
+      }));
+    }).then(function () {
       return Promise.all(want.filter(function (w) { return got[w.url]; }).map(function (w) {
         return db.from(table).update({ thumb_data: got[w.url] }).eq('id', w.id).is('thumb_data', null).select('*').then(function (res) {
           var row = (res && res.data || [])[0];
@@ -6095,6 +6149,10 @@
         }).catch(function () { refused = 'meta-failed'; }).then(function () { return batch(i + 3); });
       };
       batch(0).then(function () {
+        return Promise.all(Object.keys(got).map(function (id) {
+          return keepThumb(got[id]).then(function (k) { got[id] = k; }).catch(function () { delete got[id]; refused = refused || 'not-saved'; });
+        }));
+      }).then(function () {
         var before = {};
         return Promise.all(want.filter(function (a) { return got[a.id]; }).map(function (a) {
           var q0 = db.from('sm_report_ads').update({ thumb_data: got[a.id] }).eq('id', a.id);

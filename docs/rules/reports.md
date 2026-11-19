@@ -333,7 +333,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`ADspaceSmReport.titleOf`).
 - Accounts carry forward.
 - Posts paste from a spreadsheet, or its CSV file, by header name. Thumbnails
-  are 320px JPEG data URLs.
+  are 320px JPEGs kept on S3 (`2026-11-20-report-pictures-on-s3.sql`; the
+  user, 2026-11-20: "Ok move to s3"): every picture a sheet, a paste or
+  Meta gives is put under its report's client's `private/{client}/thumbs/`
+  (sign-upload purpose `thumb`, Reports at Work in scope, a JPEG of a
+  megabyte at most) before the row is written, and the row and every
+  version published since name its key (`keepThumb`, js/reports.js; an
+  upload refused writes nothing and says The picture could not be saved.
+  Try again.). A key is read through an hour's S3 link sign-download signs
+  for the reader (`thumbs`, `sm_report_thumbs`: a colleague at Reports or
+  Clients View in scope, any key the report's rows or versions name; the
+  client's portal contact, a live version's), many in one call
+  (`ADspaceSmReport.thumbsFor`, the one copy for the console's rows and the
+  PDF, the PDF fetching across origins through the bucket's CORS GET). A
+  data URL from before the move still draws as it is; `report-thumbs-move`
+  moved them once (docs/S3-STORAGE.md §7).
   - A slashed date is day first unless the paste shows otherwise (a second
     part over 12) or is a Meta export (`Post ID` and `Publish time`), which
     is month first.

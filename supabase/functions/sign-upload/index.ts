@@ -88,6 +88,12 @@ const PURPOSES: Record<string, {
      the script's client at Work. */
   script: { field: 'scriptId', sections: ['scripts'], kind: 'client', level: 'work',
     clientOf: async (a, id) => { const r = await one(a.from('video_scripts').select('client_id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.client_id) } : null; } },
+  /* A report's post or ad picture (2026-11-20): a 320px JPEG kept private
+     under the report's client's `thumbs/`, read back only through a link
+     sign-download signs; asked of the report's client at Work. */
+  thumb: { field: 'reportId', sections: ['reports'], kind: 'client', level: 'work', private: 'must',
+    clientOf: async (a, id) => { const r = await one(a.from('sm_reports').select('client_id').eq('id', id).maybeSingle());
       return r ? { client: String(r.client_id) } : null; } }
 };
 const MAX_BYTES = 2 * 1024 * 1024 * 1024;   // 2 GB, a sane ceiling for a review copy
@@ -118,6 +124,7 @@ Deno.serve(async (req) => {
   const creatorCode = String(body.creatorCode ?? '').toUpperCase();
   const optionId = String(body.optionId ?? '');
   let scope = '';
+  let thumb = false;
 
   if (creatorCode) {
     if (!/^[A-Z0-9]{8}$/.test(creatorCode)) return json({ error: 'bad_code' }, 400, origin);
@@ -211,6 +218,7 @@ Deno.serve(async (req) => {
     if (body.private === true && !rule.private) return json({ error: 'bad_private' }, 400, origin);
     if (rule.private === 'must' && body.private !== true) return json({ error: 'bad_private' }, 400, origin);
     scope = clientId;
+    thumb = purpose === 'thumb';
   }
 
   // 2. Validate what they are asking to upload.
@@ -242,11 +250,13 @@ Deno.serve(async (req) => {
   /* A private file (a campaign's invoice PDF, 2026-10-02) goes under
      `private/`, which CloudFront does not serve: it is opened only through a
      five-minute link from sign-download. Only the console asks for one, and
-     only for a PDF. */
+     only for a PDF (a report picture alone a JPEG, under `thumbs/`). */
   const priv = body.private === true;
-  if (priv && (creatorCode || ext !== 'pdf')) return json({ error: 'bad_private' }, 400, origin);
+  if (priv && (creatorCode || ext !== (thumb ? 'jpg' : 'pdf'))) return json({ error: 'bad_private' }, 400, origin);
+  /* A report picture is a 320px JPEG: a megabyte is a generous ceiling. */
+  if (thumb && size > 1024 * 1024) return json({ error: 'too_large' }, 400, origin);
   const key = priv
-    ? `private/${scope}/${crypto.randomUUID()}.pdf`
+    ? (thumb ? `private/${scope}/thumbs/${crypto.randomUUID()}.jpg` : `private/${scope}/${crypto.randomUUID()}.pdf`)
     : `${prefix}/${scope}/${crypto.randomUUID()}.${ext}`;
   const target = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 

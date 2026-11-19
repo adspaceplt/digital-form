@@ -2133,7 +2133,9 @@ learned about an area is written in its file, never here.
   is owed (`optionId`, Creator Campaigns: Campaigns at Work), `invoice` a
   campaign (`campaignId`, Creator Campaigns: Finance at Work, private where
   set up), `report` a report version (`versionId`, Reports at Work, always
-  private, its scope asked of the report's client); the record must be the named client's and the caller's client
+  private, its scope asked of the report's client), `thumb` a report's
+  picture (`reportId`, Reports at Work, always private, a JPEG under
+  `private/{client}/thumbs/`); the record must be the named client's and the caller's client
   scope must reach it, each asked as the caller. Work in one section signs
   nothing for another; a page that names no purpose is asked to reload.
 - `sign-upload` signs only the extensions the pages upload (`EXT_TYPE`:
@@ -2202,8 +2204,10 @@ learned about an area is written in its file, never here.
     token and the performance master code live only in Supabase.
   - The delete code lives in the database.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
-  and under `private/` (write and read, for invoices and each published
-  report's kept PDF) once §5 is done;
+  and under `private/` (write and read, for invoices, each published
+  report's kept PDF and every report picture, `private/{client}/thumbs/`,
+  read through S3 links sign-download signs, the bucket's CORS allowing
+  GET and PUT from the portal; S3-STORAGE §7) once §5 is done;
   `private/` is closed to CloudFront by the bucket policy. `content/` is
   served only with the media pass (§6 done; CloudFront's `content/*`
   behaviour requires it since 2026-10-09) (`media-pass` signs with a
