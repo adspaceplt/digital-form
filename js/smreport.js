@@ -718,7 +718,7 @@
       if (isPng(u8) && !big) return pdf.embedPng(u8).catch(function () { return viaCanvas(pdf, buf); });
       return viaCanvas(pdf, buf);
     }).catch(function (e) {
-      if (warn) warn('An image could not be loaded: ' + url.split('?')[0].split('/').pop() + ' (' + ((e && e.message) || e) + ').');
+      if (warn) warn('A picture could not be loaded: ' + url.split('?')[0].split('/').pop() + ' (' + ((e && e.message) || e) + ').');
       return null;
     });
   }
@@ -1034,7 +1034,7 @@
         if (!u) return;
         thumbJobs[p.id] = isThumbKey(u)
           ? links.then(function (m) {
-              if (!m[u]) { warn('A picture could not be loaded.'); return null; }
+              if (!m[u]) { warn('A picture could not be loaded and is left out of the PDF. Download again.'); return null; }
               return embedImage(pdf, m[u], warn);
             })
           : embedImage(pdf, u, warn);
