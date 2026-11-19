@@ -5648,7 +5648,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     };
 
     if (name === 'ops_transition_task_on' || name === 'ops_task_move_redate') {
-      var myDay = function (t) { return new Date((t ? Date.parse(t) : Date.now()) + 8 * 3600e3).toISOString().slice(0, 10); };
+
       var tdy = myDay(), onDay = args.p_on;
       var bk = DB.app_settings ? Number(appSet('stage_back_days', tdy)) : 7;
       if (!isFinite(bk)) bk = 7;
