@@ -56,7 +56,7 @@ Body (HTML):
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
 <tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
-<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">
+<a href="https://adspace.me" style="display:inline-block;text-decoration:none;border:0;"><img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>
 <h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">Your sign-in code</h1>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Dear Sir or Madam,</p>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Please enter the following code to sign in to the ADspace Digital Portal:</p>
@@ -101,7 +101,7 @@ Body (HTML):
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
 <tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
-<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">
+<a href="https://adspace.me" style="display:inline-block;text-decoration:none;border:0;"><img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>
 <h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">{{ if eq .Data.kind "client" }}Welcome to your ADspace Client Portal{{ else }}Your access to the ADspace Digital Portal{{ end }}</h1>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Dear {{ if .Data.greeting }}{{ .Data.greeting }}{{ else }}Sir or Madam{{ end }},</p>
 {{ if eq .Data.kind "client" }}<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services and resources with ADspace all in one place.</p>

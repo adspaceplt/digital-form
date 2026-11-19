@@ -50,7 +50,7 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
     '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1a1a1a;">' +
-    '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">' +
+    '<a href="https://adspace.me" style="display:inline-block;text-decoration:none;border:0;"><img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;"></a>' +
     '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">' + esc(o.heading) + '</h1>' +
     ps +
     (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">' + esc(o.foot) + '</p>' : '') +
