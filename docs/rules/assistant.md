@@ -12,10 +12,32 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   on) with a fixed list of tools and runs none of them: every tool runs on the
   page as the colleague. A read (`find_clients`, `client_summary`,
   `list_tasks`, `waiting_on_me`, `list_reports`, `find_colleagues`,
-  `client_months`, `list_sets`, `list_campaigns`, `find_contacts`) makes the
-  screens' own reads under their policies, asks `may()` first (no-access),
-  and never sends a contact's email or number; an email or number typed into
-  a question is masked by the function. `list_tasks` with a `query` finds a
+  `client_months`, `list_sets`, `list_campaigns`, `find_contacts`, and
+  every other section since 2026-11-19, the user: "some questions it doesnt
+  answer"): `overdue_invoices` (bukku-sync `invoices`, `clients.billing`),
+  `client_billing` (`client_billing()`, complete or the fields missing,
+  never its numbers or addresses; `clients.billing`), `list_quotations`
+  (`ADspaceQuotes.stateOf`; `clients.quotes`), `creator_payments`
+  (`creator_payments_queue`), `find_creators`, `creator_bookings`
+  (`creator_bills_list`; the three at `campaigns.creators`, an amount only
+  where the function answers one and `campaigns.pay` is held),
+  `find_suppliers` (`suppliers_list`, never bank details, an NRIC, a number
+  or an email; `suppliers`), `dashboard_figures` (the Dashboard's own
+  periods, rules and counts: `ADspaceOverview.span`, `.can`, `ops_reports`,
+  `ADspaceSales.figures`), `find_documents` (`register.documents` or
+  `register.hr`, HR Letters only at `register.hr`; Letters of Offer at
+  `clients.documents`), `list_scripts` (`scripts`), `find_links` (`links`),
+  `activity_record` (`sectionAllowed('activity')`, its policy answering the
+  rest), `message_log` (`wa_messages`, `mail_log`; `whatsapp`), `handbook`
+  (every colleague) and `search_portal` (console search's own reads,
+  `ADspaceSearch.find`, each result opened as search opens it). Each makes
+  the screens' own reads under their policies, asks `may()` first (refused,
+  it answers `no-access` with `what` it would have read and the section
+  as the rail names it, which Claude says as "You do not have permission
+  to view {what}. Please ask an admin.", never a key or a level), and
+  never sends a contact's email or number, bank details, an NRIC, a salary
+  or a code; an email or number in a name, note or summary is masked on
+  the page, and one typed into a question by the function. `list_tasks` with a `query` finds a
   task by its words as My Work's search does (every task the colleague may
   see, open, finished or cancelled; title, code, description, brief,
   client or number), every word matching and a platform by any of its
@@ -25,6 +47,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   in fewer words before saying a task is not there (the user, 2026-11-13:
   "find the xhs account renewal task" found nothing). A client's name and its work go to
   Claude (approved by the user for the assistant, 2026-11-13).
+- No bare "unable to answer" (the user, 2026-11-19): a question no tool
+  answers is met by naming the section that holds it and `open_page` to it
+  (`kind` section: every route, a section's tab such as Overdue invoices,
+  Payments, the Email log or Hiring, and the Activity record's sheet; or a
+  record, or a `search_portal` result); a button is drawn only where
+  `sectionAllowed` (bridged as `ADspaceAdmin.sectionAllowed`) and the
+  tab's key let the colleague open it, else Claude is told no-access.
 - A change is a `propose_*` tool, drawn as a card of what will be written,
   from and to (`.ag-confirm`, its act Confirm, else the screen's own word:
   Book, Create, Publish, Unpublish, Send); nothing is written until it is
@@ -37,8 +66,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   cancelled or undone is told to Claude with the next question. `open_page`
   draws a button to the record on its own screen (`client_month` the
   client's Months). The assistant never deletes, sends to a creator or
-  supplier, writes an email, or touches money, billing, quotations, access
-  or performance: none is among its tools. Captions, scripts, checklists
+  supplier, writes an email, or changes money, billing, quotations, access
+  or performance: no change among its tools does (it reads them where the
+  reads above allow). Captions, scripts, checklists
   and commentary stay their own screens' Write with AI.
 - Actions behind their card (the user, 2026-11-13: "approve build both",
   the mockups "Assistant · actions with Confirm" and "Assistant · phone"):
@@ -99,7 +129,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `window.__agentReplies` (`tests/agent.js`).
 - A strict tool's field that may be one of a list or null is `anyOf` a
   string enum and null (`optEnum`), never an enum on a type list; strict is
-  kept to the change cards but `propose_schedule` (`LOOSE`), since Claude's
+  kept to the change cards and `open_page` but `propose_schedule`; every
+  read is `LOOSE`, since Claude's
   API takes 20 strict tools, 24 optional and 16 nullable fields a request
   and refuses every question past them (2026-11-13; `tests/agent.js` reads
   the function's tool list and counts them). The stand-in never sends the

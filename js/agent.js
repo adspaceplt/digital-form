@@ -6,12 +6,17 @@
  * Claude with a fixed set of tools and hands back its answer. Every tool
  * Claude asks for runs here, through the colleague's own sign-in:
  *   - a read (find_clients, client_summary, list_tasks, waiting_on_me,
- *     list_reports, find_colleagues) makes the reads the screens make, under
- *     the same policies, and answers no-access where `may()` says so;
+ *     list_reports, find_colleagues and, since 2026-11-19, every other
+ *     section: money, creators, suppliers, the Dashboard's figures,
+ *     documents, scripts, links, the Activity record, the message logs, the
+ *     Handbook and search_portal) makes the reads the screens make, under
+ *     the same policies, and answers no-access, naming what it would have
+ *     read, where `may()` says so;
  *   - a change (propose_*) is drawn as a card of what will be written, from
  *     and to; nothing is written until Confirm, through the function the
  *     screen uses, and Undo stands where the screen offers one;
- *   - open_page draws a button to the record on its own screen.
+ *   - open_page draws a button to a record, a search result or a section,
+ *     only where the colleague may open it.
  * Each confirmed change is filed in the Activity record under the colleague,
  * marked as made through the Assistant (`assistant.task`, `assistant.call`,
  * `assistant.report`, `assistant.meeting`, `assistant.campaign`,
@@ -20,8 +25,8 @@
  * meeting, create a campaign, publish or unpublish a set, and send a
  * WhatsApp template to a client, each only behind its card; and schedule a
  * reminder or one of those for later (`agent_schedule_add`, run as the
- * colleague every five minutes). It never deletes, and never touches
- * money, billing, access or performance: those are not among its tools.
+ * colleague every five minutes). It never deletes, and never changes
+ * money, billing, access or performance: no change among its tools does.
  */
 (function () {
   'use strict';
@@ -119,7 +124,11 @@
       .replace(/\b[3689]\d{3}[\s-]?\d{4}\b/g, '[number]');
   }
   function clean(q) { return String(q || '').replace(/["\\%*,()]/g, ' ').replace(/\s+/g, ' ').trim(); }
-  function noAccess() { return { error: 'no-access' }; }
+  /* A read the colleague may not make answers what it would have read and
+     the section that holds it, as the rail names it (2026-11-19, the user:
+     "if no control return the answer to the team member that they have no
+     control to view or manage that"); Claude says it in the portal's words. */
+  function noAccess(what, section) { return { error: 'no-access', what: what || 'this', section: section || null }; }
   function rows(r) { if (r.error) throw r.error; return r.data || []; }
 
   var stages = null;
@@ -178,7 +187,7 @@
 
   var READ = {
     find_clients: function (a) {
-      if (!may('clients')) return Promise.resolve(noAccess());
+      if (!may('clients')) return Promise.resolve(noAccess('clients', 'Clients'));
       var q = clean(a.query);
       if (q.length < 2) return Promise.resolve({ error: 'too-short' });
       var v = q.replace(/_/g, '\\\\_');
@@ -193,7 +202,7 @@
       });
     },
     client_summary: function (a) {
-      if (!may('clients')) return Promise.resolve(noAccess());
+      if (!may('clients')) return Promise.resolve(noAccess('clients', 'Clients'));
       return Promise.all([team(), loadStages()]).then(function () {
         return db.from('clients').select('id, name, client_code, stage, stage_since, owner, sales_by, industry, market, slug').eq('id', a.client_id).maybeSingle();
       }).then(function (r) {
@@ -225,12 +234,12 @@
       });
     },
     list_tasks: function (a) {
-      if (!may('ops')) return Promise.resolve(noAccess());
+      if (!may('ops')) return Promise.resolve(noAccess('tasks', 'My Work'));
       if (clean(a.query || '').length >= 2) return findTasks(a);
-      if (a.whose === 'everyone' && !may('ops.all')) return Promise.resolve({ error: 'no-access', why: 'Only your own tasks may be listed.' });
+      if (a.whose === 'everyone' && !may('ops.all')) return Promise.resolve(noAccess("the whole team's tasks", 'My Work'));
       var mine = a.whose === 'me' ? (me() || {}).id : a.whose === 'person' ? a.person_id : null;
       if (a.whose === 'person' && !a.person_id) return Promise.resolve({ error: 'person_id required' });
-      if (a.whose === 'person' && a.person_id !== (me() || {}).id && !may('ops.all')) return Promise.resolve({ error: 'no-access', why: 'Only your own tasks may be listed.' });
+      if (a.whose === 'person' && a.person_id !== (me() || {}).id && !may('ops.all')) return Promise.resolve(noAccess("the whole team's tasks", 'My Work'));
       var ids = mine ? db.from('ops_task_assignees').select('task_id').eq('team_member_id', mine).eq('responsibility', 'owner').is('ended_at', null).limit(400)
         .then(function (r) { return rows(r).map(function (x) { return x.task_id; }); }) : Promise.resolve(null);
       return Promise.all([team(), loadStages(), ids]).then(function (got) {
@@ -256,7 +265,7 @@
     },
     waiting_on_me: function () {
       var m = me();
-      if (!m) return Promise.resolve(noAccess());
+      if (!m) return Promise.resolve(noAccess('Waiting for you', 'Dashboard'));
       var out = {}, jobs = [];
       if (may('ops')) jobs.push(db.from('ops_due_requests').select('id, task_id, wants_at, reason, asked_by, asked_at')
         .eq('decider_id', m.id).eq('state', 'asked').limit(20).then(function (r) {
@@ -278,7 +287,7 @@
       return Promise.all(jobs).then(function () { return out; });
     },
     list_reports: function (a) {
-      if (!may('reports')) return Promise.resolve(noAccess());
+      if (!may('reports')) return Promise.resolve(noAccess('reports', 'Reports'));
       var q = db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)');
       if (a.client_id) q = q.eq('client_id', a.client_id);
       if (a.status && a.status !== 'any') q = q.eq('status', a.status);
@@ -292,7 +301,7 @@
     /* A client's content months in My Work: whether each is confirmed,
        and its meeting, so a meeting is booked on the right month. */
     client_months: function (a) {
-      if (!may('ops')) return Promise.resolve(noAccess());
+      if (!may('ops')) return Promise.resolve(noAccess('content months', 'My Work'));
       return team().then(function () {
         return db.from('ops_engagements').select('id, period, status, meeting_at, meeting_channel, meeting_minutes, meeting_na, meeting_owner_id, meeting_event_id')
           .eq('client_id', a.client_id).order('period', { ascending: false }).limit(8);
@@ -307,7 +316,7 @@
     /* A client's content sets in Content Review, where each one's posts
        stand, newest first. */
     list_sets: function (a) {
-      if (!may('review.sets')) return Promise.resolve(noAccess());
+      if (!may('review.sets')) return Promise.resolve(noAccess('content sets', 'Content Review'));
       return db.from('batches').select('id, title, period, published, created_at').eq('client_id', a.client_id)
         .order('created_at', { ascending: false }).limit(12).then(rows).then(function (list) {
           if (!list.length) return { sets: [] };
@@ -323,7 +332,7 @@
         });
     },
     list_campaigns: function (a) {
-      if (!may('campaigns.campaigns')) return Promise.resolve(noAccess());
+      if (!may('campaigns.campaigns')) return Promise.resolve(noAccess('creator campaigns', 'Creator Campaigns'));
       var q = db.from('campaigns').select('id, title, state, slots, owner, campaign_code, clients(name)');
       if (a.client_id) q = q.eq('client_id', a.client_id);
       return q.order('created_at', { ascending: false }).limit(15).then(rows).then(function (list) {
@@ -336,7 +345,7 @@
     /* A client's contacts, to name who a WhatsApp goes to: never a number
        or an email, only whether WhatsApp can reach them. */
     find_contacts: function (a) {
-      if (!may('clients.contacts')) return Promise.resolve(noAccess());
+      if (!may('clients.contacts')) return Promise.resolve(noAccess('client contacts', 'Clients'));
       return db.from('client_contacts').select('id, salutation, name, role, is_primary, whatsapp, phone').eq('client_id', a.client_id)
         .is('archived_at', null).limit(20).then(rows).then(function (list) {
           return { contacts: list.map(function (k) {
@@ -356,6 +365,400 @@
       });
     }
   };
+  /* ---- Every other section (2026-11-19, the user: "the assistant feature is
+     still weak, some questions it doesnt answer"): money, creators and
+     suppliers, the Dashboard's figures, documents, video scripts, short
+     links, the Activity record, the message logs and the Handbook. Each is
+     the read its own screen makes, asked behind the same `may()` key, and
+     each leaves out what never goes to Claude: a contact's email or number,
+     bank details, an NRIC, a salary, a code. Money reaches only a colleague
+     who already reads it there. ------------------------------------------- */
+  function amt(n, cur) {
+    var M = window.ADspaceMoney;
+    var mk = cur === 'SGD' || cur === 'SG' ? 'SG' : 'MY';
+    return M && M.money2 ? M.money2(Number(n) || 0, mk) : (mk === 'SG' ? 'S$ ' : 'RM ') + (Number(n) || 0).toFixed(2);
+  }
+  function has(v, q) { return !q || String(v || '').toLowerCase().indexOf(String(q).toLowerCase()) > -1; }
+  /* A function's own refusal: denied is the colleague's access, said as
+     no-access; anything else is a read that failed. */
+  function fnData(r, what, section) {
+    if (r.error) throw r.error;
+    var d = r.data || {};
+    if (d.error === 'denied') return { refused: noAccess(what, section) };
+    if (d.error) throw new Error(String(d.error));
+    return { data: d };
+  }
+  function invoke(name, body) {
+    return db.functions.invoke(name, { body: body }).then(function (r) {
+      if (r && r.data && r.data.error) return r.data;
+      var refused = API.fnRefusal ? API.fnRefusal(r) : Promise.resolve(r.error ? 'failed' : null);
+      return refused.then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    });
+  }
+  function words2(k) { return String(k || '').replace(/[_-]+/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); }); }
+  var CREATOR_STATE = { confirmed: 'Confirmed', pending_visit: 'Pending visit', pending_delivery: 'Pending visit', pending_draft: 'Pending draft',
+    submitted: 'Submitted', reviewing: 'Reviewing', changes: 'Changes requested', scheduled: 'Scheduled', posted: 'Posted', completed: 'Completed',
+    withdrawn: 'Withdrawn', replaced: 'Withdrawn' };
+  var BILL_STATE = { draft: 'Draft in Bukku', processing: 'Awaiting payment', paid: 'Paid', void: 'Voided' };
+  var PLATFORM_WORD = { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+  var PLATFORM_KEY = { xhs: 'xhs', rednote: 'xhs', '小红书': 'xhs', red: 'xhs', instagram: 'instagram', ig: 'instagram',
+    tiktok: 'tiktok', tt: 'tiktok', facebook: 'facebook', fb: 'facebook' };
+  var DOC_FAMILY = { quote_cover: 'Quotation Cover', client: 'Client letter', hr: 'HR Letter', other: 'Other document' };
+  var HB_CAT = { handbook: 'Employee Handbook', sop: 'SOPs', policy: 'Policies', template: 'Templates and forms', other: 'Other' };
+  var MAIL_STATE = { queued: 'Queued', sending: 'Sending', sent: 'Sent', delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced',
+    complained: 'Marked as spam', failed: 'Not sent', unknown: 'Not confirmed' };
+  var WA_PURPOSE = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
+    quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', representative: 'Representative introduction', message: 'Message' };
+  function waState(x) {
+    return x.state === 'queued' ? 'Queued' : x.state === 'sending' ? 'Sending' : x.state === 'failed' ? 'Failed' : x.state === 'unknown' ? 'Not confirmed'
+      : x.read_at ? 'Read' : x.delivered_at ? 'Delivered' : x.failed_at ? 'Failed' : 'Sent';
+  }
+  function monthKey(m) { return /^\d{4}-\d{2}$/.test(String(m || '')) ? m + '-01' : today().slice(0, 7) + '-01'; }
+  /* What the search found, kept on the page so open_page can open it as
+     search opens it (`result`, its key). */
+  var found = {};
+  var foundN = 0;
+
+  Object.assign(READ, {
+    /* Money: Clients' Overdue invoices, one client's unpaid ones too. */
+    overdue_invoices: function (a) {
+      if (!may('clients.billing')) return Promise.resolve(noAccess('invoices', 'Clients'));
+      return invoke('bukku-sync', a.client_id ? { action: 'invoices', client: a.client_id } : { action: 'invoices' }).then(function (d) {
+        if (d.error === 'denied') return noAccess('invoices', 'Clients');
+        if (d.error) return { error: 'could-not-read', why: d.error };
+        var list = (d.rows || []).map(function (l) {
+          return { client: l.client_name || 'Not linked to a client', client_id_code: l.client_code || null, company: l.company || null,
+            invoice: l.number, amount_due: amt(l.amount, l.currency), balance: amt(l.balance, l.currency),
+            due: l.due ? dayWord(l.due) : null, days_overdue: Number(l.days) > 0 ? Number(l.days) : 0 };
+        });
+        var by = {};
+        (d.rows || []).forEach(function (l) { if (Number(l.days) > 0) by[l.currency || 'MYR'] = (by[l.currency || 'MYR'] || 0) + (Number(l.amount) || 0); });
+        return { invoices: list.slice(0, 40), shown: Math.min(list.length, 40), found: list.length,
+          overdue_total: Object.keys(by).map(function (k) { return amt(by[k], k); }), read_from: 'Bukku' };
+      });
+    },
+    /* A client's billing: complete or what is missing, never its numbers,
+       emails or address. */
+    client_billing: function (a) {
+      if (!may('clients.billing')) return Promise.resolve(noAccess('billing details', 'Clients'));
+      return Promise.all([
+        db.from('clients').select('id, name, stage, market, bill_sgd, sst_applies').eq('id', a.client_id).maybeSingle(),
+        db.rpc('client_billing', { p_ids: [a.client_id] })
+      ]).then(function (g) {
+        if (g[0].error) throw g[0].error;
+        var c = g[0].data;
+        if (!c) return { error: 'not-found' };
+        var b = ((g[1] && g[1].data) || []).filter(function (x) { return x.id === c.id; })[0] || {};
+        var missing = (Array.isArray(b.missing) ? b.missing : Array.isArray(b.billing_missing) ? b.billing_missing : []).map(words2);
+        return { client: c.name, stage: STAGE[c.stage] || c.stage, registered_company_name: b.legal_name || null,
+          billed_in: c.market === 'SG' && c.bill_sgd ? 'S$' : 'RM', sst_applies: c.sst_applies !== false,
+          billing: g[1].error ? 'Unable to load' : missing.length ? 'Incomplete' : 'Complete', missing: missing };
+      });
+    },
+    /* Quotations and where each stands, as the client's Quotations reads
+       them; one client's or every client's. */
+    list_quotations: function (a) {
+      if (!may('clients.quotes')) return Promise.resolve(noAccess('quotations', 'Clients'));
+      var q = db.from('quotations').select('id, ref, client_id, brand, totals, status, source, issued_at, valid_until, removed_at, requested_at, ' +
+        'proceed_at, proceed_due, replaces, released_at, reply_due, signed_at, submitted_at, reviewed_at, returned_at, declined_at, withdrawn_at, withdrawn_on, clients(name)')
+        .is('removed_at', null);
+      if (a.client_id) q = q.eq('client_id', a.client_id);
+      return q.order('issued_at', { ascending: false }).limit(40).then(rows).then(function (list) {
+        var Q = window.ADspaceQuotes;
+        var out = list.map(function (x) {
+          var by = list.filter(function (y) { return y.replaces === x.id; })[0];
+          x._lines = []; x._revised = by ? by.ref : null;
+          var st = Q && Q.stateOf ? Q.stateOf(x) : [x.status];
+          var t = x.totals || {}, cur = t.currency;
+          return { quotation: x.ref, client: (x.clients && x.clients.name) || x.brand || null, state: st[0], issued: dayWord(x.issued_at),
+            valid_until: x.valid_until ? dayWord(x.valid_until) : null,
+            monthly_incl_sst: t.month && t.month.incl != null ? amt(t.month.incl, cur) : null,
+            one_off_incl_sst: t.once && t.once.incl != null ? amt(t.once.incl, cur) : null,
+            term_months: t.term || null, from_website: x.source === 'website' };
+        });
+        return { quotations: out.slice(0, 25), shown: Math.min(out.length, 25), found: out.length };
+      });
+    },
+    /* Creator Campaigns: Payments, every creator's payment work. */
+    creator_payments: function (a) {
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creator payments', 'Creator Campaigns'));
+      var from = CLOCK && CLOCK.addMonths ? CLOCK.addMonths(today().slice(0, 7) + '-01', -2) + '-01' : today().slice(0, 7) + '-01';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(a.paid_from || ''))) from = a.paid_from;
+      return db.rpc('creator_payments_queue', { p_paid_from: from }).then(function (r) {
+        var g = fnData(r, 'creator payments', 'Creator Campaigns');
+        if (g.refused) return g.refused;
+        var d = g.data, pay = d.pay === true && may('campaigns.pay'), t = today();
+        var job = function (j) {
+          var b = j.bill || null, fee = pay && j.fee ? amt(j.fee.amount, j.fee.currency) : null;
+          return { creator: j.name, creator_id: j.creator, job_reference: j.job || null, campaign: j.campaign || null, client: j.client || null,
+            posted: j.posted_on ? dayWord(j.posted_on) : null, pay_by: j.pay_by ? dayWord(j.pay_by) : null,
+            late: !!(b && b.status === 'processing' && j.pay_by && j.pay_by < t),
+            fee: fee, bill: b ? b.number : null, bill_state: b ? BILL_STATE[b.status] || words2(b.status) : 'Not billed',
+            bill_amount: pay && b && b.amount != null ? amt(b.amount, b.currency) : null,
+            paid_on: b && b.status === 'paid' && (b.paid_on || b.date) ? dayWord(b.paid_on || b.date) : null };
+        };
+        var jobs = (d.jobs || []).map(job);
+        var grp = function (k) { return jobs.filter(function (j) { return k === 'ready' ? j.bill_state === 'Not billed' : j.bill_state === k; }); };
+        return {
+          amounts_shown: pay,
+          details_to_review: (d.review || []).map(function (x) { return { creator: x.name, creator_id: x.creator, submitted: dayWord(x.created_at), replaces_approved: !!x.replaces }; }),
+          ready_to_bill: grp('ready'), draft_in_bukku: grp('Draft in Bukku'), awaiting_payment: grp('Awaiting payment'),
+          paid_since: dayWord(from), paid: grp('Paid')
+        };
+      });
+    },
+    /* The Creators List: by name, Creator ID, platform or rate. */
+    find_creators: function (a) {
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creators', 'Creator Campaigns'));
+      var plat = PLATFORM_KEY[String(a.platform || '').toLowerCase().trim()] || null;
+      var q = db.from('creators').select('id, name, creator_code, client_rate, active, creator_profiles(platform)');
+      var words0 = clean(a.query || '');
+      if (words0.length >= 2) {
+        var v = words0.replace(/_/g, '\\\\_');
+        q = q.or('name.ilike."%' + v + '%",creator_code.ilike."%' + v + '%"');
+      }
+      if (a.min_rate != null && !isNaN(Number(a.min_rate))) q = q.gte('client_rate', Number(a.min_rate));
+      if (a.max_rate != null && !isNaN(Number(a.max_rate))) q = q.lte('client_rate', Number(a.max_rate));
+      return q.order('name').limit(200).then(rows).then(function (list) {
+        var out = list.filter(function (c) {
+          return (a.include_inactive || c.active !== false) &&
+            (!plat || (c.creator_profiles || []).some(function (p) { return p.platform === plat; }));
+        }).map(function (c) {
+          var ps = [];
+          (c.creator_profiles || []).forEach(function (p) { var w = PLATFORM_WORD[p.platform] || p.platform; if (ps.indexOf(w) < 0) ps.push(w); });
+          return { creator_id: c.id, name: c.name, creator_id_code: c.creator_code || null, platforms: ps,
+            rate: c.client_rate != null ? amt(c.client_rate) : null, active: c.active !== false };
+        });
+        return { creators: out.slice(0, 25), shown: Math.min(out.length, 25), found: out.length };
+      });
+    },
+    /* One creator's bookings and where each one's payment stands, as the
+       creator's Payment pane reads them. */
+    creator_bookings: function (a) {
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess("a creator's bookings", 'Creator Campaigns'));
+      return db.rpc('creator_bills_list', { p_creator: a.creator_id }).then(function (r) {
+        var g = fnData(r, "a creator's bookings", 'Creator Campaigns');
+        if (g.refused) return g.refused;
+        var d = g.data, pay = d.pay === true && may('campaigns.pay');
+        var bill = function (b) {
+          return b ? { bill: b.number, state: BILL_STATE[b.status] || words2(b.status), amount: pay && b.amount != null ? amt(b.amount, b.currency) : null,
+            paid_on: b.paid_on ? dayWord(b.paid_on) : null } : { state: 'Not billed' };
+        };
+        return { amounts_shown: pay, linked_to_bukku: !!d.linked,
+          standard_fee: pay && d.standard_fee ? amt(d.standard_fee.amount, d.standard_fee.currency) : null,
+          bookings: (d.jobs || []).map(function (j) {
+            return { job_reference: j.job || null, campaign: j.campaign || null, campaign_id: j.campaign_id || null,
+              step: CREATOR_STATE[j.state] || words2(j.state), posted: j.posted_on ? dayWord(j.posted_on) : null,
+              pay_by: j.pay_by ? dayWord(j.pay_by) : null, fee: pay && j.fee ? amt(j.fee.amount, j.fee.currency) : null, payment: bill(j.bill) };
+          }),
+          earlier_bills: (d.earlier || []).slice(0, 10).map(bill) };
+      });
+    },
+    /* Suppliers: who they are and where they stand; never bank details,
+       an NRIC, a number or an email. */
+    find_suppliers: function (a) {
+      if (!may('suppliers')) return Promise.resolve(noAccess('suppliers', 'Suppliers'));
+      return db.rpc('suppliers_list', {}).then(function (r) {
+        var g = fnData(r, 'suppliers', 'Suppliers');
+        if (g.refused) return g.refused;
+        var q = clean(a.query || '').toLowerCase();
+        var list = (g.data.rows || []).filter(function (s) { return !q || has(s.name, q) || has(s.code, q) || has(s.contact_name, q); });
+        return { suppliers: list.slice(0, 20).map(function (s) {
+          return { supplier_id: s.id, supplier_id_code: s.code, name: s.name || null, kind: s.kind === 'individual' ? 'Individual' : s.kind === 'company' ? 'Company' : null,
+            status: { pending: 'Pending', active: 'Active', inactive: 'Inactive' }[s.status] || s.status, contact_person: s.contact_name || null,
+            designation: s.designation || null, payment_term: s.payment_term || null, currency: s.currency === 'SGD' ? 'S$' : 'RM',
+            details_waiting: !!s.waiting, approved: s.approved_at ? dayWord(s.approved_at) : null };
+        }), shown: Math.min(list.length, 20), found: list.length };
+      });
+    },
+    /* The Dashboard's figures, counted as its tiles count them: Delivered,
+       On time, Oldest late and each colleague's (My Work: Reports), and
+       New leads, Won, Lost and Churned (Clients at Full Access with Leads). */
+    dashboard_figures: function (a) {
+      var O = window.ADspaceOverview;
+      if (!O || !O.span) return Promise.resolve({ error: 'unavailable' });
+      var keys = (O.PERIODS || []).map(function (p) { return p[0]; });
+      var p = keys.indexOf(a.period) > -1 ? a.period : 'month';
+      var work = O.can.figures(), leads = O.can.leads() && window.ADspaceSales;
+      if (!work && !leads) return Promise.resolve(noAccess('the Dashboard figures', 'Dashboard'));
+      var s = O.span(p), out = { period: s.name, compared_with: s.prevName };
+      var who = a.person_id || null;
+      var jobs = [];
+      if (work) jobs.push(db.rpc('ops_reports', { p_ranges: [s.now, s.prev].map(function (r) { return { from: r.from.toISOString(), to: r.to.toISOString() }; }) })
+        .then(function (r) {
+          if (r.error || !Array.isArray(r.data)) throw r.error || new Error('');
+          var now = r.data[0] || {}, prev = r.data[1] || {};
+          var done = function (d) { return (d.by_person || []).reduce(function (x, y) { return x + (Number(y.completed) || 0); }, 0); };
+          var rate = function (d) { var f = d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0); return n ? Math.round(Number(f.met || 0) / n * 100) : null; };
+          var late = now.late || [];
+          var oldest = late.reduce(function (x, t) { return x && (Number(x.days_over) || 0) >= (Number(t.days_over) || 0) ? x : t; }, null);
+          out.delivered = done(now); out.delivered_before = done(prev);
+          out.on_time = rate(now) == null ? 'None due' : rate(now) + '%';
+          out.on_time_before = rate(prev) == null ? 'None due' : rate(prev) + '%';
+          out.late_now = late.length;
+          out.oldest_late = oldest ? { task: oldest.title, client: oldest.client || null, days_late: Number(oldest.days_over) || 0 } : null;
+          var people = {};
+          (now.open_by_person || []).forEach(function (x) { if (x.team_member_id) people[x.team_member_id] = { name: x.name, open: Number(x.open) || 0, late: Number(x.late) || 0, delivered: 0, on_time: 0 }; });
+          (now.by_person || []).forEach(function (x) {
+            var id = x.team_member_id || x.id;
+            if (!id) return;
+            var q = people[id] || (people[id] = { name: x.name, open: 0, late: 0, delivered: 0, on_time: 0 });
+            q.delivered = Number(x.completed) || 0; q.on_time = Number(x.on_time) || 0;
+          });
+          out.by_person = Object.keys(people).filter(function (k) { return !who || k === who; }).map(function (k) {
+            var q = people[k];
+            return { person_id: k, name: q.name, open: q.open, late: q.late, delivered: q.delivered,
+              on_time: q.delivered ? Math.round(q.on_time / q.delivered * 100) + '%' : null };
+          });
+        }));
+      else out.work_figures = noAccess('the work figures', 'Dashboard');
+      if (leads) jobs.push(API.readPages(function () {
+        return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, bill_sgd').order('id');
+      }).then(rows).then(function (cl) {
+        var S = window.ADspaceSales, f = S.figures(cl, null, s.now), b = S.figures(cl, null, s.prev);
+        var mine = function (list) { return who ? list.filter(function (c) { return c.sales_by === who; }) : list; };
+        var names = function (list) { return mine(list).slice(0, 15).map(function (c) { return c.name; }); };
+        out.new_leads = mine(f.newLeads).length; out.new_leads_before = mine(b.newLeads).length; out.new_lead_names = names(f.newLeads);
+        out.won = mine(f.won).length; out.won_before = mine(b.won).length; out.won_names = names(f.won);
+        out.lost_leads = mine(f.lost).length; out.churned = who ? null : f.churned.length;
+        if (who) out.counted_by = 'Sales by';
+      }));
+      else out.lead_figures = noAccess('the lead figures', 'Dashboard');
+      return Promise.all(jobs).then(function () { return out; });
+    },
+    /* Documents: letters and documents issued, by serial, recipient or
+       client; HR Letters only where they are held. */
+    find_documents: function (a) {
+      var docs = may('register.documents') || may('register.hr'), offers = may('clients.documents');
+      if (!docs && !offers) return Promise.resolve(noAccess('documents', 'Documents'));
+      var v = clean(a.query || '').replace(/_/g, '\\\\_');
+      var jobs = [];
+      if (docs) {
+        var q = db.from('documents').select('id, serial, kind, family, title, issued_at, voided_at, signed, client_id, recipient, clients(name)');
+        if (!may('register.hr')) q = q.neq('family', 'hr');
+        if (a.client_id) q = q.eq('client_id', a.client_id);
+        if (v.length >= 2) q = q.or('serial.ilike."%' + v + '%",title.ilike."%' + v + '%",recipient->>name.ilike."%' + v + '%"');
+        jobs.push(q.order('created_at', { ascending: false }).limit(20).then(rows).then(function (l) {
+          return l.map(function (d) {
+            return { reference: d.serial, document: d.title || words2(d.kind), family: DOC_FAMILY[d.family] || words2(d.family),
+              client: (d.clients && d.clients.name) || null, to: mask(d.recipient && d.recipient.name) || null,
+              issued: d.issued_at ? dayWord(d.issued_at) : null, state: d.voided_at ? 'Void' : d.signed === false ? 'Not signed' : 'Issued', _at: d.issued_at || '' };
+          });
+        }));
+      }
+      if (offers) {
+        var o = db.from('client_documents').select('id, number, issued_at, voided_at, signed_at, client_id, clients(name)');
+        if (a.client_id) o = o.eq('client_id', a.client_id);
+        if (v.length >= 2) o = o.ilike('number', '%' + v + '%');
+        jobs.push(o.order('created_at', { ascending: false }).limit(20).then(rows).then(function (l) {
+          return l.map(function (d) {
+            return { reference: d.number, document: 'Letter of Offer', family: 'Letter of Offer', client: (d.clients && d.clients.name) || null,
+              issued: d.issued_at ? dayWord(d.issued_at) : null, state: d.voided_at ? 'Void' : d.signed_at ? 'Signed' : 'Issued', _at: d.issued_at || '' };
+          });
+        }));
+      }
+      return Promise.all(jobs).then(function (g) {
+        var all = [].concat.apply([], g).sort(function (x, y) { return String(y._at).localeCompare(String(x._at)); });
+        all.forEach(function (x) { delete x._at; });
+        return { documents: all.slice(0, 25), shown: Math.min(all.length, 25) };
+      });
+    },
+    /* Video Scripts. */
+    list_scripts: function (a) {
+      if (!may('scripts')) return Promise.resolve(noAccess('video scripts', 'Video Scripts'));
+      var q = db.from('video_scripts').select('id, code, title, period, status, shoot_on, venue, client_id, clients(name)');
+      if (a.client_id) q = q.eq('client_id', a.client_id);
+      var v = clean(a.query || '').replace(/_/g, '\\\\_');
+      if (v.length >= 2) q = q.or('code.ilike."%' + v + '%",title.ilike."%' + v + '%"');
+      return q.order('created_at', { ascending: false }).limit(20).then(rows).then(function (l) {
+        return { scripts: l.map(function (x) {
+          return { script_id: x.id, code: x.code || null, title: x.title || null, client: (x.clients && x.clients.name) || null,
+            month: x.period ? monthName(x.period) : 'No month', state: x.status === 'shared' ? 'Published' : 'Draft',
+            shoot: x.shoot_on ? dayWord(x.shoot_on) : null, venue: x.venue || null };
+        }) };
+      });
+    },
+    /* Short Links. */
+    find_links: function (a) {
+      if (!may('links')) return Promise.resolve(noAccess('short links', 'Short Links'));
+      var q = db.from('links').select('slug, title, target_url, active, created_at');
+      var v = clean(a.query || '').replace(/_/g, '\\\\_');
+      if (v.length >= 2) q = q.or('slug.ilike."%' + v + '%",title.ilike."%' + v + '%",target_url.ilike."%' + v + '%"');
+      return q.order('created_at', { ascending: false }).limit(25).then(rows).then(function (l) {
+        return { links: l.map(function (x) {
+          return { short_link: x.slug, title: x.title || null, goes_to: x.target_url, state: x.active === false ? 'Paused' : 'Live' };
+        }) };
+      });
+    },
+    /* The Activity record: who changed what, the parts of it the colleague
+       may read (its policy answers the rest with nothing). */
+    activity_record: function (a) {
+      if (!bridge.sectionAllowed || !bridge.sectionAllowed('activity')) return Promise.resolve(noAccess('the Activity record', 'Activity record'));
+      var days = Math.max(1, Math.min(90, Number(a.days) || 14));
+      var q = db.from('activity_log').select('created_at, actor, action, subject, detail').gte('created_at', new Date(Date.now() - days * 864e5).toISOString());
+      var v = clean(a.query || '').replace(/_/g, '\\\\_');
+      if (v.length >= 2) q = q.or('subject.ilike."%' + v + '%",detail.ilike."%' + v + '%"');
+      return team().then(function () { return q.order('created_at', { ascending: false }).limit(60); }).then(rows).then(function (l) {
+        var by = a.person_id ? nameOf(a.person_id) : '';
+        var out = l.map(function (x) {
+          var r = bridge.record ? bridge.record(x) : { who: '', what: x.action, on: x.subject, detail: x.detail };
+          return { when: whenWord(x.created_at), who: r.who || 'System', what: r.what, on: mask(r.on) || null, detail: mask(r.detail) || null };
+        }).filter(function (x) { return !by || x.who === by; });
+        return { entries: out.slice(0, 40), days: days, shown: Math.min(out.length, 40) };
+      });
+    },
+    /* Messages: the WhatsApp and Email logs, a month at a time, never a
+       number or an address. */
+    message_log: function (a) {
+      if (!may('whatsapp')) return Promise.resolve(noAccess('messages sent', 'Messages'));
+      var month = monthKey(a.month), email = a.channel === 'email', q = clean(a.query || '').toLowerCase();
+      return db.rpc(email ? 'mail_log' : 'wa_messages', { p_month: month }).then(function (r) {
+        var g = fnData(r, 'messages sent', 'Messages');
+        if (g.refused) return g.refused;
+        var items = g.data.items || [];
+        var list = email ? items.map(function (x) {
+          return { to: mask(x.to_name) || 'A deleted address', client: x.client || null, supplier: x.supplier || null, email: x.subject || null,
+            reference: x.reference || null, sent_by: x.sent_by || 'Automatic', status: MAIL_STATE[x.status] || words2(x.status),
+            when: whenWord(x.sent_at || x.created_at) };
+        }) : items.map(function (x) {
+          return { to: mask(x.to_name) || null, client: x.client || null, what: WA_PURPOSE[x.purpose] || words2(x.purpose), template: x.template || null,
+            sent_by: x.created_by || 'Automatic', status: waState(x), when: whenWord(x.created_at) };
+        });
+        if (q) list = list.filter(function (x) { return JSON.stringify(x).toLowerCase().indexOf(q) > -1; });
+        return { channel: email ? 'Email' : 'WhatsApp', month: monthName(month), messages: list.slice(0, 40), shown: Math.min(list.length, 40), found: list.length };
+      });
+    },
+    /* The Handbook: every colleague reads it. */
+    handbook: function (a) {
+      var q = db.from('handbook_docs').select('id, title, category, summary, required, updated_at').is('archived_at', null);
+      var v = clean(a.query || '').replace(/_/g, '\\\\_');
+      if (v.length >= 2) q = q.or('title.ilike."%' + v + '%",summary.ilike."%' + v + '%"');
+      return q.order('title').limit(30).then(rows).then(function (l) {
+        return { documents: l.map(function (x) {
+          return { title: x.title, category: HB_CAT[x.category] || words2(x.category), summary: mask(x.summary) || null,
+            must_read: !!x.required, updated: x.updated_at ? dayWord(x.updated_at) : null };
+        }) };
+      });
+    },
+    /* Every section at once, as console search finds a record: the
+       fallback for a question no other read answers. A result opens with
+       open_page kind result. */
+    search_portal: function (a) {
+      var S = window.ADspaceSearch;
+      if (!S || !S.find) return Promise.resolve({ error: 'unavailable' });
+      return S.find(a.query).then(function (r) {
+        return { groups: r.groups.map(function (g) {
+          return { section: g.head, results: g.rows.map(function (x) {
+            var key = 'r' + (++foundN);
+            found[key] = x.open;
+            return { result: key, name: mask(x.name), code: x.code || null,
+              about: (x.meta || []).filter(function (m) { return m != null && String(m).trim(); }).map(mask).join(' · ') || null };
+          }) };
+        }), could_not_read: r.failed };
+      });
+    }
+  });
+
   function reportRow(r) {
     return { report_id: r.id, client: (r.clients && r.clients.name) || null, brand: r.brand_name || null,
       kind: REPORT_KIND[r.kind] || r.kind, period: dayWord(r.period_start) + ' to ' + dayWord(r.period_end),
@@ -965,6 +1368,33 @@
   }
 
   /* ---- Where a record opens: its own address, then its section ------------ */
+  /* A section by the name Claude is given (2026-11-19: the fallback names
+     the section that holds the answer and opens it): its address, its
+     route, and the key a colleague must hold beyond the route. */
+  var PLACES = {
+    dashboard: ['/admin/?s=dashboard', 'overview'], analytics: ['/admin/?s=analytics', 'analytics'],
+    my_work: ['/admin/?s=work', 'work'], clients: ['/admin/?s=clients', 'clients'],
+    overdue_invoices: ['/admin/?s=clients&view=overdue', 'clients', 'clients.billing'],
+    content_review: ['/admin/?s=review', 'review'], video_scripts: ['/admin/?s=scripts', 'scripts'],
+    creator_campaigns: ['/admin/?s=campaigns', 'campaigns'], creators: ['/admin/?s=campaigns&tab=roster', 'campaigns', 'campaigns.creators'],
+    creator_payments: ['/admin/?s=campaigns&tab=payments', 'campaigns', 'campaigns.creators'],
+    reports: ['/admin/?s=reports', 'reports'], whatsapp: ['/admin/?s=whatsapp', 'whatsapp'], email_log: ['/admin/?s=whatsapp&tab=email', 'whatsapp'],
+    documents: ['/admin/?s=register', 'register'], suppliers: ['/admin/?s=suppliers', 'suppliers'], short_links: ['/admin/?s=links', 'links'],
+    services: ['/admin/?s=services', 'services'], team: ['/admin/?s=team', 'team'], hiring: ['/admin/?s=team&tab=hiring', 'team'],
+    handbook: ['/admin/?s=handbook', 'handbook'], settings: ['/admin/?s=settings', 'settings'], my_records: ['/admin/?s=mine', 'mine'],
+    activity_record: [null, 'activity']
+  };
+  /* Whether the colleague may open where a button would go: a section by
+     its route's own rule, a record by its section. */
+  var KIND_ROUTE = { client: 'clients', client_month: 'work', task: 'work', report: 'reports', set: 'review', script: 'scripts',
+    campaign: 'campaigns', creator: 'campaigns', supplier: 'suppliers', my_work: 'work', dashboard: 'overview' };
+  function mayOpen(o) {
+    var ok = function (route) { return !bridge.sectionAllowed || bridge.sectionAllowed(route); };
+    if (o.kind === 'result') return Boolean(found[o.id]);
+    if (o.kind === 'section') { var pl = PLACES[o.id]; return Boolean(pl) && ok(pl[1]) && (!pl[2] || may(pl[2])); }
+    if (o.kind === 'creator' && !may('campaigns.creators')) return false;
+    return ok(KIND_ROUTE[o.kind] || 'work');
+  }
   function addressOf(o) {
     var id = encodeURIComponent(o.id || '');
     switch (o.kind) {
@@ -975,14 +1405,22 @@
       case 'set': return ['/admin/?s=review&set=' + id, 'review'];
       case 'script': return ['/admin/?s=scripts&script=' + id, 'scripts'];
       case 'campaign': return ['/admin/?s=campaigns&campaign=' + id, 'campaigns'];
+      case 'creator': return ['/admin/?s=campaigns&tab=roster&creator=' + id, 'campaigns'];
+      case 'supplier': return ['/admin/?s=suppliers&supplier=' + id, 'suppliers'];
+      case 'section': return PLACES[o.id] || ['/admin/?s=work', 'work'];
       case 'dashboard': return ['/admin/?s=dashboard', 'overview'];
       default: return ['/admin/?s=work', 'work'];
     }
   }
   function openRecord(o) {
-    if (o.kind !== 'my_work' && o.kind !== 'dashboard' && !o.id) return;
-    var to = addressOf(o);
+    if (!mayOpen(o)) return;
     if (SHEET.isOpen(box)) SHEET.close();
+    /* A search result opens as search opens it; the Activity record is the
+       sheet its mark at the rail's foot opens. */
+    if (o.kind === 'result') { found[o.id](); return; }
+    if (o.kind === 'section' && o.id === 'activity_record') { var mark = $('activityOpen'); if (mark) mark.click(); return; }
+    if (o.kind !== 'my_work' && o.kind !== 'dashboard' && o.kind !== 'section' && !o.id) return;
+    var to = addressOf(o);
     history.replaceState(null, '', to[0]);
     if (to[1] === 'review' && bridge.restore) bridge.restore();
     else if (bridge.show) bridge.show(to[1]);
@@ -1184,8 +1622,11 @@
       return Promise.resolve(result(use, { shown: 'The change is shown to the colleague as a card. Nothing is written until they confirm it.' }, false));
     }
     if (name === 'open_page') {
-      var el = add('', 'ag-ai ag-opens');
-      if (a.kind === 'my_work' || a.kind === 'dashboard' || a.id) el.appendChild(openBtn(a));
+      /* A button is drawn only where the colleague may open it; else
+         Claude is told, and says so. */
+      if (!(a.kind === 'my_work' || a.kind === 'dashboard' || a.id)) return Promise.resolve(result(use, { error: 'id required' }, true));
+      if (!mayOpen(a)) return Promise.resolve(result(use, a.kind === 'result' ? { error: 'not-found' } : noAccess('this page', null), false));
+      add('', 'ag-ai ag-opens').appendChild(openBtn(a));
       return Promise.resolve(result(use, { shown: 'A button to open it is shown.' }, false));
     }
     return Promise.resolve(result(use, { error: 'unknown-tool' }, true));

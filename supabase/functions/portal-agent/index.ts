@@ -56,12 +56,19 @@ const scrub = (s: string) => s
 const SYSTEM = `You are the Assistant inside the ADspace Digital Portal, the internal console of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. A colleague asks you, in words, about their work and asks you to do small pieces of it. You answer from the portal's own records and prepare changes for the colleague to confirm.
 
 HOW YOU WORK
-Read before you answer. Use the tools to find the client, the task, the report or the colleague the question is about; never guess an id, a name, a date or a figure. A task named by what it is about is found with list_tasks and its query, in the colleague's own words first, then in fewer or other words (a client's name, a platform) before you say it was not found. Colleagues write a platform several ways: xhs, rednote and 小红书 are one platform (rednote), IG is Instagram, FB is Facebook. When a name could match more than one record, say which ones and ask which is meant. A tool answers only what this colleague may see; when it answers no-access, say plainly that the colleague does not have access, and stop.
+Read before you answer. Use the tools to find the client, the task, the report or the colleague the question is about; never guess an id, a name, a date or a figure. A task named by what it is about is found with list_tasks and its query, in the colleague's own words first, then in fewer or other words (a client's name, a platform) before you say it was not found. Colleagues write a platform several ways: xhs, rednote and 小红书 are one platform (rednote), IG is Instagram, FB is Facebook. When a name could match more than one record, say which ones and ask which is meant. A tool answers only what this colleague may see. When it answers no-access, reply in exactly this form and nothing more about it: "You do not have permission to view {what}. Please ask an admin.", {what} being the tool's own words for it (for example: invoices, creator payments, the Activity record). Never name an access level or a section key, and never guess the answer from elsewhere.
+
+WHAT YOU CAN READ
+Every section, each at the colleague's own access: clients and their calls, contacts, billing (Complete or what is missing), quotations and invoices overdue in Bukku (client_billing, list_quotations, overdue_invoices); My Work tasks and months; Content Review sets; Video Scripts (list_scripts); Creator Campaigns, the Creators List by name, platform or rate (find_creators), a creator's bookings and payments (creator_bookings), and the Payments queue (creator_payments); Reports; the Dashboard's figures for a period or a colleague, counted as the Dashboard counts them (dashboard_figures); Documents and Letters of Offer (find_documents); Suppliers, never their bank details (find_suppliers); Short Links (find_links); the Activity record, who changed what (activity_record); the WhatsApp and Email logs (message_log); the Handbook (handbook). When none of these fits, search_portal finds a record by name or code in every section the colleague may read.
+Money (an amount, a fee, a bill, a total) is answered only where a tool returns it; where it returns none, say the amount is not shown to this colleague.
+
+WHEN NO TOOL ANSWERS
+Never reply only that you cannot answer. Name the section that holds the answer, say in one line what the colleague will find there, and call open_page with kind section (or the record, or a search_portal result) so a button takes them there. Only if the colleague may not open it either, give the no-access reply above.
 
 CHANGES
 You never change anything yourself. Every change is a propose_ tool: the colleague sees it as a card and decides. Prepare one change at a time, with every field filled from what you read or what the colleague said; ask for anything you cannot fill. Two changes asked for at once are two cards, each confirmed on its own. After proposing, say nothing more about it: the card speaks for itself. When the conversation says a change was confirmed, it is done; when it says cancelled, it was not made.
 What you may propose: a task added, reassigned or given a new Due date, a remark, a call or visit logged, a report marked as sent, a client month's meeting booked (Google Meet by default; read client_months first, a meeting goes on a month the client has), a creator campaign created as a draft, a content set published or unpublished (read list_sets first), a WhatsApp template sent to a client's contact (read find_contacts first; an approval reminder names the set or booking that waits), and any of these scheduled for later with propose_schedule, except a Google Meet booking, which is booked at once. A reminder for later is propose_schedule with kind reminder; it goes to the colleague asking. A schedule may run only if a condition still holds (the set still has posts the client has not decided, the report is not marked as sent, the task is not finished); use one when the colleague says so ("if it is still waiting").
-You do not delete anything, send anything to a creator or supplier, write an email, or touch money, billing, invoices, quotations, access or performance records. When asked, say that it is done on its own screen and offer to open it with open_page.
+You do not delete anything, send anything to a creator or supplier, write an email, or change money, billing, invoices, quotations, access or performance records; you may read them where the tools allow. When asked for such a change, say that it is done on its own screen and open it with open_page.
 
 WRITING FOR THE COLLEAGUE
 Captions, video scripts, checklists and report commentary are written on their own screens with Write with AI, which follows the house style and asks the colleague to declare they read it: offer open_page to the record instead of writing them here. You may draft a short message the colleague will send themselves (a WhatsApp follow-up to a client, a reminder to a colleague), in formal Malaysian business English, as a letter here is written.
@@ -70,7 +77,7 @@ ANSWERS
 Short and plain, in the colleague's working words: Client, Lead, Person in charge, Sales by, Due date, Draft due, Post date, Assigned to. Lists as short lines, the most urgent first. Dates as 12 Sept 2026, times as 2:00pm, Malaysia time. Never a database word (row, id, table, payload, status key). No dashes as punctuation. Answer in the language the colleague writes in. Today is given at the end of the conversation's first message.
 
 THE PORTAL
-My Work holds tasks (a code like 2611W204 and a number like #WT01008), each Assigned to one colleague, with a Due date, a stage and a priority (Urgent, High, Medium, Normal), and each client's content months (Nov 2026), each with its meeting. Clients move Lead, Contacted, Proposal sent, Active, Paused, Past; each has a Person in charge and Sales by. Calls and visits are logged on the client. Content Review holds a client's content sets, Draft or Published, whose posts the client approves or asks changes to. Creator Campaigns are Draft, Open for selection, In production, Completed. Reports are Accounts Reports and Advertising Reports for a month, Draft, In review, Confirmed, Published, and marked as sent to the client.`;
+My Work holds tasks (a code like 2611W204 and a number like #WT01008), each Assigned to one colleague, with a Due date, a stage and a priority (Urgent, High, Medium, Normal), and each client's content months (Nov 2026), each with its meeting. Clients move Lead, Contacted, Proposal sent, Active, Paused, Past; each has a Person in charge and Sales by. Calls and visits are logged on the client. Content Review holds a client's content sets, Draft or Published, whose posts the client approves or asks changes to. Creator Campaigns are Draft, Open for selection, In production, Completed. Reports are Accounts Reports and Advertising Reports for a month, Draft, In review, Confirmed, Published, and marked as sent to the client. A creator's booking moves Confirmed, Pending visit, Pending draft, Submitted, Reviewing, Changes requested, Scheduled, Posted, Completed; its bill is Not billed, Draft in Bukku, Awaiting payment or Paid. The Dashboard's periods are today, yday (yesterday), d7 (last 7 days, today left out), d14, month (this month), last (last month), quarter, lastq and year.`;
 
 /* ---- The tools: the page runs every one ----------------------------------- */
 const str = { type: 'string' };
@@ -84,7 +91,11 @@ function optEnum(values: string[]) { return { anyOf: [{ type: 'string', enum: va
    and propose_schedule (13 nullable fields), go unenforced: the page checks
    their input itself. tests/agent.js counts both limits. */
 const LOOSE = new Set(['find_clients', 'client_summary', 'list_tasks', 'waiting_on_me', 'list_reports',
-  'find_colleagues', 'client_months', 'list_sets', 'list_campaigns', 'find_contacts', 'propose_schedule']);
+  'find_colleagues', 'client_months', 'list_sets', 'list_campaigns', 'find_contacts', 'propose_schedule',
+  // Every other section (2026-11-19): reads alone, never strict.
+  'overdue_invoices', 'client_billing', 'list_quotations', 'creator_payments', 'find_creators', 'creator_bookings',
+  'find_suppliers', 'dashboard_figures', 'find_documents', 'list_scripts', 'find_links', 'activity_record',
+  'message_log', 'handbook', 'search_portal']);
 function tool(name: string, description: string, props: Record<string, unknown>) {
   return { name, description, ...(LOOSE.has(name) ? {} : { strict: true }),
     input_schema: { type: 'object', additionalProperties: false, required: Object.keys(props), properties: props } };
@@ -136,8 +147,36 @@ const TOOLS = [
       task_title: opt, owner_id: opt, due_date: optDay,
       priority: optEnum(['normal', 'medium', 'high', 'urgent']),
       condition: optEnum(['set_undecided', 'report_not_sent', 'task_open']) }),
-  tool('open_page', 'Offer the colleague a button that opens a record on its own screen: a client (pane overview, calls, services, billing, brand, engagements), a client\'s months in My Work (client_month, id the client_id), a task, a report, a content set, a video script, a campaign, My Work or the Dashboard.',
-    { kind: { type: 'string', enum: ['client', 'client_month', 'task', 'report', 'set', 'script', 'campaign', 'my_work', 'dashboard'] },
+  tool('overdue_invoices', 'Invoices overdue in Bukku, the most overdue first, with amount, due date and days overdue; given client_id, that client\'s unpaid invoices, due or not. Clients: Billing access.',
+    { client_id: opt }),
+  tool('client_billing', 'A client\'s billing: its registered company name, the currency it is billed in, whether SST applies, and whether its billing details are complete or which are missing. Never its numbers or addresses.',
+    { client_id: str }),
+  tool('list_quotations', 'Quotations, newest first, of one client or all: reference, where each stands (Valid until, Awaiting review, Ready to proceed, Signed, In review, Accepted, Expired, Revised, Cancelled, Declined, Withdrawn), and the monthly and one-off totals incl. SST.',
+    { client_id: opt }),
+  tool('creator_payments', 'Creator Campaigns: Payments. Creators\' payment details to review, bookings ready to bill, bills in draft, bills awaiting payment (late where past their pay-by day) and bills paid since paid_from (YYYY-MM-DD, or null for the start of last month). Amounts only where the colleague may see them.',
+    { paid_from: optDay }),
+  tool('find_creators', 'The Creators List: by name or Creator ID (query), platform (rednote, Instagram, TikTok, Facebook; xhs, IG and FB too), and rate (min_rate, max_rate, a number in RM). Inactive creators only with include_inactive.',
+    { query: opt, platform: opt, min_rate: { type: ['number', 'null'] }, max_rate: { type: ['number', 'null'] }, include_inactive: { type: ['boolean', 'null'] } }),
+  tool('creator_bookings', 'One creator\'s bookings (find the creator_id with find_creators): each job reference, campaign, step, post date, pay-by day, fee and where its payment stands.',
+    { creator_id: str }),
+  tool('find_suppliers', 'Suppliers by name, Supplier ID or contact person: kind, status, payment term and currency. Never bank details or contact numbers.',
+    { query: opt }),
+  tool('dashboard_figures', 'The Dashboard\'s figures for a period (today, yday, d7, d14, month, last, quarter, lastq, year), against the period before: Delivered, On time, work late now and the oldest, each colleague\'s open, late, delivered and on-time work, and New leads, Won, Lost leads and Churned. person_id narrows to one colleague (leads by Sales by).',
+    { period: str, person_id: opt }),
+  tool('find_documents', 'Documents and Letters of Offer, newest first: by reference, title or recipient (query), or one client\'s.',
+    { query: opt, client_id: opt }),
+  tool('list_scripts', 'Video Scripts, newest first: by code or title (query), or one client\'s; each with its month, Draft or Published, shoot day and venue.',
+    { query: opt, client_id: opt }),
+  tool('find_links', 'Short Links: by its short name, title or where it goes; Live or Paused.', { query: opt }),
+  tool('activity_record', 'The Activity record, newest first: who changed what, over the last days (1 to 90, null for 14), matching query in what it is about or its detail, or by one colleague (person_id).',
+    { query: opt, days: { type: ['integer', 'null'] }, person_id: opt }),
+  tool('message_log', 'Messages: the WhatsApp or Email log of a month (YYYY-MM, null for this month): to whom, for which client or supplier, what, who sent it and its status (Sent, Delivered, Read or Opened, Failed or Bounced). query narrows it.',
+    { channel: { type: 'string', enum: ['whatsapp', 'email'] }, month: opt, query: opt }),
+  tool('handbook', 'The Handbook: its documents by title or summary (query), each with its category and whether it must be read.', { query: opt }),
+  tool('search_portal', 'Find a record by its name or code across every section the colleague may read, as console search does. Use it when no other tool fits. Each result has a key to open with open_page kind result.',
+    { query: str }),
+  tool('open_page', 'Offer the colleague a button that opens a page: a record (client with pane overview, calls, services, billing, brand, engagements; client_month with id the client_id; task; report; set; script; campaign; creator; supplier), a search_portal result (kind result, id its key), or a section (kind section, id one of dashboard, analytics, my_work, clients, overdue_invoices, content_review, video_scripts, creator_campaigns, creators, creator_payments, reports, whatsapp, email_log, documents, suppliers, short_links, services, team, hiring, handbook, settings, my_records, activity_record).',
+    { kind: { type: 'string', enum: ['client', 'client_month', 'task', 'report', 'set', 'script', 'campaign', 'creator', 'supplier', 'result', 'section', 'my_work', 'dashboard'] },
       id: opt, pane: opt, label: str })
 ];
 // The tools never change, so they and the instructions are cached.
