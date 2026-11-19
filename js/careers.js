@@ -94,7 +94,7 @@
       '</dd></div>' + place(i, false) + '</dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
     /* An invitation not answered by its reply-by date (2026-11-19, the user:
        "Expire, tell the team"): choosing closes, the team is told. */
-    if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The time to choose an interview time has passed. ' +
+    if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
       'ADspace will contact you by email if another time can be arranged.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     if (i.state === 'confirmed') {
