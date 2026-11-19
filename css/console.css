@@ -1741,7 +1741,11 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .qhand .select { flex: 1 1 180px; max-width: 260px; }
 .qhand .select[hidden] { display: none; }
 .qhand .tickline[hidden] { display: none; }
-.qhand-lab { font-size: 13px; color: var(--ink-soft); }
+.qhand-lab { font-size: 13px; color: var(--ink-soft); min-width: 5.5em; }
+/* The day a move happened sits under Assign to, its box on the select's
+   edge (2026-11-19). */
+.qhand + .qhand { margin-top: 8px; }
+.qhand .qhand-day { flex: 0 1 180px; }
 .qnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .qnext .msg { margin-top: 8px; }
 /* A finished task is rated on the card that says it is finished. Five marks,

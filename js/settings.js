@@ -362,7 +362,8 @@
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
         meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'working day', 'working days')]
           .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])
-          .concat(num('task_past_days') == null ? [] : [(num('task_past_days') === 0 ? 'No past dates' : 'Past dates ' + plural(num('task_past_days'), 'day', 'days'))])) },
+          .concat(num('task_past_days') == null ? [] : [(num('task_past_days') === 0 ? 'No past dates' : 'Past dates ' + plural(num('task_past_days'), 'day', 'days'))])
+          .concat(num('stage_back_days') == null ? [] : [(num('stage_back_days') === 0 ? 'Stage moves today only' : 'Stage moves up to ' + plural(num('stage_back_days'), 'day', 'days') + ' back')])) },
       biz && { id: 'priority', name: 'Priority deadlines', kind: 'edit',
         meta: num('priority_high_hours') == null ? '' : parts(['Urgent ' + plural(num('priority_urgent_hours'), 'hour', 'hours'),
           'High ' + plural(num('priority_high_hours'), 'hour', 'hours'), 'Medium ' + plural(num('priority_medium_hours'), 'hour', 'hours')]) },

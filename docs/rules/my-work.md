@@ -752,6 +752,23 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - `ops_delete_engagement` (a reason; its tasks stay, its untouched report
     tasks cancelled).
 - The task sheets live in `#workSheets`, outside the section.
+- A stage move is dated the day it happened (`2026-11-19-stage-moves-dated.sql`;
+  the user, 2026-11-19: moves pressed days later read the work late): the
+  next step and the step sheet ask Date, today prefilled, back as far as
+  `stage_back_days` (7, Settings, My Work: Due dates; 0 asks nothing) and
+  never past today; a day before today goes to `ops_transition_task_on`,
+  which makes the move through `ops_transition_task` unchanged and dates
+  the rows it wrote and the stamps it set (Draft in, delivered, completed,
+  cancelled), taken at 18:00 that day, never before the task's last move
+  (`future-day`, `too-early` with `days`, `before-last` with `day`). A move
+  made on a row, a card or by a drag is today's, its note offering Change
+  date. `ops_task_events.created_at` is when a thing happened, which every
+  figure reads; `recorded_at` when it was entered, said in the history as
+  recorded {day} where the two differ. `ops_task_move_redate(p_event, p_on)`
+  dates a move again: its colleague inside the window, or `ops.override`
+  any day between the moves either side (`not-yours`, `after-next`), filed
+  on the task as `move_dated`; an admin's pen on Draft in, Delivered and
+  Completed opens it (`tests/stagedate.js`).
 - Delivery against the due date (`ops_timeliness(p_from, p_to)`,
   `2026-11-18-delivery-against-due.sql`; My Work: Reports, client scope;
   by colleague and the most delayed at All tasks): a content or everyday

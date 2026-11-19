@@ -199,6 +199,9 @@
     'no-such-person': 'That person is not a colleague.',
     'bad-count': 'Add 1 to 60 posts.',
     'not-owner': 'Only the person it is assigned to, or an admin, can move it.',
+    /* The day a stage move happened (2026-11-19). */
+    'future-day': 'Choose today or an earlier date.',
+    'not-yours': 'You do not have permission to change the date of this move. Please ask an admin.',
     'not-open': 'This task is no longer open to take.',
     'already-yours': 'This task is already assigned to you.',
     'finished': 'This task is finished.',
@@ -245,6 +248,12 @@
      are built from the task it refused: naming an owner beside the owner
      the rail shows is how the page contradicted itself. */
   function said(err, t, d) {
+    if (err === 'too-early') {
+      var bk = d && d.days != null ? d.days : backDays();
+      return bk ? 'Choose a date within the last ' + bk + (bk === 1 ? ' day.' : ' days.') : 'Choose today\'s date.';
+    }
+    if (err === 'before-last') return 'Choose a date on or after ' + ((d && d.day) || 'the last move') + '.';
+    if (err === 'after-next') return 'Choose a date on or before ' + ((d && d.day) || 'the next move') + '.';
     if (err === 'tasks-open' && d && d.open) {
       return d.open === 1 ? '1 task in this month is still open. Complete or cancel it first.' : d.open + ' tasks in this month are still open. Complete or cancel them first.';
     }
@@ -3214,6 +3223,57 @@
     q.box.querySelector('textarea').placeholder = q.box.querySelector('textarea').getAttribute('aria-label');
     q.open();
   }
+  /* THE DAY A MOVE HAPPENED (the user, 2026-11-19: a move pressed days
+     later read the work late). A move asks its day, today prefilled, back as
+     far as the setting allows (`stage_back_days`, 7; 0 asks nothing); a day
+     before today goes to `ops_transition_task_on`, today's to the move
+     itself. */
+  function backDays() {
+    var n = Number(window.ADspaceMoney && window.ADspaceMoney.setting('stage_back_days'));
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  function dayBox(el) {
+    if (!el) return;
+    var today = CK.today();
+    el.max = today;
+    el.min = CK.addDays(today, -backDays());
+    el.value = today;
+  }
+  function movedOn(el) {
+    if (!el || el.closest('[hidden]')) return null;
+    var v = String(el.value || '');
+    return v && v !== CK.today() ? v : null;
+  }
+  function moveFn(fn, args, on) {
+    if (!on || fn !== 'ops_transition_task') return fn;
+    args.p_on = on;
+    return 'ops_transition_task_on';
+  }
+  /* A move made on a row, a card or by a drag is today's; its note offers
+     the day it happened, which dates that move again. */
+  function askMoveDay(t, el) {
+    if (!backDays() || !window.ADspaceConfirm) return;
+    var today = CK.today();
+    window.ADspaceConfirm.ask({
+      title: 'Date of move', go: 'Save', wait: true,
+      field: { label: 'Date', type: 'date', value: today, min: CK.addDays(today, -backDays()), max: today }
+    }, function (day) {
+      if (!day || day === today) return '';
+      return db.from('ops_task_events').select('id').eq('task_id', t.id).eq('event_type', 'stage_changed')
+        .order('created_at', { ascending: false }).limit(1)
+        .then(function (r) {
+          var ev = r.data && r.data[0];
+          if (r.error || !ev) return said('not-found', t);
+          return db.rpc('ops_task_move_redate', { p_event: ev.id, p_on: day }).then(function (x) {
+            var d = x.data;
+            if (x.error) return dbWord(x.error.message);
+            if (d && d.error) return said(d.error, t, d);
+            rowNote(el, 'Dated ' + shortDate(day) + '.', 'ok');
+            return '';
+          });
+        });
+    });
+  }
   /* One path for every way a stage is moved on this page — the select on a
      list row, the select on a board card, and a card dragged into a column.
      All three go through `ops_transition_task` and therefore through the same
@@ -3238,7 +3298,7 @@
            tell they made: the row is rebuilt somewhere else in the band order
            and the select they pressed is gone. What happened is named under
            the row it happened on, once the repaint has drawn it. */
-        state.moved = { id: t.id, word: isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next),
+        state.moved = { id: t.id, t: t, word: isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next),
                         /* The page stays where the reader was: the repaint
                            rebuilds every band, and a phone that had scrolled
                            to keep the focused select in view jumped with it. */
@@ -3258,9 +3318,10 @@
       window.scrollTo(0, m.y);
     }
     var row = document.querySelector('[data-task="' + m.id + '"]');
-    if (row) rowNote(row, 'Moved to ' + m.word + '.', 'ok');
+    if (row) rowNote(row, 'Moved to ' + m.word + '.', 'ok', m.t && backDays()
+      ? { label: 'Change date', run: function () { askMoveDay(m.t, row); } } : null);
   }
-  function rowNote(el, text, tone) {
+  function rowNote(el, text, tone, act) {
     if (!el || !el.parentNode) { if (text) msg('workMsg', text, tone || 'err'); return; }
     var was = el.nextSibling;
     if (was && was.classList && was.classList.contains('task-note')) was.remove();
@@ -3268,8 +3329,18 @@
     var note = document.createElement('div');
     note.className = 'msg ' + (tone || 'err') + ' task-note';
     note.textContent = text;
+    if (act) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn btn-sm btn-quiet task-note-act';
+      b.textContent = act.label;
+      b.addEventListener('click', act.run);
+      note.appendChild(document.createTextNode(' '));
+      note.appendChild(b);
+    }
     el.parentNode.insertBefore(note, el.nextSibling);
-    if (tone === 'ok') setTimeout(function () { if (note.parentNode) note.remove(); }, 6000);
+    /* A note offering an act stays while the person may still want it. */
+    if (tone === 'ok') setTimeout(function () { if (note.parentNode) note.remove(); }, act ? 12000 : 6000);
   }
 
   // ---- The task, opened from a list -----------------------------------------
@@ -4084,7 +4155,7 @@
      say different things about the same task. */
   function NEXT_DW() {
     return { box: $('dwNext'), title: $('dwNextTitle'), line: $('dwNextLine'), list: $('dwNextList'),
-             late: $('dwNextLate'), hand: $('dwHand'),
+             late: $('dwNextLate'), hand: $('dwHand'), on: $('dwOnRow'), onDay: $('dwOn'),
              lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw',
              steps: $('dwSteps') };
   }
@@ -4170,12 +4241,14 @@
     var mv = n.go && n.go.move;
     var show = Boolean(mv) && may('ops', 'work');
     b.hand.hidden = !show;
+    if (b.on) b.on.hidden = !show || !backDays();
     if (!show) return;
     var key = t.id + '|' + mv;
     var perf = mv === 'performance_review';
     b.hand.setAttribute('data-perf', perf ? '1' : '');
     if (b.hand.getAttribute('data-key') === key) return;
     b.hand.setAttribute('data-key', key);
+    dayBox(b.onDay);
     var cur = ownerId(t);
     /* One picker, never a switch beside it (the user, 2026-10-11): the one
        who has it now is the first choice (Me where that is the reader), and
@@ -4265,6 +4338,8 @@
     $('stepWhat').textContent = stageLabel(t) + ' to ' + labelOfStage(t, key) + '.';
     var live = key === 'live', sched = key === 'scheduled';
     $('stepDateRow').hidden = !(live || sched);
+    /* The day the move happened, but where the step asks its own date. */
+    if ($('stepOnRow')) { $('stepOnRow').hidden = live || sched || !backDays(); dayBox($('stepOn')); }
     $('stepDateLabel').textContent = live ? 'Date it went live' : 'Post date';
     $('stepDate').value = live ? dateValue(new Date()) : dateValue(t.publish_at);
     if (live) $('stepDate').setAttribute('max', dateValue(new Date())); else $('stepDate').removeAttribute('max');
@@ -4384,7 +4459,8 @@
       } else goLive(t.version);
       return;
     }
-    rpc('ops_transition_task', { p_task: t.id, p_next: key, p_version: t.version, p_note: note || null, p_assignee: who }, ok);
+    var stepArgs = { p_task: t.id, p_next: key, p_version: t.version, p_note: note || null, p_assignee: who };
+    rpc(moveFn('ops_transition_task', stepArgs, movedOn($('stepOn'))), stepArgs, ok);
   }
   function stepDone(c, d, who) {
     var t = c.t;
@@ -5409,7 +5485,7 @@
 
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
-    task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed',
+    task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed', move_dated: 'Move date changed',
     assignment_changed: 'Reassigned', handover: 'Handed on', offered: 'Offered to the team',
     offer_withdrawn: 'Offer withdrawn', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
@@ -5465,7 +5541,11 @@
          time round is the finding. */
       return (from.stage_key ? labelForKey(from.stage_key) + ' to ' : '') + labelForKey(to.stage_key) +
         (Number(d.round) > 1 ? ', round ' + d.round : '') +
-        (d.skip_reason ? ' · skipped: ' + d.skip_reason : '') + (d.note ? ' · ' + d.note : '');
+        (d.skip_reason ? ' · skipped: ' + d.skip_reason : '') + (d.note ? ' · ' + d.note : '') +
+        (e.recorded_at && dateValue(e.recorded_at) !== dateValue(e.created_at) ? ' · recorded ' + niceDate(e.recorded_at) : '');
+    }
+    if (e.event_type === 'move_dated') {
+      return labelForKey(to.stage_key) + ' · ' + niceDate(from.at) + ' to ' + niceDate(to.at);
     }
     if (e.event_type === 'live_confirmed') {
       return niceDate(to.live_at) + (from.scheduled && dateValue(from.scheduled) !== dateValue(to.live_at)
@@ -5718,9 +5798,16 @@
         (moved ? '<small>moved from ' + esc(niceDate(r.from)) + '</small>' : '') + '</dd></div>';
     }).join('');
     /* The days that ended a step, read from its events. */
+    /* An admin dates again the move that set one (the user, 2026-11-19:
+       moves recorded late are corrected), from its pen. */
+    var fix = may('ops.override', 'work');
     [['Draft in', t.first_draft_submitted_at], ['Delivered', t.delivered_at], ['Completed', t.completed_at]]
       .filter(function (p) { return p[1]; }).forEach(function (p) {
-        html += '<div><dt>' + esc(p[0]) + '</dt><dd><span class="tdate-read">' + esc(niceDate(p[1])) + '</span></dd></div>';
+        var ev = fix ? moveAt(p[1]) : null;
+        html += '<div><dt>' + esc(p[0]) + '</dt><dd>' + (ev
+          ? '<button class="tdate" data-moved="' + esc(ev.id) + '" data-was="' + esc(dateValue(p[1])) + '" type="button" aria-label="' +
+              esc(p[0] + ', ' + niceDate(p[1]) + '. Change') + '">' + esc(niceDate(p[1])) + PEN_SVG + '</button>'
+          : '<span class="tdate-read">' + esc(niceDate(p[1])) + '</span>') + '</dd></div>';
       });
     if (state.eng && state.eng.meeting_at && !state.eng.meeting_na) {
       var ml = monthLink(t);
@@ -5732,9 +5819,36 @@
     Array.prototype.forEach.call($('taskDates').querySelectorAll('[data-date]'), function (b) {
       b.addEventListener('click', function () { editDate(b.getAttribute('data-date')); });
     });
+    Array.prototype.forEach.call($('taskDates').querySelectorAll('[data-moved]'), function (b) {
+      b.addEventListener('click', function () { redateMove(b.getAttribute('data-moved'), b.getAttribute('data-was')); });
+    });
     paintDue(t);
   }
 
+  /* The stage move that set a stamp: the one recorded at that moment. */
+  function moveAt(stamp) {
+    var at = new Date(stamp).getTime();
+    return ((state.detail && state.detail.events) || []).filter(function (e) {
+      return e.event_type === 'stage_changed' && new Date(e.created_at).getTime() === at;
+    })[0] || null;
+  }
+  function redateMove(id, was) {
+    var t = state.task;
+    if (!t || !window.ADspaceConfirm) return;
+    window.ADspaceConfirm.ask({
+      title: 'Date of move', go: 'Save', wait: true,
+      field: { label: 'Date', type: 'date', value: was, max: CK.today() }
+    }, function (day) {
+      if (!day || day === was) return '';
+      return db.rpc('ops_task_move_redate', { p_event: id, p_on: day }).then(function (r) {
+        var d = r.data;
+        if (r.error) return dbWord(r.error.message);
+        if (d && d.error) return said(d.error, t, d);
+        readTask(t.id, function () { msg('taskDatesMsg', 'Saved.', 'ok'); });
+        return '';
+      });
+    });
+  }
   function editDate(kind) {
     var t = state.task;
     if (!t || !may('ops', 'work')) return;
@@ -6003,6 +6117,7 @@
       : { p_task: t.id, p_next: next, p_version: t.version, p_note: note || null, p_assignee: o.assignee || null };
     var go = $(state.drawer ? 'dwGo' : 'taskGo');
     if (go) go.disabled = true;
+    fn = moveFn(fn, args, movedOn($('dwOn')));
     call(fn, args, msgHere(), function (d) {
       if (o.assignee) { state.owners[t.id] = nameOf(o.assignee); state.ownerIds[t.id] = o.assignee; }
       var word = isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next);
