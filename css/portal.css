@@ -9793,6 +9793,8 @@ body.qs-page { background: var(--card); }
    a document, its name over its reference at the left, where it stands at
    the right; opened, the code, the caution, then the terms and the reply. */
 .cr-docs { gap: 12px; }
+/* The section's gap is the step under its heading too (2026-11-19). */
+.cr-docs > .qs-sec-h { margin-bottom: 0; }
 .cr-doc { display: grid; gap: 16px; }
 .cr-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .cr-doc-who { display: grid; gap: 2px; min-width: 0; }

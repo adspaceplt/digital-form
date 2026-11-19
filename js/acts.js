@@ -40,7 +40,10 @@
        mark after); a way to another console page takes the chevron after
        (DESIGN.md §5; 2026-11-19). */
     [/^Open in Bukku$/, 'out', true],
-    [/^Open (Work|Months|Handbook|reviews)$/, 'go', true]
+    [/^Open (Work|Months|Handbook|reviews)$/, 'go', true],
+    /* View opens what it names (a report's step, a colleague's salary), as
+       Reports draws it (2026-11-19). */
+    [/^View$/, 'go', true]
   ];
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {
@@ -57,7 +60,9 @@
     return Boolean(p && p.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea'));
   }
   function mark(b) {
-    if (!b || !b.classList || !b.classList.contains('btn') || b.classList.contains('btn-quiet')) return;
+    /* A quiet button acts too (a record part's Add, DESIGN.md §1): only a
+       form's commit stays words, and Cancel names no act of the table. */
+    if (!b || !b.classList || !b.classList.contains('btn')) return;
     var own = b.querySelector('svg:not([data-act]), img');
     if (own) return;
     var given = b.querySelector('svg[data-act]');

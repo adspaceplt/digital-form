@@ -151,11 +151,14 @@
     } else {
       box.innerHTML = '<p class="cr-next">' + (openDoc.codeSent ? 'A code has been sent to your email address. It expires in 15 minutes.'
           : 'For your privacy, ADspace will email a six-digit code to your email address before showing the document.') + '</p>' +
-        (openDoc.codeSent ? '<div class="field qs-form"><label class="field-label" for="crCode">Code</label><input class="input cr-code" id="crCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></div>' : '') +
-        '<p class="msg" id="crDocMsg"></p>' +
-        '<div class="qs-foot">' + (openDoc.codeSent ? '<button class="btn" type="button" data-docx="code">Send a new code</button><button class="btn btn-primary" type="button" data-docx="open">Open</button>'
-          : '<button class="btn" type="button" data-docx="close">Cancel</button><button class="btn btn-primary" type="button" data-docx="code">Email me a code</button>') + '</div>';
-      if (openDoc.codeSent && $('crCode')) $('crCode').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); docAct('open'); } });
+        (openDoc.codeSent ? '<form class="cr-codeform" id="crCodeForm" novalidate><div class="qs-form"><div class="field"><label class="field-label" for="crCode">Code</label><input class="input cr-code" id="crCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"></div></div>' +
+          '<p class="msg" id="crDocMsg"></p>' +
+          '<div class="qs-foot"><button class="btn" type="button" data-docx="code">Send a new code</button><button class="btn btn-primary" type="submit" data-docx="open">Open</button></div></form>'
+          : '<p class="msg" id="crDocMsg"></p>' +
+            '<div class="qs-foot"><button class="btn" type="button" data-docx="close">Cancel</button><button class="btn btn-primary" type="button" data-docx="code">Email me a code</button></div>');
+      /* The code and Open are one form: Open is its commit, and Enter in the
+         field submits it once (2026-11-19). */
+      if ($('crCodeForm')) $('crCodeForm').addEventListener('submit', function (e) { e.preventDefault(); });
     }
     Array.prototype.forEach.call(box.querySelectorAll('[data-docx]'), function (b) { b.addEventListener('click', function () { docAct(b.getAttribute('data-docx'), b); }); });
   }
@@ -172,7 +175,7 @@
       (months ? '<div><dt>Probation</dt><dd>' + months + ' month' + (months === 1 ? '' : 's') + '</dd></div>' : '') +
       '<div><dt>Basic salary</dt><dd>' + esc(money(p.basic)) + ' per month' + (months && p.probation ? '<br>' + esc(money(p.probation)) + ' per month during probation' : '') + '</dd></div>' +
       '</dl>';
-    var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">Download</button></div>';
+    var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('file') : '') + 'Download</button></div>';
     if (d.returned_note) facts = '<p class="msg warn">ADspace returned this document: ' + esc(d.returned_note) + '</p>' + facts;
     if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and tell you by email.</p>' : '');
     var tick = function (id, text) {

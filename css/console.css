@@ -4960,6 +4960,9 @@ body.hb-gate #tabBar { display: none; }
    beside the entry and exit steps on 1.618 : 1, one column when narrow. */
 .onb-grid { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(240px, 1fr); gap: 24px; align-items: start; }
 .is-narrow .onb-grid { grid-template-columns: minmax(0, 1fr); }
+/* The grid's gap is the step: a read group's own 4px above it (it heads a
+   record's pane elsewhere) doubled it (2026-11-19, the day's gate). */
+.onb-grid > .readgroups { margin-top: 0; }
 .onb-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .onb-list > .onb-row:first-child { border-top: 0; padding-top: 0; }
 label.onb-row { cursor: pointer; }
@@ -6008,6 +6011,10 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prow:not(:has(> .pr-act)) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "lead main state" "lead main end"; }
 .is-narrow .prow:not(:has(> .pr-lead)):not(:has(> .pr-act)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main state" "main end"; }
 .is-narrow .prow > .pr-lead { grid-area: lead; }
+/* A lead slot a row leaves empty (a task with no ring to draw) keeps a
+   ring's width (18px), so its title stands on the same edge as the rows
+   beside it; it began 18px left of them (2026-11-19, the day's gate). */
+.is-narrow .prow > .pr-lead { min-width: 18px; }
 .is-narrow .prow > .pr-main { grid-area: main; min-width: 0; }
 .is-narrow .prow > .pr-state { grid-area: state; justify-self: end; text-align: right; }
 .is-narrow .prow > .pr-act { grid-area: act; justify-self: end; }
