@@ -6076,7 +6076,10 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prow > .pr-state { grid-area: state; justify-self: end; text-align: right; }
 .is-narrow .prow > .pr-act { grid-area: act; justify-self: end; }
 .is-narrow .prow > .pr-end { grid-area: end; justify-self: end; text-align: right; min-width: 0; }
-.is-narrow .prow > :not(.pr-lead):not(.pr-main):not(.pr-state):not(.pr-act):not(.pr-end) { display: none; }
+.is-narrow .prow > :not(.pr-lead):not(.pr-main):not(.pr-state):not(.pr-act):not(.pr-end):not(.pr-float) { display: none; }
+/* A control laid over the row by its own position (`.pr-float`: My Work's
+   swiped next step, `.trow-next`) takes no slot and stays drawn: hidden with
+   the cells, the swipe showed nothing on a phone (2026-11-19). */
 .is-narrow .prow.crm-head { display: none; }
 /* The lead, the state and the ⋯ stand on the title's line, their targets
    given back to it, so the right column's lines stand on the left's. The ⋯

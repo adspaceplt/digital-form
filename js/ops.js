@@ -2921,7 +2921,7 @@
       if (act && act.parentNode === el) return;
       act = document.createElement('button');
       act.type = 'button';
-      act.className = 'btn btn-primary trow-next';
+      act.className = 'btn btn-primary trow-next pr-float';
       act.textContent = verbFor(next, t);
       act.tabIndex = -1;
       act.setAttribute('aria-hidden', 'true');
