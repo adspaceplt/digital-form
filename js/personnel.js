@@ -299,7 +299,7 @@
       return '<div class="prs-file" data-file="' + k[0] + '"><div class="prs-file-who"><span class="prs-file-name">' + esc(k[1]) + '</span>' +
         '<span class="prs-file-meta">' + esc(f ? 'Added ' + dateWord(f.at) : 'Not added') + '</span></div>' +
         '<span class="prs-file-acts">' +
-          (f ? '<button class="btn btn-sm" type="button" data-f="view">View</button>' : '') +
+          (f ? '<button class="btn btn-sm" type="button" data-f="view">Preview</button>' : '') +
           (can ? '<label class="btn btn-sm prs-pick">' + (f ? 'Replace' : PLUS + 'Add') +
             '<input type="file" accept="' + (k[0] === 'photo' ? 'image/jpeg,image/png' : 'image/jpeg,image/png,application/pdf') + '" data-f="pick" hidden></label>' : '') +
           (f && can ? '<span class="team-act"><button class="kmenu-btn" type="button" data-f="menu" aria-label="More actions for ' + esc(k[1]) + '" aria-expanded="false">' +

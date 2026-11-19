@@ -416,8 +416,32 @@
     return page(0);
   }
 
+  /* A file kept in Supabase Storage, opened in a new tab on a link signed
+     for `secs` seconds: the one copy (the Handbook's files, a candidate's CV
+     and documents, an HR document's sealed copy). The tab is opened at the
+     press, while it still counts as the person's, or a browser blocks a
+     window opened after the link comes back; it is sent to the file's own
+     origin, never kept as this page's opener, and shut again on a refusal.
+     Answers a promise: kept once the tab is on its way, refused otherwise. */
+  function openStored(bucket, path, secs) {
+    const tab = window.open('', '_blank');
+    return Promise.resolve().then(() => {
+      if (!client || !path) throw new Error('unread');
+      return client.storage.from(bucket).createSignedUrl(path, secs || 60);
+    }).then((r) => {
+      const url = r && r.data && (r.data.signedUrl || r.data.signedURL);
+      if (!r || r.error || !url) throw (r && r.error) || new Error('unread');
+      if (tab) { try { tab.opener = null; } catch (e) { /* cross-origin */ } tab.location.href = url; }
+      else location.href = url;
+    }).catch((e) => {
+      if (tab) try { tab.close(); } catch (x) { /* already shut */ }
+      throw e;
+    });
+  }
+
   window.ADspaceAPI = {
     readPages,
+    openStored,
     steadyFetch,
     loading: { begin: loadBegin, end: loadEnd, get slowAfter() { return LOADING().slowAfter; }, get busy() { return busyN; } },
     accessToken,

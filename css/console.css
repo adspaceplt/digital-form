@@ -3820,6 +3820,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .qt-row > .qt-name { grid-area: name; }
 .is-narrow .qt-row > .qt-amt { grid-area: amt; text-align: right; }
 .is-narrow .qt-row > .qt-state { grid-area: state; align-items: flex-end; }
+/* The figure and the state are a right edge: their track is sized by each
+   row alone (`auto`), so laid at its start they began wherever that row's
+   figure was widest, 11px apart (2026-11-18, the day's gate). */
+.is-narrow .qt-row > .qt-amt, .is-narrow .qt-row > .qt-state { justify-self: end; }
 .is-narrow .qt-row > .team-act { grid-area: act; }
 /* The ⋯ stands on the reference's line, its target overflowing it evenly
    (2026-10-31: it hung between the first two lines on a phone). */
@@ -4956,6 +4960,9 @@ body.hb-gate #tabBar { display: none; }
    beside the entry and exit steps on 1.618 : 1, one column when narrow. */
 .onb-grid { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(240px, 1fr); gap: 24px; align-items: start; }
 .is-narrow .onb-grid { grid-template-columns: minmax(0, 1fr); }
+/* The grid's gap is the step: a read group's own 4px above it (it heads a
+   record's pane elsewhere) doubled it (2026-11-19, the day's gate). */
+.onb-grid > .readgroups { margin-top: 0; }
 .onb-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .onb-list > .onb-row:first-child { border-top: 0; padding-top: 0; }
 label.onb-row { cursor: pointer; }
@@ -6004,6 +6011,14 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prow:not(:has(> .pr-act)) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "lead main state" "lead main end"; }
 .is-narrow .prow:not(:has(> .pr-lead)):not(:has(> .pr-act)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main state" "main end"; }
 .is-narrow .prow > .pr-lead { grid-area: lead; }
+/* A lead slot a row leaves empty (a task with no ring to draw) keeps a
+   ring's width (18px), so its title stands on the same edge as the rows
+   beside it; it began 18px left of them (2026-11-19, the day's gate). */
+.is-narrow .prow > .pr-lead { min-width: 18px; }
+/* A tick in the lead is drawn at a ring's 18px and its target overflows the
+   slot evenly, as a tick on a checklist row does: at its control's width it
+   set a report task's title 18px right of a content task's (2026-11-19). */
+.is-narrow .prow > .pr-lead > .tcheck { margin-inline: calc((18px - var(--ctl-h)) / 2); }
 .is-narrow .prow > .pr-main { grid-area: main; min-width: 0; }
 .is-narrow .prow > .pr-state { grid-area: state; justify-self: end; text-align: right; }
 .is-narrow .prow > .pr-act { grid-area: act; justify-self: end; }

@@ -265,21 +265,13 @@
     }).catch(function () {});
   }
   function openFile(v, btn, m, done) {
-    /* The tab is opened now, while the press still counts as the person's,
-       or a browser blocks a window opened after the link comes back. */
-    var w = window.open('', '_blank');
     if (btn) btn.disabled = true;
     say(m, '');
-    db.storage.from(BUCKET).createSignedUrl(v.file_path, SIGN_SECS).then(function (r) {
+    API.openStored(BUCKET, v.file_path, SIGN_SECS).then(function () {
       if (btn) btn.disabled = false;
-      var url = r && r.data && (r.data.signedUrl || r.data.signedURL);
-      if (r.error || !url) throw r.error || new Error('The file could not be opened.');
-      if (w) { try { w.opener = null; } catch (e) { /* cross-origin */ } w.location.href = url; }
-      else location.href = url;
       if (done) done();
     }).catch(function (e) {
       if (btn) btn.disabled = false;
-      if (w) w.close();
       say(m, openSaid(e), 'err');
     });
   }
