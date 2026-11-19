@@ -3068,7 +3068,10 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .wl-brands .wl-add { justify-self: start; margin-top: 8px; }
 /* Meta (2026-10-08): the accounts a client's reports are imported from, read
    first on the Brand pane; Edit opens the picker sheet. */
-.readgroup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.readgroup-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 12px; }
+/* A head's acts are one group: they wrap under the title together. */
+.readgroup-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.readgroup-acts:empty { display: none; }
 .meta-for { margin: 0 0 12px; font-weight: 600; }
 /* Brand analysis (2026-10-10): the client's AI analysis read first on the
    Brand pane; Confirm and Run again at the head's right, a section a
@@ -4663,6 +4666,9 @@ span.inv-amt { font-weight: 600; }
    weeks of money in and out (1 : 1.618, one over the other in a narrow
    pane), then a card of payers whose phone row is `.prow`. */
 #pynView { display: grid; gap: 12px; }
+/* A view laid as a grid takes its gap from the grid: the bar's own step
+   below it would double it (uxaudit `stack`). */
+#odView > .cmdbar, #pynView > .cmdbar { margin-bottom: 0; }
 #pynView > .msg { margin: 0; }
 #pynView > .msg:empty { display: none; }
 #pynBody { display: grid; gap: 12px; min-width: 0; }
