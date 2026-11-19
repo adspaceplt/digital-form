@@ -253,7 +253,7 @@ begin
   if p_on is null or p_on = v_today then
     return public.ops_transition_task(p_task, p_next, p_version, p_note, p_assignee, p_skip_reason);
   end if;
-  if public.ops_me().id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if (public.ops_me()).id is null then return jsonb_build_object('error', 'not-team'); end if;
   if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
   select max(e.created_at) into v_last from public.ops_task_events e
    where e.task_id = p_task and e.event_type = 'stage_changed';
