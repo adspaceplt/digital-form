@@ -261,7 +261,10 @@
                 /* Hiring (2026-11-16): every candidate, adding them and the
                    colleagues on each. A colleague added to one candidate
                    sees that candidate alone without it. */
-                ['hiring', 'Hiring']],
+                ['hiring', 'Hiring'],
+                /* A colleague's signed-in devices, each signed out on its
+                   own (2026-11-20). */
+                ['sessions', 'Signed-in devices']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
@@ -305,7 +308,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'team.sessions': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full control. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -1357,7 +1360,7 @@
     ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Documents', ['register.types']],
-    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel', 'team.hiring']]
+    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel', 'team.hiring', 'team.sessions']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
@@ -1395,6 +1398,7 @@
     'register.documents': 'Client Letters and other documents.',
     'register.hr': 'HR Letters and downloaded performance records.',
     'team.personnel': 'Each colleague\'s employee record, their salary behind the master code, and the AutoCount HRMS download.',
+    'team.sessions': 'Each colleague\'s signed-in devices, when each was last active, and signing one device out.',
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'
@@ -2692,7 +2696,11 @@
        head keep their width from tab to tab (the user, 2026-11-17: "sudden
        jumping"); Their work stays beside the Work pane as its summary. */
     var work = paneOk('work');
-    rail.innerHTML = (work ? '<div class="railblock" id="mrecHeld"><h3 class="railtitle">Their work</h3><div id="mrecHeldBody"></div></div>' : '') + access;
+    /* Their signed-in devices (2026-11-20, `team.sessions`): what Supabase
+       keeps of each sign-in, read when the record opens, nothing written. */
+    var devs = may('team.sessions', 'work') && !m.erased_at;
+    rail.innerHTML = (work ? '<div class="railblock" id="mrecHeld"><h3 class="railtitle">Their work</h3><div id="mrecHeldBody"></div></div>' : '') + access +
+      (devs ? '<div class="railblock" id="mrecDevs"><h3 class="railtitle">Devices</h3><div id="mrecDevsBody"></div></div>' : '');
     var lastOne = function () {
       var shown = rail.querySelectorAll('.railblock:not([hidden])');
       Array.prototype.forEach.call(rail.querySelectorAll('.railblock'), function (b) { b.classList.remove('is-last'); });
@@ -2729,6 +2737,7 @@
       var hand = body.querySelector('[data-r="hand"]');
       if (hand) hand.addEventListener('click', function () { handOverAsk(m, w.own, held); });
     });
+    if (devs) paintDevices(m, $('mrecDevsBody'));
     if (!seenToo) return;
     var list = $('mrecSeen');
     db.rpc('team_member_seen', { p_id: m.id }).then(function (r) {
@@ -2745,6 +2754,60 @@
       if (list.children.length) $('mrecAccess').hidden = false;
       lastOne();
     }).catch(function () {});
+  }
+  /* Devices: each live sign-in, the newest active first, five shown before
+     Show all. A row names the device, when it was last active and when it
+     signed in, its session's code in the token face; Sign out ends that one
+     sign-in, never the reader's own. */
+  var DEV_SAID = {
+    denied: 'You do not have permission to sign out a device. Please ask an admin.',
+    'not-found': 'This device is already signed out. Refresh the page.',
+    'own-session': 'This is your own device. Use Sign out in your account menu.',
+    'system-account': 'Only the super admin can sign out the super admin\'s devices.'
+  };
+  function paintDevices(m, body, all) {
+    if (!body) return;
+    body.innerHTML = '<div class="skel"><div class="skel-row"></div><div class="skel-row"></div></div>';
+    db.rpc('team_member_sessions', { p_id: m.id }).then(function (r) {
+      if ($('mrecDevsBody') !== body) return;
+      var d = r && !r.error && r.data;
+      if (!d || d.error) throw new Error((r && r.error && r.error.message) || (d && d.error) || '');
+      var list = d.sessions || [];
+      if (!list.length) { body.innerHTML = '<p class="muted mrec-none">Not signed in on any device.</p>'; return; }
+      var shown = all ? list : list.slice(0, 5);
+      body.innerHTML = '<ul class="mrec-devs">' + shown.map(function (x) {
+        var last = x.last_at ? activeWord(x.last_at) : '';
+        return '<li class="mrec-dev">' +
+          '<span class="mrec-dev-what"><b>' + esc(x.device) + '</b>' + (x.mine ? ' <span class="chip">This device</span>' : '') +
+            '<small>' + [last, 'Signed in ' + whenWord(x.created_at)].filter(Boolean).map(function (w) {
+              return '<span class="mrec-dev-part">' + esc(w) + '</span>'; }).join(' · ') + '</small>' +
+            '<code class="mrec-dev-code">' + esc(String(x.id).slice(0, 6)) + '</code></span>' +
+          (x.mine ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
+      }).join('') + '</ul>' +
+        (shown.length < list.length ? '<button class="btn btn-quiet btn-sm mrec-devmore" type="button">Show all ' + list.length + '</button>' : '') +
+        '<p class="msg" id="mrecDevMsg" role="status"></p>';
+      var more = body.querySelector('.mrec-devmore');
+      if (more) more.addEventListener('click', function () { paintDevices(m, body, true); });
+      Array.prototype.forEach.call(body.querySelectorAll('[data-dev]'), function (b) {
+        var x = list.filter(function (s) { return s.id === b.getAttribute('data-dev'); })[0];
+        b.addEventListener('click', function () {
+          window.ADspaceConfirm.ask({
+            title: 'Sign out this device?', go: 'Sign out',
+            body: m.name + ' will be signed out on ' + x.device + ' within an hour. Their other devices stay signed in.'
+          }, function () {
+            b.disabled = true;
+            db.rpc('team_session_end', { p_id: m.id, p_session: x.id }).then(function (r2) {
+              var e = (r2 && r2.error && r2.error.message) || (r2 && r2.data && r2.data.error) || '';
+              if (e) { b.disabled = false; msg('mrecDevMsg', DEV_SAID[e] || 'Not signed out. Try again.', 'err'); return; }
+              paintDevices(m, body, all);
+            }).catch(function () { b.disabled = false; msg('mrecDevMsg', 'Not signed out. Try again.', 'err'); });
+          });
+        });
+      });
+    }).catch(function () {
+      if ($('mrecDevsBody') !== body) return;
+      UI().failLine(body, 'Devices', '', function () { paintDevices(m, body, all); });
+    });
   }
   /* Hand over work, from the Work pane's head and the rail alike. */
   function handOverAsk(m, own, held) {

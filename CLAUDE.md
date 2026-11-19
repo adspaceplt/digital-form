@@ -1704,7 +1704,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
   2026-10-15) and `team.analytics` (Analytics, 2026-10-25) and
-  `team.personnel` (Personnel, 2026-11-16); each offers Manage
+  `team.personnel` (Personnel, 2026-11-16) and `team.sessions` (Signed-in
+  devices, 2026-11-20); each offers Manage
   alone (on or off). Team: Health (every colleague's answers by name) is
   no part: an admin's alone, never offered to a group (2026-10-18, below).
   `suppliers.pay` (Supplier bank details,
