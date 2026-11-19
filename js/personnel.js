@@ -351,6 +351,7 @@
     var self = me() && me().id === m.id;
     var acts = '<div class="prs-acts">' +
       (!self && m.active && !m.system ? '<button class="btn btn-sm" type="button" data-p="request">Request employee record</button>' : '') +
+      (isAdmin() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-p="pdf">Download</button>' : '') +
       '<button class="btn btn-sm" type="button" data-p="edit">' + PEN + 'Edit</button></div>';
     box.innerHTML = '<div class="readgroups">' +
       statusGroup(rec, true, acts) +
@@ -365,9 +366,43 @@
         if (k === 'terms') openTerms(b);
         if (k === 'salary') salaryOpen(b);
         if (k === 'request') request(b);
+        if (k === 'pdf') window.ADspaceHrForms.download(b, 'record', team.m.name, recordForm, $('prsMsg'));
       });
     });
     wireFiles(box, member);
+  }
+  /* The Employee Record Form as the paper reads it (js/hrforms.js): every
+     answer a section, the terms (never the salary), the declaration, the
+     photograph at the head and the NRIC copies at the foot. */
+  function isAdmin() { var A = window.ADspaceAdmin; return Boolean(A && A.isAdmin && A.isAdmin()); }
+  function fileBlob(member, kind) {
+    return db.functions.invoke('sign-download', { body: { personnel: { member: member, kind: kind } } }).then(function (r) {
+      var b = r && r.data;
+      return !r.error && b && typeof b.size === 'number' && b.size && /image\/(png|jpe?g)/.test(b.type) ? b : null;
+    }).catch(function () { return null; });
+  }
+  function recordForm() {
+    var rec = team.rec, m = team.m, data = rec.data || {}, files = rec.files || {};
+    var sup = rec.superior_id && team.people.filter(function (t) { return t.id === rec.superior_id; })[0];
+    var sections = [{ h: 'Employment terms', rows: [
+      ['Join date', dateWord(rec.join_date)], ['Employee status', rec.employee_status],
+      ['Employee type', (TYPES.filter(function (t) { return t[0] === rec.employee_type; })[0] || [])[1]],
+      ['Probation', rec.probation_months == null ? '' : rec.probation_months === 0 ? 'None' : rec.probation_months + (rec.probation_months === 1 ? ' month' : ' months')],
+      ['Confirm date', dateWord(rec.confirm_date)]
+    ].concat(rec.contract_end ? [['End of contract', dateWord(rec.contract_end)]] : []).concat([['Reports to', sup ? sup.name : '']]) }];
+    SECTIONS.forEach(function (s) {
+      var rows = FIELDS.filter(function (f) { return f[0] === s[0]; }).filter(function (f) {
+        return !(/^spouse_/.test(f[1]) && data.marital !== 'Married') && valueWord(f, data[f[1]]);
+      }).map(function (f) { return [f[2], valueWord(f, data[f[1]])]; });
+      sections.push(rows.length ? { h: s[1], rows: rows } : { h: s[1], lines: ['Not set'] });
+    });
+    sections.push({ h: 'Declaration', lines: [rec.declared_at ? 'Signed by ' + rec.declared_name + ' on ' + dateWord(rec.declared_at) + '.' : 'Not submitted.'] });
+    var want = function (k) { return files[k] ? fileBlob(m.id, k) : Promise.resolve(null); };
+    return Promise.all([want('photo'), want('nric_front'), want('nric_back')]).then(function (b) {
+      return { title: 'Employee Record Form', who: m.name, ref: [m.staff_code, m.designation].filter(Boolean).join(' · '),
+        sections: sections, photo: b[0],
+        images: [{ label: 'NRIC (front)', blob: b[1] }, { label: 'NRIC (back)', blob: b[2] }] };
+    });
   }
   function setRec(d) {
     if (team.m && d.member === team.m.id) { team.rec = d; paintTeam(); }

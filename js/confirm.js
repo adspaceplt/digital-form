@@ -112,11 +112,11 @@
     sheet.appendChild(card);
     document.body.appendChild(sheet);
 
-    elCancel.addEventListener('click', shut);
-    elClose.addEventListener('click', shut);
+    elCancel.addEventListener('click', cancel);
+    elClose.addEventListener('click', cancel);
     elGo.addEventListener('click', go);
     /* The scrim cancels; a press inside the card does not. */
-    sheet.addEventListener('mousedown', function (e) { if (e.target === sheet) shut(); });
+    sheet.addEventListener('mousedown', function (e) { if (e.target === sheet) cancel(); });
     document.addEventListener('keydown', key, true);
   }
 
@@ -135,7 +135,7 @@
        its own keys: Enter picks, Escape shuts the finder, not the question. */
     var pk = document.getElementById('pickerBox');
     if (pk && !pk.hidden && (pk.contains(e.target) || e.key === 'Escape')) return;
-    if (e.key === 'Escape') { e.preventDefault(); shut(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); return; }
     /* Enter answers the question from a field, a one-line box included,
        but never while an input method is composing: there it picks the
        word (pinyin's Enter), and sending then sent half a reason. */
@@ -164,6 +164,7 @@
      stays a field, with the number keyboard on a phone. */
   function numeric(f) {
     var digits = /^\d+$/;
+    if (f.code) return true;
     return digits.test(String(f.match == null ? '' : f.match)) ||
       (f.match == null && digits.test(String(f.value == null ? '' : f.value)));
   }
@@ -233,6 +234,14 @@
     }
     shut();
     if (fn) fn(arg);
+  }
+
+  /* Left unanswered (Cancel, the close mark, the scrim, Escape): `no` runs,
+     so a caller waiting on the answer is told it will not come. */
+  function cancel() {
+    var no = open && opts && typeof opts.no === 'function' ? opts.no : null;
+    shut();
+    if (no) no();
   }
 
   function shut() {
@@ -349,6 +358,8 @@
         input.autocomplete = 'off';
         input.spellcheck = false;
         if (numeric(f)) input.inputMode = 'numeric';
+        /* A code from an email: the iPhone offers it from Mail. */
+        if (f.code) input.autocomplete = 'one-time-code';
         if (f.min) input.min = f.min;
         if (f.max) input.max = f.max;
       }

@@ -188,3 +188,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   reference is kept (`hiring_serials_kept`) and never given again; Make
   colleague asks Team at Full Access as Add member does (`team-access`,
   `hiring_hire_state` `may`).
+- The Interview Sheet and the Welcome Kit download as PDFs for an admin
+  alone, behind the emailed code (`hr_form_pass`, `docs/rules/personnel.md`):
+  Download on a candidate's Interviews (the decision, the averages, each
+  colleague's rating, scores and answers) and beside Add section in the
+  Welcome Kit's sheet.

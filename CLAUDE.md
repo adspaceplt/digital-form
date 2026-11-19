@@ -994,6 +994,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     while an input method is composing (pinyin's Enter picks the word).
   - `check(values)` refuses in place what the fields cannot state alone (an
     end before its start): the sheet and what was typed stay.
+  - `no` runs when the question is left unanswered (Cancel, the close
+    mark, the scrim, Escape); a field marked `code` is an emailed code
+    (the number keyboard, `one-time-code`).
   - A destructive question opens on Cancel; one that asks a name typed back
     opens on that field, where an empty Enter is refused.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
