@@ -9,8 +9,8 @@
 --
 -- WHAT CHANGES
 --   * `creator_totals`: `paid` counts the paid bills of the bookings Agreed
---     counts, so Agreed is Paid and Outstanding together; `earlier` answers
---     the paid bills no such booking holds. Who reads each line is
+--     counts (booked, a fee agreed), so Agreed is Paid and Outstanding
+--     together; `earlier` answers every other paid bill. Who reads each line is
 --     unchanged (Margin an admin's alone).
 --
 -- ORDER: this file, then the pages. A page served before reads `paid` as
@@ -86,6 +86,7 @@ begin
                 join public.campaign_options o on o.id = b.option_id
                where b.creator_id = p_creator and b.status = 'paid' and not b.gone
                  and o.state not in ('option', 'shortlisted', 'backup', 'withdrawn', 'replaced')
+                 and exists (select 1 from public.creator_fees f where f.option_id = o.id)
                group by 1) x), '[]'::jsonb) end,
     -- Earlier payments: the paid bills no booking here holds (a job from
     -- before the portal), apart from Paid so neither is read against the
@@ -96,7 +97,8 @@ begin
                 from public.creator_bills b
                where b.creator_id = p_creator and b.status = 'paid' and not b.gone
                  and not exists (select 1 from public.campaign_options o where o.id = b.option_id
-                                   and o.state not in ('option', 'shortlisted', 'backup', 'withdrawn', 'replaced'))
+                                   and o.state not in ('option', 'shortlisted', 'backup', 'withdrawn', 'replaced')
+                                   and exists (select 1 from public.creator_fees f where f.option_id = o.id))
                group by 1) x), '[]'::jsonb) end);
 end $$;
 revoke all on function public.creator_totals(uuid) from public, anon;

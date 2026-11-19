@@ -3443,7 +3443,7 @@ function cardSlugFree(name, self, email) {
       }, function (o) { return o.rate; }, 'bookings');
     }
 
-    var bookedOpt = function (id) { return (DB.campaign_options || []).some(function (o) { return o.id === id && BOOKED_OUT.indexOf(o.state) < 0; }); };
+    var bookedOpt = function (id) { return (DB.campaign_options || []).some(function (o) { return o.id === id && BOOKED_OUT.indexOf(o.state) < 0 && (DB.creator_fees || []).some(function (f) { return f.option_id === o.id; }); }); };
     var paidBills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && b.status === 'paid' && !b.gone; });
     var paid = pay ? group(paidBills.filter(function (b) { return b.option_id && bookedOpt(b.option_id); }),
       function (b) { return b.currency || 'MYR'; }, function (b) { return b.amount; }, 'bills') : null;
