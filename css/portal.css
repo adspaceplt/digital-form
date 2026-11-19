@@ -9788,6 +9788,18 @@ body.qs-page { background: var(--card); }
 .cr-picks { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .cr-note { margin: 0; padding: 12px 14px; border-radius: var(--radius); background: var(--sunk); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cr-facts dd.is-pre { white-space: pre-line; }
+/* Where the interview is held (2026-11-19): the place over its address a
+   line a part, then Get directions, 8px under it; online, Google Meet over
+   when its link comes, or the link itself once confirmed. */
+.cr-where { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.cr-addr { white-space: pre-line; color: var(--ink-soft); }
+.cr-where-note { color: var(--ink-mute); }
+.cr-meet { color: var(--ink-soft); overflow-wrap: anywhere; }
+.cr-meet-code { white-space: nowrap; }
+.cr-where > .cr-map { margin-top: 8px; }
+/* On a phone the label takes the narrow width, as every label beside its
+   value does (104px), so an address line and a meeting link keep one line. */
+@media (max-width: 640px) { .cr-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
 .cr-iv > .qs-foot { margin: 0; max-width: none; padding-top: 8px; }
 /* A candidate's offer and contract (2026-11-17, release H2 step D): a card
    a document, its name over its reference at the left, where it stands at

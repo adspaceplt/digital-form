@@ -50,7 +50,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   open. The candidate picks a time on their page, or None of these times
   with a note (`careers_pick`, `careers_none`, anon, the link's own key;
   the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
-  name). Approve (`hiring_interview_approve`, the part or the Owner) books
+  name). An invitation is answered by its reply-by date (`reply_by`,
+  stamped as it is made: the earlier of `hiring_reply_days`, 3, 1 to 14,
+  after it and the last time offered; the user, 2026-11-19), which the
+  invitation email and the page state; past it, `careers_pick` and
+  `careers_none` refuse `reply-passed`, the page reads that ADspace will
+  contact the candidate, every read draws it Expired, and
+  `hiring_interviews_expire()` (pg_cron `hiring-interview-expire`, every
+  fifteen minutes) files it and tells the Owners (`hiring.expired`); the
+  console reads Expired with its reply-by and Invite again, an expired card
+  holding no ⋯. Approve (`hiring_interview_approve`, the part or the Owner) books
   an online interview's Google Meet (`meet-create` `interviewId`, the event
   `adhire{id}` titled Interview · {position}, never the candidate's name),
   and the candidate moves Invited → Interview. Each step emails the

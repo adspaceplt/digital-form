@@ -557,20 +557,20 @@
   }
 
   var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['Other times asked for', 'is-danger'],
-    confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'] };
+    confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
   function interviewPane(c, can) {
     if (state.interviews == null) return '<section class="readgroup"><div id="hirIvFail"></div></section>';
     var open = state.interviews.filter(function (i) { return i.state !== 'cancelled'; })[0];
-    var invite = can && (!open || open.state === 'none' || open.state === 'confirmed');
+    var invite = can && (!open || open.state === 'none' || open.state === 'confirmed' || open.state === 'expired');
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
-      (invite ? '<button class="btn btn-sm' + (open ? ' btn-quiet' : '') + '" type="button" data-h="invite">' + (open ? 'Send new times' : 'Invite') + '</button>' : '') + '</div>' +
+      (invite ? '<button class="btn btn-sm' + (open ? ' btn-quiet' : '') + '" type="button" data-h="invite">' + (!open ? 'Invite' : open.state === 'expired' ? 'Invite again' : 'Send new times') + '</button>' : '') + '</div>' +
       (state.interviews.length ? '<div class="hir-ivs">' + state.interviews.map(function (i) { return ivCard(i, can); }).join('') + '</div>'
         : '<p class="emptyline">No interviews.</p>') + '</section>';
   }
   function ivCard(i, can) {
-    var st = IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled';
+    var st = IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired';
     var times = (i.slots || []).map(function (t, n) {
       var chosen = i.picked === n + 1;
       return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(when(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
@@ -590,6 +590,7 @@
       '<dl class="ovfacts">' +
         fact(i.picked ? 'Times offered' : 'Times', '<ul class="hir-times">' + times + '</ul>') +
         fact('Length', esc(i.minutes) + ' minutes') +
+        ((i.state === 'invited' || i.state === 'expired') && i.reply_by ? fact('Reply by', esc(when(i.reply_by))) : '') +
         fact('Where', i.mode === 'online' ? (i.meeting_link ? '<a class="plink" href="' + esc(i.meeting_link) + '" target="_blank" rel="noopener"><span>Google Meet</span></a>' : 'Google Meet') : 'At the office') +
         (i.note ? fact('Note to the candidate', esc(i.note), 'is-pre') : '') +
         (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
