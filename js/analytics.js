@@ -77,7 +77,7 @@
   /* Clients lost a quarter, as a share of those active at the period's
      start, and whether it passes the alert (`analytics_churn_pct`). */
   function churnOf(f, n) {
-    if (!f.activeStart || !n) return null;
+    if (!f.activeStart || !n || isDays()) return null;
     var q = f.churned.length / f.activeStart * 3 / n, alert = setting('analytics_churn_pct', 10) / 100;
     return { rate: q, alert: alert, over: q > alert };
   }
@@ -132,11 +132,24 @@
   }
 
   // ---- The period ------------------------------------------------------------------
-  var PERIODS = [['12', 'Last 12 months'], ['6', 'Last 6 months'], ['24', 'Last 24 months'],
+  /* The days first, as the Dashboard's (2026-11-19, the user: "can add,
+     today, yesterday, last 7 days (excl today), last 14 days", for the
+     Dashboard and Analytics both): their spans are the Dashboard's own
+     (`ADspaceOverview.span`), one copy of each rule. */
+  var PERIODS = [['today', 'Today'], ['yday', 'Yesterday'], ['d7', 'Last 7 days'], ['d14', 'Last 14 days'],
+                 ['12', 'Last 12 months'], ['6', 'Last 6 months'], ['24', 'Last 24 months'],
                  ['year', 'This year'], ['lastyear', 'Last year']];
+  var DAYS = { today: 1, yday: 1, d7: 7, d14: 14 };
   var period = '12', tab = 'sales';
+  function isDays(p) { return !!DAYS[p == null ? period : p]; }
+  function daySpan(p) { return window.ADspaceOverview.span(p); }
+  /* A trend is read in months: under a period of days, the charts by month
+     and the tiles' trends keep the last 12 months, while every figure reads
+     the days. */
+  function trendRange() { return rangeOf(isDays() ? '12' : period); }
   function monthStart(key) { return CK.start(key.slice(0, 7) + '-01'); }
   function rangeOf(p) {
+    if (isDays(p)) { var d = daySpan(p).now; return { from: d.from, to: d.to, open: p === 'today', days: true }; }
     var now = new Date(), t = CK.today();
     if (p === 'year') return { from: monthStart(t.slice(0, 4) + '-01'), to: now, open: true };
     if (p === 'lastyear') {
@@ -149,6 +162,7 @@
   /* The period before: the same months a span earlier (Last year the year
      before it, This year the same days of last year). */
   function prevOf(p) {
+    if (isDays(p)) { var d = daySpan(p).prev; return { from: d.from, to: d.to, days: true }; }
     var r = rangeOf(p), n = p === 'year' || p === 'lastyear' ? 12 : Number(p) || 12;
     /* The span before ends at the same moment of its own month: a period
        running to now is read against one running to now's day n months
@@ -166,11 +180,13 @@
   /* How many months a range covers, its last one counted as the share of
      it that has passed, so a month is read the same in both spans. */
   function monthsIn(r) {
+    if (r.days) return (r.to.getTime() - r.from.getTime()) / (30.4375 * 864e5);
     var ks = keysOf(r), last = ks[ks.length - 1];
     var a = monthStart(last).getTime(), b = monthStart(CK.addMonths(last, 1)).getTime();
     return ks.length - 1 + Math.max(0, Math.min(1, (r.to.getTime() - a) / (b - a)));
   }
   function prevWord(p) {
+    if (isDays(p)) return daySpan(p).prevName;
     if (p === 'year') return 'the same months last year';
     if (p === 'lastyear') return 'the year before';
     return 'the ' + (Number(p) || 12) + ' months before';
@@ -183,7 +199,14 @@
   }
   function monWord(key) { return CK.MON[Number(key.slice(5, 7)) - 1]; }
   function monthLong(key) { return CK.MON[Number(key.slice(5, 7)) - 1] + ' ' + key.slice(0, 4); }
+  function dayWord(d) { var x = CK.parts(d); return x.d + ' ' + CK.MON[x.mo] + ' ' + x.y; }
   function spanWord(r) {
+    if (r.days) {
+      var a = CK.parts(r.from), b = CK.parts(r.to.getTime() - 1);
+      if (a.d === b.d && a.mo === b.mo && a.y === b.y) return dayWord(r.from);
+      if (a.mo === b.mo && a.y === b.y) return a.d + ' to ' + b.d + ' ' + CK.MON[a.mo] + ' ' + a.y;
+      return a.d + ' ' + CK.MON[a.mo] + (a.y === b.y ? '' : ' ' + a.y) + ' to ' + dayWord(r.to.getTime() - 1);
+    }
     var ks = keysOf(r), a = ks[0], b = ks[ks.length - 1];
     return a === b ? monWord(a) + ' ' + a.slice(0, 4) : monWord(a) + ' ' + a.slice(0, 4) + ' to ' + monWord(b) + ' ' + b.slice(0, 4);
   }
@@ -287,7 +310,8 @@
       el.querySelector('.ovw-kpi-label').textContent = t.label;
       el.querySelector('.ovw-kpi-fig').textContent = t.fig;
       el.querySelector('.ovw-kpi-sub').innerHTML = verdictHtml(t.verdict) + esc(t.sub || '');
-      if (t.spark && t.spark.length > 1) el.querySelector('.ovw-kpi-trend').innerHTML = CH.spark(t.spark);
+      /* A month's trend under a figure of days would read as theirs. */
+      if (t.spark && t.spark.length > 1 && !isDays()) el.querySelector('.ovw-kpi-trend').innerHTML = CH.spark(t.spark);
       grid.appendChild(el);
     });
   }
@@ -364,10 +388,11 @@
   function sales(box, cl) {
     var r = rangeOf(period), pr = prevOf(period);
     var f = S().figures(cl, null, r), fp = S().figures(cl, null, pr);
-    var h = history(cl), keys = keysOf(r);
+    var tr = trendRange(), h = history(cl), keys = keysOf(tr), days = isDays();
     var per = function (k, fld) { return (h.months[k] || {})[fld] || 0; };
     var n = monthsIn(r), np = monthsIn(pr);
-    var lead = f.newLeads.length / n, leadP = fp.newLeads.length / np;
+    /* Over days a figure is the count itself, never a month's rate. */
+    var lead = days ? f.newLeads.length : f.newLeads.length / n, leadP = days ? fp.newLeads.length : fp.newLeads.length / np;
     var wr = winRate(f), wrP = winRate(fp);
     var ch = churnOf(f, n), cmp = leadsComparable(pr);
     if (!cmp) {
@@ -377,7 +402,7 @@
       box.appendChild(note);
     }
     tiles(box, [
-      { key: 'leads', label: 'New leads per month', fig: one(lead), sub: cmp ? changeWord(lead, leadP, true) : '',
+      { key: 'leads', label: days ? 'New leads' : 'New leads per month', fig: days ? plain(lead) : one(lead), sub: cmp ? changeWord(lead, leadP, !days) : '',
         verdict: cmp ? judge(f.newLeads.length, fp.newLeads.length, 'up', 2) : null,
         spark: keys.map(function (k) { return per(k, 'newLeads'); }) },
       { key: 'win', label: 'Win rate', fig: wr ? pct(wr.rate) : '—',
@@ -390,7 +415,7 @@
     ]);
 
     var g1 = row(box, true);
-    trendCard(g1, h, keys, r);
+    trendCard(g1, h, keys, tr);
     insights(g1, clientChanges(f, fp, n).filter(function (x) { return x.verdict && x.verdict.tone === 'late'; }).concat(salesChanges(f, fp, h, cmp)));
 
     var g2 = row(box);
@@ -608,7 +633,7 @@
   function clientsTab(box, cl) {
     var r = rangeOf(period), pr = prevOf(period);
     var f = S().figures(cl, null, r), fp = S().figures(cl, null, pr);
-    var h = history(cl), keys = keysOf(r);
+    var tr = trendRange(), h = history(cl), keys = keysOf(tr);
     var per = function (k, fld) { return (h.months[k] || {})[fld] || 0; };
     var ten = f.activeEndList.map(sinceActive).filter(function (x) { return x != null; }).sort(function (a, b) { return a - b; });
     var med = ten.length ? ten[Math.floor((ten.length - 1) / 2)] : null;
@@ -616,7 +641,7 @@
     var lt = lostTile(f, fp, ch, keys, per);
     lt.key = 'left'; lt.label = 'Clients left';
     tiles(box, [
-      { key: 'active', label: 'Active clients', fig: plain(f.activeEnd), sub: plain(f.activeStart) + ' at the start of ' + monthLong(keys[0]),
+      { key: 'active', label: 'Active clients', fig: plain(f.activeEnd), sub: plain(f.activeStart) + ' at the start of ' + (r.days ? dayWord(r.from) : monthLong(keys[0])),
         verdict: judge(f.activeEnd, f.activeStart, 'up', 2),
         spark: keys.map(function (k) { return per(k, 'active'); }) },
       { key: 'joined', label: 'Clients joined', fig: plain(f.won.length), sub: plain(fp.won.length) + ' in ' + prevWord(period),
@@ -631,14 +656,14 @@
       kind: 'columns', labels: true,
       cats: keys.map(function (k) { return { label: monWord(k), long: monthLong(k), values: [per(k, 'active')], tone: k === cur ? 'mute' : '' }; }),
       series: [{ label: 'Active clients' }]
-    }, spanWord(r));
+    }, spanWord(tr));
     heading(ac, [{ label: 'Active clients', d: direction(h, 'active', 'up') }]);
     insights(g1, clientChanges(f, fp, n));
     var g0 = row(box);
     var fl = chart(g0, 'flow', 'Clients joined and left', {
       kind: 'line', cats: keys.map(function (k) { return { label: monWord(k), long: monthLong(k), values: [per(k, 'won'), per(k, 'churned')] }; }),
       series: [{ label: 'Joined' }, { label: 'Left', tone: 'mute' }]
-    }, spanWord(r));
+    }, spanWord(tr));
     heading(fl, [{ label: 'Joined', d: direction(h, 'won', 'up') }, { label: 'Left', d: direction(h, 'churned', 'down') }]);
     var g2 = row(box);
     chart(g2, 'industry', 'Active clients by industry', { kind: 'bars', inline: true, rows: groupCount(f.activeEndList, function (c) { return c.industry; }), empty: 'No active client.' }, 'Now');
@@ -713,7 +738,7 @@
     var ten = f.activeEndList.map(sinceActive).filter(function (x) { return x != null; }).sort(function (a, b) { return a - b; });
     var count = function (list, fn) { return groupCount(list, fn).map(function (x) { return { name: x.label, clients: x.value }; }); };
     var dir = function (field, good) { var d = direction(h, field, good); return d ? { heading: d.word, a_month: r1(d.slope) } : null; };
-    var fl = rangeOf(period).open ? forecast(h, 'newLeads', 3) : null, fw = fl ? forecast(h, 'won', 3) : null;
+    var fl = trendRange().open ? forecast(h, 'newLeads', 3) : null, fw = fl ? forecast(h, 'won', 3) : null;
     var ahead = fl ? fl.slice(1) : [], wa = fw ? fw.slice(1) : [];
     var lo = function (a, k) { return Math.round(Math.min.apply(null, a.map(function (x) { return x[k]; }))); };
     var hi = function (a, k) { return Math.round(Math.max.apply(null, a.map(function (x) { return x[k]; }))); };
@@ -746,7 +771,7 @@
         median_months_as_client: ten.length ? Math.round(ten[Math.floor((ten.length - 1) / 2)] / 30.4) : null
       },
       heading: { new_leads: dir('newLeads', 'up'), new_clients: dir('won', 'up'), active: dir('active', 'up'), left: dir('churned', 'down') },
-      months: keysOf(r).map(function (k) {
+      months: keysOf(trendRange()).map(function (k) {
         var m = h.months[k] || {};
         return { month: monthLong(k), new_leads: m.newLeads || 0, new_clients: m.won || 0, left: m.churned || 0, active: m.active || 0 };
       }),
@@ -1039,7 +1064,7 @@
           var r = rangeOf(period), word = PERIODS.filter(function (p) { return p[0] === period; })[0][1];
           O().forAnalytics(page, tab === 'sales' ? 'Sales' : 'Operations', {
             from: r.from, to: r.to, prev: prevOf(period), prevName: prevWord(period),
-            name: period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
+            name: isDays() ? daySpan(period).name : period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
             cl && tab === 'sales' ? ['sources'] : [], cl);
         }
         /* A Dashboard tile pressed for its clients lands on its card. */
