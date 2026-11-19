@@ -57,7 +57,7 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '</td></tr>' +
     '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#515151;">' +
     'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>' +
-    '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>' +
+    '(60)18 762 5233 · <a href="https://adspace.me" style="color:#515151;text-decoration:none;">adspace.me</a>' +
     fine +
     /* The portal's own line (the user, 2026-11-18), a row under the fine
        print in its light grey: the year is Malaysia's at the send. */
