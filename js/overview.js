@@ -136,8 +136,8 @@
   // What a change is measured against, in a word: "on Sept", "on last quarter".
   function prevWord(p) {
     if (p && typeof p === 'object') return p.prevName;
-    if (p === 'today' || p === 'yday') { var b = CK.parts(prevOf(p).from); return b.d + ' ' + MON[b.mo]; }
-    if (DAYS[p]) return 'the ' + DAYS[p] + ' days before';
+    if (p === 'today' || p === 'yday') return 'the day before';
+    if (DAYS[p]) return 'the previous ' + DAYS[p] + ' days';
     if (p === 'quarter') return 'last quarter';
     if (p === 'lastq') return quarterWord(prevOf(p).from);
     if (p === 'year') return 'last year';

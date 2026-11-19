@@ -99,8 +99,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   This year on last year; Today from its start to now, on the same hours of
   yesterday; Yesterday and a run of days end at today's start, so today is
   never in them (the user, 2026-11-19: "last 7 days (excl today)"), each
-  measured on as many days before, said `on 18 Nov` or `on the 7 days
-  before`), with the
+  measured on as many days before, said `on the day before` or `on the previous
+  7 days`), with the
   span and the time read beside it; both pages read the one period.
   - Summary, in this order (the revamp, 2026-11-12, "go as recommended",
     replacing the order of 2026-10-22): four figures lead (`#ovwLead`:
