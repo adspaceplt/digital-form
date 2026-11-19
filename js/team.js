@@ -264,7 +264,7 @@
                 ['hiring', 'Hiring'],
                 /* A colleague's signed-in devices, each signed out on its
                    own (2026-11-20). */
-                ['sessions', 'Sign-in sessions']],
+                ['sessions', 'Signed-in devices']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
@@ -2761,9 +2761,9 @@
      sign-in, never the reader's own. */
   var DEV_SAID = {
     denied: 'You do not have permission to sign out a device. Please ask an admin.',
-    'not-found': 'This session has already ended.',
+    'not-found': 'This device is already signed out. Refresh the page.',
     'own-session': 'This is your own device. Use Sign out in your account menu.',
-    'system-account': 'Only the system account can sign out its own devices.'
+    'system-account': 'Only the super admin can sign out the super admin\'s devices.'
   };
   function paintDevices(m, body, all) {
     if (!body) return;
@@ -2779,7 +2779,8 @@
         var last = x.last_at ? activeWord(x.last_at) : '';
         return '<li class="mrec-dev">' +
           '<span class="mrec-dev-what"><b>' + esc(x.device) + '</b>' + (x.mine ? ' <span class="chip">This device</span>' : '') +
-            '<small>' + esc([last, 'Signed in ' + whenWord(x.created_at)].filter(Boolean).join(' · ')) + '</small>' +
+            '<small>' + [last, 'Signed in ' + whenWord(x.created_at)].filter(Boolean).map(function (w) {
+              return '<span class="mrec-dev-part">' + esc(w) + '</span>'; }).join(' · ') + '</small>' +
             '<code class="mrec-dev-code">' + esc(String(x.id).slice(0, 6)) + '</code></span>' +
           (x.mine ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
       }).join('') + '</ul>' +

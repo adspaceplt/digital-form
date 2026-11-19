@@ -132471,8 +132471,8 @@ grant execute on function public.payment_analysis(text) to authenticated;
 --     own. Nothing is written; no IP address is answered.
 --   * `team_session_end(p_id, p_session)` (`team.sessions`): ends one of a
 --     colleague's sessions (its renewal is refused, so the device signs out
---     within the hour its access lasts), filed `team.changed` under Sign-in
---     sessions. Refuses `denied`, `not-found`, `own-session` (Sign out ends
+--     within the hour its access lasts), filed `team.changed` under Signed-in
+--     devices. Refuses `denied`, `not-found`, `own-session` (Sign out ends
 --     one's own) and `system-account` (only that account ends its own).
 --
 -- ORDER: this file (the API, as a whole: it holds a delete), then the
@@ -132541,7 +132541,7 @@ begin
   if v_dev is null then return jsonb_build_object('error', 'not-found'); end if;
   delete from auth.sessions s where s.id = p_session;
   insert into public.activity_log (actor, action, subject, detail)
-  values (me.name, 'team.changed', 'Sign-in sessions',
+  values (me.name, 'team.changed', 'Signed-in devices',
           m.name || ': signed out on ' || v_dev || ' (' || left(p_session::text, 6) || ')');
   return jsonb_build_object('ok', true);
 end $$;

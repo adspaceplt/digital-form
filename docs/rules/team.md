@@ -69,7 +69,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   then Show all. Sign out (`team_session_end`) asks, ends that one
   sign-in (the device signs out within the hour its access lasts), never
   the reader's own (`own-session`) or the system account's
-  (`system-account`), filed `team.changed` under Sign-in sessions. No IP
+  (`system-account`), filed `team.changed` under Signed-in devices. No IP
   address is read; nothing is written but the sign-out.
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
