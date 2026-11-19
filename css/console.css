@@ -5864,6 +5864,10 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cpq-l, .cpq-r { display: grid; gap: 2px; min-width: 0; }
 .cpq-r { justify-items: end; text-align: right; }
 .cpq-act { display: flex; justify-content: flex-end; }
+/* A group none of whose rows holds an act gives up the act's track, so its
+   figures end on the card's edge (2026-11-19). */
+.cpq-list:not(:has(.cpq-act:not(:empty))) > .cpq-row { grid-template-columns: minmax(0, 1fr) auto; }
+.cpq-list:not(:has(.cpq-act:not(:empty))) .cpq-act { display: none; }
 .cpq-name { font-weight: 500; overflow-wrap: anywhere; }
 .cpq-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 .cpq-job { color: var(--ink-mute); font-weight: 400; }

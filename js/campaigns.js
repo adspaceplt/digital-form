@@ -809,8 +809,11 @@
     }
     /* Creator fees (2026-11-13): agreed, outstanding and margin, at
        Creator payments View alone (the function leaves them out else). */
+    /* Paid counts the bookings Agreed counts, so Agreed is Paid and
+       Outstanding together; a paid bill no booking holds is Earlier
+       payments, drawn only where there is one (2026-11-19). */
     var body = lines(t.billed, 'Billed to clients') + lines(t.agreed, 'Agreed creator fees') + lines(t.paid, 'Paid to creator') +
-      lines(t.owed, 'Outstanding') + lines(t.margin, 'Margin');
+      lines(t.owed, 'Outstanding') + (t.earlier && t.earlier.length ? lines(t.earlier, 'Earlier payments') : '') + lines(t.margin, 'Margin');
     return body ? '<section class="railblock" id="crTotals"><h3 class="railtitle">Totals</h3><dl class="raildates">' + body + '</dl></section>' : '';
   }
   /* What waits on the team, and the record: a block with nothing leaves. */
@@ -1583,7 +1586,10 @@
     var per = '<select class="select select-sm cpq-period" id="cpqPeriod" aria-label="Paid period">' +
       CPQ_PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === cpqPeriod ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>';
     if (paid.length) section('paid', 'Paid', paid, paid.map(function (j) {
-      return row(j, { top: amt(j), sub: sub(j, true), when: 'Paid ' + esc(cpqDay(j.bill.paid_on)) }, '');
+      /* A paid bill opens in Bukku as an awaiting one does (2026-11-19, the
+         user: the row stood short of its card's edge, its act column empty). */
+      return row(j, { top: amt(j), sub: sub(j, true), when: 'Paid ' + esc(cpqDay(j.bill.paid_on)) },
+        j.bill && j.bill.number ? '<button class="btn btn-sm" type="button" data-a="bukku" data-num="' + esc(j.bill.number) + '">Open in Bukku</button>' : '');
     }).join(''), per);
     else {
       var none = document.createElement('section'); none.className = 'crm-group cpq-paid-none';
