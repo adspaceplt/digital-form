@@ -293,7 +293,7 @@
     }
     body += scenesOf(s);
     if (s.kind === 'story') {
-      body += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4><p class="vs-prose">' +
+      body += '<section class="vs-block"><h4 class="fsec-h">Voice-over</h4><p class="vs-prose">' +
         (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p></section>';
     }
     if (s.remarks) body += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' + esc(s.remarks) + '</p></section>';

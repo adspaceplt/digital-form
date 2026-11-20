@@ -46,6 +46,12 @@
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     /* A supplier holds no account manager (2026-10-27, SPF-6). */
     notSentAdspace: 'Not sent. Please try again, or contact ADspace.',
+    notSaved: 'Not saved. Please try again.',
+    /* A details form's lines, the client's and the supplier's alike
+       (2026-11-20, the client pages' tone sweep). */
+    linkExpired: 'Link expired', formEnds: 'This form is open until {d}.', formReceived: 'Details received',
+    formSubmitted: 'This form has already been submitted.', tickToContinue: 'Tick the box to continue.',
+    badMobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.',
     // A wait past the expected, and a read the connection lost (2026-11-10).
     stillLoading: 'Still loading…',
     offline: 'The connection was lost or is too slow. Please try again.',
@@ -147,6 +153,10 @@
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
     notSentAdspace: '未能提交，请重试或联系 ADspace。',
+    notSaved: '未能保存，请重试。',
+    linkExpired: '链接已过期', formEnds: '此表格开放至{d}。', formReceived: '资料已收到',
+    formSubmitted: '此表格已提交。', tickToContinue: '请勾选后继续。',
+    badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
     stillLoading: '仍在加载…',
     offline: '网络连接中断或过慢，请重试。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',

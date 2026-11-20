@@ -23,31 +23,29 @@
       sst: 'SST Registration No.', address: 'Billing address', finance: 'Finance email',
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
       optional: 'Optional', consent: 'I confirm that these details are correct and consent to ADspace keeping them for business purposes.',
-      submit: 'Submit', ends: 'This form is open until {d}.',
+      submit: 'Submit',
       req: { legal_name: 'Enter the Registered Company Name.', company_no: 'Enter the Business Registration Number.',
         billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
         contact_phone: 'Enter the mobile number.', contact_email: 'Enter the email address.' },
       badBrn: 'Enter the Business Registration Number as shown on the company\'s registration.',
-      badEmail: 'Enter a valid email address.', badPhone: 'Enter a mobile number of 8 to 15 digits.',
-      badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.', tick: 'Tick the box to continue.',
-      doneT: 'Details received', doneP: 'Thank you. Your ADspace account manager will review your details.',
-      expT: 'Link expired', submittedT: 'Details received', submittedP: 'This form has already been submitted.'
+      badEmail: 'Enter a valid email address.', 
+      badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.',
+      doneP: 'Thank you. Your ADspace account manager will review your details.',
     },
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
-      company: '公司', legal: '公司注册名称', brn: '公司注册号码',
+      company: '公司', legal: '公司注册名称', brn: '商业注册号码',
       brnPh: '12位数字', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
       optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料作业务用途。',
-      submit: '提交', ends: '此表格开放至{d}。',
-      req: { legal_name: '请填写公司注册名称。', company_no: '请填写公司注册号码。', billing_address: '请填写账单地址。',
+      submit: '提交',
+      req: { legal_name: '请填写公司注册名称。', company_no: '请填写商业注册号码。', billing_address: '请填写账单地址。',
         contact_name: '请填写账单联系人姓名。', contact_phone: '请填写手机号码。', contact_email: '请填写邮箱地址。' },
-      badBrn: '请按公司注册文件填写注册号码。',
-      badEmail: '请输入有效的邮箱地址。', badPhone: '请输入8至15位数字的手机号码。',
-      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。', tick: '请勾选后继续。',
-      doneT: '资料已收到', doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
-      expT: '链接已过期', submittedT: '资料已收到', submittedP: '此表格已提交。'
+      badBrn: '请按公司注册文件填写商业注册号码。',
+      badEmail: '请输入有效的邮箱地址。', 
+      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。',
+      doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
     }
   });
   var t = function () { return WORDS[lang]; };
@@ -106,7 +104,7 @@
       '</section>' +
       '<label class="qs-consent"><input type="checkbox" id="dfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(w.consent) + '</span></label>' +
       '<span class="msg" id="dfConsentMsg"></span>' +
-      '<p class="qs-note">' + esc(f(w.ends, { d: day(info.expires_at, true) })) + '</p>' +
+      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>' +
       '<p class="msg" id="dfMsg" role="status"></p>' +
       '</form></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button></div>';
@@ -123,9 +121,9 @@
     if (state === 'loading') return;
     if (state === 'bad') { cover(w.notFound, w.notFoundText); return; }
     if (state === 'fail') { cover(w.failTitle, w.failText); return; }
-    if (state === 'expired') { cover(w.expT, w.notFoundText); return; }
-    if (state === 'submitted') { paintDone(w.submittedT, w.submittedP); return; }
-    if (state === 'done') { paintDone(w.doneT, w.doneP); return; }
+    if (state === 'expired') { cover(w.linkExpired, w.notFoundText); return; }
+    if (state === 'submitted') { paintDone(w.formReceived, w.formSubmitted); return; }
+    if (state === 'done') { paintDone(w.formReceived, w.doneP); return; }
     root().innerHTML = paintForm();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
@@ -163,9 +161,9 @@
     if (v('finance_email') && !mail.test(v('finance_email'))) bad('finance_email', w.badEmail);
     if (v('contact_name').length < 2) bad('contact_name', w.req.contact_name);
     var digits = v('contact_phone').replace(/\D/g, '');
-    if (!digits) bad('contact_phone', w.req.contact_phone); else if (digits.length < 8 || digits.length > 15) bad('contact_phone', w.badPhone);
+    if (!digits) bad('contact_phone', w.req.contact_phone); else if (digits.length < 8 || digits.length > 15) bad('contact_phone', w.badMobile);
     if (!v('contact_email')) bad('contact_email', w.req.contact_email); else if (!mail.test(v('contact_email'))) bad('contact_email', w.badEmail);
-    if (!consent) { say('dfConsentMsg', w.tick); if (!first) first = 'dfConsent'; }
+    if (!consent) { say('dfConsentMsg', w.tickToContinue); if (!first) first = 'dfConsent'; }
     if (first && $(first)) $(first).focus();
     return !first;
   }
@@ -175,7 +173,7 @@
     var w = t();
     if (CODE[k]) return f(w.badCode, { a: CODE[k][0], b: CODE[k][1] });
     return { company_no: w.badBrn, billing_address: w.badAddr, finance_email: w.badEmail, contact_email: w.badEmail,
-      contact_phone: w.badPhone }[k] || w.req[k] || w.req.legal_name;
+      contact_phone: w.badMobile }[k] || w.req[k] || w.req.legal_name;
   }
   var SERVER = { 'bad-legal_name': 'legal_name', 'bad-company_no': 'company_no', 'bad-company_no_old': 'company_no_old',
     'bad-tin': 'tin', 'bad-sst_no': 'sst_no', 'bad-billing_address': 'billing_address', 'bad-finance_email': 'finance_email',

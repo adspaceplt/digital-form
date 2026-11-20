@@ -117,7 +117,7 @@
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '合作项目', payment: '付款', account: '门户访问权限',
       addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + '结束'; },
-      legalName: '注册名称', regNo: '商业登记号码', address: '账单地址', market: '市场',
+      legalName: '公司注册名称', regNo: '商业注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
       contact: '联系人', reach: '联系方式', contacts: '联系人',

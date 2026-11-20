@@ -183,6 +183,18 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   - registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt;
   - margins 33.3pt on all four sides (W ÷ φ⁶, the Social Media Report's; the user, 2026-11-16: 54pt read as wide white sides on paper): the wordmark's capitals and the monogram start 33.3pt down, a continuation page's hairline sits there, the foot's baseline 33.3pt up; the type unchanged;
   - the monogram 21pt, top right of the letterhead only.
+  - Which sheet (the user, 2026-11-20): the letterhead for a document that
+    leaves the company or binds it (a letter, an offer, a contract, the
+    Monthly Performance Record); the plain page for an admin's working form
+    (the Employee Record Form, Interview Sheet, Onboarding Checklist,
+    Welcome Kit, a client's checklist, the Analytics Analysis): no
+    wordmark, monogram or registration, the title in Slate Medium 15pt on
+    the letterhead's first line with INTERNAL USE ONLY at the right edge in
+    the foot's ink (Slate Regular 7.5pt, untracked so a search reads it), a
+    hairline under them, on every page; the margins, body and foot the
+    letterhead's. One table names every PDF's sheet
+    (`ADspaceDocs.TEMPLATE`, `templateOf`; `pen(…, { kind, title })` draws
+    the plain head); a new PDF joins it.
   - Config holds file paths, never font names.
 - Letter tables: Description, Rate, Amount only. Quantity rides in the rate
   cell. The term sits mute under the Amount. Inclusions go under the name, then
