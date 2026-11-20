@@ -53,7 +53,11 @@
     'meet-pending': 'Google is still creating the Google Meet link. Press Create Google Meet again shortly.',
     'bad-recommend': 'Choose a recommendation.', 'bad-outcome': 'Please refresh the page and try again.',
     'no-email': 'This decision sends no email.', 'bad-criteria': 'Enter 3 to 8 criteria, each 2 to 60 characters, none twice.',
-    'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.'
+    'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.',
+    'not-yet': 'The interview has not started yet. Mark it held once it has taken place.',
+    'past': 'Choose a decision date and time after now.', 'too-far': 'Choose a decision date within 30 working days.',
+    'held': 'This interview has been held and cannot be cancelled.', 'not-held': 'Mark the interview held first.',
+    'decided': 'A decision has already been made on this candidate. Refresh the page to see it.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -595,6 +599,10 @@
   var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['Other times asked for', 'is-danger'],
     confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
+  /* Interview held (2026-11-20): a confirmed interview once it has taken
+     place, its decision date while no decision is made. */
+  var HELD = ['Held', 'is-ok'];
+  function undecided() { return state.rec && state.rec.stage === 'interview'; }
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
   function interviewPane(c, can) {
     if (state.interviews == null) return '<section class="readgroup"><div id="hirIvFail"></div></section>';
@@ -606,7 +614,7 @@
         : '<p class="emptyline">No interviews.</p>') + '</section>';
   }
   function ivCard(i, can) {
-    var st = IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired';
+    var st = i.held_at ? HELD : IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired';
     var times = (i.slots || []).map(function (t, n) {
       var chosen = i.picked === n + 1;
       return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(when(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
@@ -615,11 +623,17 @@
     var acts = '';
     if (live && i.state === 'picked') acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivapprove" data-id="' + esc(i.id) + '">Approve</button>';
     if (live && i.state === 'confirmed' && i.mode === 'online' && !i.meeting_link) acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivmeet" data-id="' + esc(i.id) + '">Create Google Meet</button>';
-    if (live && i.state === 'confirmed' && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
+    if (live && i.state === 'confirmed' && !i.held_at && i.picked && Date.parse(i.slots[i.picked - 1]) <= Date.now() && undecided())
+      acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview held</button>';
+    if (live && i.held_at && i.decide_by && undecided()) {
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
+      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
+    }
+    if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
     if (live && i.state === 'invited' && i.invite_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
-    var menu = live ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
+    var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" hidden><button class="kmenu-item" data-g="5" type="button" data-h="ivcancel" data-id="' + esc(i.id) + '" role="menuitem">Cancel</button></div></span>' : '';
     return '<div class="hir-iv' + (i.state === 'cancelled' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>Interview ' + esc(i.round) + '</b>' +
         '<span class="hir-iv-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' + menu + '</span></div>' +
@@ -632,7 +646,10 @@
         (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
         fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
-        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') +
+        (i.held_at ? fact('Held', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
+        (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(when(i.decide_by))) : '') +
+        (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
+        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('held', 'Decision date email') +
       '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
   }
 
@@ -1218,6 +1235,62 @@
     });
   }
 
+  /* The decision date asked as a date and a time, Malaysia's, opening on
+     the setting's working days (or the date already set), held to now and
+     30 working days on. */
+  function decideAsk(i, title, go, at, more, done) {
+    var c = state.rec, C = window.ADspaceClock;
+    rpc('hiring_decide_by_suggest', {}).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { msg('hirRecMsg', said(r), 'err'); return; }
+      var from = at || d.at, f = [
+        { name: 'day', label: 'Decision date', type: 'date', min: C.today(), value: C.day(from), half: true, head: 'Decision by' },
+        { name: 'time', label: 'Time', type: 'time', value: C.time(from), half: true }].concat(more || []);
+      f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
+      window.ADspaceConfirm.ask({ title: title, go: go, wait: true, fields: f,
+        body: 'The Owners will be reminded two working days before the decision date and on the day.',
+        check: function (v) {
+          var t = C.at(v.day, v.time);
+          if (!t) return 'Enter the decision date and time.';
+          if (t.getTime() <= Date.now()) return SAID.past;
+          if (t.getTime() > Date.parse(d.latest)) return SAID['too-far'];
+          if (String(v.note || '').trim().length > 500) return 'Shorten the note to 500 characters.';
+          return '';
+        } },
+      function (v) { return done(C.at(v.day, v.time).toISOString(), v); });
+    });
+  }
+  function heldIv(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
+    if (!i) return;
+    decideAsk(i, 'Interview held?', 'Interview held', null, [], function (at, v) {
+      return rpc('hiring_interview_held', { p_interview: id, p_decide_by: at }).then(function (r) {
+        if (r.error || (r.data || {}).error) return said(r);
+        state.pane = 'interview';
+        (v.mail ? sendMail(id, 'held') : Promise.resolve(false)).then(function (sent) {
+          openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+        });
+        return '';
+      });
+    });
+  }
+  function moveDecision(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
+    if (!i) return;
+    decideAsk(i, 'Change decision date', 'Save', i.decide_by,
+      [{ name: 'note', label: 'Note to the candidate', rows: 2, required: false, placeholder: 'Optional', value: i.decide_note || '' }],
+      function (at, v) {
+        return rpc('hiring_decide_by_change', { p_interview: id, p_decide_by: at, p_note: String(v.note || '').trim() || null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) return said(r);
+          (v.mail && !d.same ? sendMail(id, 'moved') : Promise.resolve(false)).then(function (sent) {
+            openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+          });
+          return '';
+        });
+      });
+  }
+
   var WORD = { 'candidate.added': 'Candidate added', 'candidate.invited': 'Invitation sent', 'candidate.interview': 'Interview updated',
     'candidate.email': 'Email to the candidate',
     'candidate.scored': 'Scores changed', 'candidate.decided': 'Decision made', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
@@ -1335,6 +1408,8 @@
       });
     });
     on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
+    on('ivheld', function (b) { heldIv(b.getAttribute('data-id')); });
+    on('ivmove', function (b) { moveDecision(b.getAttribute('data-id')); });
     on('score', score);
     on('ivpdf', function (b) { window.ADspaceHrForms.download(b, 'sheet', c.name, function () { return Promise.resolve(sheetForm(c)); }, $('hirRecMsg')); });
     on('decide', function (b) { decide(b.getAttribute('data-o')); });

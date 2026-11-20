@@ -28,7 +28,7 @@
   var NEXT = {
     received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
-  var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed',
+  var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
     offer: 'Offer to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   /* An interview's time with its weekday, Malaysia's day (2026-11-19, the
@@ -97,6 +97,12 @@
     if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
       'ADspace will contact you by email if another time can be arranged.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
+    /* Interview held (2026-11-20): when it was, and by when ADspace will
+       inform the candidate of the outcome, in place of the way to join. */
+    if (i.state === 'confirmed' && i.held) {
+      return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div></dl>' +
+        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + '.</p>' : '') + '</section>';
+    }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
         ? '<a class="btn btn-primary" href="' + esc(window.ADspaceWords.absUrl(i.link)) + '" target="_blank" rel="noopener">Join Google Meet</a>' : '';
@@ -374,7 +380,7 @@
       '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
-      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
+      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
       (d.docs && d.docs.length ? docsSection(d.docs) : (dec || (i ? interview(i) : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
     if (!(d.docs && d.docs.length) && !dec && i && i.state === 'invited') wire();
     if ($('crPool')) wirePool();
