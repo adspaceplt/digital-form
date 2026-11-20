@@ -134,7 +134,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
     period before (`on Sept`, `on last quarter`) and its trend
     (`ADspaceChart.spark`) where it has a history; every tile keeps the
-    trend's room, so a row of tiles stands one height); then Active clients
+    trend's room, so a row of tiles stands one height; a label wraps onto a
+    second line, never cut, and the lead row's tiles share their rows by
+    subgrid so every figure stands on one line, `fit` failing a cut
+    label, 2026-11-20); then Active clients
     by month. The trends: On time by month (delivered and posted,
     two lines) and Active
     clients by month (each figure over its column, this month lighter).

@@ -1565,6 +1565,11 @@
     });
     var shared = rows.length && rows[0].set && rows.every(function (p) { return p.set && p.kind === rows[0].kind; }) ? rows[0].kind : '';
     var cur = same ? rows[0] : null;
+    /* Several pages, set, with times or notes of their own (2026-11-20): a
+       date or note left empty keeps each page's own; only what is typed is
+       laid over every page, so a note added never takes an end away. */
+    var mixed = rows.length > 1 && !same && rows.some(function (p) { return p.set; });
+    var allWa = rows.length && rows.every(function (p) { return p.whatsapp; }) ? 'on' : '';
     var WINDOW = ['sday', 'stime', 'eday', 'etime', 'note', 'note_zh'], held = null;
     window.ADspaceConfirm.ask({
       title: one ? one.name : 'Set availability · ' + plural(keys.length, 'page', 'pages'), go: 'Save', wait: true,
@@ -1575,8 +1580,9 @@
                { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true, value: cur ? pgDay(cur.ends_at) : '' },
                { name: 'etime', label: 'End time', type: 'time', required: false, half: true, hint: 'Optional', value: cur ? pgTime(cur.ends_at) : '' },
                { name: 'note', label: 'Note to visitors', placeholder: 'Optional', required: false, value: cur ? cur.note || '' : '' },
-               { name: 'note_zh', label: '中文 note', placeholder: 'Optional', required: false, value: cur ? cur.note_zh || '' : '' }]
-        .concat(keys.length === 1 && keys[0] === 'admin' ? [] : [{ name: 'whatsapp', label: 'Show Chat on WhatsApp', tick: true, value: cur && cur.whatsapp ? 'on' : '' }]),
+               { name: 'note_zh', label: '中文 note', placeholder: 'Optional', required: false, value: cur ? cur.note_zh || '' : '' },
+               { line: mixed ? 'These pages have different times or notes. Leave a field empty to keep each page\'s current value.' : '' }]
+        .concat(keys.length === 1 && keys[0] === 'admin' ? [] : [{ name: 'whatsapp', label: 'Show Chat on WhatsApp', tick: true, value: cur ? (cur.whatsapp ? 'on' : '') : mixed ? allWa : '' }]),
       /* Available holds no window: choosing it lays the window and notes
          aside, and choosing a state again brings them back. */
       change: function (name, fieldOf) {
@@ -1599,7 +1605,26 @@
       var w = bridge.upgradeWindow(v), was = keys.map(pgOf).filter(Boolean).map(pgArgs);
       var args = { p_pages: keys, p_kind: v.kind, p_note: v.kind === 'none' ? null : v.note || null, p_note_zh: v.kind === 'none' ? null : v.note_zh || null,
         p_starts: v.kind === 'none' ? null : w.starts, p_ends: v.kind === 'none' ? null : w.ends, p_whatsapp: v.kind !== 'none' && v.whatsapp === 'on' };
-      return pgSave(args).then(function () {
+      /* Each page keeps what was left empty: its own start, end, notes and
+         WhatsApp line (the tick untouched); pages left alike save together. */
+      var calls = [args];
+      if (mixed && v.kind !== 'none') {
+        var byArgs = {};
+        calls = [];
+        rows.forEach(function (p) {
+          var own = pgArgs(p), a = {
+            p_kind: v.kind,
+            p_starts: v.sday || v.stime ? w.starts : own.p_starts,
+            p_ends: v.eday || v.etime ? w.ends : own.p_ends,
+            p_note: v.note || own.p_note, p_note_zh: v.note_zh || own.p_note_zh,
+            p_whatsapp: (v.whatsapp || '') === allWa ? own.p_whatsapp : v.whatsapp === 'on'
+          };
+          var k = JSON.stringify(a);
+          if (!byArgs[k]) { byArgs[k] = a; a.p_pages = []; calls.push(a); }
+          byArgs[k].p_pages.push(p.key);
+        });
+      }
+      return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve()).then(function () {
         pg.picking = false; pg.picked = {};
         paintPg();
         pgMsg('Saved.', 'ok');

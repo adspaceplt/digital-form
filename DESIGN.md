@@ -87,9 +87,10 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 - Every colour is a token; a literal cannot follow the theme.
 - A document (every PDF) pairs its ground and words as the user's palette
   does (2026-11-20, "white with #515151, #f5f5f5 with #1a1a1a"): the
-  white page carries `#515151`, a shaded `#f5f5f5` box `#1a1a1a`; the
-  marks and titles `#1a1a1a`, fine print `#a1a1a1`, hairlines `#cfd0d4`
-  (Print, §2 Typography).
+  white page carries `#515151`, the ADspace wordmark too, a shaded
+  `#f5f5f5` box `#1a1a1a`; titles `#1a1a1a`; the head's and the foot's
+  marks and fine print `#a1a1a1`; hairlines `#cfd0d4` (Print, §2
+  Typography).
 - An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary `#515151`, the fine print (the confidentiality line, a reminder's legal note and disclaimer) very light in `#a1a1a1` (the user, 2026-11-11; the console's preview of an email draws it `#767676`, 4.5:1, the user, 2026-11-12), the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, a code's digits are centred in their box, and Apple Mail's number detection is kept off (the user, 2026-11-09); the email ends a row under the fine print with the portal's copyright line, `© {year} ADSPACE PLT. All Rights Reserved.`, in the fine print's light grey (the user, 2026-11-18).
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
@@ -186,11 +187,14 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   - the page: A4, margins 72pt top and bottom, 54pt each side; the head
     28.8pt under the top edge, the foot 28.8pt over the bottom edge;
   - inks, the user's palette (2026-11-20: "white with #515151, #f5f5f5
-    with #1a1a1a"): the body `#515151` on the white page; the wordmark, a
-    title, PRIVATE & CONFIDENTIAL, FOR INTERNAL USE and ADSPACE PLT
-    `#1a1a1a`; the fine print alone (Co. Reg. 9pt, the verify line 6pt)
-    `#a1a1a1`, never the body; hairlines `#cfd0d4`; a shaded box `#f5f5f5` with `#1a1a1a`
-    words (`pen().ink`, `strong`, `faint`, `line`, `shade`);
+    with #1a1a1a"; then the wordmark and the foot): the body and the
+    ADspace wordmark `#515151` on the white page; a title, the headings,
+    PRIVATE & CONFIDENTIAL in the body and ADSPACE PLT `#1a1a1a`; the
+    head's and the foot's marks (the page count, FOR INTERNAL USE, the
+    foot's PRIVATE & CONFIDENTIAL, the verify line, Co. Reg., the page's
+    reference) `#a1a1a1`, never the body; hairlines `#cfd0d4`; a shaded
+    box `#f5f5f5` with `#1a1a1a` words (`pen().ink`, `strong`, `faint`,
+    `line`, `shade`; `pdfreal` reads each run's fill);
   - the faces are the templates' four alone: Optima (the wordmark), Slate
     Medium, Slate Regular and Slate Book; Slate Light, the ACL page count's
     face in the template, is not held, so it is Slate Book;

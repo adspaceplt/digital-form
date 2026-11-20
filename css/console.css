@@ -2599,7 +2599,10 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .is-narrow .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
-.ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A tile's label is a fact read whole: it wraps onto a second line, never
+   cut (2026-11-20: My open ta… and Waiting for … at a 900px window); the
+   tiles of a row stand one height as their grid row does. */
+.ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); overflow-wrap: break-word; min-width: 0; }
 .is-narrow .ovw-kpi-label.has-short .ovw-long { display: none; }
 .is-narrow .ovw-kpi-label.has-short .ovw-short { display: inline; }
 .ovw-kpi-fig { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 30px; overflow-wrap: anywhere; }
@@ -5907,6 +5910,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* Tiles of one row share a height: the change strip stands at the foot, never
    a gap under it; the figure keeps one line, its trend narrower on a phone. */
 .ovw-kpis.ovw-lead > .ovw-kpi { grid-template-rows: auto auto 1fr; }
+/* The tiles of a row share their rows (subgrid): a label wrapping onto a
+   second line in one tile keeps every figure of the row on one line
+   (2026-11-20). */
+@supports (grid-template-rows: subgrid) {
+  .ovw-kpis.ovw-lead > .ovw-kpi { grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
+}
 .ovw-lead > .ovw-kpi > .ovw-kpi-line { align-self: end; }
 .ovw-lead > .ovw-kpi > .ovw-kpi-fig { white-space: nowrap; overflow-wrap: normal; }
 .is-narrow .ovw-lead > .ovw-kpi > .ovw-kpi-trend { width: 44px; }
