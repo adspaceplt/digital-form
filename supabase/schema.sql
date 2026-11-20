@@ -133042,8 +133042,8 @@ end $$;
 --
 -- WHAT IT CHANGES
 --   * `meeting_message_template`'s body, only where it still holds the seed
---     word for word: 摘要 becomes 议程, Content Discussion 内容讨论, Link
---     链接. A message the team edited in Settings is left as it is.
+--     word for word: 摘要 becomes 议程, Content Discussion 内容讨论,
+--     Channel 会议方式 (渠道 reads as a sales channel), Link 链接. A message the team edited in Settings is left as it is.
 --
 -- ORDER: the pages (js/ops.js carries the same words where the read fails),
 -- then this file (the API). A tab open before either fills the old words.
@@ -133053,7 +133053,7 @@ end $$;
 -- ===========================================================================
 
 update public.meeting_message_template x set body =
-  E'Meeting Schedule {meeting}\n\nDate 日期: {date}\nTime 时间: {time}\n\nMeeting Agenda 议程:\n•  {month} Content Discussion 内容讨论\n\nChannel 渠道:\n{channel}\nLink 链接: {link}',
+  E'Meeting Schedule {meeting}\n\nDate 日期: {date}\nTime 时间: {time}\n\nMeeting Agenda 议程:\n•  {month} Content Discussion 内容讨论\n\nChannel 会议方式:\n{channel}\nLink 链接: {link}',
   updated_at = now()
  where x.id = 1 and x.body =
   E'Meeting Schedule {meeting}\n\nDate 日期: {date}\nTime 时间: {time}\n\nMeeting Agenda 摘要:\n•  {month} Content Discussion\n\nChannel 渠道:\n{channel}\nLink: {link}';

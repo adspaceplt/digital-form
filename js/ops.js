@@ -7153,7 +7153,7 @@
      none. A line whose word in braces has no value is left out, and so is
      a heading left with nothing under it. */
   var MEET_MSG = 'Meeting Schedule {meeting}\n\nDate \u65e5\u671f: {date}\nTime \u65f6\u95f4: {time}\n\n' +
-    'Meeting Agenda \u8bae\u7a0b:\n\u2022  {month} Content Discussion \u5185\u5bb9\u8ba8\u8bba\n\nChannel \u6e20\u9053:\n{channel}\nLink \u94fe\u63a5: {link}';
+    'Meeting Agenda \u8bae\u7a0b:\n\u2022  {month} Content Discussion \u5185\u5bb9\u8ba8\u8bba\n\nChannel \u4f1a\u8bae\u65b9\u5f0f:\n{channel}\nLink \u94fe\u63a5: {link}';
   var meetMsg = { body: null, asked: false, by: null, at: null };
   function readMeetMsg(then) {
     meetMsg.asked = true;
