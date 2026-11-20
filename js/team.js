@@ -2786,7 +2786,7 @@
           '<span class="mrec-dev-what"><b>' + esc(x.device) + '</b>' + (x.mine ? ' <span class="chip">This device</span>' : '') +
             '<small>' + [last, 'Signed in ' + whenWord(x.created_at)].filter(Boolean).map(function (w) {
               return '<span class="mrec-dev-part">' + esc(w) + '</span>'; }).join(' · ') + '</small>' +
-            '<code class="mrec-dev-code">' + esc(String(x.id).slice(0, 6)) + '</code></span>' +
+            '<code class="mrec-dev-code">' + esc(window.ADspaceAPI.sessionShort(x.id)) + '</code></span>' +
           (x.mine ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
       }).join('') + '</ul>' +
         (shown.length < list.length || allOk ? '<div class="mrec-railacts">' +
