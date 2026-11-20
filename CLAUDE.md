@@ -771,7 +771,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     client page covers itself under its own bar (`.maint-cover`, z-index 39;
     the rest `inert`): Upgrade in progress / 系统升级中 (`W.maintTitle`;
     `maintText` The portal will be available again shortly. / 系统将稍后恢复使用。;
-    `maintBack` Expected back by {end}), or Temporarily unavailable / 暂时无法使用
+    `maintBack` The portal will be available again by, then on its own line
+    20 Nov 2026 (Friday), 12:30pm. / 系统将于以下时间前恢复使用：, then the date), or Temporarily unavailable / 暂时无法使用
     (`W.pausedTitle`, `pausedText`, Chat on WhatsApp where set), its note in
     the page's language, following the 中文 switch. A quotation link already
     sent (`/quote/?q=`) keeps opening while the website is only paused. Every
