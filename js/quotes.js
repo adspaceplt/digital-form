@@ -26,7 +26,7 @@
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
     'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
+    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-off items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
@@ -768,7 +768,7 @@
     var today = window.ADspaceClock.today(), signedDay = window.ADspaceClock.day(q.signed_at);
     var fields = [{ name: 'on', label: 'Withdrawn from', type: 'date', required: true, value: today, min: signedDay, max: today },
       { name: 'reason', label: 'Reason', required: true }];
-    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Return its confirmed service lines to To quote', tick: true, value: 'on' });
+    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Revert its confirmed service lines to To quote', tick: true, value: 'on' });
     window.ADspaceConfirm.ask({
       title: 'Mark withdrawn?',
       body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
@@ -781,7 +781,7 @@
         if (r.error || d.error) return OUT_SAID[d.error] || said(r.error || d.error);
         var n = d.lines || 0;
         ctx.reload(function () {
-          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' returned to To quote.' : ''), function () {
+          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' reverted to To quote.' : ''), function () {
             ctx.db.rpc('quotation_withdraw_undo', { p_id: q.id }).then(function (u) {
               var e = u.error || (u.data && u.data.error);
               if (e) { ctx.msg('qtMsg', said(e), 'err'); return; }

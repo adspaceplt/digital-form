@@ -923,8 +923,8 @@
     'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
     /* The KOC fee item (2026-11-15): Business settings, found in Bukku by SKU and code. */
     'no-item': 'Set the item SKU and classification code for creator bills in Settings, Money, Bukku.',
-    'no-product': 'Bukku holds no product with the item SKU chosen for creator bills. Check the SKU in Bukku, or in Settings, Money, Bukku.',
-    'no-bukku-account': 'Bukku holds no account with the account code chosen for creator bills. Check the account in Bukku, or in Settings, Money, Bukku.',
+    'no-product': 'Bukku has no product with the item SKU chosen for creator bills. Check the SKU in Bukku, or in Settings, Money, Bukku.',
+    'no-bukku-account': 'Bukku has no account with the account code chosen for creator bills. Check the account in Bukku, or in Settings, Money, Bukku.',
     'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
     creating: 'This bill is already being created. Press Read from Bukku in a minute.',
     'not-confirmed': 'Bukku did not confirm the bill. Press Read from Bukku in a few minutes before you create it again.' };
@@ -2558,7 +2558,7 @@
     };
     db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').single().then(function (r) {
       if (r.error && /slots-booked/.test((r.error.hint || '') + (r.error.message || ''))) {
-        msg('campMsg', 'Not saved. The count cannot go below the creators already booked.', 'err'); return;
+        msg('campMsg', 'Not saved. The number of creators cannot be fewer than those already booked.', 'err'); return;
       }
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.edited', title, slots + ' creators');
@@ -3154,7 +3154,7 @@
       (r.reviewer ? ' by ' + r.reviewer : byTeam ? '' : ' by the client') +
       (r.created_at ? ' · ' + niceStamp(r.created_at) : '');
     return '<div class="kask' + (o.state === 'changes' ? ' is-open' : '') + '">' +
-      '<div class="kask-head"><b>' + (o.state === 'changes' ? 'Changes requested' : 'Asked for') + '</b>' +
+      '<div class="kask-head"><b>' + (o.state === 'changes' ? 'Changes requested' : 'Changes') + '</b>' +
         '<span>' + esc(who) + '</span></div>' +
       '<p class="kask-note">' + (r.note ? esc(r.note) : '<span class="kask-none">No note.</span>') + '</p></div>';
   }
@@ -3623,7 +3623,7 @@
     if (!box) return;
     var rows = live.filter(function (o) { return ((state.files || {})[o.id] || []).length || o.draft_url; });
     if (!rows.length) {
-      UI.emptyLine(box, 'Nothing handed in.');
+      UI.emptyLine(box, 'Nothing submitted.');
       return;
     }
     box.innerHTML = '';
@@ -4054,7 +4054,7 @@
     var rows = live.filter(function (o) {
       return ((state.files || {})[o.id] || []).length || o.draft_url;
     });
-    if (!rows.length) return ovSec('Deliverables', 'creators', 'Creators', ovNone('Nothing handed in.'));
+    if (!rows.length) return ovSec('Deliverables', 'creators', 'Creators', ovNone('Nothing submitted.'));
     var body = rows.slice(0, 6).map(function (o) {
       var n = ((state.files || {})[o.id] || []).length;
       var w = OPTION_WORD[o.state] || [o.state, ''];
@@ -4066,7 +4066,7 @@
     }).join('');
     return ovSec('Deliverables', 'creators', 'Creators',
       '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
-      '<span>Handed in</span><span>Step</span><span class="ovamt"></span></div>' + body + '</div>');
+      '<span>Submitted</span><span>Step</span><span class="ovamt"></span></div>' + body + '</div>');
   }
 
   /* ---- The rail: one block per question --------------------------------
@@ -5237,7 +5237,7 @@
         '</svg><span class="filepin-name">' + esc(f.name) + '</span></span>' +
         '<button class="filepin-x" type="button" data-a="teamunhold" aria-label="Remove ' + esc(f.name) + '">×</button></span>';
     }).join('') + '</div>' +
-      '<div class="row acts"><button class="btn btn-primary" type="button" data-a="teamsend">Hand in ' +
+      '<div class="row acts"><button class="btn btn-primary" type="button" data-a="teamsend">Submit ' +
         list.length + (list.length === 1 ? ' file' : ' files') + '</button></div>';
   }
   window.addEventListener('beforeunload', function (e) {
@@ -5313,7 +5313,7 @@
     chain.then(function () {
       if (box) box.hidden = true;
       pick.disabled = false;
-      var text = (done ? done + (done === 1 ? ' file' : ' files') + ' handed in for ' +
+      var text = (done ? done + (done === 1 ? ' file' : ' files') + ' submitted for ' +
         ((o.creators || {}).name || 'the creator') + '.' : '') +
         (failed.length ? ' Not saved: ' + failed.join('; ') : '') +
         (tooBig ? ' ' + tooBig : '');
@@ -5798,11 +5798,11 @@
     denied: 'You do not have permission to do this. Please ask an admin.',
     'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Only a submitted draft can be sent back.',
-    'not-changes': 'There is no request to take back.',
+    'not-changes': 'There is no request to withdraw.',
     'not-reviewing': 'Only a draft in Reviewing can be confirmed internally. Release it to the client first.',
-    'not-scheduled': 'There is no approval to take back.',
+    'not-scheduled': 'There is no approval to withdraw.',
     'note-required': 'Enter the changes.',
-    'new-files': 'The creator has handed in new files. Check them and release them instead.',
+    'new-files': 'The creator has submitted new files. Check them and release them instead.',
     'qc-required': 'Complete the quality check, then release to the client.',
     'needs-approval': 'The booking moves to Scheduled only once the client approves. Use Confirm internally where the client approved by message.'
   };
@@ -5956,7 +5956,7 @@
     if (cap) {
       cap.innerHTML =
         (ask && Number(o.revision_round || 0) > Number(ask.round || 0)
-          ? '<p class="qc-cap-lab">Asked for</p><p class="qc-cap-text">' + esc(ask.note || 'No note.') + '</p>' : '') +
+          ? '<p class="qc-cap-lab">Changes</p><p class="qc-cap-text">' + esc(ask.note || 'No note.') + '</p>' : '') +
         '<p class="qc-cap-lab">Caption</p>' +
         (o.draft_caption ? '<p class="qc-cap-text">' + esc(o.draft_caption) + '</p>'
                          : '<p class="msg warn">No caption.</p>');
@@ -6138,7 +6138,7 @@
          creator and what is still owed. */
       log('campaign.qc', logSubject(),
         ((o.creators || {}).name || 'A creator') +
-        (out.state === 'waiting' ? ' · second reviewer asked for' : ''));
+        (out.state === 'waiting' ? ' · Second reviewer requested' : ''));
       /* The run is spent. A booking sent back for changes is checked again
          from the top, because it is a different file. */
       delete qcKept[o.id];
@@ -6156,7 +6156,7 @@
   var SAID_QC = {
     denied: 'You do not have permission to release this draft. Please ask an admin.',
     'no-booking': 'This booking no longer exists.',
-    'not-submitted': 'Nothing handed in for this booking.',
+    'not-submitted': 'Nothing submitted for this booking.',
     'qc-required': 'Complete the quality check, then release to the client.'
   };
 
@@ -6250,7 +6250,7 @@
         if (!mayWork()) {
           var facts = [];
           if (p.published_at) facts.push(['Posted on', niceDate(p.published_at)]);
-          if (p.measure_from || p.measure_to) facts.push(['Counted', [p.measure_from, p.measure_to].filter(Boolean).map(niceDate).join(' to ')]);
+          if (p.measure_from || p.measure_to) facts.push(['Results period', [p.measure_from, p.measure_to].filter(Boolean).map(niceDate).join(' to ')]);
           ['impressions', 'engagements', 'views'].forEach(function (k) {
             if (p[k] != null) facts.push([k.charAt(0).toUpperCase() + k.slice(1), Number(p[k]).toLocaleString()]);
           });
@@ -6358,7 +6358,7 @@
       body: (goodwill
               ? name + ' has already filmed, so replacing them is goodwill: they are still paid. '
               : '')
-          + 'The booking is kept on the record for invoice reconciliation, and '
+          + 'The booking is kept for invoice reconciliation, and '
           + (kind === 'withdrawn' || !goodwill ? 'the place opens for somebody else.'
                                                : 'the place stays filled.'),
       go: kind === 'withdrawn' ? 'Withdraw' : 'Replace',
@@ -6557,7 +6557,7 @@
     if (file && !/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
       msg('invMsg', 'The invoice must be a PDF.', 'err'); return;
     }
-    if (file && !putToS3) { msg('invMsg', 'Uploads are not available on this page.', 'err'); return; }
+    if (file && !putToS3) { msg('invMsg', 'Uploads are not available on this page. Refresh the page, then try again.', 'err'); return; }
 
     msg('invMsg', file ? 'Uploading…' : 'Saving…');
     var step = file
@@ -6664,7 +6664,7 @@
     'over-slots': function (d) { return 'Not confirmed. ' + d.booked + ' of ' + d.slots + ' creators are already booked; confirm ' + Math.max(0, d.slots - d.booked) + ' at most.'; },
     denied: function () { return 'Not confirmed. You do not have permission to confirm creators. Please ask an admin.'; },
     'client-scope': function () { return 'Not confirmed. This client is not one of your clients.'; },
-    'not-found': function () { return 'This campaign is no longer available.'; }
+    'not-found': function () { return 'This campaign no longer exists.'; }
   };
 
   // ---- Bulk logistics -----------------------------------------------------
@@ -6726,7 +6726,7 @@
     window.ADspaceConfirm.ask({
       title: 'Overwrite every creator',
       body: 'Dates set by hand on a booking will be replaced with these. '
-          + 'Apply to blanks leaves those alone.',
+          + 'Apply to blanks keeps them.',
       go: 'Overwrite',
       tone: 'warn'
     }, function () { applyBulk(true); });

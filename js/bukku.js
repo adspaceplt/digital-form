@@ -54,7 +54,7 @@
     moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-value': 'Choose a field from the list.',
-    'bad-sku': 'Enter the item SKU as Bukku holds it, for example P995.',
+    'bad-sku': 'Enter the item SKU as it appears in Bukku, for example P995.',
     'bad-class': 'Enter the classification code as three digits, for example 037.',
     'bad-account': 'Choose the account.',
     'not-held': 'Bukku and the portal have different details. Choose Send to Bukku or Use Bukku\'s first.',
@@ -69,7 +69,7 @@
   function said(d) {
     if (!d) return SAID.failed;
     if (d.error === 'incomplete') return 'Fill in ' + (d.missing || []).join(' and ') + ' before it is sent to Bukku.';
-    if (d.error === 'bukku-refused') return 'Bukku refused it' + (d.message ? ': ' + d.message : '.');
+    if (d.error === 'bukku-refused') return 'Bukku refused the request' + (d.message ? ': ' + String(d.message).replace(/\.+$/, '') : '') + '. Check the details in Bukku, then try again.';
     return SAID[d.error] || d.error || SAID.failed;
   }
   /* One call of the function; a refusal comes back as { error }. */
@@ -217,7 +217,7 @@
       var head = '<div class="bk-l">' + MARK + '' + code;
       var when = function (iso) { return iso ? day(iso) + ', ' + (window.ADspaceClock ? window.ADspaceClock.clock(iso) : '') : ''; };
       if (r.error) {
-        var copy = d.read_at ? ' Showing the copy read ' + when(d.read_at) + '.' : '';
+        var copy = d.read_at ? ' The details shown were read on ' + when(d.read_at) + '.' : '';
         host.innerHTML = head + '<span class="chip-state is-warn">Not read</span></div>' +
           '<p class="bk-sub">' + esc(said(r)) + esc(copy) + '</p>' +
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Try again</button>' + menu + '</div>';
@@ -235,7 +235,6 @@
       } else {
         var rows = (r.differs || []);
         host.innerHTML = head + '<span class="chip-state is-warn">Differs from Bukku</span></div>' +
-          '<p class="bk-sub">Nothing is replaced until one side is chosen.</p>' +
           (work ? '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' +
             '<button class="btn btn-sm" type="button" data-bk="hold">Use Bukku\'s</button>' + menu + '</div>' : '') +
           '<div class="bk-table bk-diff" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
@@ -339,7 +338,7 @@
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
         '<section class="fsec"><h4 class="fsec-h" id="bkPickH">Contact in Bukku</h4><div id="bkPick" role="radiogroup" aria-labelledby="bkPickH"></div></section>' +
-        '<section class="fsec"><h4 class="fsec-h" id="bkRowsH">What changes</h4><div id="bkRows"></div></section>' +
+        '<section class="fsec"><h4 class="fsec-h" id="bkRowsH">Changes</h4><div id="bkRows"></div></section>' +
         '<div class="msg" id="bkMsg" role="status"></div>' +
       '</div>' +
       '<div class="sheet-foot">' +
@@ -505,10 +504,10 @@
         ],
         check: function (v) {
           if (v.client && (v.client === v.supplier || v.client === v.creator)) return 'Choose a different field for the Client ID.';
-          if (!/^[A-Za-z0-9._\/-]{1,40}$/.test(String(v.sku || '').trim())) return 'Enter the item SKU as Bukku holds it, for example P995.';
+          if (!/^[A-Za-z0-9._\/-]{1,40}$/.test(String(v.sku || '').trim())) return 'Enter the item SKU as it appears in Bukku, for example P995.';
           if (!/^[0-9]{3}$/.test(String(v.cls || '').trim())) return 'Enter the classification code as three digits, for example 037.';
           if (!v.account) return 'Choose the account.';
-          if (String(v.budget || '').trim() && !/^[A-Za-z0-9._\/-]{1,30}$/.test(String(v.budget).trim())) return 'Enter the account code as Bukku holds it, for example 3000-01.';
+          if (String(v.budget || '').trim() && !/^[A-Za-z0-9._\/-]{1,30}$/.test(String(v.budget).trim())) return 'Enter the account code as it appears in Bukku, for example 3000-01.';
           return '';
         }
       }, function (v) {
