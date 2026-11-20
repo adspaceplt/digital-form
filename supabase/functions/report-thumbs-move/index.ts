@@ -103,6 +103,9 @@ Deno.serve(async (req) => {
 
   const n = Math.min(100, Math.max(1, Number(body.batch) || 50));
   let moved = 0, failed = 0;
+  /* Why a row was not moved, counted by reason, so a failed run says so. */
+  const why: Record<string, number> = {};
+  const miss = (k: string) => { failed++; why[k] = (why[k] || 0) + 1; };
   for (const table of ['sm_report_posts', 'sm_report_ads']) {
     if (moved + failed >= n) break;
     const { data: rows, error } = await admin.from(table).select('id, report_id, thumb_data, sm_reports(client_id)')
@@ -111,17 +114,21 @@ Deno.serve(async (req) => {
     for (const r of rows || []) {
       const client = String(((r.sm_reports as Record<string, unknown> | null) || {}).client_id || '');
       const bytes = bytesOf(String(r.thumb_data));
-      if (!/^[0-9a-f-]{36}$/.test(client) || !bytes) { failed++; continue; }
+      if (!/^[0-9a-f-]{36}$/.test(client)) { miss('no_client'); continue; }
+      if (!bytes) { miss('not_a_picture'); continue; }
       const key = `private/${client}/thumbs/${crypto.randomUUID()}.jpg`;
       const put = await aws.fetch(`${bucket}/${key}`, { method: 'PUT', body: bytes, headers: { 'Content-Type': 'image/jpeg' } });
-      if (!put.ok) { failed++; continue; }
-      const { data: done } = await admin.from(table).update({ thumb_data: key }).eq('id', r.id).eq('thumb_data', r.thumb_data).select('id');
-      if (done && done.length) moved++; else failed++;
+      if (!put.ok) { miss('s3_' + put.status); continue; }
+      /* A published report's rows are held by its guard; the database's
+         own function makes this one swap (A REPORT PICTURE MOVED TO S3). */
+      const { data: done, error: ue } = await admin.rpc('sm_report_thumb_set',
+        { p_kind: table === 'sm_report_posts' ? 'post' : 'ad', p_id: r.id, p_key: key });
+      if (ue) miss('update_' + (ue.code || 'error')); else if (done === true) moved++; else miss('changed_meanwhile');
     }
   }
   const [{ count: lp }, { count: la }] = await Promise.all([
     admin.from('sm_report_posts').select('id', { count: 'exact', head: true }).like('thumb_data', 'data:image/%'),
     admin.from('sm_report_ads').select('id', { count: 'exact', head: true }).like('thumb_data', 'data:image/%')
   ]);
-  return say({ moved, failed, left: (lp ?? 0) + (la ?? 0) });
+  return say({ moved, failed, why, left: (lp ?? 0) + (la ?? 0) });
 });
