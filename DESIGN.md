@@ -887,6 +887,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
 - Chinese is localised, not translated: 下午2:00, never pm; a figure and its unit with no space (42分钟); the full-width comma (2026-10-20, POR-3, VER-1).
 - No dashes in copy where avoidable. Dates `12 Sept 2026`, months `Oct 2026`,
   money `RM 8,490.00`, agreement prose `16 September 2026`.
+- A date the reader waits on (a deadline, an appointment, a page back by) carries its weekday: `20 Nov 2026 (Friday)`, `2026年11月20日（星期五）`, with its time `20 Nov 2026 (Friday), 12:30pm` (`ADspaceClock.date` `named`, `ADspaceClock.due`; `named: 'ahead'` once it has passed); a history date never does (the user, 2026-11-20).
 - Client-page cover words live in `js/words.js`:
   - "Link not recognised / Please contact your ADspace account manager.";
   - "Access code / Enter the access code provided.";

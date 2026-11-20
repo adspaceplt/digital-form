@@ -267,10 +267,11 @@
   var code = '';
   function t() { return T[lang]; }
 
-  function fmtDate(d) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function fmtDate(d, named) {
     if (!d) return '';
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
-    return ADspaceClock.date(d, { zh: lang === 'zh' }) || d;
+    return ADspaceClock.date(d, { zh: lang === 'zh', named: named }) || d;
   }
 
   /* A shoot's time in the page's language (ux-audit CREATOR-7): 10:00 am,
@@ -790,7 +791,7 @@
       var plats = platsOf(b.platforms);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · '), 'megaphone']);
       if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish), 'calendar']);
-      if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due), 'clock']);
+      if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due, true), 'clock']);
     }
     /* A fact with its chips (the place, the contact) takes its own row, so
        the plain facts come first and pair up (2026-10-20, CRE-1). */

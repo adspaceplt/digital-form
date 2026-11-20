@@ -33,9 +33,10 @@
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
 
   function esc(s) { return window.ADspaceWords.esc(s); }
-  function day(iso) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function day(iso, named) {
     if (!iso) return '';
-    return window.ADspaceClock.date(iso);
+    return window.ADspaceClock.date(iso, { named: named });
   }
   function time(t) {
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');
@@ -151,7 +152,7 @@
     var el = document.createElement('section');
     el.className = 'panel vs-index';
     el.innerHTML = list.map(function (s) {
-      var when = [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ');
+      var when = [day(s.shoot_on, 'ahead'), time(s.shoot_time)].filter(Boolean).join(', ');
       return '<button class="vs-pick" type="button" data-id="' + esc(s.id) + '">' +
         '<span class="vs-pick-name"><b>' + esc(label(s)) + '</b><small>' + esc(KIND_WORD[s.kind] || '') + '</small></span>' +
         '<span class="vs-pick-state">' + (when ? esc(when) : '<span class="mute">Not set</span>') + '</span>' + CHEV + '</button>';
@@ -215,7 +216,7 @@
   function factsOf(s) {
     var f = [['Platform', s.platform], ['Language', s.language === 'Malay' ? 'Bahasa Melayu' : s.language],
              ['Aspect ratio', s.aspect], ['Video length', s.length_seconds ? s.length_seconds + ' seconds' : ''],
-             ['Shooting date', [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')],
+             ['Shooting date', [day(s.shoot_on, 'ahead'), time(s.shoot_time)].filter(Boolean).join(', ')],
              ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]];
     var ref = s.reference_url
       ? '<div class="vs-ref"><dt>Reference video</dt><dd><a class="plink" href="' + esc(s.reference_url) +

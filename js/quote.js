@@ -311,7 +311,8 @@
     var x = Number(v || 0), s = MON.money2(Math.abs(x), 'MY').replace(/^RM /, '');
     return x < 0 ? '(' + s + ')' : s;
   }
-  function day(iso, long) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function day(iso, long, named) {
     var C = window.ADspaceClock;
     if (!iso) return '';
     if (long && lang !== 'zh') {
@@ -319,7 +320,7 @@
       var M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       return m ? Number(m[3]) + ' ' + M[Number(m[2]) - 1] + ' ' + m[1] : iso;
     }
-    return C ? C.date(String(iso).slice(0, 10), { zh: lang === 'zh' }) : iso;
+    return C ? C.date(String(iso).slice(0, 10), { zh: lang === 'zh', named: named }) : iso;
   }
   function waDigits(s) {
     var d = String(s || '').replace(/[^0-9]/g, '');
@@ -633,7 +634,7 @@
     var over = q.valid_until < q.today;
     var chip = q.seal && q.seal.withdrawn ? ['is-off', t().withdrawn] : st === 'welcome' ? ['is-ok', t().confirmed]
       : st === 'closed' ? ['is-off', q.declined ? t().declined : t().closed]
-      : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
+      : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until, false, true) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
     var lines = window.ADspaceMoney.planFold(q.lines).map(function (l) {
       /* Every inclusion a point, as the service lists them and the PDF
@@ -694,7 +695,7 @@
        button beside empty space). */
     return '<div class="qs-quote is-single" data-shown><section class="qs-main">' +
       '<div class="qs-head"><h1 class="qs-title">' + esc(w.quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
-      done(w.reviewT, q.reply_due ? f(w.reviewP, { d: day(q.reply_due) }) : '') +
+      done(w.reviewT, q.reply_due ? f(w.reviewP, { d: day(q.reply_due, false, 'ahead') }) : '') +
       '<div class="qs-notes"><span>' + esc(w.reviewNote) + '</span></div>' +
       '<div class="qs-review-act" id="qsSide">' + side + '</div></section></div>';
   }

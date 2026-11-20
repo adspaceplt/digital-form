@@ -1460,8 +1460,9 @@
   function pgName(k) { var p = pgOf(k); return p ? p.name : k; }
   function pgState(p) {
     if (!p.set) return ['is-ok', 'Available', ''];
-    var w = p.on ? (p.ends_at ? 'Until ' + when(p.ends_at) : 'No end set')
-      : 'From ' + when(p.starts_at) + (p.ends_at ? ' to ' + when(p.ends_at) : '');
+    var due = window.ADspaceClock.due;
+    var w = p.on ? (p.ends_at ? 'Until ' + due(p.ends_at, { space: true }) : 'No end set')
+      : 'From ' + due(p.starts_at, { space: true }) + (p.ends_at ? ' to ' + due(p.ends_at, { space: true }) : '');
     return [p.kind === 'paused' ? 'is-off' : 'is-warn', PG_WORD[p.kind] || PG_WORD.upgrade, w];
   }
   /* How many pages are unavailable now and how many are set for later. */

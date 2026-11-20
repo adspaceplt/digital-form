@@ -458,8 +458,8 @@
       /* The console's own row of Page availability (2026-10-29). */
       var word = upgrade.kind === 'paused' ? 'Temporarily unavailable' : 'Upgrade in progress';
       var w = !M ? '' : upgrade.on
-        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the notice page.'
-        : 'Console: ' + word + ' from ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.when(upgrade.ends_at) : '') + '.';
+        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.due(upgrade.ends_at) : '') + '. Everyone but admins sees the notice page.'
+        : 'Console: ' + word + ' from ' + M.due(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.due(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
     if (M && upgrade.on && !admin && me) {
