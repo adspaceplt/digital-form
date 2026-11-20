@@ -85,6 +85,11 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.
+- A document (every PDF) pairs its ground and words as the user's palette
+  does (2026-11-20, "white with #515151, #f5f5f5 with #1a1a1a"): the
+  white page carries `#515151`, a shaded `#f5f5f5` box `#1a1a1a`; the
+  marks and titles `#1a1a1a`, fine print `#a1a1a1`, hairlines `#cfd0d4`
+  (Print, §2 Typography).
 - An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary `#515151`, the fine print (the confidentiality line, a reminder's legal note and disclaimer) very light in `#a1a1a1` (the user, 2026-11-11; the console's preview of an email draws it `#767676`, 4.5:1, the user, 2026-11-12), the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, a code's digits are centred in their box, and Apple Mail's number detection is kept off (the user, 2026-11-09); the email ends a row under the fine print with the portal's copyright line, `© {year} ADSPACE PLT. All Rights Reserved.`, in the fine print's light grey (the user, 2026-11-18).
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
@@ -172,29 +177,68 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 - The front door's hierarchy: headings in the body face 17/600 (16 phone); the
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
-- Print (the letterhead):
-  - inks as an email's (the user, 2026-11-12): text `#1a1a1a`, secondary
-    `#515151`, the foot (reference, PRIVATE & CONFIDENTIAL, page count)
-    `#a1a1a1` (`pen()` in `js/documents.js`: `ink`, `mute`, `faint`);
-  - wordmark in Optima 14pt (`fontMark`);
-  - body in Slate Book 11/14.5pt, 14pt between paragraphs (`font`);
-  - heavier lines in Slate Regular (`fontBold`), headings in Slate Medium
-    (`fontMed`);
-  - registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt;
-  - margins 33.3pt on all four sides (W ÷ φ⁶, the Social Media Report's; the user, 2026-11-16: 54pt read as wide white sides on paper): the wordmark's capitals and the monogram start 33.3pt down, a continuation page's hairline sits there, the foot's baseline 33.3pt up; the type unchanged;
-  - the monogram 21pt, top right of the letterhead only.
-  - Which sheet (the user, 2026-11-20): the letterhead for a document that
-    leaves the company or binds it (a letter, an offer, a contract, the
-    Monthly Performance Record); the plain page for an admin's working form
-    (the Employee Record Form, Interview Sheet, Onboarding Checklist,
-    Welcome Kit, a client's checklist, the Analytics Analysis): no
-    wordmark, monogram or registration, the title in Slate Medium 15pt on
-    the letterhead's first line with INTERNAL USE ONLY at the right edge in
-    the foot's ink (Slate Regular 7.5pt, untracked so a search reads it), a
-    hairline under them, on every page; the margins, body and foot the
-    letterhead's. One table names every PDF's sheet
-    (`ADspaceDocs.TEMPLATE`, `templateOf`; `pen(…, { kind, title })` draws
-    the plain head); a new PDF joins it.
+- Print: the company's Word templates (`docs/templates/`; the user,
+  2026-11-20: "please take note of the header and footer. it should remain
+  in place", "yes align all to the templates"), drawn by the one pen
+  (`ADspaceDocs.pen`, its figures `ADspaceDocs.PAGE`, measured from the
+  templates rendered in their own fonts), the head and the foot at the same
+  place on every page whatever the page holds:
+  - the page: A4, margins 72pt top and bottom, 54pt each side; the head
+    28.8pt under the top edge, the foot 28.8pt over the bottom edge;
+  - inks, the user's palette (2026-11-20: "white with #515151, #f5f5f5
+    with #1a1a1a"): the body `#515151` on the white page; the wordmark, a
+    title, PRIVATE & CONFIDENTIAL, FOR INTERNAL USE and ADSPACE PLT
+    `#1a1a1a`; the fine print alone (Co. Reg. 9pt, the verify line 6pt)
+    `#a1a1a1`, never the body; hairlines `#cfd0d4`; a shaded box `#f5f5f5` with `#1a1a1a`
+    words (`pen().ink`, `strong`, `faint`, `line`, `shade`);
+  - the faces are the templates' four alone: Optima (the wordmark), Slate
+    Medium, Slate Regular and Slate Book; Slate Light, the ACL page count's
+    face in the template, is not held, so it is Slate Book;
+  - an uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) carries
+    no letter spacing: the user's 1.08pt, set as character spacing, read
+    letter by letter to pdf.js (F O R I N T E R N A L), so it was dropped
+    (2026-11-20);
+  - a letter's title is the body's size in Slate Medium; a title on any
+    other document is the body times φ (17.8pt on 11pt, 16.18pt on 10pt;
+    `ADspaceDocs.TITLE`);
+  - the Date beside Our Ref is the portal's date (`20 Nov 2026`,
+    `ADspaceDocs.refDate`), never the template's superscript ordinal;
+  - AL (the letterhead): the wordmark in Optima 16pt top left (baseline
+    60.2pt from the top); Page n of N in Slate Book 8pt from 493.75pt
+    (baseline 47pt from the bottom);
+  - ALP (internal): AL's head with FOR INTERNAL USE in Slate Medium 8pt
+    centred on the page (58.9pt); the foot PRIVATE & CONFIDENTIAL in Slate
+    Medium 8pt at the left (48.9pt from the bottom) and AL's page count; a
+    form's title opens its first page in Slate Medium 15pt over a hairline;
+  - ACL_SIGN and ACL_NOSIGN (a lettered document to a party): page one the
+    full letterhead (the wordmark Optima 14pt, Co. Reg. 9pt, the address
+    11pt on 12.5pt lines at the left; the phone, email and website at the
+    right edge; the monogram 20.3pt square top right), later pages the
+    wordmark and the monogram; the foot the verify line centred in Slate
+    Book 6pt (This is a computer-generated document. [No signature
+    required. ]Verify document authenticity: go.adspace.me/verify) and Page
+    n of N in 7.5pt from 493.75pt; the body PRIVATE & CONFIDENTIAL (Slate
+    Medium) at 155.1pt, Our Ref and Date a blank line under it, the
+    recipient's name (Slate Regular) over its lines, the title (Slate
+    Medium), the salutation and the message a blank line apart, single
+    lines of 12.5pt at 11pt, then Yours sincerely, and ADSPACE PLT in Slate
+    Medium;
+  - which template (`ADspaceDocs.TEMPLATE`, `templateOf(kind, signed)`; a
+    new PDF joins it): ACL_SIGN for a document carrying a signature block
+    or signing page (the Letter of Offer, a signed client, HR or supplier
+    letter, the Supplier Service Agreement, the Employment Contract, and a
+    sealed copy's Record page), ACL_NOSIGN for one that does not (an
+    unsigned letter, the Employment Offer); ALP for an admin's working form
+    (Employee Record Form, Interview Sheet, Onboarding Checklist, Welcome
+    Kit, a client's checklist, the Analytics Analysis) and the Rate Card;
+    AL for the rest (the Monthly Performance Record, the quotation, the
+    Social Media Report, the video scripts), whose bodies keep their own
+    layout between the template's margins; a white-label report puts its
+    partner's logo in the wordmark's place;
+  - nothing else in the head or the foot; a mark a document needs on every
+    page (the Letter of Offer's Client initials, the performance record's
+    reference line, the Rate Card's version) stands in the bottom margin
+    clear of the foot.
   - Config holds file paths, never font names.
 - Letter tables: Description, Rate, Amount only. Quantity rides in the rate
   cell. The term sits mute under the Amount. Inclusions go under the name, then

@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   var D = function () { return window.ADspaceDocs; };
-  var FLOOR = 70;
+  var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
   var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
@@ -85,7 +85,7 @@
         got = g;
         if (seal) {
           var co = seal.record.company || (opts.to && opts.to.name) || q.brand;
-          info = { ref: q.ref, docId: seal.record.id, verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
+          info = { ref: q.ref, docId: seal.record.id, kind: 'quotation', verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
             sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ADSPACE PLT.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
@@ -124,7 +124,7 @@
 
     // Page 1: the Quotation Cover, the letter engine's own page.
     var first = docs.letterPages(pdf, PDF, fonts, logo, {
-      family: 'quote_cover', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false,
+      family: 'quote_cover', pdfKind: 'quotation', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false,
       recipient: { name: to.name || q.brand, address: to.address || '', attn: person, attn_role: opts.attentionRole || '' },
       title: cover.title || COVER.title,
       salutation: person ? 'Dear ' + person + ',' : (cover.salutation || COVER.salutation),
@@ -134,7 +134,7 @@
     });
     var pn = first.pn, pages = first.pages.slice();
     var W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
-    var ink = pn.ink, mute = pn.mute, hair = PDF.rgb(0.812, 0.8, 0.776);
+    var ink = pn.ink, mute = pn.mute, hair = pn.line;
     var book = fonts.font, reg = fonts.bold;
     var hasCjk = function (s) { return /[　-鿿＀-￯]/.test(String(s)); };
     var face = function (s, f) { return fonts.cjk && hasCjk(s) ? fonts.cjk : f; };
@@ -169,14 +169,13 @@
       pn.page.drawRectangle({ x: x, y: yy, width: w, height: h, borderColor: hair, borderWidth: 0.6 });
     };
     var y;
-    /* A continuation page: no second letterhead (the user, 2026-10-31), a
-       hairline across the top where the letterhead's foot would sit. */
+    /* A continuation page: the template's head (AL, the wordmark), the
+       body from the top margin. */
     var newPage = function () {
       pn.page = pdf.addPage([W, H]);
       pages.push(pn.page);
-      y = H - M;
-      rule(y);
-      y -= 14;
+      pn.head();
+      y = H - pn.TOP - 10;   // under the top margin: a heading's capitals stand inside it
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(); return true; } return false; };
     var heading = function (s) { y -= 11; text(s, M, y, 11, reg); y -= 10; };
@@ -194,7 +193,7 @@
        numbered sections (each part of the fee, then the terms), and the
        table heads; the quotation's own facts as one block under the title
        in place of a sentence restating them. */
-    var H1 = 16, H2 = 12, LBL = 8.5;
+    var H1 = 16.18, H2 = 12, LBL = 8.5;   // a title: the body (10pt) times φ
     var secNo = 0;
     var h2 = function (s) {
       room(80); y -= 8; secNo++;
@@ -202,7 +201,7 @@
       y -= 8;
     };
     if (t.layout === 2) {
-      y -= 6; text('Quotation', M, y, H1, reg); y -= 22;
+      y -= 6; text('Quotation', M, y, H1, reg, pn.strong); y -= 22;
       /* The quotation's own title (2026-11-16), under the heading. */
       if (t.title) {
         wrap(String(t.title), FULL, 12, reg).forEach(function (ln) { text(ln, M, y, 12, reg); y -= 15; });
@@ -498,7 +497,7 @@
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
     var v2 = t.layout === 2;
-    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg); y -= 8; } else heading('Acceptance of Quotation');
+    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8; } else heading('Acceptance of Quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
       'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;
@@ -579,7 +578,7 @@
     }
 
     // The foot on every page; a preview is a draft over every page.
-    docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL', opts.extraPages ? pages.length + opts.extraPages : 0);
+    docs.letterFoot(pn, pages, q.ref, '', opts.extraPages ? pages.length + opts.extraPages : 0);
     if (opts.draft) pages.forEach(function (pg) { docs.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
     return { page: formPage, boxes: boxes };
   }

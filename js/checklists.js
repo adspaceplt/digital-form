@@ -718,12 +718,12 @@
   }
 
   function layout(pdf, PDF, fonts, d, cl) {
-    /* The plain page (an internal form: its title and INTERNAL USE ONLY at
-       the top, the letterhead's margins and foot; ADspaceDocs.TEMPLATE). */
+    /* The internal template (ALP, ADspaceDocs.TEMPLATE): its head and
+       foot, the title opening the first page. */
     var pn = window.ADspaceDocs.pen(PDF, fonts, null, { kind: 'checklist', title: d.title });
-    var W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M, FLOOR = 60;
-    var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090), mute = PDF.rgb(0.4, 0.4, 0.4);
-    var fill = PDF.rgb(0.949, 0.949, 0.949), edge = PDF.rgb(0.91, 0.91, 0.91);
+    var W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M, FLOOR = pn.BOT + 4;
+    var ink = pn.ink, dark = pn.strong, mute = pn.ink;
+    var fill = pn.shade, edge = pn.line;
     var book = fonts.font, med = fonts.med || fonts.bold;
     var hasCjk = function (s) { return /[　-鿿＀-￯]/.test(String(s)); };
     var face = function (s, f) { return fonts.cjk && (hasCjk(s) || s === '→') ? fonts.cjk : f; };

@@ -1,12 +1,11 @@
 /* The Video Script PDF (2026-10-09), for the crew on site: drawn in the
  * browser from the scripts as they stand, never stored.
  *
- * The page furniture and the type are the Reports PDF's (the user,
- * 2026-10-09: "refer back to the Reports style"; js/smreport.js): the
- * Optima wordmark in ink at the head of every page and the client's name in
- * small capitals at its right; PRIVATE & CONFIDENTIAL in Slate Medium at the
- * foot on the margin's line, the page count at its right; sizes and spaces
- * on S(k) = 10·φ^(k/2) with the S(5) margin; tables of white cells under a
+ * The page furniture is the letterhead template's (AL, 2026-11-20: the
+ * wordmark at the head, the page count at the foot, the template's
+ * margins); the type is the Reports PDF's (the user, 2026-10-09: "refer
+ * back to the Reports style"; js/smreport.js): sizes and spaces on
+ * S(k) = 10·φ^(k/2); tables of white cells under a
  * shaded title row, the title row and the grid in one grey (#f2f2f2), heads
  * in Slate Regular. The content keeps the user's template: Video Script and
  * its type and month, the header table (Video #, Platform, Client/Brand,
@@ -25,10 +24,12 @@
   var W = 595.28, H = 841.89;
   var PHI = 1.6180339887;
   var S = function (k) { return 10 * Math.pow(PHI, k / 2); };
-  var M = S(5), R = W - M;            // the Reports PDF's margin, 33.3pt
-  var HEAD_Y = H - M - 11.6;          // the wordmark's baseline
-  var FOOT_Y = M;                     // the foot, on the margin's line
-  var FLOOR = M + S(1) + S(4);        // nothing draws below this
+  /* The page is the letterhead template's (AL, ADspaceDocs.TEMPLATE;
+     2026-11-20): its 54pt sides and 72pt top and bottom, its head (the
+     wordmark) and its foot (the page count), drawn by the pen. */
+  var M = 54, R = W - M;
+  var TOP_Y = H - 72;                 // the top margin
+  var FLOOR = 76;                     // nothing draws below this
   var CJK = /[⺀-鿿豈-﫿＀-￯]/;
 
   function draw(videos, title) {
@@ -64,12 +65,12 @@
   }
 
   function layout(pdf, PDF, fonts, videos) {
-    var ink = PDF.rgb(0.251, 0.251, 0.251), mute = PDF.rgb(0.40, 0.40, 0.40);   // the Reports PDF's ink and soft
-    var grey = PDF.rgb(0.949, 0.949, 0.949);
+    var ink = PDF.rgb(0.318, 0.318, 0.318), mute = ink, dark = PDF.rgb(0.102, 0.102, 0.102);   // the palette's #515151 and #1a1a1a
+    var grey = PDF.rgb(0.961, 0.961, 0.961);   // a shaded box, #f5f5f5
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
     var body = S(0), lead = S(0) * 1.45, small = S(-1);
-    var client = String(((videos[0] || {}).clients || {}).name || '').toUpperCase();
+    var pn = D().pen(PDF, fonts, null, { kind: 'script' });
 
     var faceOf = function (s, f) { return fonts.cjk && CJK.test(s || '') ? fonts.cjk : f || fonts.font; };
     var safe = function (s) {
@@ -110,13 +111,12 @@
       return out.length ? out : [''];
     };
 
-    /* The head on every page: the wordmark, and the client in small
-       capitals at the right. */
+    /* The template's head on every page. */
     var newPage = function () {
       page = pdf.addPage([W, H]);
-      text('ADspace', M, HEAD_Y, S(2), mark, ink);
-      if (client) text(client, R - width(client, small, med), HEAD_Y + 0.9, small, med, ink);
-      y = HEAD_Y - S(4);
+      pn.page = page;
+      pn.frameHead(false);
+      y = TOP_Y;
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(); return true; } return false; };
 
@@ -193,8 +193,8 @@
       room(S(5) + S(4) * 5);
       /* The page title on the Reports PDF's title step, its type and month
          under it. */
-      y = HEAD_Y - S(5);
-      text('Video Script', M, y, S(3), med);
+      y = TOP_Y - S(3);
+      text('Video Script', M, y, S(2), med, dark);   // the body (10pt) times φ
       y -= S(2) + 2;
       text([v.month_word, group.length > 1 ? group.length + ' scripts' : v.kind_word].filter(Boolean).join(' · '), M, y, small, book, mute);
       y -= S(3);
@@ -298,12 +298,7 @@
     });
 
     var pages = pdf.getPages();
-    pages.forEach(function (pg, i) {
-      page = pg;
-      text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, small, med, ink);
-      var t = 'Page ' + (i + 1) + ' of ' + pages.length;
-      text(t, R - width(t, small, book), FOOT_Y, small, book, ink);
-    });
+    pages.forEach(function (pg, i) { pn.page = pg; pn.foot(i, pages.length); });
   }
 
   window.ADspaceScriptPdf = { draw: draw };

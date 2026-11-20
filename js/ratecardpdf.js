@@ -25,7 +25,12 @@
   function tagOf(card) { return 'v.' + card.version + SOURCE; }
   var W = 595.28, H = 841.89;
   var M = 54, R = W - M, FULL = R - M;
-  var HEAD_Y = H - 61;                // the wordmark's baseline
+  /* The head and the foot are the internal template's (ALP,
+     ADspaceDocs.TEMPLATE; 2026-11-20): the wordmark and FOR INTERNAL USE;
+     PRIVATE & CONFIDENTIAL and the page count. The body keeps the card's
+     own room (a section a page, as the team's document runs), from under
+     the top margin to 62pt, clear of the foot. */
+  var TOP_Y = H - 75;                 // the body's first line hangs from here
   var FLOOR = 62;                     // nothing draws below this
   /* The card's own type (the team's document): 11pt, lines 13.68pt apart,
      a cell's words 5.76pt in from its side, a row at least 18.72pt. */
@@ -77,11 +82,12 @@
       return live.filter(function (s) { return (s.spec || {}).role === r; })
         .sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
     };
-    var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090);
-    var head = PDF.rgb(0.949, 0.949, 0.949), deep = PDF.rgb(0.851, 0.851, 0.851);
+    var ink = PDF.rgb(0.318, 0.318, 0.318), dark = PDF.rgb(0.102, 0.102, 0.102);   // the palette's #515151 and #1a1a1a
+    var head = PDF.rgb(0.961, 0.961, 0.961), deep = PDF.rgb(0.851, 0.851, 0.851);
     var edge = PDF.rgb(0.902, 0.902, 0.902);
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
+    var pn = D().pen(PDF, fonts, null, { kind: 'ratecard' });
 
     var safe = function (s) {
       s = String(s == null ? '' : s);
@@ -108,11 +114,10 @@
     var version = tagOf(card) + (card.valid_until ? ' exp. ' + String(card.valid_until).slice(0, 10).replace(/-/g, '') : '');
     var newPage = function (title) {
       page = pdf.addPage([W, H]);
-      text('ADspace', M, HEAD_Y, 16, mark, ink);
-      /* Centred on the paper, measured in its own face (the user, 2026-10-15). */
-      text('FOR INTERNAL USE', (W - width('FOR INTERNAL USE', 8, med)) / 2, HEAD_Y + 2, 8, med, dark);
-      y = HEAD_Y - 14;
-      if (title) { text(title, M, y - 14, 18, reg, ink); y -= 26; }
+      pn.page = page;
+      pn.frameHead(false);
+      y = TOP_Y;
+      if (title) { text(title, M, y - 14, D().TITLE, reg, dark); y -= 26; }
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(''); return true; } return false; };
     var label = function (t) { room(LEAD + 30); text(t, M, y - BODY - 1, BODY, book, dark); y -= BODY + 5; };
@@ -421,15 +426,12 @@
       });
     }
 
-    /* The foot on every page: PRIVATE & CONFIDENTIAL and the page count on
-       one line, the version under it. */
+    /* The template's foot on every page; the version under it. */
     var pages = pdf.getPages();
     pages.forEach(function (pg, i) {
-      page = pg;
-      text('PRIVATE & CONFIDENTIAL', M, 48, 8, med, dark);
-      var t = 'Page ' + (i + 1) + ' of ' + pages.length;
-      text(t, R - width(t, 8, book), 48, 8, book, dark);
-      text(version, M, 30, 6, book, dark);
+      page = pg; pn.page = pg;
+      pn.foot(i, pages.length);
+      text(version, M, 38, 6, book, dark);
     });
   }
 

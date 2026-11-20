@@ -921,8 +921,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   is counted in one line, filed `From Meta: n pictures added` / `replaced`,
   and Undo puts each earlier picture back.
 - The PDF:
-  - Every section on its own page, on a golden-ratio scale, with a 33.3pt
-    margin; no Methodology page. Page titles and the commentary's block
+  - Every section on its own page, on a golden-ratio scale, on the
+    letterhead template (AL: 54pt sides, 72pt top and bottom, the wordmark
+    and the page count; DESIGN.md, Print; 2026-11-20); no Methodology page. Page titles and the commentary's block
     heads are in title case (Executive Summary, Ad Performance, What Worked,
     Areas to Improve): a formal document.
   - Tables are white cells under a shaded title row, the title row and the

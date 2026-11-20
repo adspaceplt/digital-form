@@ -206,15 +206,21 @@
     cells.forEach(function (c, i) { n = Math.max(n, wrapAny(pn, c, widths[i] - PADX * 2, f).length); });
     return n * LEAD + PADY * 2;
   }
-  var TOP = 120, QR = 40;
+  var TOP = 92, QR = 40;
+  /* The Record page continues the document it seals: that document's
+     template (an Employment Contract's ACL_SIGN, a quotation's AL), its
+     continuation head and its foot, the verify line included. */
+  function recordPen(PDF, fonts, logo, info) {
+    return window.ADspaceDocs.pen(PDF, fonts, logo, { kind: info.kind || 'seal', signed: true, cont: true });
+  }
   /* How many Record pages the steps take, asked before the signed pages
      are drawn so their foot counts them. */
   function pagesFor(PDF, fonts, info) {
-    var pn = window.ADspaceDocs.pen(PDF, fonts, null), FULL = pn.R - pn.M;
-    var widths = cols(FULL), room = pn.H - pn.M * 2 - TOP - 3 * (LEAD + PADY * 2) - QR - 60, n = 1, used = rowHeight(pn, HEAD, widths, fonts.font);
+    var pn = recordPen(PDF, fonts, null, info), FULL = pn.R - pn.M, BODYH = pn.H - pn.TOP - pn.BOT;
+    var widths = cols(FULL), room = BODYH - TOP - 3 * (LEAD + PADY * 2) - QR - 30, n = 1, used = rowHeight(pn, HEAD, widths, fonts.font);
     (info.rows || []).forEach(function (r) {
       var h = rowHeight(pn, r, widths, fonts.font);
-      if (used + h > room) { n++; used = rowHeight(pn, HEAD, widths, fonts.font); room = pn.H - pn.M * 2 - 60; }
+      if (used + h > room) { n++; used = rowHeight(pn, HEAD, widths, fonts.font); room = BODYH - 30; }
       used += h;
     });
     return n;
@@ -238,13 +244,12 @@
      signedPages (n), verifyUrl, rows, total (the file's page count). */
   function addRecord(pdf, PDF, fonts, logo, info) {
     var docs = window.ADspaceDocs;
-    var pn = docs.pen(PDF, fonts, logo), W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
-    var f = fonts.font, grid = PDF.rgb(0.949, 0.949, 0.949), pages = [];
-    var page = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); };
+    var pn = recordPen(PDF, fonts, logo, info), W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
+    var f = fonts.font, grid = pn.shade, pages = [];
+    var y;
+    var page = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
     page();
-    var y = H - M - 10;
-    pn.text('ADspace', M, y, 14, fonts.mark || fonts.bold);
-    y -= 32;
+    y -= 12;
     // The padlock, then the heading.
     try {
       pn.page.drawSvgPath('M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', { x: M - 1, y: y + 12, scale: 0.55, borderColor: pn.ink, borderWidth: 1.1 / 0.55 });
@@ -298,10 +303,10 @@
     };
     drawRow(HEAD, true);
     (info.rows || []).forEach(function (r) {
-      if (y - rowHeight(pn, r, widths, f) < M + 30) { page(); y = H - M - 10; drawRow(HEAD, true); }
+      if (y - rowHeight(pn, r, widths, f) < pn.BOT + 4) { page(); drawRow(HEAD, true); }
       drawRow(r, false);
     });
-    docs.letterFoot(pn, pages, info.ref, 'PRIVATE & CONFIDENTIAL', info.total, info.total - pages.length);
+    docs.letterFoot(pn, pages, info.ref, '', info.total, info.total - pages.length);
     return pages.length;
   }
 

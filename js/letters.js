@@ -213,7 +213,9 @@
   }
 
   // ---- Drawing ---------------------------------------------------------------
-  var LH = 14.5, PARA = 14, BODY = 11, FLOOR = 76;
+  /* The template's body: 11pt on single lines (12.5pt); nothing drawn
+     under the bottom margin (72pt). */
+  var LH = 12.5, PARA = 12.5, BODY = 11, FLOOR = 76;
 
   function render(doc) {
     var D = window.ADspaceDocs;
@@ -234,10 +236,10 @@
       if (wantsCjk && !fonts.cjk) {
         throw new Error(window.ADspaceWords.line.pdfCjk);
       }
+      /* The template (ACL_SIGN or ACL_NOSIGN, by the To be signed tick)
+         draws the head and the foot, its verify line included. */
       var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, doc);
-      var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +
-        'Verify this document at ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
-      DOCS.letterFoot(drawn.pn, drawn.pages, doc.serial, footWord);
+      DOCS.letterFoot(drawn.pn, drawn.pages, doc.serial);
       /* A Preview is a draft, and says so over every page (the user,
          2026-10-06), as a report not yet confirmed does. */
       if (doc.draft) drawn.pages.forEach(function (pg) { DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
@@ -286,25 +288,22 @@
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-      var pn = DOCS.pen(PDF, fonts, logo);
+      /* Signed by both parties: ACL_SIGN. */
+      var pn = DOCS.pen(PDF, fonts, logo, { kind: 'letter.supplier', signed: true });
       var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
       var text = pn.text, wrap = pn.wrap;
-      var FILL = PDF.rgb(0.949, 0.949, 0.949), EDGE = PDF.rgb(0.85, 0.85, 0.85);
+      var FILL = pn.shade, EDGE = pn.line;
       var pages = [], y;
       var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
       var need = function (h) { if (y - h < FLOOR) newPage(); };
       newPage();
 
-      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
-      var REFX = M + 78;
-      var ref = function (label, value) {
-        text(label, M, y, BODY); text(':', M + 72, y, BODY); text(value, REFX, y, BODY); y -= LH;
-      };
-      ref('Our Ref', doc.serial);
-      ref('Date', DOCS.letterDate(doc.issued_at));
-      y -= 12;
+      y = pn.pc(y);
+      y = pn.ref(y, 'Our Ref', doc.serial);
+      y = pn.ref(y, 'Date', DOCS.refDate(doc.issued_at));
+      y -= pn.G.afterPc - pn.G.refLine;
       wrap(String(doc.title || 'Service Agreement').toUpperCase(), R - M, 13, med).forEach(function (ln) {
-        need(18); pn.centre(ln, y, 13, med); y -= 18;
+        need(18); pn.centre(ln, y, 13, med, pn.strong); y -= 18;
       });
       y -= 8;
 
@@ -372,7 +371,7 @@
         if (head) draw(head, bold, true);
         rows.forEach(function (r) { draw(r, font, false); });
       };
-      var heading = function (s, size) { need(LH * 4); text(s, M, y, size || BODY, med); y -= (size || BODY) + 10; };
+      var heading = function (s, size) { need(LH * 4); text(s, M, y, size || BODY, med, pn.strong); y -= (size || BODY) + 10; };
 
       newPage();
       heading('SCHEDULE A', 13);
@@ -408,20 +407,8 @@
           return [String(i + 1), r.client || '', r.account || '', spend, dmyOf(r.start), dmyOf(r.end)];
         }));
 
-      var n = pages.length;
-      var footWord = 'This is a computer-generated document. Verify this document at ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
-      var FZ = 7.5;
-      var refEnd = M + font.widthOfTextAtSize(String(doc.serial || ''), FZ);
-      var sentW = font.widthOfTextAtSize(footWord, FZ);
-      pages.forEach(function (pg, i) {
-        pn.page = pg;
-        pn.footMark(i, n, FZ);
-        text(doc.serial, M, M, FZ, font, mute);
-        var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
-        var x = Math.min(Math.max(W / 2 - sentW / 2, refEnd + 12), pageStart - 12 - sentW);
-        text(footWord, x, M, FZ, font, mute);
-        if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
-      });
+      DOCS.letterFoot(pn, pages, doc.serial);
+      if (doc.draft) pages.forEach(function (pg) { DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font); });
       /* The reference in the file's title, which supplier-mail checks. */
       DOCS.meta(pdf, String(doc.serial || ''), String(doc.kind || 'Supplier Service Agreement'));
       return pdf.save();
