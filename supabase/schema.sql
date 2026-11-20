@@ -133004,17 +133004,17 @@ end $$;
 create or replace function public.hiring_workday_add(p_day date, p_n int)
 returns date language plpgsql stable security definer set search_path = public as $$
 declare
-  v_at   date := p_day;
+  v_cur  date := p_day;
   v_left int := abs(coalesce(p_n, 0));
   v_step int := case when coalesce(p_n, 0) < 0 then -1 else 1 end;
 begin
   while v_left > 0 loop
-    v_at := v_at + v_step;
-    if extract(isodow from v_at) < 6 and not exists (select 1 from public.public_holidays h where h.day = v_at) then
+    v_cur := v_cur + v_step;
+    if extract(isodow from v_cur) < 6 and not exists (select 1 from public.public_holidays h where h.day = v_cur) then
       v_left := v_left - 1;
     end if;
   end loop;
-  return v_at;
+  return v_cur;
 end $$;
 revoke all on function public.hiring_workday_add(date, int) from public, anon, authenticated;
 
