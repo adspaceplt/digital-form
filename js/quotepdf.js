@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   var D = function () { return window.ADspaceDocs; };
-  var FLOOR = 70;
+  var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
   var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
@@ -85,7 +85,7 @@
         got = g;
         if (seal) {
           var co = seal.record.company || (opts.to && opts.to.name) || q.brand;
-          info = { ref: q.ref, docId: seal.record.id, verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
+          info = { ref: q.ref, docId: seal.record.id, kind: 'quotation', verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
             sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ADSPACE PLT.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
@@ -124,7 +124,7 @@
 
     // Page 1: the Quotation Cover, the letter engine's own page.
     var first = docs.letterPages(pdf, PDF, fonts, logo, {
-      family: 'quote_cover', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false,
+      family: 'quote_cover', pdfKind: 'quotation', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false,
       recipient: { name: to.name || q.brand, address: to.address || '', attn: person, attn_role: opts.attentionRole || '' },
       title: cover.title || COVER.title,
       salutation: person ? 'Dear ' + person + ',' : (cover.salutation || COVER.salutation),
@@ -169,14 +169,13 @@
       pn.page.drawRectangle({ x: x, y: yy, width: w, height: h, borderColor: hair, borderWidth: 0.6 });
     };
     var y;
-    /* A continuation page: no second letterhead (the user, 2026-10-31), a
-       hairline across the top where the letterhead's foot would sit. */
+    /* A continuation page: the template's head (AL, the wordmark), the
+       body from the top margin. */
     var newPage = function () {
       pn.page = pdf.addPage([W, H]);
       pages.push(pn.page);
-      y = H - M;
-      rule(y);
-      y -= 14;
+      pn.head();
+      y = H - pn.TOP - 10;   // under the top margin: a heading's capitals stand inside it
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(); return true; } return false; };
     var heading = function (s) { y -= 11; text(s, M, y, 11, reg); y -= 10; };
@@ -579,7 +578,7 @@
     }
 
     // The foot on every page; a preview is a draft over every page.
-    docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL', opts.extraPages ? pages.length + opts.extraPages : 0);
+    docs.letterFoot(pn, pages, q.ref, '', opts.extraPages ? pages.length + opts.extraPages : 0);
     if (opts.draft) pages.forEach(function (pg) { docs.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
     return { page: formPage, boxes: boxes };
   }

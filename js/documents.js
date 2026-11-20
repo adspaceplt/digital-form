@@ -580,32 +580,65 @@
      of Offer and the letters in js/letters.js cannot come out on two
      different sheets of paper. `ctx.page` is the page being drawn; the caller
      owns the cursor. */
-  var W = 595.28, H = 841.89, M = 33.3, R = W - M;
-  /* ---- Which sheet each PDF is drawn on (2026-11-20) -------------------
-     The user: formal documents (contracts, offers, letters) take the
-     letterhead; an admin's working form takes the plain page, its title and
-     INTERNAL USE ONLY at the top, so the letterhead is kept for what leaves
-     the company or binds it. One table names every PDF the portal draws;
-     `own` is a document drawn in a format of its own (the Rate Card, the
-     Social Media Report, a quotation's pages), `seal` the Record of this
-     Document appended to a signed file in the letterhead's type. */
-  var TEMPLATE = {
-    offer: 'letterhead', 'letter.client': 'letterhead', 'letter.hr': 'letterhead', 'letter.supplier': 'letterhead',
-    'hr.offer': 'letterhead', 'hr.contract': 'letterhead', perf: 'letterhead',
-    quotation: 'own', ratecard: 'own', report: 'own', script: 'own', seal: 'seal',
-    'hr.record': 'plain', 'hr.sheet': 'plain', 'hr.onboarding': 'plain', 'hr.kit': 'plain',
-    checklist: 'plain', analytics: 'plain'
+  /* ---- The company's Word templates (2026-11-20) -----------------------
+     The user: "please take note of the header and footer. it should remain
+     in place", then "yes align all to the templates". Every PDF is drawn on
+     one of the four templates in docs/templates/, their page set up as
+     Word's: A4, the top and bottom margins 72pt, the sides 54pt, the head
+     28.8pt under the top edge and the foot 28.8pt over the bottom one. The
+     figures below are measured from the templates rendered in their own
+     fonts (distance from the top edge), never from a guess, and the head
+     and the foot stand at them on every page whatever the page holds.
+       AL          the letterhead: the wordmark; the page count.
+       ALP         internal: the wordmark, FOR INTERNAL USE centred; PRIVATE &
+                   CONFIDENTIAL and the page count.
+       ACL_SIGN    a client letter to be signed: the full letterhead on page
+                   one (registration, address, contact, the monogram), the
+                   wordmark and the monogram after; the verify line and the
+                   page count.
+       ACL_NOSIGN  the same, its verify line saying No signature required.
+     One table names each PDF's template; 'ACL' is either, by whether the
+     document is signed. */
+  var W = 595.28, H = 841.89, M = 54, R = W - M, TOP = 72, BOT = 72;
+  var G = {
+    mark: 16, markAt: 60.2, internalAt: 58.9, countX: 493.75, countAt: 794.9, count: 8, pcAt: 793.0,
+    aclMark: 14, aclMarkAt: 56.3, regAt: 68.1, addrAt: 80.1, contactAt: 92.3, monoAt: 44.3, mono: 20.3,
+    aclCountAt: 794.5, aclCount: 7.5, verifyAt: 798.1, verify: 6,
+    aclBodyAt: 155.1, bodyAt: 81.9,
+    line: 12.5, refLine: 14.35, afterPc: 26.9, block: 25
   };
-  function templateOf(kind) { return TEMPLATE[kind] || 'letterhead'; }
-  var INTERNAL = 'INTERNAL USE ONLY';
+  var TEMPLATE = {
+    offer: 'ACL_SIGN', 'letter.client': 'ACL', 'letter.hr': 'ACL', 'letter.supplier': 'ACL',
+    'hr.offer': 'ACL_NOSIGN', 'hr.contract': 'ACL_SIGN', seal: 'ACL',
+    perf: 'AL', quotation: 'AL', report: 'AL', script: 'AL',
+    ratecard: 'ALP', 'hr.record': 'ALP', 'hr.sheet': 'ALP', 'hr.onboarding': 'ALP', 'hr.kit': 'ALP',
+    checklist: 'ALP', analytics: 'ALP'
+  };
+  function templateOf(kind, signed) {
+    var t = TEMPLATE[kind] || 'AL';
+    return t === 'ACL' ? (signed ? 'ACL_SIGN' : 'ACL_NOSIGN') : t;
+  }
+  var INTERNAL = 'FOR INTERNAL USE';
+  function verifyLine(signed) {
+    return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
+      'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
+  }
+  /* opts: kind (the TEMPLATE key), signed (an ACL document's), title (an
+     ALP form's, drawn on its first page under the head), cont (the pages
+     continue another document's: a sealed copy's Record page). */
   function pen(PDF, fonts, logo, opts) {
     opts = opts || {};
-    var font = fonts.font;
-    /* The paper's three inks (the user, 2026-11-12): text #1a1a1a, never
-       true black; secondary #515151; the fine print (the foot) #a1a1a1. */
-    var ink = PDF.rgb(0.102, 0.102, 0.102), mute = PDF.rgb(0.318, 0.318, 0.318), faint = PDF.rgb(0.631, 0.631, 0.631);
+    var font = fonts.font, med = fonts.med || fonts.bold;
+    var tpl = templateOf(opts.kind, opts.signed);
+    var acl = tpl === 'ACL_SIGN' || tpl === 'ACL_NOSIGN';
+    /* The templates' inks: the text #404040, the ACL wordmark #262626, the
+       fine print (Co. Reg., the verify line) #7f7f7f. */
+    var ink = PDF.rgb(0.251, 0.251, 0.251), mute = PDF.rgb(0.498, 0.498, 0.498), faint = mute;
+    var markInk = PDF.rgb(0.149, 0.149, 0.149);
     var line = PDF.rgb(0.87, 0.89, 0.89);
-    var p = { page: null, W: W, H: H, M: M, R: R, ink: ink, mute: mute, faint: faint, line: line, fonts: fonts, logo: logo };
+    var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, mute: mute, faint: faint, line: line, fonts: fonts, logo: logo };
+    p.plain = tpl === 'ALP';
+    p.signed = tpl === 'ACL_SIGN';
     p.safe = function (s) {
       s = String(s == null ? '' : s);
       return fonts.custom ? s : s.replace(/[^\x20-\x7E -ÿ]/g, '-');
@@ -638,48 +671,77 @@
       if (cur) out.push(cur);
       return out;
     };
-    // The letterhead, in the reference's positions; returns the y under it.
+    var at = function (top) { return H - top; };
+    /* The head, at the template's place on every page. `first` is the
+       document's first page: an ACL letter's carries the full letterhead. */
+    p.frameHead = function (first) {
+      var wm = fonts.mark || fonts.bold;
+      if (!acl) {
+        p.text('ADspace', M, at(G.markAt), G.mark, wm, ink);
+        if (tpl === 'ALP') p.centre(INTERNAL, at(G.internalAt), 8, med, ink);
+        return;
+      }
+      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, markInk);
+      if (logo) {
+        var mw = logo.width * (G.mono / logo.height);
+        p.page.drawImage(logo, { x: R - mw, y: at(G.monoAt) - G.mono, width: mw, height: G.mono });
+      }
+      if (!first) return;
+      if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, at(G.regAt), 9, font, mute);
+      String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s, i) {
+        p.text(s, M, at(G.addrAt + i * G.line), 11, font, ink);
+      });
+      [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s, i) {
+        p.right(s, R, at(G.contactAt + i * G.line), 11, font, ink);
+      });
+    };
+    /* The head on the page being drawn; answers the first baseline under
+       it: the top margin's, or on an ACL letter's first page the line
+       PRIVATE & CONFIDENTIAL stands on. An ALP form's title opens its
+       first page, under a hairline. */
+    var headed = 0;
     p.head = function () {
-      /* The letterhead stands on the side margin (2026-11-16, the user:
-         the top read wider than the sides): the wordmark's capitals start
-         M down, everything under it keeps its place below it. */
-      var D = 58 - (M + 10);
-      var T = function (top) { return H - (top - D); };
-      p.text('ADspace', M, T(58), 14, fonts.mark || fonts.bold);
-      if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, T(70), 9, font, mute);
-      var ly = T(83);
-      String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s) { p.text(s, M, ly, 11); ly -= 12.5; });
-      if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); p.page.drawImage(logo, { x: R - mw, y: H - M - mh, width: mw, height: mh }); }
-      var ry = T(92);
-      [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { p.right(s, R, ry, 11); ry -= 12.5; });
-      return Math.min(ly, ry) - 10;
+      var first = !headed && !opts.cont;
+      headed++;
+      p.frameHead(first);
+      if (acl && first) return at(G.aclBodyAt);
+      var y0 = at(G.bodyAt);
+      if (tpl === 'ALP' && first && opts.title) {
+        var lines = p.wrap(opts.title, R - M, 15, med);
+        y0 -= 3;
+        lines.forEach(function (ln, i) { p.text(ln, M, y0 - i * 19, 15, med); });
+        var under = y0 - (lines.length - 1) * 19 - 12;
+        p.rule(under);
+        return under - 18;
+      }
+      return y0;
     };
-    /* The plain page (`templateOf(kind)` plain): no wordmark, monogram or
-       registration; the title in Slate Medium on the letterhead's first
-       line, INTERNAL USE ONLY in the foot's faint ink at the right edge on
-       the same baseline, a hairline under them. On every page. */
-    p.plainHead = function (title) {
-      /* Untracked: a tracked run reads I N T E R N A L to a search or a
-         copy, so the mark stays one phrase. */
-      var size = 15, med = fonts.med || fonts.bold, reg = fonts.bold || font, mz = 7.5;
-      var markW = p.width(INTERNAL, mz, reg);
-      var y0 = H - M - 12;
-      var lines = p.wrap(title || '', R - M - markW - 24, size, med);
-      lines.forEach(function (ln, i) { p.text(ln, M, y0 - i * 19, size, med); });
-      p.text(INTERNAL, R - markW, y0, mz, reg, faint);
-      var under = y0 - (lines.length - 1) * 19 - 12;
-      p.rule(under);
-      return under - 18;
+    p.plainHead = function () { return p.head(); };
+    /* The foot, at the template's place on every page. */
+    p.foot = function (i, n) {
+      var count = 'Page ' + (i + 1) + ' of ' + n;
+      if (acl) {
+        p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, ink);
+        p.centre(verifyLine(tpl === 'ACL_SIGN'), at(G.verifyAt), G.verify, font, mute);
+        return;
+      }
+      p.text(count, G.countX, at(G.countAt), G.count, font, ink);
+      if (tpl === 'ALP') p.text('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, ink);
     };
-    if (opts.kind && templateOf(opts.kind) === 'plain') {
-      p.plain = true;
-      p.head = function () { return p.plainHead(opts.title); };
-    }
-    /* The page count bottom right. The monogram belongs to the letterhead at
-       the top of the page and nowhere else: the foot carried a second one,
-       which ADspace has dropped (the user, 2026-09-25). */
-    p.footMark = function (i, n, size) {
-      p.right('Page ' + (i + 1) + ' of ' + n, R, M, size || 7.5, font, faint);
+    p.footMark = function (i, n) { p.foot(i, n); };
+    /* An ACL letter's opening, as the template sets it: PRIVATE &
+       CONFIDENTIAL in Slate Medium, then Our Ref and Date with their colons
+       in one column, each value wrapping under itself. */
+    p.pc = function (yy) { p.text('PRIVATE & CONFIDENTIAL', M, yy, 11, med); return yy - G.afterPc; };
+    p.ref = function (yy, label, value, f) {
+      var vx = M + 72 + p.width(': ', 11), lines = [];
+      String(value == null ? '' : value).split(/\r?\n/).forEach(function (s) {
+        if (s.trim()) lines = lines.concat(p.wrap(s.trim(), R - vx, 11, f));
+      });
+      if (!lines.length) return yy;
+      p.text(label, M, yy, 11); p.text(':', M + 72, yy, 11);
+      lines.forEach(function (ln, i) { p.text(ln, vx, yy, 11, f); yy -= i < lines.length - 1 ? G.line : G.refLine; });
+      return yy;
     };
     return p;
   }
@@ -709,7 +771,9 @@
      (js/quotepdf.js, which /quote/ draws without letters.js). It answers the
      pen, the pages and where the closing ended; the caller draws the foot
      (`letterFoot`). */
-  var LH = 14.5, PARA = 14, BODY = 11, FLOOR = 76;
+  /* The template's body: Slate Book 11pt on single lines (12.5pt) with a
+     blank line between paragraphs. */
+  var LH = G.line, PARA = G.line, BODY = 11, FLOOR = BOT + 4;
   function paragraphs(s) {
     return String(s || '').replace(/\r/g, '').split(/\n\s*\n/).map(function (p) {
       return p.replace(/\s*\n\s*/g, ' ').trim();
@@ -720,12 +784,18 @@
       return l === 'en' || String((doc.body || {})[l] || '').trim();
     });
   }
+  /* A letter's template key: the caller's (a quotation's cover is the
+     quotation's), else the family's. */
+  function letterKind(doc) {
+    if (doc.pdfKind) return doc.pdfKind;
+    return doc.family === 'hr' ? 'letter.hr' : doc.family === 'supplier' ? 'letter.supplier' : 'letter.client';
+  }
   function letterPages(pdf, PDF, fonts, logo, doc) {
     var langs = letterLangs(doc);
     var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-    var pn = pen(PDF, fonts, logo);
+    var pn = pen(PDF, fonts, logo, { kind: letterKind(doc), signed: Boolean(doc.signed) });
     var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
-    var text = pn.text, right = pn.right, rule = pn.rule, wrap = pn.wrap, centre = pn.centre;
+    var text = pn.text, rule = pn.rule, wrap = pn.wrap;
     var pages = [], y;
     var head = function () { y = pn.head(); };
     var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); head(); };
@@ -746,35 +816,26 @@
     var rc = doc.recipient || {};
     var hr = doc.family === 'hr';
 
-    text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
-
-    // Our Ref / Date / To / Attn, the colons in one column, every value
-    // wrapping to the column it started in.
-    var REFX = M + 78;
-    var ref = function (label, value, f) {
-      var lines = [];
-      String(value || '').split(/\r?\n/).forEach(function (s) {
-        if (s.trim()) lines = lines.concat(wrap(s.trim(), R - REFX, BODY, f));
-      });
-      if (!lines.length) return;
-      need(LH * lines.length);
-      text(label, M, y, BODY);
-      text(':', M + 72, y, BODY);
-      lines.forEach(function (ln) { text(ln, REFX, y, BODY, f); y -= LH; });
-    };
-    ref('Our Ref', doc.serial);
-    ref('Date', letterDate(doc.issued_at));
-    if (hr) {
-      /* A colleague's letter names them, their position and the staff code
-         the serial is built from beside the identity number they gave. */
-      ref('To', [rc.name, rc.role, [rc.staff_code, rc.ic].filter(Boolean).join(' / ')].filter(Boolean).join('\n'));
-      y -= 4;
-      line('TO BE OPENED BY ADDRESSEE ONLY', bold);
-    } else {
-      ref('To', [String(rc.name || '').toUpperCase(), rc.address].filter(Boolean).join('\n'));
-      ref('Attn', rc.attn ? rc.attn + (rc.attn_role ? ', ' + rc.attn_role : '') : '');
-    }
-    y -= 12;
+    /* The template's opening: PRIVATE & CONFIDENTIAL, Our Ref and Date,
+       then the recipient's name (Slate Regular) over the lines under it
+       (Slate Book), each block a blank line from the next. */
+    y = pn.pc(y);
+    y = pn.ref(y, 'Our Ref', doc.serial);
+    y = pn.ref(y, 'Date', letterDate(doc.issued_at));
+    y -= pn.G.afterPc - pn.G.refLine;
+    var to = [];
+    String(hr ? rc.name || '' : String(rc.name || '').toUpperCase()).split(/\r?\n/).forEach(function (s) {
+      if (s.trim()) to = to.concat(wrap(s.trim(), R - M, BODY, bold).map(function (l) { return [l, bold]; }));
+    });
+    var under = hr
+      ? [rc.role, [rc.staff_code, rc.ic].filter(Boolean).join(' / ')]
+      : String(rc.address || '').split(/\r?\n/).concat(rc.attn ? ['Attn: ' + rc.attn + (rc.attn_role ? ', ' + rc.attn_role : '')] : []);
+    under.forEach(function (s) {
+      if (String(s || '').trim()) to = to.concat(wrap(String(s).trim(), R - M, BODY).map(function (l) { return [l, font]; }));
+    });
+    to.forEach(function (l) { line(l[0], l[1]); });
+    if (hr) { y -= LH; line('TO BE OPENED BY ADDRESSEE ONLY', med); }
+    y -= LH;
 
     if (String(doc.title || '').trim()) {
       wrap(String(doc.title).toUpperCase(), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
@@ -787,19 +848,16 @@
        Chinese face and breaks by glyph. */
     var body = doc.body || {};
     langs.forEach(function (l, i) {
-      /* The rule sits midway between the blocks it divides, measured on
-         the ink: the last line's descent above it and the next line's
-         glyph height below it. Hung 18pt over the next baseline it read
-         as 27 above and 10 below. After the paragraph gap y is one line
-         and a gap under the last baseline; the rule goes 10 up from
-         there and the next baseline 24 down from the rule. */
-      if (i) { need(38); y += 10; rule(y); y -= 24; }
+      /* The rule sits midway between the blocks it divides: after the
+         paragraph's blank line y is a line under the last baseline. */
+      if (i) { need(38); y += 4; rule(y); y -= 20; }
       paragraphs(body[l]).forEach(function (p) { l === 'zh' ? paraCjk(p) : para(p); });
     });
 
-    /* The closing, the company, and for a signed kind a space to sign over
-       the name and the designation. Reserved together: a signature on a
-       page of its own is a signature to nothing. */
+    /* The closing, as the template signs off: Yours sincerely, then
+       ADSPACE PLT in Slate Medium, and for a signed kind a space to sign
+       over the name and the designation. Reserved together: a signature on
+       a page of its own is a signature to nothing. */
     var sig = doc.signatory || {};
     /* Unsigned, the name and designation follow the company with no space
        to sign (the Issue sheet's To be signed tick, 2026-10-01). */
@@ -807,7 +865,7 @@
     var closeH = LH * 2 + (doc.signed ? 60 : 0) + (named ? LH * 2 : 0);
     need(closeH);
     if (String(doc.closing || '').trim()) { text(doc.closing, M, y, BODY); y -= LH; }
-    text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
+    text(ORG.name || 'ADSPACE PLT', M, y, BODY, med); y -= LH;
     if (doc.signed) y -= 60;
     else if (named) y -= LH * 0.5;
     if (named) {
@@ -817,32 +875,16 @@
 
     return { pn: pn, pages: pages, y: y };
   }
-  /* One row at the foot of every page (the user, 2026-10-06): the reference
-     on the left, the page count on the right, the given line between them,
-     centred on the page where it clears both, else in the room they leave.
-     7.5pt; where the longest line cannot clear both, 7pt on every page. */
-  /* `total` and `from` count pages drawn apart from these: a sealed copy's
-     signed pages read "of n" with its Record page counted, and the Record
-     page reads its own place (SIGNED DOCUMENT SEAL, 2026-11-17). */
+  /* The template's foot on every page: the page count, and the verify line
+     or PRIVATE & CONFIDENTIAL where the template carries one
+     (`pen().foot`). `total` and `from` count pages drawn apart from these:
+     a sealed copy's signed pages read "of n" with its Record page counted,
+     and the Record page reads its own place (SIGNED DOCUMENT SEAL,
+     2026-11-17). The reference and the words once passed here are the
+     body's: the templates' foot holds neither. */
   function letterFoot(pn, pages, serial, footWord, total, from) {
-    var font = pn.fonts.font, M = pn.M, R = pn.R, W = pn.W, n = total || pages.length, at = from || 0;
-    var GAP = 12, lineW = R - M;
-    var rowFits = function (z) {
-      return font.widthOfTextAtSize(String(serial || ''), z) + font.widthOfTextAtSize(footWord, z) +
-        font.widthOfTextAtSize('Page ' + n + ' of ' + n, z) + GAP * 2 <= lineW;
-    };
-    var FZ = rowFits(7.5) ? 7.5 : 7;
-    var refEnd = M + font.widthOfTextAtSize(String(serial || ''), FZ);
-    var sentW = font.widthOfTextAtSize(footWord, FZ);
-    pages.forEach(function (pg, i) {
-      pn.page = pg;
-      pn.footMark(i + at, n, FZ);
-      pn.text(serial, M, M, FZ, font, pn.faint);
-      var pageStart = R - font.widthOfTextAtSize('Page ' + (i + at + 1) + ' of ' + n, FZ);
-      var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
-      x = Math.min(x, pageStart - GAP - sentW);
-      pn.text(footWord, x, M, FZ, font, pn.faint);
-    });
+    var n = total || pages.length, at = from || 0;
+    pages.forEach(function (pg, i) { pn.page = pg; pn.foot(i + at, n); });
   }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function letterDate(s) {
@@ -930,17 +972,18 @@
       var font = fonts.font, bold = fonts.bold;
       /* The pen holds the primitives and the letterhead; this letter keeps
          its own cursor and tells the pen which page it is on. */
-      var pn = pen(PDF, fonts, logo);
-      var ink = pn.ink, mute = pn.mute;
+      var pn = pen(PDF, fonts, logo, { kind: 'offer', signed: true });
+      var ink = pn.ink, mute = pn.mute, med = fonts.med || bold;
       var text = pn.text, width = pn.width, right = pn.right, rule = pn.rule, wrap = pn.wrap;
+      var M = pn.M, R = pn.R;
       var pages = [];
       var page, y;
-      var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); y = H - M - 8; };
-      var need = function (h) { if (y - h < 64) newPage(); };
-      newPage();
-
-      // The letterhead, on every page; the page count bottom right. y counts down from the top of the page.
+      /* The template's head on every page (the full letterhead on the
+         first), the body from under it. y counts down from the top. */
       var head = function () { y = pn.head(); };
+      var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); head(); };
+      var need = function (h) { if (y - h < FLOOR) newPage(); };
+      newPage();
       /* Every page names the letter it belongs to, and every page but the one
          that is signed carries a line for the client's initials.
 
@@ -950,23 +993,20 @@
          page is the ordinary commercial answer, and the reference in the foot
          means a page lifted out of this letter still says which letter it is. */
       var foot = function (i, n) {
-        pn.footMark(i, n);
-        text(doc.number, M, M, 7.5, font, mute);
+        pn.foot(i, n);
         /* The initials go where a hand rests to write them, which is the same
-           side of the page the signature is on. They sit a row above the page
-           number rather than beside it: the two are the only marks in the
-           right of the foot and a collision there is a page nobody can sign. */
+           side of the page the signature is on. They sit in the bottom
+           margin over the template's page count, clear of it and of the
+           body above. */
         if (i < n - 1) {
-          rule(56, R - 96, R);
-          right('Client initials', R, 45, 7.5, font, mute);
+          rule(67, R - 96, R);
+          right('Client initials', R, 57, 7.5, font, mute);
         }
       };
-      var LH = 14.5, PARA = 14, BODY = 11;
       var para = function (s, f, size) {
         wrap(s, R - M, size || BODY, f).forEach(function (ln) { need(LH); text(ln, M, y, size || BODY, f); y -= LH; });
         y -= PARA;
       };
-      head();
 
       var b = doc.bill_to || {};
       /* One name for the whole letter. `To`, the opening paragraph and the
@@ -987,35 +1027,23 @@
          rate says so under its name. */
       var taxed = MON.sstOf(doc.lines || [], lineTax === false ? 0 :
         price.sstPct != null ? price.sstPct : MON.setting('sst_pct', dayOf(doc.issued_at)));
-      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
-
-      // Our Ref / Date / To / Attn, the colons in one column. The contact is
-      // addressed with their salutation where one is held (2026-10-14).
+      /* The template's opening: PRIVATE & CONFIDENTIAL, Our Ref and Date,
+         then the client's registered name (Slate Regular) over its Attn
+         line. The contact is addressed with their salutation where one is
+         held (2026-10-14). */
       var who = ADspaceWords.person(b.contact_salutation, b.contact);
-      var refs = [
-        ['Our Ref', doc.number], ['Date', letterDate(doc.issued_at)],
-        ['To', legalName.toUpperCase()],
-        ['Attn', b.contact ? who + (b.contact_role ? ', ' + b.contact_role : '') : '']
-      ].filter(function (f) { return f[1]; });
-      /* The value wraps to the column it started in. A registered name or an
-         Attn line carrying a full job title is longer than the page is wide,
-         and an unwrapped one ran off the right edge and was simply gone:
-         "Corporate Communications and B". The label and its colon stay on the
-         first line, because they belong to the whole value and not to its
-         first line. */
-      var REFX = M + 78;
-      refs.forEach(function (f) {
-        text(f[0], M, y, BODY);
-        text(':', M + 72, y, BODY);
-        wrap(f[1], R - REFX, BODY).forEach(function (ln, i) {
-          text(ln, REFX, y, BODY);
-          if (i < 99) y -= LH;
-        });
-      });
-      y -= 12;
+      y = pn.pc(y);
+      y = pn.ref(y, 'Our Ref', doc.number);
+      y = pn.ref(y, 'Date', letterDate(doc.issued_at));
+      y -= pn.G.afterPc - pn.G.refLine;
+      /* The name wraps to the column: a registered name longer than the
+         page is wide ran off the right edge and was simply gone. */
+      wrap(legalName.toUpperCase(), R - M, BODY, bold).forEach(function (ln) { text(ln, M, y, BODY, bold); y -= LH; });
+      if (b.contact) wrap('Attn: ' + who + (b.contact_role ? ', ' + b.contact_role : ''), R - M, BODY).forEach(function (ln) { text(ln, M, y, BODY); y -= LH; });
+      y -= LH;
 
-      text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
-      text('Dear ' + (who || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
+      text(String(k.title).toUpperCase(), M, y, BODY, med); y -= LH * 2;
+      text('Dear ' + (who || 'Sir/Madam') + ',', M, y, BODY); y -= LH * 2;
 
       // The offer: the services and fees, the total, the terms, the acceptance.
       para('Thank you for your interest in our marketing services. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
@@ -1059,7 +1087,7 @@
         var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
-        if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
+        if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < FLOOR) { newPage(); thead(); }
         text(names[0] || '', cols.desc, y, 10, bold);
         // A letter priced line by line prints the rate the client is billed,
         // term adjustment included, because that is the figure they are
@@ -1202,7 +1230,7 @@
       var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
       need(closeH);
       text('Yours sincerely,', M, y, BODY); y -= LH;
-      text('For and on behalf of ' + (ORG.name || 'ADSPACE PLT'), M, y, BODY, bold); y -= LH;
+      text(ORG.name || 'ADSPACE PLT', M, y, BODY, med); y -= LH;
       /* The name of the person who issued it, and nothing else. It is never a
          permission: issue_letter refuses a team row named for a role, so
          "Superadmin" cannot reach a client's letterhead. */
@@ -1681,7 +1709,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
+    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };

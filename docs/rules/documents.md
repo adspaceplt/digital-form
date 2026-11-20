@@ -287,10 +287,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     reference reading PREVIEW (a reissue keeps its own), every page under
     DRAFT (INTERNAL USE ONLY) (the report's watermark, one copy:
     `ADspaceDocs.watermark`); a new tab, else a download.
-  - A letter's foot is one row (the user, 2026-10-06): the reference, the
-    verify line (`ADSPACE_ORG.verifyUrl`, digital.adspace.me/verify, on
-    every PDF that names it), the page count; 7.5pt, 7 where the longest
-    line cannot clear both.
+  - A letter's foot is its template's (ACL_SIGN or ACL_NOSIGN, by To be
+    signed; DESIGN.md, Print; 2026-11-20): the verify line centred
+    (`ADSPACE_ORG.verifyUrl`, go.adspace.me/verify, which redirects to
+    /verify/) and the page count; the reference stands in the body (Our
+    Ref), never the foot.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit: Document types

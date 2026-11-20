@@ -943,10 +943,10 @@
         docs.meta(pdf, 'ADspace Analytics Analysis v' + v.version, 'Analytics Analysis');
         return docs.embedFonts(pdf, PDF, { cjk: false });
       }).then(function (fonts) {
-        /* The plain page (an internal form: its title and INTERNAL USE ONLY
-           at the top, the letterhead's margins and foot; ADspaceDocs.TEMPLATE). */
+        /* The internal template (ALP, ADspaceDocs.TEMPLATE): its head and
+           foot, the title opening the first page. */
         var pn = docs.pen(PDF, fonts, null, { kind: 'analytics', title: 'Analytics Analysis' });
-        var W = pn.W, H = pn.H, M = pn.M, FULL = W - 2 * M, FLOOR = 64;
+        var W = pn.W, H = pn.H, M = pn.M, FULL = W - 2 * M, FLOOR = pn.BOT + 4;
         var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090), mute = PDF.rgb(0.4, 0.4, 0.4);
         var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold;
         var safe = function (s) { s = String(s == null ? '' : s).replace(/→/g, '>'); return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-'); };

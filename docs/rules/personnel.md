@@ -55,5 +55,5 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   proved in fifteen minutes (`code-needed` with the sign-in address, the
   page sending the code and asking it back), and files each download
   `team.changed` under whom it is about. Drawn in the browser on the
-  plain Internal use only page (`ADspaceDocs.templateOf`) and never stored
+  internal template (ALP, FOR INTERNAL USE; `ADspaceDocs.templateOf`) and never stored
   (`tests/hrforms.js`).

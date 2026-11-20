@@ -46,12 +46,17 @@
   var W = 595.28, H = 841.89;
   var PHI = 1.6180339887;
   var S = function (k) { return 10 * Math.pow(PHI, k / 2); };
-  var M = S(5);                 // 33.3pt on every side
-  var R = W - M, CW = R - M;    // the text column: 528.7pt
-  var HEAD_Y = H - M - 11.6;    // the wordmark's baseline: its cap height under the top margin
-  var TOP = HEAD_Y - S(5);      // the page title's baseline, one margin under the head
-  var FOOT_Y = M;               // PRIVATE & CONFIDENTIAL and the page count, on the margin
-  var FLOOR = M + S(1) + S(4);  // nothing draws below this; the foot is under it
+  /* 2026-11-20, the company's Word templates (the user: "please take note
+     of the header and footer. it should remain in place", "yes align all
+     to the templates"): the page is the letterhead template's (AL,
+     ADspaceDocs.TEMPLATE), its 54pt sides and 72pt top and bottom, its head
+     (the wordmark) and its foot (the page count) drawn by the pen; the type
+     and the spaces keep the scale below. */
+  var M = 54;                   // the template's sides
+  var R = W - M, CW = R - M;    // the text column: 487.3pt
+  var HEAD_Y = H - 60.2;        // the template's wordmark baseline
+  var TOP = H - 72 - S(3) * 0.72; // the page title's baseline: its capitals under the top margin
+  var FLOOR = 76;               // nothing draws below the bottom margin (72pt)
   // The type roles, each a step of the scale.
   var TY = {
     cover: S(5), coverSub: S(3), coverMeta: S(1),
@@ -2313,12 +2318,8 @@
     }
 
     // ------------------------------------------------------- Heads and feet
-    /* The rate card's furniture on every page, the cover included, on the
-       new margin: the Optima wordmark at S(2) top left and the client's name
-       in small capitals on the right margin; PRIVATE & CONFIDENTIAL at the
-       foot on the margin's line, the page count on the right. The line under
-       it naming the draft or the version is gone (the user, 2026-10-01): it
-       lifted the foot off the margin and the page read top heavy. */
+    /* The letterhead template's head and foot (AL) on every page, the cover
+       included (2026-11-20). */
     /* A report not yet confirmed carries its stage across every page (the
        user, 2026-10-02): DRAFT, or PENDING REVIEW once submitted, each
        "(INTERNAL USE ONLY)", in light text repeated on the diagonal over the
@@ -2331,32 +2332,27 @@
        (`ADspaceDocs.watermark`, which a letter's Preview carries too). */
     var watermark = function (page) { window.ADspaceDocs.watermark(page, WM, book); };
     var n = pages.length;
-    var label = String(rep.client_name || '').toUpperCase();
-    /* The head's mark: ADspace's wordmark, or for a partner's client the
-       partner's landscape logo (2026-10-06), its top on the top margin and
-       its foot under the wordmark's baseline, no wider than two fifths of
-       the line; a partner with no logo held is named in the wordmark's face. */
+    var pn = window.ADspaceDocs.pen(PDF, fonts, null, { kind: 'report' });
+    /* The head's mark: the template's wordmark, or for a partner's client
+       the partner's landscape logo in its place (white label, 2026-10-06),
+       its top on the wordmark's capitals and no wider than two fifths of
+       the line; a partner with no logo held is named in the wordmark's
+       face. */
     var pt = rep.partner || null, ptImg = pt && mdl.partnerLogo;
     var ptH = 0, ptW = 0;
     if (ptImg) {
       ptH = 15; ptW = ptH * ptImg.width / ptImg.height;
       if (ptW > CW * 0.4) { ptW = CW * 0.4; ptH = ptW * ptImg.height / ptImg.width; }
     }
-    var markWord = pt && !ptImg ? String(pt.name || '') : 'ADspace';
-    var markW = ptImg ? ptW : width(markWord, S(2), mark);
     var zhOn = ZH;
     pages.forEach(function (p, i) {
       pg = p;
+      pn.page = p.page;
       ZH = false;   // the head and foot are the template's, English throughout
       if (ptImg) p.page.drawImage(ptImg, { x: M, y: HEAD_Y + 11.6 - ptH, width: ptW, height: ptH });
-      else text(markWord, M, HEAD_Y, S(2), mark, INK);
-      if (label) {
-        var lab = clip(label, CW - markW - S(4), TY.small, med);
-        var lw = sh.lineWidth(sh.linesOf(lab, 1e6, TY.small, med)[0] || [], TY.small);
-        tline(lab, R - lw, HEAD_Y + 0.9, TY.small, med, INK);
-      }
-      text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
-      right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
+      else if (pt) text(String(pt.name || ''), M, HEAD_Y, 16, mark, INK);
+      else pn.frameHead(false);
+      pn.foot(i, n);
       if (WM) watermark(p.page);
     });
     ZH = zhOn;

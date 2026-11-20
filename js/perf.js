@@ -1787,10 +1787,10 @@
         D.meta(pdf, recs.length === 1 && recs[0].serial ? recs[0].serial : name, 'Performance Review');
         return Promise.all([D.embedFonts(pdf, PDF), D.embedLogo(pdf)]);
       }).then(function (a) {
-        var p = D.pen(PDF, a[0], a[1]);
+        var p = D.pen(PDF, a[0], a[1], { kind: 'perf' });
         recs.forEach(function (r) { drawRecord(pdf, p, r); });
         var pages = pdf.getPages();
-        pages.forEach(function (pg, i) { p.page = pg; p.footMark(i, pages.length); });
+        pages.forEach(function (pg, i) { p.page = pg; p.foot(i, pages.length); });
         return pdf.save();
       }).then(function (bytes) {
         D.save(new Blob([bytes], { type: 'application/pdf' }), name, tab);
@@ -1821,8 +1821,9 @@
      shaded title row, the title row and the grid in one grey (#f2f2f2);
      one bold figure (the final score). Page one is the result, page two
      the follow-up and the record of this copy, by design rather than by
-     spill. The foot is PRIVATE & CONFIDENTIAL and the page count on one
-     line, with the reference and who downloaded it above. */
+     spill. The head and the foot are the letterhead template's (AL,
+     2026-11-20); the reference and who downloaded it stand in the bottom
+     margin over the foot. */
   var RPHI = 1.6180339887;
   var RS = function (k) { return 10 * Math.pow(RPHI, k / 2); };
   function drawRecord(pdf, p, r) {
@@ -1835,19 +1836,19 @@
     var SP = { tight: RS(-2), line: RS(-1), under: RS(1), block: RS(4) };
     var LH = RS(1);                          // a line of body or cell text
     var PADX = RS(-2), ROW = RS(3);          // a cell's side padding, a row's least height
-    var FOOT = 30;                           // the letterhead's foot line (the page count)
-    var FLOOR = FOOT + RS(1) + RS(4);        // nothing draws below this
+    var STAMP = p.BOT - 14;                  // the reference line, in the bottom margin over the template's foot
+    var FLOOR = p.BOT + 4;                   // nothing draws below the bottom margin
     var y, pageNo = 0;
     var page = function (first) {
       p.page = pdf.addPage([p.W, p.H]);
       pageNo++;
-      y = first ? p.head() - SP.under : p.H - M - SP.block;
+      /* The template's head (AL) on every page; its foot is drawn once the
+         pages are counted. */
+      y = first ? p.head() - SP.under : (p.head(), p.H - p.TOP);
       var st0 = r.__stamp;
-      /* Slate Medium, as every portal PDF's foot is (the Reports PDF's). */
-      p.text('PRIVATE & CONFIDENTIAL', M, FOOT, TY.small, med, INK);
       p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
         (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
-        M, FOOT + RS(1), TY.small, book, SOFT);
+        M, STAMP, TY.small, book, SOFT);
     };
     var need = function (h) { if (y - h < FLOOR) page(false); };
     var rect = function (x, yy, w, h, fill) {
@@ -2040,7 +2041,7 @@
       ['Step', 'Name', 'Email', 'Date and time'], rows);
     y -= SP.line;
     para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
-      (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'digital.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
+      (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'go.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
   }
 
   // ---- Performance rewards (2026-09-28) ------------------------------------------------
