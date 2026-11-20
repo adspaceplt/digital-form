@@ -2436,9 +2436,10 @@ learned about an area is written in its file, never here.
     Supabase's own sign-in emails from the same address, set in its SMTP
     settings), and replies to a company mailbox, never a
     colleague's own address (the user, 2026-11-17): General
-    advertise@ (clients, careers, invitations, all else), Accounts payable
-    ap@ (suppliers, creators), Finance finance@ (invoices and reminders),
-    e-Invoice einvoice@ (e-invoice submissions alone); the four are
+    advertise@ (clients, invitations to colleagues, all else), HR hr@
+    (careers: every email to a candidate; the user, 2026-11-20), Accounts
+    payable ap@ (suppliers, creators), Finance finance@ (invoices and
+    reminders), e-Invoice einvoice@ (e-invoice submissions alone); the five are
     Settings, Messages: Reply-to mailboxes (`mail_boxes`,
     `mail_boxes_set`, `team.settings`, filed `team.changed` under Reply-to
     mailboxes), the pages reading them through `mail_senders_read`

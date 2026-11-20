@@ -786,10 +786,11 @@
   }
 
   /* ---- Reply-to mailboxes (2026-11-17) ---------------------------------
-     The four company mailboxes; each section's sender replies to one of
-     them (Clients, Careers and invitations General; Suppliers and Creators
-     Accounts payable; invoices and reminders Finance). */
-  var BOX_NOTE = { general: 'Replies to client, careers and invitation emails, and all other enquiries.',
+     The five company mailboxes; each section's sender replies to one of
+     them (Clients and invitations General; Careers HR, 2026-11-20;
+     Suppliers and Creators Accounts payable; invoices and reminders
+     Finance). */
+  var BOX_NOTE = { general: 'Replies to client and invitation emails, and all other enquiries.', hr: 'Replies to emails sent to candidates.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
     einvoice: 'Receives e-Invoice submissions only.' };
   function openMailboxes() {

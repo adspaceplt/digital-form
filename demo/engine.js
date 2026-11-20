@@ -13638,13 +13638,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
     function mailBoxes() {
       DB.mail_boxes = DB.mail_boxes || [{ key: 'general', label: 'General', address: 'advertise@adspacestudios.com' },
+        { key: 'hr', label: 'HR', address: 'hr@adspacestudios.com' },
         { key: 'payables', label: 'Accounts payable', address: 'ap@adspacestudios.com' }, { key: 'finance', label: 'Finance', address: 'finance@adspacestudios.com' },
         { key: 'einvoice', label: 'e-Invoice', address: 'einvoice@adspacestudios.com' }];
       return DB.mail_boxes;
     }
     function mailSendersFull() {
       var box = {}; mailBoxes().forEach(function (b) { box[b.key] = b.address; });
-      var S = { clients: ['ADspace', 'general'], suppliers: ['ADspace', 'payables'], creators: ['ADspace', 'payables'], careers: ['ADspace', 'general'],
+      var S = { clients: ['ADspace', 'general'], suppliers: ['ADspace', 'payables'], creators: ['ADspace', 'payables'], careers: ['ADspace', 'hr'],
         finance: ['ADspace Finance', 'finance'], team: ['ADspace Digital Portal', 'general'] }, o = {};
       Object.keys(S).forEach(function (k) { o[k] = { from: S[k][0] + ' <portal@sc.adspace.me>', reply_to: box[S[k][1]] }; });
       return o;
@@ -15305,12 +15306,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var hDayEnd = function (iso, n) { var C = window.ADspaceClock; return C.at(C.addDays(C.day(iso), n), '18:00').toISOString(); };
       var hTell = function (c, kind, title, body) {
-        var to = {};
-        DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).forEach(function (p) { to[p.team_member_id] = 1; });
-        (DB.team_members || []).filter(function (t) { return t.active !== false && !t.removed_at && !t.system &&
-          (t.is_admin || ['work', 'manage'].indexOf(((t.access || {})['team.hiring']) || '') > -1); }).forEach(function (t) { to[t.id] = 1; });
-        Object.keys(to).forEach(function (id) {
-          (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: id, kind: kind, title: title, body: body,
+        DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).forEach(function (p) {
+          (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: p.team_member_id, kind: kind, title: title, body: body,
             link: 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' + c.id, created_at: new Date().toISOString(), read_at: null });
         });
       };

@@ -17,17 +17,17 @@
 --   * `hiring_invite` and `hiring_decide` (Keep in talent pool, Not proceed)
 --     cancel a confirmed interview not yet held, as they cancel an open one;
 --     the page takes its Google Meet off first and tells the candidate.
---   * An Employment Offer or Contract past its reply-by is told to the
---     Owners and the Hiring part once (`hiring_docs_expire`, pg_cron
---     `hiring-docs-expire`, every fifteen minutes; `expired_told_at`), and
---     the candidate is emailed (`hiring-mail` `drain`, woken by
---     `hiring_mail_kick` with the wake secret; `hiring_expire_mail_claim`,
---     `hiring_expire_mail_done`, the service role's; `expire_mail`). An offer
---     declined is told the same way, with the next step.
+--   * An Employment Offer or Contract past its reply-by is filed once
+--     (`hiring_docs_expire`, pg_cron `hiring-docs-expire`, every fifteen
+--     minutes; `expired_told_at`) and the candidate emailed (`hiring-mail`
+--     `drain`, woken by `hiring_mail_kick` with the wake secret;
+--     `hiring_expire_mail_claim`, `hiring_expire_mail_done`, the service
+--     role's; `expire_mail`). No notice to colleagues (the user).
+--   * Careers replies go to a fifth mailbox, HR (hr@adspacestudios.com,
+--     `mail_boxes`, Settings, Messages: Reply-to mailboxes); the careers
+--     sender points at it; `mail_senders_read` and `mail_boxes_set` list it.
 --   * `hiring_mail_prepare`: a cancellation is no longer refused for a
 --     replaced invitation sent after it.
---   * `hiring_tell`: every candidate notice reaches the Hiring part's
---     holders as well as the Owners.
 --   * Make colleague carries the confirmed contract's salary into Personnel
 --     (trigger `hiring_candidates_pay_to_personnel`, never shown or filed as
 --     a figure; a salary already set is left alone).
@@ -41,12 +41,14 @@
 -- ROLLBACK: unschedule `hiring-docs-expire`; drop `hiring_docs_expire`,
 -- `hiring_mail_kick`, `hiring_expire_mail_claim`, `hiring_expire_mail_done`,
 -- `hiring_day_end`, the trigger and its function; run `hiring_reply_by`
--- from INTERVIEW REPLY-BY, `hiring_doc_send`, `hiring_doc_send_back` and
--- `careers_doc_answer` from HIRING OFFERS AND CONTRACTS, `hiring_invite` and
--- `hiring_tell` from HIRING: INTERVIEWS, `hiring_doc_mail_prepare`, `hiring_mail_prepare`,
+-- from INTERVIEW REPLY-BY, `hiring_doc_send` and `hiring_doc_send_back`
+-- from HIRING OFFERS AND CONTRACTS, `hiring_invite` from HIRING:
+-- INTERVIEWS, `hiring_doc_mail_prepare`, `hiring_mail_prepare`,
 -- `hiring_decide` and `careers_read` from HIRING: CONFIRMED AND CANCELLED
--- EMAILS again. The Welcome Kit's words are the team's to edit back. The
--- columns may stay.
+-- EMAILS, and `mail_senders_read` and `mail_boxes_set` from EVERY EMAIL
+-- IN MESSAGES again; point the careers sender back at `general`, delete
+-- the `hr` box and restore the four-key check. The Welcome Kit's words are
+-- the team's to edit back. The columns may stay.
 -- ===========================================================================
 
 /* The end of a working reply: 6:00pm Malaysia time, n days after a moment's day. */
@@ -55,6 +57,56 @@ returns timestamptz language sql stable security definer set search_path = publi
   select (((p_at at time zone 'Asia/Kuala_Lumpur')::date + coalesce(p_days, 0)) + time '18:00') at time zone 'Asia/Kuala_Lumpur';
 $$;
 revoke all on function public.hiring_day_end(timestamptz, int) from public, anon, authenticated;
+
+/* Careers replies go to HR (the user, 2026-11-20): a fifth company mailbox,
+   seeded once, and the careers sender pointed at it where it still holds the
+   seed's General. Invitations to colleagues stay on General. */
+alter table public.mail_boxes drop constraint if exists mail_boxes_key_check;
+alter table public.mail_boxes add constraint mail_boxes_key_check check (key in ('general', 'hr', 'payables', 'finance', 'einvoice'));
+insert into public.mail_boxes (key, label, address) values ('hr', 'HR', 'hr@adspacestudios.com') on conflict (key) do nothing;
+update public.mail_senders set box = 'hr' where key = 'careers' and box = 'general';
+
+create or replace function public.mail_senders_read()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_team() then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'boxes', (select jsonb_agg(jsonb_build_object('key', b.key, 'label', b.label, 'address', b.address)
+                order by array_position(array['general', 'hr', 'payables', 'finance', 'einvoice'], b.key)) from public.mail_boxes b),
+    'senders', (select jsonb_object_agg(m.key, jsonb_build_object('from', m.name || ' <' || m.address || '>', 'reply_to', b.address))
+                  from public.mail_senders m join public.mail_boxes b on b.key = m.box));
+end $$;
+revoke all on function public.mail_senders_read() from public, anon;
+grant execute on function public.mail_senders_read() to authenticated;
+
+create or replace function public.mail_boxes_set(p_values jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  b  public.mail_boxes;
+  v  text;
+  v_said text[] := '{}';
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  for b in select * from public.mail_boxes order by array_position(array['general', 'hr', 'payables', 'finance', 'einvoice'], key) loop
+    v := lower(btrim(coalesce(p_values ->> b.key, b.address)));
+    if v !~ '^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$' then return jsonb_build_object('error', 'bad-email', 'field', b.key); end if;
+    if v is distinct from b.address then
+      update public.mail_boxes x set address = v where x.key = b.key;
+      v_said := v_said || (b.label || ': ' || b.address || ' → ' || v);
+    end if;
+  end loop;
+  if array_length(v_said, 1) > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'team.changed', 'Reply-to mailboxes', array_to_string(v_said, ' · '));
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.mail_boxes_set(jsonb) from public, anon;
+grant execute on function public.mail_boxes_set(jsonb) to authenticated;
+
 
 alter table public.hiring_docs add column if not exists expired_told_at timestamptz;
 alter table public.hiring_docs add column if not exists expire_mail text;
@@ -299,80 +351,7 @@ begin
 end $$;
 grant execute on function public.hiring_decide(uuid, text, text) to authenticated;
 
-create or replace function public.careers_doc_answer(p_key text, p_doc uuid, p_view text, p_answer text, p_payload jsonb)
-returns jsonb language plpgsql volatile security definer set search_path = public, extensions as $$
-declare
-  d public.hiring_docs := public.careers_doc_of(p_key, p_doc);
-  s public.hiring_doc_codes;
-  p public.hiring_doc_pay;
-  pl jsonb := coalesce(p_payload, '{}'::jsonb);
-  v_name text := btrim(coalesce(pl->>'name', ''));
-  v_id text := upper(btrim(coalesce(pl->>'id_no', '')));
-  v_sig text := coalesce(pl->>'signature', '');
-  v_at timestamptz := now();
-  v_title text;
-begin
-  if d.id is null then return jsonb_build_object('error', 'not_found'); end if;
-  s := public.careers_doc_view(d.id, p_view);
-  if s.id is null then return jsonb_build_object('error', 'code-needed'); end if;
-  select * into d from public.hiring_docs where id = d.id for update;
-  if d.state <> 'sent' then return jsonb_build_object('error', 'answered'); end if;
-  if d.reply_by <= now() then return jsonb_build_object('error', 'expired'); end if;
-  v_title := case d.kind when 'offer' then 'Employment Offer' else 'Employment Contract' end;
-  if p_answer = 'decline' then
-    if d.kind <> 'offer' then return jsonb_build_object('error', 'bad-request'); end if;
-    if char_length(coalesce(pl->>'note', '')) > 500 then return jsonb_build_object('error', 'too-long'); end if;
-    update public.hiring_docs set state = 'declined', answered_at = v_at, decline_note = nullif(btrim(coalesce(pl->>'note', '')), ''),
-      updated_at = now() where id = d.id;
-    update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = d.candidate_id;
-    insert into public.hiring_events (candidate_id, actor, action, detail)
-    values (d.candidate_id, 'Candidate page', 'candidate.document', d.serial || ' declined');
-    perform public.hiring_tell(d.candidate_id, 'hiring.declined', 'A candidate declined an offer',
-      d.serial || ' was declined. Choose Not proceed, or send a new offer.');
-    return jsonb_build_object('ok', true);
-  end if;
-  if coalesce(p_answer, '') not in ('accept', 'sign') or (p_answer = 'accept') <> (d.kind = 'offer') then
-    return jsonb_build_object('error', 'bad-request');
-  end if;
-  if char_length(v_name) not between 2 and 120 then return jsonb_build_object('error', 'bad-name'); end if;
-  if coalesce(pl->>'agree', '') <> 'true' then return jsonb_build_object('error', 'bad-agree'); end if;
-  if d.kind = 'contract' then
-    if v_id !~ '^([0-9]{6}-[0-9]{2}-[0-9]{4}|[A-Z0-9]{6,20})$' then return jsonb_build_object('error', 'bad-id'); end if;
-    if v_sig !~ '^[MLQCZmlqcz0-9 .,-]+$' or char_length(v_sig) not between 8 and 30000 then return jsonb_build_object('error', 'bad-signature'); end if;
-  end if;
-  select * into p from public.hiring_doc_pay where doc_id = d.id;
-  update public.hiring_docs set state = 'signed', signed_at = v_at, answered_at = v_at,
-    signed = jsonb_strip_nulls(jsonb_build_object('via', 'online', 'name', v_name,
-      'id_no', case when d.kind = 'contract' then v_id end, 'signature', case when d.kind = 'contract' then v_sig end,
-      'record', jsonb_build_object('at', v_at, 'email', s.email, 'ip', nullif(public.request_ip(), ''),
-        'country', nullif(public.request_country(), ''), 'device', public.seal_device(pl->>'device'),
-        'fingerprint', upper(left(encode(digest(d.serial || d.terms::text || coalesce(p.basic::text, '') || coalesce(p.probation::text, '') ||
-          v_name || v_at::text, 'sha256'), 'hex'), 16))))),
-    updated_at = now()
-   where id = d.id;
-  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = d.candidate_id;
-  insert into public.hiring_events (candidate_id, actor, action, detail)
-  values (d.candidate_id, 'Candidate page', 'candidate.document', d.serial || case d.kind when 'offer' then ' accepted' else ' signed' end || ' on the candidate page');
-  perform public.hiring_tell(d.candidate_id, 'hiring.signed', case d.kind when 'offer' then 'A candidate accepted an offer' else 'A candidate signed a contract' end,
-    d.serial || '. Open the candidate to confirm it.');
-  return jsonb_build_object('ok', true);
-end $$;
-revoke all on function public.careers_doc_answer(text, uuid, text, text, jsonb) from public;
-grant execute on function public.careers_doc_answer(text, uuid, text, text, jsonb) to anon, authenticated;
 
-create or replace function public.hiring_tell(p_candidate uuid, p_kind text, p_title text, p_body text)
-returns void language plpgsql security definer set search_path = public as $$
-declare me public.team_members := public.ops_me();
-begin
-  insert into public.ops_notifications (team_member_id, kind, title, body, link)
-  select t.id, p_kind, p_title, p_body, 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' || p_candidate
-    from public.team_members t
-   where t.active and t.removed_at is null and not t.system and (me.id is null or t.id <> me.id)
-     and (exists (select 1 from public.hiring_people p where p.candidate_id = p_candidate and p.team_member_id = t.id and p.role = 'owner')
-          /* The Hiring part's holders too (2026-11-20): an admin, or a group granted it. */
-          or t.is_admin or coalesce(t.access->>'team.hiring', '') in ('work', 'manage'));
-end $$;
-revoke all on function public.hiring_tell(uuid, text, text, text) from public, anon, authenticated;
 
 /* A cancellation is refused only for an interview a live one followed, never
    a replaced invitation's (2026-11-20). */
@@ -460,11 +439,11 @@ end $$;
 revoke all on function public.hiring_mail_kick() from public, anon, authenticated;
 
 /* Every fifteen minutes: an offer or contract past its reply-by with no
-   answer is told once to the Owners and the part, and queued to email the
-   candidate. */
+   answer is filed once and queued to email the candidate (the user,
+   2026-11-20: the candidate's email alone, no notice to colleagues). */
 create or replace function public.hiring_docs_expire()
 returns int language plpgsql security definer set search_path = public as $$
-declare r record; n int := 0; v_word text;
+declare r record; n int := 0;
 begin
   for r in
     select d.id, d.candidate_id, d.kind, d.serial, d.terms->>'position' as position from public.hiring_docs d
@@ -472,12 +451,9 @@ begin
      where d.state = 'sent' and d.reply_by <= now() and d.expired_told_at is null and c.removed_at is null
      for update of d
   loop
-    v_word := case r.kind when 'offer' then 'Employment Offer' else 'Employment Contract' end;
     update public.hiring_docs set expired_told_at = now(), expire_mail = 'queued', expire_mail_at = null where id = r.id;
     insert into public.hiring_events (candidate_id, actor, action, detail)
     values (r.candidate_id, 'Portal', 'candidate.document', r.serial || ' expired with no reply');
-    perform public.hiring_tell(r.candidate_id, 'hiring.doc_expired', 'An ' || v_word || ' expired',
-      r.serial || ' for the ' || coalesce(r.position, 'position') || ' candidate expired with no reply. Choose Not proceed, or send a new one.');
     n := n + 1;
   end loop;
   if n > 0 then perform public.hiring_mail_kick(); end if;

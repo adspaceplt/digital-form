@@ -568,7 +568,8 @@
       });
     });
   }
-  var UNDO_MS = 8000;
+  /* The window before a decision's email goes (the user, 2026-11-20: 30 seconds). */
+  var UNDO_MS = 30000;
   var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
   function outcomeMail(id) {
     var c = { id: id || state.rec.id };
@@ -597,7 +598,7 @@
           if (r.error || d.error) return said(r);
           state.pane = 'scores';
           /* The email waits out the Undo (2026-11-20): it goes only once the
-             eight seconds pass with no Undo, and the database refuses it once
+             30 seconds pass with no Undo, and the database refuses it once
              the decision is reopened. */
           var undone = false, wait = mails && v.mail;
           load().then(function () {
@@ -606,7 +607,7 @@
             if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
               undone = true;
               return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function () { openRec(c.id); });
-            }, $('hirRecMsg'));
+            }, $('hirRecMsg'), wait ? UNDO_MS : 0);
             if (wait) setTimeout(function () {
               if (undone) return;
               outcomeMail(c.id).then(function (sent) { if (sent && state.rec && state.rec.id === c.id) load(); });

@@ -267,10 +267,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     past its last time offered), written with its weekday and time;
   - every line on the candidate's page asking them to contact ADspace names
     the careers mailbox (`careers_read` `contact`, on every answer, a
-    refusal's too; `mail_sender('careers')`, never typed);
-  - Keep in talent pool and Not proceed email the candidate only once the
-    Undo's eight seconds pass with no Undo; a decision reopened is refused
-    the email by the database (`no-email`);
+    refusal's too; `mail_sender('careers')`, never typed), and every
+    candidate email replies to it: the HR mailbox (hr@adspacestudios.com,
+    Settings, Messages: Reply-to mailboxes; the user, 2026-11-20);
+  - Keep in talent pool and Not proceed email the candidate only once their
+    Undo's 30 seconds pass with no Undo (the user; this act's own window,
+    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8); a decision
+    reopened is refused the email by the database (`no-email`);
   - Proceed promises no offer: the page reads ADspace will contact you
     about the next step. (Status Application in progress) until an offer is
     sent; a candidate who declined the talent pool reads ADspace will not
@@ -280,14 +283,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     is told to remove it; the candidate's email says the link no longer
     applies) and the candidate emailed; Keep in talent pool and Not proceed
     cancel it too, its Meet with it (`hiring_invite`, `hiring_decide`);
-  - an offer or contract past its reply-by with no answer is told once to
-    the Owners and the Hiring part (`hiring_docs_expire`, every fifteen
-    minutes, `hiring.doc_expired`: Choose Not proceed, or send a new one),
-    and the candidate emailed by `hiring-mail`'s drain (woken by the
-    database with the wake secret; `hiring_expire_mail_claim` takes each
-    row once); an offer declined is told with the same next step;
-  - every candidate notice reaches the Hiring part's holders as well as the
-    Owners (`hiring_tell`);
+  - an offer or contract past its reply-by with no answer is filed once
+    (`hiring_docs_expire`, every fifteen minutes) and the candidate emailed
+    by `hiring-mail`'s drain (woken by the database with the wake secret;
+    `hiring_expire_mail_claim` takes each row once); no notice goes to
+    colleagues (the user, 2026-11-20); candidate notices stay the Owners'
+    (`hiring_tell` unchanged);
   - Make colleague carries the confirmed contract's salary into Personnel
     (trigger `hiring_candidates_pay_to_personnel`; never a figure on screen
     or in a history line; a salary already set is left alone);
