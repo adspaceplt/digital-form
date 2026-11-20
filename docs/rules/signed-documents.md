@@ -16,9 +16,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`signed.record.device`).
 - Approving a signed quotation seals it once (`quotation_review` ok, then
   the reviewer's page): drawn with its Record of this Document as the last
-  page (Document ID, the SHA-256 of the signed pages, Verify with a QR code
-  of `/verify/?s={ref}`, every step to the second GMT+8, Slate Book 9pt in
-  every cell, every foot counting the Record page), stored private
+  page (the title with the Document ID at its right; the steps as a dated
+  timeline grouped by Malaysian day, each to the second with who and where
+  it was done; at the right a QR code of `/verify/?s={ref}` 32pt square
+  (`QR`, 33 modules of 0.34mm for an address up to 59 characters), its
+  caption and the signed pages' SHA-256 whole on two lines; DESIGN.md §2
+  Print; 2026-11-21), every foot counting the Record page), stored private
   (`sign-upload` `seal`), kept by `quotation_seal` (Quotations Work, once;
   `not-reviewed`, `bad-key`, `bad-sha`, a second answering `kept`) with the
   whole file's SHA-256 beside the pages'. Never drawn again: every Download,

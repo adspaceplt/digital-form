@@ -18,7 +18,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   names the section at 22/600 in Slate (`--font-head`, as every heading; the user, 2026-11-13: the system face read as another family) over one line (`.console-sub`, the same Slate at 13.6px, the title over φ; the user, 2026-11-13): the rail's
   group, then what the section holds as figures and words
   (`ADspaceAdmin.counts`: 14 open · 2 late · 6 due this week; a late part
-  in red words), drawn by the section itself; the head is 76px on every section, its words centred in it and its sides at the body's 32px (`--head-h`, which every sticky offset reads). A card on the sheet is white
+  in red words), drawn by the section itself; the head is every bar's height, `--head-h` (64, 56 on a phone; the user, 2026-11-21: "Lets do all 64"), its words centred in it and its sides at the body's 32px, every sticky offset reading it. A card on the sheet is white
   with a `--card-edge` hairline drawn as an outline just inside it (never
   an inset shadow, which the rows' white ground covers), never a shadow; a card inside a
   card is one surface; cards take the large corner (`--radius-lg`). The
@@ -124,7 +124,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | Token | Value | Use |
 |---|---|---|
 | `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2). Where the browser draws `corner-shape`, every rounded box takes the squircle on the same radii (surfaces, controls, icon marks, the ⋯, a strip's sliding thumb, a count, a chip), never some round and some squircle beside each other (`tests/corners.js`); a browser without it keeps the round corner; pills, discs, dots and rings stay round (the user, 2026-10-24; 2026-11-07) |
-| `--head-h` | 64px (56 phone) | The top bar on every page; never wraps; the kicker hides below 640 before anything clips |
+| `--head-h` | 64px (56 phone) | Every bar, one height (the user, 2026-11-21: "Take note all client facing (brandmark \| {portal name}) height must be same"): every client page's bar (the wordmark and the portal's name), the console's signed-out pages and the console's own head; no page sets its own; never wraps; the kicker hides below 640 before anything clips |
 | `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes (the user, 2026-10-23); under a finger a `.btn` still takes a 44px press (its `::after`) |
 | `--ctl-h-sm` | 30px (32 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
 | `--tap` | 44px | The press a finger needs: a `.btn`'s invisible press area and an icon button's box under a coarse pointer |
@@ -239,6 +239,21 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     Social Media Report, the video scripts), whose bodies keep their own
     layout between the template's margins; a white-label report puts its
     partner's logo in the wordmark's place;
+  - a sealed copy's Record page (`js/seal.js`, the user, 2026-11-21: "Sorry
+    what i mean is to use this", Apple's print design the model) is a dated
+    timeline in about a quarter of the page: Record of this Document 13pt
+    Slate Medium after the padlock, the Document ID at its right on its
+    baseline (Document ID 7pt, the code 9pt Slate Medium); the sentence
+    8pt; a hairline; at the left the steps under their Malaysian day
+    (`12 Jan 1988 · GMT+8`, 7pt Slate Medium, no weekday), each a line of
+    8pt on 10pt: the time to the second in a 54pt column, the step's word
+    in Slate Medium, the rest a sentence, and its device on one 6.3pt line;
+    a 4pt dot a step on a 0.6pt hairline, filled for Signed and Confirmed;
+    at the right, at least 96pt, the QR code 32pt, Scan to check this copy
+    over the verify address, then SHA-256, pages 1 to n over the hash on
+    two lines of 32 characters, all 6pt; inks as above (the words
+    `#515151`, a step's word, the title and the code `#1a1a1a`, never
+    `#a1a1a1`); a long record runs on under the same head;
   - nothing else in the head or the foot; a mark a document needs on every
     page (the Letter of Offer's Client initials, the performance record's
     reference line, the Rate Card's version) stands in the bottom margin
@@ -318,7 +333,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Usual defaults | `details.fmore` More details, its line naming what it holds |
 | A record pane of facts | Read first (`readGroup`, missing required values in warn) on a white card (`.readgroups`, the groups a hairline apart inside it; a client's Billing a card for the request link, one for the primary entity with its Bukku band, one for the other entities, one for unpaid invoices), the rail beside it on the ground; Edit opens the same groups in a sheet |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |
-| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`, after RIMOWA's notice (the user, 2026-11-20: "I like this style"), every one: the client pages' notices, the console's sign-in (its field and Sign in on one row, the passkey and Use another email under it as `.cover-alt`), Access denied and /quote/'s Request received; each under the page's own bar and foot ("the header footer should be the same": the bar every page's 64, 56 on a phone, the console's 76 its signed-in head's alone); white to the edge, no box; one column (440px at most) centred across and between the bar and the foot; the wordmark (`.cover-mark`) only where no bar carries it (the namecard, the console's whole-screen notice; inverted in dark); the title a small uppercase mark (Slate Medium 13px, tracked 1.08px, `--ink`; the words sentence case in the markup; Chinese neither uppercase nor tracked); the line the statement at 17/400 in ink, line height 1.45; a second line 14px `--ink-soft`; the actions under it as `.btn`s, equal halves on a phone; signed in, last `Reference {code}` (`.cover-ref`, 14px ink, tabular). The line never restates the title. The 404 and `admin/offline.html` draw the same type (`tests/covers.js`) |
+| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`, after RIMOWA's notice (the user, 2026-11-20: "I like this style"), every one: the client pages' notices, the console's sign-in (its field and Sign in on one row, the passkey and Use another email under it as `.cover-alt`), Access denied and /quote/'s Request received; each under the page's own bar and foot ("the header footer should be the same": the bar every page's `--head-h`); white to the edge, no box; one column (440px at most) centred across and between the bar and the foot; the wordmark (`.cover-mark`) only where no bar carries it (the namecard, the console's whole-screen notice; inverted in dark); the title a small uppercase mark (Slate Medium 13px, tracked 1.08px, `--ink`; the words sentence case in the markup; Chinese neither uppercase nor tracked); the line the statement at 17/400 in ink, line height 1.45; a second line 14px `--ink-soft`; the actions under it as `.btn`s, equal halves on a phone; signed in, last `Reference {code}` (`.cover-ref`, 14px ink, tabular). The line never restates the title. The 404 and `admin/offline.html` draw the same type (`tests/covers.js`) |
 | Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (a tonal pop-up: the buttons' shade, no outline, its dot in the box and the chevron at its end; never blue) only for a state that moves as the work |
 | A task on My Work's board and list (v3, 2026-11-12) | A board column is a `--sunk` panel (14px corner) of white cards (12px corner, inset `--card-edge`): the priority tag and the format tag (`.chip.tfmt`) with the grip, the client's logo (18px) and name · the number, the title at 500, two lines of the brief, the checklist as a bar a check (`.tcheckbar`, amber while running, green when all ticked, n/N), the stage select, then a foot of the colleague as an initials disc in a tint of their own (`.tav`), the remarks counted (`.trem`) and the due date. A list row leads the name with the client's logo (left off on a narrow pane) and carries the format, the checklist bar and the remarks on a line under the client; the colleague's disc leads their name. Checklists and remarks are read once a list load for the open tasks (`readExtras`, 150 a request), a refused read leaving the marks off |
 | The Clients list over its bands (v3, 2026-11-12) | `#crmTiles`, four `.ovw-kpi.crm-tile`s across (two narrow) above the bands, each from the clients already read: Leads in hand (n proposals sent; a `--sunk` foot in red words naming those past their follow-up time), New leads this month, Active clients (n paused) and, at My Work View, Late work this month (across n clients). A client's late work this month (`ops_engagement_counts`, read once a visit) is a red `.tone.is-danger` tag after its name; Person in charge and Sales by each lead with the colleague's disc (`ADspaceAdmin.avatar`, left off narrow) |
