@@ -6883,7 +6883,7 @@
     if (!t || !may('ops', 'work')) return;
     dupKey = '';
     $('dupWhat').textContent = 'A copy of ' + (t.title || serialOf(t)) +
-      ' will be created with a new code. Its history, its time and its links stay here.';
+      ' will be created with a new code. Its history, time records and links stay with this task.';
     $('dupDesc').checked = true;
     $('dupDates').checked = false;
     $('dupPeople').checked = false;
@@ -7720,7 +7720,7 @@
       /* When the month runs and which reports it owes, read on the card and
          changed where they are read (2026-11-02, the user: a month starting
          on the 9th went unseen until a report asked for 9 Oct to 8 Nov). */
-      ['Runs', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'Period')],
+      ['Period', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'Period')],
       ['Reports', engValue(engReportsWord(e), can && !engShut(e), 'reports', 'Reports')],
       ['Files', /^https:\/\//i.test(e.drive_url || '') ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });

@@ -69,7 +69,7 @@
   function said(d) {
     if (!d) return SAID.failed;
     if (d.error === 'incomplete') return 'Fill in ' + (d.missing || []).join(' and ') + ' before it is sent to Bukku.';
-    if (d.error === 'bukku-refused') return 'Bukku refused the request' + (d.message ? ': ' + d.message : '.');
+    if (d.error === 'bukku-refused') return 'Bukku refused the request' + (d.message ? ': ' + String(d.message).replace(/\.+$/, '') : '') + '. Check the details in Bukku, then try again.';
     return SAID[d.error] || d.error || SAID.failed;
   }
   /* One call of the function; a refusal comes back as { error }. */
@@ -217,7 +217,7 @@
       var head = '<div class="bk-l">' + MARK + '' + code;
       var when = function (iso) { return iso ? day(iso) + ', ' + (window.ADspaceClock ? window.ADspaceClock.clock(iso) : '') : ''; };
       if (r.error) {
-        var copy = d.read_at ? ' Showing the details read on ' + when(d.read_at) + '.' : '';
+        var copy = d.read_at ? ' The details shown were read on ' + when(d.read_at) + '.' : '';
         host.innerHTML = head + '<span class="chip-state is-warn">Not read</span></div>' +
           '<p class="bk-sub">' + esc(said(r)) + esc(copy) + '</p>' +
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Try again</button>' + menu + '</div>';

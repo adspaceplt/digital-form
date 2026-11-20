@@ -5004,7 +5004,7 @@
         var res = gg.results != null ? fmt(gg.results) : (sm.line.indexOf(' from the ads') > -1 ? fmt(sm.total) : sm.line);
         return [o[1], res + ' · ' + money2(sm.spent).replace(/ /g, '\u00a0')];
       });
-      var before = r.first_month ? [['Comparison', 'First month of ads, with guidance on reading the figures']] :
+      var before = r.first_month ? [['Comparison', 'First month of ads']] :
         [['Compared with', t.prev_from ? fromWord || 'Published report' : 'Typed figures'],
           ['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
           ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];

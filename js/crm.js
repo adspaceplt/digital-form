@@ -4094,7 +4094,7 @@
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
   function baLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. Please ask an admin.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. Please ask an admin to turn them on.';
     var n = d.limit || 3;
     return 'You have used your ' + n + (n === 1 ? ' analysis' : ' analyses') + ' for today.' + (d.next ? ' Resets at ' + baClock(d.next) + '.' : '');
   }

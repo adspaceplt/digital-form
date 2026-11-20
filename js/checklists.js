@@ -467,11 +467,11 @@
       if (rs[0].error || l.error) { ctx.msg('ckMsg', said(rs[0].error || l.error), 'err'); return; }
       if (!l.left) {
         ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. Please ask an admin to turn it on.'
-          : 'No checklist drafts left today. The next is available at 12:00 am.', 'err');
+          : 'No checklist drafts left today. Resets at 12:00 am.', 'err');
         return;
       }
       var needBa = !rs[1].error && !ready.error && !ready.analysis;
-      if (needBa && !al.left) { ctx.msg('ckMsg', 'No Brand analysis is confirmed, and no analyses are left today. The next is available at 12:00 am.', 'err'); return; }
+      if (needBa && !al.left) { ctx.msg('ckMsg', 'No Brand analysis is confirmed, and no analyses are left today. Resets at 12:00 am.', 'err'); return; }
       var was = keep(k);
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
@@ -523,7 +523,7 @@
       busy(false);
       var m = e && e.message;
       ctx.msg('ckMsg', m === 'no-source' ? 'Add the website, an Instagram or Facebook handle, or link Meta accounts on Brand first.'
-        : m === 'ai-limit' ? 'No analyses left today. The next is available at 12:00 am.' : said(e), 'err');
+        : m === 'ai-limit' ? 'No analyses left today. Resets at 12:00 am.' : said(e), 'err');
     });
   }
   /* The analysis read here before it is confirmed: the parts the checklist
@@ -590,7 +590,7 @@
     }).catch(function (e) {
       busy(false);
       var d = e && e.d;
-      ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. The next is available at 12:00 am.' : said(e), 'err');
+      ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. Resets at 12:00 am.' : said(e), 'err');
     });
   }
 
