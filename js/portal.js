@@ -117,7 +117,7 @@
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '合作项目', payment: '付款', account: '门户访问权限',
       addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + '结束'; },
-      legalName: '注册名称', regNo: '商业登记号码', address: '账单地址', market: '市场',
+      legalName: '公司注册名称', regNo: '商业注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
       contact: '联系人', reach: '联系方式', contacts: '联系人',
@@ -185,11 +185,12 @@
     el.textContent = text || '';
     el.className = 'msg' + (kind ? ' ' + kind : '');
   }
-  function niceDate(d) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function niceDate(d, named) {
     if (!d) return '';
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
     var k = String(d).length > 10 ? ADspaceClock.day(d) : String(d).slice(0, 10);
-    return ADspaceClock.date(k, { zh: lang === 'zh' }) || String(d);
+    return ADspaceClock.date(k, { zh: lang === 'zh', named: named }) || String(d);
   }
   /* The billed rate, term adjustment included, from the same one definition
      the console and the letter read. A client must never be shown a different
@@ -688,7 +689,7 @@
         if (list.length) {
           var stb = table('');
           list.forEach(function (x) {
-            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on)) : '';
+            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on, 'ahead')) : '';
             var row = document.createElement('div');
             row.className = 'svc-row cp-work-row';
             row.innerHTML = '<span class="svc-name"><b>' + esc([x.code, x.title].filter(Boolean).join(' · ')) + '</b><small>' +

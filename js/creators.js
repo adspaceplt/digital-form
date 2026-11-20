@@ -163,12 +163,11 @@
       reviewThanks: 'Thank you. Your response has been received. ADspace will follow up shortly.',
       draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
-      saveFailed: 'Unable to save. Please try again.',
       selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       ratesChanged: 'The rates have been updated. Please review them and confirm again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
       overSlots: function (n) {
-        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove one and confirm again.'
+        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove the extra creators and confirm again.'
           : 'Every creator for this campaign has been booked. Please contact your ADspace account manager.';
       },
       unavailable: 'Unavailable. Please select a replacement below.',
@@ -267,7 +266,6 @@
       reviewThanks: '谢谢，您的回复已收到，ADspace 团队将尽快跟进。',
       draftMoved: '页面打开后此初稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
-      saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
       selectionChanged: '部分创作者已无法选择，请重新查看后再次确认。',
@@ -503,7 +501,7 @@
     $('campBrief').hidden = !brief;
     // The engagement in one line: how many creators, when, which invoice.
     var facts = [[t().creatorsLabel, String(c.slots || 0)]];
-    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline)]);
+    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline, 'ahead')]);
     if (c.invoice_no) facts.push([t().invoice, c.invoice_no]);
     $('engageFacts').innerHTML = facts.map(function (f) {
       return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
@@ -670,7 +668,7 @@
     var seeding = (feed.campaign || {}).push_format === 'seeding';
     box.innerHTML =
       '<p class="cx-standing-line"><b>' + esc(t().ofPosted(live, booked.length)) + '</b>' +
-        (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0]))) + '</span>' : '') + '</p>' +
+        (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0], true))) + '</span>' : '') + '</p>' +
       '<div class="cx-track" aria-hidden="true">' + bars.map(function (o) {
         return '<i class="is-' + dotOf(o.state) + '"></i>'; }).join('') + '</div>' +
       '<p class="cx-legend">' + counts.map(function (c) {
@@ -806,7 +804,7 @@
         facts.push([t().postedOn, fmtDate(wentOut)]);
       } else if (!live) {
         facts.push([seeding ? t().deliveryOn : t().shootOn,
-          o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? (lang === 'zh' ? ' ' : ', ') + ampm(o.visit_time) : '') : t().tbc]);
+          o.visit_date ? fmtDate(o.visit_date, 'ahead') + (o.visit_time ? (lang === 'zh' ? ' ' : ', ') + ampm(o.visit_time) : '') : t().tbc]);
       }
       /* Once its post is out, each post's row names its platform. */
       var plats = posts.length ? [] : platsOf(o);
@@ -1075,7 +1073,7 @@
         load();                     // states have moved, so read them back
       }).catch(function () {
         lock(false);
-        say(t().saveFailed, true);
+        say(t().notSaved, true);
       });
     }
   }
@@ -1094,9 +1092,10 @@
     h = h % 12 || 12;
     return lang === 'zh' ? zh + h + ':' + (m[2] || '00') : h + ':' + (m[2] || '00') + x;
   }
-  function fmtDate(d) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function fmtDate(d, named) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
-    return ADspaceClock.date(d, { zh: lang === 'zh' });
+    return ADspaceClock.date(d, { zh: lang === 'zh', named: named });
   }
 
   var BACKUPS_WANTED = 2;
@@ -1500,7 +1499,7 @@
       }
       else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
       else if (e === 'too-long') msg('confirmMsg', t().tooLong, 'err');
-      else msg('confirmMsg', t().saveFailed, 'err');
+      else msg('confirmMsg', t().notSaved, 'err');
     };
     db.rpc('confirm_selection_with', {
       p_token: TOKEN, p_person: name, p_passcode: passcode,
@@ -1518,7 +1517,7 @@
          confirmed it and when (SELECTION-5), rather than a cover titled with
          the page's own name. */
       load();
-    }).catch(function () { btn.disabled = false; msg('confirmMsg', t().saveFailed, 'err'); });
+    }).catch(function () { btn.disabled = false; msg('confirmMsg', t().notSaved, 'err'); });
   });
 
   setLang(lang);

@@ -53,7 +53,8 @@
   function bankKept() { return update && bankHeld && !String(typed.bank_account || '').trim(); }
   var root = function () { return $('sfRoot'); };
 
-  function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function day(iso, named) { return window.ADspaceClock.date(iso, { long: true, named: named }); }
   function cover(title, text) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
   }
@@ -113,7 +114,7 @@
       '<ol class="qs-notes sf-auth">' + AUTH.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
       '<label class="qs-consent"><input type="checkbox" id="sfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">I agree to the authorisation above.</span></label>' +
       '<span class="msg" id="sfConsentMsg"></span>' +
-      '<p class="qs-note">This form is open until ' + esc(day(info.expires_at)) + '.</p>' +
+      '<p class="qs-note">' + esc(W.formEnds.replace('{d}', day(info.expires_at, true))) + '</p>' +
       '<p class="msg" id="sfMsg" role="status"></p>' +
       '</form></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfSubmit">Submit</button></div>';
@@ -123,15 +124,15 @@
   function paintDone(text) {
     root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">Details received</h1><p>' + esc(text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.')) + '</p></div>';
+      '<h1 class="qs-title">' + esc(W.formReceived) + '</h1><p>' + esc(text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.')) + '</p></div>';
   }
   function paint() {
     if (state === 'loading') return;
     /* A supplier has no account manager (CP-11). */
     if (state === 'bad') { cover(W.notFound, W.contactAdspace); return; }
     if (state === 'fail') { cover(W.failTitle, W.failTextAdspace); return; }
-    if (state === 'expired') { cover('Link expired', W.contactAdspace); return; }
-    if (state === 'submitted') { paintDone('This form has already been submitted.'); return; }
+    if (state === 'expired') { cover(W.linkExpired, W.contactAdspace); return; }
+    if (state === 'submitted') { paintDone(W.formSubmitted); return; }
     if (state === 'done') { paintDone(); return; }
     root().innerHTML = paintForm();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
@@ -153,22 +154,27 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit Business Registration Number, digits only.',
+    brn: 'Enter the 12-digit Business Registration Number, digits only.',
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
     sst_no: 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
-    mobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', address: 'Enter the full billing address.',
+    mobile: W.badMobile, address: 'Enter the full billing address.',
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',
     bank_name: 'Choose a bank.', bank_account: 'Enter the account number, digits only.',
     swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'Enter a bank address of up to 300 characters.',
     kind: 'Choose a supplier type.', currency: 'Choose a currency.'
   };
+  /* The name is asked as its field is labelled, for a company or a person. */
+  function fault(k) {
+    if (k === 'name') return typed.kind === 'individual' ? 'Enter the Full Name as per NRIC.' : 'Enter the Registered Company Name.';
+    return FAULT[k];
+  }
   function check() {
     var first = null, mail = { test: ADspaceWords.emailOk }, ind = typed.kind === 'individual';
     var v = function (k) { return String(typed[k] || '').trim(); };
     var digits = function (k) { return v(k).replace(/\D/g, ''); };
     var bad = function (k) {
-      var id = ID[k]; say(id + 'Msg', FAULT[k]);
+      var id = ID[k]; say(id + 'Msg', fault(k));
       if ($(id)) $(id).setAttribute('aria-invalid', 'true');
       if (!first) first = id;
     };
@@ -193,7 +199,7 @@
     }
     if (!mail.test(v('finance_email'))) bad('finance_email');
     if (!bankKept() && v('swift') && !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(v('swift').replace(/\s+/g, ''))) bad('swift');
-    if (!consent) { say('sfConsentMsg', 'Tick the box to continue.'); if (!first) first = 'sfConsent'; }
+    if (!consent) { say('sfConsentMsg', W.tickToContinue); if (!first) first = 'sfConsent'; }
     if (first && $(first)) $(first).focus();
     return !first;
   }
@@ -213,7 +219,7 @@
       if (d.error === 'not_found') { state = 'bad'; paint(); return; }
       var k = d.error && d.error.indexOf('bad-') === 0 ? d.error.slice(4) : null;
       if (k && ID[k]) {
-        say(ID[k] + 'Msg', FAULT[k]);
+        say(ID[k] + 'Msg', fault(k));
         if ($(ID[k])) { $(ID[k]).setAttribute('aria-invalid', 'true'); $(ID[k]).focus(); }
         return;
       }

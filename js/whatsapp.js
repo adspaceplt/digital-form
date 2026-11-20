@@ -77,7 +77,7 @@
     'not-published': 'Publish the report first.',
     'not-booked': 'Only a booked creator can be sent their booking.',
     'not-found': 'This record no longer exists.',
-    'not-client': 'Feedback is asked of a client, never a lead.',
+    'not-client': 'This contact is a lead. Feedback can be requested from a client only.',
     'not-lead': 'A representative is introduced to a lead only. This client is no longer a lead.',
     'no-sales-by': 'Set Sales by on the lead first.',
     'no-contact': 'This lead is marked Do not contact. Choose Allow contact on their quotation first.',
@@ -96,7 +96,7 @@
     'wa-busy': 'WhatsApp is busy. Try again in a minute.',
     'wa-failed': 'Not sent. Try again.',
     'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
-    sending: 'This message is being sent now. Check the messages list before sending it again.',
+    sending: 'This message has already been sent. Check the WhatsApp tab before sending it again.',
     'bad-file': 'The PDF could not be attached. Please try again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
@@ -1295,7 +1295,7 @@
         body: recentLine(rec, r) + ' Send it again? ' + costLine
       } : {
         title: 'Send on WhatsApp?', go: 'Send',
-        body: 'The message goes to ' + r.name + (r.kind === 'contact' && r.client ? ' of ' + r.client : '') + ' on ' + phone(r.number) +
+        body: 'The message will be sent to ' + r.name + (r.kind === 'contact' && r.client ? ' of ' + r.client : '') + ' on ' + phone(r.number) +
           '. ' + costLine
       }, function () { go(Boolean(rec)); });
     };
