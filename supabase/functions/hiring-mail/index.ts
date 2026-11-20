@@ -77,7 +77,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: title + ': ' + m.ref,
       heading: 'Your ' + title,
       body: 'Dear ' + m.name + ',\n\n' +
-        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been returned to you ' + (m.doc === 'contract' ? 'for your signature again.' : 'for your reply again.')
+        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been sent to you again ' + (m.doc === 'contract' ? 'for your signature.' : 'for your reply.')
           : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
         'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
         'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + 'Yours sincerely,\n' + m.sender + '\nADspace',
@@ -143,7 +143,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         'There is no suitable opening for you at this time. ADspace would like to keep your application for ' + m.months +
         ' months and may contact you about future positions.\n\n' +
         'Please indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
-      block: button('Respond on your page', PAGE + m.key)
+      block: button('View your application', PAGE + m.key)
     };
   }
   if (m.kind === 'not') {
@@ -167,7 +167,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         m.minutes + ' minutes ' + where + ' at one of the following times:\n\n' + times + '\n\n' +
         (m.note ? m.note + '\n\n' : '') +
         'Please choose a time on your application page' + (m.reply_by ? ' by ' + m.reply_by + ' (Malaysia time)' : '') +
-        '. If none of these times suits you, please say so on the same page.\n\n{invoices}\n\n' +
+        '. If none of these times is suitable, please indicate this on the same page.\n\n{invoices}\n\n' +
         'Yours sincerely,\n' + m.sender + '\nADspace',
       block: button('Choose a time', PAGE + m.key)
     };

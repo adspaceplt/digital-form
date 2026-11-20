@@ -1,5 +1,5 @@
 <!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
-# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `hiring-mail`)
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `hiring-mail`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -65,7 +65,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   and the candidate moves Invited → Interview. Each step emails the
   candidate (`hiring-mail`: the invitation with a button to their page, the
   confirmation with the Meet or the office's address; from the careers
-  sender; filed by `hiring_mail_done`, Email again where it failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
+  sender; filed by `hiring_mail_done`, Email again where it failed). Cancel (asked) takes the Meet off; on a confirmed interview it asks
+  Email {name}, ticked (the user, 2026-11-20: "yes fix the 3 hiring issues
+  too"): `hiring-mail` `cancelled` (Interview cancelled: {position}, the
+  time it held, the earlier Google Meet link no longer applies, ADspace will
+  contact them; `cancel_mail`, `not-cancelled` for an interview never
+  confirmed, `replaced` once new times are sent), Email candidate on the
+  card where it failed; the candidate's page then reads Status Interview
+  cancelled and ADspace will contact you to arrange another time., never
+  the time or the link (`careers_read` answers `{state: cancelled}` alone),
+  until new times are sent.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
   not chosen. Settings, Hiring: Time limits holds the figures
@@ -155,7 +164,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   that takes the reference on Send, the earlier one void; Void (the
   part, a reason); Delete a draft, or a void one with its reference typed
   back. Confirm (countersign) is the part's (`hiring_doc_confirm`, a stamp
-  certificate number optional), and the confirmed copy is drawn once
+  certificate number optional, Email {name} ticked: `hiring-mail`
+  `confirmed`, {Document} confirmed: {ref}, confirmed and countersigned by
+  ADSPACE PLT, read on the candidate's page, no attachment and no salary;
+  `confirm_mail`, Email candidate where it failed; 2026-11-20, the page
+  having promised it), and the confirmed copy is drawn once
   behind the master code with its Record of this Document
   (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
   `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
@@ -216,3 +229,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Download on a candidate's Interviews (the decision, the averages, each
   colleague's rating, scores and answers) and beside Add section in the
   Welcome Kit's sheet.
+- Hiring times (2026-11-20): every time a candidate or the team waits on
+  (the times offered, a reply-by, the interview, the decision date) reads
+  as `ADspaceClock.due` writes it, 21 Nov 2026 (Saturday), 10:00am:
+  `hiring_when` in the emails, the bell and the history, the console's
+  card and `/careers/`; a time gone by (sent, approved, held) reads without
+  its weekday.
+- Internship and Part-time contracts carry no statutory contributions (the
+  user, 2026-11-20: "intern and part time contracts, all no statutories
+  epf, socso eis"): their Deductions clause names no EPF, SOCSO or EIS, and
+  reads The Employee shall not be entitled to contributions under the
+  Employees Provident Fund Act 1991, the Employees' Social Security Act 1969
+  or the Employment Insurance System Act 2017.; a full-time contract is
+  unchanged. No template bracket or field mark is left in print (the
+  items [a], [b] … aside).

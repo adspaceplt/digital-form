@@ -215,7 +215,7 @@
         if (!contract) {
           para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
           var months = Number(t.probation_months) || 0;
-          var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Scope', t.scope || '']];
+          var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Job scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
           facts.push(['Commencement', t.start ? D.letterDate(t.start) : '']);
           if (t.end) facts.push(['End of contract', D.letterDate(t.end)]);
@@ -243,7 +243,7 @@
             c.p.forEach(function (s) { var m = /^\[([a-z])\] (.*)$/.exec(s); if (m) { need(LH); text('[' + m[1] + ']', M, y, BODY); para(m[2], font, M + 22); } else para(s); });
           });
           para('If the above terms and conditions are agreeable to you, please sign this contract on your application page as soon as possible.');
-          para('This letter when signed by applicant will constitute a binding contract.');
+          para('This letter, when signed by the applicant, will constitute a binding contract.');
         }
 
         // The company's closing and its signatory.
@@ -295,7 +295,7 @@
   }
   function seal(doc, pay, record) {
     var S = window.ADspaceSeal;
-    if (!S) return Promise.reject(new Error('The seal tools are not loaded.'));
+    if (!S) return Promise.reject(new Error('The document could not be generated. Refresh the page and try again.'));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
     var info = { ref: doc.serial, docId: record.id, verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
       rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };

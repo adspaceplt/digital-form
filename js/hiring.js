@@ -38,7 +38,7 @@
     'bad-source': 'Choose a source.', 'bad-cv': 'Enter a web address that starts with https://.', 'too-long': 'Shorten the note to 2,000 characters.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'bad-role': 'Choose Owner or Interviewer.', 'bad-colleague': 'Choose an active colleague.', 'not-removed': 'Remove the candidate first.',
-    'has-contract': 'This candidate holds a signed offer or contract and cannot be deleted. The candidate stays removed.',
+    'has-contract': 'This candidate has a signed offer or contract and cannot be deleted. The candidate remains removed.',
     'bad-request': 'Please refresh the page and try again.',
     'bad-slots': 'Enter one to three times.', 'slot-past': 'Choose a time at least an hour from now.',
     'slot-far': 'Choose times within the next 60 days.', 'bad-minutes': 'Choose the length.', 'bad-mode': 'Choose Google Meet or At the office.',
@@ -58,7 +58,7 @@
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
     'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
     'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
-    'not-cancelled': 'Not sent. This interview is not a cancelled confirmed interview.',
+    'not-cancelled': 'Not sent. Only a confirmed interview that was cancelled is emailed about its cancellation.',
     'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.'
   };
   function said(r) {
@@ -269,7 +269,7 @@
           fact('Source', esc(SOURCE[c.source] || '')) + fact('Added', esc(day(c.created_at))) + fact('CV', cv) +
           fact('Note', c.note ? esc(c.note) : '', 'is-pre') + '</dl></section>' +
         (keeps && !removed ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Candidate page</h4></div>' +
-          '<dl class="ovfacts"><div><dt>State</dt><dd>' + (ended ? 'Link ended ' + esc(day(c.link_ends)) : 'Open until ' + esc(day(c.link_ends))) + '</dd></div></dl>' +
+          '<dl class="ovfacts"><div><dt>State</dt><dd>' + (ended ? 'Link expired ' + esc(day(c.link_ends)) : 'Open until ' + esc(day(c.link_ends))) + '</dd></div></dl>' +
           (url && !ended ? '<div class="rec-linktools"><div class="linkbox">' +
             '<input class="input readfield" id="hirLink" readonly aria-label="Candidate page link" value="' + esc(url) + '">' +
             '<button class="btn btn-icon" type="button" data-h="copy">' + COPY + '<span>Copy link</span></button>' +
@@ -360,7 +360,7 @@
         (out.outcome === 'pool' ? fact('Talent pool', esc(POOL[out.pool_consent] || '') + (out.pool_until ? ' · until ' + esc(day(out.pool_until)) : '')) : '') +
         (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + ' · ' + esc(when(out.mail_at)), out.mail === 'sent' ? '' : 'is-warn') : '') + '</dl>' +
         (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && out.mail !== 'sent'
-            ? '<button class="btn btn-sm" type="button" data-h="outmail">Email the candidate</button>' : '') +
+            ? '<button class="btn btn-sm" type="button" data-h="outmail">Email candidate</button>' : '') +
           (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
       decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Not proceed</button>' +
@@ -440,7 +440,7 @@
   }
   function sheetQs(c) {
     return [['mbti', 'MBTI'], ['why_role', 'Why do you want the ' + (c.position || 'this') + ' role?'],
-      ['about', 'About self and family background'], ['academics', 'Academics and languages'], ['experience', 'Experience'],
+      ['about', 'Personal and family background'], ['academics', 'Academics and languages'], ['experience', 'Experience'],
       ['hobbies', 'Hobbies'], ['strengths', 'Strengths and weaknesses'],
       ['future', 'Where do you see yourself in the next 5 to 10 years?'], ['ambition', 'What is your ambition?'],
       ['company', 'What kind of company are you looking for?'], ['found', 'How did you find out about ADspace?'],
@@ -598,7 +598,7 @@
     });
   }
 
-  var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['Other times asked for', 'is-danger'],
+  var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-danger'],
     confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
   /* Interview held (2026-11-20): a confirmed interview once it has taken
@@ -674,17 +674,17 @@
   var EMP_TYPE = { permanent: 'Permanent', contract: 'Contract', intern: 'Internship', part_time: 'Part-time' };
   var DOC_SAID = {
     'not-offer': 'Choose Proceed on the Scores tab first.', 'offer-first': 'Confirm the Employment Offer first.',
-    'exists': 'This candidate already has one. Open it below.', 'not-draft': 'This document has been sent and can no longer be edited.',
+    'exists': 'This candidate already has this document. Open it below.', 'not-draft': 'This document has been sent and can no longer be edited.',
     'no-pay': 'Set the salary first.', 'bad-type': 'Choose the employment type.', 'bad-probation': 'Enter a probation of 0 to 12 months.',
     'bad-reply': 'Enter 1 to 14 days to reply.', 'bad-start': 'Enter the commencement date.', 'bad-end': 'Enter an end date after the commencement date.',
     'bad-scope': 'Enter the scope.', 'bad-duties': 'Enter the nature of works.', 'bad-basic': 'Enter the basic salary.',
     'bad-probation-pay': 'Enter the salary during probation, or leave it empty.', 'code-needed': 'Enter the master code again.',
     'wrong-code': 'The master code is incorrect.', 'locked': 'Too many attempts. Please try again in 15 minutes.',
-    'no-code': 'The master code is not set up yet. Please contact an admin.', 'not-sent': 'This document is not on the candidate\'s page.',
+    'no-code': 'The master code is not set up yet. Please contact an admin.', 'not-sent': 'This document is no longer waiting on the candidate. Refresh the page.',
     'not-signed': 'This document has not been signed.', 'bad-note': 'Enter a reason.', 'bad-date': 'Choose a date from the day it was sent to today.',
     'bad-file': 'Upload the signed copy as a PDF.', 'bad-stamp': 'Enter the stamp certificate number as printed.', 'bad-state': 'This document has changed. Refresh the page.',
     'bad-serial': 'Type the reference exactly as shown.', 'expired': 'The days to reply have passed. Replace the document instead.',
-    'replaced': 'The document it replaces can no longer be replaced.', 'gone': 'This document no longer exists.', 'not-confirmed': 'Confirm the document first.',
+    'replaced': 'The earlier document has already been replaced. Refresh the page.', 'gone': 'This document no longer exists.', 'not-confirmed': 'Confirm the document first.',
     'bad-sha': 'The sealed copy could not be saved. Please try again.'
   };
   function docSaid(r) { var k = r && r.data && r.data.error; return DOC_SAID[k] || said(r); }
@@ -868,7 +868,7 @@
       { name: 'probation', label: 'Probation (months)', type: 'number', value: t.probation_months == null ? 3 : t.probation_months, half: true },
       { name: 'reply', label: 'Days to reply', type: 'number', value: t.reply_days || (k === 'offer' ? 3 : 7) }
     ];
-    if (k === 'offer') f.push({ name: 'scope', label: 'Scope', value: t.scope || '', required: true });
+    if (k === 'offer') f.push({ name: 'scope', label: 'Job scope', value: t.scope || '', required: true });
     else {
       f.push({ name: 'duties', label: 'Nature of works', rows: 3, value: t.duties || '', required: true });
       f.push({ name: 'place', label: 'Place of employment', value: t.place || '', required: false, note: 'Leave empty for the registered office.' });
@@ -966,7 +966,7 @@
      name and reference, never its terms. */
   function confirmedMail(d) {
     return fnCall('hiring-mail', { docId: d.id, kind: 'confirmed' }).then(function (x) {
-      if (x.error) { msg('hirRecMsg', DOC_SAID[x.error] || SAID[x.error] || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
+      if (x.error) { msg('hirRecMsg', (x.error === 'not-confirmed' ? DOC_SAID[x.error] : SAID[x.error]) || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
       return true;
     });
   }
@@ -1033,7 +1033,7 @@
   function docBack(d) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Send back?', go: 'Send back', tone: 'warn', wait: true,
-      body: 'The candidate will be asked to ' + (d.kind === 'offer' ? 'reply' : 'sign') + ' again. The signing so far is kept in its record.',
+      body: 'The candidate will be asked to ' + (d.kind === 'offer' ? 'reply' : 'sign') + ' again. The candidate\'s earlier signature is kept.',
       field: { name: 'note', label: 'Reason', required: true } },
     function (v) {
       return rpc('hiring_doc_send_back', { p_doc: d.id, p_note: String(v.note || '').trim() }).then(function (r) {
@@ -1109,7 +1109,7 @@
   function docReplace(d) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Replace ' + DOC_WORD[d.kind] + '?', go: 'Replace', wait: true,
-      body: 'A new draft will be created from these terms. Once sent, it takes ' + d.serial + ' and this document becomes void. Set the salary again before sending.' },
+      body: 'A new draft will be created from these terms. Once sent, it replaces ' + d.serial + ', which becomes void. Set the salary again before sending.' },
     function () {
       return rpc('hiring_doc_replace', { p_doc: d.id }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
@@ -1514,8 +1514,7 @@
       if (!opts.length) { msg('hirRecMsg', 'Every active colleague has already been added to this candidate.', 'warn'); return; }
       window.ADspaceConfirm.ask({ title: 'Add colleague', go: 'Add', wait: true,
         fields: [{ name: 'member', label: 'Colleague', choices: [['', 'Choose a colleague']].concat(opts), required: true },
-                 { name: 'role', label: 'Role', choices: [['interviews', 'Interviewer'], ['owner', 'Owner']], seg: true, value: 'interviews',
-                   note: 'The owner decides on the candidate and sends the messages. An interviewer sees the candidate and enters scores.' }] },
+                 { name: 'role', label: 'Role', choices: [['interviews', 'Interviewer'], ['owner', 'Owner']], seg: true, value: 'interviews' }] },
       function (v) {
         if (!v.member) return 'Choose a colleague.';
         return rpc('hiring_person_set', { p_id: c.id, p_member: v.member, p_role: v.role }).then(function (r) {

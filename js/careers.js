@@ -70,7 +70,7 @@
         (ORG.map ? '<a class="btn btn-sm cr-map" href="' + esc(ORG.map) + '" target="_blank" rel="noopener">' +
           (I ? I.svg('pin') : '') + 'Get directions' + (I ? I.svg('out') : '') + '</a>' : '');
     return '<div><dt>Location</dt><dd class="cr-where">' + where + '</dd></div>' +
-      '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
+      '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
   }
   function interview(i) {
     if (!i) return '';
@@ -84,7 +84,7 @@
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
         }).join('') +
         '<label class="qs-pick"><input type="radio" name="crTime" value="none"><span class="qs-text"><b>None of these times</b></span>' + MARK + '</label></fieldset>' +
-        '<div class="field" id="crNoneBox" hidden><label for="crNone">Times that suit you</label>' +
+        '<div class="field" id="crNoneBox" hidden><label for="crNone">Preferred times</label>' +
           '<textarea class="textarea" id="crNone" rows="2" maxlength="300" placeholder="Optional"></textarea></div>' +
         '<p class="msg" id="crMsg"></p>' +
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
@@ -156,9 +156,9 @@
   };
   var DOCSAID = {
     wrong: 'The code is incorrect. Please try again.',
-    locked: 'This code can no longer be used. Please ask for a new code.',
-    'no-code': 'This code can no longer be used. Please ask for a new code.',
-    'code-expired': 'This code has expired. Please ask for a new code.',
+    locked: 'This code can no longer be used. Please select Send a new code.',
+    'no-code': 'This code can no longer be used. Please select Send a new code.',
+    'code-expired': 'This code has expired. Please select Send a new code.',
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
@@ -216,7 +216,7 @@
     var facts = '<dl class="ovfacts cr-facts">' +
       '<div><dt>Employment</dt><dd>' + esc(TYPEWORD[t.type] || '') + '</dd></div>' +
       '<div><dt>Position</dt><dd>' + esc(t.position || '') + '</dd></div>' +
-      (t.scope ? '<div><dt>Scope</dt><dd>' + esc(t.scope) + '</dd></div>' : '') +
+      (t.scope ? '<div><dt>Job scope</dt><dd>' + esc(t.scope) + '</dd></div>' : '') +
       '<div><dt>Commencement</dt><dd>' + esc(day(t.start)) + '</dd></div>' +
       (t.end ? '<div><dt>End of contract</dt><dd>' + esc(day(t.end)) + '</dd></div>' : '') +
       (months ? '<div><dt>Probation</dt><dd>' + months + ' month' + (months === 1 ? '' : 's') + '</dd></div>' : '') +
