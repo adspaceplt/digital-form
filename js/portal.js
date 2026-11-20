@@ -185,11 +185,12 @@
     el.textContent = text || '';
     el.className = 'msg' + (kind ? ' ' + kind : '');
   }
-  function niceDate(d) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function niceDate(d, named) {
     if (!d) return '';
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
     var k = String(d).length > 10 ? ADspaceClock.day(d) : String(d).slice(0, 10);
-    return ADspaceClock.date(k, { zh: lang === 'zh' }) || String(d);
+    return ADspaceClock.date(k, { zh: lang === 'zh', named: named }) || String(d);
   }
   /* The billed rate, term adjustment included, from the same one definition
      the console and the letter read. A client must never be shown a different
@@ -688,7 +689,7 @@
         if (list.length) {
           var stb = table('');
           list.forEach(function (x) {
-            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on)) : '';
+            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on, 'ahead')) : '';
             var row = document.createElement('div');
             row.className = 'svc-row cp-work-row';
             row.innerHTML = '<span class="svc-name"><b>' + esc([x.code, x.title].filter(Boolean).join(' · ')) + '</b><small>' +

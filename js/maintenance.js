@@ -66,6 +66,15 @@
     } catch (e) { return d.toISOString(); }
   }
 
+  /* A moment the reader waits on (the page back by, a window starting):
+     its weekday after the date, 20 Nov 2026 (Friday), 12:30pm;
+     2026年11月20日（星期五）下午12:30 (2026-11-20, the user). */
+  function due(iso) {
+    var C = window.ADspaceClock;
+    if (!iso || isNaN(new Date(iso))) return '';
+    return C && C.due ? C.due(iso, { zh: zh() }) : when(iso);
+  }
+
   function esc(s) { return window.ADspaceWords.esc(s); }
 
   var shown = null;
@@ -78,14 +87,17 @@
     /* With an end set, the time is the one line: "shortly" beside a time
        hours away said the same thing twice and the two disagreed (the
        user's sweep, 2026-11-12). */
-    var back = shown.ends_at ? (set.maintBack || 'The portal will be available again by {when}.').replace('{when}', when(shown.ends_at)) : '';
+    /* The lead words, then the date and time on a line of their own. */
+    var back = shown.ends_at ? (set.maintBack || 'The portal will be available again by\n{when}.').split('\n').map(function (line) {
+      return esc(line.replace('{when}', due(shown.ends_at)));
+    }).join('<br>') : '';
     var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
     /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
     var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
     var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
     box.querySelector('.cover-panel').innerHTML =
       '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
-      (back ? '<p class="maint-back">' + esc(back) + '</p>'
+      (back ? '<p class="maint-back">' + back + '</p>'
         : '<p>' + esc(paused ? set.pausedText || 'Please check again later.' : set.maintText || 'The portal will be available again shortly.') + '</p>') +
       (note ? '<p class="maint-note">' + esc(note) + '</p>' : '') +
       (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
@@ -231,5 +243,5 @@
     often('maintenance', settle, again);
   }
 
-  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch, often: often, page: PAGE };
+  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, due: due, watch: watch, often: often, page: PAGE };
 })();
