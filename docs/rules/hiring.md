@@ -218,7 +218,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   2026-11-20: "Give working hours a setting"), its PDF the same at today,
   never typed into a section; Acknowledge (`welcome_kit_ack`, filed). The
   Employment Contract's Working Hours clause (8 hours a day, five days a
-  week, a one-hour lunch) stays the template's words, never the setting. The sections are Settings, Hiring: Welcome
+  week, a one-hour lunch, `js/hrdocs.js`) never reads the Working hours
+  setting: it stays as written (the user, 2026-11-20: "Maintain employment
+  contract", its own sentence allowing the hours to change with business
+  needs). The sections are Settings, Hiring: Welcome
   Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
   refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for
