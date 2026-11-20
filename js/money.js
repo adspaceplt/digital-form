@@ -30,7 +30,7 @@
     lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
     ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10, ai_price_image: 0.07,
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72, task_remind_hours: 3, task_start_days: 2, task_past_days: 30, stage_back_days: 7, quote_valid_days: 30, quote_reply_days: 2, details_form_days: 14, wa_repeat_hours: 24, quote_wa_day: 30,
-    vic_lead_followup_hours: 24, vic_proposal_followup_days: 7, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30, hiring_invite_days: 3, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
+    vic_lead_followup_hours: 24, vic_proposal_followup_days: 7, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30, hiring_invite_days: 3, hiring_reply_days: 3, hiring_decision_days: 7, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
     /* A creator's payment, working days after the post (2026-11-09). */
     creator_pay_days_myr: 10, creator_pay_days_other: 21,
     /* The month Analytics counts its history from, YYYYMM (2026-10-25). */

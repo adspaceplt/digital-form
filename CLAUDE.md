@@ -2305,7 +2305,10 @@ learned about an area is written in its file, never here.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
 - A migration is applied by Claude through the Supabase connector (project
-  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), in the order the release
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), or through the Management
+  API (`api.supabase.com/v1/projects/{ref}/database/query`, the token never
+  printed) in a session whose connector belongs to another organisation
+  (2026-11-20); never a connector on another organisation, in the order the release
   states (commonly after the Pages deploy, so the page stops asking before
   the database stops answering), and verified on the live database
   afterwards. The report names what was applied.

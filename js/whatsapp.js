@@ -340,7 +340,8 @@
   var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
     approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
     creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved',
-    hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_pool: 'Talent pool', hiring_not: 'Application outcome',
+    hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_held: 'Interview held', hiring_moved: 'Decision date changed',
+    hiring_pool: 'Talent pool', hiring_not: 'Application outcome',
     hiring_doc: 'Employment document', hiring_code: 'Verification code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };
   var ML_STATE = { queued: ['Queued', 'is-warn'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
@@ -561,6 +562,7 @@
     gone: 'This email\'s address and message have been deleted, so it cannot be sent again.',
     already: 'This email has already been sent again. Refresh the page to see it.',
     'not-open': 'The interview times have changed. Send the invitation from the candidate\'s record.',
+    'not-held': 'Not sent. A decision has been made on this candidate.',
     'not-confirmed': 'The interview is no longer confirmed. Send the email from the candidate\'s record.',
     'no-meet': 'The interview has no Google Meet link. Add one on the candidate\'s record first.',
     'no-email': 'The candidate\'s decision has changed. Send the email from the candidate\'s record.',
@@ -571,6 +573,7 @@
   };
   var AGAIN_STATES = { failed: 1, bounced: 1, unknown: 1 };
   var HIRE_KIND = { hiring_invite: ['invite', 'interviewId'], hiring_confirm: ['confirm', 'interviewId'],
+    hiring_held: ['held', 'interviewId'], hiring_moved: ['moved', 'interviewId'],
     hiring_pool: ['outcome', 'candidateId'], hiring_not: ['outcome', 'candidateId'], hiring_doc: ['doc', 'docId'] };
   function mlCanAgain(x) {
     if (!AGAIN_STATES[x.status] || !x.to_email || !may('whatsapp', 'work') || !may('send.email', 'work')) return false;

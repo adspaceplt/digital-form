@@ -6,6 +6,12 @@
  *                                     the candidate's own page to choose one;
  *   { interviewId, kind: 'confirm' }  the time approved, with its Google Meet
  *                                     or the office's address;
+ *   { interviewId, kind: 'held' }     the interview held (2026-11-20): the
+ *                                     candidate thanked and told by when
+ *                                     ADspace will inform them of the
+ *                                     outcome;
+ *   { interviewId, kind: 'moved' }    that date changed, with the team's
+ *                                     note to the candidate;
  *   { candidateId, kind: 'outcome' }  the decision (step C): Keep in talent
  *                                     pool asks the candidate to agree on
  *                                     their page; Not proceed thanks them.
@@ -70,6 +76,31 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
   }
   const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
   const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
+  /* The interview held, and its decision date moved (2026-11-20). */
+  if (m.kind === 'held') {
+    return {
+      subject: 'Thank you for your interview: ' + m.position,
+      heading: 'Thank you for your interview',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Thank you for attending the interview for the position of ' + m.position + '.\n\n' +
+        'ADspace will inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
+        'The details are also on your application page.\n\n{invoices}\n\n' + close,
+      block: button('View your application', PAGE + m.key)
+    };
+  }
+  if (m.kind === 'moved') {
+    return {
+      subject: 'Your application: ' + m.position,
+      heading: 'Your application',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Thank you for your patience following the interview for the position of ' + m.position + '. ' +
+        'ADspace requires additional time to consider your application.\n\n' +
+        'ADspace will now inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
+        (m.decide_note ? m.decide_note + '\n\n' : '') +
+        'The details are also on your application page.\n\n{invoices}\n\n' + close,
+      block: button('View your application', PAGE + m.key)
+    };
+  }
   if (m.kind === 'pool') {
     return {
       subject: 'Your application: ' + m.position,
@@ -171,7 +202,7 @@ Deno.serve(async (req) => {
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
   const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc';
   const id = String((outcome ? b.candidateId : isDoc ? b.docId : b.interviewId) || '');
-  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'outcome', 'doc'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'held', 'moved', 'outcome', 'doc'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -199,7 +230,10 @@ Deno.serve(async (req) => {
      its own, so Resend never answers it with the first send, and filed as
      sending that email again. */
   const again = /^[0-9a-f-]{36}$/.test(String(b.againOf || '')) ? String(b.againOf) : '';
+  /* A decision date's key carries the date, so a date moved is emailed
+     again. */
   const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
+    (kind === 'held' || kind === 'moved' ? '-' + String(m.decide_by || '').replace(/[^0-9a-z]/gi, '') : '') +
     (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
     body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
