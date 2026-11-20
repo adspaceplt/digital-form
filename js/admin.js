@@ -5667,9 +5667,9 @@
     if (state.uploading) { cancelUpload(); return; }
     if (!state.drafts.length) { clearDrafts(); return; }
     window.ADspaceConfirm.ask({
-      title: 'Discard these assets?',
+      title: 'Discard these files?',
       body: 'The ' + state.drafts.length + (state.drafts.length === 1 ? ' file' : ' files')
-          + ' waiting to be added will be discarded. Nothing is added to the set.',
+          + ' waiting to be added will be discarded.',
       go: 'Discard',
       tone: 'danger'
     }, clearDrafts);

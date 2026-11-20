@@ -1713,7 +1713,7 @@
   function openDelete(d, onChange) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: 'Deleting ' + d.serial + ' deletes the document. ' +
+      body: d.serial + ' will be deleted. ' +
         (d.source === 'portal' ? 'The PDF is generated on Download and is not stored. ' : '') +
         'This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,

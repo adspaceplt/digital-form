@@ -335,7 +335,7 @@
       if (!work && !mine) return '';
       return formHead('Details update form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!mine ? 'Not sent' : mine.state === 'used'
-          ? 'Received ' + esc(day(mine.submitted_at)) + ', applied' : 'Link ended ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
+          ? 'Received ' + esc(day(mine.submitted_at)) + ', applied' : 'Link expired ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
     }
     if (s.status !== 'pending') return '';
     if (!work && !f) return '';

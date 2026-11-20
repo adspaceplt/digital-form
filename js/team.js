@@ -705,7 +705,7 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Only another admin can change your own access date. Please ask another admin.';
+    if (/own-expiry/.test(t)) return 'You cannot change your own access date. Please ask another admin.';
     if (/expired-date/.test(t)) return 'Set Access until to today or a later date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
@@ -1015,7 +1015,7 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Only another admin can remove your own account. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    own: 'You cannot remove your own account. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
     'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
@@ -1221,7 +1221,7 @@
          offered to the super admin alone, as every other group select. */
       var to = state.roles.filter(function (g) { return g.slug !== r.slug && (amSuper() || !(g.is_admin || g.slug === 'admin')); })
         .map(function (g) { return [g.slug, g.name]; });
-      var fields = members ? [{ name: 'to', label: 'Move its ' + members + (members === 1 ? ' member to' : ' members to'), required: true,
+      var fields = members ? [{ name: 'to', label: 'New group for its ' + members + (members === 1 ? ' member' : ' members'), required: true,
         choices: [['', 'Choose a group']].concat(to) }] : [];
       window.ADspaceConfirm.ask({
         title: 'Delete',
