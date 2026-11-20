@@ -101,13 +101,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     manager (`sm_reports_month_tick`); a report task made after its report
     stands (a tick added in My Work later) takes the report's step at once (`ops_tasks_report_catch_up`;
     `2026-11-10-report-ticks-its-month.sql`; the user, 2026-11-10).
-  - The month's report task follows its report
-    (`2026-10-08-report-tasks-follow.sql`, trigger `sm_reports_task_follow`,
-    the task found as `sm_report_gate` finds it; the user, 2026-10-08): a
-    report made puts it In progress under its maker; in review, confirmed
-    or published and not yet sent, Waiting; marked as sent, Review. Done is
-    the owner's own press: a finished or cancelled task never moves, nothing
-    moves one to Done, and a white-label brand's report leaves it alone; a
+  - The month's report task follows its report to Done
+    (`2026-11-21-report-task-follows-to-done.sql`, trigger
+    `sm_reports_task_follow`, the task found as `sm_report_gate` finds it,
+    the stage from `sm_report_task_target`, every move through
+    `sm_report_task_move`; the user, 2026-11-21): a report made puts it In
+    progress under its maker; submitted for review, confirmed or published
+    and not yet sent, Review; marked as sent, Done, finished on the sent
+    day (its last second in Malaysia, or now where that day is today), its
+    timers stopped and filed `completed`. A finished task, whether the
+    report or its owner finished it, moves only with its report moving
+    back: marked as not sent, Review; back in draft (sent back or revised),
+    In progress. A cancelled task never moves, and a white-label brand's
+    report leaves it alone; a
     report given a brand after it was made puts the task back to To do
     under the month's manager (unless another of the client's own reports
     in the month holds it), and one given back to its client takes it

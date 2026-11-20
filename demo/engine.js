@@ -8532,11 +8532,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
     try { bad = opsRpc('__month_report_tick', { e: e, kind: r.kind || 'social' }); } finally { session.user.email = who; }
     if (bad) undo();
   }
-  function smTaskFollow(r, made) {
+  function smTaskFollow(r, made, before) {
     if (!r || r.brand_id || r.on_request) return;
-    var to = r.status === 'draft' ? 'doing' : (r.status === 'review' || r.status === 'confirmed' || (r.status === 'published' && !r.sent_on)) ? 'waiting'
-      : r.status === 'published' ? 'review' : null;
+    var to = r.status === 'draft' ? 'doing' : (r.status === 'review' || r.status === 'confirmed' || (r.status === 'published' && !r.sent_on)) ? 'review'
+      : r.status === 'published' ? 'complete' : null;
     if (!to) return;
+
+    var wasStatus = before ? before.split('|')[0] : null, wasSent = before ? before.split('|')[1] : '';
+    var back = !made && !!before && ((r.status === 'draft' && wasStatus !== 'draft') ||
+      (r.status === 'published' && wasStatus === 'published' && !r.sent_on && !!wasSent));
     var e = (DB.ops_engagements || []).filter(function (x) {
       if (x.client_id !== r.client_id || x.status === 'cancelled') return false;
       var sp = smSpan(x); return r.period_end >= sp[0] && r.period_end <= sp[1];
@@ -8544,7 +8548,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (!e) return;
     var t = (DB.ops_tasks || []).filter(function (x) { return x.engagement_id === e.id && x.source_type === 'report_' + (r.kind || 'social') && !x.cancelled_at && !x.archived_at; })
       .sort(function (x, y) { return String(y.created_at || '').localeCompare(String(x.created_at || '')); })[0];
-    if (!t || t.completed_at) return;
+    if (!t || (t.completed_at && !back)) return;
     var at = new Date().toISOString();
     if (made && r.created_by) {
       var own = (DB.ops_task_assignees || []).filter(function (x) { return x.task_id === t.id && x.responsibility === 'owner' && !x.ended_at; })[0];
@@ -8557,9 +8561,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (t.stage_key !== to) {
       var was = t.stage_key;
       var note = made ? 'Report started' : r.status === 'draft' ? 'Report back in draft' : r.status === 'review' ? 'Report submitted for review'
-        : r.status === 'confirmed' ? 'Report confirmed' : !r.sent_on ? 'Report published' : 'Report sent to the client';
-      Object.assign(t, { stage_key: to, version: (t.version || 1) + 1, updated_at: at, completed_at: null, blocked_at: null, blocked_category: null });
+        : r.status === 'confirmed' ? 'Report confirmed' : !r.sent_on && back ? 'Report marked as not sent' : !r.sent_on ? 'Report published' : 'Report sent to the client';
+
+      var fin = null;
+      if (to === 'complete') {
+        var end = Date.parse((r.sent_on || appToday()) + 'T23:59:59+08:00');
+        fin = new Date(Math.min(Date.now(), end)).toISOString();
+      }
+      Object.assign(t, { stage_key: to, version: (t.version || 1) + 1, updated_at: at, completed_at: fin, blocked_at: null, blocked_category: null });
       opsLog(t.id, 'stage_changed', { stage_key: was }, { stage_key: to }, note, { report_id: r.id });
+      if (fin) opsLog(t.id, 'completed', null, null, null, { report_id: r.id });
     }
   }
 
@@ -10548,7 +10559,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var smId = (args || {}).p_id || (/^sm_report_create/.test(name) ? sout.id : null);
         var smR = (DB.sm_reports || []).filter(function (x) { return x.id === smId; })[0];
         if (smR && !smWas) smMonthTick(smR);
-        if (smR && (!smWas || smWas !== smR.status + '|' + (smR.sent_on || ''))) smTaskFollow(smR, !smWas);
+        if (smR && (!smWas || smWas !== smR.status + '|' + (smR.sent_on || ''))) smTaskFollow(smR, !smWas, smWas);
       }
       persist();
       return Promise.resolve({ data: sout, error: null });
