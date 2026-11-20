@@ -9746,7 +9746,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!ssList.length) return ssNo('none');
         ssAll[ssKey] = [];
         DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
-          detail: ssRow.name + ': signed out on every device (' + ssList.length + ')', created_at: new Date().toISOString() });
+          detail: ssRow.name + ' signed out on ' + ssList.length + (ssList.length === 1 ? ' device' : ' devices'), created_at: new Date().toISOString() });
         return Promise.resolve({ data: { ok: true, ended: ssList.length }, error: null });
       }
       if (ssRow.system && (!ssMe || ssMe.id !== ssRow.id)) return ssNo('system-account');

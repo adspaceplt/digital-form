@@ -6145,7 +6145,7 @@
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     /* A colleague's sign-in unused this long is signed out each night
        (2026-11-20, `team_sessions_idle_end`). */
-    idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Sign out devices unused for (days, 0 turns this off)', 'idle', '', 'Unused for', per('day')]] },
+    idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],
       ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],

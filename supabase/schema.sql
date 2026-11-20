@@ -132983,8 +132983,8 @@ begin
     if v_n > 0 then
       insert into public.activity_log (actor, action, subject, detail)
       values ('system', 'team.changed', 'Signed-in devices',
-              v_n || case when v_n = 1 then ' device' else ' devices' end || ' unused for ' || v_days ||
-              case when v_days = 1 then ' day' else ' days' end || ' signed out');
+              v_n || case when v_n = 1 then ' device' else ' devices' end || ' signed out after ' || v_days ||
+              case when v_days = 1 then ' day' else ' days' end || ' unused');
     end if;
   end if;
   perform public.job_beat('session-idle', true,
@@ -133013,7 +133013,7 @@ begin
   if v_n = 0 then return jsonb_build_object('error', 'none'); end if;
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'team.changed', 'Signed-in devices',
-          m.name || ': signed out on every device (' || v_n || ')');
+          m.name || ' signed out on ' || v_n || case when v_n = 1 then ' device' else ' devices' end);
   return jsonb_build_object('ok', true, 'ended', v_n);
 end $$;
 revoke all on function public.team_sessions_end_all(uuid) from public, anon, authenticated;

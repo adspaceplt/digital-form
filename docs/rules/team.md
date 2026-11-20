@@ -76,15 +76,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (beside Show all where drawn, else at its own width), drawn wherever the
   colleague holds a sign-in, never on the reader's own record or a system
   account's; it asks (how many devices, signed in again on each), ends every
-  sign-in at once and is filed `{name}: signed out on every device (n)`;
+  sign-in at once and is filed `{name} signed out on n devices`;
   refusals `own-account`, `system-account`, `none`, `denied`, `not-found`.
   Each night (pg_cron `session-idle`, 03:52 MYT) `team_sessions_idle_end`
   ends every colleague's sign-in whose latest renewal, update or start is
   older than `session_idle_days` (Business setting, 30, 0 turns this off, 1
   to 365; Settings, Portal: Signed-in devices; the user: "yes option 2"),
   never a system account's or a client contact's; one `team.changed` line by
-  `system` a run that signed anybody out (`n devices unused for 30 days
-  signed out`), a `job_beats` beat (`session-idle`) every run, and a failed
+  `system` a run that signed anybody out (`n devices signed out after 30
+  days unused`), a `job_beats` beat (`session-idle`) every run, and a failed
   run raises so `jobs_watch` names it.
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
