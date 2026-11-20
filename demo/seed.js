@@ -370,6 +370,47 @@
       archived_at: null, created_at: ago(200 - i * 10), created_by: 'd0', updated_at: ago(30 + i) };
   });
 
+  /* Documents to check on /verify/ (the user, 2026-11-20): a signed Letter
+     of Offer, a signed quotation confirmed and sealed, and a client letter
+     made void, each dated January 1988 so no reference can be a real one,
+     each with its Document ID. Every copy carries one, so the issue date
+     never stands in for it here. */
+  var V = ACTIVE[0], VC = V.client_code, VK = DB.client_contacts.filter(function (k) { return k.client_id === V.id && k.is_primary; })[0];
+  var VS = DB.client_services.filter(function (s) { return s.client_id === V.id; })[0];
+  DB.app_settings = [{ key: 'verify_code_from', from_date: '2023-08-14', value: 19870101, set_by: null, set_at: '1987-01-01T00:00:00Z' }];
+  DB.mail_boxes = [['general', 'General'], ['hr', 'HR'], ['payables', 'Accounts payable'], ['finance', 'Finance'], ['einvoice', 'e-Invoice'],
+    ['legal', 'Legal and compliance']].map(function (b) { return { key: b[0], label: b[1], address: b[0] + '@example.com' }; });
+  var vSub = VS.rate, vTax = Math.round(vSub * 8) / 100;
+  DB.client_documents.push({ id: 'dvo1', client_id: V.id, kind: 'offer', number: 'AQL/' + VC + '/880101', issued_at: '1988-01-01', market: 'MY',
+    subtotal: vSub, tax: vTax, total: vSub + vTax,
+    bill_to: { name: V.name, legal_name: V.legal_name, address: V.billing_address, regno: V.company_no, regno_old: '', tin: '', sst_no: '', sst_applies: true,
+      market: 'MY', fx_sgd: null, contact: VK.name, contact_role: VK.role, contact_salutation: VK.salutation, phone: VK.phone, email: VK.email,
+      finance_email: V.finance_email, client_code: VC, owner: V.owner, source: V.source, industry: V.industry, stage: 'proposal', enquiry: '', terms: [], terms_own: false, entity_id: null },
+    lines: [{ label: VS.label, unit: VS.unit, note: '', detail: '', state: 'quoted', qty: 1, rate: VS.rate, tenure: 12, start_on: '1988-02-01',
+      term_adjust: false, term_pct: null, tax: true, service_id: VS.id, tax_code: 'SV8', tax_pct: 8 }],
+    issued_by: 'Alex Tan', client_code: VC, idem_key: null, created_at: '1988-01-01T02:00:00Z', voided_at: null, voided_by: null, void_reason: null,
+    signed_at: '1988-01-04T03:00:00Z', verified_at: '1988-01-05T02:00:00Z', verified_by: 'Alex Tan', superseded_by: null, doc_code: 'SAMP2E88' });
+  var vAt = function (d, t) { return '1988-01-0' + d + 'T' + t + 'Z'; };
+  var vDevice = 'Safari 18 on macOS 15 · 1512×982 · Asia/Kuala_Lumpur · en-MY';
+  DB.quotations.push({ id: 'dvq1', ref: 'ADP/QT8801-' + V.name.charAt(0).toUpperCase() + '01', client_id: V.id, brand: V.name, version: '1.0.0',
+    selection: {}, lines: [{ kind: 'plan', label: VS.label, basis: 'month', qty: 1, rate: VS.rate, amount: VS.rate }],
+    totals: { month: { incl: vSub + vTax }, term: 12, sst_pct: 8 }, status: 'sent', source: 'console', issued_at: vAt(1, '02:10:00'), valid_until: '1988-01-31',
+    made_by: 'Mei Ling Chan', contact: null, access_key: null, sent_out_at: vAt(1, '02:20:00'), signed_at: vAt(4, '02:42:15'),
+    signed: { via: 'online', company: { legal_name: V.legal_name }, contact: { name: 'Jane Doe', email: 'client@example.com' },
+      signer: { name: 'Jane Doe', designation: 'Director' }, signature: { type: 'typed', text: 'Jane Doe' },
+      record: { at: vAt(4, '02:42:15'), email: 'client@example.com', in_contacts: true, ip: '192.0.2.10', country: 'MY', device: vDevice } },
+    submitted_at: vAt(4, '06:05:44'), submitted_by: 'Mei Ling Chan', reviewer_name: 'Alex Tan', reviewed_at: vAt(5, '01:16:09'), reviewed_by: 'Alex Tan',
+    reviewed_role: 'Managing Director', seal_key: 'private/' + V.id + '/sample.pdf', seal_sha: '0'.repeat(64), seal_pages_sha: '0'.repeat(64),
+    sealed_at: vAt(5, '01:16:12'), sealed_by: 'Alex Tan', removed_at: null, removed_by: null, replaces: null, doc_code: 'SAMP3Q88' });
+  DB.signing_steps = [
+    { id: 'dvs1', doc_kind: 'quotation', doc_id: 'dvq1', step: 'opened', at: vAt(4, '02:38:02'), ip: '192.0.2.10', country: 'MY', device: vDevice },
+    { id: 'dvs2', doc_kind: 'quotation', doc_id: 'dvq1', step: 'code', at: vAt(4, '02:41:37'), email: 'client@example.com', in_contacts: true, ip: '192.0.2.10', device: vDevice }];
+  DB.documents.push({ id: 'dvd1', serial: 'ACL/' + VC + '/88010801', type_id: 'dt-letter', family: 'client', kind: 'Letter to Client', client_id: V.id,
+    member_id: null, supplier_id: null, issued_at: '1988-01-08', title: 'LETTER', salutation: 'Dear Jane,', recipient: { name: V.legal_name, address: V.billing_address },
+    body: { en: 'We write regarding your account with us.' }, signatory: { name: 'Alex Tan', designation: 'Managing Director' }, signed: true,
+    closing: 'Yours sincerely,', languages: ['en'], issued_by: 'Alex Tan', source: 'portal', idem_key: null, created_at: '1988-01-08T02:00:00Z',
+    voided_at: '1988-01-12T03:00:00Z', voided_by: 'Alex Tan', void_reason: 'Issued in error.', replaces: null, note: null, file_url: null, doc_code: 'SAMP4V88' });
+
   /* What happened lately, newest first in the record. */
   var ACTS = [['Mei Ling Chan', 'task.moved', 0.1], ['Nur Aina', 'client.touch', 0.3], ['Daniel Wong', 'task.moved', 0.5], ['Ravi Kumar', 'client.added', 1],
     ['Mei Ling Chan', 'report.published', 1.4], ['Sophie Lee', 'task.moved', 2], ['Alex Tan', 'set.published', 3], ['Nur Aina', 'campaign.offered', 5]];

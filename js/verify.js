@@ -71,6 +71,19 @@
         'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件' }
     }
   };
+  /* The issuer's own names, as the page's settings hold them: the demo
+     (js/demo.js) answers for its sample agency, never as ADspace. */
+  (function names() {
+    var cfg = window.ADSPACE_CONFIG || {}, org = ORG.name || 'ADSPACE PLT', brand = cfg.agencyName || 'ADspace';
+    if (org === 'ADSPACE PLT' && brand === 'ADspace') return;
+    var walk = function (o) {
+      Object.keys(o).forEach(function (k) {
+        if (typeof o[k] === 'string') o[k] = o[k].replace(/ADSPACE PLT/g, org).replace(/ADspace/g, brand);
+        else if (o[k] && typeof o[k] === 'object') walk(o[k]);
+      });
+    };
+    walk(WORDS);
+  })();
   /* A step done is green, one that closes the document grey, a void red. */
   var STEP_TONE = { voided: 'is-danger', declined: 'is-off', withdrawn: 'is-off', replaced: 'is-off', expired: 'is-off' };
   var lang = 'en';
