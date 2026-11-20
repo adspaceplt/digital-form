@@ -22,7 +22,7 @@
     denied: 'You do not have permission to change checklists. Please ask an admin.',
     'brand-denied': 'Write with AI reads the Brand analysis, which you do not have access to. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
-    'bad-value': 'Choose one of the answers listed.', 'bad-item': 'This checklist has changed. Open it again.',
+    'bad-value': 'Choose one of the answers listed.', 'bad-item': 'Not saved. This checklist was changed by someone else. Refresh the page to see the latest version.',
     'too-long': 'Enter a note of up to 1,000 characters.', own: 'Only a colleague who did not prepare or fill in this checklist can sign it off.',
     'not-started': 'Nothing has been recorded on this checklist. Tick or answer an item first.',
     'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
@@ -79,7 +79,7 @@
         var d = r.data || {};
         if (r.error || d.error) { row.querySelector('.ck-item-meta').textContent = 'Could not load: ' + said(r.error || d.error); return; }
         var c = count(d), st = stateOf(d);
-        row.querySelector('.ck-item-meta').textContent = 'Ver. ' + d.version + ' · ' + c.done + ' of ' + c.n + ' done' +
+        row.querySelector('.ck-item-meta').textContent = 'Version ' + d.version + ' · ' + c.done + ' of ' + c.n + ' done' +
           (d.reviewed ? ' · Signed off by ' + d.reviewed.name + ', ' + day(d.reviewed.at) : '');
         row.querySelector('.ck-item-state').innerHTML = '<span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>';
       }).catch(function (e) { row.querySelector('.ck-item-meta').textContent = 'Could not load: ' + said(e); });
@@ -193,7 +193,7 @@
     var d = V.data, c = count(d), st = stateOf(d), na = d.sections_na || [];
     var cl = V.ctx.client, can = editable(d);
     var html = '<button class="backlink ck-back" type="button" data-a="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>All checklists</button>' +
-      '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Ver. ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
+      '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Version ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
       '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
       (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
       '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
@@ -467,11 +467,11 @@
       if (rs[0].error || l.error) { ctx.msg('ckMsg', said(rs[0].error || l.error), 'err'); return; }
       if (!l.left) {
         ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. Please ask an admin to turn it on.'
-          : 'No checklist drafts left today. The next is free at 12:00 am.', 'err');
+          : 'No checklist drafts left today. Resets at 12:00 am.', 'err');
         return;
       }
       var needBa = !rs[1].error && !ready.error && !ready.analysis;
-      if (needBa && !al.left) { ctx.msg('ckMsg', 'No Brand analysis is confirmed, and no analyses are left today. The next is free at 12:00 am.', 'err'); return; }
+      if (needBa && !al.left) { ctx.msg('ckMsg', 'No Brand analysis is confirmed, and no analyses are left today. Resets at 12:00 am.', 'err'); return; }
       var was = keep(k);
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
@@ -523,7 +523,7 @@
       busy(false);
       var m = e && e.message;
       ctx.msg('ckMsg', m === 'no-source' ? 'Add the website, an Instagram or Facebook handle, or link Meta accounts on Brand first.'
-        : m === 'ai-limit' ? 'No analyses left today. The next is free at 12:00 am.' : said(e), 'err');
+        : m === 'ai-limit' ? 'No analyses left today. Resets at 12:00 am.' : said(e), 'err');
     });
   }
   /* The analysis read here before it is confirmed: the parts the checklist
@@ -550,7 +550,7 @@
       if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#ckBaSheet .sheet-card');
     }
     box.querySelector('[data-m="body"]').innerHTML =
-      (row.hypothesis ? '<p class="msg warn ck-ba-hyp">A starting hypothesis to test</p>' : '') +
+      (row.hypothesis ? '<p class="msg warn ck-ba-hyp">This analysis is a starting hypothesis to test.</p>' : '') +
       sec('Brand positioning', fact([['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         ['Competitors', esc((p.competitors || []).join(', '))]])) +
       sec('Target audiences', fact((a.audiences || []).map(function (x) { return [x.name, esc([x.who, x.pains].filter(Boolean).join(' · '))]; }))) +
@@ -590,7 +590,7 @@
     }).catch(function (e) {
       busy(false);
       var d = e && e.d;
-      ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. The next is free at 12:00 am.' : said(e), 'err');
+      ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. Resets at 12:00 am.' : said(e), 'err');
     });
   }
 
@@ -788,7 +788,7 @@
     newPage();
     text(d.lead || '', M, y - 6, 9, book, mute); y -= 22;
     factRow('Client / Brand', cl.name);
-    factRow('Version', 'ver. ' + d.version);
+    factRow('Version', String(d.version));
     factRow('Project Manager / PM', cl.owner || '');
     y -= 14;
     var na = d.sections_na || [];
