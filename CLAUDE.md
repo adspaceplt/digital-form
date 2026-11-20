@@ -177,8 +177,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   and server).
 - The slowest suites wait for what the page shows, never for time
   (`tests/settle.js`: `settle(p)` after an act, `ready(p)` after a load or a
-  sign-in, ten seconds at most); a fixed sleep stays only where the thing
-  measured is time itself.
+  sign-in, ten seconds at most; `settle` lets two frames render first, so a
+  ResizeObserver's refit after a resize is read, 2026-11-20); a fixed sleep
+  stays only where the thing measured is time itself.
 - It prints one line per suite, ending in its wall time, then the total,
   and ends `gate: ok` or `gate: PROBLEM (n)`
   (also written to `$OUT`, default `/tmp/gate.txt`); a pass that warned
@@ -809,7 +810,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     in the sheet a window that does not end after its start and now; Undo
     puts each page back. It opens on Upgrading, never Available, unless the
     pages chosen share a set state (that state, their window kept where it
-    is one); Available lays the window and notes aside (the state chosen
+    is one; where their times or notes differ, the fields open empty over
+    a mute line saying so, and each page keeps its own of every field left
+    empty, only what is typed laid over all, `tests/upgrade.js`); Available lays the window and notes aside (the state chosen
     again brings them back), and a window typed under Available is refused
     (Choose Upgrading or Unavailable to set a start, an end or a note.; the user, 2026-11-20).
     Every date and time field is one height (`--ctl-h`, the small one

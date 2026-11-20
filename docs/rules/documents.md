@@ -291,7 +291,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     signed; DESIGN.md, Print; 2026-11-20): the verify line centred
     (`ADSPACE_ORG.verifyUrl`, go.adspace.me/verify, which redirects to
     /verify/) and the page count; the reference stands in the body (Our
-    Ref), never the foot.
+    Ref) and, on a lettered document of two pages or more, on every page
+    in the bottom margin's left (Slate Book 6.5pt, `#a1a1a1`, level with the
+    Client initials, `pen()` `ref` or `letterFoot`'s serial; 2026-11-20,
+    the anti-swap reference restored; `pdfreal`). The inks are the pen's
+    alone (DESIGN.md, Print): the wordmark and body `#515151`, titles
+    `#1a1a1a`, every mark of the head and the foot `#a1a1a1`.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit: Document types
