@@ -306,7 +306,7 @@
           /* Stop is the soft remove; Delete, once it is stopped, is the one
              that cannot be taken back. */
           on('delete', function () {
-            window.ADspaceConfirm.ask({ title: 'Delete this announcement?', body: 'It will be deleted. This cannot be undone.', go: 'Delete', tone: 'danger' },
+            window.ADspaceConfirm.ask({ title: 'Delete this announcement?', body: 'This cannot be undone.', go: 'Delete', tone: 'danger' },
               function () { drop(a); });
           });
         });

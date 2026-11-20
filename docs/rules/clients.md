@@ -422,7 +422,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the month's check of that key (`ready`), and Reopen unticks it. A month's
   check is never ticked by hand (`ops_engagement_set_check` refuses
   `use-checklist`); My Work shows it with Open on the client's checklist.
-  Download draws its PDF (FOR INTERNAL USE centred on the paper). The
+  Download draws its PDF on the plain Internal use only page (DESIGN.md §2, Print). The
   Pre-Advertising Checklist is ver. r1.3-26 (`2026-10-15-checklist-r13.sql`;
   a checklist started before keeps its template): Campaign Details asks
   Primary Destination and Monthly Budget; Meta Campaign Setup holds

@@ -14,8 +14,10 @@
  * emailed code or a passkey within fifteen minutes (`hr_form_pass`, the
  * Performance lock's proof, `perf_code_fresh`); otherwise the code is sent
  * to their sign-in address and asked here, then the download asked again.
- * Drawn in the browser on the letterhead and never stored; filed in the
- * Activity record by the database. Never a salary.
+ * Drawn in the browser on the plain page (title and INTERNAL USE ONLY,
+ * `ADspaceDocs.templateOf('hr.' + kind)`; admins' working forms never take
+ * the letterhead) and never stored; filed in the Activity record by the
+ * database. Never a salary.
  */
 (function () {
   'use strict';
@@ -70,25 +72,26 @@
     });
   }
 
-  function draw(form) {
+  function draw(form, kind) {
     var D = window.ADspaceDocs;
+    var key = 'hr.' + (kind || form.kind || 'record');
     return D.lib().then(function (PDF) {
       var pdf, fonts, logo;
       return PDF.PDFDocument.create().then(function (p) {
         pdf = p;
-        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf)]);
+        return Promise.all([D.embedFonts(pdf, PDF, {}), D.templateOf(key) === 'plain' ? null : D.embedLogo(pdf)]);
       }).then(function (got) {
         fonts = got[0]; logo = got[1];
         return embedAll(pdf, form);
       }).then(function (pics) {
         var font = fonts.font, med = fonts.med || fonts.bold;
-        var pn = D.pen(PDF, fonts, logo);
+        var pn = D.pen(PDF, fonts, logo, { kind: key, title: form.title });
         var M = pn.M, R = pn.R, W = pn.W, H = pn.H, text = pn.text, wrap = pn.wrap, mute = pn.mute;
         var pages = [], y;
         var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
         var need = function (h) { if (y - h < FLOOR) newPage(); };
         newPage();
-        text('PRIVATE & CONFIDENTIAL', M, y, BODY, fonts.bold); y -= 22;
+        if (!pn.plain) { text('PRIVATE & CONFIDENTIAL', M, y, BODY, fonts.bold); y -= 22; }
         /* The photograph stands at the right of the title, as the paper
            form's box does. */
         var photoH = 0;
@@ -99,7 +102,8 @@
           photoH = ph;
         }
         var top = y;
-        wrap(form.title, R - M - (photoH ? 100 : 0), 15, med).forEach(function (ln) { text(ln, M, y, 15, med); y -= 19; });
+        /* The plain page heads itself with the title. */
+        if (!pn.plain) wrap(form.title, R - M - (photoH ? 100 : 0), 15, med).forEach(function (ln) { text(ln, M, y, 15, med); y -= 19; });
         if (form.who) { text(form.who, M, y, 11, font); y -= 15; }
         if (form.ref) { text(form.ref, M, y, 9, font, mute); y -= 13; }
         if (photoH) y = Math.min(y, top - photoH - 4);
@@ -192,7 +196,7 @@
         if (d.error) { stop(d.error === 'missing' ? said({ code: 'PGRST202' }) : said(d)); return; }
         tab = D.previewTab ? D.previewTab() : null;
         return build().then(function (form) {
-          return draw(form).then(function (bytes) {
+          return draw(form, kind).then(function (bytes) {
             return D.save(new Blob([bytes], { type: 'application/pdf' }), fileName(form), tab);
           });
         }).then(function () { if (btn) btn.disabled = false; });
