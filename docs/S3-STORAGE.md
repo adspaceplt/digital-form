@@ -517,6 +517,31 @@ Every file is public again within minutes, as before.
 
 ---
 
+## 7. Report pictures (2026-11-20)
+
+A Social Media Report's post and ad pictures are kept under
+`private/{client}/thumbs/{id}.jpg` and read through S3 links signed for an
+hour (`sign-download`, `thumbs`), because the report PDF is drawn in the
+browser and reads each picture's bytes across origins.
+
+### 7a. Let the browser read the bucket (the user, once)
+
+S3 → **myadspace** → **Permissions** → **Cross-origin resource sharing
+(CORS)** → **Edit**, and change `"AllowedMethods": ["PUT"]` to
+`"AllowedMethods": ["GET", "PUT"]`. Nothing else changes; `private/` stays
+closed to CloudFront, and a link without a signature is still refused.
+
+### 7b. Move the pictures already held (Claude, once)
+
+`report-thumbs-move` (deployed with Verify JWT off) moves the data URLs out
+of the database. Claude sets `app_secrets.thumbs_move_token` to a fresh
+random value, calls the function with it in `x-move-token` until `left`
+reads 0 (`{ batch: 50 }`), then with `{ versions: true }` until its `left`
+reads 0, then deletes the token row and checks the tables' size. It never
+deletes from S3, and a row changed meanwhile is left as it is.
+
+---
+
 ## Seeing what is in there
 
 ```sh

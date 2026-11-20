@@ -663,6 +663,35 @@
   }
 
   // ---- Assets -----------------------------------------------------------------
+  /* A report's pictures (2026-11-20): a key under `private/{client}/thumbs/`
+     on S3, read through an hour's link sign-download signs for the caller,
+     many in one call and kept here until ten minutes before they end. A
+     data URL (a picture from before the move) is its own address. The one
+     copy, for the PDF and the console's rows alike. */
+  /* The client's folder is any id here; sign-download and the database
+     hold it to the client's own. */
+  var THUMB_KEY = /^private\/[0-9a-z-]+\/thumbs\/[0-9a-f-]{36}\.jpg$/;
+  var thumbLinks = {};
+  function isThumbKey(v) { return THUMB_KEY.test(String(v || '')); }
+  function thumbSeed(key, url) { if (isThumbKey(key) && url) thumbLinks[key] = { url: url, until: Infinity }; }
+  function thumbsFor(report, keys) {
+    var now = Date.now(), out = {}, ask = [];
+    (keys || []).forEach(function (k) {
+      if (!isThumbKey(k) || out[k] || ask.indexOf(k) > -1) return;
+      var h = thumbLinks[k];
+      if (h && h.until > now) out[k] = h.url; else ask.push(k);
+    });
+    var API = window.ADspaceAPI, db = API && API.client;
+    if (!ask.length || !report || !db || !db.functions) return Promise.resolve(out);
+    var chunks = [];
+    for (var i = 0; i < ask.length; i += 400) chunks.push(ask.slice(i, i + 400));
+    return Promise.all(chunks.map(function (part) {
+      return db.functions.invoke('sign-download', { body: { thumbs: { report: report, keys: part } } }).then(function (r) {
+        var d = r && !r.error && r.data, until = Date.now() + (Math.max(60, Number(d && d.expires_in) || 3600) - 600) * 1000;
+        Object.keys((d && d.urls) || {}).forEach(function (k) { thumbLinks[k] = { url: d.urls[k], until: until }; out[k] = d.urls[k]; });
+      }).catch(function () { /* left without */ });
+    })).then(function () { return out; });
+  }
   var bytesCache = {};
   function fetchBytes(url) {
     if (!url) return Promise.reject(new Error('none'));
@@ -689,7 +718,7 @@
       if (isPng(u8) && !big) return pdf.embedPng(u8).catch(function () { return viaCanvas(pdf, buf); });
       return viaCanvas(pdf, buf);
     }).catch(function (e) {
-      if (warn) warn('An image could not be loaded: ' + url.split('?')[0].split('/').pop() + ' (' + ((e && e.message) || e) + ').');
+      if (warn) warn('A picture could not be loaded: ' + url.split('?')[0].split('/').pop() + ' (' + ((e && e.message) || e) + ').');
       return null;
     });
   }
@@ -997,9 +1026,18 @@
          its way left a blank where it belonged (the user, 2026-10-01). */
       sh.linesOf(everyText, 1e6, 10, fonts.font);
       var thumbJobs = {};
-      mdl.posts.concat(mdl.ads).forEach(function (p) {
+      var held = mdl.posts.concat(mdl.ads);
+      var keyed = held.map(function (p) { return p.thumb_url; }).filter(isThumbKey);
+      var links = thumbsFor(snap.report && snap.report.id, keyed);
+      held.forEach(function (p) {
         var u = p.thumb_url || p.thumb_signed_url || null;
-        if (u) thumbJobs[p.id] = embedImage(pdf, u, warn);
+        if (!u) return;
+        thumbJobs[p.id] = isThumbKey(u)
+          ? links.then(function (m) {
+              if (!m[u]) { warn('A picture could not be loaded and is left out of the PDF. Download again.'); return null; }
+              return embedImage(pdf, m[u], warn);
+            })
+          : embedImage(pdf, u, warn);
       });
       var logoJob = rep.client_logo_url ? embedImage(pdf, rep.client_logo_url, null) : Promise.resolve(null);
       /* A partner's client's report carries the partner's logo (2026-10-06). */
@@ -2348,6 +2386,7 @@
   window.ADspaceSmReport = {
     render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, perThousand: perThousand, cprOf: cprOf, roasOf: roasOf, roasWord: roasWord, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, platWord: platWord, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
-    AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord, pointTree: pointTree
+    AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord, pointTree: pointTree,
+    thumbsFor: thumbsFor, thumbSeed: thumbSeed, isThumbKey: isThumbKey
   };
 })();

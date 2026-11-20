@@ -28,6 +28,15 @@
  * ADspace has confirmed it). The key is always under the quotation's own
  * client's folder.
  *
+ * A report's pictures (2026-11-20) are kept under `private/{client}/thumbs/`
+ * and come back as S3 links signed for an hour, many in one call: the
+ * caller sends { thumbs: { report, keys } } with their own sign-in, and
+ * `sm_report_thumbs` answers them, as themselves, which of those keys the
+ * report names and they may read (a colleague at Reports or Clients View
+ * in scope, or the client's portal contact for a live version). The links
+ * are S3's, never CloudFront's, so the report PDF drawn in the browser can
+ * read the bytes (the bucket's CORS allows GET from the portal).
+ *
  * Once CloudFront serves `private/*` behind the portal's key group
  * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
  * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
@@ -56,6 +65,9 @@ const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 // Five minutes: long enough to open, short enough that a forwarded link dies.
 const EXPIRES = 300;
 const PRIVATE_KEY = /^private\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf$/;
+const THUMB_KEY = /^private\/[0-9a-f-]{36}\/thumbs\/[0-9a-f-]{36}\.jpg$/;
+// A report picture's link: an hour, so a report open for a while keeps them.
+const THUMB_EXPIRES = 3600;
 const UUID = /^[0-9a-f-]{36}$/;
 const CDN = 'https://mycdn.adspace.me';
 const ALG = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-1' };
@@ -120,6 +132,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
   let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string;
+    thumbs?: { report?: string; keys?: unknown };
     personnel?: { member?: string | null; kind?: string } };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -152,6 +165,44 @@ Deno.serve(async (req) => {
     if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
     return stream(String(data.key || ''), owned ? String(data.client || '') : undefined);
   };
+
+  if (body.thumbs) {
+    /* A report's pictures: the database answers which of the keys asked
+       for this caller may read, every one under the report's own client. */
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const report = String(body.thumbs.report ?? '');
+    const asked = Array.isArray(body.thumbs.keys) ? (body.thumbs.keys as unknown[]).map(String) : [];
+    if (!UUID.test(report) || !asked.length || asked.length > 400 || asked.some((k) => !THUMB_KEY.test(k))) {
+      return json({ error: 'bad_request' }, 400, origin);
+    }
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('sm_report_thumbs', { p_report: report, p_keys: asked });
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: 'not_allowed' }, 403, origin);
+    const client = String(data.client || '');
+    const ok = (Array.isArray(data.keys) ? data.keys : []).map(String)
+      .filter((k: string) => THUMB_KEY.test(k) && k.startsWith(`private/${client}/thumbs/`));
+    const bucket = Deno.env.get('S3_BUCKET')!;
+    const region = Deno.env.get('S3_REGION')!;
+    const aws = new AwsClient({
+      accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+      secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+      region,
+      service: 's3'
+    });
+    const urls: Record<string, string> = {};
+    for (const k of ok) {
+      const target = new URL(`https://${bucket}.s3.${region}.amazonaws.com/${k}`);
+      target.searchParams.set('X-Amz-Expires', String(THUMB_EXPIRES));
+      const signed = await aws.sign(new Request(target.toString(), { method: 'GET' }), {
+        aws: { signQuery: true, allHeaders: false },
+        headers: {}
+      });
+      urls[k] = signed.url;
+    }
+    return json({ urls, expires_in: THUMB_EXPIRES }, 200, origin);
+  }
 
   if (body.reportVersion) {
     // A report's kept PDF: the database answers the caller as themselves.

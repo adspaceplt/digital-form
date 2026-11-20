@@ -581,6 +581,7 @@
     sm_report_sent: 'p_id p_on',
     sm_report_keep_file: 'p_version p_key',
     sm_report_file_key: 'p_version',
+    sm_report_thumbs: 'p_report p_keys',
     client_brands_list: 'p_client',
     meta_links_list: 'p_client',
     meta_checks_on: '',
@@ -1179,7 +1180,7 @@
     quotations: { r: 'clients.quotes:view' },
     links: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
     link_qrs: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
-    services: { r: 'team|services:manage', i: 'services:manage', u: 'services:manage', d: 'services:manage' },
+    services: { r: 'team', i: 'services:manage', u: 'services:manage', d: 'services:manage' },
     rate_card_text: { r: 'services:view' },
     rate_card_versions: { r: 'services:view' },
     sm_reports: { r: 'reports:view', u: 'reports:work' },
@@ -1188,7 +1189,7 @@
     sm_report_platforms: { r: 'reports:view', i: 'reports:work', u: 'reports:work', d: 'reports:work' },
     sm_report_posts: { r: 'reports:view', i: 'reports:work', u: 'reports:work', d: 'reports:work' },
     team_members: { r: 'team', i: 'team:manage', u: 'team:manage' },
-    team_roles: { r: 'team|admin:work', i: 'admin:work', u: 'admin:work', d: 'admin:work' },
+    team_roles: { r: 'team', i: 'admin:work', u: 'admin:work', d: 'admin:work' },
     doc_types: { r: 'team' },
     documents: { r: 'team' },
     ops_engagements: { r: 'team' },
@@ -8675,6 +8676,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (!fv.file_key || fv.file_at < fv.published_at) return { error: 'not-kept' };
       return { key: fv.file_key };
+    }
+
+    if (name === 'sm_report_thumbs') {
+      var tk = (a.p_keys || []).map(String);
+      if (!tk.length || tk.length > 400) return { error: 'bad-keys' };
+      var trp = DB.sm_reports.filter(function (x) { return x.id === a.p_report; })[0];
+      if (!trp) return { error: 'not-found' };
+      var tpre = 'private/' + trp.client_id + '/thumbs/';
+      var tshape = /^private\/[0-9a-z-]+\/thumbs\/[0-9a-f-]{36}\.jpg$/;
+      var tvs = (DB.sm_report_versions || []).filter(function (x) { return x.report_id === trp.id; });
+      var named = function (k, live) {
+        return tvs.some(function (v) { return (!live || (!v.withdrawn_at && v.published_at)) && JSON.stringify(v.snapshot || {}).indexOf('"' + k + '"') > -1; });
+      };
+      var tok;
+      if (me) {
+        if (!(smCan('view') || opsAccess(me).admin || RANK[opsAccess(me).map.clients || 'none'] >= RANK.view) || !scopeSeen(trp.client_id, 'view')) return { error: 'not-found' };
+        tok = tk.filter(function (k) {
+          return k.indexOf(tpre) === 0 && tshape.test(k) && ((DB.sm_report_posts || []).concat(DB.sm_report_ads || []).some(function (r) {
+            return r.report_id === trp.id && r.thumb_data === k; }) || named(k, false));
+        });
+      } else if (portalClientIds().indexOf(trp.client_id) > -1) {
+        tok = tk.filter(function (k) { return k.indexOf(tpre) === 0 && tshape.test(k) && named(k, true); });
+      } else return { error: 'not-found' };
+      return { client: trp.client_id, keys: tok.filter(function (k, i) { return tok.indexOf(k) === i; }) };
     }
 
     if (name === 'sm_report_version_restore' || name === 'sm_report_version_delete') {
@@ -17334,6 +17359,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
           });
         }
+
+        if (name === 'sign-download' && opts && opts.body && opts.body.thumbs) {
+          var thb = opts.body.thumbs, thk = Array.isArray(thb.keys) ? thb.keys : [];
+          var thBad = { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 400 } };
+          if (!thk.length || thk.length > 400 || thk.some(function (k) { return !/^private\/[0-9a-z-]+\/thumbs\/[0-9a-f-]{36}\.jpg$/.test(k); })) return Promise.resolve(thBad);
+          window.__thumbSigns = (window.__thumbSigns || 0) + 1;
+          return rpc('sm_report_thumbs', { p_report: thb.report, p_keys: thk }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 403 } };
+            var urls = {};
+            (d.keys || []).forEach(function (k) { if (k.indexOf('private/' + d.client + '/thumbs/') === 0) urls[k] = 'https://s3.test/get/' + k + '?X-Amz-Expires=3600'; });
+            return { data: { urls: urls, expires_in: 3600 }, error: null };
+          });
+        }
         if (name === 'sign-download' && opts && opts.body && opts.body.reportVersion) {
           var fnErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
           return rpc('sm_report_file_key', { p_version: opts.body.reportVersion }).then(function (r) {
@@ -18597,18 +18636,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var v = (DB.sm_report_versions || []).filter(function (r) { return r.id === id; })[0];
               var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']],
             script: ['scriptId', function (id) { var x = (DB.video_scripts || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['scripts']],
-            seal: ['quotationId', function (id) { var x = (DB.quotations || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['clients.quotes']]
+            seal: ['quotationId', function (id) { var x = (DB.quotations || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['clients.quotes']],
+            thumb: ['reportId', function (id) { var x = (DB.sm_reports || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['reports']]
           }[bd.purpose];
           if (!upFor) return upRefuse('Reload the page to upload.');
           if (!bd.clientId || upFor[1](bd[upFor[0]]) !== bd.clientId) return upRefuse('bad_parent');
           if (!upFor[2].some(function (k) { return opsAllowed(k, 'work'); })) return upRefuse('not_allowed');
-          if ((bd.purpose === 'report' || bd.purpose === 'seal') && bd.private !== true) return upRefuse('bad_private');
-          if (bd.private === true && ['invoice', 'report', 'seal'].indexOf(bd.purpose) < 0) return upRefuse('bad_private');
+          if ((bd.purpose === 'report' || bd.purpose === 'seal' || bd.purpose === 'thumb') && bd.private !== true) return upRefuse('bad_private');
+          if (bd.private === true && ['invoice', 'report', 'seal', 'thumb'].indexOf(bd.purpose) < 0) return upRefuse('bad_private');
         }
 
         if (bd.private === true) {
-          if (bd.ext !== 'pdf') return upRefuse('bad_private');
           var hex = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
+
+          if (bd.purpose === 'thumb') {
+            if (bd.ext !== 'jpg') return upRefuse('bad_private');
+            if (!(Number(bd.size) >= 1 && Number(bd.size) <= 1048576)) return upRefuse('too_large');
+            var tkk = 'private/' + bd.clientId + '/thumbs/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.jpg';
+            return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + tkk, publicUrl: null, key: tkk, contentType: upType }, error: null });
+          }
+          if (bd.ext !== 'pdf') return upRefuse('bad_private');
           var pk = 'private/' + (bd.clientId || 'c1') + '/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.pdf';
           return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType }, error: null });
         }
