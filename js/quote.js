@@ -685,19 +685,21 @@
   }
   /* A website quotation the team has not sent yet (2026-10-29, the user:
      "the price shouldnt send out straight"): the database sends no line or
-     figure, so the page says it was received and when it will be sent. */
+     figure, so the page says it was received and when it will be sent. A
+     full-page state, so it is every page's cover (2026-11-20, after RIMOWA's
+     notice): Request received as the title, the day as the statement, then
+     the note and the quotation's reference; the way on is Chat on WhatsApp,
+     with the colleague who took the lead where one has (QTE-2). */
   function paintReview() {
-    var q = Q, w = t();
-    var side = q.rep ? repHtml(q) : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
-    /* One column and one statement of where it stands: Request received with
-       the day, the way to chat under it (2026-10-29, audit QTE-1, QTE-2: a
-       Being reviewed chip said it again, and at a desk a card held one
-       button beside empty space). */
-    return '<div class="qs-quote is-single" data-shown><section class="qs-main">' +
-      '<div class="qs-head"><h1 class="qs-title">' + esc(w.quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
-      done(w.reviewT, q.reply_due ? f(w.reviewP, { d: day(q.reply_due, false, 'ahead') }) : '') +
-      '<div class="qs-notes"><span>' + esc(w.reviewNote) + '</span></div>' +
-      '<div class="qs-review-act" id="qsSide">' + side + '</div></section></div>';
+    var q = Q, w = t(), first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
+    return '<section class="cover qs-wait" data-shown><div class="cover-inner"><div class="cover-panel">' +
+      '<h2>' + esc(w.reviewT) + '</h2>' +
+      (q.reply_due ? '<p>' + esc(f(w.reviewP, { d: day(q.reply_due, false, 'ahead') })) + '</p>' : '') +
+      '<p>' + esc(w.reviewNote) + '</p>' +
+      '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p>' +
+      '<div class="cover-alt"><a class="btn" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK +
+        esc(q.rep ? f(w.repChat, { n: first }) : w.chat) + '</a></div>' +
+      '</div></div></section>';
   }
   /* The advertising budget the quotation's fees manage each month: the
      budget chosen past the plan's cover, else the plan's own cover as the
@@ -732,10 +734,16 @@
   function done(title, line) {
     return '<div class="qs-asked">' + TICK + '<span><b>' + esc(title) + '</b>' + (line ? '<span>' + esc(line) + '</span>' : '') + '</span></div>';
   }
-  function repHtml(q) {
-    var w = t(), whole = String(q.rep.name || '').trim(), first = whole.split(' ')[0];
-    var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
+  /* The colleague's own WhatsApp where their namecard shows it, else the
+     office's. */
+  function repHref(q) {
+    var whole = q.rep ? String(q.rep.name || '').trim() : '';
+    return q.rep && q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
       encodeURIComponent('Hello ' + whole + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
+  }
+  function repHtml(q) {
+    var w = t(), first = String(q.rep.name || '').trim().split(' ')[0];
+    var href = repHref(q);
     /* A person card: the name and position on a white card with its way to
        reach them, never an initials disc (no stand-in for a person's
        picture; 2026-11-07). */

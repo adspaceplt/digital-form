@@ -335,7 +335,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   kept with `reply_due` (`quote_reply_days` working days) and the leads
   team told Quotation to review; until a colleague sends it
   (`quotations.released_at`) the link reads Request received and the day
-  it will be sent on WhatsApp, in one column, and `quote_website_read`
+  it will be sent on WhatsApp, as the page's cover (2026-11-20), and `quote_website_read`
   answers no lines, totals, version or validity while it is unsent,
   whatever its stage (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
   Awaiting review · Send by {day} with two ways to show it, each asked and
