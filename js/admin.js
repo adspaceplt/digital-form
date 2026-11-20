@@ -6081,6 +6081,9 @@
     for (var t = 600; t <= 2330; t += (t % 100 ? 70 : 30)) out.push([String(t), clockOfSetting(t)]);
     return out;
   }
+  /* A choice that takes its row whole: the weekend's segment and the
+     lunch under it, the week's two times side by side above them. */
+  var SET_WHOLE = { weekend: true, lunch: true };
   var SET_CHOICES = {
     month: monthChoices,
     clock: clockChoices,
@@ -6222,8 +6225,8 @@
        read by the Welcome Kit at the colleague's first day. */
     hours: { title: 'Working hours', keys: [['work_start', 'Monday to Friday, start', 'clock', '', 'Start', clockOfSetting],
       ['work_end', 'Monday to Friday, end', 'clock', '', 'End', clockOfSetting],
-      ['work_lunch_min', 'Lunch', 'lunch', '', 'Lunch', lunchOfSetting],
-      ['work_weekend', 'Saturday and Sunday', 'weekend', '', 'Saturday and Sunday', function (v) { return weekendOfSetting(v).toLowerCase(); }]],
+      ['work_weekend', 'Saturday and Sunday', 'weekend', '', 'Saturday and Sunday', function (v) { return weekendOfSetting(v).toLowerCase(); }],
+      ['work_lunch_min', 'Lunch', 'lunch', '', 'Lunch', lunchOfSetting]],
       check: function (v) { return Number(v.work_end) > Number(v.work_start) ? '' : 'Choose an end time after the start time.'; } },
     analytics: { title: 'Analytics', keys: [['analytics_from', 'Count leads and clients from', 'month', '', 'Counts from', monthOfSetting],
       ['analytics_change_pct', 'Minimum change to report (%)', 'chg', '', 'Change counted from', pctOf],
@@ -6264,7 +6267,7 @@
       shown[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
         choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || undefined,
-        half: !third && n > 1 && !(n % 2 && at === n), third: third,
+        half: !third && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]], third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
          From moves to its day and the figure to the one in force the day

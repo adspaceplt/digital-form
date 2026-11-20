@@ -2746,6 +2746,9 @@ body.is-plain .topbar { background: var(--chrome); }
    stands on the row's foot. */
 .askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
+/* A select in a half or third column fits it: its own floor (180px) would
+   run past the column on a phone (2026-11-20, Working hours' two times). */
+.askentry:is(.is-half, .is-third) > .select { min-width: 0; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
 /* A question of more than five figures reads as sections (2026-10-14,
    audit SET-4): each heading 12 above its fields, a hairline and a 24px
