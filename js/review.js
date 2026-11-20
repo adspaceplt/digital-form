@@ -301,7 +301,7 @@
       // right beside Show full copy, which is a different kind of action.
       copy.innerHTML =
         '<div class="copyhead">' +
-          '<h5>Copywriting</h5>' +
+          '<h5>Caption</h5>' +
           /* Edit text and Copy text are one pair at the heading's right,
              each a small tonal button with its glyph: the pen alone beside
              the heading went unnoticed (the user, 2026-10-04). Edit text
@@ -573,7 +573,7 @@
       /* Each field under its own visible label, never a placeholder alone
          (2026-10-31, RV-3). */
       '<div class="changebox">' +
-        '<div class="changebox-f"><label class="field-label" for="cbNote' + cbN + '">Changes required</label>' +
+        '<div class="changebox-f"><label class="field-label" for="cbNote' + cbN + '">Changes</label>' +
         '<textarea class="textarea" id="cbNote' + cbN + '" data-f="note" maxlength="2000"></textarea></div>' +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
@@ -799,7 +799,7 @@
     }).catch(function () {
       settle();
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-      refused(wrap, 'Unable to save. Please try again.');
+      refused(wrap, W.notSent);
     });
   }
   function refused(wrap, text) {
