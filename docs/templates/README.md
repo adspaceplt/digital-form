@@ -11,3 +11,8 @@ files' author details are set to ADSPACE PLT.
 | `ALP.dotx` | Plain internal page: FOR INTERNAL USE at the head, PRIVATE & CONFIDENTIAL and the page count in the foot | The plain Internal use only page |
 | `ACL_SIGN.dotx` | Client letter to be signed: full letterhead (registration, address, contact), Our Ref, Date, recipient, title, body, Yours sincerely, ADSPACE PLT; foot: computer-generated, verify at go.adspace.me/verify | Client letter (`ACL/…`) with a signature block |
 | `ACL_NOSIGN.dotx` | The same, the foot adding No signature required | Client letter (`ACL/…`) without a signature |
+
+Which PDF takes which template is `ADspaceDocs.TEMPLATE` in `js/documents.js`
+and DESIGN.md §2, Print (2026-11-20). The figures the pen draws at were
+measured from these files rendered with `soffice --headless --convert-to pdf`
+in the portal's own fonts.

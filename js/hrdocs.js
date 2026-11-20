@@ -21,7 +21,9 @@
   'use strict';
   var DOCS = function () { return window.ADspaceDocs; };
   var ORG = window.ADSPACE_ORG || {};
-  var LH = 14.5, PARA = 14, BODY = 11, FLOOR = 76;
+  /* The template's body: 11pt on single lines (12.5pt), a blank line
+     between paragraphs; nothing under the bottom margin (72pt). */
+  var LH = 12.5, PARA = 12.5, BODY = 11, FLOOR = 76;
 
   var TYPE = {
     permanent: ['Permanent | Regular | Full-Time', 'FULL-TIME'],
@@ -187,7 +189,9 @@
         fonts = got[0]; logo = got[1];
         if (opts.seal && window.ADspaceSeal) opts.extraPages = window.ADspaceSeal.pagesFor(PDF, fonts, opts.seal);
         var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-        var pn = D.pen(PDF, fonts, logo);
+        /* The contract is signed (ACL_SIGN); the offer is accepted on the
+           application page (ACL_NOSIGN). */
+        var pn = D.pen(PDF, fonts, logo, { kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer' });
         var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute, text = pn.text, wrap = pn.wrap;
         var t = doc.terms || {}, pages = [], y;
         var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
@@ -200,17 +204,15 @@
           y -= PARA * 0.6;
         };
         newPage();
-        text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
-        var REFX = M + 78;
-        var ref = function (label, value) { text(label, M, y, BODY); text(':', M + 72, y, BODY); text(value, REFX, y, BODY); y -= LH; };
-        ref('Our Ref', doc.serial || 'PREVIEW');
-        ref('Date', D.letterDate(doc.sent_at || window.ADspaceClock.today()));
-        y -= 12;
+        y = pn.pc(y);
+        y = pn.ref(y, 'Our Ref', doc.serial || 'PREVIEW');
+        y = pn.ref(y, 'Date', D.refDate(doc.sent_at || window.ADspaceClock.today()));
+        y -= pn.G.afterPc - pn.G.refLine;
         var contract = doc.kind === 'contract';
-        if (!contract) { line(String(doc.name || '')); y -= LH * 0.5; }
-        else { line('Dear ' + String(doc.name || '').trim() + ','); y -= LH * 0.5; }
-        wrap(titleOf(doc), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
-        y -= LH * 0.5;
+        if (!contract) { line(String(doc.name || ''), bold); y -= LH; }
+        else { line('Dear ' + String(doc.name || '').trim() + ','); y -= LH; }
+        wrap(titleOf(doc), R - M, BODY, med).forEach(function (ln) { line(ln, med, BODY, pn.strong); });
+        y -= LH;
 
         if (!contract) {
           para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
@@ -250,7 +252,7 @@
         var sig = doc.signatory || {};
         need(LH * 5);
         text('Yours sincerely,', M, y, BODY); y -= LH;
-        text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH * 1.5;
+        text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH * 1.5;
         if (sig.name) { text(sig.name, M, y, BODY, bold); y -= LH; if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; } }
         y -= LH;
 
@@ -286,7 +288,7 @@
         }
         how().forEach(function (h) { wrap(h, R - M, 8.5, font).forEach(function (ln) { need(11); text(ln, M, y, 8.5, font, mute); y -= 11; }); });
 
-        D.letterFoot(pn, pages, doc.serial || 'PREVIEW', 'PRIVATE & CONFIDENTIAL', opts.extraPages ? pages.length + opts.extraPages : 0);
+        D.letterFoot(pn, pages, doc.serial || 'PREVIEW', '', opts.extraPages ? pages.length + opts.extraPages : 0);
         if (opts.draft) pages.forEach(function (pg) { D.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
         D.meta(pdf, String(doc.serial || 'PREVIEW'), contract ? 'Employment Contract' : 'Employment Offer');
         return { pdf: pdf, pages: pages, fonts: fonts, logo: logo, PDF: PDF };
@@ -297,7 +299,7 @@
     var S = window.ADspaceSeal;
     if (!S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
-    var info = { ref: doc.serial, docId: record.id, verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
+    var info = { ref: doc.serial, docId: record.id, kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
       rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };
     var d;
     return draw(doc, pay, { seal: info }).then(function (x) {

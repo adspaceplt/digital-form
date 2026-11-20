@@ -95,7 +95,11 @@
     /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
     var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
     var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
+    /* The console's cover is the whole screen, its bar under it: the
+       wordmark leads it, as every page's bar would (2026-11-20). */
+    var logo = shown.out && window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.brandLogo;
     box.querySelector('.cover-panel').innerHTML =
+      (shown.out ? (logo ? '<img class="cover-mark" src="' + esc(logo) + '" alt="ADspace">' : '<b class="cover-mark">ADspace</b>') : '') +
       '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
       (back ? '<p class="maint-back">' + back + '</p>'
         : '<p>' + esc(paused ? set.pausedText || 'Please check again later.' : set.maintText || 'The portal will be available again shortly.') + '</p>') +
@@ -242,6 +246,48 @@
     ready.then(settle);
     often('maintenance', settle, again);
   }
+
+
+  /* A cover's reference (2026-11-20, as RIMOWA's notice carries one): where
+     this browser holds a sign-in, every full-page notice ends Reference
+     {code}, the sign-in's code as a colleague's Devices block shows it, so
+     an admin can match a report to its device. Signed out, no line at all.
+     One watcher for every cover the page draws, the console's and the
+     client portal's alike (`ADspaceAPI.sessionCode`, no network). */
+  var refBusy = false;
+  function refs() {
+    if (refBusy) return;
+    var panels = [].filter.call(document.querySelectorAll('.cover .cover-panel'), function (x) { return x.getClientRects().length; });
+    var stale = [].filter.call(document.querySelectorAll('.cover-ref'), function (x) { return panels.indexOf(x.parentNode) < 0 || x !== x.parentNode.lastElementChild; });
+    stale.forEach(function (x) { x.remove(); });
+    var need = panels.filter(function (x) { return !x.querySelector(':scope > .cover-ref'); });
+    if (!need.length || !API || !API.sessionCode) return;
+    refBusy = true;
+    API.sessionCode().then(function (code) {
+      refBusy = false;
+      if (!code) return;
+      var W = window.ADspaceWords || {};
+      var set = (zh() ? W.zh : W.en) || {};
+      need.forEach(function (x) {
+        if (x.querySelector(':scope > .cover-ref')) return;
+        var line = document.createElement('p');
+        line.className = 'cover-ref';
+        line.textContent = (set.coverRef || 'Reference') + ' ' + code;
+        x.appendChild(line);
+      });
+    }, function () { refBusy = false; });
+  }
+  var refTick = 0;
+  function refSoon() { if (!refTick) refTick = requestAnimationFrame(function () { refTick = 0; refs(); }); }
+  function refWatch() {
+    if (!window.MutationObserver || !document.body) return;
+    new MutationObserver(refSoon).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    new MutationObserver(function () { [].forEach.call(document.querySelectorAll('.cover-ref'), function (x) { x.remove(); }); refSoon(); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    refSoon();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refWatch, { once: true });
+  else refWatch();
 
   window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, due: due, watch: watch, often: often, page: PAGE };
 })();

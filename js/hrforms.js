@@ -14,7 +14,8 @@
  * emailed code or a passkey within fifteen minutes (`hr_form_pass`, the
  * Performance lock's proof, `perf_code_fresh`); otherwise the code is sent
  * to their sign-in address and asked here, then the download asked again.
- * Drawn in the browser on the plain page (title and INTERNAL USE ONLY,
+ * Drawn in the browser on the internal template (ALP: FOR INTERNAL USE at
+ * the head, PRIVATE & CONFIDENTIAL in the foot,
  * `ADspaceDocs.templateOf('hr.' + kind)`; admins' working forms never take
  * the letterhead) and never stored; filed in the Activity record by the
  * database. Never a salary.
@@ -79,7 +80,7 @@
       var pdf, fonts, logo;
       return PDF.PDFDocument.create().then(function (p) {
         pdf = p;
-        return Promise.all([D.embedFonts(pdf, PDF, {}), D.templateOf(key) === 'plain' ? null : D.embedLogo(pdf)]);
+        return Promise.all([D.embedFonts(pdf, PDF, {}), D.templateOf(key) === 'ALP' ? null : D.embedLogo(pdf)]);
       }).then(function (got) {
         fonts = got[0]; logo = got[1];
         return embedAll(pdf, form);

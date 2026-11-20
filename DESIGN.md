@@ -85,6 +85,11 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.
+- A document (every PDF) pairs its ground and words as the user's palette
+  does (2026-11-20, "white with #515151, #f5f5f5 with #1a1a1a"): the
+  white page carries `#515151`, a shaded `#f5f5f5` box `#1a1a1a`; the
+  marks and titles `#1a1a1a`, fine print `#a1a1a1`, hairlines `#cfd0d4`
+  (Print, §2 Typography).
 - An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary `#515151`, the fine print (the confidentiality line, a reminder's legal note and disclaimer) very light in `#a1a1a1` (the user, 2026-11-11; the console's preview of an email draws it `#767676`, 4.5:1, the user, 2026-11-12), the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, a code's digits are centred in their box, and Apple Mail's number detection is kept off (the user, 2026-11-09); the email ends a row under the fine print with the portal's copyright line, `© {year} ADSPACE PLT. All Rights Reserved.`, in the fine print's light grey (the user, 2026-11-18).
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
@@ -158,7 +163,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Money in a row | 13.5px tabular, its figure at 500 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
 | A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (2026-10-31; uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
 | Control, small | 13 / 12.5px | |
-| Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
+| Label | 12/600, sentence case, mute, **no tracking, never uppercase** (but a cover's title mark and the PDFs' uppercase marks: uppercase by the stylesheet alone, tracked 1.08px; the user, 2026-11-20) | Every table header, band, fact label, step title, sidebar kicker |
 | Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 170px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
 | Numbers in cells | 17/600/-.02em | `.tally-cell b`; the selection page's results summary under its lead figure (`.cx-figs dd`, 17/600, the user, 2026-10-31: kept for emphasis) |
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
@@ -172,29 +177,68 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 - The front door's hierarchy: headings in the body face 17/600 (16 phone); the
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
-- Print (the letterhead):
-  - inks as an email's (the user, 2026-11-12): text `#1a1a1a`, secondary
-    `#515151`, the foot (reference, PRIVATE & CONFIDENTIAL, page count)
-    `#a1a1a1` (`pen()` in `js/documents.js`: `ink`, `mute`, `faint`);
-  - wordmark in Optima 14pt (`fontMark`);
-  - body in Slate Book 11/14.5pt, 14pt between paragraphs (`font`);
-  - heavier lines in Slate Regular (`fontBold`), headings in Slate Medium
-    (`fontMed`);
-  - registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt;
-  - margins 33.3pt on all four sides (W ÷ φ⁶, the Social Media Report's; the user, 2026-11-16: 54pt read as wide white sides on paper): the wordmark's capitals and the monogram start 33.3pt down, a continuation page's hairline sits there, the foot's baseline 33.3pt up; the type unchanged;
-  - the monogram 21pt, top right of the letterhead only.
-  - Which sheet (the user, 2026-11-20): the letterhead for a document that
-    leaves the company or binds it (a letter, an offer, a contract, the
-    Monthly Performance Record); the plain page for an admin's working form
-    (the Employee Record Form, Interview Sheet, Onboarding Checklist,
-    Welcome Kit, a client's checklist, the Analytics Analysis): no
-    wordmark, monogram or registration, the title in Slate Medium 15pt on
-    the letterhead's first line with INTERNAL USE ONLY at the right edge in
-    the foot's ink (Slate Regular 7.5pt, untracked so a search reads it), a
-    hairline under them, on every page; the margins, body and foot the
-    letterhead's. One table names every PDF's sheet
-    (`ADspaceDocs.TEMPLATE`, `templateOf`; `pen(…, { kind, title })` draws
-    the plain head); a new PDF joins it.
+- Print: the company's Word templates (`docs/templates/`; the user,
+  2026-11-20: "please take note of the header and footer. it should remain
+  in place", "yes align all to the templates"), drawn by the one pen
+  (`ADspaceDocs.pen`, its figures `ADspaceDocs.PAGE`, measured from the
+  templates rendered in their own fonts), the head and the foot at the same
+  place on every page whatever the page holds:
+  - the page: A4, margins 72pt top and bottom, 54pt each side; the head
+    28.8pt under the top edge, the foot 28.8pt over the bottom edge;
+  - inks, the user's palette (2026-11-20: "white with #515151, #f5f5f5
+    with #1a1a1a"): the body `#515151` on the white page; the wordmark, a
+    title, PRIVATE & CONFIDENTIAL, FOR INTERNAL USE and ADSPACE PLT
+    `#1a1a1a`; the fine print alone (Co. Reg. 9pt, the verify line 6pt)
+    `#a1a1a1`, never the body; hairlines `#cfd0d4`; a shaded box `#f5f5f5` with `#1a1a1a`
+    words (`pen().ink`, `strong`, `faint`, `line`, `shade`);
+  - the faces are the templates' four alone: Optima (the wordmark), Slate
+    Medium, Slate Regular and Slate Book; Slate Light, the ACL page count's
+    face in the template, is not held, so it is Slate Book;
+  - an uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) carries
+    no letter spacing: the user's 1.08pt, set as character spacing, read
+    letter by letter to pdf.js (F O R I N T E R N A L), so it was dropped
+    (2026-11-20);
+  - a letter's title is the body's size in Slate Medium; a title on any
+    other document is the body times φ (17.8pt on 11pt, 16.18pt on 10pt;
+    `ADspaceDocs.TITLE`);
+  - the Date beside Our Ref is the portal's date (`20 Nov 2026`,
+    `ADspaceDocs.refDate`), never the template's superscript ordinal;
+  - AL (the letterhead): the wordmark in Optima 16pt top left (baseline
+    60.2pt from the top); Page n of N in Slate Book 8pt from 493.75pt
+    (baseline 47pt from the bottom);
+  - ALP (internal): AL's head with FOR INTERNAL USE in Slate Medium 8pt
+    centred on the page (58.9pt); the foot PRIVATE & CONFIDENTIAL in Slate
+    Medium 8pt at the left (48.9pt from the bottom) and AL's page count; a
+    form's title opens its first page in Slate Medium 15pt over a hairline;
+  - ACL_SIGN and ACL_NOSIGN (a lettered document to a party): page one the
+    full letterhead (the wordmark Optima 14pt, Co. Reg. 9pt, the address
+    11pt on 12.5pt lines at the left; the phone, email and website at the
+    right edge; the monogram 20.3pt square top right), later pages the
+    wordmark and the monogram; the foot the verify line centred in Slate
+    Book 6pt (This is a computer-generated document. [No signature
+    required. ]Verify document authenticity: go.adspace.me/verify) and Page
+    n of N in 7.5pt from 493.75pt; the body PRIVATE & CONFIDENTIAL (Slate
+    Medium) at 155.1pt, Our Ref and Date a blank line under it, the
+    recipient's name (Slate Regular) over its lines, the title (Slate
+    Medium), the salutation and the message a blank line apart, single
+    lines of 12.5pt at 11pt, then Yours sincerely, and ADSPACE PLT in Slate
+    Medium;
+  - which template (`ADspaceDocs.TEMPLATE`, `templateOf(kind, signed)`; a
+    new PDF joins it): ACL_SIGN for a document carrying a signature block
+    or signing page (the Letter of Offer, a signed client, HR or supplier
+    letter, the Supplier Service Agreement, the Employment Contract, and a
+    sealed copy's Record page), ACL_NOSIGN for one that does not (an
+    unsigned letter, the Employment Offer); ALP for an admin's working form
+    (Employee Record Form, Interview Sheet, Onboarding Checklist, Welcome
+    Kit, a client's checklist, the Analytics Analysis) and the Rate Card;
+    AL for the rest (the Monthly Performance Record, the quotation, the
+    Social Media Report, the video scripts), whose bodies keep their own
+    layout between the template's margins; a white-label report puts its
+    partner's logo in the wordmark's place;
+  - nothing else in the head or the foot; a mark a document needs on every
+    page (the Letter of Offer's Client initials, the performance record's
+    reference line, the Rate Card's version) stands in the bottom margin
+    clear of the foot.
   - Config holds file paths, never font names.
 - Letter tables: Description, Rate, Amount only. Quantity rides in the rate
   cell. The term sits mute under the Amount. Inclusions go under the name, then
@@ -270,7 +314,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Usual defaults | `details.fmore` More details, its line naming what it holds |
 | A record pane of facts | Read first (`readGroup`, missing required values in warn) on a white card (`.readgroups`, the groups a hairline apart inside it; a client's Billing a card for the request link, one for the primary entity with its Bukku band, one for the other entities, one for unpaid invoices), the rail beside it on the ground; Edit opens the same groups in a sheet |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |
-| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
+| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`, after RIMOWA's notice (the user, 2026-11-20: "I like this style"): white to the edge, no box; one column (440px at most) centred across and between the bar and the foot; the wordmark (`.cover-mark`) only where no bar carries it (the namecard, the console's whole-screen notice; inverted in dark); the title a small uppercase mark (Slate Medium 13px, tracked 1.08px, `--ink`; the words sentence case in the markup; Chinese neither uppercase nor tracked); the line the statement at 17/400 in ink, line height 1.45; a second line 14px `--ink-soft`; the actions under it as `.btn`s, equal halves on a phone; signed in, last `Reference {code}` (`.cover-ref`, 14px ink, tabular). The line never restates the title. The 404 and `admin/offline.html` draw the same type (`tests/covers.js`) |
 | Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (a tonal pop-up: the buttons' shade, no outline, its dot in the box and the chevron at its end; never blue) only for a state that moves as the work |
 | A task on My Work's board and list (v3, 2026-11-12) | A board column is a `--sunk` panel (14px corner) of white cards (12px corner, inset `--card-edge`): the priority tag and the format tag (`.chip.tfmt`) with the grip, the client's logo (18px) and name · the number, the title at 500, two lines of the brief, the checklist as a bar a check (`.tcheckbar`, amber while running, green when all ticked, n/N), the stage select, then a foot of the colleague as an initials disc in a tint of their own (`.tav`), the remarks counted (`.trem`) and the due date. A list row leads the name with the client's logo (left off on a narrow pane) and carries the format, the checklist bar and the remarks on a line under the client; the colleague's disc leads their name. Checklists and remarks are read once a list load for the open tasks (`readExtras`, 150 a request), a refused read leaving the marks off |
 | The Clients list over its bands (v3, 2026-11-12) | `#crmTiles`, four `.ovw-kpi.crm-tile`s across (two narrow) above the bands, each from the clients already read: Leads in hand (n proposals sent; a `--sunk` foot in red words naming those past their follow-up time), New leads this month, Active clients (n paused) and, at My Work View, Late work this month (across n clients). A client's late work this month (`ops_engagement_counts`, read once a visit) is a red `.tone.is-danger` tag after its name; Person in charge and Sales by each lead with the colleague's disc (`ADspaceAdmin.avatar`, left off narrow) |
