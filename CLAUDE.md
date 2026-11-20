@@ -127,6 +127,11 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     Malaysia's, never `toISOString().slice(0, 10)` (the UTC day, yesterday
     before 8am here; 2026-10-29: `overview` read a booking 5 days late,
     not 4, after midnight).
+  - A suite never compares a page's today taken at one moment with its own
+    taken at another: it reads today on both sides of the act that set it
+    (or reads the page's own), so a run crossing midnight holds
+    (2026-11-20: `quotes` read Build quote's Date limit against a today
+    read minutes after the sheet opened).
   - A suite names every month it counts on: a task's content month is
     given, never left to the month the suite runs in, and a figure read
     for this month holds a record made this hour, never days back
