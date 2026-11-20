@@ -2675,6 +2675,15 @@ body.is-plain .topbar { background: var(--chrome); }
    stands on the row's foot. */
 .askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
+/* A date and its time stand one height in a question, never a floor:
+   Safari drew the time a few pixels taller than the date beside it, which
+   lifted its label off the date's line (2026-11-20, Page availability).
+   The time's one line fills the field rather than being padded onto its
+   middle, so no engine's own inset can add to it. */
+.askentry :is(.input[type="date"], .input[type="time"], .input[type="month"]) { height: var(--ctl-h); }
+@media (pointer: fine) {
+  .askentry .input[type="time"] { padding-block: 0; line-height: calc(var(--ctl-h) - 2px); }
+}
 .askentry .field-label { display: block; margin-bottom: 6px; }
 /* A question of more than five figures reads as sections (2026-10-14,
    audit SET-4): each heading 12 above its fields, a hairline and a 24px
