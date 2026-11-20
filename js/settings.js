@@ -1553,10 +1553,22 @@
   function pgAsk(keys, opener) {
     var one = keys.length === 1 ? pgOf(keys[0]) : null;
     var today = pgDay(new Date().toISOString());
-    var cur = one && one.set ? one : null;
+    /* The question opens on Upgrading, never Available: a window typed
+       under Available saved nothing (the user, 2026-11-20). Pages that
+       already share a set state open on it, their window kept where it is
+       one window. */
+    var rows = keys.map(pgOf).filter(Boolean);
+    var same = rows.length && rows.every(function (p) {
+      var a = rows[0];
+      return p.set && p.kind === a.kind && p.starts_at === a.starts_at && p.ends_at === a.ends_at &&
+        (p.note || '') === (a.note || '') && (p.note_zh || '') === (a.note_zh || '') && !!p.whatsapp === !!a.whatsapp;
+    });
+    var shared = rows.length && rows[0].set && rows.every(function (p) { return p.set && p.kind === rows[0].kind; }) ? rows[0].kind : '';
+    var cur = same ? rows[0] : null;
+    var WINDOW = ['sday', 'stime', 'eday', 'etime', 'note', 'note_zh'], held = null;
     window.ADspaceConfirm.ask({
       title: one ? one.name : 'Set availability · ' + plural(keys.length, 'page', 'pages'), go: 'Save', wait: true,
-      fields: [{ name: 'kind', label: 'Availability', seg: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
+      fields: [{ name: 'kind', label: 'Availability', seg: true, value: shared || 'upgrade', note: pgNote(keys),
                  choices: [['none', 'Available'], ['upgrade', 'Upgrading'], ['paused', 'Unavailable']] },
                { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: cur && !cur.on ? pgDay(cur.starts_at) : '' },
                { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: cur && !cur.on ? pgTime(cur.starts_at) : '' },
@@ -1565,7 +1577,24 @@
                { name: 'note', label: 'Note to visitors', placeholder: 'Optional', required: false, value: cur ? cur.note || '' : '' },
                { name: 'note_zh', label: '中文 note', placeholder: 'Optional', required: false, value: cur ? cur.note_zh || '' : '' }]
         .concat(keys.length === 1 && keys[0] === 'admin' ? [] : [{ name: 'whatsapp', label: 'Show Chat on WhatsApp', tick: true, value: cur && cur.whatsapp ? 'on' : '' }]),
-      check: function (v) { return v.kind === 'none' ? '' : bridge.upgradeWindow(v).bad; }
+      /* Available holds no window: choosing it lays the window and notes
+         aside, and choosing a state again brings them back. */
+      change: function (name, fieldOf) {
+        if (name !== 'kind') return;
+        var none = fieldOf('kind').value === 'none';
+        if (none === !!held) return;
+        if (none) held = {};
+        WINDOW.forEach(function (k) {
+          var f = fieldOf(k); if (!f) return;
+          if (none) { held[k] = f.value; f.value = ''; } else f.value = held[k] || '';
+          f.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        if (!none) held = null;
+      },
+      check: function (v) {
+        if (v.kind === 'none') return WINDOW.some(function (k) { return v[k]; }) ? 'Choose Upgrading or Unavailable to set a start, an end or a note.' : '';
+        return bridge.upgradeWindow(v).bad;
+      }
     }, function (v) {
       var w = bridge.upgradeWindow(v), was = keys.map(pgOf).filter(Boolean).map(pgArgs);
       var args = { p_pages: keys, p_kind: v.kind, p_note: v.kind === 'none' ? null : v.note || null, p_note_zh: v.kind === 'none' ? null : v.note_zh || null,

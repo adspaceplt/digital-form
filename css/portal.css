@@ -463,8 +463,12 @@ a { color: inherit; }
    `display: block` for some time after the rule had stopped using it, which
    is how `tests/sch.js` came to assert a sentence rather than the mechanism:
    a comment can go stale and a measurement cannot. */
+/* One height, never a floor: Safari let a time field grow a few pixels past
+   the date beside it, which lifted its label off the date's line in a
+   question's pair (2026-11-20, Page availability); the small field keeps
+   the small height. */
 .input[type="date"], .input[type="time"], .input[type="month"] {
-  line-height: 1.5; min-height: var(--ctl-h);
+  line-height: 1.5; min-height: var(--ctl-h); height: var(--ctl-h);
   appearance: none; -webkit-appearance: none; text-align: left;
   display: flex; align-items: center;
   /* iOS gives a date field an intrinsic width wider than a half-width cell
@@ -493,7 +497,10 @@ a { color: inherit; }
    and Safari's own inset around the value goes, so it starts where every
    other field's text does. */
 @media (pointer: fine) {
-  .input[type="time"] { display: block; padding-block: calc((var(--ctl-h) - 2px - 1.5em) / 2); }
+  /* The time's one line fills the field rather than being padded onto its
+     middle, so no engine's own inset can add to it. */
+  .input[type="time"] { display: block; padding-block: 0; line-height: calc(var(--ctl-h) - 2px); }
+  .input-sm[type="time"] { line-height: calc(var(--ctl-h-sm) - 2px); }
   .input[type="time"]::-webkit-datetime-edit { padding: 0; }
   .input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
 }
@@ -4883,6 +4890,7 @@ body > .shell { width: 100%; }
 .team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; }
 .group-name .input { width: 100%; }
 .input-sm { min-height: var(--ctl-h-sm); font-size: 13px; }
+.input-sm:is([type="date"], [type="time"], [type="month"]) { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
 .team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 /* Your own row is marked with the neutral chip, not the accent: being you is
