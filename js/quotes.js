@@ -509,6 +509,20 @@
     job.catch(function () { return null; }).then(function () { delete sealing[q.id]; });
     return job;
   }
+  /* The demo (js/demo.js) keeps no stored file: its sealed sample is drawn
+     here as the sealing draws it, from the record before it was sealed,
+     and the demo keeps the hash of each copy it hands out for /verify/'s
+     File check on the sample data (2026-11-20). */
+  function sealedCopy(q, client) {
+    var ctx = { db: window.ADspaceAPI.client, client: client || {} };
+    return ctx.db.rpc('quotation_record', { p_id: q.id }).then(function (r) {
+      var rec = r.data || {};
+      if (r.error || rec.error) throw new Error(said(r.error || rec.error));
+      rec.steps = (rec.steps || []).filter(function (s) { return s.step !== 'sealed'; });
+      rec.seal = null;
+      return drawPlain(q, ctx, { seal: { record: rec, verifyUrl: verifyUrl(q) } });
+    });
+  }
   function drawPdf(q, ctx, extra) {
     if (!(extra && extra.draft)) {
       if (q.sealed_at) return readSealed(q, ctx);
@@ -2387,5 +2401,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline, offerable: offerable };
+  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline, offerable: offerable, sealedCopy: sealedCopy };
 })();

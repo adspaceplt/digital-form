@@ -17,10 +17,15 @@
    - draws a bar under the head, Demo · Sample data, with Exit demo, which
      signing out does too.
    The client pages (the client portal, Content Review, the creator
-   selection, the creator's page, Video Scripts, a namecard) load it the same
-   way, so a link the demo console hands out opens on the same sample data:
+   selection, the creator's page, Video Scripts, a namecard, /verify/) load
+   it the same way, so a link the demo console hands out opens on the same sample data:
    the client portal signed in as a sample client's main contact, the rest on
-   their link as a client or a creator meets it. Signing out of the client
+   their link as a client or a creator meets it; /verify/ answers the sample
+   agency's documents alone, a real reference typed there never reaching the
+   database (the user, 2026-11-20, option A). The sealed sample quotation
+   is drawn when downloaded (the demo keeps no file), and the hash of each
+   copy the demo hands out is kept in this browser, so File check matches
+   that copy and no other. Signing out of the client
    portal returns to the console, still in the demo.
    The audit of 2026-10-27: a demo whose sample data did not load never
    falls back on the real database (the page reads Unable to load); Sign
@@ -32,6 +37,7 @@
 (function () {
   'use strict';
   var KEY = 'adspace-demo';
+  var SEALS = 'adspace-demo-seals';
   var on = window.ADSPACE_DEMO;
   var CONSOLE = /^\/admin\//.test(location.pathname);
   /* A phone keeps a sheet's draft in the tab (js/sheet.js): none crosses
@@ -49,6 +55,7 @@
       /* The client pages' guides the demo marked met are offered again. */
       JSON.parse(localStorage.getItem('adspace-demo-guides') || '[]').forEach(function (k) { localStorage.removeItem('adspace-guide:' + k); });
       localStorage.removeItem('adspace-demo-guides');
+      localStorage.removeItem(SEALS);
     } catch (e) {}
     dropDrafts();
   }
@@ -122,6 +129,14 @@
     if (READS[name] || /^(get_|me$)/.test(name) || /(_list|_read|_state|_left|_last|_mine|_check|_ok|_word|_of|_get|_counts)$/.test(name)) return false;
     return name.split('_').some(function (w) { return VERB.indexOf(w) > -1; });
   }
+  /* The sealed sample's copies the demo handed out, by reference. */
+  var refKey = function (r) { return String(r || '').trim().toUpperCase().replace(/\//g, '-'); };
+  function seals() { try { return JSON.parse(localStorage.getItem(SEALS) || '{}') || {}; } catch (e) { return {}; } }
+  function keepSeal(ref, sha) {
+    var all = seals(), k = refKey(ref), list = (all[k] || []).filter(function (x) { return x !== sha; });
+    list.push(sha); all[k] = list.slice(-20);
+    try { localStorage.setItem(SEALS, JSON.stringify(all)); } catch (e) {}
+  }
   function refused() { return { data: null, error: { message: SAID, code: 'demo' }, status: 403, count: null }; }
   /* A refusal shaped as the builder's answer: chainable, then a promise. */
   function refusal() {
@@ -140,6 +155,13 @@
       return b;
     };
     c.rpc = function (name, args) {
+      /* File check: a copy this demo handed out is the sealed copy. */
+      if (name === 'verify_file' && args && window.__DB) {
+        var sha = String(args.p_sha || '').toLowerCase();
+        if ((seals()[refKey(args.p_serial)] || []).indexOf(sha) > -1) {
+          (window.__DB.quotations || []).forEach(function (q) { if (q.seal_key && refKey(q.ref) === refKey(args.p_serial)) q.seal_sha = sha; });
+        }
+      }
       if (!writes(name)) return rpc.call(c, name, args);
       (window.__demoRefused = window.__demoRefused || []).push(name);
       return refusal();
@@ -151,6 +173,17 @@
     if (c.functions) {
       var fi = c.functions.invoke;
       c.functions.invoke = function (name, opts) {
+        /* The sealed sample quotation: drawn as the sealing draws it. */
+        var qid = name === 'sign-download' && opts && opts.body && opts.body.quotation;
+        var sq = qid && window.__DB && (window.__DB.quotations || []).filter(function (q) { return q.id === qid && q.seal_key; })[0];
+        if (sq && window.ADspaceQuotes && window.ADspaceQuotes.sealedCopy) {
+          var sc = (window.__DB.clients || []).filter(function (x) { return x.id === sq.client_id; })[0];
+          return window.ADspaceQuotes.sealedCopy(JSON.parse(JSON.stringify(sq)), sc ? JSON.parse(JSON.stringify(sc)) : null).then(function (blob) {
+            keepSeal(sq.ref, blob.seal.sha);
+            sq.seal_sha = blob.seal.sha;
+            return { data: blob, error: null };
+          }).catch(function (e) { return { data: null, error: { message: (e && e.message) || SAID, code: 'demo' } }; });
+        }
         if (name === 'bukku-sync' && opts && opts.body && opts.body.action === 'invoices') {
           if (!window.__bukkuInvoices) window.__bukkuInvoices = [];
           return fi.call(c.functions, name, opts);
@@ -189,12 +222,14 @@
     var shared = {}; (D.video_scripts || []).forEach(function (v) { if (v.status === 'shared') shared[v.client_id] = 1; });
     var vs = first(D.clients, function (c) { return shared[c.id] && c.script_key; });
     var me = first(D.team_members, function (m) { return m.email === 'alex@example.com' && m.card_key; });
+    var vq = first(D.quotations, function (q) { return q.seal_key && q.ref; });
     return [['Client portal', '/client/'],
       rv && ['Content Review', '/review/?k=' + rv.access_token],
       cm && ['Creator selection', '/creators/?k=' + cm.access_token],
       cr && ['Creator page', '/creator/?k=' + cr.access_code],
       vs && ['Video Scripts', '/script/?k=' + vs.script_key],
-      me && ['Namecard', '/card/?k=' + me.card_key]].filter(Boolean);
+      me && ['Namecard', '/card/?k=' + me.card_key],
+      ['Verify document', '/verify/' + (vq ? '?s=' + encodeURIComponent(vq.ref) : '')]].filter(Boolean);
   }
   var lib = window.supabase;
   /* The engine sets its own library in place of the real one and then

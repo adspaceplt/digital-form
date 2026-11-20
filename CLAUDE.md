@@ -2044,12 +2044,18 @@ learned about an area is written in its file, never here.
   creator selection, a creator's page, Video Scripts and a namecard, each
   on its sample link in a tab of its own, so nobody needs an address; the
   user, 2026-10-27) and Exit demo, which Sign out does too. The client pages
-  (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`)
+  (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`,
+  `/verify/`)
   load the same while it stands: the client portal signed in as a sample
   client's main contact (`client@example.com`), the rest on their sample
   links alone, each key holding a 0 that no real key's alphabet holds
   (`demo0r…`, `demo0c…`, `DEMO0…`, `demo0s…`, `demo0…`), so a real link
-  opened while the demo stands is the real page; each under the bar edge
+  opened while the demo stands is the real page; `/verify/` loads it for
+  any reference (Verify document in Client pages opens it on the sealed
+  sample's), answering the seed's January 1988 documents alone, a real
+  reference Not found, and File check matching only a copy of the sealed
+  sample the demo console drew (`adspace-demo-seals`, the hashes it handed
+  out; the user, 2026-11-20, option A); each under the bar edge
   to edge (`.annbar.demobar`; the namecard has no bar); the creator's page
   opened bare, with no code kept, opens a sample creator holding a booking,
   and Exit demo lets go of a sample code it kept; signing out of

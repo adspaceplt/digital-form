@@ -619,9 +619,17 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-None open (2026-11-17: the thirteen logged were fixed at their cause or
+Open below; before them none (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop); the five found on 2026-11-18 fixed 2026-11-19.
+- 2026-11-20: the quotation PDF drawn in the demo (the sealed sample's
+  Download) prints ADspace's wordmark, ADSPACE PLT and the ADspace Service
+  Terms and Rate Card lines, typed in `js/quotepdf.js` rather than read
+  from `ADSPACE_ORG` and `agencyName`.
+- 2026-11-20: `taxcodes` fails on main (both widths): Delete over two
+  ticked codes, one named by a service line, no longer refuses with
+  "SVE is on a service line"; found by the demo release's affected run,
+  reproduced on origin/main b257e7f.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
