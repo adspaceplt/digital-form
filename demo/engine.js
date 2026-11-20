@@ -18110,7 +18110,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var idNow = ct ? ((ct.fields || []).filter(function (f) { return f.field_id === p.field_id; })[0] || {}).value || '' : '';
             if (bkb.action === 'preview') {
               return { data: { ok: true, code: ct ? ct.contact_code : nextC(), rows: [
-                { key: 'legal_name', pick: !!ct, field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
+                { key: 'legal_name', pick: !!ct, field: p.kind === 'creator' ? 'Legal name' : 'Registered Company Name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
                 { key: 'reg_no', pick: !!ct, field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
                 { key: 'address', pick: !!ct, field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
                 p.field_id && { key: 'our_id', pick: !!ct, field: p.kind === 'client' ? 'Client ID' : p.kind === 'creator' ? 'Creator ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },

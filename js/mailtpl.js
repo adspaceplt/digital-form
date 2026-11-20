@@ -129,7 +129,7 @@
           subject: c.subject, body: c.body, foot: c.foot || '',
           save: function (v) { return saveWith('code_email_template_save', { p_subject: v.subject, p_body: v.body, p_foot: v.foot }); } });
         SUPABASE.forEach(function (x, n) {
-          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Set outside the portal', name: x[0], subject: x[1], fixed: true });
+          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Standard emails', name: x[0], subject: x[1], fixed: true });
         });
       }
       st.free = Boolean(a[4]);
@@ -207,7 +207,7 @@
     var box = $('mtList');
     if (window.ADspaceState && window.ADspaceState.skeleton) window.ADspaceState.skeleton(box, 3);
     load().then(paint).catch(function (e) {
-      if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'The templates', (e && e.message) || 'Could not load.', function () { open(btn, say); });
+      if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'Email templates', (e && e.message) || '', function () { open(btn, say); });
     });
   }
 
@@ -333,7 +333,7 @@
 
   function del(it) {
     shutMenus();
-    window.ADspaceConfirm.ask({ title: 'Delete this template?', body: '“' + it.name + '” will no longer be offered. Emails already sent keep their words. This cannot be undone.',
+    window.ADspaceConfirm.ask({ title: 'Delete this template?', body: '“' + it.name + '” will no longer be offered. Emails already sent are not changed. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true }, function () {
       return rpc('email_template_delete', { p_id: it.tid }).then(function (d) {
         if (d && d.error) return said(d);
