@@ -9870,8 +9870,11 @@ body.qs-page { background: var(--card); }
    other times asked) keeps the section's 12px alone (2026-11-20). */
 .cr-iv > .qs-sec-h:has(+ .cr-next) { margin-bottom: 0; }
 .cr-doc { display: grid; gap: 16px; }
-.cr-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.cr-doc-who { display: grid; gap: 2px; min-width: 0; }
+/* The state stands on the name's line while both fit and takes the line
+   under it where they do not (320: the reference and Awaiting your reply
+   widened the page by 17px); the name keeps its longest word whole. */
+.cr-doc-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; }
+.cr-doc-who { display: grid; gap: 2px; flex: 1 1 0; }
 .cr-doc-who > b { font-size: 15px; font-weight: 600; }
 .cr-doc-meta { font-size: 13px; color: var(--ink-mute); }
 .cr-doc-head > .chip-state { flex: none; white-space: nowrap; }
