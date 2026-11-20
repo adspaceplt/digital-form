@@ -206,7 +206,11 @@
     cells.forEach(function (c, i) { n = Math.max(n, wrapAny(pn, c, widths[i] - PADX * 2, f).length); });
     return n * LEAD + PADY * 2;
   }
-  var TOP = 92, QR = 40;
+  /* The QR code is 32pt square (about 11.3mm; the user, 2026-11-21: "Qr
+     code can go smaller"): a verify address up to 59 characters (every
+     reference sealed today) is 33 modules at level M, 0.34mm each, over
+     the 0.33mm a phone reads. */
+  var TOP = 92, QR = 32;
   /* The Record page continues the document it seals: that document's
      template (an Employment Contract's ACL_SIGN, a quotation's AL), its
      continuation head and its foot, the verify line included, and its
