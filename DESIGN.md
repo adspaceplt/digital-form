@@ -194,9 +194,10 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   - the faces are the templates' four alone: Optima (the wordmark), Slate
     Medium, Slate Regular and Slate Book; Slate Light, the ACL page count's
     face in the template, is not held, so it is Slate Book;
-  - an uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) is set
-    1.08pt apart as character spacing (`pen().spaced`), reading as words
-    to a search or a copy;
+  - an uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) carries
+    no letter spacing: the user's 1.08pt, set as character spacing, read
+    letter by letter to pdf.js (F O R I N T E R N A L), so it was dropped
+    (2026-11-20);
   - a letter's title is the body's size in Slate Medium; a title on any
     other document is the body times φ (17.8pt on 11pt, 16.18pt on 10pt;
     `ADspaceDocs.TITLE`);

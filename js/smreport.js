@@ -60,7 +60,8 @@
   // The type roles, each a step of the scale.
   var TY = {
     cover: S(5), coverSub: S(3), coverMeta: S(1),
-    title: S(2), block: S(1),   // a page title: the body (10pt) times φ lead: S(1), body: S(0), cell: S(0), small: S(-1),
+    // a page title: the body (10pt) times φ
+    title: S(2), block: S(1), lead: S(1), body: S(0), cell: S(0), small: S(-1),
     figure: S(3)
   };
   // The spaces between things, each a step of the scale.

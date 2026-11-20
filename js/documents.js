@@ -660,15 +660,12 @@
     p.right = function (s, xr, yy, size, f, color) { p.text(s, xr - p.width(s, size, f), yy, size, f, color); };
     p.centre = function (s, yy, size, f, color) { p.text(s, (W - p.width(s, size, f)) / 2, yy, size, f, color); };
     /* An uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) is set
-       1.08pt apart (the user's letter spacing), as character spacing, so
-       the words still read as words to a search or a copy. */
-    var SPACE = 1.08;
-    p.spacedWidth = function (s, size, f) { var t = p.safe(s); return p.width(t, size, f) + SPACE * Math.max(0, t.length - 1); };
-    p.spaced = function (s, x, yy, size, f, color) {
-      p.page.pushOperators(PDF.pushGraphicsState(), PDF.setCharacterSpacing(SPACE));
-      p.text(s, x, yy, size, f, color);
-      p.page.pushOperators(PDF.popGraphicsState());
-    };
+       as the template sets it, with no letter spacing: the user's 1.08pt,
+       set as character spacing, made pdf.js read the mark letter by letter
+       (F O R I N T E R N A L), so a search or a copy lost the words
+       (2026-11-20). */
+    p.spacedWidth = function (s, size, f) { return p.width(s, size, f); };
+    p.spaced = function (s, x, yy, size, f, color) { p.text(s, x, yy, size, f, color); };
     p.rule = function (yy, x1, x2, heavy) {
       p.page.drawLine({ start: { x: x1 || M, y: yy }, end: { x: x2 || R, y: yy }, thickness: heavy ? 1 : 0.6, color: heavy ? ink : line });
     };
