@@ -9847,6 +9847,9 @@ body.qs-page { background: var(--card); }
 .cr-docs { gap: 12px; }
 /* The section's gap is the step under its heading too (2026-11-19). */
 .cr-docs > .qs-sec-h { margin-bottom: 0; }
+/* A heading over one line of words (an interview cancelled, expired or
+   other times asked) keeps the section's 12px alone (2026-11-20). */
+.cr-iv > .qs-sec-h:has(+ .cr-next) { margin-bottom: 0; }
 .cr-doc { display: grid; gap: 16px; }
 .cr-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .cr-doc-who { display: grid; gap: 2px; min-width: 0; }
