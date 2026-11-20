@@ -101,7 +101,7 @@
        inform the candidate of the outcome, in place of the way to join. */
     if (i.state === 'confirmed' && i.held) {
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div></dl>' +
-        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + '.</p>' : '') + '</section>';
+        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') + '</section>';
     }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)

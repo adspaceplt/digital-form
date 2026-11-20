@@ -54,10 +54,10 @@
     'bad-recommend': 'Choose a recommendation.', 'bad-outcome': 'Please refresh the page and try again.',
     'no-email': 'This decision sends no email.', 'bad-criteria': 'Enter 3 to 8 criteria, each 2 to 60 characters, none twice.',
     'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.',
-    'not-yet': 'The interview has not started yet. Mark it held once it has taken place.',
-    'past': 'Choose a decision date and time after now.', 'too-far': 'Choose a decision date within 30 working days.',
-    'held': 'This interview has been held and cannot be cancelled.', 'not-held': 'Mark the interview held first.',
-    'decided': 'A decision has already been made on this candidate. Refresh the page to see it.'
+    'not-yet': 'The interview has not taken place. Mark it held after it ends.',
+    'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
+    'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
+    'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -601,7 +601,7 @@
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
   /* Interview held (2026-11-20): a confirmed interview once it has taken
      place, its decision date while no decision is made. */
-  var HELD = ['Held', 'is-ok'];
+  var HELD = ['Interview held', 'is-ok'];
   function undecided() { return state.rec && state.rec.stage === 'interview'; }
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
   function interviewPane(c, can) {
@@ -646,7 +646,7 @@
         (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
         fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
-        (i.held_at ? fact('Held', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
+        (i.held_at ? fact('Marked held by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(when(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
         mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('held', 'Decision date email') +
@@ -1244,11 +1244,10 @@
       var d = r.data || {};
       if (r.error || d.error) { msg('hirRecMsg', said(r), 'err'); return; }
       var from = at || d.at, f = [
-        { name: 'day', label: 'Decision date', type: 'date', min: C.today(), value: C.day(from), half: true, head: 'Decision by' },
+        { name: 'day', label: 'Decision date', type: 'date', min: C.today(), value: C.day(from), half: true },
         { name: 'time', label: 'Time', type: 'time', value: C.time(from), half: true }].concat(more || []);
       f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
       window.ADspaceConfirm.ask({ title: title, go: go, wait: true, fields: f,
-        body: 'The Owners will be reminded two working days before the decision date and on the day.',
         check: function (v) {
           var t = C.at(v.day, v.time);
           if (!t) return 'Enter the decision date and time.';
@@ -1263,7 +1262,7 @@
   function heldIv(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
     if (!i) return;
-    decideAsk(i, 'Interview held?', 'Interview held', null, [], function (at, v) {
+    decideAsk(i, 'Interview held', 'Interview held', null, [], function (at, v) {
       return rpc('hiring_interview_held', { p_interview: id, p_decide_by: at }).then(function (r) {
         if (r.error || (r.data || {}).error) return said(r);
         state.pane = 'interview';

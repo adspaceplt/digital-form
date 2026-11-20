@@ -307,7 +307,7 @@ begin
   update public.hiring_interviews set held_at = now(), held_by = me.id, held_mail = null, held_mail_at = null, updated_at = now() where id = i.id;
   update public.hiring_candidates set decide_by = v_at, decide_note = null, decide_soon_at = null, decide_due_at = null, decide_moved_at = null,
     last_step_at = now(), updated_at = now() where id = c.id;
-  perform public.hiring_log(c.id, 'candidate.interview', 'Interview held. Decision by ' || public.hiring_when(v_at));
+  perform public.hiring_log(c.id, 'candidate.interview', 'Interview held. Decision due ' || public.hiring_when(v_at));
   return jsonb_build_object('ok', true, 'decide_by', v_at);
 end $$;
 grant execute on function public.hiring_interview_held(uuid, timestamptz) to authenticated;
@@ -363,12 +363,12 @@ begin
     if v_today = v_day and r.decide_due_at is null then
       update public.hiring_candidates set decide_due_at = now() where id = r.id;
       perform public.hiring_tell(r.id, 'hiring.decide_due', 'A hiring decision is due today',
-        r.position || '. Decide by ' || public.hiring_when(r.decide_by) || ' on the candidate''s Scores tab.');
+        'Decide on the ' || r.position || ' candidate by ' || public.hiring_when(r.decide_by) || ' on the Scores tab.');
       n := n + 1;
     elsif v_today < v_day and v_today >= public.hiring_workday_add(v_day, -2) and r.decide_soon_at is null then
       update public.hiring_candidates set decide_soon_at = now() where id = r.id;
       perform public.hiring_tell(r.id, 'hiring.decide_soon', 'A hiring decision is due in two working days',
-        r.position || '. Decide by ' || public.hiring_when(r.decide_by) || ' on the candidate''s Scores tab.');
+        'Decide on the ' || r.position || ' candidate by ' || public.hiring_when(r.decide_by) || ' on the Scores tab.');
       n := n + 1;
     end if;
   end loop;

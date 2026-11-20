@@ -82,8 +82,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: 'Thank you for your interview: ' + m.position,
       heading: 'Thank you for your interview',
       body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your time in attending the interview for the position of ' + m.position + '. ' +
-        'ADspace is now considering your application.\n\n' +
+        'Thank you for attending the interview for the position of ' + m.position + '.\n\n' +
         'ADspace will inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
         'The details are also on your application page.\n\n{invoices}\n\n' + close,
       block: button('View your application', PAGE + m.key)
@@ -94,8 +93,8 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: 'Your application: ' + m.position,
       heading: 'Your application',
       body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your patience following your interview for the position of ' + m.position + '. ' +
-        'ADspace requires a little more time to consider your application.\n\n' +
+        'Thank you for your patience following the interview for the position of ' + m.position + '. ' +
+        'ADspace requires additional time to consider your application.\n\n' +
         'ADspace will now inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
         (m.decide_note ? m.decide_note + '\n\n' : '') +
         'The details are also on your application page.\n\n{invoices}\n\n' + close,

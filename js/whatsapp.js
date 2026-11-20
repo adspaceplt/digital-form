@@ -562,7 +562,7 @@
     gone: 'This email\'s address and message have been deleted, so it cannot be sent again.',
     already: 'This email has already been sent again. Refresh the page to see it.',
     'not-open': 'The interview times have changed. Send the invitation from the candidate\'s record.',
-    'not-held': 'A decision has been made on this candidate, so this email is no longer needed.',
+    'not-held': 'Not sent. A decision has been made on this candidate.',
     'not-confirmed': 'The interview is no longer confirmed. Send the email from the candidate\'s record.',
     'no-meet': 'The interview has no Google Meet link. Add one on the candidate\'s record first.',
     'no-email': 'The candidate\'s decision has changed. Send the email from the candidate\'s record.',

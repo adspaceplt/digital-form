@@ -15505,7 +15505,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (Date.parse(hAt) > Date.parse(hDecideAt(30))) return hNo('too-far');
           iv.held_at = hNowIso; iv.held_by = hMe.id; iv.held_mail = null; iv.held_mail_at = null;
           Object.assign(icand, { decide_by: hAt, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null, last_step_at: hNowIso });
-          hLog(iv.candidate_id, 'candidate.interview', 'Interview held. Decision by ' + hWhen(hAt));
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview held. Decision due ' + hWhen(hAt));
           return hOk({ decide_by: hAt });
         }
         if (name === 'hiring_interview_set_meet') {

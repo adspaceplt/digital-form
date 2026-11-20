@@ -6145,7 +6145,7 @@
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],
-      ['hiring_decision_days', 'Decision time (working days after the interview is held, 1 to 30)', 'away', '', 'Decision time', per('working day')],
+      ['hiring_decision_days', 'Decision time (working days after the interview, 1 to 30)', 'away', '', 'Decision time', per('working day')],
       ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],
       ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool kept', per('month')],
       ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed candidates kept', per('month')]] },
