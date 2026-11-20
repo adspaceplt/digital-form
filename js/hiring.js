@@ -57,7 +57,9 @@
     'not-yet': 'The interview has not taken place. Mark it held after it ends.',
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
     'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
-    'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.'
+    'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
+    'not-cancelled': 'Not sent. This interview is not a cancelled confirmed interview.',
+    'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -604,6 +606,10 @@
   var HELD = ['Interview held', 'is-ok'];
   function undecided() { return state.rec && state.rec.stage === 'interview'; }
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
+  /* A time the candidate or the team waits on (an interview, a reply-by, a
+     decision date) carries its weekday: 21 Nov 2026 (Saturday), 10:00am
+     (`ADspaceClock.due`, 2026-11-20); a history time never does. */
+  function due(iso) { return window.ADspaceClock.due(iso); }
   function interviewPane(c, can) {
     if (state.interviews == null) return '<section class="readgroup"><div id="hirIvFail"></div></section>';
     var open = state.interviews.filter(function (i) { return i.state !== 'cancelled'; })[0];
@@ -617,7 +623,7 @@
     var st = i.held_at ? HELD : IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired';
     var times = (i.slots || []).map(function (t, n) {
       var chosen = i.picked === n + 1;
-      return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(when(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
+      return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(due(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
     }).join('');
     var mail = function (k, label) { var v = i[k + '_mail']; return v ? fact(label, esc(MAIL[v] || v) + ' · ' + esc(when(i[k + '_mail_at'])), v === 'sent' ? '' : 'is-warn') : ''; };
     var acts = '';
@@ -631,6 +637,10 @@
     }
     if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
+    /* A confirmed interview cancelled (2026-11-20): Email candidate where
+       its cancellation did not go, while no newer interview was sent. */
+    if (can && i.state === 'cancelled' && i.approved_at && (i.cancel_mail === 'failed' || i.cancel_mail === 'unknown') && state.interviews[0] === i)
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
     if (live && i.state === 'invited' && i.invite_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
     var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
@@ -640,16 +650,16 @@
       '<dl class="ovfacts">' +
         fact(i.picked ? 'Times offered' : 'Times', '<ul class="hir-times">' + times + '</ul>') +
         fact('Length', esc(i.minutes) + ' minutes') +
-        ((i.state === 'invited' || i.state === 'expired') && i.reply_by ? fact('Reply by', esc(when(i.reply_by))) : '') +
+        ((i.state === 'invited' || i.state === 'expired') && i.reply_by ? fact('Reply by', esc(due(i.reply_by))) : '') +
         fact('Where', i.mode === 'online' ? (i.meeting_link ? '<a class="plink" href="' + esc(i.meeting_link) + '" target="_blank" rel="noopener"><span>Google Meet</span></a>' : 'Google Meet') : 'At the office') +
         (i.note ? fact('Note to the candidate', esc(i.note), 'is-pre') : '') +
         (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
         fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at ? fact('Marked held by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
-        (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(when(i.decide_by))) : '') +
+        (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(due(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
-        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('held', 'Decision date email') +
+        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('cancel', 'Cancellation') + mail('held', 'Decision date email') +
       '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
   }
 
@@ -813,6 +823,8 @@
         item(2, 'docreplace', 'Replace');
       }
       if (d.state === 'confirmed') acts += '<button class="btn btn-sm" type="button" data-h="docseal"' + id + '>Download</button>';
+      if (d.state === 'confirmed' && (d.confirm_mail === 'failed' || d.confirm_mail === 'unknown'))
+        acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail"' + id + '>Email candidate</button>';
       if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Signed copy');
       if (d.state !== 'draft') item(1, 'docrecord', 'Record');
       if (part && ['sent', 'withdrawn', 'declined', 'signed', 'confirmed'].indexOf(d.state) >= 0) item(6, 'docvoid', 'Void', true);
@@ -832,12 +844,13 @@
         fact('Salary', d.pay_set ? 'Set' : '', d.pay_set ? '' : 'is-warn') +
         (d.state === 'draft' ? fact('Days to reply', esc(t.reply_days || '')) : '') +
         (d.sent_at ? fact('Sent', esc([d.sent_by, when(d.sent_at)].filter(Boolean).join(' · '))) : '') +
-        (d.state === 'sent' ? fact(d.expired ? 'Expired' : 'Reply by', esc(when(d.reply_by))) : '') +
+        (d.state === 'sent' ? fact(d.expired ? 'Expired' : 'Reply by', esc(d.expired ? when(d.reply_by) : due(d.reply_by))) : '') +
         (d.mail ? fact('Email', esc(MAIL[d.mail] || d.mail) + ' · ' + esc(when(d.mail_at)), d.mail === 'sent' ? '' : 'is-warn') : '') +
         (d.returned_note && d.state === 'sent' ? fact('Sent back', esc(d.returned_note), 'is-pre') : '') +
         (signed ? fact(d.kind === 'offer' ? 'Accepted' : 'Signed', signed) : '') +
         (d.state === 'declined' ? fact('Declined', esc(when(d.answered_at)) + (d.decline_note ? ' · ' + esc(d.decline_note) : '')) : '') +
         (d.confirmed_at ? fact('Confirmed', esc([d.confirmed_by, when(d.confirmed_at)].filter(Boolean).join(' · '))) : '') +
+        (d.confirm_mail ? fact('Confirmation email', esc(MAIL[d.confirm_mail] || d.confirm_mail) + ' · ' + esc(when(d.confirm_mail_at)), d.confirm_mail === 'sent' ? '' : 'is-warn') : '') +
         (d.stamp_no ? fact('Stamp certificate', esc(d.stamp_no)) : '') +
         (d.sealed_at ? fact('Sealed', esc(when(d.sealed_at))) : '') +
         (d.void_note ? fact('Void', esc(d.void_note)) : '') +
@@ -949,6 +962,14 @@
       return true;
     });
   }
+  /* The candidate told that the document was confirmed (2026-11-20): its
+     name and reference, never its terms. */
+  function confirmedMail(d) {
+    return fnCall('hiring-mail', { docId: d.id, kind: 'confirmed' }).then(function (x) {
+      if (x.error) { msg('hirRecMsg', DOC_SAID[x.error] || SAID[x.error] || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
+      return true;
+    });
+  }
   function docSend(d, b) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Send ' + DOC_WORD[d.kind] + '?', go: 'Send', wait: true,
@@ -1026,12 +1047,13 @@
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
       body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
-      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it if the document was stamped.' }] },
+      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it if the document was stamped.' },
+        { name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] },
     function (v) {
       return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
-        openRec(c.id).then(function () {
-          msg('hirRecMsg', 'Confirmed.', 'ok');
+        (v.mail ? confirmedMail(d) : Promise.resolve(false)).then(function (sent) { return openRec(c.id).then(function () { return sent; }); }).then(function (sent) {
+          msg('hirRecMsg', sent ? 'Confirmed. The candidate was emailed.' : 'Confirmed.', 'ok');
           var now = (state.docs || []).filter(function (x) { return x.id === d.id; })[0];
           if (now) docSealed(now, null);
         });
@@ -1221,15 +1243,23 @@
   function cancelIv(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
     if (!i) return;
+    /* A confirmed interview's candidate is told, the tick on by default
+       (2026-11-20, the user: "yes fix the 3 hiring issues too"). */
+    var told = i.state === 'confirmed';
     window.ADspaceConfirm.ask({ title: 'Cancel interview?', go: 'Cancel interview', tone: 'warn', wait: true,
-      body: (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') + 'The candidate will not be emailed. Tell the candidate, or send new times.' },
-    function () {
+      body: (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') +
+        (told ? 'Send new times afterwards to arrange another interview.' : 'The candidate will not be emailed. Send new times to arrange another interview.'),
+      fields: told ? [{ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] : [] },
+    function (v) {
       var off = i.meeting_link ? fnCall('meet-create', { interviewId: id, action: 'delete' }) : Promise.resolve({});
       return off.then(function (m) {
         if (m.error) return SAID[m.error] || SAID['google-refused'];
         return rpc('hiring_interview_cancel', { p_interview: id }).then(function (r) {
           if (r.error || (r.data || {}).error) return said(r);
-          openRec(c.id); return '';
+          (told && v && v.mail ? sendMail(id, 'cancelled') : Promise.resolve(false)).then(function (sent) {
+            openRec(c.id).then(function () { if (sent) msg('hirRecMsg', 'Cancelled. The candidate was emailed.', 'ok'); });
+          });
+          return '';
         });
       });
     });
@@ -1391,6 +1421,7 @@
     on('docmark', function (b) { docMark(docOf(b)); });
     on('docback', function (b) { docBack(docOf(b)); });
     on('docconfirm', function (b) { docConfirm(docOf(b), b); });
+    on('docconfirmmail', function (b) { b.disabled = true; confirmedMail(docOf(b)).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
     on('docseal', function (b) { docSealed(docOf(b), b); });
     on('docscan', function (b) { openPath(docOf(b).signed.path, b); });
     on('docrecord', function (b) { docRecord(docOf(b), b); });
