@@ -159,10 +159,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A walk that ends a step inside a record leaves it by its Back before
     it moves on, never counting on the rail to (2026-11-18: uxaudit waited
     on Team's Members inside a candidate).
-  - uxaudit's `head` holds each bar family to one height, a screen grouped
-    by the bar it draws (`.console-head` or `.topbar`), never by the page
-    it is on (2026-11-21: the signed-out console wears the client pages'
-    bar, and 431 signed-in screens read against its 64px).
+  - uxaudit's `head` holds every bar on the walk to one height at each
+    width, the console's head and a client page's bar alike, naming the bar
+    drawn (2026-11-21: grouped by page, the signed-out console's bar read as
+    the console's and 431 screens failed; then every bar became 64).
   - A suite types a question's answer into its field by name
     (`getByLabel`), never into whatever holds focus: under a finger
     `ADspaceConfirm` focuses its card, never a field (2026-11-21:
@@ -556,7 +556,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   bar from the root's background, never the head (2026-11-14). The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
 - The bar is two families: the console's `.console-head` (`css/console.css`)
-  and every client page's `.topbar` (`js/chrome.js`, `css/portal.css`); a
+  and every client page's `.topbar` (`js/chrome.js`, `css/portal.css`), one
+  height, `--head-h` (64 at a desk, 56 on a phone), the console's signed-in
+  head too; no page sets its own (the user, 2026-11-21); a
   change to one is checked on the other in the same push (2026-11-14: the
   status bar fixed on the console reached the client pages a release later).
 - The console is a PWA:
