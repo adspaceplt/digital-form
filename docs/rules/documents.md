@@ -254,10 +254,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     of issue (`issued_month`, drawn Nov 2026), `sealed`, `more` and `by_day`;
     no day and no Document ID. The page reads it as a shaded card
     (Reference, Issued by from `ADSPACE_ORG`, Document, Issued, Status) over
-    "This answer confirms that ADSPACE PLT issued a document with this
-    reference. It does not confirm the copy you hold.", then View more
-    details and, for a sealed copy alone, Check a file, side by side (one
-    over the other on a phone). A reissued document answers its standing
+    "This result confirms that ADSPACE PLT issued a document under this
+    reference. It does not confirm the copy you hold.", then More details
+    (Show details) and, for a sealed copy alone, File check (Check a file),
+    side by side (one over the other on a phone). A reissued document answers its standing
     version as Valid and never says reissued.
   - Every document /verify/ answers (`documents`, HR letters among them,
     `client_documents`, `quotations`, `hiring_docs`, `perf_reviews`) holds a
@@ -275,14 +275,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - The details (`verify_details(p_serial, p_code, p_day)`, anon) answer
     the day of issue, the Document ID, the state and the steps by Malaysian
     day (issued, sent, signed by the recipient, confirmed by ADspace, sealed
-    copy kept, acknowledged, finalised, declined, withdrawn, void, replaced,
+    copy stored, acknowledged, finalised, declined, withdrawn, void, replaced,
     expired; drawn with the status's dot, no weekday) only for the Document
     ID (any case, with or without its dash) or, for a document issued before
     `verify_code_from` (a Business setting, YYYYMMDD, seeded 20261120) or
     holding none, its day of issue (the fold "No Document ID on your
     copy?"). A wrong code, a wrong day and an unknown reference read the
-    same (`no_match`): "No document matches these details. Please check both
-    entries, or contact ADspace at {contact}.", `contact` the Legal and
+    same (`no_match`): "No document matches these details. Please check the
+    details entered, or contact ADspace at {contact}.", `contact` the Legal and
     compliance mailbox (`mail_boxes` `legal`).
   - Check a file: the PDF hashed in the browser, never uploaded, its SHA-256
     asked of `verify_file` (anon): Matches the sealed copy or Does not match
@@ -291,8 +291,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     file checks an hour a connection (`verify_count()`, `verify_tries`) and
     10 detail checks (`verify_detail_count()`, `verify_detail_tries`), each
     by `request_ip()`, RLS on, no policy, no grant, then `locked` with the
-    minutes left before anything is read (Too many checks; Too many
-    attempts); a session with no request is not counted; `privacy_retention`
+    minutes left before anything is read (Too many checks: Too many checks
+    were made from this network.); a session with no request is not counted; `privacy_retention`
     removes a row whose hour began over 30 days ago.
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
   - It is Noto Sans SC as TrueType in the repo (`css/NotoSansSC-Regular.ttf`,

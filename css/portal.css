@@ -2071,17 +2071,14 @@ dd > .linkbtn::before { inset: 3px 0; }
 .verify-facts dd { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
 .verify-facts .verify-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: .02em; }
 .verify-card .verify-note, .verify-history .verify-note { margin-top: 12px; font-size: 13px; color: var(--ink-mute); line-height: 1.5; }
-:root[data-face="client"] .verify-panel .verify-note { font-size: 13px; }
+:root[data-face="client"] .verify-panel .verify-note, :root[data-face="client"] .verify-panel .verify-pick p { font-size: 13px; }
 /* The two ways on, side by side and one height (a column each on a phone):
-   tonal blocks, the name over one mute line. */
+   shaded blocks, a title over one mute line and its small button. */
 .verify-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 12px; }
 .verify-acts:has(> .verify-pick:only-of-type) { grid-template-columns: minmax(0, 1fr); }
-.btn.verify-pick {
-  height: auto; min-height: 0; padding: 14px 16px; white-space: normal; text-align: left;
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 4px; width: 100%;
-}
-.btn.verify-pick b { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: 0; }
-.btn.verify-pick span { font-size: 12.5px; font-weight: 400; color: var(--ink-mute); line-height: 1.45; }
+.verify-pick { background: var(--sunk); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.verify-pick h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.verify-panel .verify-pick p { margin: 0 0 6px; font-size: 12.5px; color: var(--ink-mute); line-height: 1.45; flex: 1 1 auto; }
 /* View more details asks in place: the Document ID, the day of issue under
    its fold where it may stand for it, the refusal under the fields. */
 .verify-ask { margin: 0; display: flex; flex-direction: column; gap: 8px; background: var(--sunk); border-radius: var(--radius); padding: 18px 20px; }

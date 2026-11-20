@@ -24,22 +24,21 @@
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
       notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
-      locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
-      detailLocked: 'Too many attempts were made from this connection. Please try again in {wait}.',
+      locked: 'Too many checks', lockedText: 'Too many checks were made from this network. Please try again in {wait}.',
       ref: 'Reference', issuedBy: 'Issued by', doc: 'Document', issued: 'Issued', docId: 'Document ID', status: 'Status',
-      note: 'This answer confirms that ADSPACE PLT issued a document with this reference. It does not confirm the copy you hold.',
-      more: 'View more details', moreText: 'Enter the Document ID printed on your copy.',
-      fileGo: 'Check a file', fileText: 'Compare a PDF with the sealed copy. The file stays on this device.',
+      note: 'This result confirms that ADSPACE PLT issued a document under this reference. It does not confirm the copy you hold.',
+      more: 'More details', moreText: 'Enter the Document ID printed on your copy.', moreGo: 'Show details',
+      file: 'File check', fileGo: 'Check a file', fileText: 'Compare a PDF with the sealed copy. The file stays on this device.',
       codeLabel: 'Document ID', codeHint: 'XXXX-XXXX', show: 'Show details', cancel: 'Cancel', showing: 'Checking…',
       noId: 'No Document ID on your copy?', dayLabel: 'Issue date',
       enterCode: 'Enter the Document ID.', enterDay: 'Enter the Document ID or the issue date.',
-      noMatch: 'No document matches these details. Please check both entries, or contact ADspace at {contact}.',
-      noMatchBare: 'No document matches these details. Please check both entries, or contact ADspace.',
+      noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
+      noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
       history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
       fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match the sealed copy', fileFailed: 'Unable to check the file. Please try again.',
       state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' },
-      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed copy kept',
+      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed copy stored',
         acknowledged: 'Acknowledged by the recipient', finalised: 'Finalised', declined: 'Declined', withdrawn: 'Withdrawn', voided: 'Void',
         replaced: 'Replaced', expired: 'Expired' }
     },
@@ -48,22 +47,21 @@
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
       notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
       failed: '无法核验', failedText: '请稍后再试。',
-      locked: '查询次数过多', lockedText: '此网络连接查询编号的次数过多。请于{wait}后重试。',
-      detailLocked: '此网络连接的尝试次数过多。请于{wait}后重试。',
+      locked: '查询次数过多', lockedText: '此网络的查询次数过多。请于{wait}后重试。',
       ref: '编号', issuedBy: '签发方', doc: '文件', issued: '签发', docId: '文件识别码', status: '状态',
-      note: '此结果确认 ADSPACE PLT 曾签发此编号的文件，但不确认您所持有的副本。',
-      more: '查看更多详情', moreText: '请输入您副本上印有的文件识别码。',
-      fileGo: '核验文件', fileText: '将 PDF 与封存副本比对。文件不会离开此设备。',
+      note: '此结果确认 ADSPACE PLT 曾以此编号签发文件，但不确认您所持有的副本。',
+      more: '更多详情', moreText: '请输入您副本上印有的文件识别码。', moreGo: '显示详情',
+      file: '文件比对', fileGo: '核验文件', fileText: '将 PDF 与封存副本比对。文件不会离开此设备。',
       codeLabel: '文件识别码', codeHint: 'XXXX-XXXX', show: '显示详情', cancel: '取消', showing: '核验中…',
       noId: '副本上没有文件识别码？', dayLabel: '签发日期',
       enterCode: '请输入文件识别码。', enterDay: '请输入文件识别码或签发日期。',
-      noMatch: '没有与这些资料相符的文件。请核对两项输入，或通过 {contact} 联系 ADspace。',
-      noMatchBare: '没有与这些资料相符的文件。请核对两项输入，或联系 ADspace。',
+      noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
+      noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
       fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
-      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '封存副本已保存',
+      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '封存副本已存档',
         acknowledged: '收件方确认收悉', finalised: '定稿', declined: '已拒绝', withdrawn: '已撤回', voided: '已作废',
         replaced: '已替换', expired: '已过期' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
@@ -163,9 +161,11 @@
     var moreBox = !detail && !asking && a.more;
     if (moreBox || a.sealed) {
       html += '<div class="verify-acts">' +
-        (moreBox ? '<button class="btn verify-pick" type="button" id="vMoreGo"><b>' + esc(t().more) + '</b><span>' + esc(t().moreText) + '</span></button>' : '') +
-        (a.sealed ? '<input type="file" id="vFile" accept="application/pdf,.pdf" hidden>' +
-          '<button class="btn verify-pick" type="button" id="vFileGo"><b>' + esc(t().fileGo) + '</b><span>' + esc(t().fileText) + '</span></button>' : '') +
+        (moreBox ? '<section class="verify-pick" aria-labelledby="vMoreH"><h3 id="vMoreH">' + esc(t().more) + '</h3><p>' + esc(t().moreText) + '</p>' +
+          '<button class="btn btn-sm" type="button" id="vMoreGo">' + esc(t().moreGo) + '</button></section>' : '') +
+        (a.sealed ? '<section class="verify-pick" aria-labelledby="vFileH"><h3 id="vFileH">' + esc(t().file) + '</h3><p>' + esc(t().fileText) + '</p>' +
+          '<input type="file" id="vFile" accept="application/pdf,.pdf" hidden>' +
+          '<button class="btn btn-sm" type="button" id="vFileGo">' + esc(t().fileGo) + '</button></section>' : '') +
         '</div>';
     }
     if (a.sealed) html += '<p class="verify-file-out" id="vFileOut" role="status"' + (fileSaid ? '' : ' hidden') + '>' + (fileSaid ? fileLine(fileSaid) : '') + '</p>';
@@ -216,7 +216,7 @@
       db.rpc('verify_details', { p_serial: a.serial, p_code: code || null, p_day: code ? null : day }).then(function (r) {
         var d = r && r.data;
         if (r.error || !d || d.error) { say(t().failed + '. ' + t().failedText); return; }
-        if (d.locked) { say(lockedLine(d.minutes, t().detailLocked)); return; }
+        if (d.locked) { say(lockedLine(d.minutes)); return; }
         if (!d.ok) {
           say(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode'));
           return;

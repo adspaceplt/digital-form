@@ -793,7 +793,7 @@
      copy does not match (VERIFY DETAILS, 2026-11-20). */
   var BOX_NOTE = { general: 'Replies to client emails, invitations and all other emails.', hr: 'Replies to emails sent to candidates.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
-    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the verify page when a document does not match.' };
+    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the Document verification page when no document matches.' };
   function openMailboxes() {
     db.rpc('mail_senders_read').then(function (r) {
       var d = (r && r.data) || {};

@@ -258,7 +258,7 @@
         resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '接受并签署', finishing: '签署中…',
         rec: '签署时间、IP 地址及设备将与您的签名一并记录。',
         waitT: '已接受', waitP: '由{n}于{d} {t}（GMT+8）签署。',
-        confT: '已确认', confP: 'ADspace 已于{d}确认。', docId: '文件编号 {id}', sealDl: '下载已签署副本',
+        confT: '已确认', confP: 'ADspace 已于{d}确认。', docId: '文件识别码 {id}', sealDl: '下载已签署副本',
         doneP: 'ADspace 将审核您的资料，并于2个工作日内确认开始日期。',
         say: {
           legal: '请填写公司注册名称。', reg: '请填写有效的商业注册号码。', regOld: '请填写有效的旧注册号码。',
