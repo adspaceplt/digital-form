@@ -1934,24 +1934,6 @@ dd > .linkbtn::before { inset: 3px 0; }
   .batch-progress { margin-left: 0; }
 }
 
-/* Signing in is the whole page, the same as the review notice. A card drawn
-   around it only adds an edge to look at. */
-.signin-card {
-  width: 100%; max-width: 340px; background: none;
-  border: 0; border-radius: 0; padding: 0; box-shadow: none;
-  text-align: left;
-}
-.signin-card h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 6px; }
-.signin-card p { color: var(--ink-mute); font-size: 13.5px; margin-bottom: 24px; }
-.signin-card .field-label { margin-bottom: 6px; }
-.signin-card .input { width: 100%; padding: 11px 13px; }
-.signin-btn { width: 100%; margin-top: 14px; padding: 12px; font-size: 14px; }
-.signin .msg { margin-top: 14px; }
-.signin-alt { width: 100%; margin-top: 8px; }
-/* The passkey is the second way in, so it is the tonal button under the
-   primary, at the primary's own height. */
-.signin-pk { padding: 12px; font-size: 14px; }
-
 /* A question asked about something on a sheet sits above that sheet: every
    sheet is moved to the end of the page on open, so without its own layer
    the question could open underneath the sheet it was about. */
@@ -2029,7 +2011,8 @@ dd > .linkbtn::before { inset: 3px 0; }
 .cover-panel:lang(zh) h1, .cover-panel:lang(zh) h2 { text-transform: none; letter-spacing: 0; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
 .cover-panel h1 + p, .cover-panel h2 + p { color: var(--ink); font-size: 17px; font-weight: 400; line-height: 1.45; }
-.cover-panel h1 + p + p, .cover-panel h2 + p + p:not(.msg) { margin-top: 8px; }
+/* Each line after the statement 8 under the one before. */
+.cover-panel :is(h1, h2) ~ p + p:not(.msg, .cover-ref) { margin-top: 8px; }
 :root[data-face="client"] .cover-panel p { font-size: 14px; }
 :root[data-face="client"] .cover-panel h2 + p { font-size: 17px; }
 /* The sign-in's reference, last, where a sign-in is held (js/maintenance.js). */
@@ -4045,10 +4028,10 @@ body > .shell { width: 100%; }
 /* The review cover claimed a full viewport of its own, which put the footer
    just below the fold on a page with nothing else on it. It now fills what is
    left between the bar and the footer instead of asking for the lot. */
-.shell:has(> .cover:not([hidden])), .shell:has(> .signin:not([hidden])) {
+.shell:has(> .cover:not([hidden])) {
   display: flex; flex-direction: column; padding-bottom: 0;
 }
-.shell:has(> .cover:not([hidden])) > .cover, .shell:has(> .signin:not([hidden])) > .signin {
+.shell:has(> .cover:not([hidden])) > .cover {
   flex: 1 1 auto; min-height: 0; margin-bottom: 0;
 }
 

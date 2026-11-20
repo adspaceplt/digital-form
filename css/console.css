@@ -50,17 +50,6 @@
 /* Write caption (2026-10-08): under the caption fields at its own width,
    its answer or refusal one line under it. */
 .capwrite { display: flex; align-items: center; gap: 8px; }
-/* Sign in sits in the middle of the page, under the same header as everywhere
-   else. The negative margin cancels the shell's bottom padding so the card
-   centres in the real space below the header rather than sitting high. */
-.signin {
-  display: flex; align-items: center; justify-content: center;
-  min-height: calc(100vh - 55px); margin-bottom: -96px; padding: 24px 0;
-}
-@supports (height: 100dvh) {
-  .signin { min-height: calc(100dvh - 55px); }
-}
-.signin-card .signin-sent { margin-bottom: 16px; }
 .pk-list { display: flex; flex-direction: column; }
 .pk-row {
   display: grid; grid-template-columns: 16px minmax(0, 1fr) auto;
@@ -5310,8 +5299,9 @@ svg.sec {
      paddings feels not visually balance"): 76px holds the title and its
      line with 13px above and below (90 read as empty space, the same day);
      every sticky offset reads it. A record's Back is the first thing under
-     it, at the body's own 20px. */
-  :root:not(.has-tabbar):has(.console) { --head-h: 76px; }
+     it, at the body's own 20px. Only while the console is drawn: signed
+     out, and on a cover, the page's bar is every page's 64 (2026-11-20). */
+  :root:not(.has-tabbar):has(#console:not([hidden])) { --head-h: 76px; }
   :root:not(.has-tabbar) .console-body .backlink { margin-top: 0; }
   :root:not(.has-tabbar) .console-body { padding-inline: 32px; }
   :root:not(.has-tabbar) .console-title { font-family: var(--font-head); font-size: 22px; font-weight: 600; letter-spacing: -.02em; min-height: 30px; }

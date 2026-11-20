@@ -164,9 +164,14 @@
      opened; the code signs in here, which is what the installed app needs,
      since it cannot take a link from the mail app into its own window. */
   var authEmailSent = '';
+  /* The cover's statement (`#authSent`) asks for the email, then says where
+     the code went; going back puts the ask back, from the markup. */
+  var authAsk = $('authSent').textContent;
   function authStep(code) {
     $('authEmailStep').hidden = code;
     $('authCodeStep').hidden = !code;
+    $('authBack').hidden = !code;
+    if (!code) $('authSent').textContent = authAsk;
     if (code) { $('authCode').value = ''; $('authCode').focus(); }
     else $('authEmail').focus();
   }

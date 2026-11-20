@@ -197,7 +197,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - Merge first, gate once a day (the user, 2026-10-12: "Once ready pr u
     can merge then only run the gate … wait till all tasks completed then
     run a full gate full suite … build all and merge first"). A request is
-    built, `node tests/affected.js --run` passes, its touched
+    built, `node tests/affected.js --run` passes (never uxaudit or matrix,
+    which run once, in the day's full gate; the user, 2026-11-20: "Only run
+    once. Run during full gate would do right"), its touched
     screens are screenshotted and read (1280 and 390, both themes in the
     console; every screen a shared layout, CSS or component change
     reaches), and it merges at once on its own PR, never held for the next
@@ -277,8 +279,11 @@ portal, so a change cannot rewrite what checks it.
 
 **Before every merge** (2026-11-17, the user: "ok all", the verification
 loop): `node tests/affected.js --run` (`node --check` on each changed
-script, then those suites through `gate.sh`, in the background; it writes
-`/tmp/affected-pass/{commit}` on a pass). The merge check
+script, then those suites through `gate.sh`, in the background, uxaudit and
+matrix left out and named as the full gate's; it writes
+`/tmp/affected-pass/{commit}` on a pass). A run stopped partway is stopped
+with every suite process it started, never its shell alone (2026-11-20: an
+orphaned `levels.js` shut the next run's Postgres cluster). The merge check
 (`.claude/hooks/verify-gate.sh`, mode in `verify-gate.mode`: off, observe,
 enforce) reads it; a merge without a pass carries `Verify: skipped, {reason}`
 in its message. A suite that fails is fixed at its cause in up to three
@@ -501,7 +506,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - no `noscript` redirect.
   - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
-  closed, confirmed, nothing to review, access denied), with the same words on
+  closed, confirmed, nothing to review, access denied, the console's
+  sign-in, a quotation waiting for the team), with the same words on
   every client page (`js/words.js`). Where the browser holds a sign-in (the console, the
   client portal), every cover ends Reference {code}, the sign-in's code as a
   colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access

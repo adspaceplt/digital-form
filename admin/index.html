@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261120zzzzzg">
-<link rel="stylesheet" href="/css/console.css?v=20261120zzzzu">
+<link rel="stylesheet" href="/css/portal.css?v=20261120zzzzzh">
+<link rel="stylesheet" href="/css/console.css?v=20261120zzzzzh">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -178,31 +178,39 @@
     <p class="hint">The portal is not set up yet. Please contact an admin.</p>
   </section>
 
-  <section class="signin" id="authPanel" hidden>
-    <div class="signin-card">
-      <h2>Sign in</h2>
-      <div id="authEmailStep" data-cf>
-        <label class="field-label" for="authEmail">Company email</label>
-        <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com"
-               autocomplete="email">
-        <button class="btn btn-primary signin-btn" id="authSend" type="button">Sign in</button>
-        <!-- Touch ID, Face ID or the device password instead of the email.
-             Drawn by js/passkey.js only where this browser can use one. -->
-        <button class="btn signin-alt signin-pk" id="authPasskey" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Sign in with a passkey
-        </button>
+  <!-- Signing in is a full-page state, so it is the one cover every page
+       draws (the user, 2026-11-20, after RIMOWA's notice): the uppercase
+       title, the statement, the field and its button on one row, the other
+       way in under it. -->
+  <section class="cover" id="authPanel" hidden>
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2>Sign in</h2>
+        <p id="authSent">Enter your company email address.</p>
+        <div id="authEmailStep" data-cf>
+          <form onsubmit="return false">
+            <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com"
+                   autocomplete="email" aria-label="Company email">
+            <button class="btn btn-primary" id="authSend" type="button">Sign in</button>
+          </form>
+          <!-- Touch ID, Face ID or the device password instead of the email.
+               Drawn by js/passkey.js only where this browser can use one. -->
+          <button class="btn cover-alt" id="authPasskey" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Sign in with a passkey
+          </button>
+        </div>
+        <!-- The email carries a link and a code. The code is what works where a
+             link cannot be opened into this window, such as the installed app. -->
+        <div id="authCodeStep" hidden>
+          <form onsubmit="return false">
+            <input class="input" id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code"
+                   maxlength="10" pattern="[0-9]*" spellcheck="false" aria-label="Sign-in code" data-otp-boxes>
+            <button class="btn btn-primary" id="authVerify" type="button">Sign in</button>
+          </form>
+        </div>
+        <div class="msg" id="authMsg"></div>
+        <button class="btn btn-quiet cover-alt" id="authBack" type="button" hidden>Use another email</button>
       </div>
-      <!-- The email carries a link and a code. The code is what works where a
-           link cannot be opened into this window, such as the installed app. -->
-      <div id="authCodeStep" hidden>
-        <p class="signin-sent" id="authSent"></p>
-        <label class="field-label" for="authCode">Sign-in code</label>
-        <input class="input" id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code"
-               maxlength="10" pattern="[0-9]*" spellcheck="false" data-otp-boxes>
-        <button class="btn btn-primary signin-btn" id="authVerify" type="button">Sign in</button>
-        <button class="btn btn-quiet signin-alt" id="authBack" type="button">Use another email</button>
-      </div>
-      <div class="msg" id="authMsg"></div>
     </div>
   </section>
 </main>
@@ -6747,7 +6755,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261120zzzzzg"></script>
+<script src="/js/admin.js?v=20261120zzzzzh"></script>
 <script src="/js/documents.js?v=20261120zzzzzd"></script>
 <script src="/js/letters.js?v=20261120zzzzzd"></script>
 <script src="/js/smreport.js?v=20261120zzzp"></script>
