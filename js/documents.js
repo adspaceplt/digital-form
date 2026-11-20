@@ -630,6 +630,32 @@
     return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
       'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
   }
+  /* A document's Document ID as printed (XXXX-XXXX; VERIFY DETAILS,
+     2026-11-20), asked of the database by the id the page already holds:
+     kind document (Documents, HR letters among them), letter (a Letter of
+     Offer), quotation, hiring (an offer or contract) or perf. A preview, a
+     page with no database and a refused or failed ask answer '', so a
+     drawing never waits on it or fails for it. One ask a document a page. */
+  var codes = {};
+  function codeOf(kind, id) {
+    var api = window.ADspaceAPI, db = api && api.client;
+    if (!id || !db) return Promise.resolve('');
+    var k = kind + ':' + id;
+    if (codes[k]) return Promise.resolve(codes[k]);
+    return Promise.resolve(db.rpc('doc_code_of', { p_kind: kind, p_id: id })).then(function (r) {
+      var c = r && !r.error && typeof r.data === 'string' && /^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(r.data) ? r.data : '';
+      if (c) codes[k] = c;
+      return c;
+    }).catch(function () { return ''; });
+  }
+  /* A copy of a document's fields with its Document ID, the caller's own
+     object left as it was. */
+  function withCode(doc, code) {
+    var o = {}, k;
+    for (k in doc) if (Object.prototype.hasOwnProperty.call(doc, k)) o[k] = doc[k];
+    o.code = code || '';
+    return o;
+  }
   /* opts: kind (the TEMPLATE key), signed (an ACL document's), title (an
      ALP form's, drawn on its first page under the head), cont (the pages
      continue another document's: a sealed copy's Record page). */
@@ -649,7 +675,7 @@
     var mute = ink, faint = PDF.rgb(0.631, 0.631, 0.631);
     var line = PDF.rgb(0.812, 0.816, 0.831), shade = PDF.rgb(0.961, 0.961, 0.961);
     var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, strong: strong, mute: mute, faint: faint, line: line, shade: shade, fonts: fonts, logo: logo,
-              reference: opts.ref || '' };
+              reference: opts.ref || '', code: opts.code || '' };
     p.plain = tpl === 'ALP';
     p.signed = tpl === 'ACL_SIGN';
     p.safe = function (s) {
@@ -743,7 +769,12 @@
       var count = 'Page ' + (i + 1) + ' of ' + n;
       if (acl) {
         p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, faint);
-        p.centre(verifyLine(tpl === 'ACL_SIGN'), at(G.verifyAt), G.verify, font, faint);
+        /* The Document ID ends the verify line (VERIFY DETAILS, 2026-11-20):
+           /verify/ shows a document's days and steps to whoever holds a
+           copy, and the copy proves it by this code. The longest line, with
+           No signature required., ends at 476pt, clear of the page count
+           at 493.75pt. */
+        p.centre(verifyLine(tpl === 'ACL_SIGN') + (p.code ? ' · Document ID ' + p.code : ''), at(G.verifyAt), G.verify, font, faint);
         /* A lettered document of two pages or more names its reference on
            every page (2026-11-20, restored after the templates' foot
            dropped it): a page swapped out of a signed agreement still says
@@ -755,6 +786,11 @@
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
       if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, faint);
+      /* A document /verify/ answers on the AL template (a quotation) names
+         its Document ID on every page, in the bottom margin's left where an
+         ACL letter names its reference: clear of the page count. A
+         performance record carries it in its own reference line instead. */
+      else if (p.code) p.text('Document ID ' + p.code, M, at(G.refAt), G.ref, font, faint);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
@@ -821,7 +857,7 @@
   function letterPages(pdf, PDF, fonts, logo, doc) {
     var langs = letterLangs(doc);
     var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-    var pn = pen(PDF, fonts, logo, { kind: letterKind(doc), signed: Boolean(doc.signed) });
+    var pn = pen(PDF, fonts, logo, { kind: letterKind(doc), signed: Boolean(doc.signed), code: doc.code });
     var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
     var text = pn.text, rule = pn.rule, wrap = pn.wrap;
     var pages = [], y;
@@ -996,13 +1032,13 @@
       /* The file names its reference: wa-send sends a letter only where it
          does (2026-10-15). */
       meta(pdf, String(doc.number || ''), k.title);
-      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
+      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf), codeOf('letter', doc.preview ? null : doc.id)]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       var font = fonts.font, bold = fonts.bold;
       /* The pen holds the primitives and the letterhead; this letter keeps
          its own cursor and tells the pen which page it is on. */
-      var pn = pen(PDF, fonts, logo, { kind: 'offer', signed: true, ref: String(doc.number || '') });
+      var pn = pen(PDF, fonts, logo, { kind: 'offer', signed: true, ref: String(doc.number || ''), code: got[2] });
       var ink = pn.ink, mute = pn.mute, med = fonts.med || bold;
       var text = pn.text, width = pn.width, right = pn.right, rule = pn.rule, wrap = pn.wrap;
       var M = pn.M, R = pn.R;
@@ -1740,7 +1776,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
+    pen: pen, codeOf: codeOf, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };

@@ -184,14 +184,20 @@
       var pdf, fonts, logo;
       return PDF.PDFDocument.create().then(function (p) {
         pdf = p;
-        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf)]);
+        /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
+        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf), D.codeOf ? D.codeOf('hiring', opts.draft ? null : doc.id) : '']);
       }).then(function (got) {
         fonts = got[0]; logo = got[1];
+        var code = got[2] || '';
+        /* A copy sealed from this release prints on its Record page the
+           Document ID every page's foot prints; one sealed before printed
+           its uuid, which /verify/ still takes for a sealed copy. */
+        if (opts.seal && code) opts.seal.docId = code;
         if (opts.seal && window.ADspaceSeal) opts.extraPages = window.ADspaceSeal.pagesFor(PDF, fonts, opts.seal);
         var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
         /* The contract is signed (ACL_SIGN); the offer is accepted on the
            application page (ACL_NOSIGN). */
-        var pn = D.pen(PDF, fonts, logo, { kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer' });
+        var pn = D.pen(PDF, fonts, logo, { kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', code: code });
         var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute, text = pn.text, wrap = pn.wrap;
         var t = doc.terms || {}, pages = [], y;
         var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };

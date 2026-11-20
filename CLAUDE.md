@@ -2439,7 +2439,9 @@ learned about an area is written in its file, never here.
     advertise@ (clients, invitations to colleagues, all else), HR hr@
     (careers: every email to a candidate; the user, 2026-11-20), Accounts
     payable ap@ (suppliers, creators), Finance finance@ (invoices and
-    reminders), e-Invoice einvoice@ (e-invoice submissions alone); the five are
+    reminders), e-Invoice einvoice@ (e-invoice submissions alone), Legal
+    and compliance legal@ (named by /verify/ where a copy does not match,
+    `verify_details` `contact`; 2026-11-20); the six are
     Settings, Messages: Reply-to mailboxes (`mail_boxes`,
     `mail_boxes_set`, `team.settings`, filed `team.changed` under Reply-to
     mailboxes), the pages reading them through `mail_senders_read`

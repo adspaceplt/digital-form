@@ -80,12 +80,17 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf)]);
+        /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
+        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf), docs.codeOf ? docs.codeOf('quotation', opts.draft ? null : q.id) : '']);
       }).then(function (g) {
         got = g;
+        opts.code = g[2] || '';
         if (seal) {
           var co = seal.record.company || (opts.to && opts.to.name) || q.brand;
-          info = { ref: q.ref, docId: seal.record.id, kind: 'quotation', verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
+          /* A copy sealed from this release prints the Document ID the foot
+             of every page prints; one sealed before printed its uuid, which
+             /verify/ still takes for a sealed copy. */
+          info = { ref: q.ref, docId: opts.code || seal.record.id, kind: 'quotation', verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
             sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ADSPACE PLT.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
@@ -124,7 +129,7 @@
 
     // Page 1: the Quotation Cover, the letter engine's own page.
     var first = docs.letterPages(pdf, PDF, fonts, logo, {
-      family: 'quote_cover', pdfKind: 'quotation', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false,
+      family: 'quote_cover', pdfKind: 'quotation', serial: q.ref, issued_at: q.issued_at, languages: ['en'], signed: false, code: opts.code || '',
       recipient: { name: to.name || q.brand, address: to.address || '', attn: person, attn_role: opts.attentionRole || '' },
       title: cover.title || COVER.title,
       salutation: person ? 'Dear ' + person + ',' : (cover.salutation || COVER.salutation),
