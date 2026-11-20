@@ -238,7 +238,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   decision tells the Owners each working morning, once (`hiring.decide_over`,
   `decide_over_on`), until a decision or a new date; the candidate is never
   told it is overdue: their page keeps the date and, once it has passed,
-  adds If you have not heard from ADspace by then, please contact us at
+  adds If you have not heard from ADspace by then, please contact ADspace at
   {the careers reply-to mailbox} (`careers_read` `contact`, from
   `mail_sender('careers')`, never typed; the user, 2026-11-20). The
   new date's email reads Decision date updated: {position}, apart from the

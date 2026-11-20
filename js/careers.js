@@ -105,7 +105,7 @@
         (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') +
         /* Past the date with no decision, the careers mailbox to write to (the
            user, 2026-11-20); the address is the database's, never typed. */
-        (i.contact ? '<p class="cr-next">If you have not heard from ADspace by then, please contact us at ' + esc(i.contact) + '.</p>' : '') + '</section>';
+        (i.contact ? '<p class="cr-next">If you have not heard from ADspace by then, please contact ADspace at ' + esc(i.contact) + '.</p>' : '') + '</section>';
     }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
