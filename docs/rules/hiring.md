@@ -272,7 +272,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Undo's eight seconds pass with no Undo; a decision reopened is refused
     the email by the database (`no-email`);
   - Proceed promises no offer: the page reads ADspace will contact you
-    about the next step. (Status Next step to follow) until an offer is
+    about the next step. (Status Application in progress) until an offer is
     sent; a candidate who declined the talent pool reads ADspace will not
     keep your details on file.;
   - Send new times on a confirmed interview not yet held asks first and

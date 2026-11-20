@@ -38,7 +38,7 @@
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
     cancelled: 'Interview cancelled',
-    offer: 'Next step to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
+    offer: 'Application in progress', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   /* A time the candidate waits on, in the portal's form (2026-11-20,
      `ADspaceClock.due`): 21 Nov 2026 (Saturday), 10:00am, the date held
