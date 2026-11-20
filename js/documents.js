@@ -581,7 +581,25 @@
      different sheets of paper. `ctx.page` is the page being drawn; the caller
      owns the cursor. */
   var W = 595.28, H = 841.89, M = 33.3, R = W - M;
-  function pen(PDF, fonts, logo) {
+  /* ---- Which sheet each PDF is drawn on (2026-11-20) -------------------
+     The user: formal documents (contracts, offers, letters) take the
+     letterhead; an admin's working form takes the plain page, its title and
+     INTERNAL USE ONLY at the top, so the letterhead is kept for what leaves
+     the company or binds it. One table names every PDF the portal draws;
+     `own` is a document drawn in a format of its own (the Rate Card, the
+     Social Media Report, a quotation's pages), `seal` the Record of this
+     Document appended to a signed file in the letterhead's type. */
+  var TEMPLATE = {
+    offer: 'letterhead', 'letter.client': 'letterhead', 'letter.hr': 'letterhead', 'letter.supplier': 'letterhead',
+    'hr.offer': 'letterhead', 'hr.contract': 'letterhead', perf: 'letterhead',
+    quotation: 'own', ratecard: 'own', report: 'own', script: 'own', seal: 'seal',
+    'hr.record': 'plain', 'hr.sheet': 'plain', 'hr.onboarding': 'plain', 'hr.kit': 'plain',
+    checklist: 'plain', analytics: 'plain'
+  };
+  function templateOf(kind) { return TEMPLATE[kind] || 'letterhead'; }
+  var INTERNAL = 'INTERNAL USE ONLY';
+  function pen(PDF, fonts, logo, opts) {
+    opts = opts || {};
     var font = fonts.font;
     /* The paper's three inks (the user, 2026-11-12): text #1a1a1a, never
        true black; secondary #515151; the fine print (the foot) #a1a1a1. */
@@ -636,6 +654,27 @@
       [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { p.right(s, R, ry, 11); ry -= 12.5; });
       return Math.min(ly, ry) - 10;
     };
+    /* The plain page (`templateOf(kind)` plain): no wordmark, monogram or
+       registration; the title in Slate Medium on the letterhead's first
+       line, INTERNAL USE ONLY in the foot's faint ink at the right edge on
+       the same baseline, a hairline under them. On every page. */
+    p.plainHead = function (title) {
+      /* Untracked: a tracked run reads I N T E R N A L to a search or a
+         copy, so the mark stays one phrase. */
+      var size = 15, med = fonts.med || fonts.bold, reg = fonts.bold || font, mz = 7.5;
+      var markW = p.width(INTERNAL, mz, reg);
+      var y0 = H - M - 12;
+      var lines = p.wrap(title || '', R - M - markW - 24, size, med);
+      lines.forEach(function (ln, i) { p.text(ln, M, y0 - i * 19, size, med); });
+      p.text(INTERNAL, R - markW, y0, mz, reg, faint);
+      var under = y0 - (lines.length - 1) * 19 - 12;
+      p.rule(under);
+      return under - 18;
+    };
+    if (opts.kind && templateOf(opts.kind) === 'plain') {
+      p.plain = true;
+      p.head = function () { return p.plainHead(opts.title); };
+    }
     /* The page count bottom right. The monogram belongs to the letterhead at
        the top of the page and nowhere else: the foot carried a second one,
        which ADspace has dropped (the user, 2026-09-25). */
@@ -1642,7 +1681,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
+    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };
