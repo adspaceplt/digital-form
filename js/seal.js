@@ -63,7 +63,8 @@
 
   // ---- The record's words ---------------------------------------------------
   var STEP = { issued: 'Issued', sent: 'Sent', opened: 'Opened', code: 'Code sent', signed: 'Signed', submitted: 'Submitted',
-    returned: 'Sent back', confirmed: 'Confirmed', stamped: 'Stamped', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined' };
+    returned: 'Sent back', confirmed: 'Confirmed', stamped: 'Stamped', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined',
+    voided: 'Void' };
   var VIA = { link: 'on the quotation link', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
   /* Time to the second, Malaysia's (GMT+8): 17 Nov 2026, 10:42:15am. */
   function when(iso) {
@@ -103,6 +104,7 @@
   // ---- The console's reading of the record -----------------------------------
   var LOCK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
   function stateOf(rec) {
+    if (rec.stateWord) return rec.stateWord;
     if (rec.withdrawn) return ['Withdrawn', 'is-off'];
     if (rec.seal) return ['Confirmed · sealed', 'is-ok', true];
     if (rec.confirmed) return ['Confirmed', 'is-ok'];
@@ -127,10 +129,34 @@
     else if (st.step === 'sealed') { who = st.by ? 'by ' + st.by : ''; if (st.note) meta.push('SHA-256 ' + st.note.slice(0, 4) + '…' + st.note.slice(-4)); }
     else if (st.step === 'declined') { who = 'by the ' + String(st.party || 'Client').toLowerCase(); if (where(st)) meta.push(where(st)); }
     else if (st.by) who = 'by ' + st.by;
-    if (st.note && ['issued', 'withdrawn', 'declined'].indexOf(st.step) >= 0) meta.push(st.note);
+    if (st.note && ['issued', 'withdrawn', 'declined', 'voided'].indexOf(st.step) >= 0) meta.push(st.note);
     if (st.step === 'signed' && st.via === 'paper' && st.party) meta[0] = 'On paper or by scan' + (st.entered_by ? ' · entered by ' + st.entered_by : '');
     return '<li class="seal-step"><span class="seal-when">' + esc(when(st.at)) + '</span><span class="seal-what"><b>' + esc(head) + '</b>' +
       (who ? ' ' + esc(who) : '') + (meta.length ? '<span class="seal-meta">' + esc(meta.join(' · ')) + '</span>' : '') + '</span></li>';
+  }
+  /* How many times a document has been checked on /verify/ (VERIFY CHECKS
+     COUNTED, 2026-11-21): a lookup that found it, once an address a day.
+     Never 0 on a screen: a document nobody checked leaves the line out. */
+  function checksWord(n) {
+    n = Math.floor(Number(n));
+    return n >= 1 ? (n === 1 ? 'Checked once' : 'Checked ' + n + ' times') : '';
+  }
+  /* The Verify fact: the page and the reference where the copy is sealed,
+     and the count under it where there is one. */
+  function verifyFact(where, n, fact) {
+    var said = checksWord(n);
+    if (!where && !said) return '';
+    return fact('Verify', (where ? esc(where) : '') + (where && said ? '<br>' : '') + (said ? '<span class="seal-checks">' + esc(said) + '</span>' : ''));
+  }
+  /* A document's count for its record, the team's alone (verify_checks_of):
+     one read a record opened; a refusal or a missing function answers null,
+     and the fact is left out. */
+  function checksOf(kind, id) {
+    var api = window.ADspaceAPI, db = api && api.client;
+    if (!kind || !id || !db) return Promise.resolve(null);
+    return Promise.resolve(db.rpc('verify_checks_of', { p_kind: kind, p_id: id })).then(function (r) {
+      return r && !r.error && typeof r.data === 'number' ? r.data : null;
+    }).catch(function () { return null; });
   }
   function panel(rec, verifyUrl) {
     var st = stateOf(rec), s = rec.seal;
@@ -139,7 +165,7 @@
       fact('State', '<span class="chip-state ' + st[1] + '">' + (st[2] ? '<span class="seal-lock">' + LOCK + '</span>' : '') + esc(st[0]) + '</span>') +
       fact('Document ID', '<span class="seal-mono">' + esc(rec.id) + '</span>') +
       (s ? fact('SHA-256', '<span class="seal-mono">' + esc(s.sha) + '</span>') : '') +
-      (s && verifyUrl ? fact('Verify', esc(verifyUrl.replace(/^https?:\/\//, '').replace(/\?.*$/, '').replace(/\/$/, '') + ' · ' + rec.ref)) : '') +
+      verifyFact(s && verifyUrl ? verifyUrl.replace(/^https?:\/\//, '').replace(/\?.*$/, '').replace(/\/$/, '') + ' · ' + rec.ref : '', rec.checks, fact) +
       '</dl><ol class="seal-steps" aria-label="Steps">' + (rec.steps || []).map(line).join('') + '</ol>';
   }
   /* The record as a sheet over the page (#sealSheet): o.title, o.sub,
@@ -162,8 +188,11 @@
     var mine = openNow = {};
     window.ADspaceSheet.show(sh, { opener: o.opener || null, onClose: function () { openNow = null; } });
     var paint = function () {
-      o.load().then(function (rec) {
+      /* The count rides beside the record, never holding it up or failing it. */
+      Promise.all([o.load(), o.checks ? checksOf(o.checks.kind, o.checks.id) : null]).then(function (both) {
+        var rec = both[0];
         if (openNow !== mine) return;
+        if (rec && both[1] != null) rec.checks = both[1];
         if (!rec || rec.error) throw new Error((rec && rec.error) || 'not-found');
         body.innerHTML = panel(rec, o.verifyUrl) + (rec.seal && o.download
           ? '<div class="seal-acts"><button class="btn btn-sm" id="sealDl" type="button">Download</button></div>' : '');
@@ -316,7 +345,7 @@
   }
 
   window.ADspaceSeal = {
-    device: device, sha256: sha256, when: when, rows: rows, panel: panel, stateOf: stateOf, open: open,
+    device: device, sha256: sha256, when: when, rows: rows, panel: panel, stateOf: stateOf, open: open, checksOf: checksOf, checksWord: checksWord,
     pagesFor: pagesFor, addRecord: addRecord, LOCK: LOCK
   };
 })();

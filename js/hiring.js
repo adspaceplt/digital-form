@@ -1122,7 +1122,7 @@
   }
   function docRecord(d, b) {
     if (!window.ADspaceSeal) return;
-    window.ADspaceSeal.open({ title: 'Record of this Document', sub: DOC_WORD[d.kind] + ' ' + (d.serial || ''), opener: b,
+    window.ADspaceSeal.open({ title: 'Record of this Document', sub: DOC_WORD[d.kind] + ' ' + (d.serial || ''), opener: b, checks: { kind: 'hiring', id: d.id },
       verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(d.serial || ''),
       load: function () { return rpc('hiring_doc_record', { p_doc: d.id }).then(function (r) { if (r.error || (r.data || {}).error) throw new Error('x'); return r.data; }); },
       download: d.seal_path ? function () { openPath(d.seal_path); } : null });

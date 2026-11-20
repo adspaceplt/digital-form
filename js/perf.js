@@ -700,6 +700,7 @@
   var sheetDirty = false;
   function showSheet(opener) {
     sheetDirty = false;
+    checksFor = {};
     $('pvTitle').textContent = '';
     $('pvCtx').hidden = true;
     $('pvStatus').textContent = '';
@@ -755,17 +756,34 @@
   function manage() { return st.mode === 'manage'; }
   function canWork() { return manage() && may('team.performance', 'work'); }
 
+  /* The head's line: the month and the colleague (or who reviewed it), then
+     how many times the record was checked on /verify/ (VERIFY CHECKS
+     COUNTED, 2026-11-21), read once a record is opened. */
+  var checksFor = {};
+  function paintCtx(r) {
+    var m = r.member || {};
+    var said = r.id && window.ADspaceSeal ? window.ADspaceSeal.checksWord(checksFor[r.id]) : '';
+    var ctx = (manage()
+      ? [r.month, deptWord(m.department), ROLE_WORD[m.role_family], said]
+      : [r.reviewer ? 'Reviewed by ' + r.reviewer : '', said]).filter(Boolean).join(' · ');
+    $('pvCtx').textContent = ctx;
+    $('pvCtx').hidden = !ctx;
+    if (r.id && r.serial && !(r.id in checksFor) && window.ADspaceSeal) {
+      checksFor[r.id] = null;
+      window.ADspaceSeal.checksOf('perf', r.id).then(function (n) {
+        checksFor[r.id] = n;
+        if (n && st.rec && st.rec.id === r.id) paintCtx(st.rec);
+      });
+    }
+  }
+
   function paintSheet() {
     var r = st.rec;
     if (!r) return;
     var res = r.result || {};
     var m = r.member || {};
     $('pvTitle').textContent = manage() ? (m.name || '') : r.month;
-    var ctx = manage()
-      ? [r.month, deptWord(m.department), ROLE_WORD[m.role_family]].filter(Boolean).join(' · ')
-      : (r.reviewer ? 'Reviewed by ' + r.reviewer : '');
-    $('pvCtx').textContent = ctx;
-    $('pvCtx').hidden = !ctx;
+    paintCtx(r);
     var w = STATUS[r.id ? r.status : 'none'] || STATUS.none;
     $('pvStatus').textContent = w[0];
     $('pvStatus').className = 'chip ' + w[1];
