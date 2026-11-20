@@ -464,7 +464,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     ticks as a list): the name, the photograph, the list
     (`.lp-band, .lp-duo { order: 1 }`), the markup keeping the desk's order;
   - Service hours: a dated week from today in Malaysia time, Monday to
-    Friday 10:00 to 18:00, redrawn every minute and on return to the tab;
+    Friday 10:00 to 18:00, redrawn every minute and on return to the tab,
+    the page's own and never the team's Working hours setting (the user,
+    2026-11-20: "keep the website front page same");
     a public holiday on the list reads Closed with its name under the date
     (`public_holidays_between`, read once a visit, a fortnight ahead; a
     failed read leaves the hours);
@@ -628,7 +630,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   and notices: Page availability, Announcements, Notices, Demo access;
   Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
   User groups (an admin's, opening Team's Groups; 2026-11-17);
-  Company: Public holidays, Departments, AutoCount HRMS, Overseas approval, Signed-in devices, Health data
+  Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health data
   kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics; Creators: Creator and
   campaign IDs, Creator payments, Creator payments sheet), My Work (Due

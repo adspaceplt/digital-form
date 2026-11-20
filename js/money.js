@@ -37,7 +37,10 @@
     analytics_from: 202609,
     /* When an Analytics figure reads better or worse, and when churn is an
        alert (2026-10-25). */
-    analytics_change_pct: 10, analytics_churn_pct: 10 };
+    analytics_change_pct: 10, analytics_churn_pct: 10,
+    /* Working hours (2026-11-20): Monday to Friday 10:00am to 7:00pm, a
+       one-hour lunch, Saturday and Sunday on demand (1). */
+    work_start: 1000, work_end: 1900, work_lunch_min: 60, work_weekend: 1 };
   var ROWS = [];
   var loading = null;
   function today() {
