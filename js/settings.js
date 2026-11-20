@@ -456,6 +456,7 @@
         biz && { id: 'hiring', name: 'Time limits', kind: 'edit',
           meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
             'Interview reply time ' + plural(num('hiring_reply_days'), 'day', 'days'),
+            'Decision time ' + plural(num('hiring_decision_days'), 'working day', 'working days'),
             'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
             'Talent pool kept ' + plural(num('hiring_pool_months'), 'month', 'months'),
             'Closed candidates kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
