@@ -315,6 +315,24 @@
     } catch (e) { return null; }
   }
 
+  /* A sign-in's reference (2026-11-20): the session id's first six, as a
+     colleague's Devices block shows it, so a report from a cover can be
+     matched to its device. `sessionCode()` reads the session id from the
+     access token held in this browser (its `session_id` claim), asking
+     nothing of the network; '' signed out. Never the whole token. */
+  function sessionShort(id) { return id ? String(id).slice(0, 6) : ''; }
+  async function sessionCode() {
+    if (!client) return '';
+    try {
+      const { data } = await client.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+      const part = String(t || '').split('.')[1];
+      if (!part) return '';
+      const json = atob(part.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((part.length + 3) % 4));
+      return sessionShort(JSON.parse(json).session_id);
+    } catch (e) { return ''; }
+  }
+
   /* The key in a client's review link and a campaign's selection link: eight
      characters from the creator code's alphabet in lower case (no 0, 1, i,
      l, o), about 850 billion links, short enough to read aloud (the user,
@@ -451,6 +469,8 @@
     phoneWord,
     movedKey,
     portalPass,
+    sessionShort,
+    sessionCode,
     configured,
     client,
     CLIENT_COLS,

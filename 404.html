@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261120b">
+<link rel="stylesheet" href="/css/portal.css?v=20261120cv">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -63,12 +63,10 @@
      title to its line, 24 to the actions (404-2). The line names nobody: a
      prospect or a creator has no account manager (404-1). Visit website
      opens in a new tab with its leaving mark, as on the front door (404-3). */
-  .door-panel { max-width: 400px; width: 100%; text-align: center; }
-  .door-panel h1 {
-    margin: 0 0 8px; font-weight: 600;
-    font-size: 17px; letter-spacing: -.01em; line-height: 1.3;
-  }
-  .door-panel p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
+  /* The panel is the portal's one cover (`.cover-panel`, css/portal.css:
+     the uppercase title mark, the statement under it; 2026-11-20), here
+     inside the 404's own frame, its line 24 over the actions (404-2). */
+  .door-panel { max-width: 440px; width: 100%; text-align: center; padding: 0; }
   /* The way out, and the way to ask. Equal halves on a phone, as every other
      pair of actions in this portal is. */
   .door-acts { margin-top: 24px; display: flex; gap: 8px; justify-content: center; }
@@ -95,7 +93,7 @@
 </header>
 
 <main class="door">
-  <div class="door-panel">
+  <div class="door-panel cover-panel">
     <h1>Page not found</h1>
     <p>Please check the address, or contact ADspace.</p>
     <div class="door-acts">
