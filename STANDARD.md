@@ -626,10 +626,6 @@ verification loop); the five found on 2026-11-18 fixed 2026-11-19.
   Download) prints ADspace's wordmark, ADSPACE PLT and the ADspace Service
   Terms and Rate Card lines, typed in `js/quotepdf.js` rather than read
   from `ADSPACE_ORG` and `agencyName`.
-- 2026-11-20: `taxcodes` fails on main (both widths): Delete over two
-  ticked codes, one named by a service line, no longer refuses with
-  "SVE is on a service line"; found by the demo release's affected run,
-  reproduced on origin/main b257e7f.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
