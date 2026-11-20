@@ -30,6 +30,17 @@
  *                                     earlier Google Meet link no longer
  *                                     applies, and that ADspace will
  *                                     contact them to arrange another time;
+ *   { action: 'drain' }              from the database alone (2026-11-20,
+ *                                     `hiring_mail_kick`, after
+ *                                     `hiring_docs_expire`), carrying the
+ *                                     wake secret as `x-adspace-wake`
+ *                                     (`wake_secret_ok`, anyone else 401):
+ *                                     each offer or contract that expired
+ *                                     with no reply, claimed once
+ *                                     (`hiring_expire_mail_claim`), emailed
+ *                                     to the candidate with the careers
+ *                                     mailbox to contact, and closed
+ *                                     (`hiring_expire_mail_done`);
  *   againOf (with any of these)    the Email log's Send again: the same
  *                                     email drawn afresh, filed as sent again
  *   { key, docId, kind: 'code', device }  the candidate's own press on their
@@ -84,7 +95,8 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: title + ': ' + m.ref,
       heading: 'Your ' + title,
       body: 'Dear ' + m.name + ',\n\n' +
-        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been sent to you again ' + (m.doc === 'contract' ? 'for your signature.' : 'for your reply.')
+        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been sent to you again ' + (m.doc === 'contract' ? 'for your signature.' : 'for your reply.') +
+          (m.returned_note ? '\n\nReason: ' + m.returned_note : '')
           : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
         'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
         'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + signOff(m),
@@ -93,6 +105,17 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
   }
   const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
   const close = signOff(m);
+  /* A document that expired with no reply (2026-11-20). */
+  if (m.kind === 'expired') {
+    return {
+      subject: title + ' expired: ' + m.ref,
+      heading: title + ' expired',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'The ' + title + ' ' + m.ref + ' dated ' + m.sent + ' has expired, as no reply was received by ' + m.reply_by + ' (Malaysia time).\n\n' +
+        'Please contact ADspace at ' + m.contact + '.\n\n' + close,
+      block: ''
+    };
+  }
   /* A document confirmed, and a confirmed interview cancelled (2026-11-20). */
   if (m.kind === 'confirmed') {
     return {
@@ -231,6 +254,33 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
 }
 
+/* The expiry emails the database queued (2026-11-20): woken by the database
+   alone, each claimed once and closed; a send is never repeated by itself. */
+async function drain(req: Request, origin: string | null): Promise<Response> {
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const given = req.headers.get('x-adspace-wake') || '';
+  const woken = given.length >= 32 ? await db.rpc('wake_secret_ok', { p_given: given }) : null;
+  if (!woken || woken.error || woken.data !== true) return json({ error: 'denied' }, 401, origin);
+  if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
+  const { data, error } = await db.rpc('hiring_expire_mail_claim');
+  if (error) return json({ error: 'claim' }, 200, origin);
+  const who = await sender('careers');
+  let sent = 0;
+  for (const m of (data as Record<string, any>[]) || []) {
+    if (!EMAIL.test(String(m.to || ''))) { await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' }); continue; }
+    const w = words(m);
+    const r = await resend({
+      from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
+      html: layout({ heading: w.heading, body: w.body, preheader: w.subject }), text: w.body
+    }, 'hire-expired-' + m.id, secret('RESEND_API_KEY'));
+    await fileSent({ kind: 'hiring_expired', ref: m.id, to: m.to, to_name: m.name, subject: w.subject, body: w.body,
+      reference: m.ref, status: r.status, provider: r.provider, error: r.error });
+    await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: r.status });
+    if (r.status === 'sent') sent++;
+  }
+  return json({ ok: true, sent }, 200, origin);
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -238,6 +288,7 @@ Deno.serve(async (req) => {
   let b: Record<string, any>;
   try { b = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   if (b && b.kind === 'code') return sendCode(req, b, origin);
+  if (b && b.action === 'drain') return drain(req, origin);
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
   const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc', isConfirmed = kind === 'confirmed';

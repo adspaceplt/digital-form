@@ -20,7 +20,15 @@
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var root = function () { return $('crRoot'); };
   function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
+  /* The careers mailbox, the database's (`careers_read` answers it on every
+     answer; 2026-11-20): every line asking the candidate to contact ADspace
+     names it. */
+  var CONTACT = '';
+  function reach(line) {
+    return CONTACT ? String(line || '').replace(/contact ADspace\.$/, 'contact ADspace at ' + CONTACT + '.') : line;
+  }
   function cover(title, text) {
+    text = reach(text);
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
   }
   /* Where the application stands, in the candidate's words. The steps
@@ -30,7 +38,7 @@
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
     cancelled: 'Interview cancelled',
-    offer: 'Offer to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
+    offer: 'Next step to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   /* A time the candidate waits on, in the portal's form (2026-11-20,
      `ADspaceClock.due`): 21 Nov 2026 (Saturday), 10:00am, the date held
@@ -119,7 +127,11 @@
      Not proceed, or a pool declined, reads closed; Proceed waits on the offer. */
   function decision(d) {
     var head = '';
-    if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you by email about an offer.</p></section>';
+    /* Proceed promises no offer (2026-11-20): the next step alone. */
+    if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you about the next step.</p></section>';
+    /* The talent pool declined: the details are not kept, the application never
+       said to be refused (2026-11-20). */
+    if (d.stage === 'closed' && d.pool_declined) return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will not keep your details on file.</p></section>';
     if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' +
       'ADspace will not be proceeding with your application at this time. ADspace wishes you every success in your search.</p></section>';
     var p = d.pool;
@@ -179,13 +191,13 @@
     return '<section class="qs-sec cr-docs" id="crDocs"><h2 class="qs-sec-h">Documents</h2>' + list.map(function (d) {
       var st = (DOCSTATE[d.state] || DOCSTATE.sent)(d.kind), on = openDoc.id === d.id;
       return '<div class="panel cr-doc" data-doc="' + esc(d.id) + '"><div class="cr-doc-head"><div class="cr-doc-who"><b>' + esc(DOCWORD[d.kind] || '') + '</b>' +
-        '<span class="cr-doc-meta">' + esc(d.serial || '') + (d.state === 'sent' && d.reply_by ? ' · Reply by ' + esc(day(d.reply_by)) : '') + '</span></div>' +
+        '<span class="cr-doc-meta">' + esc(d.serial || '') + (d.state === 'sent' && d.reply_by ? ' · Reply by ' + esc(when(d.reply_by)) : '') + '</span></div>' +
         '<span class="chip chip-state ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
         (on ? '<div class="cr-doc-body" id="crDocBody"></div>' : '<div class="qs-foot cr-doc-foot"><button class="btn" type="button" data-docopen="' + esc(d.id) + '">' +
           (d.kind === 'contract' ? 'Read contract' : 'Read offer') + '</button></div>') + '</div>';
     }).join('') + '</section>';
   }
-  function docSay(t, ok) { var m = $('crDocMsg'); if (m) { m.textContent = t || ''; m.className = 'msg' + (t ? (ok ? ' ok' : ' err') : ''); } }
+  function docSay(t, ok) { t = reach(t); var m = $('crDocMsg'); if (m) { m.textContent = t || ''; m.className = 'msg' + (t ? (ok ? ' ok' : ' err') : ''); } }
   function deviceOf() { return window.ADspaceSeal && window.ADspaceSeal.device ? window.ADspaceSeal.device() : ''; }
   function docBody() {
     var box = $('crDocBody');
@@ -212,7 +224,7 @@
     }
     Array.prototype.forEach.call(box.querySelectorAll('[data-docx]'), function (b) { b.addEventListener('click', function () { docAct(b.getAttribute('data-docx'), b); }); });
   }
-  var TYPEWORD = { permanent: 'Permanent | Regular | Full-Time', contract: 'Contract | Full-Time', intern: 'Internship', part_time: 'Part-Time' };
+  var TYPEWORD = { permanent: 'Permanent, full-time', contract: 'Contract, full-time', intern: 'Internship', part_time: 'Part-time' };
   function money(n) { return window.ADspaceMoney && window.ADspaceMoney.money2 ? window.ADspaceMoney.money2(n, 'MY') : 'RM ' + Number(n || 0).toFixed(2); }
   function docView(d) {
     var t = d.terms || {}, p = d.pay || {}, months = Number(t.probation_months) || 0;
@@ -416,13 +428,13 @@
       }).catch(function () { send.disabled = false; say(W.notSentAdspace || 'Not sent. Please try again.'); });
     });
   }
-  function say(t) { var m = $('crMsg'); if (m) { m.textContent = t; m.className = 'msg' + (t ? ' err' : ''); } }
+  function say(t) { t = reach(t); var m = $('crMsg'); if (m) { m.textContent = t; m.className = 'msg' + (t ? ' err' : ''); } }
   if (!db) { cover(W.failTitle, W.failTextAdspace); return; }
-  if (!/^[a-z0-9]{8}$/.test(key)) { cover(W.notFound, W.contactAdspace); return; }
   function load() {
     db.rpc('careers_read', { p_key: key }).then(function (r) {
       var d = r.data || {};
       if (r.error) throw r.error;
+      if (d.contact) CONTACT = d.contact;
       if (d.error === 'expired') { cover('Link expired', W.contactAdspace); return; }
       if (d.error || !d.ok) { cover(W.notFound, W.contactAdspace); return; }
       paint(d);

@@ -1,5 +1,5 @@
 <!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
-# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `hiring-mail`)
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `hiring-mail`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -260,3 +260,37 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   or the Employment Insurance System Act 2017.; a full-time contract is
   unchanged. No template bracket or field mark is left in print (the
   items [a], [b] … aside).
+- Before the first hire (2026-11-20, the user: "Check before the first real
+  hire: these parts, fix all"):
+  - every reply-by, an invitation's and an offer's or contract's, ends at
+    6:00pm Malaysia time on its day (`hiring_day_end`; an invitation never
+    past its last time offered), written with its weekday and time;
+  - every line on the candidate's page asking them to contact ADspace names
+    the careers mailbox (`careers_read` `contact`, on every answer, a
+    refusal's too; `mail_sender('careers')`, never typed);
+  - Keep in talent pool and Not proceed email the candidate only once the
+    Undo's eight seconds pass with no Undo; a decision reopened is refused
+    the email by the database (`no-email`);
+  - Proceed promises no offer: the page reads ADspace will contact you
+    about the next step. (Status Next step to follow) until an offer is
+    sent; a candidate who declined the talent pool reads ADspace will not
+    keep your details on file.;
+  - Send new times on a confirmed interview not yet held asks first and
+    cancels it, its Meet taken off where the calendar allows (else the team
+    is told to remove it; the candidate's email says the link no longer
+    applies) and the candidate emailed; Keep in talent pool and Not proceed
+    cancel it too, its Meet with it (`hiring_invite`, `hiring_decide`);
+  - an offer or contract past its reply-by with no answer is told once to
+    the Owners and the Hiring part (`hiring_docs_expire`, every fifteen
+    minutes, `hiring.doc_expired`: Choose Not proceed, or send a new one),
+    and the candidate emailed by `hiring-mail`'s drain (woken by the
+    database with the wake secret; `hiring_expire_mail_claim` takes each
+    row once); an offer declined is told with the same next step;
+  - every candidate notice reaches the Hiring part's holders as well as the
+    Owners (`hiring_tell`);
+  - Make colleague carries the confirmed contract's salary into Personnel
+    (trigger `hiring_candidates_pay_to_personnel`; never a figure on screen
+    or in a history line; a salary already set is left alone);
+  - the employment type reads in words (Permanent, full-time), and a
+    document sent back carries its reason in the email.
+

@@ -24,6 +24,8 @@
 --     `hiring_mail_kick` with the wake secret; `hiring_expire_mail_claim`,
 --     `hiring_expire_mail_done`, the service role's; `expire_mail`). An offer
 --     declined is told the same way, with the next step.
+--   * `hiring_mail_prepare`: a cancellation is no longer refused for a
+--     replaced invitation sent after it.
 --   * `hiring_tell`: every candidate notice reaches the Hiring part's
 --     holders as well as the Owners.
 --   * Make colleague carries the confirmed contract's salary into Personnel
@@ -41,7 +43,7 @@
 -- `hiring_day_end`, the trigger and its function; run `hiring_reply_by`
 -- from INTERVIEW REPLY-BY, `hiring_doc_send`, `hiring_doc_send_back` and
 -- `careers_doc_answer` from HIRING OFFERS AND CONTRACTS, `hiring_invite` and
--- `hiring_tell` from HIRING: INTERVIEWS, `hiring_doc_mail_prepare`,
+-- `hiring_tell` from HIRING: INTERVIEWS, `hiring_doc_mail_prepare`, `hiring_mail_prepare`,
 -- `hiring_decide` and `careers_read` from HIRING: CONFIRMED AND CANCELLED
 -- EMAILS again. The Welcome Kit's words are the team's to edit back. The
 -- columns may stay.
@@ -371,6 +373,49 @@ begin
           or t.is_admin or coalesce(t.access->>'team.hiring', '') in ('work', 'manage'));
 end $$;
 revoke all on function public.hiring_tell(uuid, text, text, text) from public, anon, authenticated;
+
+/* A cancellation is refused only for an interview a live one followed, never
+   a replaced invitation's (2026-11-20). */
+create or replace function public.hiring_mail_prepare(p_interview uuid, p_kind text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  i public.hiring_interviews;
+  c public.hiring_candidates;
+  v_role text;
+begin
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  select * into i from public.hiring_interviews where id = p_interview;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id;
+  if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_kind = 'invite' and public.hiring_interview_state(i) not in ('invited', 'none') then return jsonb_build_object('error', 'not-open'); end if;
+  if p_kind = 'confirm' and i.state <> 'confirmed' then return jsonb_build_object('error', 'not-confirmed'); end if;
+  if p_kind = 'confirm' and i.mode = 'online' and i.meeting_link is null then return jsonb_build_object('error', 'no-meet'); end if;
+  if p_kind in ('held', 'moved') and (i.held_at is null or c.decide_by is null or c.outcome is not null) then
+    return jsonb_build_object('error', 'not-held');
+  end if;
+  /* A cancellation is told only of a confirmed interview, and only while no
+     newer interview has been sent. */
+  if p_kind = 'cancelled' and (i.state <> 'cancelled' or i.approved_at is null or i.picked is null) then
+    return jsonb_build_object('error', 'not-cancelled');
+  end if;
+  if p_kind = 'cancelled' and exists (select 1 from public.hiring_interviews j where j.candidate_id = i.candidate_id
+       and j.id <> i.id and j.invited_at > i.invited_at and j.state not in ('cancelled', 'replaced')) then
+    return jsonb_build_object('error', 'replaced');
+  end if;
+  if p_kind not in ('invite', 'confirm', 'held', 'moved', 'cancelled') then return jsonb_build_object('error', 'bad-kind'); end if;
+  return jsonb_build_object('id', i.id, 'kind', p_kind, 'to', c.email, 'name', c.name, 'position', c.position,
+    'key', c.link_key, 'mode', i.mode, 'minutes', i.minutes, 'note', i.note, 'link', case when p_kind <> 'cancelled' then i.meeting_link end,
+    'times', (select jsonb_agg(public.hiring_when(s) order by s) from unnest(i.slots) s),
+    'when', case when i.picked is not null then public.hiring_when(i.slots[i.picked]) end,
+    'reply_by', case when p_kind = 'invite' and i.state = 'invited' then public.hiring_when(i.reply_by) end,
+    'decide_by', case when p_kind in ('held', 'moved') then public.hiring_when(c.decide_by) end,
+    'decide_note', case when p_kind = 'moved' then c.decide_note end,
+    'sender', me.name, 'system', coalesce(me.system, false));
+end $$;
 
 /* Make colleague carries the confirmed contract's salary into Personnel,
    never shown or filed as a figure; a salary already set is left alone. */
