@@ -5711,10 +5711,12 @@
   /* A stored address drawn as a link: http or https alone (js/words.js). */
   function absUrl(u) { return window.ADspaceWords.absUrl(u); }
 
-  /* The campaign ⋯ menus only: the account menu is shut by its own control,
-     and a scroll as a list finished loading used to take it with these. */
+  /* The campaign ⋯ menus only: the head's own (the account menu, the bell)
+     are shut by their own controls; a scroll used to take the bell with
+     these, so it never opened on a page scrolled down (the user,
+     2026-11-20). */
   function shutMenus() {
-    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu)'), function (m) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu):not(.notif-menu)'), function (m) {
       m.hidden = true;
     });
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) {
