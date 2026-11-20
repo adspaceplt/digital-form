@@ -9222,7 +9222,7 @@
       if (open) loadNotifs();
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
-      if (open) { var first = menu.querySelector('.notif-item, #notifAll'); if (first) first.focus(); }
+      if (open) { var first = menu.querySelector('.notif-item, #notifAll'); if (first) first.focus({ preventScroll: true }); }
     });
     document.addEventListener('click', function (e) {
       if (!menu.hidden && !e.target.closest('#notifWrap')) shutBell();
