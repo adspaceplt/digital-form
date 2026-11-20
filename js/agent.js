@@ -1010,7 +1010,7 @@
             undo: function () {
               var had = e.meeting_at && !e.meeting_na;
               var gone = a._google && !e.meeting_event_id
-                ? meet('delete').then(function (d) { if (d && d.error) throw new Error('Not undone. The Google Meet could not be removed from the calendar.'); })
+                ? meet('delete').then(function (d) { if (d && d.error) throw new Error('Not undone. The Google Meet could not be removed. Remove it in Google Calendar.'); })
                 : Promise.resolve();
               return gone.then(function () {
                 if (!had) return null;
@@ -1032,7 +1032,7 @@
         var title = String(a.title || '').trim();
         if (!/[\p{L}\p{N}]/u.test(title) || title.length > 120) return Promise.reject(new Error('Enter a campaign name.'));
         var slots = Number(a.creators);
-        if (!(slots >= 1 && slots <= 200) || Math.floor(slots) !== slots) return Promise.reject(new Error('Enter 1 or more creators.'));
+        if (!(slots >= 1 && slots <= 200) || Math.floor(slots) !== slots) return Promise.reject(new Error('Enter at least one creator.'));
         return Promise.all([team(), db.from('clients').select('id, name, client_code, stage').eq('id', a.client_id).maybeSingle()]).then(function (g) {
           var c = g[1].data;
           if (!c) throw new Error('That client could not be found.');
@@ -1078,7 +1078,7 @@
             var d = res && res.data;
             if (res.error || !d || d.error) {
               var code = (d && d.error) || 'wa-failed';
-              if (code === 'recent') throw new Error('This was sent on WhatsApp recently. Send it again only if it is still needed.');
+              if (code === 'recent') throw new Error(W.line.sentRecently);
               throw new Error(WA() && WA().said ? WA().said({ code: code }) : 'Not sent. Please try again.');
             }
             file('assistant.whatsapp', a._prep.subject || a._prep.client || '', (a._tplWord || a._tpl.name) + ' sent to ' + (d.to || a._prep.name));
@@ -1135,11 +1135,11 @@
           if (Boolean(b.published) === on) throw new Error(on ? 'That set is already published.' : 'That set is not published.');
           return db.rpc('review_set_counts', { p_sets: [b.id] }).then(function (q) {
             var n = ((q.data || [])[0] || {}).n_posts || 0;
-            if (on && !n) throw new Error('That set holds no posts. Add assets before publishing.');
+            if (on && !n) throw new Error('That set has no posts. Add assets before publishing.');
             a._set = b;
             return [['Set', b.title + ' · ' + n + (n === 1 ? ' post' : ' posts')], ['Client', (b.clients && b.clients.name) || ''],
                     ['Change', on ? 'Draft → Published' : 'Published → Draft'],
-                    ['Client view', on ? 'On the review link at once' : 'No longer on the review link']];
+                    ['Review link', on ? 'On the review link at once' : 'No longer on the review link']];
           });
         });
       },
@@ -1223,7 +1223,7 @@
           return { facts: [['To', (prep.greeting || prep.name) + ' · ' + X.phone(prep.number)], ['Template', a._tplWord + (X.category(tpl.category) ? ' · ' + X.category(tpl.category) : '')],
                            ['Sent recently', rec ? 'Yes, ' + whenWord(rec.at) + (rec.by ? ' by ' + rec.by : '') : 'None in ' + hours + ' hours']],
                    preview: body + (tpl.footer ? '\n\n' + tpl.footer : '') + (btns ? '\n\n' + btns : ''),
-                   warn: rec ? 'This was sent recently. Send it again only if it is still needed.' : '', go: rec ? 'Send again' : 'Send' };
+                   warn: rec ? W.line.sentRecently : '', go: rec ? 'Send again' : 'Send' };
         });
       });
     });

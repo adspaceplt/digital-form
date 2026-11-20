@@ -132,7 +132,7 @@
         if (dl) dl.addEventListener('click', function () {
           shutMenus();
           window.ADspaceConfirm.ask({ title: 'Delete this notice?',
-            body: '\u201c' + n.title + '\u201d will be removed from every colleague\u2019s bell. This cannot be undone.',
+            body: '\u201c' + n.title + '\u201d will be deleted from every colleague\u2019s bell. This cannot be undone.',
             go: 'Delete', tone: 'danger' }, function () { drop(n); });
         });
       });

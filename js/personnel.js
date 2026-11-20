@@ -598,7 +598,7 @@
             { name: 'confirmed', label: 'Salary after probation (RM)', type: 'number', min: '0', value: money(d.confirmed).replace(/,/g, ''), required: false }],
           check: function (v) {
             var bad = ['probation', 'confirmed'].filter(function (k) { return v[k] !== '' && !/^\d{1,7}(\.\d{1,2})?$/.test(String(v[k]).trim()); });
-            return bad.length ? 'Enter an amount in ringgit, with up to two decimals.' : '';
+            return bad.length ? 'Enter an amount in RM, to the cent.' : '';
           }
         }, function (v) {
           return new Promise(function (ok) {

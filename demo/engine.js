@@ -3141,7 +3141,7 @@ function cardSlugFree(name, self, email) {
     });
   }
 
-  var MEETING_MESSAGE = 'Meeting Schedule {meeting}\n\nDate \u65e5\u671f: {date}\nTime \u65f6\u95f4: {time}\n\nMeeting Agenda \u6458\u8981:\n\u2022  {month} Content Discussion\n\nChannel \u6e20\u9053:\n{channel}\nLink: {link}';
+  var MEETING_MESSAGE = 'Meeting Schedule {meeting}\n\nDate \u65e5\u671f: {date}\nTime \u65f6\u95f4: {time}\n\nMeeting Agenda \u8bae\u7a0b:\n\u2022  {month} Content Discussion \u5185\u5bb9\u8ba8\u8bba\n\nChannel \u4f1a\u8bae\u65b9\u5f0f:\n{channel}\nLink \u94fe\u63a5: {link}';
   function invTemplateSeed() {
     return { id: 1, subject_one: 'Payment reminder · Invoice {invoice no}', subject_many: 'Payment reminder · {count} overdue invoices',
       body: 'Dear {contact name},\n\nThis is a reminder that payment of {total} due from {client} is now overdue.\n\n{invoices}\n\nWe would be grateful if payment could be arranged at your earliest convenience. If payment has already been made, please disregard this email.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',

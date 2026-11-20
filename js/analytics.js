@@ -672,9 +672,9 @@
     }, spanWord(tr));
     heading(fl, [{ label: 'Joined', d: direction(h, 'won', 'up') }, { label: 'Left', d: direction(h, 'churned', 'down') }]);
     var g2 = row(box);
-    chart(g2, 'industry', 'Active clients by industry', { kind: 'bars', inline: true, rows: groupCount(f.activeEndList, function (c) { return c.industry; }), empty: 'No active client.' }, 'Now');
+    chart(g2, 'industry', 'Active clients by industry', { kind: 'bars', inline: true, rows: groupCount(f.activeEndList, function (c) { return c.industry; }), empty: 'No active clients.' }, 'Now');
     chart(g2, 'market', 'Active clients by market', { kind: 'bars', inline: true,
-      rows: groupCount(f.activeEndList, function (c) { var m = String(c.market || '').toUpperCase(); return MARKET[m] || m; }), empty: 'No active client.' }, 'Now');
+      rows: groupCount(f.activeEndList, function (c) { var m = String(c.market || '').toUpperCase(); return MARKET[m] || m; }), empty: 'No active clients.' }, 'Now');
     var g3 = row(box);
     var why = Object.keys(f.reasons).map(function (k) {
       var x = f.reasons[k];
@@ -682,7 +682,7 @@
     }).sort(function (a, b) { return b.value - a.value; });
     chart(g3, 'why', 'Why clients paused or left', { kind: 'bars', inline: true, rows: why, empty: 'No client paused or left in the period.' }, spanWord(r));
     var BANDS = [['Under 3 months', 0, 91], ['3 to 6 months', 91, 183], ['6 to 12 months', 183, 365], ['1 to 2 years', 365, 730], ['Over 2 years', 730, 1e9]];
-    chart(g3, 'stay', 'How long active clients have stayed', { kind: 'bars', inline: true, empty: 'No active client.',
+    chart(g3, 'stay', 'How long active clients have stayed', { kind: 'bars', inline: true, empty: 'No active clients.',
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
   }
 
@@ -709,7 +709,7 @@
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
     if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. Please ask an admin to turn it on.'
-      : 'No analyses left today. The next is free at 12:00 am.';
+      : 'No analyses left today. The limit resets at 12:00 am.';
     if (/function|schema cache|Failed to send/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return AI_SAID[k] || 'The analysis could not be written. Try again.';
   }
@@ -877,7 +877,7 @@
       if (!d.left) { msg(aiSaid(null, { error: 'ai-limit', limit: d.limit })); return; }
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: 'Write with AI will read the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, never a client\'s name, and write an analysis for management. ' +
+        body: 'Write with AI will read the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, without any client\'s name, and write an analysis for management. ' +
           d.left + (d.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Write',
         fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 3, required: false, placeholder: 'Optional', value: was }]
@@ -976,7 +976,7 @@
         var head = function (s) { if (y - 60 < FLOOR) newPage(); y -= 8; para(s, 12, med, dark, 0, 4); };
         newPage();
         para(v.period, 10, book, mute, 0, 2);
-        para('Version ' + v.version + ' · Written with AI for ' + (v.by || 'a colleague') + ', ' + CK.date(v.created_at), 9, book, mute, 0, 14);
+        para('Version ' + v.version + ' · Written by AI for ' + (v.by || 'a colleague') + ', ' + CK.date(v.created_at), 9, book, mute, 0, 14);
         para('Health: ' + (HEALTH[a.health] || HEALTH.mixed)[1], 11, med, dark, 0, 4);
         para(a.headline, 12, reg, dark, 0, 6);
         para(a.summary, 10.5, book, ink, 0, 8);

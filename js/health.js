@@ -56,8 +56,8 @@
     'already-asked': 'You have already asked them. Withdraw that request first.',
     'bad-status': 'This talk has changed. Refresh the page.',
     'not-found': 'This talk no longer exists.',
-    'denied': 'Only an admin can open Health check-ins.',
-    'not-team': 'Only a team member can open this.'
+    'denied': 'You do not have permission to open Health check-ins. Please ask an admin.',
+    'not-team': 'You do not have permission to open this page. Please ask an admin.'
   };
   function said(d) {
     if (!d || !d.error) return '';

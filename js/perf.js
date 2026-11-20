@@ -547,7 +547,7 @@
     if (opener && opener.focus) opener.focus();
     window.ADspaceConfirm.ask({
       title: 'Delete ' + rec.name + '\u2019s ' + (rec.month || 'month'),
-      body: seen + 'The review, its scores and any query will be deleted. This cannot be undone. The history keeps who deleted it and why.',
+      body: seen + 'The review, its scores and any query will be deleted. The history keeps who deleted it and why. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'who', label: 'Type ' + typed + ' to confirm', match: typed, mismatch: 'Type ' + typed + ' to confirm.' },
@@ -925,7 +925,7 @@
     var lines = [];
     if (res.capped) lines.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
     if (res.review) lines.push('Management will follow up.');
-    if (res.grade === 'C' && res.previous_grade === 'C') lines.push('Baseline again after a Baseline month, so not reward eligible.');
+    if (res.grade === 'C' && res.previous_grade === 'C') lines.push('Two Baseline months in a row are not eligible for a reward.');
     var path = res.path && PATH[res.path];
     return card('Result',
       '<div class="perf-result">' +
@@ -1724,7 +1724,7 @@
     if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + '.', 'warn'); return; }
     btn.disabled = true;
     var D = window.ADspaceDocs, tab = D && D.tabFor ? D.tabFor() : null;
-    msg('perfMsg', 'Drawing ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
+    msg('perfMsg', 'Generating ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
     var recs = [], left = people.length;
     people.forEach(function (p, i) {
       call('perf_open', { p_token: token, p_member: p.team_member_id, p_period: st.period }, function (d) {
@@ -1746,7 +1746,7 @@
     if (!D || !D.lib) { drawNow(recs, name, btn, then, tab); return; }
     D.lib().then(function () { drawNow(recs, name, btn, then, tab); }).catch(function (e) {
       if (D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be generated: ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', (e && e.message) || 'The file could not be generated. Please try again.', 'err');
       if (then) then(false);
     });
   }
@@ -1754,10 +1754,10 @@
     var PDF = window.PDFLib, D = window.ADspaceDocs;
     var fail = function (e) {
       if (D && D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be generated: ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', (e && e.message) || 'The file could not be generated. Please try again.', 'err');
       if (then) then(false);
     };
-    if (!PDF || !D) { fail(new Error('the PDF library did not load')); return; }
+    if (!PDF || !D) { fail(new Error(window.ADspaceWords.line.pdfLib)); return; }
     if (btn) btn.disabled = true;
     /* The download is filed before anything is drawn, and the file prints
        the filing: the server's time and who took it, so a copy found later
@@ -1773,7 +1773,7 @@
         if (--left) return;
         if (refused) {
           if (btn) btn.disabled = false;
-          fail(new Error('the download could not be recorded, so no file was made'));
+          fail(new Error('The file could not be generated. The download could not be recorded. Please try again.'));
           return;
         }
         make();
@@ -1994,7 +1994,7 @@
     if (path) { para(path[0], TY.body, med); para(path[1]); }
     else para('No development or recovery path applies this month.', TY.body, book, SOFT);
     y -= SP.tight;
-    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', TY.small, book, SOFT);
+    para('A month with no issue resets the recovery path. Consequences are limited to privileges, training and discretionary rewards, and never affect salary.', TY.small, book, SOFT);
 
     heading('Improvement and Follow-up', ROW * 3);
     var lw2 = W / (1 + RPHI) / RPHI;
@@ -2215,7 +2215,7 @@
       /* A critical issue is named only when it changes: ticked, or cleared
          after it was ticked. */
       var parts = (d.changed || []).filter(function (c) { return c.key !== 'critical' || !!c.to !== !!c.from; }).map(function (c) {
-        if (c.key === 'critical') return c.to ? 'Critical issue ticked' : 'Critical issue cleared';
+        if (c.key === 'critical') return c.to ? 'Critical issue ticked' : 'Critical issue unticked';
         var i = Number(String(c.key).slice(1)) - 1;
         return moved((crit[i] || [c.key])[0], c.from, c.to, num);
       });

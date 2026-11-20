@@ -313,7 +313,7 @@
       return formHead(update ? 'Details update' : 'Request from supplier', work && !held
           ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
         /* The received day is the head's; the state says what waits. */
-        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in' : 'Waiting to be taken in') + '</dd></div>' +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be applied' : 'Waiting to be applied') + '</dd></div>' +
         (update ? changesOf(f) + '</dl>' : '</dl>' + answersOf(f)) +
         (held && work ? '<p class="msg warn">The bank details changed. A colleague with access to supplier bank details must use these changes.</p>' : '');
     }
@@ -335,13 +335,13 @@
       if (!work && !mine) return '';
       return formHead('Details update form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!mine ? 'Not sent' : mine.state === 'used'
-          ? 'Received ' + esc(day(mine.submitted_at)) + ', taken in' : 'Link ended ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
+          ? 'Received ' + esc(day(mine.submitted_at)) + ', applied' : 'Link expired ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
     }
     if (s.status !== 'pending') return '';
     if (!work && !f) return '';
     return formHead('Request from supplier', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
-        ? 'Received ' + esc(day(f.submitted_at)) + ', taken in' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
+        ? 'Received ' + esc(day(f.submitted_at)) + ', applied' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
   }
   /* The client this supplier also is (2026-10-18): its own Supplier ID and
      Client ID kept apart, the two records opening each other. While none is
@@ -404,7 +404,7 @@
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         /* A supplier holding no details yet reads one line, never three
            groups of Not set (2026-10-20, SUP-3). */
-        (noDetails ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
+        (noDetails ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details.</p></section>'
           : group(GROUPS[0]) + group(GROUPS[1])),
       payment: (noDetails ? '' : group(GROUPS[2])) +
         (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
