@@ -129,7 +129,7 @@
           subject: c.subject, body: c.body, foot: c.foot || '',
           save: function (v) { return saveWith('code_email_template_save', { p_subject: v.subject, p_body: v.body, p_foot: v.foot }); } });
         SUPABASE.forEach(function (x, n) {
-          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Fixed emails', name: x[0], subject: x[1], fixed: true });
+          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Standard emails', name: x[0], subject: x[1], fixed: true });
         });
       }
       st.free = Boolean(a[4]);
