@@ -340,7 +340,7 @@
   var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
     approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
     creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved',
-    hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_held: 'Interview held', hiring_moved: 'Decision date changed',
+    hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_held: 'Decision date', hiring_moved: 'Decision date changed',
     hiring_cancelled: 'Interview cancelled', hiring_confirmed: 'Employment document confirmed',
     hiring_pool: 'Talent pool', hiring_not: 'Application outcome',
     hiring_doc: 'Employment document', hiring_code: 'Verification code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };

@@ -117,7 +117,7 @@
     var noStatutory = type === 'intern' || type === 'part_time';
     para('The Company reserves the right in its absolute discretion to deduct from your pay ' +
       (noStatutory ? '' : 'the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and ') +
-      'any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of the Company’s rules or terms.');
+      'any sums which you may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of your negligence or breach of the Company’s rules or terms.');
     if (noStatutory) para('The Employee shall not be entitled to contributions under the Employees Provident Fund Act 1991, the Employees’ Social Security Act 1969 or the Employment Insurance System Act 2017.');
     head('REST DAYS AND PUBLIC HOLIDAYS');
     para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.');
@@ -128,7 +128,7 @@
     para('[b] twelve (12) days for every twelve (12) months of continuous service with the Company from the third year onwards; and');
     para('[c] sixteen (16) days for every twelve (12) months of continuous service with the Company from the sixth year onwards.');
     para('If your employment commences or terminates part way through the year, your entitlement to the annual leave during the year will be assessed on a pro-rata basis and deductions from final salary due to your termination of employment will be made in respect of the annual leaves taken in excess of entitlement.');
-    para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take Annual Leave must be given to the Company. No more than 7 days’ annual leave may be taken at any one time unless permission is given by the Company through the Employee’s Direct Manager.');
+    para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take annual leave must be given to the Company. No more than seven (7) days’ annual leave may be taken at any one time unless permission is given by the Company through the Employee’s Direct Manager.');
     para('Emergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform your Direct Manager personally at the earliest time of the day.');
     head('SICK LEAVE');
     para('You shall, after examination by a registered medical practitioner duly appointed by the Company; or a medical officer of the General Hospital or Government Clinic, be entitled to paid sick leave of a maximum of fourteen (14) days in the aggregate in each calendar year.');
@@ -295,7 +295,7 @@
   }
   function seal(doc, pay, record) {
     var S = window.ADspaceSeal;
-    if (!S) return Promise.reject(new Error('The document could not be generated. Refresh the page and try again.'));
+    if (!S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
     var info = { ref: doc.serial, docId: record.id, verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
       rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };

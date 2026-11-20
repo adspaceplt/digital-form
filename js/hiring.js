@@ -660,7 +660,7 @@
         (i.held_at ? fact('Marked held by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(due(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
-        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('cancel', 'Cancellation') + mail('held', 'Decision date email') +
+        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('cancel', 'Cancellation') + mail('held', 'Decision date') +
       '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
   }
 
@@ -1048,7 +1048,7 @@
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
       body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
-      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it if the document was stamped.' },
+      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional' },
         { name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] },
     function (v) {
       return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {

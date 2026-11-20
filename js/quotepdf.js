@@ -75,7 +75,7 @@
        appended, printing that hash, and the whole file is hashed too. The
        blob carries both (`seal.sha`, `seal.pagesSha`). */
     var seal = opts.seal || null, S = window.ADspaceSeal, got, info, signedN;
-    if (seal && !S) return Promise.reject(new Error('The document could not be generated. Refresh the page and try again.'));
+    if (seal && !S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     return docs.lib().then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
