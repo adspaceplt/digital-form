@@ -163,6 +163,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     by the bar it draws (`.console-head` or `.topbar`), never by the page
     it is on (2026-11-21: the signed-out console wears the client pages'
     bar, and 431 signed-in screens read against its 64px).
+  - A suite types a question's answer into its field by name
+    (`getByLabel`), never into whatever holds focus: under a finger
+    `ADspaceConfirm` focuses its card, never a field (2026-11-21:
+    `cprofile` set a creator inactive at 390 with no reason).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
