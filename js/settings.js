@@ -424,7 +424,7 @@
         /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
            company mailbox each section's emails reply to, never a
            colleague's own address. */
-        biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, Accounts payable, Finance, e-Invoice',
+        biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, HR, Accounts payable, Finance, e-Invoice',
           open: function () { openMailboxes(); } },
         /* Sent again (2026-10-14): the same message sent within the window
            asks again before it goes, WhatsApp and emails alike (SET2-1). */
@@ -790,7 +790,7 @@
      them (Clients and invitations General; Careers HR, 2026-11-20;
      Suppliers and Creators Accounts payable; invoices and reminders
      Finance). */
-  var BOX_NOTE = { general: 'Replies to client and invitation emails, and all other enquiries.', hr: 'Replies to emails sent to candidates.',
+  var BOX_NOTE = { general: 'Replies to client emails, invitations and all other emails.', hr: 'Replies to emails sent to candidates.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
     einvoice: 'Receives e-Invoice submissions only.' };
   function openMailboxes() {
