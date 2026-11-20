@@ -40,19 +40,19 @@
     'no-email': 'This client has no email address. Add one to its billing contact.',
     'nothing-overdue': 'These invoices are no longer overdue.',
     'nothing-unpaid': 'This invoice is paid or voided in Bukku, so it was not sent.',
-    sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
+    sending: 'A reminder to this client has already been sent. Refresh the page in a minute to see its status.',
     'bad-subject': window.ADspaceWords.line.subject,
     'bad-body': window.ADspaceWords.line.message,
     'no-invoices': 'Keep {invoices} in the message, where the table of invoices goes.',
     'too-long': 'Keep the legal note and the disclaimer to 1,000 characters each.',
     'not-sent': 'Not sent. Resend refused the email.',
     'not-confirmed': 'Not confirmed. Check the Email tab before sending again.',
-    'bad-request': 'The invoices changed after they were read. Read again, then send.',
+    'bad-request': 'The invoices changed after they were read. Refresh the page, then send.',
     failed: 'The request failed. Please try again.'
   };
-  SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
+  SAID['bad-invoices'] = 'An invoice number could not be read. Refresh the page, then send.';
   SAID['bad-recipient'] = 'That address is no longer listed for this client. Refresh the page, then choose another address.';
-  SAID['bad-copy'] = 'A copy can go to five of this client\'s contacts at most, each once and not to the recipient.';
+  SAID['bad-copy'] = 'Copy up to five of this client\'s contacts, none the same as the recipient.';
   function said(d) {
     if (d && d.error === 'unknown-field') return window.ADspaceWords.line.unknownField(d.field, d.fields);
     return (d && SAID[d.error]) || SAID.failed;

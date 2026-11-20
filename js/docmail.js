@@ -53,7 +53,7 @@
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'email-off': 'Send by email is off. Turn it on in Settings, Clients.'
+    'email-off': 'Send by email is off. Turn it on in Settings, Messages.'
   };
   /* Resend's word on an email, as the record's line reads it. */
   var STATE = { sending: 'Sending', sent: '', delivered: 'Delivered', opened: 'Opened', failed: 'Not sent',

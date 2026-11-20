@@ -135,7 +135,7 @@
   var SAID = {
     denied: 'You do not have permission to change video scripts. Please ask an admin.',
     'client-scope': 'You do not have access to this client. Please ask an admin.',
-    'not-found': 'This script is no longer available.',
+    'not-found': 'This script no longer exists.',
     'bad-kind': 'Choose the script type.',
     'bad-period': 'Choose the content month.',
     'bad-title': 'Enter a title of up to 200 characters.',
@@ -368,7 +368,7 @@
     }).catch(function (e) {
       if (e && e.message === 'not-found') {
         backToList();
-        say($('vsListMsg'), 'That script is no longer available.', 'warn');
+        say($('vsListMsg'), 'This script no longer exists.', 'warn');
         return;
       }
       UI.failLine($('vsRecBody'), 'The script', (e && e.message) || '', function () { openScript(id, false, false, month); });
@@ -1734,7 +1734,7 @@
     'ai-incomplete': 'No script was written. Try again.',
     denied: 'You do not have permission to change video scripts. Please ask an admin.',
     'client-scope': 'You do not have access to this client. Please ask an admin.',
-    'not-found': 'This script is no longer available.'
+    'not-found': 'This script no longer exists.'
   };
   var LENGTHS = [['15', '15s'], ['30', '30s'], ['60', '60s'], ['120', '120s']];
   function keep(key, v) {

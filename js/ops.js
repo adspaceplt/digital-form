@@ -153,13 +153,13 @@
     'bad-complexity': 'Choose a complexity from the list.',
     'bad-estimate': 'Enter an estimate from 0 to 10,000 minutes.',
     'no-code': 'This task has no code to change.',
-    'other-client': 'That record belongs to another client.',
+    'other-client': 'That post or script belongs to another client.',
     'record-not-found': 'This record no longer exists.',
     'post-taken': 'Another task is already linked to that post.',
     'has-post': 'This task is already linked to a post. Remove that link first.',
     'script-taken': 'Another task is already linked to that script.',
     'has-script': 'This task is already linked to a script. Remove that link first.',
-    'record-link': 'To change a record link, remove it and link it again.',
+    'record-link': 'To change a linked post or script, remove the link and add it again.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'not-yours': 'Only the person asked can decide this.',
     'decided': 'This request has already been decided.',
@@ -170,13 +170,13 @@
     'draft-not-before-final': 'Choose a Draft due before the due date.',
     'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'The task cannot move there from its current stage.',
-    'priority-not-yours': 'The priority is changed by whoever created the task, or a manager.',
+    'priority-not-yours': 'Only the colleague who created the task, or a manager, can change its priority.',
     'held-resume': 'The task can only go back to the stage it left. Choose that stage.',
     'no-such-stage': 'That stage is not in this workflow.',
-    'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
-    'footage-not-ready': 'The footage is not ready for editing.',
-    'needs-draft': 'Add the draft link, or say how it was sent.',
-    'needs-final-link': 'Delivered needs a final link.',
+    'ready-needs-owner-and-due': 'Assign someone and set a due date before moving to Ready.',
+    'footage-not-ready': 'The footage is not ready for editing. Mark the footage ready first.',
+    'needs-draft': 'Add the draft link, or enter how it was sent.',
+    'needs-final-link': 'Add a final link before moving to Delivered.',
     'needs-delivery-or-reason': 'Add a delivery or a closing reason.',
     'checklist-incomplete': 'Tick the required checklist items first.',
     'reason-required': 'Enter a reason.',
@@ -192,11 +192,11 @@
     'bad-week': 'Choose a week from 1 to 5.',
     'skip-reason-required': 'Enter a reason to skip this step.',
     'back-reason-required': 'Enter a reason to go back.',
-    'retired-stage': 'That stage is no longer used.',
+    'retired-stage': 'That stage is no longer used. Choose another stage.',
     'planning-incomplete': 'This month\u2019s checklists are not done. Tick them, or mark them Not needed, first.',
     'meeting-required': 'Set the content meeting, or mark it not applicable, first.',
     'needs-final-or-reason': 'Add a final link or a note.',
-    'no-such-person': 'That person is not a colleague.',
+    'no-such-person': 'That person is not a colleague. Choose a colleague.',
     'bad-count': 'Add 1 to 60 posts.',
     'not-owner': 'Only the person it is assigned to, or an admin, can move it.',
     /* The day a stage move happened (2026-11-19). */
@@ -204,7 +204,7 @@
     'not-yours': 'You do not have permission to change the date of this move. Please ask an admin.',
     'not-open': 'This task is no longer open to take.',
     'already-yours': 'This task is already assigned to you.',
-    'finished': 'This task is finished.',
+    'finished': 'This task is finished. Reopen it first.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
     'tasks-open': 'Tasks in this month are still open. Complete or cancel them first.',
@@ -223,8 +223,8 @@
     'bad-channel': 'Choose where the meeting is held.',
     'checklist-open': 'Tick both checklists, or mark one not needed, first.',
     'workflow-required': 'No workflow is set up. Please contact an admin.',
-    'bad-format': 'A format is listed twice or is not on the Rate Card.',
-    'name-taken': 'Another template has this name.',
+    'bad-format': 'Choose each format once, from the Rate Card.',
+    'name-taken': 'A template with this name already exists. Choose another name.',
     'name-required': 'Enter a name.',
     'bad-kind': 'Choose a link type.',
     'url-required': 'Enter a link.',
@@ -269,14 +269,14 @@
     if (err === 'exists') return (d && d.period ? monthWord(d.period) : 'That month') + ' already exists for this client. Open it with Edit.';
     if (err === 'dates-required' && d && d.piece) return 'Post ' + d.piece + ' needs its Draft due, Due date and Post date.';
     if (err === 'code-taken') return d && d.task_no ? 'That code is already used by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is already used.';
-    if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
+    if (err === 'format-taken') return (d && d.family ? 'A ticked format already belongs to ' + d.family + '.' : 'A ticked format already belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
       var need = [];
       /* A queue row carries no assignees; the queue's own read of the owner
          is what it knows. */
-      if (!ownerId(t) && !(state.ownerIds && state.ownerIds[t.id])) need.push('someone assigned');
-      if (!t.current_final_due_at) need.push('a due date');
-      if (need.length) return 'Ready needs ' + need.join(' and ') + '.';
+      if (!ownerId(t) && !(state.ownerIds && state.ownerIds[t.id])) need.push('assign someone');
+      if (!t.current_final_due_at) need.push('set a due date');
+      if (need.length) { var w = need.join(' and '); return w.charAt(0).toUpperCase() + w.slice(1) + ' before moving to Ready.'; }
     }
     return SAID[err] || ('Refused: ' + err + '.');
   }
@@ -3597,7 +3597,7 @@
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var REPORT_SAID = {
     'month-gate': 'Its month in My Work does not include this report.',
-    'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
+    'denied': 'You do not have permission to start this report. Please ask an admin.',
     'bad-period': 'The month\'s dates could not be loaded.'
   };
   function monthSpanOf(e) {
@@ -3833,7 +3833,7 @@
     if (!c) return;
     ADspaceConfirm.ask({
       title: 'Edit remark', go: 'Save',
-      field: { label: 'Remark', rows: 3, value: c.body, need: 'A remark cannot be empty.' }
+      field: { label: 'Remark', rows: 3, value: c.body, need: 'Enter a remark.' }
     }, function (v) {
       call('ops_edit_comment', { p_event: c.id, p_body: v }, msgHere(), function () {
         readTask(t.id, function () { msg(msgHere(), 'Remark edited.', 'ok'); });
@@ -4056,8 +4056,8 @@
         });
         if (opts) html += '<optgroup label="Content Review posts">' + opts + '</optgroup>';
       }
-      sel.innerHTML = n ? '<option value="">Select record</option>' + html
-        : '<option value="">' + (failed ? 'Unable to load records' : 'No records to link') + '</option>';
+      sel.innerHTML = n ? '<option value="">Choose a post or script</option>' + html
+        : '<option value="">' + (failed ? 'Unable to load' : 'Nothing to link') + '</option>';
       sel.disabled = false;
     }).catch(function () {
       sel.innerHTML = '<option value="">Unable to load records</option>';
@@ -4076,7 +4076,7 @@
                  hide: ['dwLinkUrlField', 'dwLinkLabelLab', 'dwLinkLabel'] };
   function linkRecord(t, pick, where, then) {
     var m = /^(campaign|set|post|script):(.+)$/.exec(String(pick || ''));
-    if (!m) { msg(where, 'Select a record.', 'err'); return; }
+    if (!m) { msg(where, 'Choose a post or script.', 'err'); return; }
     if (m[1] === 'post') {
       call('ops_link_post', { p_task: t.id, p_post: m[2], p_version: t.version }, where, then);
       return;
@@ -4258,7 +4258,7 @@
     b.to.innerHTML = keep + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (creator)' : '') + '</option>';
     }).join('');
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
     if (!perf && keep && !handsToColleague(mv, t)) def = '__keep';
@@ -4365,7 +4365,7 @@
     $('stepHandTo').innerHTML = keepIt + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (creator)' : '') + '</option>';
     }).join('');
     /* The same default as the task's own step: a review goes to whoever
        created the task, where that is somebody else. */
@@ -4811,7 +4811,7 @@
     if (state.drawer === id) closeDrawer(true);
     if (from === 'client') { readClientWork(); return; }
     load();
-    msg('workMsg', 'That task is no longer available.', 'warn');
+    msg('workMsg', 'This task no longer exists.', 'warn');
   }
   function readDone(r, t, after) {
     state.due = (((r[7] && r[7].data) || [])[0]) || null;
@@ -5206,7 +5206,7 @@
       n.title = 'Scheduled';
       n.line = t.publish_at
         ? (dn < 0 ? 'Was due to go live on ' + niceDate(t.publish_at) + '. Confirm the date it went live.'
-          : dn === 0 ? 'Goes live today.' : 'Goes live ' + niceDate(t.publish_at) + '.')
+          : dn === 0 ? 'Will go live today.' : 'Will go live on ' + niceDate(t.publish_at) + '.')
         : 'No post date set.';
       if (work && hasNext(t, 'live')) n.go = stepAct(t, 'live');
       return n;
@@ -5589,7 +5589,7 @@
     if (e.event_type === 'details_changed') {
       var bits = [];
       if ('priority_level' in to) bits.push('Priority ' + (PRIORITY_WORD[String(from.priority_level)] || 'Normal') + ' to ' + (PRIORITY_WORD[String(to.priority_level)] || 'Normal'));
-      if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief cleared');
+      if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief removed');
       var fw = function (k) { return k && k !== 'other' ? (DELIVER_WORD[k] || sentence(k)) : 'not set'; };
       if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
       if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
@@ -5922,7 +5922,7 @@
     var whole = function (x) { var v = String(x == null ? '' : x).replace(/[,\s]/g, ''); return /^\d+$/.test(v) ? Number(v) : null; };
     ADspaceConfirm.ask({
       title: 'Results', go: 'Save',
-      body: 'The post\'s own figures, a week after it went live.',
+      body: 'Enter the post\'s figures one week after it went live.',
       fields: [{ name: 'views', label: 'Views', value: t.result_views != null ? String(t.result_views) : '', type: 'number', min: '0', half: true },
                { name: 'eng', label: 'Engagements', value: t.result_engagements != null ? String(t.result_engagements) : '', type: 'number', min: '0', half: true }],
       check: function (v) { return whole(v.views) == null || whole(v.eng) == null ? said('bad-number') : ''; }
@@ -6439,7 +6439,7 @@
     /* The clients could not be read: said where the client is picked, never
        an empty list that reads as no clients (audit, 2026-10-03). */
     if (state.clientsErr && scope !== 'internal') {
-      msg('ntMsg', 'The clients could not be read. ' + (state.clientsErr.message || ''), 'err');
+      msg('ntMsg', 'The clients could not be loaded. ' + (state.clientsErr.message || ''), 'err');
     }
     /* An internal task carries no code, so the month and the week that build
        one have nothing to say; and engagement work is for a client. */
@@ -6883,7 +6883,7 @@
     if (!t || !may('ops', 'work')) return;
     dupKey = '';
     $('dupWhat').textContent = 'A copy of ' + (t.title || serialOf(t)) +
-      ' with a new code. Its history, its time and its links stay here.';
+      ' will be created with a new code. Its history, time records and links stay with this task.';
     $('dupDesc').checked = true;
     $('dupDates').checked = false;
     $('dupPeople').checked = false;
@@ -6937,7 +6937,7 @@
        names it (2026-10-18). */
     if (r.last_error) {
       var why = /\s/.test(r.last_error) ? r.last_error : said(r.last_error, state.task);
-      w += ' · Could not be made: ' + String(why).replace(/^Refused:\s*/, '').replace(/\.+$/, '');
+      w += ' · Could not be created: ' + String(why).replace(/^Refused:\s*/, '').replace(/\.+$/, '');
     }
     return w;
   }
@@ -7720,7 +7720,7 @@
       /* When the month runs and which reports it owes, read on the card and
          changed where they are read (2026-11-02, the user: a month starting
          on the 9th went unseen until a report asked for 9 Oct to 8 Nov). */
-      ['Runs', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'When the month runs')],
+      ['Period', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'Period')],
       ['Reports', engValue(engReportsWord(e), can && !engShut(e), 'reports', 'Reports')],
       ['Files', /^https:\/\//i.test(e.drive_url || '') ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
@@ -8579,7 +8579,7 @@
       e.preventDefault();
       var t = state.task, body = String($('dwComment').value || '').trim();
       if (!t) return;
-      if (!body) { msg('dwMsg', 'A remark cannot be empty.', 'err'); $('dwComment').focus(); return; }
+      if (!body) { msg('dwMsg', 'Enter a remark.', 'err'); $('dwComment').focus(); return; }
       call('ops_add_comment', { p_task: t.id, p_body: body }, 'dwMsg', function () {
         closeCardForm('dwCommentForm');
         readTask(t.id);
