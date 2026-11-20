@@ -554,7 +554,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     white card did not read as a button): `.btn-quiet` is the tonal ground
     like `.btn`, and words alone only as Cancel beside the view's blue
     primary (`:has(> .btn-primary, > .btn-go)`). A way inside a line of
-    facts stays `.linkbtn`.
+    facts stays `.linkbtn`. A shaded button never gives its padding back
+    sideways: its ground would stand past the words' edge (2026-11-20, a
+    performance issue's Withdraw 13px left of its row, now its ⋯).
   - `.btn-sm`.
   - A sheet Cancel is `.btn-quiet`, never a bare `.btn` (`flex: 1` grows it).
     `.sheet-foot > .btn { flex: 0 0 auto }`.
