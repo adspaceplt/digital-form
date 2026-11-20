@@ -622,6 +622,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop); the five found on 2026-11-18 fixed 2026-11-19.
+- 2026-11-20, `vs` (found by tone sweep 4's affected run, failing the same
+  with main's `js/scripts.js`): on a phone a scene's picture no longer stands
+  over its words on their left edge (`{"over":false,"edge":false}`).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
