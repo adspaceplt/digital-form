@@ -943,9 +943,12 @@
         docs.meta(pdf, 'ADspace Analytics Analysis v' + v.version, 'Analytics Analysis');
         return docs.embedFonts(pdf, PDF, { cjk: false });
       }).then(function (fonts) {
-        var W = 595.28, H = 841.89, M = 48, FULL = W - 2 * M, FLOOR = 64;
+        /* The plain page (an internal form: its title and INTERNAL USE ONLY
+           at the top, the letterhead's margins and foot; ADspaceDocs.TEMPLATE). */
+        var pn = docs.pen(PDF, fonts, null, { kind: 'analytics', title: 'Analytics Analysis' });
+        var W = pn.W, H = pn.H, M = pn.M, FULL = W - 2 * M, FLOOR = 64;
         var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090), mute = PDF.rgb(0.4, 0.4, 0.4);
-        var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
+        var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold;
         var safe = function (s) { s = String(s == null ? '' : s).replace(/→/g, '>'); return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-'); };
         var page, y, pages = [];
         var text = function (s, x, yy, size, f, color) { page.drawText(safe(s), { x: x, y: yy, size: size, font: f || book, color: color || ink }); };
@@ -962,10 +965,8 @@
         };
         var newPage = function () {
           page = pdf.addPage([W, H]); pages.push(page);
-          text('ADspace', M, H - 52, 16, mark, ink);
-          var fi = 'FOR INTERNAL USE';
-          text(fi, (W - med.widthOfTextAtSize(fi, 7.5)) / 2, H - 50, 7.5, med, dark);
-          y = H - 84;
+          pn.page = page;
+          y = pn.head() + 4;
         };
         var para = function (s, size, f, color, indent, gap) {
           var ls = wrap(s, FULL - (indent || 0), size, f), lh = size * 1.4;
@@ -974,7 +975,6 @@
         };
         var head = function (s) { if (y - 60 < FLOOR) newPage(); y -= 8; para(s, 12, med, dark, 0, 4); };
         newPage();
-        para('Analytics Analysis', 20, reg, dark, 0, 4);
         para(v.period, 10, book, mute, 0, 2);
         para('Version ' + v.version + ' · Written with AI for ' + (v.by || 'a colleague') + ', ' + CK.date(v.created_at), 9, book, mute, 0, 14);
         para('Health: ' + (HEALTH[a.health] || HEALTH.mixed)[1], 11, med, dark, 0, 4);
@@ -985,12 +985,7 @@
         if (a.forecast) { head('Forecast'); para(CREDIBLE[a.forecast.verdict] || '', 10.5, med, dark, 0, 2); if (a.forecast.detail) para(a.forecast.detail, 10, book, ink, 0, 6); }
         if ((a.actions || []).length) { head('Recommended Actions'); a.actions.forEach(function (x, i) { para((i + 1) + '. ' + x.action, 10.5, med, dark, 0, 2); para(x.why, 10, book, ink, 12, 6); }); }
         if ((a.caveats || []).length) { head('Caveats'); a.caveats.forEach(function (x) { para(x, 9.5, book, mute, 0, 4); }); }
-        pages.forEach(function (p, i) {
-          page = p;
-          text('PRIVATE & CONFIDENTIAL', M, 34, 7.5, med, dark);
-          var w = 'Page ' + (i + 1) + ' of ' + pages.length;
-          text(w, W - M - book.widthOfTextAtSize(w, 7.5), 34, 7.5, book, mute);
-        });
+        docs.letterFoot(pn, pages, 'Analytics Analysis, Version ' + v.version, 'PRIVATE & CONFIDENTIAL');
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
     });
@@ -1101,6 +1096,6 @@
 
   window.ADspaceAnalytics = { enter: enter, urlState: urlState, allowed: allowed,
     _forecast: forecast, _season: seasonOf, _history: history, _range: rangeOf, _prev: prevOf, _monthsIn: monthsIn,
-    _judge: judge, _churn: churnOf, _direction: direction };
+    _judge: judge, _churn: churnOf, _direction: direction, _pdf: drawPdf };
   if (bridge.analyticsReady) bridge.analyticsReady();
 })();

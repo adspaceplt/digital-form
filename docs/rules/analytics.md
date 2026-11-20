@@ -89,8 +89,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   as the next version (`analytics_reads`, RLS on, no policy, no grant;
   `analytics_read_save`, `analytics_reads_list` the last twenty), filed
   `team.changed` under Analytics. Its ⋯: Versions (one shown at a time),
-  Download (asks the AI declaration; drawn in the browser, FOR INTERNAL
-  USE, never stored) and Delete (asked, no restore,
+  Download (asks the AI declaration; drawn in the browser on the plain
+  Internal use only page, never stored) and Delete (asked, no restore,
   `analytics_read_delete`, filed). Secret `ANALYTICS_MODEL` (unset,
   `claude-opus-5-5`).
 - Full months count from the Business setting `analytics_from` (YYYYMM,
