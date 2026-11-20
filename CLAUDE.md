@@ -13,7 +13,7 @@ selection), `creator/` (a creator's own page), `review/` (content review),
 `careers/` (a candidate's own page), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
-applied by Claude through the Supabase Management API (§3). A change to one function or one
+applied by Claude through the Supabase connector (§3). A change to one function or one
 column ships as a dated file in `supabase/migrations/`: narrowly scoped, safe to
 run twice, its own rollback, mirrored in `schema.sql`.
 
@@ -1798,7 +1798,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   bell, push or WhatsApp; a failed scheduled job's `jobs.failed` still
   reaches it), and while it is active it alone makes or removes an admin
   (below).
-  The mark is set only with no sign-in (the Management API or the SQL editor;
+  The mark is set only with no sign-in (the connector or the SQL editor;
   a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
   by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
   trigger `team_members_system_guard` lets only the account itself change its
@@ -2304,20 +2304,26 @@ learned about an area is written in its file, never here.
   confirm the Pages build, report.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
-- A migration is applied by Claude through the Supabase Management API
-  (`POST https://api.supabase.com/v1/projects/hwwuigvdfubuymchsvyx/database/query`,
-  the token added by the proxy, never printed), never the Supabase connector,
-  which is connected to another organisation (the user, 2026-11-20), in the
-  order the release states (commonly after the Pages deploy, so the page
-  stops asking before the database stops answering), and verified on the
-  live database afterwards. The report names what was applied. A storage
-  policy goes in a run of its own, since a failure rolls back the whole run.
+- A migration is applied by Claude through the Supabase connector (project
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), or through the Management
+  API (`api.supabase.com/v1/projects/{ref}/database/query`, the token never
+  printed) in a session whose connector belongs to another organisation
+  (2026-11-20); never a connector on another organisation, in the order the release
+  states (commonly after the Pages deploy, so the page stops asking before
+  the database stops answering), and verified on the live database
+  afterwards. The report names what was applied.
+  - The connector holds any statement holding `drop` or `delete` (a function
+    body included) for a confirmation it cannot show, and times out: apply
+    the rest in small `execute_sql` pieces (`create or replace trigger`, a
+    policy created under `if not exists`), then hand the user the held part
+    for the SQL Editor as its own run. A storage policy goes in a run of its
+    own, since the editor may not alter `storage.objects` and a failure rolls
+    back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
   `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`, `hiring-mail`) is
   deployed by Claude through the
-  Management API (`functions/deploy?slug=`, multipart, read back with
-  `functions/{slug}/body`) from the repo copy, keeping its Verify JWT setting, and
+  Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
   repo file before anything else; a file is always sent whole, never in
   part (2026-10-16: a half file broke `report-draft` for three minutes),
@@ -2328,7 +2334,7 @@ learned about an area is written in its file, never here.
   deploy from a branch behind `main` takes away what another session
   deployed (2026-10-29: `bukku-sync` v12 removed #814's button for five
   minutes).
-  The connector turned a `\u` escape into its character, so a function file
+  The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
   A function that imports `../_shared/` is sent with that file in the same
   call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; `supplier-mail`,
