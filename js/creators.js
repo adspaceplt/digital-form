@@ -163,12 +163,11 @@
       reviewThanks: 'Thank you. Your response has been received. ADspace will follow up shortly.',
       draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
-      saveFailed: 'Unable to save. Please try again.',
-      selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
+            selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       ratesChanged: 'The rates have been updated. Please review them and confirm again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
       overSlots: function (n) {
-        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove one and confirm again.'
+        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove the extra creators and confirm again.'
           : 'Every creator for this campaign has been booked. Please contact your ADspace account manager.';
       },
       unavailable: 'Unavailable. Please select a replacement below.',
@@ -267,8 +266,7 @@
       reviewThanks: '谢谢，您的回复已收到，ADspace 团队将尽快跟进。',
       draftMoved: '页面打开后此初稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
-      saveFailed: '保存失败，请重试。',
-      selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
+            selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
       selectionChanged: '部分创作者已无法选择，请重新查看后再次确认。',
       overSlots: function (n) {
@@ -1075,7 +1073,7 @@
         load();                     // states have moved, so read them back
       }).catch(function () {
         lock(false);
-        say(t().saveFailed, true);
+        say(t().notSaved, true);
       });
     }
   }
@@ -1500,7 +1498,7 @@
       }
       else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
       else if (e === 'too-long') msg('confirmMsg', t().tooLong, 'err');
-      else msg('confirmMsg', t().saveFailed, 'err');
+      else msg('confirmMsg', t().notSaved, 'err');
     };
     db.rpc('confirm_selection_with', {
       p_token: TOKEN, p_person: name, p_passcode: passcode,
@@ -1518,7 +1516,7 @@
          confirmed it and when (SELECTION-5), rather than a cover titled with
          the page's own name. */
       load();
-    }).catch(function () { btn.disabled = false; msg('confirmMsg', t().saveFailed, 'err'); });
+    }).catch(function () { btn.disabled = false; msg('confirmMsg', t().notSaved, 'err'); });
   });
 
   setLang(lang);

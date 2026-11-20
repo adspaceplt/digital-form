@@ -75,7 +75,7 @@
       changesHead: 'Revision notes',
       changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
-      nextUpWord: 'Next up', handIn: 'Submit your draft', handInAgain: 'Submit your revision',
+      nextUpWord: 'Next step', handIn: 'Submit your draft', handInAgain: 'Submit your revision',
       dropTitle: 'Add photos or videos', dropSub: 'Up to 1 GB each',
       directions: 'Directions', call: 'Call', whatsapp: 'WhatsApp',
       captionHint: '',
@@ -112,8 +112,8 @@
       payNone: 'Please submit your payment details before your first payment.',
       payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Declined', payChangePending: 'Change under review',
       paySentOn: 'Submitted on {d}', payAgain: 'Please submit your details again.',
-      payTo: 'Pay to', payMethod: 'Method', payAccount: 'Account', payEnding: 'Ending {n}',
-      payBilling: 'Billing as', payName: 'Legal name', payEmail: 'Email',
+      payTo: 'Account holder', payMethod: 'Method', payAccount: 'Account', payEnding: 'Ending {n}',
+      payBilling: 'Billing type', payEmail: 'Email',
       payHeads: { billing: 'Billing', payment: 'Payment', contact: 'Contact' },
       payKinds: { nric: 'Individual (NRIC)', passport: 'Individual (Passport)', brn: 'Company' },
       payIdLabel: { nric: 'NRIC Number', passport: 'Passport Number', brn: 'Business Registration Number (12 digits)' },
@@ -223,7 +223,7 @@
       payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
       paySentOn: '提交于{d}', payAgain: '请重新提交您的资料。',
       payTo: '收款人', payMethod: '付款方式', payAccount: '账户', payEnding: '尾号{n}',
-      payBilling: '开票身份', payName: '法定名称', payEmail: '电邮',
+      payBilling: '开票身份', payEmail: '电邮',
       payHeads: { billing: '开票资料', payment: '收款资料', contact: '联络资料' },
       payKinds: { nric: '个人（身份证）', passport: '个人（护照）', brn: '公司' },
       payIdLabel: { nric: '身份证号码', passport: '护照号码', brn: '公司注册号（12位数字）' },
@@ -1158,7 +1158,7 @@
         [T0.payMethod, [T0.payMethods[paid.method] || paid.method, window.ADspaceWords.bank(paid.bank)]],
         [T0.payAccount, fill(T0.payEnding, { n: paid.account_end })],
         [T0.payBilling, [T0.payKinds[paid.bill_kind] || '', fill(T0.payEnding, { n: paid.id_end })]],
-        [T0.payName, paid.legal_name],
+        [T0.payNameLabel[paid.bill_kind] || T0.payNameLabel.brn, paid.legal_name],
         [T0.payEmail, paid.email]
       ].map(function (r) {
         var v = typeof r[1] === 'string' ? esc(r[1]) : r[1].filter(Boolean).map(function (x, i) { return part(esc(x), !i); }).join('');
