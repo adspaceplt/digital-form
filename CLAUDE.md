@@ -807,7 +807,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     is today's), a note, a 中文 note and Show Chat on WhatsApp (not the
     console's), saying under the choice what it does to that page, refusing
     in the sheet a window that does not end after its start and now; Undo
-    puts each page back.
+    puts each page back. It opens on Upgrading, never Available, unless the
+    pages chosen share a set state (that state, their window kept where it
+    is one); Available lays the window and notes aside (the state chosen
+    again brings them back), and a window typed under Available is refused
+    (Choose Upgrading or Unavailable to set a start, an end or a note.; the user, 2026-11-20).
+    Every date and time field is one height (`--ctl-h`, the small one
+    `--ctl-h-sm`), never a floor, so a pair's labels share one line.
 - Announcements (`js/announce.js`, `2026-10-07-announcements.sql`,
   `2026-10-07-announcements-several.sql`): one bar under the top bar, the
   team's on the console (laid like `.upgradebar`) and the clients' on every
