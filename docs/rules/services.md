@@ -79,6 +79,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   set inactive, or one no page holds (additional content, on request), is
   never printed. The Add-ons table opens on `addons_included`
   (`2026-10-13-rate-card-included-revisions.sql`, Wording).
+- The rate card's section name is Ala Carté, as the team writes it, never
+  respelled (the user, 2026-11-20: "keep Ala Carté"); its table writes
+  "/ month" (2 content pieces / month), the card's own notation.
 - What a quote reads of a line is `services.spec` (`service_spec_ok`), set in
   the line's sheet under Quotation details: a plan (letter, with or without ads,
   platforms, contents a month, its content options, the ad budget it
