@@ -603,7 +603,7 @@
   var G = {
     mark: 16, markAt: 60.2, internalAt: 58.9, countX: 493.75, countAt: 794.9, count: 8, pcAt: 793.0,
     aclMark: 14, aclMarkAt: 56.3, regAt: 68.1, addrAt: 80.1, contactAt: 92.3, monoAt: 44.3, mono: 20.3,
-    aclCountAt: 794.5, aclCount: 7.5, verifyAt: 798.1, verify: 6,
+    aclCountAt: 794.5, aclCount: 7.5, verifyAt: 798.1, verify: 6, refAt: 784.9, ref: 6.5,
     aclBodyAt: 155.1, bodyAt: 81.9,
     line: 12.5, refLine: 14.35, afterPc: 26.9, block: 25
   };
@@ -639,14 +639,17 @@
     var tpl = templateOf(opts.kind, opts.signed);
     var acl = tpl === 'ACL_SIGN' || tpl === 'ACL_NOSIGN';
     /* The paper's inks, the user's palette (2026-11-20: "white with
-       #515151, #f5f5f5 with #1a1a1a"): the body #515151; the wordmark,
-       a title, PRIVATE & CONFIDENTIAL, FOR INTERNAL USE and ADSPACE PLT
-       #1a1a1a; fine print of 6 to 7.5pt (Co. Reg., the verify line)
+       #515151, #f5f5f5 with #1a1a1a"; then the foot and the wordmark): the
+       body and the ADspace wordmark #515151; a title, headings, PRIVATE &
+       CONFIDENTIAL in the body and ADSPACE PLT #1a1a1a; the head's and the
+       foot's marks (the page count, FOR INTERNAL USE, the foot's PRIVATE &
+       CONFIDENTIAL, the verify line, Co. Reg., the page's reference)
        #a1a1a1; hairlines #cfd0d4; a shaded box #f5f5f5. */
     var ink = PDF.rgb(0.318, 0.318, 0.318), strong = PDF.rgb(0.102, 0.102, 0.102);
     var mute = ink, faint = PDF.rgb(0.631, 0.631, 0.631);
     var line = PDF.rgb(0.812, 0.816, 0.831), shade = PDF.rgb(0.961, 0.961, 0.961);
-    var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, strong: strong, mute: mute, faint: faint, line: line, shade: shade, fonts: fonts, logo: logo };
+    var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, strong: strong, mute: mute, faint: faint, line: line, shade: shade, fonts: fonts, logo: logo,
+              reference: opts.ref || '' };
     p.plain = tpl === 'ALP';
     p.signed = tpl === 'ACL_SIGN';
     p.safe = function (s) {
@@ -694,11 +697,11 @@
     p.frameHead = function (first) {
       var wm = fonts.mark || fonts.bold;
       if (!acl) {
-        p.text('ADspace', M, at(G.markAt), G.mark, wm, strong);
-        if (tpl === 'ALP') p.spaced(INTERNAL, (W - p.spacedWidth(INTERNAL, 8, med)) / 2, at(G.internalAt), 8, med, strong);
+        p.text('ADspace', M, at(G.markAt), G.mark, wm, ink);
+        if (tpl === 'ALP') p.spaced(INTERNAL, (W - p.spacedWidth(INTERNAL, 8, med)) / 2, at(G.internalAt), 8, med, faint);
         return;
       }
-      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, strong);
+      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, ink);
       if (logo) {
         var mw = logo.width * (G.mono / logo.height);
         p.page.drawImage(logo, { x: R - mw, y: at(G.monoAt) - G.mono, width: mw, height: G.mono });
@@ -739,12 +742,19 @@
     p.foot = function (i, n) {
       var count = 'Page ' + (i + 1) + ' of ' + n;
       if (acl) {
-        p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, ink);
+        p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, faint);
         p.centre(verifyLine(tpl === 'ACL_SIGN'), at(G.verifyAt), G.verify, font, faint);
+        /* A lettered document of two pages or more names its reference on
+           every page (2026-11-20, restored after the templates' foot
+           dropped it): a page swapped out of a signed agreement still says
+           which agreement it is. Fine print in the bottom margin's left,
+           above the verify line and level with the Client initials on the
+           right, so it touches neither nor the page count. */
+        if (n > 1 && p.reference) p.text(p.reference, M, at(G.refAt), G.ref, font, faint);
         return;
       }
-      p.text(count, G.countX, at(G.countAt), G.count, font, ink);
-      if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, strong);
+      p.text(count, G.countX, at(G.countAt), G.count, font, faint);
+      if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, faint);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
@@ -898,10 +908,12 @@
      (`pen().foot`). `total` and `from` count pages drawn apart from these:
      a sealed copy's signed pages read "of n" with its Record page counted,
      and the Record page reads its own place (SIGNED DOCUMENT SEAL,
-     2026-11-17). The reference and the words once passed here are the
-     body's: the templates' foot holds neither. */
+     2026-11-17). The reference is drawn on every page of a lettered
+     document over one page (`pen().foot`); the words once passed here are
+     the body's. */
   function letterFoot(pn, pages, serial, footWord, total, from) {
     var n = total || pages.length, at = from || 0;
+    if (serial) pn.reference = String(serial);
     pages.forEach(function (pg, i) { pn.page = pg; pn.foot(i + at, n); });
   }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -990,7 +1002,7 @@
       var font = fonts.font, bold = fonts.bold;
       /* The pen holds the primitives and the letterhead; this letter keeps
          its own cursor and tells the pen which page it is on. */
-      var pn = pen(PDF, fonts, logo, { kind: 'offer', signed: true });
+      var pn = pen(PDF, fonts, logo, { kind: 'offer', signed: true, ref: String(doc.number || '') });
       var ink = pn.ink, mute = pn.mute, med = fonts.med || bold;
       var text = pn.text, width = pn.width, right = pn.right, rule = pn.rule, wrap = pn.wrap;
       var M = pn.M, R = pn.R;
@@ -1009,7 +1021,8 @@
          page two can be executed and then have page one swapped: the signed
          sheet proves only that somebody signed something. Initials on each
          page is the ordinary commercial answer, and the reference in the foot
-         means a page lifted out of this letter still says which letter it is. */
+         (the pen's, `ref`) means a page lifted out of this letter still says
+         which letter it is. */
       var foot = function (i, n) {
         pn.foot(i, n);
         /* The initials go where a hand rests to write them, which is the same

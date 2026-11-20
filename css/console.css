@@ -1859,8 +1859,14 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .perf-rate .perf-use { margin-inline-start: -8px; white-space: nowrap; }
 .perf-pct { display: inline-flex; align-items: center; gap: 4px; }
 .perf-breach, .perf-dispute { padding: 10px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 3px; }
-.perf-breach-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; }
-.perf-breach-pts { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--err); }
+.perf-breach-top { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+/* A list row's name and its figure read at 500 (DESIGN §1); the points
+   stand at the right edge, the ⋯ after them on the title line, its target
+   overflowing the line evenly (2026-11-20). */
+.perf-breach-sev { font-weight: 500; }
+.perf-breach-pts { margin-left: auto; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--err); }
+.perf-breach-top > .chip { margin-left: auto; }
+.perf-breach-act .kmenu-btn { margin-block: calc((1lh - var(--ctl-h)) / 2); }
 .perf-breach-ev { overflow-wrap: anywhere; }
 .perf-plan { display: grid; gap: 16px; }
 .perf-plan .row { margin-top: 0; }
@@ -2599,7 +2605,10 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .is-narrow .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
-.ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A tile's label is a fact read whole: it wraps onto a second line, never
+   cut (2026-11-20: My open ta… and Waiting for … at a 900px window); the
+   tiles of a row stand one height as their grid row does. */
+.ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); overflow-wrap: break-word; min-width: 0; }
 .is-narrow .ovw-kpi-label.has-short .ovw-long { display: none; }
 .is-narrow .ovw-kpi-label.has-short .ovw-short { display: inline; }
 .ovw-kpi-fig { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 30px; overflow-wrap: anywhere; }
@@ -4865,10 +4874,9 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
    the left, Open report at the right edge. */
 .task-deadline.task-post { align-items: center; justify-content: space-between; }
 .task-deadline.task-post .btn { margin-block: -4px; }
-/* Its quiet Open report gives its padding back, so the label starts on
-   the words' edge when it wraps under them and ends on the line's edge
-   beside them (2026-11-07). */
-.task-deadline.task-post .btn-quiet { min-width: 0; margin-inline: -13px; }
+/* Its quiet Open report keeps its own width; shaded since 2026-11-16, it
+   gives no padding back, or its ground stood 13px past the line's edge. */
+.task-deadline.task-post .btn-quiet { min-width: 0; }
 
 /* Email templates (js/mailtpl.js, 2026-11-10): the list by recipient, a
    section a heading over a shaded card of rows (a box inside the sheet is
@@ -5907,6 +5915,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* Tiles of one row share a height: the change strip stands at the foot, never
    a gap under it; the figure keeps one line, its trend narrower on a phone. */
 .ovw-kpis.ovw-lead > .ovw-kpi { grid-template-rows: auto auto 1fr; }
+/* The tiles of a row share their rows (subgrid): a label wrapping onto a
+   second line in one tile keeps every figure of the row on one line
+   (2026-11-20). */
+@supports (grid-template-rows: subgrid) {
+  .ovw-kpis.ovw-lead > .ovw-kpi { grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
+}
 .ovw-lead > .ovw-kpi > .ovw-kpi-line { align-self: end; }
 .ovw-lead > .ovw-kpi > .ovw-kpi-fig { white-space: nowrap; overflow-wrap: normal; }
 .is-narrow .ovw-lead > .ovw-kpi > .ovw-kpi-trend { width: 44px; }

@@ -7487,7 +7487,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-breach small, .perf-dispute small { font-size: 12px; color: var(--ink-mute); }
 /* Quiet and on the text's own margin: its label starts where the breach's
    words do, not a button's padding further in. */
-.perf-void { justify-self: start; min-width: 0; margin-left: -13px; }
 .perf-answer { margin: 4px 0 0; padding: 8px 10px; background: var(--sunk); border-radius: var(--radius-sm); font-size: 13px; }
 .perf-answer small { display: block; margin-bottom: 2px; }
 .perf-dpick textarea[hidden] { display: none; }

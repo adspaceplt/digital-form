@@ -1031,12 +1031,17 @@
       if (b.repeated) flags.push('Repeated in the quarter');
       if (b.late) flags.push('Reported late');
       var voiding = st.editing === 'void:' + b.id;
+      /* Withdraw is the issue's lifecycle act: its ⋯ on the title line, after
+         the points (the menu standard), never a button under the row. */
+      var act = draft && !voiding ? '<span class="team-act perf-breach-act">' +
+        '<button class="kmenu-btn" data-a="bmenu" type="button" aria-label="More actions" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="5" data-void="' + esc(b.id) + '" type="button" role="menuitem">Withdraw</button></div></span>' : '';
       return '<div class="perf-breach" data-breach="' + esc(b.id) + '">' +
-        '<div class="perf-breach-top"><b>' + esc(SEV_WORD[b.severity]) + '</b>' + vicMark(b) + '<span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span></div>' +
+        '<div class="perf-breach-top"><span class="perf-breach-sev">' + esc(SEV_WORD[b.severity]) + '</span>' + vicMark(b) + '<span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span>' + act + '</div>' +
         '<p class="perf-breach-what">' + esc(b.what) + '</p>' +
         '<small>' + esc([dateWord(b.occurred_on), BREACH_CAT[b.category], b.client_name].concat(flags).filter(Boolean).join(' · ')) + '</small>' +
         (b.evidence && manage() ? '<small class="perf-breach-ev">' + esc(b.evidence) + '</small>' : '') +
-        (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Withdraw</button>' : '') +
         (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Reason</label>' +
           '<textarea class="input" id="pvVoidWhy" rows="1" data-oneline maxlength="300"></textarea><div class="qform-acts">' +
           '<button class="btn btn-sm btn-warn" type="submit">Withdraw</button><button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>' : '') +
@@ -1140,7 +1145,7 @@
           : 'Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
       }
       return '<div class="perf-dispute">' +
-        '<div class="perf-breach-top"><b>' + esc(itemWord(d)) + '</b>' +
+        '<div class="perf-breach-top"><span class="perf-breach-sev">' + esc(itemWord(d)) + '</span>' +
           (dec ? '<span class="chip ' + (dec === 'not_upheld' ? 'is-off' : 'is-ok') + '">' + esc(DECISION[dec]) + '</span>' : '<span class="chip is-warn">Waiting</span>') + '</div>' +
         '<p class="perf-breach-what">' + esc(d.reason) + '</p>' +
         (dec ? '<p class="perf-answer"><small>' + esc((d.decided_by || 'Answered') + ', ' + timeWord(d.decided_at)) + '</small>' + esc(d.response) + (change ? ' ' + esc(change) : '') + '</p>' : '') +
@@ -1352,8 +1357,19 @@
         if (el) { el.value = b.getAttribute('data-v'); el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); }
       });
     });
+    Array.prototype.forEach.call($('pvBody').querySelectorAll('[data-a="bmenu"]'), function (btn) {
+      var menu = btn.parentNode.querySelector('[data-menu]');
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = menu.hidden;
+        shutBreachMenus();
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(btn, menu);
+      });
+    });
     Array.prototype.forEach.call($('pvBody').querySelectorAll('[data-void]'), function (b) {
-      b.addEventListener('click', function () { st.editing = 'void:' + b.getAttribute('data-void'); paintSheet(); var f = $('pvVoidWhy'); if (f) f.focus(); });
+      b.addEventListener('click', function () { shutBreachMenus(); st.editing = 'void:' + b.getAttribute('data-void'); paintSheet(); var f = $('pvVoidWhy'); if (f) f.focus(); });
     });
 
     var rf = $('pvReasonForm');
@@ -2996,6 +3012,14 @@
     }
     return el;
   }
+  function shutBreachMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#pvBody .perf-breach-act .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#pvBody .perf-breach-act .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutBreachMenus);
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#pvBody .perf-breach-act')) shutBreachMenus();
+  });
   function shutComMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('#rwCList .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('#rwCList .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
