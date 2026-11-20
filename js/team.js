@@ -2763,7 +2763,9 @@
     denied: 'You do not have permission to sign out a device. Please ask an admin.',
     'not-found': 'This device is already signed out. Refresh the page.',
     'own-session': 'This is your own device. Use Sign out in your account menu.',
-    'system-account': 'Only the super admin can sign out the super admin\'s devices. Please ask the super admin.'
+    'system-account': 'Only the super admin can sign out the super admin\'s devices. Please ask the super admin.',
+    'own-account': 'These are your own devices. Use Sign out in your account menu.',
+    none: 'No device is signed in. Refresh the page.'
   };
   function paintDevices(m, body, all) {
     if (!body) return;
@@ -2775,6 +2777,9 @@
       var list = d.sessions || [];
       if (!list.length) { body.innerHTML = '<p class="muted mrec-none">Not signed in on any device.</p>'; return; }
       var shown = all ? list : list.slice(0, 5);
+      /* Sign out all (2026-11-20): every sign-in the colleague holds, never
+         the reader's own record nor a system account's. */
+      var allOk = !(me() && me().id === m.id) && !m.system;
       body.innerHTML = '<ul class="mrec-devs">' + shown.map(function (x) {
         var last = x.last_at ? activeWord(x.last_at) : '';
         return '<li class="mrec-dev">' +
@@ -2784,10 +2789,31 @@
             '<code class="mrec-dev-code">' + esc(String(x.id).slice(0, 6)) + '</code></span>' +
           (x.mine ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
       }).join('') + '</ul>' +
-        (shown.length < list.length ? '<button class="btn btn-quiet btn-sm mrec-devmore" type="button">Show all ' + list.length + '</button>' : '') +
+        (shown.length < list.length || allOk ? '<div class="mrec-railacts">' +
+          (shown.length < list.length ? '<button class="btn btn-quiet btn-sm mrec-devmore" type="button">Show all ' + list.length + '</button>' : '') +
+          (allOk ? '<button class="btn btn-sm mrec-devall" type="button">Sign out all</button>' : '') + '</div>' : '') +
         '<p class="msg" id="mrecDevMsg" role="status"></p>';
       var more = body.querySelector('.mrec-devmore');
       if (more) more.addEventListener('click', function () { paintDevices(m, body, true); });
+      var every = body.querySelector('.mrec-devall');
+      if (every) every.addEventListener('click', function () {
+        window.ADspaceConfirm.ask({
+          title: 'Sign out all devices?', go: 'Sign out all',
+          body: m.name + ' will be signed out on ' + (list.length === 1 ? '1 device' : 'all ' + list.length + ' devices') +
+            ' within an hour and must sign in again on each.'
+        }, function () {
+          every.disabled = true;
+          db.rpc('team_sessions_end_all', { p_id: m.id }).then(function (r2) {
+            var e = (r2 && r2.error && r2.error.message) || (r2 && r2.data && r2.data.error) || '';
+            if (e) {
+              every.disabled = false;
+              msg('mrecDevMsg', DEV_SAID[e] || (/function|schema cache/i.test(e) ? window.ADspaceWords.line.notYet : 'Not signed out. Try again.'), 'err');
+              return;
+            }
+            paintDevices(m, body, all);
+          }).catch(function () { every.disabled = false; msg('mrecDevMsg', 'Not signed out. Try again.', 'err'); });
+        });
+      });
       Array.prototype.forEach.call(body.querySelectorAll('[data-dev]'), function (b) {
         var x = list.filter(function (s) { return s.id === b.getAttribute('data-dev'); })[0];
         b.addEventListener('click', function () {

@@ -458,8 +458,8 @@
       /* The console's own row of Page availability (2026-10-29). */
       var word = upgrade.kind === 'paused' ? 'Temporarily unavailable' : 'Upgrade in progress';
       var w = !M ? '' : upgrade.on
-        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the notice page.'
-        : 'Console: ' + word + ' from ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.when(upgrade.ends_at) : '') + '.';
+        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.due(upgrade.ends_at) : '') + '. Everyone but admins sees the notice page.'
+        : 'Console: ' + word + ' from ' + M.due(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.due(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
     if (M && upgrade.on && !admin && me) {
@@ -6052,7 +6052,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -6143,6 +6143,9 @@
        reminds the admins (2026-10-24). */
     abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')],
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
+    /* A colleague's sign-in unused this long is signed out each night
+       (2026-11-20, `team_sessions_idle_end`). */
+    idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],
       ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],

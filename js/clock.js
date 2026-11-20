@@ -23,6 +23,13 @@
  *   ADspaceClock.date(v, o)     12 Sept 2026; o.long (12 September 2026),
  *                               o.year false (12 Sept), o.weekday (Sat, 12
  *                               Sept 2026), o.zh (2026年9月12日)
+ *                               o.named (20 Nov 2026 (Friday); with o.zh
+ *                               2026年11月20日（星期五）): a day the reader
+ *                               waits on carries its weekday; o.named
+ *                               'ahead' only while the day has not passed
+ *   ADspaceClock.due(v, o)      a moment the reader waits on: 20 Nov 2026
+ *                               (Friday), 12:30pm; o.zh 2026年11月20日（星期五）
+ *                               下午12:30; o.space (12:30 pm)
  *   ADspaceClock.clock(v, o)    11:30am; o.space (11:30 am), o.h24 (11:30),
  *                               o.zh (上午11:30)
  *   ADspaceClock.month(v, o)    Sept 2026 (a month key or a moment);
@@ -106,14 +113,30 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var WDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var WD_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
   /* A month key (2026-09) is that month's first day. */
   function partsOf(v) { return parts(/^\d{4}-\d{2}$/.test(String(v || '')) ? v + '-01' : v); }
   function date(v, o) {
     o = o || {};
     var p = partsOf(v);
     if (!p) return '';
-    if (o.zh) return (o.year === false ? '' : p.y + '年') + (p.mo + 1) + '月' + p.d + '日';
-    return (o.weekday ? WD[p.wd] + ', ' : '') + p.d + ' ' + (o.long ? LONG : MON)[p.mo] + (o.year === false ? '' : ' ' + p.y);
+    /* 'ahead': the weekday only while the day is today or later, so a
+       shoot or a deadline gone by reads as history. */
+    if (o.named === 'ahead') o = Object.assign({}, o, { named: dayOf(p.y, p.mo, p.d) >= today() });
+    if (o.zh) return (o.year === false ? '' : p.y + '年') + (p.mo + 1) + '月' + p.d + '日' + (o.named ? '（' + WD_ZH[p.wd] + '）' : '');
+    return (o.weekday ? WD[p.wd] + ', ' : '') + p.d + ' ' + (o.long ? LONG : MON)[p.mo] + (o.year === false ? '' : ' ' + p.y) +
+      (o.named ? ' (' + WDAY[p.wd] + ')' : '');
+  }
+  /* A date and time the reader waits on (a deadline, an appointment, a page
+     back by): the weekday in brackets after the date, then the time
+     (2026-11-20, the user: "remember to show the day when necessary"). A
+     history date never carries it. */
+  function due(v, o) {
+    o = o || {};
+    if (moment(v) === null) return '';
+    if (o.zh) return date(v, { zh: true, named: true }) + clock(v, { zh: true });
+    return date(v, { named: true, long: o.long }) + ', ' + clock(v, { space: o.space });
   }
   function clock(v, o) {
     o = o || {};
@@ -136,6 +159,6 @@
   window.ADspaceClock = {
     OFFSET: OFF, moment: moment, parts: parts, day: day, today: today, start: start,
     at: at, time: time, addDays: addDays, addMonths: addMonths, periodEnd: periodEnd, between: between, weekday: weekday,
-    date: date, clock: clock, month: month, MON: MON, LONG: LONG
+    date: date, due: due, clock: clock, month: month, MON: MON, LONG: LONG, WDAY: WDAY
   };
 })();

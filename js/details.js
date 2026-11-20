@@ -63,9 +63,10 @@
   var info = null, state = 'loading', typed = {}, consent = false, sending = false;
   var root = function () { return $('dfRoot'); };
 
-  function day(iso) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function day(iso, named) {
     var C = window.ADspaceClock;
-    if (C && C.date) return C.date(iso, { zh: lang === 'zh', long: true });
+    if (C && C.date) return C.date(iso, { zh: lang === 'zh', long: true, named: named });
     return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'long', year: 'numeric' });
   }
   function cover(title, text) {
@@ -103,7 +104,7 @@
       '</section>' +
       '<label class="qs-consent"><input type="checkbox" id="dfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(w.consent) + '</span></label>' +
       '<span class="msg" id="dfConsentMsg"></span>' +
-      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at) })) + '</p>' +
+      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>' +
       '<p class="msg" id="dfMsg" role="status"></p>' +
       '</form></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button></div>';

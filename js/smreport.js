@@ -985,15 +985,15 @@
   // ---- Rendering ---------------------------------------------------------------
   function render(snap, opts) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
+    if (!D || !D.lib) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     return D.lib().then(function () { return drawReport(snap, opts); });
   }
   function drawReport(snap, opts) {
     opts = opts || {};
     var PDF = window.PDFLib;
     var DOCS = window.ADspaceDocs;
-    if (!PDF) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
-    if (!DOCS) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
+    if (!PDF) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
+    if (!DOCS) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
     /* The report's template is always English (the user, 2026-10-01: Meta's
@@ -1015,7 +1015,7 @@
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       if (needsCjk && !fonts.cjk) {
-        throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Please contact an admin.');
+        throw new Error(window.ADspaceWords.line.pdfCjk);
       }
       sh = Shaper(PDF, pdf, fonts, warn);
       /* Every fixed English string reaches the page through here, so a

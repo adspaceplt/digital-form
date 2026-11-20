@@ -33,7 +33,7 @@
 
   function draw(videos, title) {
     var docs = D();
-    if (!docs) return Promise.reject(new Error('The PDF tools are not loaded.'));
+    if (!docs) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var needCjk = JSON.stringify(videos).search(CJK) > -1;
     return docs.lib().then(function (PDF) {
       var pdf;
@@ -43,7 +43,7 @@
         docs.meta(pdf, title || [((v0.clients || {}).name || ''), 'Video Script', v0.month_word || ''].filter(Boolean).join(' '), 'Video Script');
         return docs.embedFonts(pdf, PDF, { cjk: needCjk });
       }).then(function (fonts) {
-        if (needCjk && !fonts.cjk) throw new Error('The Chinese typeface could not be loaded.');
+        if (needCjk && !fonts.cjk) throw new Error(window.ADspaceWords.line.pdfCjk);
         /* Each scene's picture (2026-11-05), embedded before the pages are
            laid out. */
         var jobs = [];

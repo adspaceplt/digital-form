@@ -53,7 +53,8 @@
   function bankKept() { return update && bankHeld && !String(typed.bank_account || '').trim(); }
   var root = function () { return $('sfRoot'); };
 
-  function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function day(iso, named) { return window.ADspaceClock.date(iso, { long: true, named: named }); }
   function cover(title, text) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
   }
@@ -113,7 +114,7 @@
       '<ol class="qs-notes sf-auth">' + AUTH.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
       '<label class="qs-consent"><input type="checkbox" id="sfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">I agree to the authorisation above.</span></label>' +
       '<span class="msg" id="sfConsentMsg"></span>' +
-      '<p class="qs-note">' + esc(W.formEnds.replace('{d}', day(info.expires_at))) + '</p>' +
+      '<p class="qs-note">' + esc(W.formEnds.replace('{d}', day(info.expires_at, true))) + '</p>' +
       '<p class="msg" id="sfMsg" role="status"></p>' +
       '</form></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfSubmit">Submit</button></div>';

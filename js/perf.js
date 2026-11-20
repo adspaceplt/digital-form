@@ -1724,7 +1724,7 @@
     if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + '.', 'warn'); return; }
     btn.disabled = true;
     var D = window.ADspaceDocs, tab = D && D.tabFor ? D.tabFor() : null;
-    msg('perfMsg', 'Drawing ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
+    msg('perfMsg', 'Generating ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
     var recs = [], left = people.length;
     people.forEach(function (p, i) {
       call('perf_open', { p_token: token, p_member: p.team_member_id, p_period: st.period }, function (d) {
@@ -1746,7 +1746,7 @@
     if (!D || !D.lib) { drawNow(recs, name, btn, then, tab); return; }
     D.lib().then(function () { drawNow(recs, name, btn, then, tab); }).catch(function (e) {
       if (D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be generated. ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', (e && e.message) || 'The file could not be generated. Please try again.', 'err');
       if (then) then(false);
     });
   }
@@ -1754,10 +1754,10 @@
     var PDF = window.PDFLib, D = window.ADspaceDocs;
     var fail = function (e) {
       if (D && D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be generated. ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', (e && e.message) || 'The file could not be generated. Please try again.', 'err');
       if (then) then(false);
     };
-    if (!PDF || !D) { fail(new Error('Refresh the page and try again.')); return; }
+    if (!PDF || !D) { fail(new Error(window.ADspaceWords.line.pdfLib)); return; }
     if (btn) btn.disabled = true;
     /* The download is filed before anything is drawn, and the file prints
        the filing: the server's time and who took it, so a copy found later
@@ -1773,7 +1773,7 @@
         if (--left) return;
         if (refused) {
           if (btn) btn.disabled = false;
-          fail(new Error('The download could not be recorded. Please try again.'));
+          fail(new Error('The file could not be generated. The download could not be recorded. Please try again.'));
           return;
         }
         make();
@@ -1994,7 +1994,7 @@
     if (path) { para(path[0], TY.body, med); para(path[1]); }
     else para('No development or recovery path applies this month.', TY.body, book, SOFT);
     y -= SP.tight;
-    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', TY.small, book, SOFT);
+    para('A month with no issue resets the recovery path. Consequences are limited to privileges, training and discretionary rewards, and never affect salary.', TY.small, book, SOFT);
 
     heading('Improvement and Follow-up', ROW * 3);
     var lw2 = W / (1 + RPHI) / RPHI;

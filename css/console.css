@@ -4362,9 +4362,11 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-dev-part { white-space: nowrap; }
 .mrec-dev-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--ink-mute); }
 .mrec-dev > .btn { flex: 0 0 auto; }
-.mrec-devmore { margin-top: 8px; }
 #mrecDevMsg:empty { display: none; }
 .mrec-railacts > .btn { flex: 1 1 50%; min-width: 0; }
+/* A lone act keeps its own width (one action is not a banner). */
+.mrec-railacts > .btn:only-child { flex: 0 0 auto; }
+#mrecDevsBody .mrec-railacts { margin-top: 8px; }
 /* Overseas access on the record (2026-10-24): the earlier requests under
    the one in hand, a row each, its state at the right. */
 .mrec-abpast { margin-top: 12px; }

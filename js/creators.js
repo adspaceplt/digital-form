@@ -501,7 +501,7 @@
     $('campBrief').hidden = !brief;
     // The engagement in one line: how many creators, when, which invoice.
     var facts = [[t().creatorsLabel, String(c.slots || 0)]];
-    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline)]);
+    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline, 'ahead')]);
     if (c.invoice_no) facts.push([t().invoice, c.invoice_no]);
     $('engageFacts').innerHTML = facts.map(function (f) {
       return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
@@ -668,7 +668,7 @@
     var seeding = (feed.campaign || {}).push_format === 'seeding';
     box.innerHTML =
       '<p class="cx-standing-line"><b>' + esc(t().ofPosted(live, booked.length)) + '</b>' +
-        (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0]))) + '</span>' : '') + '</p>' +
+        (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0], true))) + '</span>' : '') + '</p>' +
       '<div class="cx-track" aria-hidden="true">' + bars.map(function (o) {
         return '<i class="is-' + dotOf(o.state) + '"></i>'; }).join('') + '</div>' +
       '<p class="cx-legend">' + counts.map(function (c) {
@@ -804,7 +804,7 @@
         facts.push([t().postedOn, fmtDate(wentOut)]);
       } else if (!live) {
         facts.push([seeding ? t().deliveryOn : t().shootOn,
-          o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? (lang === 'zh' ? ' ' : ', ') + ampm(o.visit_time) : '') : t().tbc]);
+          o.visit_date ? fmtDate(o.visit_date, 'ahead') + (o.visit_time ? (lang === 'zh' ? ' ' : ', ') + ampm(o.visit_time) : '') : t().tbc]);
       }
       /* Once its post is out, each post's row names its platform. */
       var plats = posts.length ? [] : platsOf(o);
@@ -1092,9 +1092,10 @@
     h = h % 12 || 12;
     return lang === 'zh' ? zh + h + ':' + (m[2] || '00') : h + ':' + (m[2] || '00') + x;
   }
-  function fmtDate(d) {
+  /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
+  function fmtDate(d, named) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
-    return ADspaceClock.date(d, { zh: lang === 'zh' });
+    return ADspaceClock.date(d, { zh: lang === 'zh', named: named });
   }
 
   var BACKUPS_WANTED = 2;
