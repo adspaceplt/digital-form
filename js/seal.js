@@ -289,9 +289,11 @@
       }
       tx = x0 + QR + 4;
     }
-    wrapAny(pn, words, M + FULL - tx - PADX * 2, f).forEach(function (ln, i) {
-      pn.text(ln, tx + PADX, y - qh / 2 + 3 - i * LEAD, SZ, f);
-    });
+    /* The words' block is centred on the QR code: its capitals' top and
+       its last baseline stand equally above and below the cell's middle. */
+    var wl = wrapAny(pn, words, M + FULL - tx - PADX * 2, f), cap = SZ * 0.7;
+    var first = y - qh / 2 + (cap + (wl.length - 1) * LEAD) / 2 - cap;
+    wl.forEach(function (ln, i) { pn.text(ln, tx + PADX, first - i * LEAD, SZ, f); });
     y -= qh + 12;
     // The steps.
     var widths = cols(FULL);
