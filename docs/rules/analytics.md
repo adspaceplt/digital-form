@@ -28,7 +28,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Yesterday, Last 7 days, Last 14 days, This month, Last month, This
   quarter and Last quarter, the Dashboard's own spans and words through
   `ADspaceOverview.span`, each on the one before it as the Dashboard reads
-  it; 6, 24, This year, Last year) is
+  it; then Last 6, 12 and 24 months, This year, Last year: the menu runs
+  from the shortest span to the longest, the user, 2026-11-20) is
   measured on the same span before it, ending
   at the same moment of its month, and a month a figure is divided by is
   the share of it passed (`prevOf`, `monthsIn`; review 2). Over days

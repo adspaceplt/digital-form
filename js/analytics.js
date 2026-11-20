@@ -138,7 +138,7 @@
      (`ADspaceOverview.span`), one copy of each rule. */
   var PERIODS = [['today', 'Today'], ['yday', 'Yesterday'], ['d7', 'Last 7 days'], ['d14', 'Last 14 days'],
                  ['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'], ['lastq', 'Last quarter'],
-                 ['12', 'Last 12 months'], ['6', 'Last 6 months'], ['24', 'Last 24 months'],
+                 ['6', 'Last 6 months'], ['12', 'Last 12 months'], ['24', 'Last 24 months'],
                  ['year', 'This year'], ['lastyear', 'Last year']];
   var DAYS = { today: 1, yday: 1, d7: 7, d14: 14 };
   /* The Dashboard's months and quarters too (2026-11-20, the user: "also
