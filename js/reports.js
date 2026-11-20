@@ -126,7 +126,7 @@
     'on-portal': 'This version is on the client portal. Publish a newer one or unpublish it first.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Enter a reason.',
-    'confirm-mismatch': 'That does not match the period.',
+    'confirm-mismatch': 'That does not match the period. Type the period as shown.',
     'sm-not-draft': 'This report is no longer a draft, so it cannot be changed. Refresh the page to see its current status.',
     'sm-status-by-function': 'The status can be changed only through its step on the report.',
     'sm-wrong-platform': 'Choose one of this report\'s accounts.'
@@ -1316,7 +1316,7 @@
        (ux-audit RPT-2). */
     var mayReturn = may('work') && (named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine));
     if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
-      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
+      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Withdraw' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
     else if (slips.length && (r.status === 'draft' || r.status === 'confirmed')) wait = r.status === 'draft' ? 'Correct the figures in the commentary to submit.' : 'Send it back to correct the figures in the commentary.';
@@ -1964,7 +1964,7 @@
         note = !lst.current ? 'Figures changed since ' + whenWord(lst.at)
           : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at) + (a.within ? ' · ' + withinWord(a.within) : '')
           : 'Continued without Meta · ' + (lst.by || 'An admin') + ', ' + whenWord(lst.at);
-        if (!lst.current) notes.push('A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.');
+        if (!lst.current) notes.push('A figure changed after Meta was read on ' + whenWord(lst.at) + '. Run the audit again.');
         else if (lst.outcome === 'override') notes.push('Meta did not answer, so the figures were not read. Reason given: ' + (lst.note || 'none') + '.');
       } else if (lst.outcome === 'mismatch') {
         mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
@@ -2816,7 +2816,7 @@
       var seen = (st.openVersions || []).length;
       window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and commentary will be deleted with it.' : 'Its accounts, posts and commentary will be deleted with it.') +
         (seen ? ' It has been published, and ' + (seen === 1 ? 'its version' : 'its ' + seen + ' versions') + ' will be removed from the client portal.' : '') + ' This cannot be undone.', go: 'Delete', tone: 'danger',
-        field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period.' } },
+        field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period. Type the period as shown.' } },
         function (typed) {
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
             var d = res.data || {};
@@ -2953,7 +2953,7 @@
             title: 'Restore version ' + v.version_no + '?',
             body: (r.status === 'published'
               ? 'Version ' + next + ' starts as a draft holding version ' + v.version_no + '\'s figures and commentary.'
-              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s. Changes made to this draft will be lost. This cannot be undone.') +
+              : 'The draft\'s figures and commentary will be replaced by version ' + v.version_no + '\'s. Changes made to this draft will be lost. This cannot be undone.') +
               (live ? ' The client keeps version ' + live.version_no + ' until a version is published.' : ''),
             /* Over a draft the edits are lost, so the question says so and
                asks in warn (2026-10-27, RPT-13). */
@@ -2972,7 +2972,7 @@
         }
         window.ADspaceConfirm.ask({
           title: 'Delete version ' + v.version_no + '?',
-          body: 'Version ' + v.version_no + ' and its kept copy are removed from the report. This cannot be undone.',
+          body: 'Version ' + v.version_no + ' and its saved PDF will be deleted. This cannot be undone.',
           go: 'Delete', tone: 'danger', wait: true
         }, function () {
           return db.rpc('sm_report_version_delete', { p_version: v.id }).then(function (res) {
@@ -4433,8 +4433,8 @@
     var when = d.next && ADspaceClock.parts(d.next) ? aiClock(d.next) : '';
     if (d.scope === 'stopped') return 'AI is turned off for you. Please ask an admin to turn it on.';
     var n = d.limit == null ? 1 : d.limit;
-    var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
-      : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
+    var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off. Please ask an admin to turn them on.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
+      : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off. Please ask an admin to turn them on.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : d.scope === 'drafts' ? 'You have used your ' + (d.limit || 10) + ' report drafts for today.'
       : d.scope === 'checks' ? 'You have used your ' + (d.limit || 10) + ' commentary checks for today.'
       : d.scope === 'next' ? 'You have used ' + ((d.limit || 3) === 1 ? 'today\'s Next batch run.' : 'your ' + (d.limit || 3) + ' Next batch runs for today.')
@@ -5004,7 +5004,7 @@
         var res = gg.results != null ? fmt(gg.results) : (sm.line.indexOf(' from the ads') > -1 ? fmt(sm.total) : sm.line);
         return [o[1], res + ' · ' + money2(sm.spent).replace(/ /g, '\u00a0')];
       });
-      var before = r.first_month ? [['Comparison', 'First month of ads, with the reading guidance']] :
+      var before = r.first_month ? [['Comparison', 'First month of ads, with guidance on reading the figures']] :
         [['Compared with', t.prev_from ? fromWord || 'Published report' : 'Typed figures'],
           ['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
           ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];
@@ -6010,14 +6010,14 @@
      more than one ad account (or a Page and an Instagram account) it asks
      which first; the other is imported after. Every figure is Meta's. */
   var META_SAID = {
-    'meta-off': 'Meta checks are off in Business settings.',
+    'meta-off': 'Meta checks are off in Settings. Please ask an admin to turn them on.',
     'not-connected': 'Meta is not connected. Please contact an admin.',
     'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
     'not-assigned': 'Meta has not shared this account with the portal. Please contact an admin.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'no-mapping': 'This account is no longer linked on the client\'s Brand.',
     'denied': 'You do not have permission to import into this report. Please ask an admin.',
-    'not-draft': 'Only a draft report can take an import.',
+    'not-draft': 'Only a draft report can be imported into. Revise the report first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   /* The pictures (2026-10-10, the user: "build post thumbnails"): after an
