@@ -159,6 +159,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A walk that ends a step inside a record leaves it by its Back before
     it moves on, never counting on the rail to (2026-11-18: uxaudit waited
     on Team's Members inside a candidate).
+  - uxaudit's `head` holds each bar family to one height, a screen grouped
+    by the bar it draws (`.console-head` or `.topbar`), never by the page
+    it is on (2026-11-21: the signed-out console wears the client pages'
+    bar, and 431 signed-in screens read against its 64px).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
