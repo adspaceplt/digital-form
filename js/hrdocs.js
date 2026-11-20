@@ -117,7 +117,7 @@
     var noStatutory = type === 'intern' || type === 'part_time';
     para('The Company reserves the right in its absolute discretion to deduct from your pay ' +
       (noStatutory ? '' : 'the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and ') +
-      'any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of Company’s rules/terms.');
+      'any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of the Company’s rules or terms.');
     if (noStatutory) para('The Employee shall not be entitled to contributions under the Employees Provident Fund Act 1991, the Employees’ Social Security Act 1969 or the Employment Insurance System Act 2017.');
     head('REST DAYS AND PUBLIC HOLIDAYS');
     para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.');

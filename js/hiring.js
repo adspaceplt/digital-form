@@ -58,7 +58,7 @@
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
     'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
     'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
-    'not-cancelled': 'Not sent. Only a confirmed interview that was cancelled is emailed about its cancellation.',
+    'not-cancelled': 'Not sent. This interview was not confirmed before it was cancelled. Send new times to arrange another interview.',
     'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.'
   };
   function said(r) {
