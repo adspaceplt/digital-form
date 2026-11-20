@@ -56,6 +56,7 @@
     'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.',
     'not-yet': 'The interview has not taken place. Mark it held after it ends.',
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
+    'not-workday': 'Choose a working day.',
     'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
     'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'not-cancelled': 'Not sent. This interview was not confirmed before it was cancelled. Send new times to arrange another interview.',
@@ -1282,6 +1283,8 @@
           var t = C.at(v.day, v.time);
           if (!t) return 'Enter the decision date and time.';
           if (t.getTime() <= Date.now()) return SAID.past;
+          var wd = C.weekday(v.day);
+          if (wd === 0 || wd === 6) return SAID['not-workday'];
           if (t.getTime() > Date.parse(d.latest)) return SAID['too-far'];
           if (String(v.note || '').trim().length > 500) return 'Shorten the note to 500 characters.';
           return '';

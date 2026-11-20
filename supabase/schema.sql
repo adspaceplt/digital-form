@@ -133657,14 +133657,28 @@ update public.meeting_message_template x set body =
 --     while the candidate is Invited or at Interview and undecided, so
 --     the page reads Interview cancelled, never its time or link.
 --   * `system_emails` files `hiring_confirmed` and `hiring_cancelled`.
+--   * The coordinator's review of the day's merges: a decision date on a
+--     working day alone (`hiring_workday_ok`; `hiring_interview_held` and
+--     `hiring_decide_by_change` refuse `not-workday`); `hiring_decide_remind
+--     (p_today)` counts the working days left (tomorrow, on the next working
+--     day, in 2 working days) and, past the date with no decision, tells the
+--     Owners each working morning (`hiring.decide_over`,
+--     `hiring_candidates.decide_over_on`); `careers_read` answers the
+--     decision date only while it is ahead; every hiring email's prepare
+--     answers `system` (the sender a system account: the email closes as
+--     the ADspace Hiring Team), never the colleague's own address.
 --
 -- ORDER: this file, then hiring-mail (the two new kinds), then the pages.
 -- An old page never asks for the new emails; an old hiring-mail refuses
 -- them (`bad-request`), so the page says the email was not sent and offers
 -- Email candidate. Safe to run twice.
 --
--- ROLLBACK: drop `hiring_confirmed_mail_prepare` and
--- `hiring_confirmed_mail_done`; run `hiring_when` from INTERVIEW TIMES IN
+-- ROLLBACK: drop `hiring_confirmed_mail_prepare`,
+-- `hiring_confirmed_mail_done`, `hiring_decide_remind(date)` and
+-- `hiring_workday_ok`; run `hiring_decide_remind`,
+-- `hiring_interview_held` and `hiring_decide_by_change` from INTERVIEW
+-- HELD, `hiring_outcome_mail_prepare` and `hiring_doc_mail_prepare` from
+-- ACCESS CLEAN-UP again; run `hiring_when` from INTERVIEW TIMES IN
 -- FULL, `hiring_doc_row` from HIRING OFFERS AND CONTRACTS, and
 -- `hiring_interview_row`, `hiring_mail_prepare`, `hiring_mail_done` and
 -- `careers_read` from INTERVIEW HELD again; restore the `system_emails`
@@ -133734,7 +133748,7 @@ begin
   select * into c from public.hiring_candidates where id = d.candidate_id;
   if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
   return jsonb_build_object('id', d.id, 'kind', 'confirmed', 'doc', d.kind, 'ref', d.serial, 'to', c.email, 'name', c.name,
-    'position', d.terms->>'position', 'key', c.link_key, 'sender', me.name, 'reply_to', me.email);
+    'position', d.terms->>'position', 'key', c.link_key, 'sender', me.name, 'system', coalesce(me.system, false));
 end $$;
 revoke all on function public.hiring_confirmed_mail_prepare(uuid) from public, anon;
 grant execute on function public.hiring_confirmed_mail_prepare(uuid) to authenticated;
@@ -133835,7 +133849,7 @@ begin
     'reply_by', case when p_kind = 'invite' and i.state = 'invited' then public.hiring_when(i.reply_by) end,
     'decide_by', case when p_kind in ('held', 'moved') then public.hiring_when(c.decide_by) end,
     'decide_note', case when p_kind = 'moved' then c.decide_note end,
-    'sender', me.name, 'reply_to', me.email);
+    'sender', me.name, 'system', coalesce(me.system, false));
 end $$;
 
 create or replace function public.careers_read(p_key text)
@@ -133869,7 +133883,7 @@ begin
       'reply_by', case when v_state = 'invited' then i.reply_by end,
       'link', case when i.state = 'confirmed' and i.held_at is null then i.meeting_link end,
       'held', case when i.held_at is not null then true end,
-      'decide_by', case when i.held_at is not null and c.outcome is null then c.decide_by end)) end,
+      'decide_by', case when i.held_at is not null and c.outcome is null and c.decide_by > now() then c.decide_by end)) end,
     'docs', case when c.stage in ('offer', 'hired') then coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('id', d.id, 'kind', d.kind,
         'serial', d.serial, 'state', case when d.state = 'sent' and d.reply_by <= now() then 'expired' else d.state end,
         'sent_at', d.sent_at, 'reply_by', d.reply_by, 'signed_at', d.signed_at)) order by d.sent_at)
@@ -133877,6 +133891,163 @@ begin
 end $$;
 revoke all on function public.careers_read(text) from public;
 grant execute on function public.careers_read(text) to anon, authenticated;
+
+/* (Added at the coordinator's review, 2026-11-20.) A decision date on a
+   working day alone: Monday to Friday, never a public holiday. */
+create or replace function public.hiring_workday_ok(p_day date)
+returns boolean language sql stable security definer set search_path = public as $$
+  select p_day is not null and extract(isodow from p_day) < 6
+     and not exists (select 1 from public.public_holidays h where h.day = p_day);
+$$;
+revoke all on function public.hiring_workday_ok(date) from public, anon, authenticated;
+
+alter table public.hiring_candidates add column if not exists decide_over_on date;
+
+create or replace function public.hiring_interview_held(p_interview uuid, p_decide_by timestamptz)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  i public.hiring_interviews;
+  c public.hiring_candidates;
+  v_role text;
+  v_at timestamptz;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id for update;
+  if i.held_at is not null then return jsonb_build_object('ok', true, 'same', true, 'decide_by', c.decide_by); end if;
+  if i.state <> 'confirmed' or i.picked is null then return jsonb_build_object('error', 'not-confirmed'); end if;
+  if c.outcome is not null or c.stage <> 'interview' then return jsonb_build_object('error', 'decided'); end if;
+  if i.slots[i.picked] > now() then return jsonb_build_object('error', 'not-yet'); end if;
+  v_at := coalesce(p_decide_by, public.hiring_decide_by_at(now(), null));
+  if v_at <= now() then return jsonb_build_object('error', 'past'); end if;
+  if v_at > public.hiring_decide_by_at(now(), 30) then return jsonb_build_object('error', 'too-far'); end if;
+  if not public.hiring_workday_ok((v_at at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
+  update public.hiring_interviews set held_at = now(), held_by = me.id, held_mail = null, held_mail_at = null, updated_at = now() where id = i.id;
+  update public.hiring_candidates set decide_by = v_at, decide_note = null, decide_soon_at = null, decide_due_at = null, decide_moved_at = null,
+    last_step_at = now(), updated_at = now() where id = c.id;
+  perform public.hiring_log(c.id, 'candidate.interview', 'Interview held. Decision due ' || public.hiring_when(v_at));
+  return jsonb_build_object('ok', true, 'decide_by', v_at);
+end $$;
+grant execute on function public.hiring_interview_held(uuid, timestamptz) to authenticated;
+
+create or replace function public.hiring_decide_by_change(p_interview uuid, p_decide_by timestamptz, p_note text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  i public.hiring_interviews;
+  c public.hiring_candidates;
+  v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id for update;
+  if i.held_at is null or c.decide_by is null then return jsonb_build_object('error', 'not-held'); end if;
+  if c.outcome is not null then return jsonb_build_object('error', 'decided'); end if;
+  if p_decide_by is null or p_decide_by <= now() then return jsonb_build_object('error', 'past'); end if;
+  if p_decide_by > public.hiring_decide_by_at(now(), 30) then return jsonb_build_object('error', 'too-far'); end if;
+  if not public.hiring_workday_ok((p_decide_by at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
+  if char_length(coalesce(p_note, '')) > 500 then return jsonb_build_object('error', 'too-long'); end if;
+  if p_decide_by = c.decide_by and nullif(btrim(coalesce(p_note, '')), '') is not distinct from c.decide_note then
+    return jsonb_build_object('ok', true, 'same', true, 'decide_by', c.decide_by);
+  end if;
+  update public.hiring_candidates set decide_by = p_decide_by, decide_note = nullif(btrim(coalesce(p_note, '')), ''),
+    decide_soon_at = null, decide_due_at = null, decide_moved_at = now(), last_step_at = now(), updated_at = now() where id = c.id;
+  update public.hiring_interviews set held_mail = null, held_mail_at = null, updated_at = now() where id = i.id;
+  perform public.hiring_log(c.id, 'candidate.interview', 'Decision date changed from ' || public.hiring_when(c.decide_by) ||
+    ' to ' || public.hiring_when(p_decide_by));
+  return jsonb_build_object('ok', true, 'was', c.decide_by, 'decide_by', p_decide_by);
+end $$;
+grant execute on function public.hiring_decide_by_change(uuid, timestamptz, text) to authenticated;
+
+/* Each morning at 8:30 (MYT; p_today stands in for today in a test): two
+   working days before a decision-by, the working days left counted
+   (tomorrow, on the next working day, in 2 working days), and on its day,
+   its Owners told once each; past it with no decision, each working
+   morning, once a day (Decision overdue); a decision clears all of it. */
+drop function if exists public.hiring_decide_remind();
+create or replace function public.hiring_decide_remind(p_today date default null)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+  n int := 0;
+  v_today date := coalesce(p_today, (now() at time zone 'Asia/Kuala_Lumpur')::date);
+  v_day date;
+  v_left int;
+  v_when text;
+begin
+  for r in
+    select c.id, c.position, c.decide_by, c.decide_soon_at, c.decide_due_at, c.decide_over_on from public.hiring_candidates c
+     where c.decide_by is not null and c.outcome is null and c.removed_at is null and c.stage = 'interview'
+     for update
+  loop
+    v_day := (r.decide_by at time zone 'Asia/Kuala_Lumpur')::date;
+    if v_today = v_day and r.decide_due_at is null then
+      update public.hiring_candidates set decide_due_at = now() where id = r.id;
+      perform public.hiring_tell(r.id, 'hiring.decide_due', 'A hiring decision is due today',
+        'Decide on the ' || r.position || ' candidate by ' || public.hiring_when(r.decide_by) || ' on the Scores tab.');
+      n := n + 1;
+    elsif v_today < v_day and v_today >= public.hiring_workday_add(v_day, -2) and r.decide_soon_at is null then
+      select count(*) into v_left from generate_series(v_today + 1, v_day, interval '1 day') g(d)
+       where public.hiring_workday_ok(g.d::date);
+      v_when := case when v_day = v_today + 1 then 'tomorrow' when v_left <= 1 then 'on the next working day'
+        else 'in ' || v_left || ' working days' end;
+      update public.hiring_candidates set decide_soon_at = now() where id = r.id;
+      perform public.hiring_tell(r.id, 'hiring.decide_soon', 'A hiring decision is due ' || v_when,
+        'Decide on the ' || r.position || ' candidate by ' || public.hiring_when(r.decide_by) || ' on the Scores tab.');
+      n := n + 1;
+    elsif v_today > v_day and public.hiring_workday_ok(v_today) and r.decide_over_on is distinct from v_today then
+      update public.hiring_candidates set decide_over_on = v_today where id = r.id;
+      perform public.hiring_tell(r.id, 'hiring.decide_over', 'A hiring decision is overdue',
+        'The decision on the ' || r.position || ' candidate was due ' || public.hiring_when(r.decide_by) || '. Decide on the Scores tab, or change the decision date.');
+      n := n + 1;
+    end if;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.hiring_decide_remind(date) from public, anon, authenticated;
+
+create or replace function public.hiring_outcome_mail_prepare(p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text := public.hiring_role(p_id);
+  c public.hiring_candidates;
+begin
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id;
+  if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.outcome not in ('pool', 'not') then return jsonb_build_object('error', 'no-email'); end if;
+  return jsonb_build_object('id', c.id, 'kind', c.outcome, 'to', c.email, 'name', c.name, 'position', c.position, 'key', c.link_key,
+    'months', coalesce(public.app_setting('hiring_pool_months', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 12),
+    'sender', me.name, 'system', coalesce(me.system, false));
+end $$;
+grant execute on function public.hiring_outcome_mail_prepare(uuid) to authenticated;
+
+create or replace function public.hiring_doc_mail_prepare(p_doc uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare me public.team_members := public.ops_me(); d public.hiring_docs; c public.hiring_candidates; v_role text;
+begin
+  if not public.send_ok('email') then return jsonb_build_object('error', 'send-off'); end if;
+  select * into d from public.hiring_docs where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(d.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if d.state <> 'sent' then return jsonb_build_object('error', 'not-sent'); end if;
+  select * into c from public.hiring_candidates where id = d.candidate_id;
+  if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('id', d.id, 'kind', 'doc', 'doc', d.kind, 'ref', d.serial, 'to', c.email, 'name', c.name,
+    'position', d.terms->>'position', 'key', c.link_key, 'reply_by', public.register_day((d.reply_by at time zone 'Asia/Kuala_Lumpur')::date),
+    'returned', d.returned_note is not null, 'sent_key', extract(epoch from coalesce(d.returned_at, d.sent_at))::bigint,
+    'sender', me.name, 'system', coalesce(me.system, false));
+end $$;
+grant execute on function public.hiring_doc_mail_prepare(uuid) to authenticated;
 
 -- END OF HIRING: CONFIRMED AND CANCELLED EMAILS --------------------------------
 

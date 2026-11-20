@@ -15289,6 +15289,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hKey = function () { var k = ''; while (k.length < 8) k += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31)); return k; };
       var hFind = function (id) { return DB.hiring_candidates.filter(function (x) { return x.id === id; })[0]; };
       DB.hiring_interviews = DB.hiring_interviews || [];
+
+      var hWorkday = function (iso) {
+        var C = window.ADspaceClock, d = C ? C.day(iso) : String(iso).slice(0, 10), wd = C ? C.weekday(d) : new Date(d).getUTCDay();
+        return wd !== 0 && wd !== 6 && !(DB.public_holidays || []).some(function (h) { return h.day === d; });
+      };
       var hWhen = function (iso) { return window.ADspaceClock ? window.ADspaceClock.due(iso) : iso; };
 
       var hIvState = function (i) { return i.state === 'invited' && i.reply_by && Date.parse(i.reply_by) <= Date.now() ? 'expired' : i.state; };
@@ -15359,7 +15364,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (civ.state === 'invited') { civ.slots = ci.slots.slice(); if (ci.reply_by) civ.reply_by = ci.reply_by; }
           if (ci.picked) civ.at = ci.slots[ci.picked - 1];
           if (ci.state === 'confirmed' && ci.meeting_link && !ci.held_at) civ.link = ci.meeting_link;
-          if (ci.held_at) { civ.held = true; if (!cc.outcome && cc.decide_by) civ.decide_by = cc.decide_by; }
+          if (ci.held_at) { civ.held = true; if (!cc.outcome && cc.decide_by && Date.parse(cc.decide_by) > Date.now()) civ.decide_by = cc.decide_by; }
         }
         if (cc.stage === 'pool' || cc.stage === 'closed') civ = null;
         var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;
@@ -15519,6 +15524,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var hAt = args.p_decide_by ? new Date(args.p_decide_by).toISOString() : hDecideAt(null);
           if (Date.parse(hAt) <= Date.now()) return hNo('past');
           if (Date.parse(hAt) > Date.parse(hDecideAt(30))) return hNo('too-far');
+          if (!hWorkday(hAt)) return hNo('not-workday');
           iv.held_at = hNowIso; iv.held_by = hMe.id; iv.held_mail = null; iv.held_mail_at = null;
           Object.assign(icand, { decide_by: hAt, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null, last_step_at: hNowIso });
           hLog(iv.candidate_id, 'candidate.interview', 'Interview held. Decision due ' + hWhen(hAt));
@@ -15548,7 +15554,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             minutes: iv.minutes, note: iv.note || null, link: mk !== 'cancelled' && iv.meeting_link || null, times: iv.slots.map(hWhen),
             when: iv.picked ? hWhen(iv.slots[iv.picked - 1]) : null, reply_by: mk === 'invite' && iv.state === 'invited' && iv.reply_by ? hWhen(iv.reply_by) : null,
             decide_by: mk === 'held' || mk === 'moved' ? hWhen(icand.decide_by) : null, decide_note: mk === 'moved' ? icand.decide_note || null : null,
-            sender: hMe.name, reply_to: hMe.email }, error: null });
+            sender: hMe.name, system: !!hMe.system }, error: null });
         }
         if (name === 'hiring_mail_done') {
           if (['invite', 'confirm', 'held', 'moved', 'cancelled'].indexOf(args.p_kind) < 0 || ['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return hNo('bad-request');
@@ -15571,6 +15577,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!args.p_decide_by || Date.parse(args.p_decide_by) <= Date.now()) return hNo('past');
         var cAt = new Date(args.p_decide_by).toISOString();
         if (Date.parse(cAt) > Date.parse(hDecideAt(30))) return hNo('too-far');
+        if (!hWorkday(cAt)) return hNo('not-workday');
         if (String(args.p_note || '').length > 500) return hNo('too-long');
         var cNote = String(args.p_note || '').trim() || null;
         if (cAt === cc2.decide_by && cNote === (cc2.decide_note || null)) return hOk({ same: true, decide_by: cAt });
@@ -15733,14 +15740,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!keepsD) return hNo('denied');
           if (hd.state !== 'sent') return hNo('not-sent');
           return Promise.resolve({ data: { id: hd.id, kind: 'doc', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
-            reply_by: hd.reply_by, returned: !!hd.returned_note, sender: hMe.name, reply_to: hMe.email }, error: null });
+            reply_by: hd.reply_by, returned: !!hd.returned_note, sender: hMe.name, system: !!hMe.system }, error: null });
         }
         if (name === 'hiring_confirmed_mail_prepare') {
           if (!sendOk('email')) return hNo('send-off');
           if (!keepsD) return hNo('denied');
           if (hd.state !== 'confirmed') return hNo('not-confirmed');
           return Promise.resolve({ data: { id: hd.id, kind: 'confirmed', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
-            sender: hMe.name, reply_to: hMe.email }, error: null });
+            sender: hMe.name, system: !!hMe.system }, error: null });
         }
         if (name === 'hiring_confirmed_mail_done') {
           if (!keepsD) return hNo('denied');
@@ -15936,7 +15943,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
         return Promise.resolve({ data: { id: hc.id, kind: hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,
-          months: Number(appSet('hiring_pool_months', appToday())) || 12, sender: hMe.name, reply_to: hMe.email }, error: null });
+          months: Number(appSet('hiring_pool_months', appToday())) || 12, sender: hMe.name, system: !!hMe.system }, error: null });
       }
       if (name === 'hiring_outcome_mail_done') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');

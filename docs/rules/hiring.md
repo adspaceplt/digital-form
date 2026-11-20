@@ -229,6 +229,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Download on a candidate's Interviews (the decision, the averages, each
   colleague's rating, scores and answers) and beside Add section in the
   Welcome Kit's sheet.
+- Decision dates (2026-11-20, the coordinator's review): a decision date
+  is a working day (`hiring_workday_ok`, `not-workday`, Choose a working
+  day.); the morning reminder counts the working days left (due tomorrow,
+  on the next working day, in 2 working days), and past the date with no
+  decision tells the Owners each working morning, once (`hiring.decide_over`,
+  `decide_over_on`), until a decision or a new date; the candidate's page
+  drops a date gone by and reads ADspace will contact you shortly. The
+  new date's email reads Decision date updated: {position}, apart from the
+  outcome emails. A hiring email sent by a system account (the super
+  admin) closes Yours sincerely, ADspace Hiring Team, never the account's
+  name over ADspace (`system` from each prepare; no prepare answers the
+  colleague's own address).
 - Hiring times (2026-11-20): every time a candidate or the team waits on
   (the times offered, a reply-by, the interview, the decision date) reads
   as `ADspaceClock.due` writes it, 21 Nov 2026 (Saturday), 10:00am:

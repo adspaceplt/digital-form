@@ -427,7 +427,13 @@
        focus instead, so no keyboard or date picker rises unasked (a sheet
        focuses its card, never a field; 2026-10-22, SET2-6). */
     var named = o.focus ? fieldOf(o.focus) : null;
-    if (named) land = window.matchMedia && matchMedia('(pointer: coarse)').matches ? card : named;
+    var finger = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    if (named) land = finger ? card : named;
+    /* Under a finger no field takes focus unasked, `focus` or not: the card
+       does, so no keyboard or date picker rises over the question
+       (2026-11-20, Interview held opened on its date). A name typed back
+       or an emailed code keeps its field: typing it is the whole question. */
+    else if (finger && typed && typed.input === land && typed.spec.match == null && !typed.spec.code) land = card;
     setTimeout(function () { try { land.focus({ preventScroll: land === card }); } catch (e) {} }, 0);
   }
 

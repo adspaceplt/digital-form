@@ -69,6 +69,13 @@ function button(label: string, href: string): string {
     'font-family:' + FONT + ';font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">' + esc(label) + '</a></td></tr></table>';
 }
 
+/* The close: the colleague who sent it over ADspace, or, sent by a system
+   account (the super admin, named ADspace), the ADspace Hiring Team alone,
+   never the account's name twice (2026-11-20). */
+function signOff(m: Record<string, any>): string {
+  return m.system || !String(m.sender || '').trim() ? 'Yours sincerely,\nADspace Hiring Team' : 'Yours sincerely,\n' + m.sender + '\nADspace';
+}
+
 /* The words, as a formal letter (DESIGN.md §6): a fact a paragraph. */
 export function words(m: Record<string, any>): { subject: string; heading: string; body: string; block: string } {
   const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
@@ -80,12 +87,12 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been sent to you again ' + (m.doc === 'contract' ? 'for your signature.' : 'for your reply.')
           : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
         'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
-        'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + 'Yours sincerely,\n' + m.sender + '\nADspace',
+        'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + signOff(m),
       block: button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
     };
   }
   const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
-  const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
+  const close = signOff(m);
   /* A document confirmed, and a confirmed interview cancelled (2026-11-20). */
   if (m.kind === 'confirmed') {
     return {
@@ -123,8 +130,8 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
   }
   if (m.kind === 'moved') {
     return {
-      subject: 'Your application: ' + m.position,
-      heading: 'Your application',
+      subject: 'Decision date updated: ' + m.position,
+      heading: 'Decision date updated',
       body: 'Dear ' + m.name + ',\n\n' +
         'Thank you for your patience following the interview for the position of ' + m.position + '. ' +
         'ADspace requires additional time to consider your application.\n\n' +
@@ -168,7 +175,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         (m.note ? m.note + '\n\n' : '') +
         'Please choose a time on your application page' + (m.reply_by ? ' by ' + m.reply_by + ' (Malaysia time)' : '') +
         '. If none of these times is suitable, please indicate this on the same page.\n\n{invoices}\n\n' +
-        'Yours sincerely,\n' + m.sender + '\nADspace',
+        signOff(m),
       block: button('Choose a time', PAGE + m.key)
     };
   }
@@ -183,7 +190,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       'Your interview for the position of ' + m.position + ' is confirmed for ' + m.when + ' (Malaysia time), for ' + m.minutes + ' minutes.\n\n' +
       place + '\n\n' + (m.note ? m.note + '\n\n' : '') +
       'The details are also on your application page.\n\n{invoices}\n\n' +
-      'Yours sincerely,\n' + m.sender + '\nADspace',
+      signOff(m),
     block: button('View your application', PAGE + m.key)
   };
 }
