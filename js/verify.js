@@ -1,14 +1,19 @@
 /*
- * Verify — the public page the footer of every letter names.
+ * Verify — the public page the foot of every document names.
  *
- * One exact reference in; the kind, the date and whether it stands out, or
- * Not found. The database function it calls (`verify_serial`) is granted to
- * the public key and answers nothing else: no listing, no partial match,
- * never the recipient. An HR letter is answered as an HR letter and no more.
+ * One exact reference in; the first answer says only that ADSPACE PLT issued
+ * a document with this reference, what kind it is, when (the month) and
+ * whether it stands (`verify_serial`). Its days and steps are shown only to
+ * somebody holding the copy: the Document ID printed at the foot of every
+ * page, or for a document issued before Document IDs, its day of issue
+ * (`verify_details`, VERIFY DETAILS 2026-11-20). A sealed copy's file is
+ * checked in the browser (`verify_file`). Never a recipient, a term or a
+ * figure: the database answers none.
  */
 (function () {
   var API = window.ADspaceAPI;
   var db = API && API.client;
+  var ORG = window.ADSPACE_ORG || {};
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return window.ADspaceWords.esc(s); }
@@ -19,22 +24,46 @@
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
       notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
-      locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
-      issued: 'Issued', signed: 'Signed', confirmed: 'Confirmed', withdrawnOn: 'Withdrawn from', docId: 'Document ID',
-      fileGo: 'Check a file', fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
+      locked: 'Too many checks', lockedText: 'Too many checks were made from this network. Please try again in {wait}.',
+      ref: 'Reference', issuedBy: 'Issued by', doc: 'Document', issued: 'Issued', docId: 'Document ID', status: 'Status',
+      note: 'This result confirms that ADSPACE PLT issued a document under this reference. It does not confirm the copy you hold.',
+      more: 'More details', moreText: 'Enter the Document ID printed on your copy.', moreGo: 'Show details',
+      file: 'File check', fileGo: 'Check a file', fileText: 'Compare a PDF with the sealed copy. The file stays on this device.',
+      codeLabel: 'Document ID', codeHint: 'XXXX-XXXX', show: 'Show details', cancel: 'Cancel', showing: 'Checking…',
+      noId: 'No Document ID on your copy?', dayLabel: 'Issue date',
+      enterCode: 'Enter the Document ID.', enterDay: 'Enter the Document ID or the issue date.',
+      noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
+      noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
+      history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
+      fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match the sealed copy', fileFailed: 'Unable to check the file. Please try again.',
-      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' }
+      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' },
+      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed copy stored',
+        acknowledged: 'Acknowledged by the recipient', finalised: 'Finalised', declined: 'Declined', withdrawn: 'Withdrawn', voided: 'Void',
+        replaced: 'Replaced', expired: 'Expired' }
     },
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
       notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
       failed: '无法核验', failedText: '请稍后再试。',
-      locked: '查询次数过多', lockedText: '此网络连接查询编号的次数过多。请于{wait}后重试。',
-      issued: '签发于', signed: '签署于', confirmed: '确认于', withdrawnOn: '撤回于', docId: '文件编号',
-      fileGo: '核验文件', fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
+      locked: '查询次数过多', lockedText: '此网络的查询次数过多。请于{wait}后重试。',
+      ref: '编号', issuedBy: '签发方', doc: '文件', issued: '签发', docId: '文件识别码', status: '状态',
+      note: '此结果确认 ADSPACE PLT 曾以此编号签发文件，但不确认您所持有的副本。',
+      more: '更多详情', moreText: '请输入您副本上印有的文件识别码。', moreGo: '显示详情',
+      file: '文件比对', fileGo: '核验文件', fileText: '将 PDF 与封存副本比对。文件不会离开此设备。',
+      codeLabel: '文件识别码', codeHint: 'XXXX-XXXX', show: '显示详情', cancel: '取消', showing: '核验中…',
+      noId: '副本上没有文件识别码？', dayLabel: '签发日期',
+      enterCode: '请输入文件识别码。', enterDay: '请输入文件识别码或签发日期。',
+      noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
+      noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
+      history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
+      fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
+      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '封存副本已存档',
+        acknowledged: '收件方确认收悉', finalised: '定稿', declined: '已拒绝', withdrawn: '已撤回', voided: '已作废',
+        replaced: '已替换', expired: '已过期' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
       kind: { 'quotation': '报价单', 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
@@ -42,32 +71,35 @@
         'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件' }
     }
   };
+  /* A step done is green, one that closes the document grey, a void red. */
+  var STEP_TONE = { voided: 'is-danger', declined: 'is-off', withdrawn: 'is-off', replaced: 'is-off', expired: 'is-off' };
   var lang = 'en';
   function t() { return WORDS[lang]; }
-  var last = null;   // the last answer, repainted when the language changes
+  /* What is on screen, repainted when the language changes: the first
+     answer, the details once shown, the question while open. */
+  var last = null, detail = null, asking = false, askSaid = null;
 
-  function niceDate(d) {
-    if (!d) return '';
-    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
-    var k = String(d).length > 10 ? ADspaceClock.day(d) : String(d).slice(0, 10);
-    return ADspaceClock.date(k, { zh: lang === 'zh' }) || String(d);
-  }
+  function zh() { return lang === 'zh'; }
+  /* Days are Malaysia's (js/clock.js); a history date carries no weekday. */
+  function dayWord(d) { return d ? (ADspaceClock.date(String(d).slice(0, 10), { zh: zh() }) || String(d)) : ''; }
+  function monthWord(m) { return m ? (ADspaceClock.month(String(m).slice(0, 7), { zh: zh() }) || String(m)) : ''; }
 
   function paintWords() {
-    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
+    document.documentElement.setAttribute('lang', zh() ? 'zh' : 'en');
     $('vTitle').textContent = t().title;
     $('vText').textContent = t().text;
     $('vGo').textContent = t().go;
+    $('vSerial').setAttribute('aria-label', t().ref);
     if ($('kicker')) $('kicker').textContent = t().kicker;
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if (last) paint(last);
   }
 
   /* The shared minutes and hours (js/words.js), in this page's sentence. */
-  function lockedLine(minutes) {
+  function lockedLine(minutes, line) {
     var W = window.ADspaceWords, w = {}, k, base = W[lang] || W.en;
     for (k in base) w[k] = base[k];
-    w.lockedText = t().lockedText;
+    w.lockedText = line || t().lockedText;
     return W.lockedLine(w, minutes);
   }
 
@@ -75,11 +107,32 @@
     var m = t().kind;
     return (m && m[String(k || '').trim().toLowerCase()]) || k || '';
   }
+  function issuer() { return (ORG.name || 'ADSPACE PLT') + (ORG.regno ? ' (' + ORG.regno + ')' : ''); }
+  function stateTone(s) { return s === 'valid' ? 'is-ok' : s === 'voided' ? 'is-danger' : 'is-off'; }
+
+  /* The facts of an answer: the first answer's month, or the details' day
+     and Document ID. */
+  function facts(a, d) {
+    var row = function (label, value) { return '<div><dt>' + esc(label) + '</dt><dd>' + value + '</dd></div>'; };
+    var state = (d && d.state) || a.state;
+    /* A database from before VERIFY DETAILS answers the day of issue; the
+       page draws its month alike. */
+    var month = a.issued_month || (a.issued_at ? ADspaceClock.day(a.issued_at).slice(0, 7) : '');
+    return '<dl class="verify-facts">' +
+      row(t().ref, esc(a.serial || '')) +
+      row(t().issuedBy, esc(issuer())) +
+      row(t().doc, esc(kindWord(a.kind))) +
+      (d ? row(t().issued, esc(dayWord(d.issued_on))) : month ? row(t().issued, esc(monthWord(month))) : '') +
+      (d && d.document_id ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
+      row(t().status, '<span class="tone ' + stateTone(state) + '">' + esc(t().state[state] || state) + '</span>') +
+      '</dl>';
+  }
 
   function paint(a) {
     last = a;
     var out = $('vOut');
     out.hidden = false;
+    out.classList.toggle('is-answer', !!a.found);
     if (a.need) { out.innerHTML = '<span class="verify-need">' + esc(t().enterRef) + '</span>'; return; }
     if (a.failed) {
       out.innerHTML = '<b>' + esc(t().failed) + '</b><span>' + esc(t().failedText) + '</span>';
@@ -94,23 +147,92 @@
       out.innerHTML = '<b>' + esc(t().notFound) + '</b><span>' + esc(t().notFoundText) + '</span>';
       return;
     }
-    var tone = a.state === 'valid' ? 'is-ok' : a.state === 'voided' ? 'is-danger' : 'is-off';
-    /* A signed quotation's days and, once sealed, its Document ID: what the
-       Record page printed, never who signed it (SEAL-SPEC decision 6). */
-    var days = [];
-    if (a.signed_at) days.push(t().signed + ' ' + niceDate(a.signed_at));
-    if (a.confirmed_at) days.push(t().confirmed + ' ' + niceDate(a.confirmed_at));
-    if (a.withdrawn_on) days.push(t().withdrawnOn + ' ' + niceDate(a.withdrawn_on));
-    out.innerHTML =
-      '<b>' + esc(a.serial) + '</b>' +
-      '<span>' + esc(kindWord(a.kind) + (a.issued_at ? ' · ' + t().issued + ' ' + niceDate(a.issued_at) : '')) + '</span>' +
-      (days.length ? '<span>' + esc(days.join(' · ')) + '</span>' : '') +
-      (a.document_id ? '<span class="verify-id">' + esc(t().docId + ' ' + a.document_id) + '</span>' : '') +
-      '<span class="tone ' + tone + '">' + esc(t().state[a.state] || a.state) + '</span>' +
-      (a.sealed ? '<div class="verify-file"><input type="file" id="vFile" accept="application/pdf,.pdf" hidden>' +
-        '<button class="btn btn-sm" type="button" id="vFileGo">' + esc(t().fileGo) + '</button>' +
-        '<span class="verify-file-out" id="vFileOut"' + (fileSaid ? '' : ' hidden') + '>' + (fileSaid ? fileLine(fileSaid) : '') + '</span></div>' : '');
+    var html = '<div class="verify-card" id="vCard">' + facts(a, detail) +
+      (detail ? '' : '<p class="verify-note">' + esc(t().note) + '</p>') + '</div>';
+    if (detail) {
+      html += '<section class="verify-history" aria-labelledby="vHistH"><h3 id="vHistH">' + esc(t().history) + '</h3><ol>' +
+        (detail.history || []).map(function (h) {
+          return '<li><span class="verify-day">' + esc(dayWord(h.day)) + '</span><span class="tone ' + (STEP_TONE[h.step] || 'is-ok') + '">' +
+            esc(t().step[h.step] || h.step) + '</span></li>';
+        }).join('') + '</ol><p class="verify-note">' + esc(t().never) + '</p></section>';
+    } else if (asking) {
+      html += askHtml(a);
+    }
+    var moreBox = !detail && !asking && a.more;
+    if (moreBox || a.sealed) {
+      html += '<div class="verify-acts">' +
+        (moreBox ? '<section class="verify-pick" aria-labelledby="vMoreH"><h3 id="vMoreH">' + esc(t().more) + '</h3><p>' + esc(t().moreText) + '</p>' +
+          '<button class="btn btn-sm" type="button" id="vMoreGo">' + esc(t().moreGo) + '</button></section>' : '') +
+        (a.sealed ? '<section class="verify-pick" aria-labelledby="vFileH"><h3 id="vFileH">' + esc(t().file) + '</h3><p>' + esc(t().fileText) + '</p>' +
+          '<input type="file" id="vFile" accept="application/pdf,.pdf" hidden>' +
+          '<button class="btn btn-sm" type="button" id="vFileGo">' + esc(t().fileGo) + '</button></section>' : '') +
+        '</div>';
+    }
+    if (a.sealed) html += '<p class="verify-file-out" id="vFileOut" role="status"' + (fileSaid ? '' : ' hidden') + '>' + (fileSaid ? fileLine(fileSaid) : '') + '</p>';
+    out.innerHTML = html;
+    if (moreBox) $('vMoreGo').addEventListener('click', function () { asking = true; askSaid = null; paint(last); if ($('vCode')) $('vCode').focus(); });
+    if (asking && !detail) wireAsk(a);
     if (a.sealed) wireFile(a.serial);
+  }
+
+  /* View more details: the Document ID, or where the day of issue may stand
+     for it (a document from before Document IDs), the day under its fold. */
+  var typed = { code: '', day: '', open: false };
+  function askHtml(a) {
+    var said = askSaid ? '<p class="msg err" id="vDetailMsg" role="alert">' + esc(askSaid) + '</p>' : '<p class="msg err" id="vDetailMsg" role="alert" hidden></p>';
+    return '<form class="verify-ask" id="vAsk" novalidate>' +
+      '<label class="verify-label" for="vCode">' + esc(t().codeLabel) + '</label>' +
+      '<input class="input" id="vCode" placeholder="' + esc(t().codeHint) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" value="' + esc(typed.code) + '">' +
+      (a.by_day ? '<details class="verify-noid" id="vNoId"' + (typed.open ? ' open' : '') + '><summary>' + esc(t().noId) + '</summary>' +
+        '<label class="verify-label" for="vDay">' + esc(t().dayLabel) + '</label>' +
+        '<input class="input" type="date" id="vDay" min="2023-08-14" max="' + esc(ADspaceClock.today()) + '" value="' + esc(typed.day) + '"></details>' : '') +
+      said +
+      '<div class="row acts verify-ask-acts"><button class="btn btn-primary" type="submit" id="vDetailGo">' + esc(t().show) + '</button>' +
+      '<button class="btn btn-quiet" type="button" id="vAskCancel">' + esc(t().cancel) + '</button></div>' +
+      '</form>';
+  }
+  function wireAsk(a) {
+    var form = $('vAsk');
+    if (!form) return;
+    var keepTyped = function () {
+      typed.code = $('vCode').value;
+      typed.day = $('vDay') ? $('vDay').value : '';
+      typed.open = !!($('vNoId') && $('vNoId').open);
+    };
+    form.addEventListener('input', keepTyped);
+    if ($('vNoId')) $('vNoId').addEventListener('toggle', keepTyped);
+    $('vAskCancel').addEventListener('click', function () {
+      asking = false; askSaid = null; typed = { code: '', day: '', open: false }; paint(last);
+      if ($('vMoreGo')) $('vMoreGo').focus();
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      keepTyped();
+      var code = typed.code.trim(), day = typed.open ? typed.day : '';
+      if (!code && !day) { say(a.by_day ? t().enterDay : t().enterCode, $('vCode')); return; }
+      var go = $('vDetailGo');
+      go.disabled = true; go.textContent = t().showing;
+      if (!db) { say(t().failedText); return; }
+      db.rpc('verify_details', { p_serial: a.serial, p_code: code || null, p_day: code ? null : day }).then(function (r) {
+        var d = r && r.data;
+        if (r.error || !d || d.error) { say(t().failed + '. ' + t().failedText); return; }
+        if (d.locked) { say(lockedLine(d.minutes)); return; }
+        if (!d.ok) {
+          say(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode'));
+          return;
+        }
+        detail = d; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
+        paint(last);
+        var h = $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+      }).catch(function () { say(t().failed + '. ' + t().failedText); });
+    });
+  }
+  /* A refusal stays under the fields with what was typed. */
+  function say(text, field) {
+    askSaid = text;
+    paint(last);
+    var f = field && $(field.id);
+    if (f) { f.setAttribute('aria-invalid', 'true'); f.focus(); }
   }
 
   /* Check a file: the PDF is hashed here and never leaves the device; only
@@ -162,15 +284,15 @@
   function check(serial) {
     serial = String(serial || '').trim();
     /* An empty check takes the last answer away with it, so nothing on the
-       page answers a reference no longer asked (VERIFY-4). */
-    /* An empty check says what is needed (2026-10-27, VER-2). */
+       page answers a reference no longer asked (VERIFY-4), and says what is
+       needed (2026-10-27, VER-2). */
     if (!serial) {
-      keep(''); paint({ need: true });
+      keep(''); detail = null; asking = false; paint({ need: true });
       $('vSerial').setAttribute('aria-invalid', 'true'); $('vSerial').focus();
       return;
     }
     $('vSerial').removeAttribute('aria-invalid');
-    fileSaid = null;
+    fileSaid = null; detail = null; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
     var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial); };

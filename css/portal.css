@@ -618,7 +618,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    (`--field-edge`, --line-ctl, 3:1 on --sunk in both themes; the user,
    2026-10-31, option A). Every grey card that holds a field is named here,
    one list. */
-:where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .qb-cus, .is-narrow .ck-tr:not(.ck-th)) {
+:where(.qs-side, .verify-ask, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .qb-cus, .is-narrow .ck-tr:not(.ck-th)) {
   --field: var(--card); --select-ground: var(--card); --field-edge: var(--line-ctl);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
@@ -2046,34 +2046,68 @@ dd > .linkbtn::before { inset: 3px 0; }
    (a row each where the halves cannot hold them). */
 .qs .cover-alt:has(.btn + .btn) { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .qs .cover-alt:has(.btn + .btn) > .btn { flex: 1 1 172px; max-width: 220px; white-space: nowrap; }
-/* The verify page's one answer: the reference, what it is and when, and
-   whether it stands, in the chip every other state on this portal wears. */
-.verify-out { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.verify-out b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
-.verify-out span { color: var(--ink-soft); font-size: 14px; }
-:root[data-face="client"] .verify-out span { font-size: 16px; }
-.verify-out .tone { font-size: 11.5px; color: inherit; }
-.verify-out .verify-need { color: var(--err); }
-/* A sealed quotation's Document ID and its file check (SEAL-SPEC decision 6). */
-.verify-out .verify-id { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
-:root[data-face="client"] .verify-out .verify-id { font-size: 12.5px; }
-.verify-file { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.verify-out .verify-file-out { font-size: 14px; }
-:root[data-face="client"] .verify-out .verify-file-out { font-size: 14px; }
-/* The verify page is a form, not a notice (2026-10-31, VER-1 to VER-3): on
-   the scale (the title 8 over its line, the field 24 under it, the answer
-   24 under that, 32 above and below), its line at the form's 14 as the
-   404's, and on a phone the field and Verify each the column's width, so a
-   whole reference stays in sight. */
+/* The verify page (VERIFY DETAILS, 2026-11-20, mockups A1 to A6): a form,
+   not a notice (2026-10-31, VER-1 to VER-3): the title 8 over its line, the
+   field 24 under it, the answer 24 under that, 32 above and below; its line
+   at the form's 14; on a phone the field and Verify each the column's
+   width, so a whole reference stays in sight. The column is every
+   cover's 440. A refusal or an empty check is one centred line; an answer
+   reads left to right. */
 .cover-panel.verify-panel { padding: 32px 0; }
 .verify-panel h2 { margin-bottom: 8px; }
 :root[data-face="client"] .verify-panel p { font-size: 14px; }
-.verify-panel form { margin-top: 24px; }
-.verify-panel .verify-out { margin-top: 24px; }
+.verify-panel form:not(.verify-ask) { margin-top: 24px; }
+.verify-out { margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.verify-out b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.verify-out > span { color: var(--ink-soft); font-size: 14px; }
+.verify-out .verify-need { color: var(--err); }
+/* The answer: a shaded card of facts, label beside value, its status the
+   dot and its word in ink; the mute line under it. */
+.verify-out.is-answer { align-items: stretch; gap: 12px; text-align: left; }
+.verify-card { background: var(--sunk); border-radius: var(--radius); padding: 18px 20px; }
+.verify-facts { display: grid; gap: 8px; margin: 0; }
+.verify-facts > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.verify-facts dt { font-size: 13px; color: var(--ink-mute); }
+.verify-facts dd { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+.verify-facts .verify-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: .02em; }
+.verify-card .verify-note, .verify-history .verify-note { margin-top: 12px; font-size: 13px; color: var(--ink-mute); line-height: 1.5; }
+:root[data-face="client"] .verify-panel .verify-note, :root[data-face="client"] .verify-panel .verify-pick p { font-size: 13px; }
+/* The two ways on, side by side and one height (a column each on a phone):
+   shaded blocks, a title over one mute line and its small button. */
+.verify-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 12px; }
+.verify-acts:has(> .verify-pick:only-of-type) { grid-template-columns: minmax(0, 1fr); }
+.verify-pick { background: var(--sunk); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.verify-pick h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.verify-panel .verify-pick p { margin: 0 0 6px; font-size: 12.5px; color: var(--ink-mute); line-height: 1.45; flex: 1 1 auto; }
+/* View more details asks in place: the Document ID, the day of issue under
+   its fold where it may stand for it, the refusal under the fields. */
+.verify-ask { margin: 0; display: flex; flex-direction: column; gap: 8px; background: var(--sunk); border-radius: var(--radius); padding: 18px 20px; }
+.verify-panel .verify-ask { margin-top: 0; }
+.verify-panel .verify-ask .input { flex: none; width: 100%; }
+.verify-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.verify-noid { margin-top: 4px; }
+.verify-noid summary { cursor: pointer; font-size: 13px; color: var(--ink-soft); padding: 4px 0; }
+.verify-noid[open] summary { margin-bottom: 8px; }
+.verify-noid .verify-label { display: block; margin-bottom: 8px; }
+.verify-ask .msg { margin-top: 0; }
+.verify-ask-acts { margin-top: 8px; }
+/* The steps by day, each the status's dot and its word. */
+.verify-history h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 12px 0 8px; }
+.verify-history ol { list-style: none; margin: 0; padding: 0; display: grid; }
+.verify-history li { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.verify-history li:first-child { border-top: 0; }
+.verify-history .verify-day { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A Chinese date (2026年11月19日) takes a wider column, whole on one line. */
+.verify-history li:lang(zh) { grid-template-columns: 124px minmax(0, 1fr); }
+.verify-out .verify-file-out { font-size: 14px; margin: 0; text-align: center; }
 @media (max-width: 640px) {
-  .cover-panel.verify-panel { padding: 32px 0; }
-  .verify-panel form { flex-direction: column; }
-  .verify-panel form > .btn { width: 100%; }
+  .verify-panel form:not(.verify-ask) { flex-direction: column; }
+  .verify-panel form:not(.verify-ask) > .btn { width: 100%; }
+  .verify-acts { grid-template-columns: minmax(0, 1fr); }
+  .verify-card, .verify-ask { padding: 14px; }
+  /* Cancel and Show details as equal halves, Cancel on the left. */
+  .verify-panel .verify-ask-acts { display: flex; flex-direction: row-reverse; flex-wrap: nowrap; gap: 8px; }
+  .verify-panel .verify-ask .verify-ask-acts > .btn { flex: 1 1 50%; width: auto; min-width: 0; }
 }
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */

@@ -240,28 +240,60 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - the new version keeps the serial and points back (`documents.replaces`);
   - the unique index covers standing documents only;
   - `/verify/` answers the standing version as Valid and never says reissued.
-- `/verify/` (`verify_serial()`, granted to anon) answers an exact reference
-  with the kind, the date and Valid / Void (Replaced for a superseded Letter of
-  Offer), in English and Chinese, with `?s=` prefilled. A reference typed with
-  dashes for slashes (the file name's form) is the same reference; an exact
-  match is answered first.
-  - It never shows the recipient.
-  - HR is shown as "HR letter".
-  - A quotation once sent out or signed reads Quotation, Valid, Void
-    (cancelled), Replaced (revised) or Expired (its validity passed
-    unsigned), issued, signed and confirmed days, and once sealed its
-    Document ID with Check a file: the PDF hashed in the browser, never
-    uploaded, its SHA-256 asked of `verify_file` (anon), Matches the sealed
-    copy or Does not match: this file has been altered. Both functions take
-    one count (`verify_count()`, no caller's; `2026-11-17-verify-sealed-files.sql`).
-    A quotation withdrawn after signing reads Withdrawn with the day
-    (QUOTATION WAYS OUT).
-  - Anyone the team does not hold is answered 30 lookups an hour a
-    connection (`verify_tries` by `request_ip()`, RLS on, no policy, no
-    grant), then `locked` with the minutes left before any reference is
-    read, said as Too many checks (`2026-10-19-verify-lookups-counted.sql`:
-    an HR reference is guessable); `privacy_retention` removes a row whose
-    hour began over 30 days ago.
+- `/verify/` (VERIFY DETAILS, `2026-11-20-verify-details.sql`; the user
+  approved mockups A1 to A6) answers in two steps, in English and Chinese,
+  with `?s=` prefilled, light and white to the edge, every cover's 440
+  column. `verify_find` (no caller's) is the one lookup and the one state:
+  an exact reference first, one typed with dashes for slashes (the file
+  name's form) the same reference; the standing version first; never the
+  recipient, a term or a figure.
+  - The first answer (`verify_serial`, anon): found, the reference, the kind
+    (HR is "HR Letter"), the state (Valid, Void, Replaced for a superseded
+    Letter of Offer or a revised quotation, Expired for an unsigned
+    quotation or an offer past its validity, Withdrawn, Declined), the month
+    of issue (`issued_month`, drawn Nov 2026), `sealed`, `more` and `by_day`;
+    no day and no Document ID. The page reads it as a shaded card
+    (Reference, Issued by from `ADSPACE_ORG`, Document, Issued, Status) over
+    "This result confirms that ADSPACE PLT issued a document under this
+    reference. It does not confirm the copy you hold.", then More details
+    (Show details) and, for a sealed copy alone, File check (Check a file),
+    side by side (one over the other on a phone). A reissued document answers its standing
+    version as Valid and never says reissued.
+  - Every document /verify/ answers (`documents`, HR letters among them,
+    `client_documents`, `quotations`, `hiring_docs`, `perf_reviews`) holds a
+    Document ID (`doc_code`): eight characters of the link alphabet in upper
+    case from `gen_random_bytes`, stamped on insert (`doc_code_stamp`,
+    `doc_code_new`), unique in its table, printed XXXX-XXXX on every page
+    through the one pen (`pen({ code })`: an ACL letter's verify line ends
+    ` · Document ID XXXX-XXXX`, centred, clear of the page count; an AL
+    quotation's stands at the bottom margin's left at `G.refAt`; a
+    performance record's in its reference line); the page asks it by the id
+    it holds (`ADspaceDocs.codeOf`, `doc_code_of`, anon too), never a
+    preview's or a draft's. A copy sealed from 2026-11-20 prints it on its
+    Record page; one sealed before printed its uuid, which still opens the
+    details of a sealed quotation or offer.
+  - The details (`verify_details(p_serial, p_code, p_day)`, anon) answer
+    the day of issue, the Document ID, the state and the steps by Malaysian
+    day (issued, sent, signed by the recipient, confirmed by ADspace, sealed
+    copy stored, acknowledged, finalised, declined, withdrawn, void, replaced,
+    expired; drawn with the status's dot, no weekday) only for the Document
+    ID (any case, with or without its dash) or, for a document issued before
+    `verify_code_from` (a Business setting, YYYYMMDD, seeded 20261120) or
+    holding none, its day of issue (the fold "No Document ID on your
+    copy?"). A wrong code, a wrong day and an unknown reference read the
+    same (`no_match`): "No document matches these details. Please check the
+    details entered, or contact ADspace at {contact}.", `contact` the Legal and
+    compliance mailbox (`mail_boxes` `legal`).
+  - Check a file: the PDF hashed in the browser, never uploaded, its SHA-256
+    asked of `verify_file` (anon): Matches the sealed copy or Does not match
+    the sealed copy.
+  - Counts: anyone the team does not hold is answered 30 references and
+    file checks an hour a connection (`verify_count()`, `verify_tries`) and
+    10 detail checks (`verify_detail_count()`, `verify_detail_tries`), each
+    by `request_ip()`, RLS on, no policy, no grant, then `locked` with the
+    minutes left before anything is read (Too many checks: Too many checks
+    were made from this network.); a session with no request is not counted; `privacy_retention`
+    removes a row whose hour began over 30 days ago.
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
   - It is Noto Sans SC as TrueType in the repo (`css/NotoSansSC-Regular.ttf`,
     `css/NotoSansSC-NOTICE.txt`), embedded with only the characters used.

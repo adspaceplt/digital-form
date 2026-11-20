@@ -22,7 +22,7 @@
     client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at',
     client_document_seq: 'client_id ym next_val',
     client_document_services: 'document_id service_id created_at',
-    client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason',
+    client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason doc_code',
     client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by',
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
     public_holidays: 'day name updated_at updated_by',
@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -40,7 +40,7 @@
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
     doc_types: 'id family code name title salutation closing body_en body_zh body_ms signed position active fields schedule',
     document_deletions: 'id serial family kind actor reason deleted_at',
-    documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id',
+    documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id doc_code',
     drive_assets: 'id client_id drive_id url mime_type width height bytes created_at poster_url',
     handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required',
     handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by',
@@ -82,7 +82,7 @@
     perf_initiatives: 'id team_member_id title improves detail link status period done_period decided_by decided_at note created_at updated_at',
     perf_people: 'team_member_id department role_family runs_ads reviewed updated_at email_code',
     perf_reflections: 'team_member_id period proud hard learn shared_at updated_at',
-    perf_reviews: 'id team_member_id period status s_output s_accuracy s_delivery s_client s_comms s_initiative r_posting r_timeline r_satisfaction r_pacing r_sla notes improvement review_by reward_step serial reviewer_id released_at dispute_until acknowledged_at finalised_at finalised_by result version rev created_at updated_at evaluated_on opened_at',
+    perf_reviews: 'id team_member_id period status s_output s_accuracy s_delivery s_client s_comms s_initiative r_posting r_timeline r_satisfaction r_pacing r_sla notes improvement review_by reward_step serial reviewer_id released_at dispute_until acknowledged_at finalised_at finalised_by result version rev created_at updated_at evaluated_on opened_at doc_code',
     perf_self_ratings: 'team_member_id period s_output s_accuracy s_delivery s_client s_comms s_initiative saved_at',
     health_consents: 'team_member_id agreed_at wording withdrawn_at updated_at',
     health_wordings: 'version care terms made_at',
@@ -682,7 +682,7 @@
     team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', hiring_register: ''
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2350,71 +2350,133 @@ function cardSlugFree(name, self, email) {
     return { ok: true };
   }
 
+  function docCode(row, list) {
+    if (!row.doc_code) {
+      var A = '23456789ABCDEFGHJKMNPQRSTUVWXYZ', out;
+      do {
+        out = '';
+        var b = new Uint8Array(16); crypto.getRandomValues(b);
+        for (var i = 0; i < 16 && out.length < 8; i++) if (b[i] < 248) out += A.charAt(b[i] % 31);
+      } while (out.length < 8 || (list || []).some(function (x) { return x.doc_code === out; }));
+      row.doc_code = out;
+    }
+    return row.doc_code;
+  }
+  function docCodeOf(a) {
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[a.p_kind];
+    var row = T && (DB[T] || []).filter(function (x) { return x.id === a.p_id; })[0];
+    if (!row) return null;
+    var c = docCode(row, DB[T]);
+    return c.slice(0, 4) + '-' + c.slice(4);
+  }
+  var mday = function (t) { return t ? (String(t).length > 10 ? new Date(new Date(t).getTime() + 8 * 36e5).toISOString().slice(0, 10) : String(t).slice(0, 10)) : null; };
+  function steps(list) {
+    return list.filter(function (x) { return x[1]; }).map(function (x, i) { return { day: x[1], step: x[0], n: i }; })
+      .sort(function (x, y) { return x.day < y.day ? -1 : x.day > y.day ? 1 : x.n - y.n; })
+      .map(function (x) { return { day: x.day, step: x.step }; });
+  }
+
+  function verifyFind(serial) {
+    var v = String(serial || '').trim().toUpperCase();
+    if (v.length < 3 || v.length > 40) return null;
+    var dash = function (x) { return String(x || '').toUpperCase().replace(/\//g, '-'); };
+    var same = function (x) { return String(x || '').toUpperCase() === v || dash(x) === dash(v); };
+    var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : appToday();
+    var d = (DB.documents || []).filter(function (x) { return same(x.serial); })
+      .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
+    if (d) return { src: 'document', id: d.id, serial: d.serial, kind: d.family === 'hr' ? 'HR Letter' : d.kind, issued: mday(d.issued_at),
+      code: docCode(d, DB.documents), sealed: false, state: d.voided_at ? 'voided' : 'valid',
+      steps: steps([['issued', mday(d.issued_at)], ['voided', mday(d.voided_at)]]) };
+    var o = (DB.client_documents || []).filter(function (x) { return same(x.number); })
+      .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
+    if (o) {
+      var by = o.superseded_by && (DB.client_documents || []).filter(function (x) { return x.id === o.superseded_by; })[0];
+      return { src: 'letter', id: o.id, serial: o.number, kind: 'Letter of Offer', issued: mday(o.issued_at), code: docCode(o, DB.client_documents), sealed: false,
+        state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid'),
+        steps: steps([['issued', mday(o.issued_at)], ['signed', mday(o.signed_at)], ['confirmed', mday(o.verified_at)],
+          ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
+    }
+
+    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at); })
+      .sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
+    if (qt) {
+      var rev = (DB.quotations || []).filter(function (r) { return r.replaces === qt.id && !r.removed_at; })
+        .map(function (r) { return mday(r.issued_at); }).sort()[0] || null;
+      var qs = qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : rev ? 'replaced'
+        : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid';
+      var after = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
+      return { src: 'quotation', id: qt.id, serial: qt.ref, kind: 'Quotation', issued: mday(qt.issued_at), code: docCode(qt, DB.quotations), sealed: !!qt.seal_key,
+        state: qs, steps: steps([['issued', mday(qt.issued_at)], ['sent', mday(qt.sent_out_at)], ['signed', mday(qt.signed_at)],
+          ['confirmed', mday(qt.reviewed_at)], ['sealed', mday(qt.sealed_at)], ['declined', mday(qt.declined_at)], ['withdrawn', qt.withdrawn_on || null],
+          ['voided', mday(qt.removed_at)], ['replaced', rev], ['expired', qs === 'expired' ? after(String(qt.valid_until).slice(0, 10)) : null]]) };
+    }
+
+    var hd = (DB.hiring_docs || []).filter(function (x) { return x.serial && same(x.serial) && x.sent_at && x.state !== 'draft'; })
+      .sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
+    if (hd) {
+      var hs = hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
+        : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid';
+      return { src: 'hiring', id: hd.id, serial: hd.serial, kind: 'HR Letter', issued: mday(hd.sent_at), code: docCode(hd, DB.hiring_docs), sealed: !!hd.seal_sha,
+        state: hs, steps: steps([['issued', mday(hd.sent_at)], ['signed', mday(hd.signed_at)], ['confirmed', mday(hd.confirmed_at)], ['sealed', mday(hd.sealed_at)],
+          ['declined', hd.state === 'declined' ? mday(hd.answered_at || hd.updated_at) : null], ['withdrawn', hd.state === 'withdrawn' ? mday(hd.updated_at) : null],
+          ['voided', mday(hd.voided_at)], ['expired', hs === 'expired' ? mday(hd.reply_by) : null]]) };
+    }
+    var pr = (DB.perf_reviews || []).filter(function (x) {
+      return x.serial && same(x.serial) && (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
+    })[0];
+    if (pr) return { src: 'perf', id: pr.id, serial: pr.serial, kind: 'HR Letter', issued: mday(pr.released_at), code: docCode(pr, DB.perf_reviews), sealed: false,
+      state: pr.status === 'draft' ? 'replaced' : 'valid',
+      steps: steps([['issued', mday(pr.released_at)], ['acknowledged', mday(pr.acknowledged_at)], ['finalised', mday(pr.finalised_at)]]) };
+
+    var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
+    if (pd) return { src: 'perf_deleted', id: pd.id, serial: pd.serial, kind: 'HR Letter', issued: mday(pd.released_at), code: null, sealed: false, state: 'voided',
+      steps: steps([['issued', mday(pd.released_at)], ['voided', mday(pd.deleted_at)]]) };
+    return null;
+  }
+
+  function verifyByDay(f) {
+    if (!f || !f.issued) return false;
+    if (!f.code) return true;
+    appDb();
+    if (!DB.app_settings.some(function (r) { return r.key === 'verify_code_from'; }))
+      DB.app_settings.push({ key: 'verify_code_from', from_date: '2023-08-14', value: 20261120, set_by: null, set_at: '2026-11-20T00:00:00Z' });
+    var n = String(appSet('verify_code_from', appToday()) || '');
+    return /^\d{8}$/.test(n) && f.issued < n.slice(0, 4) + '-' + n.slice(4, 6) + '-' + n.slice(6, 8);
+  }
+
   function verifySerial(a) {
 
     if (window.__verifyLocked) return { found: false, locked: true, minutes: window.__verifyLocked };
-    var v = String(a.p_serial || '').trim().toUpperCase();
-    if (!v) return { found: false };
+    var f = verifyFind(a.p_serial);
+    if (!f) return { found: false };
+    return { found: true, serial: f.serial, kind: f.kind, state: f.state, issued_month: f.issued ? f.issued.slice(0, 7) : null,
+      sealed: !!f.sealed, more: true, by_day: verifyByDay(f) };
+  }
 
-    var dash = function (x) { return String(x || '').toUpperCase().replace(/\//g, '-'); };
-    var same = function (x) { return String(x || '').toUpperCase() === v || dash(x) === dash(v); };
-    var hits = (DB.documents || []).filter(function (d) {
-      return same(d.serial);
-    }).sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); });
-    if (hits.length) {
-      var d = hits[0];
-      return {
-        found: true,
+  function legalBox() {
+    var b = (DB.mail_boxes || [{ key: 'legal', address: 'legal@adspacestudios.com' }]).filter(function (x) { return x.key === 'legal'; })[0];
+    return b ? b.address : null;
+  }
 
-        kind: d.family === 'hr' ? 'HR letter' : d.kind,
-        issued_at: d.issued_at,
-        state: d.voided_at ? 'voided' : 'valid', serial: d.serial
-      };
+  function verifyDetails(a) {
+    var contact = legalBox();
+    if (window.__verifyDetailLocked) return { locked: true, minutes: window.__verifyDetailLocked, contact: contact };
+    if (!opsMe()) {
+      var t = DB.verify_detail_tries = DB.verify_detail_tries || { n: 0, since: Date.now() };
+      if (Date.now() - t.since > 36e5) { t.n = 0; t.since = Date.now(); }
+      t.n++;
+      if (t.n > 10) return { locked: true, minutes: Math.max(1, Math.ceil((t.since + 36e5 - Date.now()) / 6e4)), contact: contact };
     }
-    var off = (DB.client_documents || []).filter(function (d) {
-      return same(d.number);
-    }).sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); });
-    if (off.length) {
-      var o = off[0];
-      return {
-        found: true, serial: o.number, kind: 'Letter of Offer', issued_at: o.issued_at,
-        state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid')
-      };
+    var f = verifyFind(a.p_serial);
+    var c = String(a.p_code || '').slice(0, 80).replace(/[^0-9A-Za-z]/g, '').toUpperCase(), ok = false;
+    if (f) {
+      if (c && f.code && c === f.code) ok = true;
+      else if (/^[0-9A-F]{32}$/.test(c) && f.sealed && (f.src === 'quotation' || f.src === 'hiring') && c === String(f.id).replace(/-/g, '').toUpperCase()) ok = true;
+      else if (!c && a.p_day && verifyByDay(f) && String(a.p_day) === f.issued) ok = true;
     }
-    var pr = (DB.perf_reviews || []).filter(function (x) {
-      return x.serial && same(x.serial) &&
-        (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
-    })[0];
-
-    var qt = (DB.quotations || []).filter(function (x) {
-      return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at);
-    }).sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
-    if (qt) {
-      var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : new Date().toISOString().slice(0, 10);
-      var revised = (DB.quotations || []).some(function (r) { return r.replaces === qt.id && !r.removed_at; });
-      return { found: true, serial: qt.ref, kind: 'Quotation', issued_at: qt.issued_at,
-        signed_at: qt.signed_at || null, confirmed_at: qt.reviewed_at || null,
-        document_id: qt.seal_key ? qt.id : null, sealed: !!qt.seal_key,
-        withdrawn_on: qt.withdrawn_on || null,
-        state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
-          : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
-    }
-
-    var hd = (DB.hiring_docs || []).filter(function (x) {
-      return x.serial && same(x.serial) && x.sent_at && x.state !== 'draft';
-    }).sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
-    if (hd) {
-      return { found: true, serial: hd.serial, kind: 'HR Letter', issued_at: hd.sent_at,
-        signed_at: hd.signed_at || null, confirmed_at: hd.confirmed_at || null,
-        document_id: hd.seal_sha ? hd.id : null, sealed: !!hd.seal_sha,
-        state: hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
-          : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid' };
-    }
-    if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
-
-    var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
-    if (pd) return { found: true, kind: 'HR letter', issued_at: pd.released_at, state: 'void' };
-    return { found: false };
+    if (!ok) return { no_match: true, contact: contact };
+    return { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
+      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed, history: f.steps, contact: contact };
   }
 
   function issueLetter(a) {
@@ -10635,6 +10697,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'document_set_void')  return Promise.resolve({ data: documentSetVoid(args), error: null });
     if (name === 'document_delete')    return Promise.resolve({ data: documentDelete(args), error: null });
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
+    if (name === 'verify_details')     return Promise.resolve({ data: verifyDetails(args), error: null });
+    if (name === 'doc_code_of')        return Promise.resolve({ data: docCodeOf(args), error: null });
     if (name === 'verify_file') {
       if (window.__verifyLocked) return Promise.resolve({ data: { locked: true, minutes: window.__verifyLocked }, error: null });
       var vh = String(args.p_sha || '').toLowerCase(), vs = String(args.p_serial || '').toUpperCase();
@@ -13640,7 +13704,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.mail_boxes = DB.mail_boxes || [{ key: 'general', label: 'General', address: 'advertise@adspacestudios.com' },
         { key: 'hr', label: 'HR', address: 'hr@adspacestudios.com' },
         { key: 'payables', label: 'Accounts payable', address: 'ap@adspacestudios.com' }, { key: 'finance', label: 'Finance', address: 'finance@adspacestudios.com' },
-        { key: 'einvoice', label: 'e-Invoice', address: 'einvoice@adspacestudios.com' }];
+        { key: 'einvoice', label: 'e-Invoice', address: 'einvoice@adspacestudios.com' },
+        { key: 'legal', label: 'Legal and compliance', address: 'legal@adspacestudios.com' }];
       return DB.mail_boxes;
     }
     function mailSendersFull() {

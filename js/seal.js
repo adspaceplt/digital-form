@@ -209,9 +209,12 @@
   var TOP = 92, QR = 40;
   /* The Record page continues the document it seals: that document's
      template (an Employment Contract's ACL_SIGN, a quotation's AL), its
-     continuation head and its foot, the verify line included. */
+     continuation head and its foot, the verify line included, and its
+     Document ID where the document holds one (VERIFY DETAILS, 2026-11-20;
+     a copy sealed before printed its uuid in the table alone). */
   function recordPen(PDF, fonts, logo, info) {
-    return window.ADspaceDocs.pen(PDF, fonts, logo, { kind: info.kind || 'seal', signed: true, cont: true });
+    var code = /^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(String(info.docId || '')) ? info.docId : '';
+    return window.ADspaceDocs.pen(PDF, fonts, logo, { kind: info.kind || 'seal', signed: true, cont: true, code: code });
   }
   /* How many Record pages the steps take, asked before the signed pages
      are drawn so their foot counts them. */

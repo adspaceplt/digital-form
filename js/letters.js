@@ -230,15 +230,17 @@
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
-      return Promise.all([DOCS.embedFonts(pdf, PDF, { cjk: wantsCjk }), DOCS.embedLogo(pdf)]);
+      /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a preview's. */
+      return Promise.all([DOCS.embedFonts(pdf, PDF, { cjk: wantsCjk }), DOCS.embedLogo(pdf), DOCS.codeOf ? DOCS.codeOf('document', doc.draft ? null : doc.id) : '']);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       if (wantsCjk && !fonts.cjk) {
         throw new Error(window.ADspaceWords.line.pdfCjk);
       }
       /* The template (ACL_SIGN or ACL_NOSIGN, by the To be signed tick)
-         draws the head and the foot, its verify line included. */
-      var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, doc);
+         draws the head and the foot, its verify line and Document ID
+         included. */
+      var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, DOCS.withCode ? DOCS.withCode(doc, got[2]) : doc);
       DOCS.letterFoot(drawn.pn, drawn.pages, doc.serial);
       /* A Preview is a draft, and says so over every page (the user,
          2026-10-06), as a report not yet confirmed does. */
@@ -284,12 +286,12 @@
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
-      return Promise.all([DOCS.embedFonts(pdf, PDF, {}), DOCS.embedLogo(pdf)]);
+      return Promise.all([DOCS.embedFonts(pdf, PDF, {}), DOCS.embedLogo(pdf), DOCS.codeOf ? DOCS.codeOf('document', doc.draft ? null : doc.id) : '']);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-      /* Signed by both parties: ACL_SIGN. */
-      var pn = DOCS.pen(PDF, fonts, logo, { kind: 'letter.supplier', signed: true });
+      /* Signed by both parties: ACL_SIGN, its Document ID in the foot. */
+      var pn = DOCS.pen(PDF, fonts, logo, { kind: 'letter.supplier', signed: true, code: got[2] || '' });
       var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
       var text = pn.text, wrap = pn.wrap;
       var FILL = pn.shade, EDGE = pn.line;

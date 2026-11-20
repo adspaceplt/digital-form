@@ -1801,8 +1801,13 @@
       PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
         D.meta(pdf, recs.length === 1 && recs[0].serial ? recs[0].serial : name, 'Performance Review');
-        return Promise.all([D.embedFonts(pdf, PDF), D.embedLogo(pdf)]);
+        /* Each record's Document ID (VERIFY DETAILS, 2026-11-20), printed
+           in its reference line on every page. */
+        return Promise.all([D.embedFonts(pdf, PDF), D.embedLogo(pdf), Promise.all(recs.map(function (r) {
+          return r.serial && D.codeOf ? D.codeOf('perf', r.id) : '';
+        }))]);
       }).then(function (a) {
+        recs.forEach(function (r, i) { r.__code = a[2][i] || ''; });
         var p = D.pen(PDF, a[0], a[1], { kind: 'perf' });
         recs.forEach(function (r) { drawRecord(pdf, p, r); });
         var pages = pdf.getPages();
@@ -1862,7 +1867,7 @@
          pages are counted. */
       y = first ? p.head() - SP.under : (p.head(), p.H - p.TOP);
       var st0 = r.__stamp;
-      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
+      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + (r.__code ? 'Document ID ' + r.__code + ' · ' : '') + r.month +
         (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
         M, STAMP, TY.small, book, SOFT);
     };

@@ -35,8 +35,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Document ID (`quote_seal_state`, anon) and Download signed copy
   (`sign-download` `quoteKey`, the service role's `quote_seal_key`), the
   main Download then gone.
-- /verify/ answers a sealed quotation with its Document ID and checks a
-  file against the whole file's SHA-256 (Documents, `/verify/`).
+- /verify/ offers a sealed copy's file check against the whole file's
+  SHA-256, and its details for the Document ID (from 2026-11-20 the short
+  code the Record page and every foot print; before, its uuid) (Documents,
+  `/verify/`).
 - Ways out (`2026-11-17-quotation-ways-out.sql`, decision 8): before
   signing the team cancels (Cancel) and the client declines on the link
   (Decline, under Accept, an optional reason of 300: `quote_decline`, anon,
