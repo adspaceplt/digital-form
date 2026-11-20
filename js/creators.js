@@ -163,7 +163,7 @@
       reviewThanks: 'Thank you. Your response has been received. ADspace will follow up shortly.',
       draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
-            selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
+      selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       ratesChanged: 'The rates have been updated. Please review them and confirm again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
       overSlots: function (n) {
@@ -266,7 +266,7 @@
       reviewThanks: '谢谢，您的回复已收到，ADspace 团队将尽快跟进。',
       draftMoved: '页面打开后此初稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
-            selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
+      selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
       selectionChanged: '部分创作者已无法选择，请重新查看后再次确认。',
       overSlots: function (n) {

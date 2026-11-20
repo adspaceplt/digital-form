@@ -222,7 +222,7 @@
       payNone: '首次付款前，请提交您的付款资料。',
       payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
       paySentOn: '提交于{d}', payAgain: '请重新提交您的资料。',
-      payTo: '收款人', payMethod: '付款方式', payAccount: '账户', payEnding: '尾号{n}',
+      payTo: '账户持有人', payMethod: '付款方式', payAccount: '账户', payEnding: '尾号{n}',
       payBilling: '开票身份', payEmail: '电邮',
       payHeads: { billing: '开票资料', payment: '收款资料', contact: '联络资料' },
       payKinds: { nric: '个人（身份证）', passport: '个人（护照）', brn: '公司' },
