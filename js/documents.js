@@ -858,7 +858,7 @@
           s.remove();
           whyNot(l).then(function (changed) {
             bad(new Error(changed
-              ? 'A file the PDF needs has changed at its source and was not loaded. Please contact ADspace.'
+              ? 'The PDF could not be generated. Please contact ADspace.'
               : window.ADspaceWords.line.pdfLib));
           });
         };

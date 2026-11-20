@@ -1994,7 +1994,7 @@
     if (path) { para(path[0], TY.body, med); para(path[1]); }
     else para('No development or recovery path applies this month.', TY.body, book, SOFT);
     y -= SP.tight;
-    para('A clean month resets the process. Consequences are limited to privileges, training and discretionary rewards, never salary.', TY.small, book, SOFT);
+    para('A month with no issue resets the recovery path. Consequences are limited to privileges, training and discretionary rewards, and never affect salary.', TY.small, book, SOFT);
 
     heading('Improvement and Follow-up', ROW * 3);
     var lw2 = W / (1 + RPHI) / RPHI;
