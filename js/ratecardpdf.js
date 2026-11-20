@@ -34,7 +34,7 @@
 
   function draw(card) {
     var docs = D();
-    if (!docs) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
+    if (!docs) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     if (!card || !card.snapshot) return Promise.reject(new Error('The Rate Card has no published version. Publish one first.'));
     return docs.lib().then(function (PDF) {
       var pdf;
@@ -197,7 +197,7 @@
     newPage('Ala Carté');
     var content = role('content');
     if (content.length) {
-      label('Social Media Contents');
+      label('Social Media Content');
       row([C('Deliverable', thirds[0], { fill: head }), C('Rate', thirds[1], { fill: head }), C('Unit', thirds[2], { fill: head })]);
       content.forEach(function (s) {
         var m = /^(.*?)(,\s*up to .*)$/i.exec(s.name || '');
@@ -229,7 +229,7 @@
       row([C('Platform', thirds[0], { fill: head }), C('Service Fee', thirds[1], { fill: head }), C('Service Fee Coverage', thirds[2], { fill: head })]);
       ads.forEach(function (s) {
         row([L(String(s.name || '').split(' · ')[0], thirds[0]), C(rm(s.rate), thirds[1]),
-          C('Up to ' + rm((s.spec || {}).budget) + ' ads budget', thirds[2])]);
+          C('Up to ' + rm((s.spec || {}).budget) + ' advertising budget', thirds[2])]);
       });
       gap();
     }
@@ -285,7 +285,7 @@
         }
         merged(L('Advertising Budget*', lw, { fill: head }), M, top, y);
       }
-      row(cells('Best for', function (p) { return L(p.spec.best_for || '', 0); }));
+      row(cells('Best For', function (p) { return L(p.spec.best_for || '', 0); }));
       gap();
     };
     planTable(plans.filter(function (p) { return !p.spec.ads; }), false);
@@ -366,7 +366,7 @@
     if (kol) {
       label('Management Fee');
       included('What’s Included', 'kol_included', thirds[1] + thirds[2]);
-      row([C('Talent Fee (Per)', thirds[0], { fill: head }), C('Management Fee (Per Talent)', thirds[1], { fill: head }), C('Minimum', thirds[2], { fill: head })]);
+      row([C('Talent Fee (Per Talent)', thirds[0], { fill: head }), C('Management Fee (Per Talent)', thirds[1], { fill: head }), C('Minimum', thirds[2], { fill: head })]);
       var prev = 0;
       (kol.spec.tiers || []).forEach(function (t) {
         var band = t.upto == null ? 'Above ' + rm(prev) : prev ? rm(prev + 1) + ' to ' + rm(t.upto) : 'Up to ' + rm(t.upto);
