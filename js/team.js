@@ -442,7 +442,7 @@
   }
   var AB_WORD = { waiting: ['is-warn', 'Waiting'], approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'],
                   ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
-  var AB_SAID = { denied: 'Only an admin can decide overseas access. Please ask an admin.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request was already decided.',
+  var AB_SAID = { denied: 'Only an admin can decide overseas access. Please ask an admin.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request has already been decided.',
                   'not-approved': 'That access has already ended.', 'too-long': 'Enter a note of 300 characters at most.' };
   function abroadGroup(m) {
     var rows = abroadOf(m.id);
@@ -521,7 +521,7 @@
         } else if (a === 'end') {
           window.ADspaceConfirm.ask({
             title: 'End overseas access?', go: 'End access', tone: 'warn', wait: true,
-            body: who + ' loses access to the console from abroad at once.'
+            body: who + ' will lose access to the console from abroad immediately.'
           }, function () {
             return db.rpc('abroad_end', { p_id: x.id })
               .then(function (r) { return after(r, 'Ended.'); }).catch(function () { return 'Not saved.'; });
@@ -705,7 +705,7 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Only another admin can change your own access date. Please ask one.';
+    if (/own-expiry/.test(t)) return 'Only another admin can change your own access date. Please ask another admin.';
     if (/expired-date/.test(t)) return 'Set Access until to today or a later date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
@@ -835,7 +835,7 @@
         var fields = handFields(m, own, held);
         window.ADspaceConfirm.ask({
           title: 'Set inactive',
-          body: m.name + ' loses access to every section until they are set active '
+          body: m.name + ' will lose access to every section until they are set active '
               + 'again here. Their record, their name on past work and everything '
               + 'they signed stay as they are.'
               + (fields.length ? ' Choose who takes each kind of their work.' : ''),
@@ -903,7 +903,7 @@
      live work counted, whatever the caller's own client scope. */
   var HELD_KINDS = [['tasks', 'Open tasks'], ['months', 'Months they manage'], ['meetings', 'Meetings they lead'],
     ['repeats', 'Repeating tasks'], ['reviews', 'Reports waiting for their review'], ['extensions', 'Extension requests waiting on them'],
-    ['templates', 'Templates naming them as default owner']];
+    ['templates', 'Task templates assigning them by default']];
   function heldBy(m, then) {
     var none = { clients: [], campaigns: [] };
     db.rpc('team_work_held', { p_member: m.id }).then(function (r) {
@@ -1015,7 +1015,7 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Only another admin can remove your own account. Please ask one.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    own: 'Only another admin can remove your own account. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
     'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
@@ -1029,7 +1029,7 @@
      alone; their name on past work, documents and the Activity record kept. */
   var PURGE_SAID = {
     'admin-only': 'You do not have permission to delete colleagues. Please ask an admin.',
-    'not-removed': 'Only a removed colleague can be deleted permanently. Use Delete on their record first, so they read Removed.',
+    'not-removed': 'Only a removed colleague can be deleted permanently. Choose Delete on their record first. They will then show as Removed.',
     own: 'You cannot delete your own account.', 'system-account': REMOVE_SAID['system-account'],
     'bad-name': REMOVE_SAID['bad-name'], 'last-admin': REMOVE_SAID['last-admin'],
     'not-found': 'This colleague no longer exists.'
@@ -1059,7 +1059,7 @@
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
         /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
         body: m.name + ' loses access permanently.' + (fields.length ? ' Choose who takes their work.' : '') +
-          ' Past work, HR Letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in email and health check-ins. This cannot be undone.',
+          ' Past work, HR Letters and performance records are kept. Erase personal details also deletes their mobile, namecard, sign-in email and health check-ins. This cannot be undone.',
         fields: fields.concat([
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Erase personal details']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
@@ -1221,7 +1221,7 @@
          offered to the super admin alone, as every other group select. */
       var to = state.roles.filter(function (g) { return g.slug !== r.slug && (amSuper() || !(g.is_admin || g.slug === 'admin')); })
         .map(function (g) { return [g.slug, g.name]; });
-      var fields = members ? [{ name: 'to', label: 'New group for its ' + members + (members === 1 ? ' member' : ' members'), required: true,
+      var fields = members ? [{ name: 'to', label: 'Move its ' + members + (members === 1 ? ' member to' : ' members to'), required: true,
         choices: [['', 'Choose a group']].concat(to) }] : [];
       window.ADspaceConfirm.ask({
         title: 'Delete',
@@ -1307,13 +1307,13 @@
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
                 work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
     suppliers: { none: 'Suppliers is hidden.', view: 'Read suppliers and their letters.',
-                 work: 'Add suppliers, send their details form and take it in. Approving needs Supplier bank details.', manage: 'Also delete suppliers and edit their email templates.' },
+                 work: 'Add suppliers, send their details form and apply it. Approving needs Supplier bank details.', manage: 'Also delete suppliers and edit their email templates.' },
     reports: { none: 'Reports is hidden.', view: 'Read reports and preview their PDFs.',
                work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, send back, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
     services: { none: 'Services is hidden.', view: 'Read the Rate Card.', manage: 'Add, edit and delete Rate Card lines, and publish the Rate Card.' },
-    team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Invitations need Send invitation.' },
+    team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Sending an invitation needs Send invitation under Advanced.' },
     activity: { none: 'The Activity record is hidden.', view: 'Read the Activity record, section by section.' }
   };
 
@@ -2589,7 +2589,7 @@
             (more ? '<button class="btn btn-sm mrec-all" type="button" data-all>Show all ' + rows.length + '</button>' : ''), act2);
         };
         if (tasks === null && err) {
-          html += group('Open tasks', '<p class="msg err">Could not load their tasks.</p>', act); act = '';
+          html += group('Open tasks', '<p class="msg err">Their tasks could not be loaded. Refresh the page.</p>', act); act = '';
         } else if (tasks && tasks.length) {
           var day = function (t) { return t.current_final_due_at ? window.ADspaceClock.day(t.current_final_due_at) : ''; };
           tasks.sort(function (x, y) {
@@ -2747,7 +2747,7 @@
       if (d.last_seen_at) lines.push(activeWord(d.last_seen_at));
       if (d.last_sign_in_at) lines.push('Last sign-in ' + whenWord(d.last_sign_in_at));
       else {
-        lines.push('Not signed in yet');
+        lines.push('Never signed in');
         if (d.invited_at) lines.push('Invitation sent ' + window.ADspaceClock.date(d.invited_at, { year: false }));
       }
       list.insertAdjacentHTML('afterbegin', lines.filter(Boolean).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join(''));
@@ -2763,7 +2763,7 @@
     denied: 'You do not have permission to sign out a device. Please ask an admin.',
     'not-found': 'This device is already signed out. Refresh the page.',
     'own-session': 'This is your own device. Use Sign out in your account menu.',
-    'system-account': 'Only the super admin can sign out the super admin\'s devices.'
+    'system-account': 'Only the super admin can sign out the super admin\'s devices. Please ask the super admin.'
   };
   function paintDevices(m, body, all) {
     if (!body) return;

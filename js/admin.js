@@ -497,7 +497,7 @@
       done('');
       readUpgrade();
       if (window.ADspaceSettings && window.ADspaceSettings.pagesChanged) window.ADspaceSettings.pagesChanged(d.pages);
-    }).catch(function () { done('Not saved. Check the connection and try again.'); });
+    }).catch(function () { done('Not saved. The connection was lost. Please try again.'); });
   }
   function upgradeOff(btn) {
     if (btn) btn.disabled = true;
@@ -3631,7 +3631,7 @@
         .select('id').then(function (r) {
           if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }
           if (!(r.data || []).length) { msg('wsMsg', 'Not saved. The database refused the request.', 'err'); return; }
-          logAction('link.reset', state.client.name, 'Previous link invalidated');
+          logAction('link.reset', state.client.name, 'Previous link no longer opens');
           state.client.access_token = next;
           $('clientLink').value = shareUrl(state.client);
           $('openLink').href = reviewUrl(state.client);
@@ -3661,7 +3661,7 @@
     shutWsMenu();
     var c = state.client;
     window.ADspaceConfirm.ask({
-      title: 'Remove from Content Review',
+      title: 'Remove from Content Review?',
       body: c.name + ' leaves this list and its review link stops opening. Every content set is kept.',
       go: 'Remove',
       tone: 'warn'
@@ -3864,7 +3864,7 @@
         { name: 'lang', label: 'Caption language', choices: CAP_LANGS,
           value: ['en', 'ms', 'zh'].indexOf(pre.lang) > -1 ? pre.lang : 'en' }
       ];
-      if (plat === 'xhs') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
+      if (plat === 'xhs') fields.push({ name: 'safe', label: 'rednote safe mode', tick: true, value: false });
       fields.push({ name: 'notes', label: 'Notes for the caption', rows: 3, required: false,
         placeholder: 'What the post is about, the offer, the call to action',
         value: capNotes(o.notesKey) || pre.brief });
@@ -4341,7 +4341,7 @@
       window.ADspaceConfirm.ask({
         title: 'Delete',
         body: n + ' post' + (n === 1 ? '' : 's') + ' in "' + b.title
-            + '" and their approval records go.'
+            + '" and their approval records will be deleted.'
             + (b.published ? ' This set is published to the client.' : '')
             + ' This cannot be undone.',
         go: 'Delete',
@@ -5410,7 +5410,7 @@
         // Neutral: nothing has happened yet. Green is kept for the import
         // actually finishing, so it means the same thing everywhere.
         msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found' +
-          (fresh ? ', ' + fresh + ' to import.' : '. All of them are already in storage.'));
+          (fresh ? ', ' + fresh + ' to import.' : '. All of them are already uploaded.'));
       });
     }).catch(function (e) {
       msg('driveMsg', e.name === 'AbortError'
@@ -5667,9 +5667,9 @@
     if (state.uploading) { cancelUpload(); return; }
     if (!state.drafts.length) { clearDrafts(); return; }
     window.ADspaceConfirm.ask({
-      title: 'Discard these assets',
-      body: state.drafts.length + ' pending asset' + (state.drafts.length === 1 ? '' : 's')
-          + ' go. Nothing is added to the set.',
+      title: 'Discard these assets?',
+      body: 'The ' + state.drafts.length + (state.drafts.length === 1 ? ' file' : ' files')
+          + ' waiting to be added will be discarded. Nothing is added to the set.',
       go: 'Discard',
       tone: 'danger'
     }, clearDrafts);
@@ -6243,7 +6243,7 @@
           var dp = Math.pow(10, b[3] || 2);
           if (x === '' && b[4] && MON.setting(k[0]) == null) continue;
           if (x === '' || isNaN(n) || n < b[0] || n > b[1] || (b[2] && n % 1) || Math.abs(Math.round(n * dp) - n * dp) > 1e-6) {
-            return k[1] + ': ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + '.';
+            return 'Enter ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + ' for ' + k[1] + '.';
           }
         }
         return '';
@@ -6294,8 +6294,8 @@
      says it to the client as a lock, never as a link unknown. */
   var UNLOCK_SAID = {
     denied: 'Not cleared. You do not have permission to change this link. Please ask an admin.',
-    'client-scope': 'Not cleared. You do not have access to this client.',
-    'not-found': 'Not cleared. The link was not found.'
+    'client-scope': 'Not cleared. You do not have access to this client. Please ask an admin.',
+    'not-found': 'Not cleared. This link no longer exists. Refresh the page.'
   };
   function linkLock(box, kind, id, hasPass, need) {
     if (!box) return;
@@ -6309,7 +6309,7 @@
       if (box.getAttribute('data-for') !== mine || !d || d.error || !d.locked) return;
       var C = window.ADspaceClock;
       var when = C.clock(d.until, { space: true }) + (C.day(d.until) === C.today() ? '' : ', ' + C.date(d.until));
-      var who = d.all ? 'new visitors' : (d.addresses === 1 ? '1 connection' : d.addresses + ' connections');
+      var who = d.all ? 'new visitors' : (d.addresses === 1 ? '1 network' : d.addresses + ' networks');
       box.innerHTML = '<span class="msg warn">Locked for ' + who + ' until ' + esc(when) + ' after incorrect access codes.</span>' +
         (may(need, 'work') ? '<button class="btn btn-sm" type="button">Clear</button>' : '');
       box.hidden = false;
@@ -7864,9 +7864,9 @@
 
     // Renaming a slug is a new row plus a delete, so catch the collision first.
     var clash = links.filter(function (l) { return l.slug === slug && l.slug !== editingSlug; });
-    if (clash.length) { linkBad('newSlug', '/' + slug + ' is already in use.'); return; }
+    if (clash.length) { linkBad('newSlug', '/' + slug + ' is already in use. Choose another short link.'); return; }
     if ((cards || []).some(function (t) { return t.card_slug === slug; })) {
-      linkBad('newSlug', '/' + slug + ' is a colleague\'s namecard.'); return;
+      linkBad('newSlug', '/' + slug + ' is a colleague\'s namecard. Choose another short link.'); return;
     }
 
     var body = {
@@ -7893,7 +7893,7 @@
            both live, so it is said rather than left (audit, 2026-10-03). */
         db.from('links').delete().eq('slug', was).select('slug').then(function (d) {
           loadLinks();
-          if (d.error || !(d.data || []).length) msg('linkListMsg', '/' + was + ' is still live. The database refused to remove it.', 'err');
+          if (d.error || !(d.data || []).length) msg('linkListMsg', 'Not deleted. The database refused the request.', 'err');
         }).catch(function () { loadLinks(); });
       } else {
         loadLinks();
@@ -7986,7 +7986,7 @@
     db.from('link_qrs').select('*').eq('slug', qrLink.slug)
       .order('created_at').then(function (r) {
         if (r.error) {
-          box.innerHTML = '<div class="empty">Could not load the codes. ' + esc(r.error.message) + '</div>';
+          box.innerHTML = '<div class="empty">QR codes could not be loaded. Refresh the page.</div>';
           return;
         }
         qrCodes = r.data || [];

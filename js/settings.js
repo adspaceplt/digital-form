@@ -785,11 +785,11 @@
      Accounts payable; invoices and reminders Finance). */
   var BOX_NOTE = { general: 'Replies to client, careers and invitation emails, and all other enquiries.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
-    einvoice: 'Receives e-Invoice submissions alone.' };
+    einvoice: 'Receives e-Invoice submissions only.' };
   function openMailboxes() {
     db.rpc('mail_senders_read').then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { rowSay('mailboxes')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load. Try again.', 'err'); return; }
+      if (r.error || d.error) { rowSay('mailboxes')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'The mailboxes could not be loaded. Refresh the page.', 'err'); return; }
       var boxes = d.boxes || [];
       window.ADspaceConfirm.ask({
         title: 'Reply-to mailboxes', go: 'Save', wait: true,
@@ -1624,8 +1624,8 @@
   function taxRefusal(d) {
     if (d.error === 'in-use') {
       var c = d.codes || [];
-      return c.join(', ') + (c.length === 1 ? ' is' : ' are') + ' on a service line, a quotation or a letter, so ' +
-        (c.length === 1 ? 'it stays. Untick Offered on new lines to stop offering it.' : 'they stay. Untick Offered on new lines to stop offering them.');
+      return c.join(', ') + (c.length === 1 ? ' is' : ' are') + ' used on a service line, a quotation or a letter, so ' +
+        (c.length === 1 ? 'it cannot be deleted. Untick Offered on new lines to stop offering it.' : 'they cannot be deleted. Untick Offered on new lines to stop offering them.');
     }
     return TAX_SAID[d.error] || d.error;
   }

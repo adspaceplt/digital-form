@@ -335,6 +335,9 @@
     nextBatchLead: 'What we will run next, based on this period\'s results.',
     /* A template naming a field its sender does not fill (2026-11-10):
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */
+    /* A message sent again within its window (the Assistant's WhatsApp
+       send, its refusal and its warning alike). */
+    sentRecently: 'This was sent recently. Send it again only if it is still needed.',
     unknownField: function (field, fields) {
       var w = (fields || []).map(function (f) { return '{' + f + '}'; });
       return 'Unknown field ' + field + '.' + (w.length ? ' Use ' + (w.length > 1 ? w.slice(0, -1).join(', ') + ' or ' + w[w.length - 1] : w[0]) + '.' : ' Remove it from the wording.');
