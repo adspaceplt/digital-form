@@ -330,7 +330,7 @@
       var out = r.data || {};
       if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
-        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be generated.' }); return; }
+        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be generated. Download it from the list.' }); return; }
         download(doc, function (warn) {
           then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
@@ -378,14 +378,14 @@
       /* The refusal's code goes with its words, as issue() hands it, so
          a `stale` preview reads the lines again (2026-11-07). */
       if (out.error) { shut(tab); then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
-      if (!out.doc) { fail('The preview could not be generated.'); return; }
+      if (!out.doc) { fail('The preview could not be generated. Try again.'); return; }
       var doc = out.doc;
       doc.number = 'PREVIEW'; doc.draft = true;
       return render(doc).then(function (bytes) {
         save(new Blob([bytes], { type: 'application/pdf' }), 'Preview ' + fileName(doc), tab);
         then({ ok: true });
       });
-    }).catch(function (e) { fail('The preview could not be generated: ' + ((e && e.message) || e)); });
+    }).catch(function (e) { fail('The preview could not be generated. Try again.'); });
   }
 
   function readBack(id, then) {
@@ -406,9 +406,9 @@
     'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
     'already-quoted': 'One of those services is already on a Letter of Offer that has not been voided. Void that letter first.',
     'bad-terms': window.ADspaceWords.line.terms,
-    'no-replaces': 'The letter being replaced could not be found.',
+    'no-replaces': 'The letter being replaced no longer exists.',
     'replaces-verified': 'A verified letter cannot be replaced.',
-    'not-found': 'That letter could not be found.',
+    'not-found': 'This letter no longer exists.',
     'voided': 'That letter is void.',
     'verified': 'That letter has already been verified.',
     'superseded': 'That letter has been replaced.',
@@ -417,12 +417,12 @@
     'clash': 'Two letters were issued at once. Try again.',
     'serial-taken': 'This reference is already used by another document. Enter another reference.',
     'bad-date': window.ADspaceWords.line.docDate,
-    'serial-shape': 'Enter a reference of 3 to 40 characters: letters, digits and / . _ -',
+    'serial-shape': window.ADspaceWords.line.serialShape,
     'no-serial': 'No free reference was found for this client this month. Enter one.',
     'reason-required': 'Enter a reason.',
     'not-verified': 'Only a verified letter can be voided. Delete an issued or signed letter instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
-    'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
+    'issuer-name': window.ADspaceWords.line.issuerName,
     'bad-state': 'Choose a valid state for the service.',
     'stale': 'The services or their quotation were changed by someone else. The latest version is now shown. Please check them and issue the letter again.',
     'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
@@ -858,14 +858,14 @@
           s.remove();
           whyNot(l).then(function (changed) {
             bad(new Error(changed
-              ? 'The PDF library has changed at its source and was not loaded. Please contact ADspace.'
-              : 'The PDF library could not be loaded. Check the connection and try again.'));
+              ? 'A file the PDF needs has changed at its source and was not loaded. Please contact ADspace.'
+              : window.ADspaceWords.line.pdfLib));
           });
         };
         document.head.appendChild(s);
       });
     })).then(function () {
-      if (!window.PDFLib) throw new Error('PDF library not loaded');
+      if (!window.PDFLib) throw new Error(window.ADspaceWords.line.pdfLib);
       return window.PDFLib;
     }).catch(function (e) { libWait = null; throw e; });
     return libWait;
@@ -877,7 +877,7 @@
   }
   function drawDoc(doc) {
     var PDF = window.PDFLib;
-    if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
+    if (!PDF) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var k = KIND[doc.kind] || KIND.offer;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
@@ -1456,7 +1456,7 @@
     if (installed()) return { viewer: true, closed: false, close: function () { this.closed = true; } };
     var tab = null;
     try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
-    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Generating the PDF…'; } catch (e) { /* still blank */ } }
     return tab;
   }
   /* The installed app's Preview, and its Download where there is no share

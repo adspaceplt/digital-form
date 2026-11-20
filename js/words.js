@@ -332,6 +332,13 @@
     terms: 'Enter up to ten terms, each of up to 400 characters.',
     /* The Next Batch page's line under its title (2026-11-13): the PDF
        and the report's Next batch step print it alike. */
+    /* A PDF that could not be generated, and one whose Chinese could not be
+       drawn (2026-11-20, tone sweep 3: each PDF worded them its own way). */
+    pdfLib: 'The PDF could not be generated. Check the connection and refresh the page.',
+    pdfCjk: 'The Chinese text could not be added to the PDF. Check the connection and try again.',
+    /* A document's reference out of shape (the letters and the register). */
+    serialShape: 'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots, underscores or dashes.',
+    issuerName: 'Your name is not set. Set it on the Team page, then issue the letter.',
     nextBatchLead: 'What we will run next, based on this period\'s results.',
     /* A template naming a field its sender does not fill (2026-11-10):
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */

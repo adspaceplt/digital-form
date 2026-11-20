@@ -66,7 +66,7 @@
   function draw(q, opts) {
     var docs = D();
     opts = opts || {};
-    if (!docs) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
+    if (!docs) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var to = opts.to || {};
     var cjk = /[　-鿿＀-￯]/.test(String(q.brand || '') + String(opts.attention || '') + String(to.name || '') + String(to.address || ''));
     /* The sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17): opts.seal holds
@@ -498,7 +498,7 @@
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
     var v2 = t.layout === 2;
-    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg); y -= 8; } else heading('Acceptance of quotation');
+    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg); y -= 8; } else heading('Acceptance of Quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
       'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;

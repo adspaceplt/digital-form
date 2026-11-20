@@ -38,17 +38,17 @@
     'agreement-incomplete': 'Complete the schedules: the supplier\'s legal name, the start date, the fee and at least one account.',
     'no-staff-code':  'Add an Employee ID to that colleague on the Team page first.',
     'no-signatory':   'Enter the signatory.',
-    'issuer-name':    'A letter is signed by a person. Set your name on the Team page, then issue it.',
+    'issuer-name':    window.ADspaceWords.line.issuerName,
     'serial-required':'Enter the reference.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
-    'serial-shape':   'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots or dashes.',
+    'serial-shape':   window.ADspaceWords.line.serialShape,
     'serial-taken':   'This reference is already used by another document. Enter another reference.',
     'bad-date':       window.ADspaceWords.line.docDate,
     'bad-family':     'Choose the kind of document.',
     'kind-required':  'Choose a document type.',
     'reason-required':'Enter a reason.',
     'confirm-mismatch':'That is not this document\'s reference.',
-    'not-found':      'That document could not be found.',
+    'not-found':      'This document no longer exists.',
     'not-manual':     'A document issued by the portal cannot be edited. Reissue it instead.',
     'not-portal':     'Only a document issued by the portal can be reissued.',
     'not-current':    'A later version of this document already exists. Reissue that version.'
@@ -171,7 +171,7 @@
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (d2, e2) {
-        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be generated.' }); return; }
+        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be generated. Download it from the list.' }); return; }
         download(d2, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
       });
     });
@@ -232,7 +232,7 @@
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       if (wantsCjk && !fonts.cjk) {
-        throw new Error('The Chinese typeface could not be loaded, so the Chinese text cannot be drawn. Please try again.');
+        throw new Error(window.ADspaceWords.line.pdfCjk);
       }
       var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, doc);
       var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +
