@@ -133667,6 +133667,8 @@ update public.meeting_message_template x set body =
 --     decision date only while it is ahead; every hiring email's prepare
 --     answers `system` (the sender a system account: the email closes as
 --     the ADspace Hiring Team), never the colleague's own address.
+--   * An email that did not go is filed in the candidate's history as not
+--     emailed, never with the mail provider's own words.
 --
 -- ORDER: this file, then hiring-mail (the two new kinds), then the pages.
 -- An old page never asks for the new emails; an old hiring-mail refuses
@@ -133764,7 +133766,7 @@ begin
   if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-request'); end if;
   update public.hiring_docs set confirm_mail = p_status, confirm_mail_at = now() where id = d.id;
   perform public.hiring_log(d.candidate_id, 'candidate.email', d.serial || ' confirmation' || case p_status when 'sent' then ' emailed'
-    when 'unknown' then ' emailed, not confirmed' else ' not emailed' || coalesce(': ' || left(p_error, 120), '') end);
+    when 'unknown' then ' emailed, not confirmed' else ' not emailed' end);
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.hiring_confirmed_mail_done(uuid, text, text) from public, anon;
@@ -133806,7 +133808,7 @@ begin
   perform public.hiring_log(i.candidate_id, 'candidate.email',
     case p_kind when 'invite' then 'Invitation' when 'confirm' then 'Confirmation' when 'cancelled' then 'Cancellation'
       when 'held' then 'Decision date' else 'New decision date' end || case p_status when 'sent' then ' emailed'
-      when 'unknown' then ' emailed, not confirmed' else ' not emailed' || coalesce(': ' || left(p_error, 120), '') end);
+      when 'unknown' then ' emailed, not confirmed' else ' not emailed' end);
   return jsonb_build_object('ok', true);
 end $$;
 grant execute on function public.hiring_mail_done(uuid, text, text, text) to authenticated;
