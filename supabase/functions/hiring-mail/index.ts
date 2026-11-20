@@ -20,7 +20,17 @@
  *                                     on the candidate's page (step D):
  *                                     the reference and the day to answer,
  *                                     never the salary or the terms;
- *   againOf (with any of the four)    the Email log's Send again: the same
+ *   { docId, kind: 'confirmed' }      that offer or contract confirmed and
+ *                                     countersigned by ADSPACE PLT
+ *                                     (2026-11-20): its name and reference
+ *                                     and the candidate's page, never the
+ *                                     terms or the salary, no attachment;
+ *   { interviewId, kind: 'cancelled' } a confirmed interview cancelled
+ *                                     (2026-11-20): its time, that the
+ *                                     earlier Google Meet link no longer
+ *                                     applies, and that ADspace will
+ *                                     contact them to arrange another time;
+ *   againOf (with any of these)    the Email log's Send again: the same
  *                                     email drawn afresh, filed as sent again
  *   { key, docId, kind: 'code', device }  the candidate's own press on their
  *                                     page, with no sign-in: a six-digit
@@ -76,6 +86,29 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
   }
   const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
   const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
+  /* A document confirmed, and a confirmed interview cancelled (2026-11-20). */
+  if (m.kind === 'confirmed') {
+    return {
+      subject: title + ' confirmed: ' + m.ref,
+      heading: title + ' confirmed',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Your ' + title + ' ' + m.ref + (m.position ? ' for the position of ' + m.position : '') +
+        ' has been confirmed and countersigned by ADSPACE PLT.\n\n' +
+        'The confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + close,
+      block: button('View your application', PAGE + m.key)
+    };
+  }
+  if (m.kind === 'cancelled') {
+    return {
+      subject: 'Interview cancelled: ' + m.position,
+      heading: 'Interview cancelled',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Your interview for the position of ' + m.position + ' on ' + m.when + ' (Malaysia time) has been cancelled.' +
+        (m.mode === 'online' ? ' The Google Meet link sent earlier no longer applies.' : '') + '\n\n' +
+        'ADspace will contact you to arrange another time.\n\n' + close,
+      block: ''
+    };
+  }
   /* The interview held, and its decision date moved (2026-11-20). */
   if (m.kind === 'held') {
     return {
@@ -200,15 +233,16 @@ Deno.serve(async (req) => {
   if (b && b.kind === 'code') return sendCode(req, b, origin);
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
-  const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc';
-  const id = String((outcome ? b.candidateId : isDoc ? b.docId : b.interviewId) || '');
-  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'held', 'moved', 'outcome', 'doc'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc', isConfirmed = kind === 'confirmed';
+  const id = String((outcome ? b.candidateId : isDoc || isConfirmed ? b.docId : b.interviewId) || '');
+  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'held', 'moved', 'cancelled', 'outcome', 'doc', 'confirmed'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: auth } } });
   const prep = outcome ? await db.rpc('hiring_outcome_mail_prepare', { p_id: id })
     : isDoc ? await db.rpc('hiring_doc_mail_prepare', { p_doc: id })
+    : isConfirmed ? await db.rpc('hiring_confirmed_mail_prepare', { p_doc: id })
     : await db.rpc('hiring_mail_prepare', { p_interview: id, p_kind: kind });
   if (prep.error) return json({ error: 'denied' }, 200, origin);
   const m = prep.data as Record<string, any>;
@@ -239,6 +273,7 @@ Deno.serve(async (req) => {
     body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
     again_of: again || undefined });
   if (isDoc) await db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: status, p_error: error || null });
+  else if (isConfirmed) await db.rpc('hiring_confirmed_mail_done', { p_doc: id, p_status: status, p_error: error || null });
   else if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
   else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);
