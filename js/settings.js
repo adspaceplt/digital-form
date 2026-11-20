@@ -1592,7 +1592,7 @@
         if (!none) held = null;
       },
       check: function (v) {
-        if (v.kind === 'none') return WINDOW.some(function (k) { return v[k]; }) ? 'Choose Upgrading or Unavailable to set a window.' : '';
+        if (v.kind === 'none') return WINDOW.some(function (k) { return v[k]; }) ? 'Choose Upgrading or Unavailable to set a start, an end or a note.' : '';
         return bridge.upgradeWindow(v).bad;
       }
     }, function (v) {
