@@ -325,6 +325,11 @@
           meta: num('abroad_days') == null ? '' : parts(['Up to ' + plural(num('abroad_days'), 'day', 'days'),
             num('abroad_remind_hours') == null ? '' : num('abroad_remind_hours') === 0 ? 'No reminder'
               : 'Reminder every ' + plural(num('abroad_remind_hours'), 'hour', 'hours')].filter(Boolean)) },
+        /* Signed-in devices (2026-11-20): a colleague's sign-in unused
+           this long is signed out each night. */
+        biz && { id: 'idle', name: 'Signed-in devices', kind: 'edit',
+          meta: num('session_idle_days') == null ? '' : num('session_idle_days') === 0 ? 'Off'
+            : 'After ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
