@@ -4890,7 +4890,7 @@ body > .shell { width: 100%; }
 .team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; }
 .group-name .input { width: 100%; }
 .input-sm { min-height: var(--ctl-h-sm); font-size: 13px; }
-.input-sm:is([type="date"], [type="time"], [type="month"]) { height: var(--ctl-h-sm); }
+.input-sm:is([type="date"], [type="time"], [type="month"]) { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
 .team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 /* Your own row is marked with the neutral chip, not the accent: being you is
