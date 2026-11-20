@@ -29,18 +29,17 @@
     received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
+    cancelled: 'Interview cancelled',
     offer: 'Offer to follow', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
-  /* An interview's time with its weekday, Malaysia's day (2026-11-19, the
-     user: "also add day, eg. Monday Tuesday"): Friday, 20 November 2026,
-     2:00pm. */
-  var WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  function when(iso) {
+  /* A time the candidate waits on, in the portal's form (2026-11-20,
+     `ADspaceClock.due`): 21 Nov 2026 (Saturday), 10:00am, the date held
+     whole so a line breaks after its comma, never inside it. A time gone by
+     (the interview held) reads without its weekday. */
+  function when(iso, past) {
     if (!iso) return '';
-    var C = window.ADspaceClock, wd = C.weekday(C.day(iso));
-    /* Each part held whole (21\u00a0November\u00a02026): a line breaks after a
-       comma, never inside a date. */
-    return (wd == null ? '' : WEEKDAY[wd] + ', ') + C.date(iso, { long: true }).replace(/ /g, '\u00a0') + ', ' + C.clock(iso);
+    var C = window.ADspaceClock;
+    return C.date(iso, { named: !past }).replace(/ /g, '\u00a0') + ', ' + C.clock(iso);
   }
   var ORG = window.ADSPACE_ORG || {};
   /* The interview (step B, HR-SPEC.md decision 2): the times offered to
@@ -71,7 +70,7 @@
         (ORG.map ? '<a class="btn btn-sm cr-map" href="' + esc(ORG.map) + '" target="_blank" rel="noopener">' +
           (I ? I.svg('pin') : '') + 'Get directions' + (I ? I.svg('out') : '') + '</a>' : '');
     return '<div><dt>Location</dt><dd class="cr-where">' + where + '</dd></div>' +
-      '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
+      '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
   }
   function interview(i) {
     if (!i) return '';
@@ -85,7 +84,7 @@
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
         }).join('') +
         '<label class="qs-pick"><input type="radio" name="crTime" value="none"><span class="qs-text"><b>None of these times</b></span>' + MARK + '</label></fieldset>' +
-        '<div class="field" id="crNoneBox" hidden><label for="crNone">Times that suit you</label>' +
+        '<div class="field" id="crNoneBox" hidden><label for="crNone">Preferred times</label>' +
           '<textarea class="textarea" id="crNone" rows="2" maxlength="300" placeholder="Optional"></textarea></div>' +
         '<p class="msg" id="crMsg"></p>' +
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
@@ -96,12 +95,17 @@
        "Expire, tell the team"): choosing closes, the team is told. */
     if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
       'ADspace will contact you by email if another time can be arranged.</p></section>';
+    /* Cancelled (2026-11-20): no time and no way to join, only what follows. */
+    if (i.state === 'cancelled') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you to arrange another time.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     /* Interview held (2026-11-20): when it was, and by when ADspace will
        inform the candidate of the outcome, in place of the way to join. */
     if (i.state === 'confirmed' && i.held) {
-      return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div></dl>' +
-        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') + '</section>';
+      return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at, true)) + '</dd></div></dl>' +
+        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') +
+        /* Past the date with no decision, the careers mailbox to write to (the
+           user, 2026-11-20); the address is the database's, never typed. */
+        (i.contact ? '<p class="cr-next">If you have not heard from ADspace by then, please contact ADspace at ' + esc(i.contact) + '.</p>' : '') + '</section>';
     }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
@@ -155,9 +159,9 @@
   };
   var DOCSAID = {
     wrong: 'The code is incorrect. Please try again.',
-    locked: 'This code can no longer be used. Please ask for a new code.',
-    'no-code': 'This code can no longer be used. Please ask for a new code.',
-    'code-expired': 'This code has expired. Please ask for a new code.',
+    locked: 'This code can no longer be used. Please select Send a new code.',
+    'no-code': 'This code can no longer be used. Please select Send a new code.',
+    'code-expired': 'This code has expired. Please select Send a new code.',
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
@@ -215,7 +219,7 @@
     var facts = '<dl class="ovfacts cr-facts">' +
       '<div><dt>Employment</dt><dd>' + esc(TYPEWORD[t.type] || '') + '</dd></div>' +
       '<div><dt>Position</dt><dd>' + esc(t.position || '') + '</dd></div>' +
-      (t.scope ? '<div><dt>Scope</dt><dd>' + esc(t.scope) + '</dd></div>' : '') +
+      (t.scope ? '<div><dt>Job scope</dt><dd>' + esc(t.scope) + '</dd></div>' : '') +
       '<div><dt>Commencement</dt><dd>' + esc(day(t.start)) + '</dd></div>' +
       (t.end ? '<div><dt>End of contract</dt><dd>' + esc(day(t.end)) + '</dd></div>' : '') +
       (months ? '<div><dt>Probation</dt><dd>' + months + ' month' + (months === 1 ? '' : 's') + '</dd></div>' : '') +
@@ -380,7 +384,7 @@
       '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
-      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
+      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
       (d.docs && d.docs.length ? docsSection(d.docs) : (dec || (i ? interview(i) : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
     if (!(d.docs && d.docs.length) && !dec && i && i.state === 'invited') wire();
     if ($('crPool')) wirePool();

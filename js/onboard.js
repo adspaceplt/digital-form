@@ -232,7 +232,7 @@
     rpc('onboarding_get', { p_member: m.id }).then(function (r) {
       if (!live()) return;
       var d = r.data || {};
-      if (r.error || d.error) { UI.failLine($('onbBox'), 'The onboarding', said(r), function () { paneTeam(m, host, live); }); return; }
+      if (r.error || d.error) { UI.failLine($('onbBox'), 'The Onboarding Checklist', said(r), function () { paneTeam(m, host, live); }); return; }
       d.member = m.id;
       team.rec = d;
       paint();

@@ -35,7 +35,7 @@
     /* What goes out by email from a screen: an invoice and a reminder
        (2026-11-04), a candidate's interview invitation and an email of
        one's own (2026-11-19, the user: Invite drawn as words alone). */
-    [/^(Send (invoice|reminders?|email)|Invite|Email the candidate)$/, 'mail'],
+    [/^(Send (invoice|reminders?|email)|Invite|Email (the )?candidate)$/, 'mail'],
     /* A way out to another system opens a tab of its own (the leaving
        mark after); a way to another console page takes the chevron after
        (DESIGN.md §5; 2026-11-19). */

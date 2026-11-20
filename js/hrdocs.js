@@ -67,8 +67,8 @@
   }
   function titleOf(doc) {
     var t = doc.terms || {};
-    return (doc.kind === 'contract' ? 'EMPLOYMENT CONTRACT' : 'EMPLOYMENT OFFER') + ' [POSITION: ' +
-      String(t.position || '').toUpperCase() + ' (' + (TYPE[t.type] || TYPE.permanent)[1] + ')]';
+    return (doc.kind === 'contract' ? 'EMPLOYMENT CONTRACT' : 'EMPLOYMENT OFFER') + ' FOR THE POSITION OF ' +
+      String(t.position || '').toUpperCase() + ' (' + (TYPE[t.type] || TYPE.permanent)[1] + ')';
   }
   function fileName(doc) {
     return String(doc.serial || 'PREVIEW').replace(/\//g, '-') + ' ' + (doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer') + '.pdf';
@@ -113,8 +113,14 @@
     para('No advance wages will be payable.');
     para('Payment of bonus and annual increment (if any) is based on your performance, the Company’s profit and the overall market/economic condition and is solely at the absolute discretion of the Company.');
     head('DEDUCTIONS');
-    para('The Company reserves the right in its absolute discretion to deduct from your pay the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of Company’s rules/terms.');
-    if (type === 'intern' || type === 'part_time') para('As an intern or part-time employee, you will not enjoy the normal EPF, SOCSO and EIS benefits stipulated by EPF Ordinance currently enforced.');
+    /* Internship and Part-time carry no statutory contributions (the user,
+       2026-11-20: "intern and part time contracts, all no statutories epf,
+       socso eis"); a full-time contract's deduction is unchanged. */
+    var noStatutory = type === 'intern' || type === 'part_time';
+    para('The Company reserves the right in its absolute discretion to deduct from your pay ' +
+      (noStatutory ? '' : 'the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and ') +
+      'any sums which you may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of your negligence or breach of the Company’s rules or terms.');
+    if (noStatutory) para('The Employee shall not be entitled to contributions under the Employees Provident Fund Act 1991, the Employees’ Social Security Act 1969 or the Employment Insurance System Act 2017.');
     head('REST DAYS AND PUBLIC HOLIDAYS');
     para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.');
     para('The remainder will be determined by the Company. You may refer to the Company’s internal list of public holidays for more information.');
@@ -124,7 +130,7 @@
     para('[b] twelve (12) days for every twelve (12) months of continuous service with the Company from the third year onwards; and');
     para('[c] sixteen (16) days for every twelve (12) months of continuous service with the Company from the sixth year onwards.');
     para('If your employment commences or terminates part way through the year, your entitlement to the annual leave during the year will be assessed on a pro-rata basis and deductions from final salary due to your termination of employment will be made in respect of the annual leaves taken in excess of entitlement.');
-    para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take Annual Leave must be given to the Company. [No more than 7 days’ Annual Leave may be taken at any one time unless permission is being given by the Company through the Employee’s Direct Manager.]');
+    para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take annual leave must be given to the Company. No more than seven (7) days’ annual leave may be taken at any one time unless permission is given by the Company through the Employee’s Direct Manager.');
     para('Emergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform your Direct Manager personally at the earliest time of the day.');
     head('SICK LEAVE');
     para('You shall, after examination by a registered medical practitioner duly appointed by the Company; or a medical officer of the General Hospital or Government Clinic, be entitled to paid sick leave of a maximum of fourteen (14) days in the aggregate in each calendar year.');
@@ -211,7 +217,7 @@
         if (!contract) {
           para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
           var months = Number(t.probation_months) || 0;
-          var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Scope', t.scope || '']];
+          var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Job scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
           facts.push(['Commencement', t.start ? D.letterDate(t.start) : '']);
           if (t.end) facts.push(['End of contract', D.letterDate(t.end)]);
@@ -239,7 +245,7 @@
             c.p.forEach(function (s) { var m = /^\[([a-z])\] (.*)$/.exec(s); if (m) { need(LH); text('[' + m[1] + ']', M, y, BODY); para(m[2], font, M + 22); } else para(s); });
           });
           para('If the above terms and conditions are agreeable to you, please sign this contract on your application page as soon as possible.');
-          para('This letter when signed by applicant will constitute a binding contract.');
+          para('This letter, when signed by the applicant, will constitute a binding contract.');
         }
 
         // The company's closing and its signatory.
@@ -291,7 +297,7 @@
   }
   function seal(doc, pay, record) {
     var S = window.ADspaceSeal;
-    if (!S) return Promise.reject(new Error('The seal tools are not loaded.'));
+    if (!S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
     var info = { ref: doc.serial, docId: record.id, kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
       rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };
