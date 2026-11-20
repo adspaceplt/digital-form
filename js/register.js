@@ -364,7 +364,7 @@
       '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
       '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([
-          [q.sealed_at && { a: 'sealed', label: 'Download' }, { a: 'record', label: 'Open client record' }]]) + '</div></span>';
+          [q.sealed_at && { a: 'sealed', label: 'Download' }, { a: 'record', label: 'Open client' }]]) + '</div></span>';
     wireMenu(el);
     var cp = el.querySelector('[data-a="copy"]');
     if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
@@ -475,7 +475,7 @@
          and no ⋯ (MENU-7, 2026-10-22). */
       '<span class="team-act">' + (offer || perf
         ? '<button class="kmenu-btn reg-go" data-a="' + (offer ? 'record' : 'review') + '" type="button" aria-label="' +
-            (offer ? 'Open client record' : 'Open review') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            (offer ? 'Open client' : 'Open review') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
             'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>'
         : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
@@ -893,7 +893,7 @@
     $('docLangRow').hidden = !quote;
     $('docSignRow').hidden = false;
     if (reseed) $('docSigned').checked = Boolean(t.signed);
-    $('docSerial').placeholder = quote ? 'From the accounting portal' : 'Assigned on issue';
+    $('docSerial').placeholder = quote ? 'From Bukku' : 'Assigned on issue';
     if (reseed) $('docSerial').value = '';
     var c = sup ? null : issuing.client || clientOf($('docClient').value);
     var m = memberOf($('docMember').value);
@@ -1235,7 +1235,7 @@
     if (!t) { msg('docMsg', 'Choose a document type.', 'err'); return; }
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     var serial = $('docSerial').value.trim();
-    if (quote && !serial) { msg('docMsg', 'Enter the reference from the accounting portal.', 'err'); $('docSerial').focus(); return; }
+    if (quote && !serial) { msg('docMsg', 'Enter the reference from Bukku.', 'err'); $('docSerial').focus(); return; }
     var sup = t.family === 'supplier';
     var client = issuing.client ? issuing.client.id : $('docClient').value;
     var supplier = issuing.supplier ? issuing.supplier.id : $('docSupplier').value;
@@ -1375,7 +1375,7 @@
     'bad-family':   'Choose a group.',
     'family-fixed': 'The group cannot be changed once the type is created.',
     'bad-code':     'Enter a reference code of 1 to 4 capital letters or digits, such as IC.',
-    'code-taken':   'Another HR letter already uses this reference code.',
+    'code-taken':   'Another HR Letter already uses this reference code.',
     'bad-fields':   'Enter field names of up to 40 characters.',
     'too-long':     'The wording is too long. Shorten it, then save again.',
     'not-found':    'This document type no longer exists.'
@@ -1713,8 +1713,8 @@
   function openDelete(d, onChange) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: 'Deleting ' + d.serial + ' removes the document. ' +
-        (d.source === 'portal' ? 'The PDF is generated on Download and is not stored, so it cannot be recovered. ' : '') +
+      body: d.serial + ' will be deleted. ' +
+        (d.source === 'portal' ? 'The PDF is generated on Download and is not stored. ' : '') +
         'This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [
