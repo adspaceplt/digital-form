@@ -335,7 +335,9 @@
    where a cover is drawn, the system face standing in until it arrives. */
 @font-face {
   font-family: "ADspace Slate Medium";
-  src: url("/css/SlateMedium.TTF") format("truetype");
+  /* WOFF2, Latin alone (the title, uppercase alone, is never Chinese in this face), 8KB
+     against the TTF's 110KB; the TTF stays for the letter's pdf-lib. */
+  src: url("/css/SlateMedium.woff2") format("woff2");
   font-weight: 500;
   font-display: optional;
 }
