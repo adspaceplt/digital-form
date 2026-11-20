@@ -622,7 +622,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   and notices: Page availability, Announcements, Notices, Demo access;
   Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
   User groups (an admin's, opening Team's Groups; 2026-11-17);
-  Company: Public holidays, Departments, AutoCount HRMS, Overseas approval, Health data
+  Company: Public holidays, Departments, AutoCount HRMS, Overseas approval, Signed-in devices, Health data
   kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics; Creators: Creator and
   campaign IDs, Creator payments, Creator payments sheet), My Work (Due

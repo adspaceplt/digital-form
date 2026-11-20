@@ -70,7 +70,22 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sign-in (the device signs out within the hour its access lasts), never
   the reader's own (`own-session`) or the system account's
   (`system-account`), filed `team.changed` under Signed-in devices. No IP
-  address is read; nothing is written but the sign-out.
+  address is read; nothing is written but the sign-out. Sign out all
+  (`team_sessions_end_all`, `2026-11-20-signed-in-devices-idle.sql`; the
+  user: "yes add sign out all devices") is a tonal `.btn-sm` under the list
+  (beside Show all where drawn, else at its own width), drawn wherever the
+  colleague holds a sign-in, never on the reader's own record or a system
+  account's; it asks (how many devices, signed in again on each), ends every
+  sign-in at once and is filed `{name}: signed out on every device (n)`;
+  refusals `own-account`, `system-account`, `none`, `denied`, `not-found`.
+  Each night (pg_cron `session-idle`, 03:52 MYT) `team_sessions_idle_end`
+  ends every colleague's sign-in whose latest renewal, update or start is
+  older than `session_idle_days` (Business setting, 30, 0 turns this off, 1
+  to 365; Settings, Portal: Signed-in devices; the user: "yes option 2"),
+  never a system account's or a client contact's; one `team.changed` line by
+  `system` a run that signed anybody out (`n devices unused for 30 days
+  signed out`), a `job_beats` beat (`session-idle`) every run, and a failed
+  run raises so `jobs_watch` names it.
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
 - Add member, Set access expiry, a member's values and Set inactive are

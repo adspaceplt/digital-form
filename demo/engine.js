@@ -673,6 +673,8 @@
     team_member_seen: 'p_id',
     team_member_sessions: 'p_id',
     team_session_end: 'p_id p_session',
+    team_sessions_end_all: 'p_id',
+    team_sessions_idle_end: 'p_now',
     team_hand_over: 'p_member p_to',
     team_member_remove: 'p_erase p_member p_name',
     team_member_purge: 'p_member p_name',
@@ -3104,7 +3106,7 @@ function cardSlugFree(name, self, email) {
 
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7,
 
-    health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2,
+    health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
 
     hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
 
@@ -3118,7 +3120,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
@@ -3737,7 +3739,7 @@ function cardSlugFree(name, self, email) {
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
-          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
+          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
@@ -9723,7 +9725,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
     }
 
-    if (name === 'team_member_sessions' || name === 'team_session_end') {
+    if (name === 'team_member_sessions' || name === 'team_session_end' || name === 'team_sessions_end_all') {
       args = args || {};
       var ssNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
       if (!opsGranted('team.sessions', 'work')) return ssNo('denied');
@@ -9736,6 +9738,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .map(function (x) { return { id: x.id, device: x.device, created_at: x.created_at, last_at: x.last_at, mine: x.id === window.__sessionMine }; }))) }, error: null });
       }
       var ssMe = opsMe();
+
+      if (name === 'team_sessions_end_all') {
+        if (!ssMe) return ssNo('denied');
+        if (ssMe.id === ssRow.id || String(ssMe.email || '').toLowerCase() === ssKey) return ssNo('own-account');
+        if (ssRow.system) return ssNo('system-account');
+        if (!ssList.length) return ssNo('none');
+        ssAll[ssKey] = [];
+        DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
+          detail: ssRow.name + ': signed out on every device (' + ssList.length + ')', created_at: new Date().toISOString() });
+        return Promise.resolve({ data: { ok: true, ended: ssList.length }, error: null });
+      }
       if (ssRow.system && (!ssMe || ssMe.id !== ssRow.id)) return ssNo('system-account');
       if (args.p_session === window.__sessionMine) return ssNo('own-session');
       var ssHit = ssList.filter(function (x) { return x.id === args.p_session; })[0];
