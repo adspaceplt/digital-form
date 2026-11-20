@@ -374,14 +374,14 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   const idOf = (x: any) => { const f = (x.fields || []).find((y: any) => Number(y.field_id) === Number(p.field_id)); return f ? String(f.value ?? '') : ''; };
   const T: Record<string, string> = { customer: 'Customer', supplier: 'Supplier', employee: 'Employee' };
   const list: [string, string, string, string][] = [
-    ['legal_name', 'Legal name', c.legal_name || '', next.legal_name || ''],
+    ['legal_name', p.kind === 'creator' ? 'Legal name' : 'Registered Company Name', c.legal_name || '', next.legal_name || ''],
     ['reg_no', 'Business Registration No.', c.reg_no || '', next.reg_no || ''],
     ['old_reg_no', 'Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
     ['tax_id_no', 'TIN', c.tax_id_no || '', next.tax_id_no || ''],
     ['sst_reg_no', 'SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
     ['email', 'Email', c.email || '', next.email || ''],
     ['phone_no', 'Phone', c.phone_no || '', next.phone_no || ''],
-    ['person', 'Billing person', person(c), person(next)],
+    ['person', 'Billing contact', person(c), person(next)],
     ['address', 'Billing address', addr(c), addr(next)],
     ['term', 'Payment term', termName(c.default_term_id), termName(next.default_term_id)],
     ['our_id', p.kind === 'supplier' ? 'Supplier ID' : p.kind === 'creator' ? 'Creator ID' : 'Client ID', idOf(c), idOf(next)],
@@ -521,7 +521,7 @@ async function billingAction(action: string, kind: string, id: string, body: Rec
     if (Array.isArray(p.clear) && p.clear.includes('reg_no')) delete next.reg_no_type;
     const r = await bukku('PUT', `/contacts/${cur.id}`, next);
     const saved = r && r.contact;
-    if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'No contact came back.' }, 200, origin);
+    if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'Bukku did not return the contact. Please try again.' }, 200, origin);
     const after = valuesOf(saved), hash = await hashOf(after);
     const ch = differs(portal, after, country);
     const t = await take(d.me, kind, id, after, hash, ch, 'save');
@@ -555,7 +555,7 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
   let stop = '';
   const halt = (e: unknown) => {
     if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) {
-      stop = e.code === 'bukku-token' ? "Bukku refused the portal's connection" : 'Bukku did not answer';
+      stop = e.code === 'bukku-token' ? "Bukku refused the portal's connection" : 'Bukku did not respond';
     }
     return !!stop;
   };
@@ -616,7 +616,7 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
     }
   }
   const bad = stop || (list.error || due.error || mdue.error ? 'the database did not answer' : '') ||
-    (history ? 'the payment history was not kept' : '');
+    (history ? 'the payment history was not saved' : '');
   await svc.rpc('job_beat', { p_job: 'bukku-nightly', p_ok: !bad, p_detail: bad || null });
   if (list.error) return json({ error: 'needs-update' }, 200, origin);
   return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months, history: history || 'ok' }, 200, origin);
@@ -1794,7 +1794,7 @@ Deno.serve(async (req) => {
     if (action === 'send') {
       const r = cur ? await bukku('PUT', `/contacts/${contact}`, keepAsHeld(next, cur, body.skip)) : await bukku('POST', '/contacts', next);
       const saved = r && r.contact;
-      if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'No contact came back.' }, 200, origin);
+      if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'Bukku did not return the contact. Please try again.' }, 200, origin);
       const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: saved.id, p_code: saved.contact_code || code });
       if (l.error || (l.data && l.data.error)) {
         console.error('bukku-sync: sent but not filed', kind, id, saved.id, l.error ? l.error.message : l.data.error);
