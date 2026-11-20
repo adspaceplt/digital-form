@@ -622,6 +622,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop); the five found on 2026-11-18 fixed 2026-11-19.
+- 2026-11-20, `vs`: on main (60f260e, tests 152c3cd) the client's script at
+  390 draws a scene's picture beside its words, not over them ("on a phone
+  the picture stands over the scene's words", `over` and `edge` false);
+  passed once at 14:00 MYT and failed three runs after, on main's own code.
+  Found by the weekday release (#1257), which does not touch the layout.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
