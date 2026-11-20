@@ -1075,7 +1075,8 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .permcmp-head { padding-top: 0; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .permcmp-head .permcmp-cell { overflow-wrap: anywhere; }
 .permcmp-chunk { padding: 16px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
-.is-narrow .permcmp-cell small { grid-column: 2; text-align: right; }
+.is-narrow .permcmp-cell > b,
+.is-narrow .permcmp-cell > small { grid-column: 2; justify-self: end; text-align: right; }
 @media (max-width: 640px) {.team-table { padding: 0; }
   .team-head, .group-head { display: none; }
   .team-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
