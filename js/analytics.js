@@ -985,7 +985,7 @@
         if (a.forecast) { head('Forecast'); para(CREDIBLE[a.forecast.verdict] || '', 10.5, med, dark, 0, 2); if (a.forecast.detail) para(a.forecast.detail, 10, book, ink, 0, 6); }
         if ((a.actions || []).length) { head('Recommended Actions'); a.actions.forEach(function (x, i) { para((i + 1) + '. ' + x.action, 10.5, med, dark, 0, 2); para(x.why, 10, book, ink, 12, 6); }); }
         if ((a.caveats || []).length) { head('Caveats'); a.caveats.forEach(function (x) { para(x, 9.5, book, mute, 0, 4); }); }
-        docs.letterFoot(pn, pages, 'ADspace Analytics Analysis v' + v.version, 'PRIVATE & CONFIDENTIAL');
+        docs.letterFoot(pn, pages, 'Analytics Analysis, Version ' + v.version, 'PRIVATE & CONFIDENTIAL');
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
     });

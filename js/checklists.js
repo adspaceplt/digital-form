@@ -852,7 +852,7 @@
     text((d.sections.length + 1) + '. Sign-off', M, y - 10, 10.5, med, dark); y -= 16;
     factRow('Prepared By, Name & Date', d.prepared ? d.prepared.name + ', ' + day(d.prepared.at) : '');
     factRow('Reviewed By, Name & Date', d.reviewed ? d.reviewed.name + ', ' + day(d.reviewed.at) : '');
-    window.ADspaceDocs.letterFoot(pn, pages, 'Ver. ' + d.version, 'PRIVATE & CONFIDENTIAL');
+    window.ADspaceDocs.letterFoot(pn, pages, d.title + ', ver. ' + d.version, 'PRIVATE & CONFIDENTIAL');
   }
 
   window.ADspaceChecklists = { mount: mount, count: count, draw: draw,
