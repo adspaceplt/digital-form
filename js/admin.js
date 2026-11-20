@@ -3690,7 +3690,7 @@
      seconds, under `host`; one bar a host, each its own clock. The one copy
      every console script draws it with (`ADspaceAdmin.undoHere`,
      2026-10-26). */
-  function undoHere(text, undo, host) {
+  function undoHere(text, undo, host, ms) {
     if (!host || !host.parentNode) return null;
     var bar = host.parentNode.querySelector(':scope > .undobar-here');
     if (!bar) {
@@ -3703,7 +3703,9 @@
     bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
     bar.querySelector('button').addEventListener('click', function () { shut(); undo(); });
     clearTimeout(bar.undoTimer);
-    bar.undoTimer = setTimeout(shut, 8000);
+    /* Eight seconds, or the act's own window where it states one (Keep in
+       talent pool and Not proceed: 30 seconds, the user, 2026-11-20). */
+    bar.undoTimer = setTimeout(shut, ms || 8000);
     return bar;
   }
 

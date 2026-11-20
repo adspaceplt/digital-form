@@ -126,7 +126,10 @@
       state.rows = d.rows || []; state.admin = Boolean(d.admin);
       if (state.admin && !state.swept) sweepFiles();
       $('hirPositions').innerHTML = uniq(state.rows.map(function (c) { return c.position; })).map(function (p) { return '<option value="' + esc(p) + '">'; }).join('');
-      if (state.open) openRec(state.open); else paint();
+      /* The open record's repaint is waited on, so a line or an Undo drawn
+         after the load stands (2026-11-20: Decided's Undo was wiped). */
+      if (state.open) return openRec(state.open);
+      paint();
     });
   }
   /* A candidate removed in their time (hiring_retention) leaves their CV file
@@ -565,8 +568,11 @@
       });
     });
   }
-  function outcomeMail() {
-    var c = state.rec;
+  /* The window before a decision's email goes (the user, 2026-11-20: 30 seconds). */
+  var UNDO_MS = 30000;
+  var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
+  function outcomeMail(id) {
+    var c = { id: id || state.rec.id };
     return fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome' }).then(function (d) {
       if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
       return true;
@@ -581,20 +587,34 @@
     if (mails) f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
     window.ADspaceConfirm.ask({ title: REC[o] + '?', go: REC[o], tone: o === 'not' ? 'warn' : '', wait: true, body: body, fields: f },
     function (v) {
-      return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
-        var d = r.data || {};
-        if (r.error || d.error) return said(r);
-        state.pane = 'scores';
-        var after = mails && v.mail ? outcomeMail() : Promise.resolve(false);
-        after.then(function (sent) {
+      /* Keep in talent pool and Not proceed cancel a confirmed interview not
+         yet held: its Google Meet is taken off first, while the interview
+         still allows it (2026-11-20). */
+      var meets = mails ? (state.interviews || []).filter(function (i) { return i.state === 'confirmed' && !i.held_at && i.meeting_link; }) : [];
+      return Promise.all(meets.map(function (i) { return fnCall('meet-create', { interviewId: i.id, action: 'delete' }); })).then(function (offs) {
+        var kept = offs.some(function (m) { return m && m.error; });
+        return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) return said(r);
+          state.pane = 'scores';
+          /* The email waits out the Undo (2026-11-20): it goes only once the
+             30 seconds pass with no Undo, and the database refuses it once
+             the decision is reopened. */
+          var undone = false, wait = mails && v.mail;
           load().then(function () {
-            msg('hirRecMsg', sent ? 'Decided. The candidate was emailed.' : 'Decided.', 'ok');
+            msg('hirRecMsg', (wait ? 'Decided. The candidate will be emailed.' : 'Decided.') +
+              (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
             if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
+              undone = true;
               return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function () { openRec(c.id); });
-            }, $('hirRecMsg'));
+            }, $('hirRecMsg'), wait ? UNDO_MS : 0);
+            if (wait) setTimeout(function () {
+              if (undone) return;
+              outcomeMail(c.id).then(function (sent) { if (sent && state.rec && state.rec.id === c.id) load(); });
+            }, UNDO_MS);
           });
+          return '';
         });
-        return '';
       });
     });
   }
@@ -1241,24 +1261,40 @@
       sendMail(id, 'confirm').then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Confirmation sent.', 'ok'); }); });
     });
   }
-  function cancelIv(id) {
+  /* Send new times on a confirmed interview not yet held asks first and
+     cancels it, its Meet taken off and the candidate told (2026-11-20),
+     then the new times are asked. */
+  function reschedule(btn) {
+    var open = (state.interviews || []).filter(function (i) { return i.state === 'confirmed' && !i.held_at; })[0];
+    if (!open) { invite(btn); return; }
+    cancelIv(open.id, function () { invite(null); }, true);
+  }
+  function cancelIv(id, then, renew) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
     if (!i) return;
     /* A confirmed interview's candidate is told, the tick on by default
        (2026-11-20, the user: "yes fix the 3 hiring issues too"). */
     var told = i.state === 'confirmed';
-    window.ADspaceConfirm.ask({ title: 'Cancel interview?', go: 'Cancel interview', tone: 'warn', wait: true,
-      body: (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') +
+    window.ADspaceConfirm.ask({ title: renew ? 'Send new times?' : 'Cancel interview?', go: renew ? 'Continue' : 'Cancel interview', tone: 'warn', wait: true,
+      body: renew ? 'Interview ' + i.round + ' on ' + due(i.slots[(i.picked || 1) - 1]) + ' will be cancelled' + (i.meeting_link ? ' and its Google Meet removed from the shared calendar' : '') + '. The new times are asked next.'
+        : (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') +
         (told ? 'Send new times afterwards to arrange another interview.' : 'The candidate will not be emailed. Send new times to arrange another interview.'),
       fields: told ? [{ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] : [] },
     function (v) {
       var off = i.meeting_link ? fnCall('meet-create', { interviewId: id, action: 'delete' }) : Promise.resolve({});
       return off.then(function (m) {
-        if (m.error) return SAID[m.error] || SAID['google-refused'];
+        /* A Meet the calendar would not take off never holds the
+           cancellation: the candidate's email says the link no longer
+           applies, and the team is told to remove it (2026-11-20). */
+        var kept = !!(m && m.error);
         return rpc('hiring_interview_cancel', { p_interview: id }).then(function (r) {
           if (r.error || (r.data || {}).error) return said(r);
           (told && v && v.mail ? sendMail(id, 'cancelled') : Promise.resolve(false)).then(function (sent) {
-            openRec(c.id).then(function () { if (sent) msg('hirRecMsg', 'Cancelled. The candidate was emailed.', 'ok'); });
+            openRec(c.id).then(function () {
+              if (sent || kept) msg('hirRecMsg', (sent ? 'Cancelled. The candidate was emailed.' : 'Cancelled.') +
+                (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
+              if (then) then();
+            });
           });
           return '';
         });
@@ -1437,7 +1473,7 @@
     on('docreplace', function (b) { docReplace(docOf(b)); });
     on('docvoid', function (b) { docVoid(docOf(b)); });
     on('docdelete', function (b) { docDelete(docOf(b)); });
-    on('invite', invite);
+    on('invite', reschedule);
     on('ivapprove', function (b) { approve(b.getAttribute('data-id')); });
     on('ivmeet', function (b) { b.disabled = true; meetThenMail(b.getAttribute('data-id'), 'online'); });
     on('ivmail', function (b) {
