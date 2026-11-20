@@ -1276,7 +1276,7 @@
       ['Industry', c.industry || null],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],
-      ['To commence', c.commence ? commenceWord(c.commence) : null]
+      ['Planned commencement', c.commence ? commenceWord(c.commence) : null]
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (f[1] == null ? '<span class="muted">Not set</span>' : esc(f[1])) + '</dd></div>';
@@ -1587,7 +1587,7 @@
     db.from('activity_log').select('*').eq('subject', c.name)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
-        if (r.error) { UI.failLine(box, 'The record of changes', r.error.message, loadClientLog); return; }
+        if (r.error) { UI.failLine(box, 'The timeline', r.error.message, loadClientLog); return; }
         var rows = r.data || [];
         /* Kept so the rail can show the last three without a second read: the
            record has already paid for this one. */
@@ -1906,7 +1906,7 @@
 
   function ovTouches() {
     var rows = state.touches || [];
-    if (!rows.length) return ovSection('Calls and visits', 'calls', 'View all', ovNone('Nothing logged.'));
+    if (!rows.length) return ovSection('Calls and visits', 'calls', 'View all', ovNone('No calls or visits.'));
     var body = '<ul class="ovlog">' + rows.slice(0, 3).map(function (t) {
       return '<li class="ovlog-row">' +
         '<span class="ovlog-ico">' + ico(KIND_ICON[t.kind] || 'chat', '') + '</span>' +
@@ -1937,7 +1937,7 @@
   function isVic(id) { return Boolean(vicOf(id)); }
   function vicTagOf(id, inRow) { var A = window.ADspaceAdmin; return A && A.vicTag ? A.vicTag(id, inRow) : ''; }
   function vicBadgeOf(id) { var A = window.ADspaceAdmin; return A && A.vicBadge ? A.vicBadge(id) : ''; }
-  var VIC_SAID = { denied: 'You do not have permission to mark VIC clients. Please ask an admin.', 'not-found': 'Not saved. This client is no longer available.',
+  var VIC_SAID = { denied: 'You do not have permission to mark VIC clients. Please ask an admin.', 'not-found': 'Not saved. This client no longer exists.',
     'too-long': 'Keep the note to 300 characters.', 'bad-date': 'Choose a date today or earlier.' };
   function paintVic(c) {
     var on = isVic(c.id), may = mayPart('clients.vic', 'work');
@@ -2143,10 +2143,10 @@
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
     if (!state.contacts.length) return { text: 'No contacts.', go: 'contacts', icon: 'person' };
-    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
+    if (stage === 'lead') return { text: 'No calls or visits.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' line to quote is' : ' lines to quote are') + ' in no letter.', go: 'documents', icon: 'file' };
+      return { text: quoting + (quoting === 1 ? ' service line to quote is' : ' service lines to quote are') + ' not on a Letter of Offer.', go: 'documents', icon: 'file' };
     }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
       return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') +
@@ -2650,7 +2650,7 @@
       if (codeNeeded) fields.push({ name: 'code', label: 'Delete code', type: 'password', need: 'The delete code is required.' });
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'Deleting ' + c.name + ' removes the record and everything filed under it' +
+        body: 'Deleting ' + c.name + ' deletes the client and everything filed under it' +
           (gone.length ? ': ' + gone.join(', ') + ', and everything in them' : '') +
           '. This cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
@@ -2660,7 +2660,7 @@
           var out = r.data;
           if (out === 'wrong-code') return 'The delete code is incorrect.';
           if (out === 'not-found') return 'This client no longer exists.';
-          if (out !== 'deleted') return String(out || 'Unable to delete.');
+          if (out !== 'deleted') return String(out || 'Not deleted. Please try again.');
           /* `delete_client` files the deletion itself (audit R1). */
           state.client = null;
           showList();
@@ -3166,7 +3166,7 @@
     'not-removed': 'This entity bills this client again. Refresh the page to see the current list.',
     'bills-others': 'This entity bills another client. Remove it there first.',
     'bukku': 'Bukku links this entity. Unlink it from Bukku first.',
-    'on-letter': 'A letter names this entity, so it is kept.',
+    'on-letter': 'A letter names this entity, so it cannot be deleted.',
     'bad-name': 'The name does not match.',
     'not-found': 'This billing entity no longer exists. Refresh the page to see the current list.'
   };
@@ -4094,7 +4094,7 @@
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
   function baLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. An admin can turn them on.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. Please ask an admin to turn them on.';
     var n = d.limit || 3;
     return 'You have used your ' + n + (n === 1 ? ' analysis' : ' analyses') + ' for today.' + (d.next ? ' Resets at ' + baClock(d.next) + '.' : '');
   }
@@ -4252,7 +4252,7 @@
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
         ['Read from', baRead(v.basis)]
       ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">A starting hypothesis to test</p>' : '') +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">This analysis is a starting hypothesis to test.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
@@ -4327,7 +4327,7 @@
       try { was = JSON.parse(baKeep(ikey) || '{}') || {}; } catch (e0) { was = {}; }
       window.ADspaceConfirm.ask({
         title: 'Run analysis',
-        body: 'Reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
+        body: 'The analysis reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
           left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Run',
         fields: [
@@ -4418,7 +4418,7 @@
     }
   });
   var META_SAID = {
-    'not-connected': 'Meta is not connected.',
+    'not-connected': 'Meta is not set up yet. Please contact an admin.',
     'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'denied': 'You do not have permission to change this client\'s Brand. Please ask an admin.'
@@ -4549,7 +4549,7 @@
   function logoPng(file) {
     return new Promise(function (ok, bad) {
       var fr = new FileReader();
-      fr.onerror = function () { bad(new Error('The file could not be read.')); };
+      fr.onerror = function () { bad(new Error('The file could not be read. Choose another file.')); };
       fr.onload = function () {
         var img = new Image();
         img.onerror = function () { bad(new Error('Choose a PNG, JPEG, WebP or SVG image.')); };
@@ -5516,7 +5516,7 @@
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log(away ? 'client.touch_removed' : 'client.touch_restored', state.client.name, KIND_WORD[tc.kind] || '');
-        if (away) undoBar('Log entry removed.', function () { archiveTouch(tc, false); });
+        if (away) undoBar('Call or visit removed.', function () { archiveTouch(tc, false); });
         loadTouches();
       });
   }
@@ -5787,7 +5787,7 @@
           quotedLines();
           loadQuotes(quotesDone);
           if (after) after();
-        }).catch(function (e) { fail((e && e.message) || 'The connection was lost.'); });
+        }).catch(function (e) { fail((e && e.message) || ADspaceWords.en.offline); });
     });
   }
 
@@ -5898,7 +5898,7 @@
       db.from('client_services').delete().eq('id', l.id).select('id').then(function (r) {
         if (r.error) {
           msg('crmServiceMsg', r.error.code === '23503'
-            ? 'A Letter of Offer quotes this service, so it stays for the record.' : svSaid(r.error), 'err');
+            ? 'A Letter of Offer quotes this service, so it cannot be deleted.' : svSaid(r.error), 'err');
           return;
         }
         if (!(r.data || []).length) { msg('crmServiceMsg', 'Not deleted. The database refused the request.', 'err'); return; }
@@ -6818,7 +6818,7 @@
     $('voidWhat').textContent =
       /* A letter issued before the mapping table carries none, and "of 0
          service lines on it" is a clause that says nothing. */
-      'Voiding ' + d.number + ' puts back the service lines this letter alone confirmed' +
+      'Voiding ' + d.number + ' reverts to To quote the service lines this letter alone confirmed' +
       (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
       'A line included in another verified letter stays confirmed. ' +
       'The letter and its reference are kept, and the reference is never reused.';
@@ -6834,7 +6834,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'Deleting ' + d.number + ' removes the letter, its link to the service lines and the ' +
-        'client’s access to it, and puts back the service lines this letter alone confirmed' +
+        'client’s access to it, and reverts to To quote the service lines this letter alone confirmed' +
         (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
         'The file is not stored, so it cannot be recovered. ' +
         'The reference is never reused. This cannot be undone.',
@@ -6850,7 +6850,7 @@
           if (err) { done(err); return; }
           var n = (out && out.reverted) || 0;
           msg('crmDocMsg', d.number + ' deleted. ' +
-            (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
+            (n ? linesWord(n) + ' reverted to To quote.' : 'No service line changed.'), 'ok');
           loadDocuments();
           loadServices();
           syncValue();
@@ -6879,7 +6879,7 @@
         shutVoid();
         var n = (out && out.reverted) || 0;
         msg('crmDocMsg', d.number + ' voided. ' +
-          (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
+          (n ? linesWord(n) + ' reverted to To quote.' : 'No service line changed.'), 'ok');
         loadDocuments();
         loadServices();
         syncValue();

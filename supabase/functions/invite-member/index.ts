@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
   // made; a database that cannot count makes none.
   const { data: claim, error: claimErr } = await admin.rpc('team_invite_claim',
     { p_caller: caller.id, p_email: email, p_kind: kind });
-  if (claimErr) return json({ error: 'invite_failed', detail: 'This needs a database update.' }, 500, origin);
+  if (claimErr) return json({ error: 'invite_failed', detail: 'This feature is not available yet. Please contact an admin.' }, 500, origin);
   if (claim && claim.error) return json({ error: claim.error === 'too-many' ? 'too_many' : claim.error }, 429, origin);
 
   // 4. Make the login. Invited, Supabase sends the magic link and the person
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
       const apiKey = Deno.env.get('RESEND_API_KEY');
       if (linkErr || !href || !apiKey) {
         console.error('invite-member: no link or key', linkErr?.message ?? '', !!apiKey);
-        return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);
+        return json({ error: 'invite_failed', detail: 'The invitation could not be sent. Please try again.' }, 500, origin);
       }
       const mail = invitation(kind, greeting, href);
       const who = await sender('team');
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
       await file({ status: sent.status, provider: sent.provider, error: sent.error });
       if (sent.status === 'failed') {
         console.error('invite-member: send failed', sent.error);
-        return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);
+        return json({ error: 'invite_failed', detail: 'The invitation could not be sent. Please try again.' }, 500, origin);
       }
       return json({ ok: true, already: true, sent: true }, 200, origin);
     }
