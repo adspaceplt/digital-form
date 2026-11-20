@@ -134,7 +134,7 @@
     });
     var pn = first.pn, pages = first.pages.slice();
     var W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
-    var ink = pn.ink, mute = pn.mute, hair = PDF.rgb(0.812, 0.8, 0.776);
+    var ink = pn.ink, mute = pn.mute, hair = pn.line;
     var book = fonts.font, reg = fonts.bold;
     var hasCjk = function (s) { return /[　-鿿＀-￯]/.test(String(s)); };
     var face = function (s, f) { return fonts.cjk && hasCjk(s) ? fonts.cjk : f; };
@@ -193,7 +193,7 @@
        numbered sections (each part of the fee, then the terms), and the
        table heads; the quotation's own facts as one block under the title
        in place of a sentence restating them. */
-    var H1 = 16, H2 = 12, LBL = 8.5;
+    var H1 = 16.18, H2 = 12, LBL = 8.5;   // a title: the body (10pt) times φ
     var secNo = 0;
     var h2 = function (s) {
       room(80); y -= 8; secNo++;
@@ -201,7 +201,7 @@
       y -= 8;
     };
     if (t.layout === 2) {
-      y -= 6; text('Quotation', M, y, H1, reg); y -= 22;
+      y -= 6; text('Quotation', M, y, H1, reg, pn.strong); y -= 22;
       /* The quotation's own title (2026-11-16), under the heading. */
       if (t.title) {
         wrap(String(t.title), FULL, 12, reg).forEach(function (ln) { text(ln, M, y, 12, reg); y -= 15; });
@@ -497,7 +497,7 @@
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
     var v2 = t.layout === 2;
-    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg); y -= 8; } else heading('Acceptance of Quotation');
+    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8; } else heading('Acceptance of Quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
       'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;

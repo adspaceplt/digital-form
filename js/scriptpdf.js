@@ -65,8 +65,8 @@
   }
 
   function layout(pdf, PDF, fonts, videos) {
-    var ink = PDF.rgb(0.251, 0.251, 0.251), mute = PDF.rgb(0.40, 0.40, 0.40);   // the Reports PDF's ink and soft
-    var grey = PDF.rgb(0.949, 0.949, 0.949);
+    var ink = PDF.rgb(0.318, 0.318, 0.318), mute = ink, dark = PDF.rgb(0.102, 0.102, 0.102);   // the palette's #515151 and #1a1a1a
+    var grey = PDF.rgb(0.961, 0.961, 0.961);   // a shaded box, #f5f5f5
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
     var body = S(0), lead = S(0) * 1.45, small = S(-1);
@@ -194,7 +194,7 @@
       /* The page title on the Reports PDF's title step, its type and month
          under it. */
       y = TOP_Y - S(3);
-      text('Video Script', M, y, S(3), med);
+      text('Video Script', M, y, S(2), med, dark);   // the body (10pt) times φ
       y -= S(2) + 2;
       text([v.month_word, group.length > 1 ? group.length + ' scripts' : v.kind_word].filter(Boolean).join(' · '), M, y, small, book, mute);
       y -= S(3);

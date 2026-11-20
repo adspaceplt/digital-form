@@ -82,8 +82,8 @@
       return live.filter(function (s) { return (s.spec || {}).role === r; })
         .sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
     };
-    var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090);
-    var head = PDF.rgb(0.949, 0.949, 0.949), deep = PDF.rgb(0.851, 0.851, 0.851);
+    var ink = PDF.rgb(0.318, 0.318, 0.318), dark = PDF.rgb(0.102, 0.102, 0.102);   // the palette's #515151 and #1a1a1a
+    var head = PDF.rgb(0.961, 0.961, 0.961), deep = PDF.rgb(0.851, 0.851, 0.851);
     var edge = PDF.rgb(0.902, 0.902, 0.902);
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
@@ -117,7 +117,7 @@
       pn.page = page;
       pn.frameHead(false);
       y = TOP_Y;
-      if (title) { text(title, M, y - 14, 18, reg, ink); y -= 26; }
+      if (title) { text(title, M, y - 14, D().TITLE, reg, dark); y -= 26; }
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(''); return true; } return false; };
     var label = function (t) { room(LEAD + 30); text(t, M, y - BODY - 1, BODY, book, dark); y -= BODY + 5; };

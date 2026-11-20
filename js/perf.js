@@ -1831,7 +1831,7 @@
     var f = p.fonts, M = p.M, R = p.R, W = R - M;
     var book = f.font, reg = f.bold, med = f.med || f.bold;
     var g = function (v) { return window.PDFLib.rgb(v, v, v); };
-    var INK = p.ink, SOFT = p.mute, FILL = g(0.949), MARK = g(0.851), PAPER = g(1);
+    var INK = p.ink, SOFT = p.mute, FILL = p.shade, MARK = g(0.851), PAPER = g(1);
     var TY = { title: RS(2), head: RS(1), body: RS(0), cell: RS(0), small: RS(-1), figure: RS(2) };
     var SP = { tight: RS(-2), line: RS(-1), under: RS(1), block: RS(4) };
     var LH = RS(1);                          // a line of body or cell text

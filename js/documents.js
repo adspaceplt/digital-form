@@ -619,6 +619,13 @@
     return t === 'ACL' ? (signed ? 'ACL_SIGN' : 'ACL_NOSIGN') : t;
   }
   var INTERNAL = 'FOR INTERNAL USE';
+  /* A title on a document that is not a letter: the body (11pt) times φ
+     (the user, 2026-11-20). A letter's title is the body's size in Slate
+     Medium, as the template sets it. */
+  var TITLE = 17.8;
+  /* The Date beside Our Ref: the portal's date (20 Nov 2026), never the
+     template's superscript ordinal. */
+  function refDate(s) { return (s && ADspaceClock.date(dayOf(s))) || String(s || ''); }
   function verifyLine(signed) {
     return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
       'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
@@ -631,12 +638,15 @@
     var font = fonts.font, med = fonts.med || fonts.bold;
     var tpl = templateOf(opts.kind, opts.signed);
     var acl = tpl === 'ACL_SIGN' || tpl === 'ACL_NOSIGN';
-    /* The templates' inks: the text #404040, the ACL wordmark #262626, the
-       fine print (Co. Reg., the verify line) #7f7f7f. */
-    var ink = PDF.rgb(0.251, 0.251, 0.251), mute = PDF.rgb(0.498, 0.498, 0.498), faint = mute;
-    var markInk = PDF.rgb(0.149, 0.149, 0.149);
-    var line = PDF.rgb(0.87, 0.89, 0.89);
-    var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, mute: mute, faint: faint, line: line, fonts: fonts, logo: logo };
+    /* The paper's inks, the user's palette (2026-11-20: "white with
+       #515151, #f5f5f5 with #1a1a1a"): the body #515151; the wordmark,
+       a title, PRIVATE & CONFIDENTIAL, FOR INTERNAL USE and ADSPACE PLT
+       #1a1a1a; fine print of 6 to 7.5pt (Co. Reg., the verify line)
+       #a1a1a1; hairlines #cfd0d4; a shaded box #f5f5f5. */
+    var ink = PDF.rgb(0.318, 0.318, 0.318), strong = PDF.rgb(0.102, 0.102, 0.102);
+    var mute = ink, faint = PDF.rgb(0.631, 0.631, 0.631);
+    var line = PDF.rgb(0.812, 0.816, 0.831), shade = PDF.rgb(0.961, 0.961, 0.961);
+    var p = { page: null, W: W, H: H, M: M, R: R, TOP: TOP, BOT: BOT, G: G, tpl: tpl, ink: ink, strong: strong, mute: mute, faint: faint, line: line, shade: shade, fonts: fonts, logo: logo };
     p.plain = tpl === 'ALP';
     p.signed = tpl === 'ACL_SIGN';
     p.safe = function (s) {
@@ -649,6 +659,16 @@
     p.width = function (s, size, f) { return (f || font).widthOfTextAtSize(p.safe(s), size || 10); };
     p.right = function (s, xr, yy, size, f, color) { p.text(s, xr - p.width(s, size, f), yy, size, f, color); };
     p.centre = function (s, yy, size, f, color) { p.text(s, (W - p.width(s, size, f)) / 2, yy, size, f, color); };
+    /* An uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) is set
+       1.08pt apart (the user's letter spacing), as character spacing, so
+       the words still read as words to a search or a copy. */
+    var SPACE = 1.08;
+    p.spacedWidth = function (s, size, f) { var t = p.safe(s); return p.width(t, size, f) + SPACE * Math.max(0, t.length - 1); };
+    p.spaced = function (s, x, yy, size, f, color) {
+      p.page.pushOperators(PDF.pushGraphicsState(), PDF.setCharacterSpacing(SPACE));
+      p.text(s, x, yy, size, f, color);
+      p.page.pushOperators(PDF.popGraphicsState());
+    };
     p.rule = function (yy, x1, x2, heavy) {
       p.page.drawLine({ start: { x: x1 || M, y: yy }, end: { x: x2 || R, y: yy }, thickness: heavy ? 1 : 0.6, color: heavy ? ink : line });
     };
@@ -677,17 +697,17 @@
     p.frameHead = function (first) {
       var wm = fonts.mark || fonts.bold;
       if (!acl) {
-        p.text('ADspace', M, at(G.markAt), G.mark, wm, ink);
-        if (tpl === 'ALP') p.centre(INTERNAL, at(G.internalAt), 8, med, ink);
+        p.text('ADspace', M, at(G.markAt), G.mark, wm, strong);
+        if (tpl === 'ALP') p.spaced(INTERNAL, (W - p.spacedWidth(INTERNAL, 8, med)) / 2, at(G.internalAt), 8, med, strong);
         return;
       }
-      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, markInk);
+      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, strong);
       if (logo) {
         var mw = logo.width * (G.mono / logo.height);
         p.page.drawImage(logo, { x: R - mw, y: at(G.monoAt) - G.mono, width: mw, height: G.mono });
       }
       if (!first) return;
-      if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, at(G.regAt), 9, font, mute);
+      if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, at(G.regAt), 9, font, faint);
       String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s, i) {
         p.text(s, M, at(G.addrAt + i * G.line), 11, font, ink);
       });
@@ -707,10 +727,11 @@
       if (acl && first) return at(G.aclBodyAt);
       var y0 = at(G.bodyAt);
       if (tpl === 'ALP' && first && opts.title) {
-        var lines = p.wrap(opts.title, R - M, 15, med);
-        y0 -= 3;
-        lines.forEach(function (ln, i) { p.text(ln, M, y0 - i * 19, 15, med); });
-        var under = y0 - (lines.length - 1) * 19 - 12;
+        /* A form's title: the body's 11pt times φ. */
+        var tz = TITLE, lines = p.wrap(opts.title, R - M, tz, med);
+        y0 -= 5;
+        lines.forEach(function (ln, i) { p.text(ln, M, y0 - i * (tz + 4), tz, med, strong); });
+        var under = y0 - (lines.length - 1) * (tz + 4) - 12;
         p.rule(under);
         return under - 18;
       }
@@ -722,17 +743,17 @@
       var count = 'Page ' + (i + 1) + ' of ' + n;
       if (acl) {
         p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, ink);
-        p.centre(verifyLine(tpl === 'ACL_SIGN'), at(G.verifyAt), G.verify, font, mute);
+        p.centre(verifyLine(tpl === 'ACL_SIGN'), at(G.verifyAt), G.verify, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, ink);
-      if (tpl === 'ALP') p.text('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, ink);
+      if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, strong);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
        CONFIDENTIAL in Slate Medium, then Our Ref and Date with their colons
        in one column, each value wrapping under itself. */
-    p.pc = function (yy) { p.text('PRIVATE & CONFIDENTIAL', M, yy, 11, med); return yy - G.afterPc; };
+    p.pc = function (yy) { p.spaced('PRIVATE & CONFIDENTIAL', M, yy, 11, med, strong); return yy - G.afterPc; };
     p.ref = function (yy, label, value, f) {
       var vx = M + 72 + p.width(': ', 11), lines = [];
       String(value == null ? '' : value).split(/\r?\n/).forEach(function (s) {
@@ -821,7 +842,7 @@
        (Slate Book), each block a blank line from the next. */
     y = pn.pc(y);
     y = pn.ref(y, 'Our Ref', doc.serial);
-    y = pn.ref(y, 'Date', letterDate(doc.issued_at));
+    y = pn.ref(y, 'Date', refDate(doc.issued_at));
     y -= pn.G.afterPc - pn.G.refLine;
     var to = [];
     String(hr ? rc.name || '' : String(rc.name || '').toUpperCase()).split(/\r?\n/).forEach(function (s) {
@@ -838,7 +859,7 @@
     y -= LH;
 
     if (String(doc.title || '').trim()) {
-      wrap(String(doc.title).toUpperCase(), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
+      wrap(String(doc.title).toUpperCase(), R - M, BODY, med).forEach(function (ln) { line(ln, med, BODY, pn.strong); });
       y -= LH;
     }
     if (String(doc.salutation || '').trim()) { line(doc.salutation); y -= LH; }
@@ -865,7 +886,7 @@
     var closeH = LH * 2 + (doc.signed ? 60 : 0) + (named ? LH * 2 : 0);
     need(closeH);
     if (String(doc.closing || '').trim()) { text(doc.closing, M, y, BODY); y -= LH; }
-    text(ORG.name || 'ADSPACE PLT', M, y, BODY, med); y -= LH;
+    text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH;
     if (doc.signed) y -= 60;
     else if (named) y -= LH * 0.5;
     if (named) {
@@ -1034,7 +1055,7 @@
       var who = ADspaceWords.person(b.contact_salutation, b.contact);
       y = pn.pc(y);
       y = pn.ref(y, 'Our Ref', doc.number);
-      y = pn.ref(y, 'Date', letterDate(doc.issued_at));
+      y = pn.ref(y, 'Date', refDate(doc.issued_at));
       y -= pn.G.afterPc - pn.G.refLine;
       /* The name wraps to the column: a registered name longer than the
          page is wide ran off the right edge and was simply gone. */
@@ -1042,7 +1063,7 @@
       if (b.contact) wrap('Attn: ' + who + (b.contact_role ? ', ' + b.contact_role : ''), R - M, BODY).forEach(function (ln) { text(ln, M, y, BODY); y -= LH; });
       y -= LH;
 
-      text(String(k.title).toUpperCase(), M, y, BODY, med); y -= LH * 2;
+      text(String(k.title).toUpperCase(), M, y, BODY, med, pn.strong); y -= LH * 2;
       text('Dear ' + (who || 'Sir/Madam') + ',', M, y, BODY); y -= LH * 2;
 
       // The offer: the services and fees, the total, the terms, the acceptance.
@@ -1230,7 +1251,7 @@
       var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
       need(closeH);
       text('Yours sincerely,', M, y, BODY); y -= LH;
-      text(ORG.name || 'ADSPACE PLT', M, y, BODY, med); y -= LH;
+      text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH;
       /* The name of the person who issued it, and nothing else. It is never a
          permission: issue_letter refuses a team row named for a role, so
          "Superadmin" cannot reach a client's letterhead. */
@@ -1709,7 +1730,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
+    pen: pen, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };

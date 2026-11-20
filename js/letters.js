@@ -292,7 +292,7 @@
       var pn = DOCS.pen(PDF, fonts, logo, { kind: 'letter.supplier', signed: true });
       var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
       var text = pn.text, wrap = pn.wrap;
-      var FILL = PDF.rgb(0.949, 0.949, 0.949), EDGE = PDF.rgb(0.85, 0.85, 0.85);
+      var FILL = pn.shade, EDGE = pn.line;
       var pages = [], y;
       var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
       var need = function (h) { if (y - h < FLOOR) newPage(); };
@@ -300,10 +300,10 @@
 
       y = pn.pc(y);
       y = pn.ref(y, 'Our Ref', doc.serial);
-      y = pn.ref(y, 'Date', DOCS.letterDate(doc.issued_at));
+      y = pn.ref(y, 'Date', DOCS.refDate(doc.issued_at));
       y -= pn.G.afterPc - pn.G.refLine;
       wrap(String(doc.title || 'Service Agreement').toUpperCase(), R - M, 13, med).forEach(function (ln) {
-        need(18); pn.centre(ln, y, 13, med); y -= 18;
+        need(18); pn.centre(ln, y, 13, med, pn.strong); y -= 18;
       });
       y -= 8;
 
@@ -371,7 +371,7 @@
         if (head) draw(head, bold, true);
         rows.forEach(function (r) { draw(r, font, false); });
       };
-      var heading = function (s, size) { need(LH * 4); text(s, M, y, size || BODY, med); y -= (size || BODY) + 10; };
+      var heading = function (s, size) { need(LH * 4); text(s, M, y, size || BODY, med, pn.strong); y -= (size || BODY) + 10; };
 
       newPage();
       heading('SCHEDULE A', 13);

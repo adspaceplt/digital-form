@@ -200,12 +200,12 @@
         newPage();
         y = pn.pc(y);
         y = pn.ref(y, 'Our Ref', doc.serial || 'PREVIEW');
-        y = pn.ref(y, 'Date', D.letterDate(doc.sent_at || window.ADspaceClock.today()));
+        y = pn.ref(y, 'Date', D.refDate(doc.sent_at || window.ADspaceClock.today()));
         y -= pn.G.afterPc - pn.G.refLine;
         var contract = doc.kind === 'contract';
         if (!contract) { line(String(doc.name || ''), bold); y -= LH; }
         else { line('Dear ' + String(doc.name || '').trim() + ','); y -= LH; }
-        wrap(titleOf(doc), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
+        wrap(titleOf(doc), R - M, BODY, med).forEach(function (ln) { line(ln, med, BODY, pn.strong); });
         y -= LH;
 
         if (!contract) {
@@ -246,7 +246,7 @@
         var sig = doc.signatory || {};
         need(LH * 5);
         text('Yours sincerely,', M, y, BODY); y -= LH;
-        text(ORG.name || 'ADSPACE PLT', M, y, BODY, med); y -= LH * 1.5;
+        text(ORG.name || 'ADSPACE PLT', M, y, BODY, med, pn.strong); y -= LH * 1.5;
         if (sig.name) { text(sig.name, M, y, BODY, bold); y -= LH; if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; } }
         y -= LH;
 

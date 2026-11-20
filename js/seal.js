@@ -245,7 +245,7 @@
   function addRecord(pdf, PDF, fonts, logo, info) {
     var docs = window.ADspaceDocs;
     var pn = recordPen(PDF, fonts, logo, info), W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
-    var f = fonts.font, grid = PDF.rgb(0.949, 0.949, 0.949), pages = [];
+    var f = fonts.font, grid = pn.shade, pages = [];
     var y;
     var page = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
     page();

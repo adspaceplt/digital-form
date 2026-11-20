@@ -947,7 +947,7 @@
            foot, the title opening the first page. */
         var pn = docs.pen(PDF, fonts, null, { kind: 'analytics', title: 'Analytics Analysis' });
         var W = pn.W, H = pn.H, M = pn.M, FULL = W - 2 * M, FLOOR = pn.BOT + 4;
-        var ink = PDF.rgb(0.251, 0.251, 0.251), dark = PDF.rgb(0.106, 0.102, 0.090), mute = PDF.rgb(0.4, 0.4, 0.4);
+        var ink = pn.ink, dark = pn.strong, mute = pn.ink;
         var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold;
         var safe = function (s) { s = String(s == null ? '' : s).replace(/→/g, '>'); return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-'); };
         var page, y, pages = [];

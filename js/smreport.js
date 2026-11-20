@@ -60,7 +60,7 @@
   // The type roles, each a step of the scale.
   var TY = {
     cover: S(5), coverSub: S(3), coverMeta: S(1),
-    title: S(3), block: S(1), lead: S(1), body: S(0), cell: S(0), small: S(-1),
+    title: S(2), block: S(1),   // a page title: the body (10pt) times φ lead: S(1), body: S(0), cell: S(0), small: S(-1),
     figure: S(3)
   };
   // The spaces between things, each a step of the scale.
@@ -1073,10 +1073,13 @@
        structure, and two lighter greys for the marks that are only context.
        Nothing on the page is coloured. */
     var g = function (v) { return PDF.rgb(v, v, v); };
-    var INK = g(0.251);            // #404040, the rate card's one ink
-    var SOFT = g(0.40);            // secondary text: captions, dates
-    var MUTE = g(0.45);            // axis labels, notes
-    var FILL = g(0.949);           // #f2f2f2: a total row, a reading note, an image frame
+    /* The user's palette (2026-11-20): words #515151 on the white page, a
+       title #1a1a1a, a shaded box #f5f5f5. */
+    var INK = g(0.318);            // #515151, every word
+    var DARK = g(0.102);           // #1a1a1a, a page title
+    var SOFT = INK;                // secondary text: captions, dates
+    var MUTE = INK;                // axis labels, notes
+    var FILL = g(0.961);           // #f5f5f5: a total row, a reading note, an image frame
     /* One grey for the title row and the grid, as the rate card draws it
        (the user, 2026-10-02: a head shaded apart from its lines looked
        wrong; the report as it was before that day). */
@@ -1143,7 +1146,7 @@
     /* The template stays English in a Chinese report (the user, 2026-10-01):
        the cover, each page's title and the head and foot; what sits under
        a title (table titles, column heads, notes, dates) reads Chinese. */
-    var pageTitle = function (s) { var z = ZH; ZH = false; tline(s, M, y, TY.title, reg, INK, CW); ZH = z; y -= TY.title * 0.25 + SP.under; };
+    var pageTitle = function (s) { var z = ZH; ZH = false; tline(s, M, y, TY.title, reg, DARK, CW); ZH = z; y -= TY.title * 0.25 + SP.under; };
     /* A block's title in Slate Regular at S(1), the block S(-1) under it.
        `y` is always the top edge of what comes next, so the space between
        two blocks is exactly S(4) whatever they are, and under a title S(2).
