@@ -79,7 +79,7 @@
     return [st.ip ? 'IP ' + st.ip : '', country(st.country), st.device || ''].filter(Boolean).join(' · ');
   }
   /* The steps the PDF prints: the first opening and the last before the
-     signature stand for the rest, so the page holds one table. */
+     signature stand for the rest, so the page stays short. */
   function printable(steps) {
     var signedAt = (steps.filter(function (x) { return x.step === 'signed'; })[0] || {}).at;
     var opened = steps.filter(function (x) { return x.step === 'opened'; });
@@ -87,16 +87,26 @@
     var keep = [opened[0], before[before.length - 1]].filter(Boolean);
     return steps.filter(function (x) { return x.step !== 'opened' || keep.indexOf(x) >= 0; });
   }
-  /* One step as the PDF's row: Step, Date and time, By, Email confirmed,
-     IP · Country · Device. */
+  /* A device's time zone: the day heading names GMT+8, so the line drops it. */
+  var ZONE = /^(UTC|GMT([+-]\d+)?|[A-Z][A-Za-z_]+(\/[A-Za-z0-9_+-]+)+)$/;
+  /* One step as the Record page's timeline says it: its Malaysian day and
+     time to the second, the step's word, the rest as a sentence (who, or
+     to whom a code went), and one line of where it was done: the email
+     confirmed (Signed), how, the address, the country and the device. */
   function row(st) {
-    var by;
+    var party = 'the ' + String(st.party || 'Client').toLowerCase(), by;
     if (st.team) by = (st.by || 'ADspace') + (st.role ? ', ' + st.role : '') + (st.by && st.by !== 'ADspace' ? ', ADspace' : '');
-    else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : (st.party || 'Client');
-    var how = st.step === 'sent' ? (VIA[st.via] || '') : st.step === 'signed' && st.via === 'paper' ? 'Signed on paper' + (st.entered_by ? ', entered by ' + st.entered_by : '') : '';
-    return [STEP[st.step] || st.step, when(st.at), by,
-      st.step === 'signed' || st.step === 'code' ? (st.email || '—') : '—',
-      [how, where(st)].filter(Boolean).join(' · ') || '—'];
+    else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : party;
+    var rest = st.step === 'code' ? 'to ' + (st.email || '') :
+      st.step === 'sent' ? [VIA[st.via] || '', 'by ' + by].filter(Boolean).join(' ') :
+      st.step === 'issued' && !st.team && !st.by ? 'on the quotation website' : 'by ' + by;
+    var how = st.step === 'signed' && st.via === 'paper' ? 'Signed on paper' + (st.entered_by ? ', entered by ' + st.entered_by : '') : '';
+    var dev = String(st.device || '').split(' · ').filter(function (x) { return x && !ZONE.test(x); }).join(' · ');
+    var place = [st.ip || '', country(st.country), dev].filter(Boolean).join(' · ');
+    return { step: st.step, word: STEP[st.step] || st.step, day: st.at && C() ? C().date(st.at) : '',
+      time: st.at && C() ? C().clock(st.at, { sec: true }) : '', rest: rest,
+      dev: [st.step === 'signed' && st.email ? st.email + ' confirmed' : '', how, place].filter(Boolean).join(' · '),
+      key: st.step === 'signed' || st.step === 'confirmed' };
   }
   function rows(rec) { return printable(rec.steps || []).map(row); }
 
@@ -182,57 +192,53 @@
   }
 
   // ---- The Record of this Document, the PDF's last page ---------------------
-  var SZ = 9, LEAD = 11.5, PADX = 5, PADY = 3.5;
-  /* Long values (an ID, a hash, a device) wrap between words, else inside
-     the word, never past their cell. */
-  function wrapAny(pn, s, max, f) {
-    var out = [];
-    pn.wrap(String(s == null ? '' : s), max, SZ, f).forEach(function (ln) {
-      while (pn.width(ln, SZ, f) > max) {
-        var k = ln.length;
-        while (k > 1 && pn.width(ln.slice(0, k), SZ, f) > max) k--;
-        out.push(ln.slice(0, k));
-        ln = ln.slice(k);
-      }
-      out.push(ln);
-    });
-    return out.length ? out : [''];
-  }
-  function cols(FULL) {
-    return [0.12, 0.2, 0.22, 0.2, 0.26].map(function (w) { return FULL * w; });
-  }
-  function rowHeight(pn, cells, widths, f) {
-    var n = 1;
-    cells.forEach(function (c, i) { n = Math.max(n, wrapAny(pn, c, widths[i] - PADX * 2, f).length); });
-    return n * LEAD + PADY * 2;
-  }
+  /* A dated timeline (the user, 2026-11-21: "Sorry what i mean is to use
+     this", a compact record after Apple's print design): the title and the
+     Document ID on one line, the sentence, a hairline, then the steps at the
+     left grouped under their Malaysian day, and the QR code with the signed
+     pages' SHA-256 at the right. The template's inks alone: the words
+     #515151, a step's word, the title and the Document ID #1a1a1a, the
+     hairlines #cfd0d4 (`#a1a1a1` stays the head's and the foot's); nothing
+     under 6pt, the verify foot's size. */
+  var T = { title: 13, sub: 8, subLead: 11, id: 7, code: 9, day: 7, dayLead: 9, step: 8, lead: 10, gap: 2.5, dayGap: 3, under: 2,
+    dev: 6.3, devLead: 8, side: 6, sideLead: 8, hashLead: 7, part: 3, rule: 7, rail: 12, timeW: 54, sideW: 96, colGap: 24, dot: 4 };
   /* The QR code is 32pt square (about 11.3mm; the user, 2026-11-21: "Qr
      code can go smaller"): a verify address up to 59 characters (every
      reference sealed today) is 33 modules at level M, 0.34mm each, over
      the 0.33mm a phone reads. */
-  var TOP = 92, QR = 32;
+  var QR = 32;
+  /* A baseline in a line box of `lead` from its top. */
+  function base(top, size, lead) { return top - (lead - size) / 2 - size * 0.8; }
+  /* Words over lines of `max` (the first may be shorter): between words,
+     else inside a word, never past their column. */
+  function flow(pn, s, first, max, size, f) {
+    var out = [], cur = '', room = first;
+    var push = function () { out.push(cur); cur = ''; room = max; };
+    String(s == null ? '' : s).split(/\s+/).filter(Boolean).forEach(function (w) {
+      var t = cur ? cur + ' ' + w : w;
+      if (pn.width(t, size, f) <= room) { cur = t; return; }
+      if (cur) push();
+      while (pn.width(w, size, f) > room) {
+        var k = w.length;
+        while (k > 1 && pn.width(w.slice(0, k), size, f) > room) k--;
+        cur = w.slice(0, k); push(); w = w.slice(k);
+      }
+      cur = w;
+    });
+    if (cur || !out.length) out.push(cur);
+    return out;
+  }
   /* The Record page continues the document it seals: that document's
      template (an Employment Contract's ACL_SIGN, a quotation's AL), its
      continuation head and its foot, the verify line included, and its
      Document ID where the document holds one (VERIFY DETAILS, 2026-11-20;
-     a copy sealed before printed its uuid in the table alone). */
+     a copy sealed before printed its uuid). */
   function recordPen(PDF, fonts, logo, info) {
     var code = /^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(String(info.docId || '')) ? info.docId : '';
-    return window.ADspaceDocs.pen(PDF, fonts, logo, { kind: info.kind || 'seal', signed: true, cont: true, code: code });
+    var pn = window.ADspaceDocs.pen(PDF, fonts, logo, { kind: info.kind || 'seal', signed: true, cont: true, code: code });
+    pn.white = PDF.rgb(1, 1, 1);
+    return pn;
   }
-  /* How many Record pages the steps take, asked before the signed pages
-     are drawn so their foot counts them. */
-  function pagesFor(PDF, fonts, info) {
-    var pn = recordPen(PDF, fonts, null, info), FULL = pn.R - pn.M, BODYH = pn.H - pn.TOP - pn.BOT;
-    var widths = cols(FULL), room = BODYH - TOP - 3 * (LEAD + PADY * 2) - QR - 30, n = 1, used = rowHeight(pn, HEAD, widths, fonts.font);
-    (info.rows || []).forEach(function (r) {
-      var h = rowHeight(pn, r, widths, fonts.font);
-      if (used + h > room) { n++; used = rowHeight(pn, HEAD, widths, fonts.font); room = BODYH - 30; }
-      used += h;
-    });
-    return n;
-  }
-  var HEAD = ['Step', 'Date and time (GMT+8)', 'By', 'Email confirmed', 'IP · Country · Device'];
   /* The QR code's modules, from the console's own QR library (qrcodejs):
      drawn as squares, so it is sharp at any size. */
   function qrModules(text) {
@@ -247,74 +253,108 @@
       return out;
     } catch (e) { return null; }
   }
-  /* info: ref, sub (the sentence under the heading), docId, pagesSha,
-     signedPages (n), verifyUrl, rows, total (the file's page count). */
-  function addRecord(pdf, PDF, fonts, logo, info) {
-    var docs = window.ADspaceDocs;
-    var pn = recordPen(PDF, fonts, logo, info), W = pn.W, H = pn.H, M = pn.M, R = pn.R, FULL = R - M;
-    var f = fonts.font, grid = pn.shade, pages = [];
-    var y;
-    var page = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
-    page();
-    y -= 12;
-    // The padlock, then the heading.
-    try {
-      pn.page.drawSvgPath('M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', { x: M - 1, y: y + 12, scale: 0.55, borderColor: pn.ink, borderWidth: 1.1 / 0.55 });
-    } catch (e) { /* the heading stands alone */ }
-    pn.text('Record of this Document', M + 16, y, 13, fonts.med || f);
-    y -= 16;
-    pn.wrap(info.sub || '', FULL, 9.5, f).forEach(function (ln) { pn.text(ln, M, y, 9.5, f, pn.mute); y -= 12.5; });
-    y -= 8;
-    var cell = function (x, yy, w, h, shade) {
-      pn.page.drawRectangle({ x: x, y: yy - h, width: w, height: h, borderColor: grid, borderWidth: 0.8, color: shade ? grid : undefined });
-    };
-    var put = function (lines, x, yy, color) {
-      lines.forEach(function (ln, i) { pn.text(ln, x + PADX, yy - PADY - SZ - i * LEAD + 1.5, SZ, f, color); });
-    };
-    // The top table: Document ID, the signed pages' hash, Verify.
-    var kw = FULL * 0.26, vw = FULL - kw;
-    var top = [['Document ID', info.docId], ['SHA-256 of pages 1 to ' + info.signedPages, info.pagesSha]];
-    top.forEach(function (r) {
-      var vl = wrapAny(pn, r[1], vw - PADX * 2, f), h = vl.length * LEAD + PADY * 2;
-      cell(M, y, kw, h); cell(M + kw, y, vw, h);
-      put([r[0]], M, y, pn.mute); put(vl, M + kw, y);
-      y -= h;
-    });
-    var qr = qrModules(info.verifyUrl);
-    var words = info.verifyUrl.replace(/^https?:\/\//, '').replace(/\?.*$/, '').replace(/\/$/, '') + ' · ' + info.ref + ' · scan to check this copy';
-    var qh = Math.max(qr ? QR + PADY * 2 : 0, LEAD + PADY * 2);
-    cell(M, y, kw, qh); cell(M + kw, y, vw, qh);
-    put(['Verify'], M, y, pn.mute);
-    var tx = M + kw;
-    if (qr) {
-      var n = qr.length, u = QR / n, x0 = M + kw + PADX, y0 = y - PADY;
-      for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
-        if (qr[r][c]) pn.page.drawRectangle({ x: x0 + c * u, y: y0 - (r + 1) * u, width: u + 0.05, height: u + 0.05, color: pn.ink });
-      }
-      tx = x0 + QR + 4;
+  /* The page laid out once, drawn or only counted: `draw` false answers how
+     many pages the steps take, asked before the signed pages are drawn so
+     their foot counts them. */
+  function lay(pn, fonts, info, draw, newPage) {
+    var f = fonts.font, fm = fonts.med || f, M = pn.M, R = pn.R, FULL = R - M;
+    var top0 = pn.H - pn.TOP - 10, y = top0, pages = 1;
+    var txt = function (s, x, yy, size, font, color) { if (draw) pn.text(s, x, yy, size, font, color); };
+    var right = function (s, xr, yy, size, font, color) { txt(s, xr - pn.width(s, size, font), yy, size, font, color); };
+    // Row 1: the padlock and the title; the Document ID at the right edge on its baseline.
+    if (draw) {
+      try {
+        pn.page.drawSvgPath('M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', { x: M - 1, y: y + 12, scale: 0.55, borderColor: pn.strong, borderWidth: 1.1 / 0.55 });
+      } catch (e) { /* the title stands alone */ }
     }
-    /* The words' block is centred on the QR code: its capitals' top and
-       its last baseline stand equally above and below the cell's middle. */
-    var wl = wrapAny(pn, words, M + FULL - tx - PADX * 2, f), cap = SZ * 0.7;
-    var first = y - qh / 2 + (cap + (wl.length - 1) * LEAD) / 2 - cap;
-    wl.forEach(function (ln, i) { pn.text(ln, tx + PADX, first - i * LEAD, SZ, f); });
-    y -= qh + 12;
-    // The steps.
-    var widths = cols(FULL);
-    var drawRow = function (cells, shade) {
-      var h = rowHeight(pn, cells, widths, f), x = M;
-      cells.forEach(function (c2, i) {
-        cell(x, y, widths[i], h, shade);
-        put(wrapAny(pn, c2, widths[i] - PADX * 2, f), x, y);
-        x += widths[i];
+    txt('Record of this Document', M + 16, y, T.title, fm, pn.strong);
+    var code = String(info.docId || '');
+    if (code) {
+      right(code, R, y, T.code, fm, pn.strong);
+      right('Document ID', R - pn.width(code, T.code, fm) - 6, y, T.id, f, pn.ink);
+    }
+    y -= T.title * 0.25 + T.under;
+    pn.wrap(info.sub || '', FULL, T.sub, f).forEach(function (ln) { txt(ln, M, base(y, T.sub, T.subLead), T.sub, f, pn.ink); y -= T.subLead; });
+    y -= T.rule;
+    if (draw) pn.page.drawLine({ start: { x: M, y: y }, end: { x: R, y: y }, thickness: 0.6, color: pn.line });
+    y -= T.rule;
+    var bodyTop = y;
+    // The right column: the QR code, its caption, the signed pages' hash.
+    var hash = String(info.pagesSha || ''), halves = [hash.slice(0, 32), hash.slice(32)].filter(Boolean);
+    var sideW = Math.max(T.sideW, QR, pn.width('Scan to check this copy', T.side, fm),
+      halves.reduce(function (w, h) { return Math.max(w, pn.width(h, T.side, f)); }, 0));
+    var addr = String(info.verifyUrl || '').replace(/^https?:\/\//, '').replace(/\?.*$/, '').replace(/\/$/, '');
+    var sy = bodyTop, qr = draw ? qrModules(info.verifyUrl) : null;
+    if (qr) {
+      var n = qr.length, u = QR / n, x0 = R - QR;
+      for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+        if (qr[r][c]) pn.page.drawRectangle({ x: x0 + c * u, y: sy - (r + 1) * u, width: u + 0.05, height: u + 0.05, color: pn.strong });
+      }
+    }
+    sy -= QR + T.part;
+    right('Scan to check this copy', R, base(sy, T.side, T.sideLead), T.side, fm, pn.ink); sy -= T.sideLead;
+    if (addr) { right(addr, R, base(sy, T.side, T.sideLead), T.side, f, pn.ink); sy -= T.sideLead; }
+    sy -= T.part;
+    right('SHA-256, pages 1 to ' + (info.signedPages || ''), R, base(sy, T.side, T.sideLead), T.side, f, pn.ink); sy -= T.sideLead;
+    halves.forEach(function (h) { right(h, R, base(sy, T.side, T.hashLead), T.side, f, pn.ink); sy -= T.hashLead; });
+    // The timeline: the rail, the time, the step's sentence, its device.
+    var xRail = M + T.dot / 2, xTime = M + T.rail, xText = xTime + T.timeW;
+    var colW = R - sideW - T.colGap - xText, fullW = R - xText;
+    var dots = [], day = '', prevStep = false;
+    var flush = function () {
+      if (!draw || !dots.length) return;
+      if (dots.length > 1) pn.page.drawLine({ start: { x: xRail, y: dots[0].y }, end: { x: xRail, y: dots[dots.length - 1].y }, thickness: 0.6, color: pn.line });
+      dots.forEach(function (d) {
+        pn.page.drawCircle({ x: xRail, y: d.y, size: T.dot / 2, borderColor: pn.strong, borderWidth: 0.8, color: d.key ? pn.strong : pn.white });
       });
-      y -= h;
+      dots = [];
     };
-    drawRow(HEAD, true);
-    (info.rows || []).forEach(function (r) {
-      if (y - rowHeight(pn, r, widths, f) < pn.BOT + 4) { page(); drawRow(HEAD, true); }
-      drawRow(r, false);
+    var heading = function () {
+      txt(day + ' · GMT+8', xTime, base(y, T.day, T.dayLead), T.day, fm, pn.ink);
+      y -= T.dayLead + T.under;
+    };
+    var turn = function () {
+      flush();
+      pages++;
+      if (draw) newPage();
+      y = top0;
+      sy = Infinity;
+    };
+    (info.rows || []).forEach(function (st) {
+      // Beside the right column the step keeps clear of it; under it, the line runs on.
+      var wide = function (yy) { return yy < sy - 2 ? fullW : colW; };
+      var lines = flow(pn, st.rest, wide(y) - pn.width(st.word + ' ', T.step, fm), wide(y), T.step, f);
+      var devs = st.dev ? flow(pn, st.dev, wide(y), wide(y), T.dev, f) : [];
+      var newDay = st.day !== day;
+      var need = lines.length * T.lead + devs.length * T.devLead + (newDay ? T.dayLead + T.under + (prevStep ? T.dayGap : 0) : prevStep ? T.gap : 0);
+      if (y - need < pn.BOT + 4 && prevStep) { turn(); newDay = true; prevStep = false; }
+      if (newDay) { if (prevStep) y -= T.dayGap; day = st.day; heading(); }
+      else if (prevStep) y -= T.gap;
+      dots.push({ y: y - 3 - T.dot / 2, key: st.key });
+      txt(st.time, xTime, base(y, T.step, T.lead), T.step, f, pn.ink);
+      txt(st.word, xText, base(y, T.step, T.lead), T.step, fm, pn.strong);
+      lines.forEach(function (ln, i) {
+        var x = i ? xText : xText + pn.width(st.word + ' ', T.step, fm);
+        if (ln) txt(ln, x, base(y, T.step, T.lead), T.step, f, pn.ink);
+        y -= T.lead;
+      });
+      devs.forEach(function (ln) { txt(ln, xText, base(y, T.dev, T.devLead), T.dev, f, pn.ink); y -= T.devLead; });
+      prevStep = true;
     });
+    flush();
+    return pages;
+  }
+  function pagesFor(PDF, fonts, info) {
+    return lay(recordPen(PDF, fonts, null, info), fonts, info, false);
+  }
+  /* info: ref, sub (the sentence under the title), docId, pagesSha,
+     signedPages (n), verifyUrl, rows (`rows(rec)`), total (the file's page
+     count). */
+  function addRecord(pdf, PDF, fonts, logo, info) {
+    var docs = window.ADspaceDocs, pn = recordPen(PDF, fonts, logo, info), pages = [];
+    var page = function () { pn.page = pdf.addPage([pn.W, pn.H]); pages.push(pn.page); pn.head(); };
+    page();
+    lay(pn, fonts, info, true, page);
     docs.letterFoot(pn, pages, info.ref, '', info.total, info.total - pages.length);
     return pages.length;
   }

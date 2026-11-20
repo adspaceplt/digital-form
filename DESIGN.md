@@ -239,6 +239,21 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     Social Media Report, the video scripts), whose bodies keep their own
     layout between the template's margins; a white-label report puts its
     partner's logo in the wordmark's place;
+  - a sealed copy's Record page (`js/seal.js`, the user, 2026-11-21: "Sorry
+    what i mean is to use this", Apple's print design the model) is a dated
+    timeline in about a quarter of the page: Record of this Document 13pt
+    Slate Medium after the padlock, the Document ID at its right on its
+    baseline (Document ID 7pt, the code 9pt Slate Medium); the sentence
+    8pt; a hairline; at the left the steps under their Malaysian day
+    (`12 Jan 1988 · GMT+8`, 7pt Slate Medium, no weekday), each a line of
+    8pt on 10pt: the time to the second in a 54pt column, the step's word
+    in Slate Medium, the rest a sentence, and its device on one 6.3pt line;
+    a 4pt dot a step on a 0.6pt hairline, filled for Signed and Confirmed;
+    at the right, at least 96pt, the QR code 32pt, Scan to check this copy
+    over the verify address, then SHA-256, pages 1 to n over the hash on
+    two lines of 32 characters, all 6pt; inks as above (the words
+    `#515151`, a step's word, the title and the code `#1a1a1a`, never
+    `#a1a1a1`); a long record runs on under the same head;
   - nothing else in the head or the foot; a mark a document needs on every
     page (the Letter of Offer's Client initials, the performance record's
     reference line, the Rate Card's version) stands in the bottom margin
