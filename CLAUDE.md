@@ -499,7 +499,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied), with the same words on
-  every client page (`js/words.js`).
+  every client page (`js/words.js`). Where the browser holds a sign-in (the console, the
+  client portal), every cover ends Reference {code}, the sign-in's code as a
+  colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access
+  token's `session_id` claim, no request; `sessionShort`, the one cut, Devices
+  too), drawn by one watcher in `js/maintenance.js`; signed out, no line;
+  never the token (`tests/covers.js`).
 - The console's sign-in page and every cover are white to the edge
   (`body.is-plain`); the grey frame is the signed-in console's alone (the
   user, 2026-11-13: "fully white would be ok"). Client pages stay as they

@@ -68,6 +68,8 @@
     decideSave: 'Save',
     decideCancel: 'Cancel',
     decideName: 'Your name',
+    // A cover's sign-in reference, as Devices shows it (2026-11-20).
+    coverRef: 'Reference',
     maintTitle: 'Upgrade in progress',
     maintText: 'The portal will be available again shortly.',
     maintBack: 'The portal will be available again by\n{when}.',
@@ -170,6 +172,7 @@
     decideSave: '保存',
     decideCancel: '取消',
     decideName: '您的姓名',
+    coverRef: '参考编号',
     maintTitle: '系统升级中',
     maintText: '系统将稍后恢复使用。',
     maintBack: '系统将于以下时间前恢复使用：\n{when}',

@@ -1989,7 +1989,10 @@
   var SESS = {}, sessSeq = 0;
   function mkSession(email, amr) {
     sessSeq += 1;
-    var s = { user: { email: email }, amr: amr || [], access_token: 'at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
+
+    var sid = window.__sessionMine || ('5e55' + ('0000' + sessSeq).slice(-4) + '-0000-4000-8000-' + ('000000000000' + Date.now()).slice(-12));
+    var claims = btoa(JSON.stringify({ sub: email, session_id: sid })).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    var s = { user: { email: email }, amr: amr || [], access_token: 'eyJhbGciOiJIUzI1NiJ9.' + claims + '.at-' + sessSeq, refresh_token: 'rt-' + sessSeq };
     SESS[s.refresh_token] = s;
     return s;
   }
