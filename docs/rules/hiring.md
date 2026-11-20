@@ -209,8 +209,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`welcome_kit_mine`, read beside `handbook_due`, holding the gate):
   their first day, Employee ID, department, position, direct manager and
   company email, then the team's sections, the Wi-Fi password and door
-  PIN always Please check with your direct manager.; Acknowledge
-  (`welcome_kit_ack`, filed). The sections are Settings, Hiring: Welcome
+  PIN always Please check with your direct manager., and last Working
+  hours, the Business setting in force on their first day (Settings,
+  Portal: Working hours, `team.settings`; `work_start` and `work_end`
+  HHMM, `work_lunch_min`, `work_weekend` 0 Closed, 1 On demand, 2 the
+  weekday's hours; `bad-hours` for an end not after its start;
+  `ADspaceAdmin.workHours`; `2026-11-20-working-hours.sql`; the user,
+  2026-11-20: "Give working hours a setting"), its PDF the same at today,
+  never typed into a section; Acknowledge (`welcome_kit_ack`, filed). The
+  Employment Contract's Working Hours clause (8 hours a day, five days a
+  week, a one-hour lunch) stays the template's words, never the setting. The sections are Settings, Hiring: Welcome
   Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
   refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for

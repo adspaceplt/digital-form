@@ -81,6 +81,19 @@
     return out;
   }
 
+  /* Working hours (2026-11-20, the user: "Give working hours a setting"):
+     the Business setting in force on the kit's day (the colleague's first
+     day; today in Settings), read as a section of facts after the team's
+     words. Null where the console holds no figures. */
+  function hoursSection(at) {
+    var A = window.ADspaceAdmin, h = A && A.workHours ? A.workHours(at) : null;
+    return h ? { title: 'Working hours', body: h.lines.join('\n') } : null;
+  }
+  function withHours(sections, at) {
+    var h = hoursSection(at);
+    return (sections || []).concat(h ? [h] : []);
+  }
+
   // ---- The Welcome Kit, at first sign-in ------------------------------------
   /* Drawn into the onboarding page by js/handbook.js: `opts.step` and
      `opts.total` say where the kit stands among the steps; `opts.done` is
@@ -100,7 +113,7 @@
         '<span class="hbo-track" aria-hidden="true"><span style="width:' + Math.round(step / total * 100) + '%"></span></span></div>' : '') +
       '<h2 class="hbo-title wk-title">' + esc(first ? 'Welcome to ADspace, ' + first : 'Welcome to ADspace') + '</h2>' +
       '<section class="panel wk-card"><h3 class="wk-h">Your employment details</h3><dl class="ovfacts wk-facts">' + mine + '</dl></section>' +
-      (k.sections || []).map(function (s) {
+      withHours(k.sections, k.first_day ? String(k.first_day).slice(0, 10) : null).map(function (s) {
         return '<section class="panel wk-card"><h3 class="wk-h">' + esc(s.title) + '</h3>' + sectionHtml(s.body) + '</section>';
       }).join('') +
       '<div class="msg" id="wkGateMsg"></div>' +
@@ -184,7 +197,7 @@
         if (!wk.rows) return;
         window.ADspaceHrForms.download($('wkPdf'), 'kit', 'Welcome Kit', function () {
           return Promise.resolve({ title: 'Welcome Kit', who: '', ref: wk.at ? 'Last changed ' + day(wk.at) : '',
-            sections: wk.rows.map(function (s) { return { h: s.title, lines: String(s.body || '').split(/\n+/).filter(Boolean) }; }) });
+            sections: withHours(wk.rows, null).map(function (s) { return { h: s.title, lines: String(s.body || '').split(/\n+/).filter(Boolean) }; }) });
         }, $('wkMsg'));
       });
       $('wkList').addEventListener('click', function (e) {

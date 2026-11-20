@@ -3179,6 +3179,8 @@ function cardSlugFree(name, self, email) {
 
     hiring_decision_days: 7,
 
+    work_start: 1000, work_end: 1900, work_lunch_min: 60, work_weekend: 1,
+
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
   var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
     fx_sgd: ['Singapore dollar rate', ' per S$1'], creator_pay_days_myr: ['Creator payment in MYR', ' working days'], creator_pay_days_other: ['Creator payment in other currencies', ' working days'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
@@ -3190,6 +3192,7 @@ function cardSlugFree(name, self, email) {
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
     health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
@@ -3813,12 +3816,18 @@ function cardSlugFree(name, self, email) {
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
+          ((k === 'work_start' || k === 'work_end') && (v < 0 || v > 2345 || v % 1 || [0, 15, 30, 45].indexOf(v % 100) < 0)) ||
+          (k === 'work_lunch_min' && (v < 0 || v > 180 || v % 15)) || (k === 'work_weekend' && [0, 1, 2].indexOf(v) < 0) ||
           (k === 'timely_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'stage_back_days' && (v < 0 || v > 30 || v % 1)) || (k === 'timely_late_days' && (v < 0 || v > 30 || Math.round(v * 10) / 10 !== v)) ||
           (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
           (k === 'bench_reels_share' && (v < 0 || v > 100)) || (k === 'bench_ad_spend_pct' && (v < 1 || v > 100)) ||
           (k === 'bench_cpl_rise' && (v < -100 || v > 100)) ||
           (/^bench_/.test(k) && ['bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise'].indexOf(k) < 0 && (v < 0 || v > 10000))) return { error: 'bad-value', key: k };
     }
+
+    if (('work_start' in vals || 'work_end' in vals) &&
+        Number('work_end' in vals ? vals.work_end : appSet('work_end', from)) <= Number('work_start' in vals ? vals.work_start : appSet('work_start', from)))
+      return { error: 'bad-hours' };
     var moved = [], now = new Date().toISOString();
     var dayWord = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
     keys.forEach(function (key) {
@@ -3838,6 +3847,19 @@ function cardSlugFree(name, self, email) {
       }
       if (!row) { row = { key: key, from_date: from }; DB.app_settings.push(row); }
       row.value = to; row.set_by = m.id; row.set_at = now;
+
+      if (key === 'work_start' || key === 'work_end' || key === 'work_weekend') {
+        var hw = function (x) {
+          if (x == null) return 'not set';
+          if (key === 'work_weekend') return ['Closed', 'On demand', 'Weekday hours'][x];
+          var h = Math.floor(x / 100);
+          return ((h + 11) % 12 + 1) + ':' + String(x % 100).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
+        };
+        DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',
+          detail: APP_WORD[key][0] + ': ' + hw(was) + ' → ' + hw(to) + ' · from ' + dayWord(from), created_at: now });
+        moved.push(key);
+        return;
+      }
       if (key === 'analytics_from') {
         var mw = function (x) { return x == null ? 'not set' : dayWord(Math.floor(x / 100) + '-' + String(x % 100).padStart(2, '0') + '-01').slice(2); };
         DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',

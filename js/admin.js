@@ -6054,7 +6054,57 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true],
+    clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true] };
+  /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
+     "by default 10am to 7pm monday to friday, Saturday and sunday on
+     demand"): a weekday's start and end as HHMM (1000, 1900), the lunch in
+     minutes and the weekend as 0 Closed, 1 On demand, 2 the weekday's
+     hours. The team's alone: the Welcome Kit reads them; the front door's
+     Service hours never do. */
+  function clockOfSetting(v) {
+    v = Number(v);
+    if (isNaN(v)) return '';
+    var h = Math.floor(v / 100), m = v % 100;
+    return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
+  }
+  function lunchOfSetting(v) {
+    v = Number(v) || 0;
+    if (!v) return 'None';
+    var h = Math.floor(v / 60), m = v % 60;
+    return [h ? h + (h === 1 ? ' hour' : ' hours') : '', m ? m + ' minutes' : ''].filter(Boolean).join(' ');
+  }
+  var WEEKEND_WORD = ['Closed', 'On demand', 'Weekday hours'];
+  function weekendOfSetting(v) { return WEEKEND_WORD[Number(v)] || ''; }
+  function clockChoices() {
+    var out = [];
+    for (var t = 600; t <= 2330; t += (t % 100 ? 70 : 30)) out.push([String(t), clockOfSetting(t)]);
+    return out;
+  }
+  /* A choice that takes its row whole: the weekend's segment and the
+     lunch under it, the week's two times side by side above them. */
+  var SET_WHOLE = { weekend: true, lunch: true };
+  var SET_CHOICES = {
+    month: monthChoices,
+    clock: clockChoices,
+    lunch: function () { return [0, 30, 45, 60, 90, 120].map(function (n) { return [String(n), lunchOfSetting(n)]; }); },
+    weekend: function () { return WEEKEND_WORD.map(function (w, i) { return [String(i), w]; }); }
+  };
+  /* The hours in force on a day (`at`, today where none): the week's, the
+     weekend's and the lunch in words, the Settings row's value line, and
+     the Welcome Kit's lines as "Label: value" facts. */
+  function workHours(at) {
+    var MON = window.ADspaceMoney, get = function (k) { return MON && MON.setting ? MON.setting(k, at) : null; };
+    var s = get('work_start'), e = get('work_end'), we = get('work_weekend'), l = get('work_lunch_min');
+    if (s == null || e == null) return null;
+    var week = clockOfSetting(s) + ' to ' + clockOfSetting(e);
+    var end = Number(we) === 2 ? week : Number(we) === 0 ? 'Closed' : 'On demand';
+    var lunch = Number(l) ? lunchOfSetting(l) : '';
+    return { week: week, weekend: end, lunch: lunch,
+      row: ['Mon to Fri ' + week, 'Sat and Sun ' + (Number(we) === 2 ? week : end.toLowerCase()), lunch ? 'Lunch ' + lunch : '']
+        .filter(Boolean).map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · '),
+      lines: ['Monday to Friday: ' + week, 'Saturday and Sunday: ' + end].concat(lunch ? ['Lunch: ' + lunch] : []) };
+  }
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -6171,6 +6221,13 @@
        leads that came to nothing (2026-10-25). */
     /* When a figure reads better or worse, and when churn is an alert
        (2026-10-25). */
+    /* Working hours (2026-11-20): the week's, the weekend's and the lunch,
+       read by the Welcome Kit at the colleague's first day. */
+    hours: { title: 'Working hours', keys: [['work_start', 'Monday to Friday, start', 'clock', '', 'Start', clockOfSetting],
+      ['work_end', 'Monday to Friday, end', 'clock', '', 'End', clockOfSetting],
+      ['work_weekend', 'Saturday and Sunday', 'weekend', '', 'Saturday and Sunday', function (v) { return weekendOfSetting(v).toLowerCase(); }],
+      ['work_lunch_min', 'Lunch', 'lunch', '', 'Lunch', lunchOfSetting]],
+      check: function (v) { return Number(v.work_end) > Number(v.work_start) ? '' : 'Choose an end time after the start time.'; } },
     analytics: { title: 'Analytics', keys: [['analytics_from', 'Count leads and clients from', 'month', '', 'Counts from', monthOfSetting],
       ['analytics_change_pct', 'Minimum change to report (%)', 'chg', '', 'Change counted from', pctOf],
       ['analytics_churn_pct', 'Quarterly churn alert (%)', 'churn', '', 'Churn alert', pctOf]] }
@@ -6209,8 +6266,8 @@
       var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
       shown[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
-        choices: k[2] === 'month' ? monthChoices() : undefined,
-        half: !third && n > 1 && !(n % 2 && at === n), third: third,
+        choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || undefined,
+        half: !third && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]], third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
          From moves to its day and the figure to the one in force the day
@@ -6252,7 +6309,7 @@
             return 'Enter ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + ' for ' + k[1] + '.';
           }
         }
-        return '';
+        return spec.check ? spec.check(v) : '';
       }
     }, function (v) {
       var vals = {};
@@ -6280,7 +6337,8 @@
         if (r.error || d.error) {
           return r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
             : d.error === 'past' ? 'Choose a From date of today or later.' : d.error === 'denied' ? window.ADspaceWords.line.noSettings
-            : d.error === 'bad-value' ? 'Enter each figure within its allowed range.' : d.error;
+            : d.error === 'bad-value' ? 'Enter each figure within its allowed range.'
+            : d.error === 'bad-hours' ? 'Choose an end time after the start time.' : d.error;
         }
         /* Saved: a failed read of the figures afterwards never reads as a
            failed save. */
@@ -6362,6 +6420,7 @@
     TAX_KEYS: TAX_KEYS,
     SETTING_SHEETS: SETTING_SHEETS,
     monthOfSetting: monthOfSetting,
+    workHours: workHours,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
     brandGate: brandGate,

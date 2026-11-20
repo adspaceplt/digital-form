@@ -319,6 +319,10 @@
            colleague's row of the import takes. */
         biz && W.ADspacePersonnel && { id: 'autocount', name: 'AutoCount HRMS', kind: 'open', meta: line('autocount'),
           open: function (btn) { W.ADspacePersonnel.openSettings(btn); } },
+        /* Working hours (2026-11-20): the team's week, weekend and lunch,
+           read by the Welcome Kit; never the front door's Service hours. */
+        biz && { id: 'hours', name: 'Working hours', kind: 'edit',
+          meta: (bridge.workHours && bridge.workHours() || {}).row || '' },
         /* Overseas approval (2026-10-24): how long an approval runs at most
            and how often a waiting request reminds. */
         biz && { id: 'abroadays', name: 'Overseas approval', kind: 'edit',
