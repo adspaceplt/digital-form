@@ -5295,14 +5295,11 @@ svg.sec {
     box-shadow: inset 0 -1px 0 var(--line-soft);
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
-  /* The head is one height on every section and its words stand in its
-     middle, the sides at the body's 32px (the user, 2026-11-13: "left right
-     paddings feels not visually balance"): 76px holds the title and its
-     line with 13px above and below (90 read as empty space, the same day);
-     every sticky offset reads it. A record's Back is the first thing under
-     it, at the body's own 20px. Only while the console is drawn: signed
-     out, and on a cover, the page's bar is every page's 64 (2026-11-20). */
-  :root:not(.has-tabbar):has(#console:not([hidden])) { --head-h: 76px; }
+  /* The head is every bar's height, `--head-h` (64 at a desk, 56 on a
+     phone; the user, 2026-11-21: "Lets do all 64"), its words in its middle
+     and its sides at the body's 32px (2026-11-13); every sticky offset reads
+     it, and no page sets its own. A record's Back is the first thing under
+     it, at the body's own 20px. */
   :root:not(.has-tabbar) .console-body .backlink { margin-top: 0; }
   :root:not(.has-tabbar) .console-body { padding-inline: 32px; }
   :root:not(.has-tabbar) .console-title { font-family: var(--font-head); font-size: 22px; font-weight: 600; letter-spacing: -.02em; min-height: 30px; }
