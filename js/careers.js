@@ -102,9 +102,10 @@
        inform the candidate of the outcome, in place of the way to join. */
     if (i.state === 'confirmed' && i.held) {
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at, true)) + '</dd></div></dl>' +
-        /* Past the date with no decision, the date leaves the page (2026-11-20). */
-        (i.decide_by && Date.parse(i.decide_by) > Date.now() ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>'
-          : '<p class="cr-next">ADspace will contact you shortly.</p>') + '</section>';
+        (i.decide_by ? '<p class="cr-next">ADspace will inform you of the outcome by ' + esc(when(i.decide_by)) + ' (Malaysia time).</p>' : '') +
+        /* Past the date with no decision, the careers mailbox to write to (the
+           user, 2026-11-20); the address is the database's, never typed. */
+        (i.contact ? '<p class="cr-next">If you have not heard from ADspace by then, please contact us at ' + esc(i.contact) + '.</p>' : '') + '</section>';
     }
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)

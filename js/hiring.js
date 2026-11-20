@@ -1271,7 +1271,13 @@
      30 working days on. */
   function decideAsk(i, title, go, at, more, done) {
     var c = state.rec, C = window.ADspaceClock;
-    rpc('hiring_decide_by_suggest', {}).then(function (r) {
+    /* The holidays ahead, read with the suggestion, so a weekend or a public
+       holiday is refused in the question before it is sent (the front
+       door's working days; a failed read leaves it to the database). */
+    var hol = {};
+    Promise.all([rpc('hiring_decide_by_suggest', {}), rpc('public_holidays_between', { p_from: C.today(), p_to: C.addDays(C.today(), 60) })]).then(function (both) {
+      var r = both[0];
+      if (both[1] && !both[1].error) (both[1].data || []).forEach(function (h) { hol[h.day] = true; });
       var d = r.data || {};
       if (r.error || d.error) { msg('hirRecMsg', said(r), 'err'); return; }
       var from = at || d.at, f = [
@@ -1284,7 +1290,7 @@
           if (!t) return 'Enter the decision date and time.';
           if (t.getTime() <= Date.now()) return SAID.past;
           var wd = C.weekday(v.day);
-          if (wd === 0 || wd === 6) return SAID['not-workday'];
+          if (wd === 0 || wd === 6 || hol[v.day]) return SAID['not-workday'];
           if (t.getTime() > Date.parse(d.latest)) return SAID['too-far'];
           if (String(v.note || '').trim().length > 500) return 'Shorten the note to 500 characters.';
           return '';

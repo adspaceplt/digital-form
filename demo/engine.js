@@ -15367,7 +15367,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (civ.state === 'invited') { civ.slots = ci.slots.slice(); if (ci.reply_by) civ.reply_by = ci.reply_by; }
           if (ci.picked) civ.at = ci.slots[ci.picked - 1];
           if (ci.state === 'confirmed' && ci.meeting_link && !ci.held_at) civ.link = ci.meeting_link;
-          if (ci.held_at) { civ.held = true; if (!cc.outcome && cc.decide_by && Date.parse(cc.decide_by) > Date.now()) civ.decide_by = cc.decide_by; }
+          if (ci.held_at) {
+            civ.held = true;
+            if (!cc.outcome && cc.decide_by) civ.decide_by = cc.decide_by;
+
+            if (!cc.outcome && cc.decide_by && Date.parse(cc.decide_by) <= Date.now()) civ.contact = mailSendersFull().careers.reply_to;
+          }
         }
         if (cc.stage === 'pool' || cc.stage === 'closed') civ = null;
         var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;

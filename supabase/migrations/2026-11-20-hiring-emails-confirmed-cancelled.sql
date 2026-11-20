@@ -29,17 +29,21 @@
 --     the page reads Interview cancelled, never its time or link.
 --   * `system_emails` files `hiring_confirmed` and `hiring_cancelled`.
 --   * The coordinator's review of the day's merges: a decision date on a
---     working day alone (`hiring_workday_ok`; `hiring_interview_held` and
+--     working day alone (`is_working_day`, the front door's rule; `hiring_interview_held` and
 --     `hiring_decide_by_change` refuse `not-workday`); `hiring_decide_remind
 --     (p_today)` counts the working days left (tomorrow, on the next working
 --     day, in 2 working days) and, past the date with no decision, tells the
 --     Owners each working morning (`hiring.decide_over`,
---     `hiring_candidates.decide_over_on`); `careers_read` answers the
---     decision date only while it is ahead; every hiring email's prepare
+--     `hiring_candidates.decide_over_on`); `careers_read` answers, past the
+--     decision date with no decision, the careers mailbox to contact; every hiring email's prepare
 --     answers `system` (the sender a system account: the email closes as
 --     the ADspace Hiring Team), never the colleague's own address.
 --   * An email that did not go is filed in the candidate's history as not
 --     emailed, never with the mail provider's own words.
+--   * Left on their own reading of a working day, unchanged here: My Work's
+--     `ops_add_business_days` (weekends alone: a due date is never moved
+--     for a holiday), `ops_tasks_remind` and `ops_tasks_nudge` (weekends,
+--     their cron asking `public_holiday_on`, which is the same rule).
 --
 -- ORDER: this file, then hiring-mail (the two new kinds), then the pages.
 -- An old page never asks for the new emails; an old hiring-mail refuses
@@ -48,7 +52,7 @@
 --
 -- ROLLBACK: drop `hiring_confirmed_mail_prepare`,
 -- `hiring_confirmed_mail_done`, `hiring_decide_remind(date)` and
--- `hiring_workday_ok`; run `hiring_decide_remind`,
+-- `is_working_day`; run `hiring_workday_add` from INTERVIEW HELD, `hiring_decide_remind`,
 -- `hiring_interview_held` and `hiring_decide_by_change` from INTERVIEW
 -- HELD, `hiring_outcome_mail_prepare` and `hiring_doc_mail_prepare` from
 -- ACCESS CLEAN-UP again; run `hiring_when` from INTERVIEW TIMES IN
@@ -256,7 +260,9 @@ begin
       'reply_by', case when v_state = 'invited' then i.reply_by end,
       'link', case when i.state = 'confirmed' and i.held_at is null then i.meeting_link end,
       'held', case when i.held_at is not null then true end,
-      'decide_by', case when i.held_at is not null and c.outcome is null and c.decide_by > now() then c.decide_by end)) end,
+      'decide_by', case when i.held_at is not null and c.outcome is null then c.decide_by end,
+      /* Past it with no decision: the careers mailbox to contact (2026-11-20). */
+      'contact', case when i.held_at is not null and c.outcome is null and c.decide_by <= now() then public.mail_sender('careers')->>'reply_to' end)) end,
     'docs', case when c.stage in ('offer', 'hired') then coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('id', d.id, 'kind', d.kind,
         'serial', d.serial, 'state', case when d.state = 'sent' and d.reply_by <= now() then 'expired' else d.state end,
         'sent_at', d.sent_at, 'reply_by', d.reply_by, 'signed_at', d.signed_at)) order by d.sent_at)
@@ -265,14 +271,33 @@ end $$;
 revoke all on function public.careers_read(text) from public;
 grant execute on function public.careers_read(text) to anon, authenticated;
 
-/* (Added at the coordinator's review, 2026-11-20.) A decision date on a
-   working day alone: Monday to Friday, never a public holiday. */
-create or replace function public.hiring_workday_ok(p_day date)
+/* A working day, the one rule (the user, 2026-11-20: the decision date
+   follows the front door's Service hours): Monday to Friday, never a day on
+   the public holidays list. The front door reads the same table. */
+create or replace function public.is_working_day(p_day date)
 returns boolean language sql stable security definer set search_path = public as $$
   select p_day is not null and extract(isodow from p_day) < 6
      and not exists (select 1 from public.public_holidays h where h.day = p_day);
 $$;
-revoke all on function public.hiring_workday_ok(date) from public, anon, authenticated;
+revoke all on function public.is_working_day(date) from public, anon, authenticated;
+
+/* n working days after p_day (before it, n below nought), by that rule. */
+create or replace function public.hiring_workday_add(p_day date, p_n int)
+returns date language plpgsql stable security definer set search_path = public as $$
+declare
+  v_cur  date := p_day;
+  v_left int := abs(coalesce(p_n, 0));
+  v_step int := case when coalesce(p_n, 0) < 0 then -1 else 1 end;
+begin
+  while v_left > 0 loop
+    v_cur := v_cur + v_step;
+    if public.is_working_day(v_cur) then
+      v_left := v_left - 1;
+    end if;
+  end loop;
+  return v_cur;
+end $$;
+revoke all on function public.hiring_workday_add(date, int) from public, anon, authenticated;
 
 alter table public.hiring_candidates add column if not exists decide_over_on date;
 
@@ -298,7 +323,7 @@ begin
   v_at := coalesce(p_decide_by, public.hiring_decide_by_at(now(), null));
   if v_at <= now() then return jsonb_build_object('error', 'past'); end if;
   if v_at > public.hiring_decide_by_at(now(), 30) then return jsonb_build_object('error', 'too-far'); end if;
-  if not public.hiring_workday_ok((v_at at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
+  if not public.is_working_day((v_at at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
   update public.hiring_interviews set held_at = now(), held_by = me.id, held_mail = null, held_mail_at = null, updated_at = now() where id = i.id;
   update public.hiring_candidates set decide_by = v_at, decide_note = null, decide_soon_at = null, decide_due_at = null, decide_moved_at = null,
     last_step_at = now(), updated_at = now() where id = c.id;
@@ -324,7 +349,7 @@ begin
   if c.outcome is not null then return jsonb_build_object('error', 'decided'); end if;
   if p_decide_by is null or p_decide_by <= now() then return jsonb_build_object('error', 'past'); end if;
   if p_decide_by > public.hiring_decide_by_at(now(), 30) then return jsonb_build_object('error', 'too-far'); end if;
-  if not public.hiring_workday_ok((p_decide_by at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
+  if not public.is_working_day((p_decide_by at time zone 'Asia/Kuala_Lumpur')::date) then return jsonb_build_object('error', 'not-workday'); end if;
   if char_length(coalesce(p_note, '')) > 500 then return jsonb_build_object('error', 'too-long'); end if;
   if p_decide_by = c.decide_by and nullif(btrim(coalesce(p_note, '')), '') is not distinct from c.decide_note then
     return jsonb_build_object('ok', true, 'same', true, 'decide_by', c.decide_by);
@@ -367,14 +392,14 @@ begin
       n := n + 1;
     elsif v_today < v_day and v_today >= public.hiring_workday_add(v_day, -2) and r.decide_soon_at is null then
       select count(*) into v_left from generate_series(v_today + 1, v_day, interval '1 day') g(d)
-       where public.hiring_workday_ok(g.d::date);
+       where public.is_working_day(g.d::date);
       v_when := case when v_day = v_today + 1 then 'tomorrow' when v_left <= 1 then 'on the next working day'
         else 'in ' || v_left || ' working days' end;
       update public.hiring_candidates set decide_soon_at = now() where id = r.id;
       perform public.hiring_tell(r.id, 'hiring.decide_soon', 'A hiring decision is due ' || v_when,
         'Decide on the ' || r.position || ' candidate by ' || public.hiring_when(r.decide_by) || ' on the Scores tab.');
       n := n + 1;
-    elsif v_today > v_day and public.hiring_workday_ok(v_today) and r.decide_over_on is distinct from v_today then
+    elsif v_today > v_day and public.is_working_day(v_today) and r.decide_over_on is distinct from v_today then
       update public.hiring_candidates set decide_over_on = v_today where id = r.id;
       perform public.hiring_tell(r.id, 'hiring.decide_over', 'A hiring decision is overdue',
         'The decision on the ' || r.position || ' candidate was due ' || public.hiring_when(r.decide_by) || '. Decide on the Scores tab, or change the decision date.');

@@ -230,12 +230,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   colleague's rating, scores and answers) and beside Add section in the
   Welcome Kit's sheet.
 - Decision dates (2026-11-20, the coordinator's review): a decision date
-  is a working day (`hiring_workday_ok`, `not-workday`, Choose a working
+  is a working day (`is_working_day`, the one rule: Monday to Friday and never
+  a day on `public_holidays`, as the front door's Service hours read the
+  same table; `not-workday`, Choose a working
   day.); the morning reminder counts the working days left (due tomorrow,
   on the next working day, in 2 working days), and past the date with no
   decision tells the Owners each working morning, once (`hiring.decide_over`,
-  `decide_over_on`), until a decision or a new date; the candidate's page
-  drops a date gone by and reads ADspace will contact you shortly. The
+  `decide_over_on`), until a decision or a new date; the candidate is never
+  told it is overdue: their page keeps the date and, once it has passed,
+  adds If you have not heard from ADspace by then, please contact us at
+  {the careers reply-to mailbox} (`careers_read` `contact`, from
+  `mail_sender('careers')`, never typed; the user, 2026-11-20). The
   new date's email reads Decision date updated: {position}, apart from the
   outcome emails. A hiring email sent by a system account (the super
   admin) closes Yours sincerely, ADspace Hiring Team, never the account's
