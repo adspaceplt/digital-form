@@ -338,6 +338,9 @@
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
           { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
+        /* Health check-ins (2026-11-22): weekly near capacity, else monthly. */
+        biz && { id: 'healthcheck', name: 'Health check-ins', kind: 'edit',
+          meta: num('health_near_pct') == null ? '' : 'Weekly from ' + num('health_near_pct') + '% of capacity · Monthly below it' },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
             'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
