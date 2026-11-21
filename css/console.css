@@ -3824,6 +3824,11 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    spanning the auto track alone had widened it, opening a gap before the
    ⋯ and pulling the figure and state off their headings (2026-10-27). */
 .rec-pane:not(.is-narrow) .qt-row.has-acts > .qt-dl { grid-row: 2; grid-column: 1 / -1; justify-self: end; margin-top: 8px; }
+/* A quotation's and a service line's figure, state and ⋯ stand on the
+   name's first line, line for line, never centred over a name of three
+   lines (the user, 2026-11-21: "quotations layout is slanted"). */
+.rec-pane:not(.is-narrow) :is(.qt-row, .csv-row):not(.crm-head) { align-items: start; }
+.rec-pane:not(.is-narrow) :is(.qt-row, .csv-row):not(.crm-head) > .team-act { align-self: start; height: 22px; margin-top: 0; display: flex; align-items: center; }
 .is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl dl"; }
 .is-narrow:not(.is-tight) .qt-row.has-acts > .qt-dl { grid-area: dl; justify-self: end; margin-top: 8px; }
 /* An empty list carries its way out on its line (2026-10-22, SL-M2). */

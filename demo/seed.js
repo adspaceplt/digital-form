@@ -394,7 +394,7 @@
   var vDevice = 'Safari 18 on macOS 15 · 1512×982 · Asia/Kuala_Lumpur · en-MY';
   DB.quotations.push({ id: 'dvq1', ref: 'ADP/QT8801-' + V.name.charAt(0).toUpperCase() + '01', client_id: V.id, brand: V.name, version: '1.0.0',
     selection: {}, lines: [{ kind: 'plan', label: VS.label, basis: 'month', qty: 1, rate: VS.rate, amount: VS.rate }],
-    totals: { month: { incl: vSub + vTax }, term: 12, sst_pct: 8 }, status: 'sent', source: 'console', issued_at: vAt(1, '02:10:00'), valid_until: '1988-01-31',
+    totals: { month: { incl: vSub + vTax }, term: 12, commitment: Math.round((vSub + vTax) * 12 * 100) / 100, sst_pct: 8 }, status: 'sent', source: 'console', issued_at: vAt(1, '02:10:00'), valid_until: '1988-01-31',
     made_by: 'Mei Ling Chan', contact: null, access_key: null, sent_out_at: vAt(1, '02:20:00'), signed_at: vAt(4, '02:42:15'),
     signed: { via: 'online', company: { legal_name: V.legal_name }, contact: { name: 'Jane Doe', email: 'client@example.com' },
       signer: { name: 'Jane Doe', designation: 'Director' }, signature: { type: 'typed', text: 'Jane Doe' },

@@ -877,9 +877,11 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   reads Delete.
 - One word per act, everywhere (the user, 2026-10-09: "why do you use
   different terms"): Publish / Unpublish (never Share, Unshare or Publish to
-  client), Download (never Download PDF), Preview PDF beside it where a
-  record draws one, Add for the next of a series (Add script). `tests/words.js`
-  fails a retired word.
+  client), Download, Preview PDF beside it where a record draws one, Add
+  for the next of a series (Add script). `tests/words.js` fails a retired
+  word. A document's ⋯ names what it opens in full (the user, 2026-11-21:
+  "can you not too short"): Download PDF, Show document record, Show
+  quotation link (Quotations, Documents).
 - One vocabulary:
   - Creator steps: Confirmed, Pending visit, Pending draft, Submitted,
     Reviewing, Changes requested, Scheduled, Posted, Completed, Withdrawn.
