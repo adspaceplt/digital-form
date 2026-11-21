@@ -234,7 +234,7 @@
        disabled with the same words (`data-gate="whatsapp quotewa"`). */
     var A = window.ADspaceAdmin;
     if (maySet && A && A.gateState && !A.gateState('quotewa').on && shown.some(awaiting)) {
-      html += '<p class="msg warn" id="qtWaOff">' + esc(window.ADspaceWords.line.quoteWaOff) + '</p>';
+      html += '<p class="msg warn" id="qtWaOff">' + esc(window.ADspaceWords.line.quoteWaOffAll) + '</p>';
     }
     /* What needs the team first, then what stands, then what is settled,
        then what is over (Expired, Revised, Cancelled); each newest first

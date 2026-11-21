@@ -349,12 +349,13 @@
     meetOff: 'Google Meet is not set up for the portal. Please contact an admin.',
     metaOff: 'Meta is not connected to the portal. Please contact an admin.',
     metaChecksOff: 'Meta checks are turned off. An admin can turn them on in Settings → Reports.',
-    quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email, or an admin can change this in Settings → Messages.',
+    quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
+    quoteWaOffAll: 'Website quotations are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
     pageOff: function (name, kind, until) {
       return name + ' is set to ' + kind + (until ? ' until ' + until : '') + '. Anyone opening this link will see the notice page instead.';
     },
     pageAhead: function (name, kind, from) {
-      return name + ' will be set to ' + kind + ' from ' + from + '. Anyone opening this link then will see the notice page instead.';
+      return name + ' will be set to ' + kind + ' from ' + from + '. From then, anyone opening this link will see the notice page instead.';
     },
     portalOffRow: 'Off for the whole portal',
     /* An automatic email a step would send, said before the step while it
