@@ -230,7 +230,8 @@
       cr && ['Creator page', '/creator/?k=' + cr.access_code],
       vs && ['Video Scripts', '/script/?k=' + vs.script_key],
       me && ['Namecard', '/card/?k=' + me.card_key],
-      ['Verify document', '/verify/' + (vq ? '?s=' + encodeURIComponent(vq.ref) : '')]].filter(Boolean);
+      // As a scan of the sealed sample's QR code lands: its Document ID in the fragment.
+      ['Verify document', '/verify/' + (vq ? '?s=' + encodeURIComponent(vq.ref) + (vq.doc_code ? '#d=' + vq.doc_code : '') : '')]].filter(Boolean);
   }
   var lib = window.supabase;
   /* The engine sets its own library in place of the real one and then

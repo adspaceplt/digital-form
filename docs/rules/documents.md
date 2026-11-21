@@ -285,6 +285,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     details entered, or contact ADspace at {contact}.", `contact` the Legal and
     compliance mailbox (`mail_boxes` `legal`).
   - Checks counted (VERIFY CHECKS COUNTED, `2026-11-21-verify-checks-counted.sql`; the user, 2026-11-21, no "since"): a `verify_serial` lookup that finds a document is kept once an address a Malaysian day a document (`verify_check_note`: `verify_checks`, the address only as the SHA-256 of `app_secrets` `verify_check_salt`, the day and `request_ip()`; a miss, a repeat, a colleague and a session with no request never), raising `verify_check_totals`, which never drops; `privacy_retention` lets go of a row 30 days after its day. `verify_details` answers `checks` (one at least), drawn as one 12px mute line under History (Checked once, Checked 5 times; 已查验5次), never in the first answer or a PDF; the team reads it on the opened record (`verify_checks_of`, `ADspaceSeal.open` `checks`): a quotation's and an HR document's Record (under Verify), a portal letter's ⋯ Record, a performance record's head line; never on a list row; none at 0.
+  - A QR code's pass (VERIFY QR PASS; the user, 2026-11-21): the code holds
+    `/verify/?s={ref}#d={Document ID}` (`ADspaceSeal.scanUrl`; a copy with no
+    Document ID the address alone, the printed line never the ID); the page
+    takes `d=` out of the address and history before it asks anything, keeps
+    it as this tab's pass for that reference (sessionStorage
+    `adspace-verify-pass:{REF}`, `verify.passMinutes` from the scan, 30) and
+    opens the details through the same `verify_details` call, a refused ID
+    falling back to the typed step with its refusal, the field empty, the
+    pass let go; a shared address, another tab or a pass run out meets the
+    first answer (`tests/verifydetails.js`).
   - Check a file: the PDF hashed in the browser, never uploaded, its SHA-256
     asked of `verify_file` (anon): Matches the sealed copy or Does not match
     the sealed copy.

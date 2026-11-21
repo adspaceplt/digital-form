@@ -18,8 +18,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the reviewer's page): drawn with its Record of this Document as the last
   page (the title with the Document ID at its right; the steps as a dated
   timeline grouped by Malaysian day, each to the second with who and where
-  it was done; at the right a QR code of `/verify/?s={ref}` 32pt square
-  (`QR`, 33 modules of 0.34mm for an address up to 59 characters), its
+  it was done; at the right a QR code of `/verify/?s={ref}#d={Document ID}`
+  (Documents, A QR code's pass) 32pt square at least, never a module under
+  0.34mm (`QR`, `QR_MODULE`: 33 modules up to 62 characters, else the
+  square grows, 37 modules at 35.7pt), its
   caption and the signed pages' SHA-256 whole on two lines; DESIGN.md §2
   Print; 2026-11-21), every foot counting the Record page), stored private
   (`sign-upload` `seal`), kept by `quotation_seal` (Quotations Work, once;

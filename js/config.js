@@ -57,6 +57,11 @@ window.ADSPACE_CONFIG = {
   // giveUpAfter (milliseconds).
   loading: { showAfter: 300, slowAfter: 8000, giveUpAfter: 20000 },
 
+  // /verify/ (js/verify.js): a QR code's Document ID opens the details, and
+  // a refresh in that tab keeps them for passMinutes after the scan; a link
+  // shared on never carries it.
+  verify: { passMinutes: 30 },
+
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change
   // this number to match. Anything bigger should be pasted as a link instead.
