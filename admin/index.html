@@ -132,17 +132,17 @@
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261117zzzf"></script>
-<script src="/js/words.js?v=20261121zzzzb"></script>
+<script src="/js/words.js?v=20261122rd"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261119"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
 <script src="/js/acts.js?v=20261120zzzzv"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261121zzw"></script>
+<script src="/js/confirm.js?v=20261122rb"></script>
 <script src="/js/sheet.js?v=20261117zzzf"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261117zzzf"></script>
+<script src="/js/form.js?v=20261122rd"></script>
 <script src="/js/otp.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -1226,7 +1226,7 @@
               <div class="msg" id="crmBillMsg"></div>
             </div>
             <div class="sheet-foot">
-              <button class="btn btn-primary" id="crmBillSave" data-need="clients.billing:work" type="button">Save</button>
+              <button class="btn btn-primary" id="crmBillSave" data-check-partial data-need="clients.billing:work" type="button">Save</button>
               <button class="btn btn-quiet" id="crmBillCancel" type="button">Cancel</button>
             </div>
           </div>
@@ -1276,7 +1276,7 @@
                   <div><label class="field-label" for="crmWebsite">Website</label>
                     <textarea class="input" id="crmWebsite" placeholder="https://adspace.me" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
-                    <input class="input" id="crmPhone" type="tel" placeholder="07-123 4567"></div>
+                    <input class="input" id="crmPhone" type="tel" data-check="phone" placeholder="07-123 4567"></div>
                 </div>
               </section>
               <!-- The same logo Content Review draws on a mockup: one row,
@@ -1776,7 +1776,7 @@
                 <div class="row fgrid">
                   <div><label class="field-label" for="qsgPSal">Salutation</label><select class="select" id="qsgPSal"><option value="">None</option></select></div>
                   <div><label class="field-label" for="qsgPName">Name</label><input class="input" id="qsgPName" maxlength="80" aria-required="true" placeholder="John Doe"></div>
-                  <div><label class="field-label" for="qsgPPhone">Phone</label><input class="input" id="qsgPPhone" type="tel" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
+                  <div><label class="field-label" for="qsgPPhone">Phone number</label><input class="input" id="qsgPPhone" type="tel" data-check="phone" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
                   <div><label class="field-label" for="qsgPEmail">Email</label><input class="input" id="qsgPEmail" type="email" maxlength="160" aria-required="true" placeholder="email@adspace.me"></div>
                 </div>
               </section>
@@ -2335,7 +2335,7 @@
                   <option value="graphic">Graphic</option>
                 </select></div>
               <div><label class="field-label" for="campSlots">Creators</label>
-                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" value="10"></div>
+                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" step="1" value="10"></div>
               <div><label class="field-label" for="campDeadline">Due date</label>
                 <input class="input" id="campDeadline" type="date"></div>
             </div>
@@ -3270,7 +3270,7 @@
             </section>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="ntGo" type="button">Create task</button>
+            <button class="btn btn-primary" id="ntGo" data-check-own type="button">Create task</button>
             <button class="btn btn-quiet" id="ntCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="ntMsg"></div>
@@ -4390,7 +4390,7 @@
         </div>
         <div class="sheet-body">
           <div class="row fgrid">
-            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" data-check="amount" autocomplete="off" aria-required="true"></div>
             <div><label class="field-label" for="rwFPro">Profit (RM)</label><input class="input" id="rwFPro" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
           </div>
           <div class="row fgrid">
@@ -5054,7 +5054,7 @@
         <div class="vs-editfoot">
           <div class="msg" id="vsMsg"></div>
           <div class="row acts">
-            <button class="btn btn-primary" id="vsSave" type="button">Save</button>
+            <button class="btn btn-primary" id="vsSave" data-check-partial type="button">Save</button>
             <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
           </div>
         </div>
@@ -6352,7 +6352,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div><label class="field-label" for="hirEmail">Email</label>
             <input class="input" id="hirEmail" type="email" aria-required="true" maxlength="160" placeholder="email@adspace.me"></div>
           <div><label class="field-label" for="hirPhone">Phone</label>
-            <input class="input" id="hirPhone" type="tel" maxlength="30" placeholder="012-345 6789"></div>
+            <input class="input" id="hirPhone" type="tel" data-check="phone" maxlength="30" placeholder="012-345 6789"></div>
         </div>
       </section>
       <section class="fsec">
@@ -6430,7 +6430,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST Registration No.</label>
             <input class="input" id="supEdSst" autocapitalize="characters" placeholder="Optional"></div>
           <div class="span-all" id="supEdPhoneWrap"><label class="field-label" for="supEdPhone">Office / mobile</label>
-            <input class="input" id="supEdPhone" type="tel" aria-required="true"></div>
+            <input class="input" id="supEdPhone" type="tel" data-check="phone" aria-required="true"></div>
           <div class="span-all" id="supEdAddrWrap"><label class="field-label" for="supEdAddr">Billing address</label>
             <textarea class="textarea" id="supEdAddr" rows="3" aria-required="true" maxlength="400"></textarea></div>
         </div>
@@ -6445,7 +6445,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdEmailWrap"><label class="field-label" for="supEdEmail">Email</label>
             <input class="input" id="supEdEmail" type="email" aria-required="true" maxlength="160"></div>
           <div id="supEdMobileWrap"><label class="field-label" for="supEdMobile">Mobile / WhatsApp</label>
-            <input class="input" id="supEdMobile" type="tel" aria-required="true"></div>
+            <input class="input" id="supEdMobile" type="tel" data-check="phone" aria-required="true"></div>
         </div>
       </section>
       <section class="fsec">
@@ -6692,7 +6692,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/letters.js?v=20261120zzzzzd"></script>
 <script src="/js/smreport.js?v=20261120zzzp"></script>
 <script src="/js/reports.js?v=20261121zzzzb"></script>
-<script src="/js/register.js?v=20261121zzzz"></script>
+<script src="/js/register.js?v=20261122r"></script>
 <script src="/js/suppliers.js?v=20261121zzzzb"></script>
 <script src="/js/hiring.js?v=20261121zzzzb"></script>
 <script src="/js/bukku.js?v=20261121zzzz"></script>
