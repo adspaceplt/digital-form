@@ -196,7 +196,7 @@
     'skip-reason-required': 'Enter a reason to skip this step.',
     'client-posts': 'The client posts this content, so it has no Live stage. Mark it as posted by ADspace first.',
     'already-live': 'Content that is already live cannot be marked as posted by the client. Move the task back from Live first.',
-    'no-live-stage': 'This workflow has no Live stage, so who posts it is not set.',
+    'no-live-stage': 'This workflow has no Live stage, so the content cannot be marked as posted by the client. Choose a workflow with a Live stage first.',
     'back-reason-required': 'Enter a reason to go back.',
     'retired-stage': 'That stage is no longer used. Choose another stage.',
     'planning-incomplete': 'This month\u2019s checklists are not done. Tick them, or mark them Not needed, first.',
@@ -5287,7 +5287,7 @@
       n.title = 'Scheduled';
       n.line = t.publish_at
         ? (cn < 0 ? 'The client was due to post it on ' + niceDate(t.publish_at) + '. Complete the task once it is posted.'
-          : cn === 0 ? 'The client will post it today.' : 'The client will post it on ' + niceDate(t.publish_at) + '.')
+          : cn === 0 ? 'The client will post it today.' : 'The client will post it on ' + CK.date(t.publish_at, { named: true }) + '.')
         : 'No post date set.';
       if (work && hasNext(t, 'completed')) n.go = stepAct(t, 'completed');
       return n;
