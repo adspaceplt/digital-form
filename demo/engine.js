@@ -5355,7 +5355,13 @@ function cardSlugFree(name, self, email) {
       'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
 
-  var HM_SEED = [{"kind": "invite", "on_send": true, "subject": "Interview invitation: {position}", "body": "Dear {candidate name},\n\nThank you for your application for the position of {position}. ADspace would like to invite you to an interview of {interview length} minutes {where} at one of the following times:\n\n{times}\n\n{note}\n\nPlease choose a time on your application page by {reply by} (Malaysia time). If none of these times is suitable, please indicate this on the same page.\n\n{button}\n\n{sign-off}"}, {"kind": "confirm", "on_send": true, "subject": "Interview confirmed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} is confirmed for {time} (Malaysia time), for {interview length} minutes.\n\n{place}\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "held", "on_send": true, "subject": "Thank you for your interview: {position}", "body": "Dear {candidate name},\n\nThank you for attending the interview for the position of {position}.\n\nADspace will inform you of the outcome by {decision date} (Malaysia time).\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "moved", "on_send": true, "subject": "Decision date updated: {position}", "body": "Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "cancelled", "on_send": true, "subject": "Interview cancelled: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}"}, {"kind": "pool", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}"}, {"kind": "not", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}"}, {"kind": "doc", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "doc_again", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "confirmed", "on_send": true, "subject": "{document} confirmed: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "expired", "on_send": true, "subject": "{document} expired: {reference}", "body": "Dear {candidate name},\n\nThe {document} {reference} dated {document date} has expired, as no reply was received by {reply by} (Malaysia time).\n\nPlease contact ADspace at {contact}.\n\n{sign-off}"}];
+  function hMailSaid(s) {
+    return s === 'sent' ? ' emailed to the candidate.' : s === 'unknown' ? ' sent to the candidate, but its delivery could not be verified.'
+      : ' could not be emailed to the candidate.';
+  }
+  function hDocName(d) { return (d.kind === 'offer' ? 'Employment Offer ' : 'Employment Contract ') + d.serial; }
+  function hDocFor(d) { var p = String((d.terms && d.terms.position) || '').trim(); return p ? ' for the position of ' + p : ''; }
+  var HM_SEED = [{"kind": "invite", "on_send": true, "subject": "Interview invitation: {position}", "body": "Dear {candidate name},\n\nThank you for your application for the position of {position}. ADspace would like to invite you to an interview of {interview length} minutes {where} at one of the following times:\n\n{times}\n\n{note}\n\nPlease choose a time on your application page by {reply by} (Malaysia time). If none of these times is suitable, please indicate this on the same page.\n\n{button}\n\n{sign-off}"}, {"kind": "confirm", "on_send": true, "subject": "Interview confirmed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} is confirmed for {time} (Malaysia time), for {interview length} minutes.\n\n{place}\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "held", "on_send": true, "subject": "Thank you for your interview: {position}", "body": "Dear {candidate name},\n\nThank you for attending the interview for the position of {position}.\n\nADspace will inform you of the outcome by {decision date} (Malaysia time).\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "moved", "on_send": true, "subject": "Decision date updated: {position}", "body": "Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "cancelled", "on_send": true, "subject": "Interview cancelled: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}"}, {"kind": "pool", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}"}, {"kind": "not", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}"}, {"kind": "doc", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "doc_again", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "confirmed", "on_send": true, "subject": "{document} confirmed: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "expired", "on_send": true, "subject": "{document} expired: {reference}", "body": "Dear {candidate name},\n\nThe {document} {reference} dated {document date} has expired, as no reply was received by {reply by} (Malaysia time).\n\nShould you wish to discuss the position, please contact ADspace at {contact}.\n\n{sign-off}"}];
   function hmTpl() {
     if (!DB.hiring_email_templates) DB.hiring_email_templates = JSON.parse(JSON.stringify(HM_SEED));
     return DB.hiring_email_templates;
@@ -9902,7 +9908,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!ssList.length) return ssNo('none');
         ssAll[ssKey] = [];
         DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
-          detail: ssRow.name + ' signed out on ' + ssList.length + (ssList.length === 1 ? ' device' : ' devices'), created_at: new Date().toISOString() });
+          detail: ssRow.name + ' was signed out on ' + ssList.length + (ssList.length === 1 ? ' device.' : ' devices.'), created_at: new Date().toISOString() });
         return Promise.resolve({ data: { ok: true, ended: ssList.length }, error: null });
       }
       if (ssRow.system && (!ssMe || ssMe.id !== ssRow.id)) return ssNo('system-account');
@@ -9911,7 +9917,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!ssHit) return ssNo('not-found');
       ssAll[ssKey] = ssList.filter(function (x) { return x !== ssHit; });
       DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
-        detail: ssRow.name + ': signed out on ' + ssHit.device + ' (' + String(ssHit.id).slice(0, 6) + ')', created_at: new Date().toISOString() });
+        detail: ssRow.name + ' was signed out on ' + ssHit.device + ' (' + String(ssHit.id).slice(0, 6) + ').', created_at: new Date().toISOString() });
       return Promise.resolve({ data: { ok: true }, error: null });
     }
 
@@ -12629,8 +12635,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
           wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn +
-          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') +
-          (won ? ' · Preferred start date ' + wonWord(won) : '') + ' · send by', wrow.id);
+          (won ? ' · Preferred start date ' + wonWord(won)
+            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · send by', wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
@@ -15650,7 +15656,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (ad.kind !== 'offer') return hNo('bad-request');
           ad.state = 'declined'; ad.answered_at = hNowIso; ad.decline_note = String(ap.note || '').trim() || null;
           DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document', detail: ad.serial + ' declined', created_at: hNowIso });
-          hTell(ac, 'hiring.declined', 'A candidate declined an offer', ad.serial + '. Open the candidate to decide the next step.', 'hiring.declined:' + ad.id);
+          hTell(ac, 'hiring.declined', 'A candidate declined an offer', hDocName(ad) + hDocFor(ad) + '. Open the candidate to decide the next step.', 'hiring.declined:' + ad.id);
           return hOk({});
         }
         if ((args.p_answer === 'accept') !== (ad.kind === 'offer') || ['accept', 'sign'].indexOf(args.p_answer) < 0) return hNo('bad-request');
@@ -15666,7 +15672,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           record: { at: hNowIso, email: av.email, ip: '203.0.113.7', country: 'MY', device: ap.device || null, fingerprint: 'A1B2C3D4E5F60718' } };
         DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document',
           detail: ad.serial + (ad.kind === 'offer' ? ' accepted' : ' signed') + ' on the candidate page', created_at: hNowIso });
-        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', ad.serial + '. Open the candidate to confirm it.');
+        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', hDocName(ad) + hDocFor(ad) + '. Open the candidate to confirm it.');
         return hOk({});
       }
       var hMe = opsMe();
@@ -15784,7 +15790,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!hWorkday(hAt)) return hNo('not-workday');
           iv.held_at = hNowIso; iv.held_by = hMe.id; iv.held_mail = null; iv.held_mail_at = null;
           Object.assign(icand, { decide_by: hAt, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null, last_step_at: hNowIso });
-          hLog(iv.candidate_id, 'candidate.interview', 'Interview held. Decision due ' + hWhen(hAt));
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview held. The decision is due by ' + hWhen(hAt) + '.');
           return hOk({ decide_by: hAt });
         }
         if (name === 'hiring_interview_set_meet') {
@@ -15816,8 +15822,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (['invite', 'confirm', 'held', 'moved', 'cancelled'].indexOf(args.p_kind) < 0 || ['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return hNo('bad-request');
           var mcol = args.p_kind === 'moved' ? 'held' : args.p_kind === 'cancelled' ? 'cancel' : args.p_kind;
           iv[mcol + '_mail'] = args.p_status; iv[mcol + '_mail_at'] = hNowIso;
-          hLog(iv.candidate_id, 'candidate.email', ({ invite: 'Invitation', confirm: 'Confirmation', cancelled: 'Cancellation', held: 'Decision date', moved: 'New decision date' })[args.p_kind] +
-            (args.p_status === 'sent' ? ' emailed' : args.p_status === 'unknown' ? ' emailed, not confirmed' : ' not emailed'));
+          hLog(iv.candidate_id, 'candidate.email', ({ invite: 'Interview invitation', confirm: 'Interview confirmation', cancelled: 'Interview cancellation', held: 'Decision date', moved: 'New decision date' })[args.p_kind] +
+            hMailSaid(args.p_status));
           return hOk({});
         }
       }
@@ -16007,13 +16013,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!keepsD) return hNo('denied');
           if (['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return hNo('bad-request');
           hd.confirm_mail = args.p_status; hd.confirm_mail_at = nowD;
-          hLog(dc.id, 'candidate.email', hd.serial + ' confirmation' + (args.p_status === 'sent' ? ' emailed' : args.p_status === 'unknown' ? ' emailed, not confirmed' : ' not emailed'));
+          hLog(dc.id, 'candidate.email', 'Confirmation of ' + hDocName(hd) + hMailSaid(args.p_status));
           return hOk({});
         }
         if (name === 'hiring_doc_mail_done') {
           if (!keepsD) return hNo('denied');
           hd.mail = args.p_status; hd.mail_at = nowD;
-          hLog(dc.id, 'candidate.email', hd.serial + (args.p_status === 'sent' ? ' emailed' : ' not emailed'));
+          hLog(dc.id, 'candidate.email', hDocName(hd) + hMailSaid(args.p_status));
           return hOk({});
         }
         var partOnly = ['hiring_doc_confirm', 'hiring_doc_void'].indexOf(name) > -1;
@@ -16201,7 +16207,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'hiring_outcome_mail_done') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         hc.outcome_mail = args.p_status; hc.outcome_mail_at = hNowIso;
-        hLog(hc.id, 'candidate.email', 'Decision' + (args.p_status === 'sent' ? ' emailed' : args.p_status === 'unknown' ? ' emailed, not confirmed' : ' not emailed'));
+        hLog(hc.id, 'candidate.email', 'Decision' + hMailSaid(args.p_status));
         return hOk({});
       }
       if (name === 'hiring_interviews_of') {
