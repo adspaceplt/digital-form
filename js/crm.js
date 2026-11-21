@@ -3742,7 +3742,7 @@
           '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="reset" role="menuitem">Reset link</button>' +
           '<button class="kmenu-item" data-g="5" type="button" data-df="close" role="menuitem">Close link</button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
-        (url ? '<div class="rec-linktools"><div class="linkbox">' +
+        (url ? '<div class="rec-linktools" data-page-link="details"><div class="linkbox">' +
           '<input class="input readfield" id="crmDfLink" readonly aria-label="Request from client link" value="' + esc(url) + '">' +
           '<button class="btn btn-icon" type="button" data-df="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
           /* The link in a message to paste into the client's WhatsApp group
@@ -3994,7 +3994,7 @@
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
               (can ? '<button class="kmenu-item" data-g="2" data-a="rename" type="button" role="menuitem">Rename</button>' : '') +
-              (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" type="button" role="menuitem">Edit Meta accounts</button>' : '') +
+              (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" data-gate="meta" type="button" role="menuitem">Edit Meta accounts</button>' : '') +
               (can ? '<button class="kmenu-item" data-g="2" data-a="logo" type="button" role="menuitem">' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</button>' +
               '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' + (b.active ? 'Set inactive' : 'Set active') + '</button>' : '') +
             '</div></span>' : '');
@@ -5456,7 +5456,7 @@
         '<span class="plink-text">' + esc(tc.meet_link.replace(/^https:\/\//, '')) + '</span></a>';
     }
     if (!removed && ahead && !tc.meet_link) {
-      acts += '<button class="btn btn-sm" data-a="meet" data-need="clients.calls:work" type="button">Create Google Meet</button>';
+      acts += '<button class="btn btn-sm" data-a="meet" data-gate="meet" data-need="clients.calls:work" type="button">Create Google Meet</button>';
     }
     /* The message to the client (2026-10-31): the team's Meeting message
        filled from this meeting, shown and copied to paste into the

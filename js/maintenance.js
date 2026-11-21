@@ -56,7 +56,17 @@
   function canAsk() { return Boolean((API && API.client && API.client.rpc) || (!API && !window.ADSPACE_DEMO && (window.ADSPACE_CONFIG || {}).supabaseUrl && window.fetch)); }
   /* A quotation link already sent keeps opening while the quotation
      website is only paused: the builder alone is covered. */
+  /* Every page's state as last read (`page_states`, the minute's
+     `page_pulse`), kept for the console, which warns beside a link it hands
+     out while that link's page is set (SWITCHED-OFF ACTS, 2026-11-21). */
+  var allPages = null;
+  function keep(all) {
+    var was = JSON.stringify(allPages), now = JSON.stringify(all || {});
+    allPages = all || {};
+    if (was !== now) { try { document.dispatchEvent(new CustomEvent('adspace-pages')); } catch (e) { /* an old browser */ } }
+  }
   function mine(all) {
+    keep(all);
     var d = all && PAGE ? all[PAGE] : null;
     if (!d || !(d.on || d.set)) return off;
     if (PAGE === 'quote' && d.kind === 'paused' && /[?&]q=/.test(location.search)) return off;
@@ -310,5 +320,6 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refWatch, { once: true });
   else refWatch();
 
-  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, due: due, watch: watch, often: often, page: PAGE };
+  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, due: due, watch: watch, often: often, page: PAGE,
+    pages: function () { return allPages; } };
 })();

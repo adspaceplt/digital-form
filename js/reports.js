@@ -1145,7 +1145,7 @@
     if (!items.length) return '';
     return '<span class="kmenu-wrap rp-sec-more"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false">' + ICON.more + '</button>' +
       '<div class="kmenu" hidden>' + items.map(function (it) {
-        return window.ADspaceMenu.item(it[0], it[1]);
+        return window.ADspaceMenu.item(it[0], it[1], null, null, it[2]);
       }).join('') + '</div></span>';
   }
   /* What a press on a ⋯ item shows while it reads: the ⋯ rests and the
@@ -1225,8 +1225,8 @@
       box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' +
           secMore([['pickads', 'Select'],
-            st.meta && (st.meta.ad_accounts || []).length ? ['metaads', 'Import from Meta'] : null,
-            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Add pictures from Meta'] : null]) : '') +
+            st.meta && (st.meta.ad_accounts || []).length ? ['metaads', 'Import from Meta', 'data-gate="meta:checks"'] : null,
+            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Add pictures from Meta', 'data-gate="meta:checks"'] : null]) : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
     } else if (k === 'text') {

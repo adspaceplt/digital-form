@@ -992,7 +992,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-gate]'), function (el) {
       var key = el.getAttribute('data-gate');
       if (key.indexOf('ai') === 0) ai = true;
-      if (key === 'bukku') bk = true;
+      if (/(^|\s)bukku(\s|$)/.test(key)) bk = true;
       var st = gateState(key);
       if (st.on) {
         if (!el.hasAttribute('data-gate-off')) return;
@@ -1004,6 +1004,8 @@
       el.setAttribute('aria-disabled', 'true');
       el.setAttribute('aria-description', st.reason);
     });
+    /* A link handed out for a page set unavailable or upgrading. */
+    Array.prototype.forEach.call(document.querySelectorAll('[data-page-link]'), pageLine);
     /* What a gate reads is asked only once an act that needs it is drawn. */
     if (ai) readAiUses(false);
     if (bk) readBukku(false);
@@ -1018,12 +1020,39 @@
           /* An AI act redrawn (Writing, then Write with AI) asks its day's
              figures again, at most once a half minute. */
           if (n.matches(AI_SEL) || (n.querySelector && n.querySelector(AI_SEL))) return true;
-          return n.hasAttribute('data-gate') || Boolean(n.querySelector && n.querySelector('[data-gate]'));
+          return n.hasAttribute('data-gate') || n.hasAttribute('data-page-link') ||
+            Boolean(n.querySelector && n.querySelector('[data-gate], [data-page-link]'));
         })) { queueGates(); return; }
       }
-    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-gate'] });
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-gate', 'data-page-link'] });
   }
   document.addEventListener('adspace-settings', function () { gatePaintQueued = false; paintGates(); });
+  document.addEventListener('adspace-pages', function () { gatePaintQueued = false; paintGates(); });
+  /* A link the team hands out (`data-page-link` on its tools: `review`,
+     `creators`, `script`, `details`, `supplier`, `quote`, `careers`) says,
+     under it, while its page is set Upgrade in progress or Temporarily
+     unavailable, now or from a time ahead, that whoever opens it meets the
+     notice page; the link still copies and sends (SWITCHED-OFF ACTS,
+     release B). A quotation link already sent keeps opening while the
+     website is only paused, so it says nothing then. */
+  var PAGE_NAME = { review: 'Content Review', creators: 'Creator selection', script: 'Video Scripts', details: 'Details form',
+    supplier: 'Supplier form', quote: 'Quotation website', careers: 'Candidate page', client: 'Client portal' };
+  function pageWarn(key) {
+    var M = window.ADspaceMaintenance, all = M && M.pages ? M.pages() : null, d = all ? all[key] : null;
+    if (!d || !(d.on || d.set) || !PAGE_NAME[key]) return '';
+    if (key === 'quote' && d.kind === 'paused') return '';
+    var L = window.ADspaceWords.line, kind = d.kind === 'paused' ? 'Temporarily unavailable' : 'Upgrade in progress';
+    if (!d.on && d.starts_at) return L.pageAhead(PAGE_NAME[key], kind, M.due(d.starts_at));
+    return L.pageOff(PAGE_NAME[key], kind, d.ends_at ? M.due(d.ends_at) : '');
+  }
+  function pageLine(host) {
+    var text = pageWarn(host.getAttribute('data-page-link'));
+    var line = null;
+    for (var c = host.firstElementChild; c; c = c.nextElementSibling) if (c.classList.contains('page-off')) line = c;
+    if (!text) { if (line) line.remove(); return; }
+    if (!line) { line = document.createElement('p'); line.className = 'msg warn page-off'; host.appendChild(line); }
+    if (line.textContent !== text) line.textContent = text;
+  }
   /* The colleague's AI uses today (`ai_uses_left`): read once an AI act is
      drawn, again as one is redrawn after a half minute, and on return to
      the tab. A read that fails leaves every act on: the press is refused
@@ -1056,7 +1085,7 @@
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible' || !me) return;
     if (document.querySelector('[data-gate^="ai"]')) readAiUses(true);
-    if (document.querySelector('[data-gate="bukku"]')) readBukku(true);
+    if (document.querySelector('[data-gate~="bukku"]')) readBukku(true);
   });
   var whyHeld = { el: null, timer: 0 };
   function whyShut(back) {
@@ -1270,6 +1299,13 @@
     var v = M && M.setting ? M.setting(key, window.ADspaceClock ? window.ADspaceClock.today() : undefined) : null;
     return v == null || Number(v) === 1;
   }
+  /* A Business setting read as on (any figure above 0), its default where
+     none is set. */
+  function setOn(key, dflt) {
+    var M = window.ADspaceMoney;
+    var v = M && M.setting ? M.setting(key, window.ADspaceClock ? window.ADspaceClock.today() : undefined) : null;
+    return Number(v == null ? dflt : v) > 0;
+  }
   /* Whether a stopped act may go now, and why not (SEND SWITCHES,
      SWITCHED-OFF ACTS, 2026-11-21). A send by hand: the portal's switch
      (Settings, Portal: Email, WhatsApp), then the one for sends by hand
@@ -1286,9 +1322,73 @@
     script: ['script written with AI', 'scripts written with AI'], picture: ['scene picture drawn with AI', 'scene pictures drawn with AI'],
     analysis: ['brand analysis with AI', 'brand analyses with AI'], checklist: ['checklist written with AI', 'checklists written with AI'],
     analytics: ['Analytics analysis with AI', 'Analytics analyses with AI'], agent: ['question to the Assistant', 'questions to the Assistant'] };
+  /* What the portal learned from a service's own answer (Google Meet,
+     Meta, Bukku answering that they are not set up): kept an hour in this
+     browser, then asked again by the next press (SWITCHED-OFF ACTS,
+     release B). Any answer that is not that refusal lets it go. */
+  var LEARN_MS = 3600000;
+  function learned(key) {
+    try {
+      var v = JSON.parse(localStorage.getItem('adspace-gate-off:' + key) || 'null');
+      return Boolean(v && Date.now() - v.at < LEARN_MS);
+    } catch (e) { return false; }
+  }
+  function gateLearn(key, off) {
+    var was = learned(key);
+    try {
+      if (off) localStorage.setItem('adspace-gate-off:' + key, JSON.stringify({ at: Date.now() }));
+      else localStorage.removeItem('adspace-gate-off:' + key);
+    } catch (e) { /* storage refused: the press says it each time */ }
+    if (was !== Boolean(off)) paintGatesNow();
+  }
+  var FN_LEARN = { 'meet-create': ['meet', 'meet-not-set-up'], 'meta-import': ['meta', 'not-connected'], 'bukku-sync': ['bukku', 'bukku-not-set-up'] };
+  function learnFrom(name, r) {
+    var f = FN_LEARN[name];
+    if (!f || !r) return;
+    var e = r.data && r.data.error;
+    if (e === f[1]) gateLearn(f[0], true);
+    else if (!r.error && r.data && !e) gateLearn(f[0], false);
+  }
+  /* Every call to an edge function is heard here, once, whichever screen
+     makes it: `functions` is a getter handing out a new client each time,
+     so the getter is wrapped. */
+  (function () {
+    if (!db) return;
+    var d = null, o = db;
+    while (o && !d) { d = Object.getOwnPropertyDescriptor(o, 'functions'); o = Object.getPrototypeOf(o); }
+    if (!d) return;
+    var get = d.get ? function () { return d.get.call(db); } : function () { return d.value; };
+    try {
+      Object.defineProperty(db, 'functions', { configurable: true, get: function () {
+        var f = get();
+        if (!f || typeof f.invoke !== 'function' || f.__heard) return f;
+        var inv = f.invoke;
+        f.invoke = function (name, opts) {
+          return Promise.resolve(inv.call(f, name, opts)).then(function (r) { try { learnFrom(name, r); } catch (e) { /* never the call's */ } return r; });
+        };
+        f.__heard = true;
+        return f;
+      } });
+    } catch (e) { /* a client that cannot be wrapped: the press says it */ }
+  })();
   function gateState(key) {
     var L = window.ADspaceWords.line;
-    var k = String(key || ''), base = k.split(':')[0], use = k.split(':')[1];
+    var k = String(key || '');
+    /* Several reasons on one act (`whatsapp quotewa`): the first that
+       stops it. */
+    if (k.indexOf(' ') > 0) {
+      var keys = k.split(/\s+/), first = null;
+      for (var i = 0; i < keys.length; i++) { var st = gateState(keys[i]); if (!st.on) return st; if (!first) first = st; }
+      return first || GATE_ON;
+    }
+    var base = k.split(':')[0], use = k.split(':')[1];
+    if (base === 'meet') return learned('meet') ? { on: false, title: 'Google Meet', reason: L.meetOff } : GATE_ON;
+    if (base === 'meta') {
+      if (learned('meta')) return { on: false, title: 'Meta', reason: L.metaOff };
+      if (use === 'checks' && !setOn('meta_checks', 0)) return { on: false, title: 'Meta', reason: L.metaChecksOff };
+      return GATE_ON;
+    }
+    if (base === 'quotewa') return setOn('quote_wa_day', 30) ? GATE_ON : { on: false, title: 'WhatsApp', reason: L.quoteWaOff };
     if (base === 'ai') {
       if (!portalOn('ai_on')) return { on: false, title: 'AI', reason: L.aiPortalOff, portal: true };
       var u = use && AI_USE[use] && aiUses && aiUses.uses ? aiUses.uses[use] : null;
@@ -1296,7 +1396,7 @@
       if (u && Number(u.left) <= 0) return { on: false, title: 'AI', reason: L.aiLimit(Number(u.limit), AI_USE[use]) };
       return GATE_ON;
     }
-    if (base === 'bukku') return bukku.connected === false ? { on: false, title: 'Bukku', reason: L.bukkuOff } : GATE_ON;
+    if (base === 'bukku') return bukku.connected === false || learned('bukku') ? { on: false, title: 'Bukku', reason: L.bukkuOff } : GATE_ON;
     if (!HAND_KEY[base]) return GATE_ON;
     var title = base === 'email' ? 'Email' : 'WhatsApp';
     if (!portalOn(base + '_on')) return { on: false, title: title, reason: base === 'email' ? L.emailPortalOff : L.whatsappPortalOff, portal: true };
@@ -6814,6 +6914,7 @@
     gateState: gateState,
     gateWhy: function (el) { whyOpen(el); },
     autoOff: autoOff,
+    gateLearn: gateLearn,
     /* Whether a route opens for this person (the Assistant's Open, 2026-11-19). */
     sectionAllowed: function (name) { return sectionAllowed(name); },
     upgradeState: function () { return upgrade; },

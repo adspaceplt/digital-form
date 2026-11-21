@@ -789,3 +789,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   nought); turnaround runs from the day a task was made, or a report's
   period ended. The targets are Business settings (`timely_pct` 85,
   `timely_late_days` 1; Settings, My Work: Delivery targets).
+- Google Meet not set up (SWITCHED-OFF ACTS, release B): Create Google Meet
+  (a month's meeting, a call or visit, an interview) carries
+  `data-gate="meet"`, drawn disabled for an hour after `meet-create`
+  answers `meet-not-set-up` in this browser; Paste a link stays.

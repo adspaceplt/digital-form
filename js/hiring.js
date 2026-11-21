@@ -280,7 +280,7 @@
           fact('Note', c.note ? esc(c.note) : '', 'is-pre') + '</dl></section>' +
         (keeps && !removed ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Candidate page</h4></div>' +
           '<dl class="ovfacts"><div><dt>State</dt><dd>' + (ended ? 'Link expired ' + esc(day(c.link_ends)) : 'Open until ' + esc(day(c.link_ends))) + '</dd></div></dl>' +
-          (url && !ended ? '<div class="rec-linktools"><div class="linkbox">' +
+          (url && !ended ? '<div class="rec-linktools" data-page-link="careers"><div class="linkbox">' +
             '<input class="input readfield" id="hirLink" readonly aria-label="Candidate page link" value="' + esc(url) + '">' +
             '<button class="btn btn-icon" type="button" data-h="copy">' + COPY + '<span>Copy link</span></button>' +
             '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview ' + OUT + '</a>' +
@@ -655,7 +655,7 @@
     var mail = function (k, label) { var v = i[k + '_mail']; return v ? fact(label, esc(MAIL[v] || v) + ' · ' + esc(when(i[k + '_mail_at'])), v === 'sent' ? '' : 'is-warn') : ''; };
     var acts = '';
     if (live && i.state === 'picked') acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivapprove" data-id="' + esc(i.id) + '">Approve</button>';
-    if (live && i.state === 'confirmed' && i.mode === 'online' && !i.meeting_link) acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivmeet" data-id="' + esc(i.id) + '">Create Google Meet</button>';
+    if (live && i.state === 'confirmed' && i.mode === 'online' && !i.meeting_link) acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivmeet" data-gate="meet" data-id="' + esc(i.id) + '">Create Google Meet</button>';
     if (live && i.state === 'confirmed' && !i.held_at && i.picked && Date.parse(i.slots[i.picked - 1]) <= Date.now() && undecided())
       acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview held</button>';
     if (live && i.held_at && i.decide_by && undecided()) {
