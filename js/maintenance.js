@@ -28,11 +28,29 @@
   /* Page availability (2026-10-29): each page reads its own row
      (`page_states`), by the first part of its address; a database before
      answers the whole portal (`maintenance_state`). */
+  /* Every page, the system pages included (EVERY PAGE AVAILABLE, 2026-11-21):
+     the front door by its root, the 404 by its own script tag's
+     `data-page="notfound"` (it answers any address). */
+  var OWN = document.currentScript && document.currentScript.getAttribute('data-page');
   var PAGE = (function () {
+    if (OWN) return OWN;
     var m = /^\/([a-z-]+)/.exec(location.pathname), k = m ? m[1] : '';
+    if (!k && /^\/(index\.html)?$/.test(location.pathname)) return 'home';
     return k === 'supplier-details' ? 'supplier'
-      : ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'].indexOf(k) >= 0 ? k : null;
+      : ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify', 'careers', 'card'].indexOf(k) >= 0 ? k : null;
   })();
+  /* A page with no database library (the front door, the 404) asks the one
+     read itself, with the public key, as the front door asks its holidays. */
+  function rpc(name, args) {
+    if (API && API.client && API.client.rpc) return Promise.resolve(API.client.rpc(name, args));
+    var cfg = window.ADSPACE_CONFIG || {};
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.fetch) return Promise.resolve({ error: { message: 'no client' } });
+    return fetch(cfg.supabaseUrl + '/rest/v1/rpc/' + name, { method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args || {}) })
+      .then(function (r) { return r.json().then(function (d) { return r.ok ? { data: d } : { error: d || { message: String(r.status) } }; }); });
+  }
+  function canAsk() { return Boolean((API && API.client && API.client.rpc) || ((window.ADSPACE_CONFIG || {}).supabaseUrl && window.fetch)); }
   /* A quotation link already sent keeps opening while the quotation
      website is only paused: the builder alone is covered. */
   function mine(all) {
@@ -166,7 +184,7 @@
 
   var legacy = false;
   function askWhole(failed) {
-    return Promise.resolve(API.client.rpc('maintenance_state')).then(function (r) {
+    return rpc('maintenance_state').then(function (r) {
       if (!r || r.error) return failed;
       var d = r.data;
       return d && (d.on || d.set) ? d : off;
@@ -174,9 +192,9 @@
   }
   function ask(strict) {
     var failed = strict ? null : off;
-    if (!(API && API.client && API.client.rpc)) return Promise.resolve(failed);
+    if (!canAsk()) return Promise.resolve(failed);
     if (legacy || !PAGE) return askWhole(failed);
-    return Promise.resolve(API.client.rpc('page_states')).then(function (r) {
+    return rpc('page_states').then(function (r) {
       if (r && r.error && /PGRST202|page_states|schema cache/i.test(String(r.error.code || '') + ' ' + String(r.error.message || ''))) {
         legacy = true; return askWhole(failed);
       }

@@ -1463,11 +1463,18 @@
      Upgrade mode a page at a time (the user, 2026-10-29: "Upgrade for
      /client page, Temporarily Unavailable for /admin, or selectively"):
      each page Available, Upgrade in progress or Temporarily unavailable,
-     with its window and note; several set at once through Select. The
-     front door, the 404 and namecards are never covered. */
+     with its window and note; several set at once through Select. Every
+     page is listed (EVERY PAGE AVAILABLE, 2026-11-21, the user: "makes all
+     pages up, including the main page"): the system pages (the front door,
+     the 404, namecards) under their own heading, which Select all never
+     reaches; their own tick under it chooses them ("split under another
+     select all"). */
   var pg = { rows: null, err: null, picking: false, picked: {} };
   var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
-    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify']]];
+    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
+  var PG_SYS = { home: '/', notfound: 'Any address not found', card: '/card/' };
+  function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
+  function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
   var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
   var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': 'Choose an end after the start, and later than now.',
     'bad-page': 'Choose a page.', 'bad-kind': 'Choose the availability.' };
@@ -1500,13 +1507,17 @@
     var n = Object.keys(pg.picked).length, counts = pgCounts(pg.rows || [], true);
     /* While several are chosen the count is the tick for all ten (DESIGN.md
        §4 Several records at once; 2026-10-29, audit SET-1). */
-    var all = (pg.rows || []).length;
+    var all = (pg.rows || []).length, main = pgMain(), sys = pgSys();
+    var nMain = main.filter(function (p) { return pg.picked[p.key]; }).length, nSys = sys.filter(function (p) { return pg.picked[p.key]; }).length;
     $('pgCount').hidden = !!pg.picking;
     $('pgCount').textContent = pg.picking ? '' : pg.rows ? [plural(all, 'page', 'pages')].concat(counts).join(' · ') : '';
     $('pgAllLine').hidden = !pg.picking;
     $('pgAllCount').textContent = n + ' selected';
-    $('pgAll').checked = !!all && n === all;
-    $('pgAll').indeterminate = n > 0 && n < all;
+    /* Select all ticks the pages; the system pages have their own. */
+    $('pgAll').checked = !!main.length && nMain === main.length;
+    $('pgAll').indeterminate = nMain > 0 && nMain < main.length;
+    var st2 = $('pgSysAll');
+    if (st2) { st2.checked = !!sys.length && nSys === sys.length; st2.indeterminate = nSys > 0 && nSys < sys.length; }
     $('pgSelect').textContent = pg.picking ? 'Done' : 'Select';
     $('pgSelect').hidden = !pg.rows;
     // Set availability is drawn once a page is ticked, never greyed (MENU-12).
@@ -1519,7 +1530,9 @@
     if (!pg.rows) { window.ADspaceState.skeleton(box, 4); return; }
     pgFoot();
     box.innerHTML = PG_GROUPS.map(function (g) {
-      return '<h4 class="fsec-h pg-grp">' + esc(g[0]) + '</h4>' + g[1].map(function (k) {
+      var sys = g[1][0] === 'home';
+      return (sys && pg.picking ? '<h4 class="fsec-h pg-grp"><label class="tickline pg-sysall"><input type="checkbox" id="pgSysAll"> ' + esc(g[0]) + '</label></h4>'
+        : '<h4 class="fsec-h pg-grp">' + esc(g[0]) + '</h4>') + g[1].map(function (k) {
         var p = pgOf(k);
         if (!p) return '';
         var st = pgState(p);
@@ -1528,13 +1541,15 @@
         var tag = pg.picking ? 'label' : 'div';
         return '<' + tag + ' class="dtrow pg-row' + (pg.picking ? ' is-picking' : '') + '" data-key="' + esc(k) + '">' +
           '<span class="dtrow-name">' + (pg.picking ? '<input type="checkbox" class="pg-tick" aria-label="' + esc(p.name) + '"' + (pg.picked[k] ? ' checked' : '') + '>' : '') +
-            '<b>' + esc(p.name) + '</b><small class="mono">/' + esc(k) + '/</small></span>' +
+            '<b>' + esc(p.name) + '</b><small' + (k === 'notfound' ? '' : ' class="mono"') + '>' + esc(PG_SYS[k] || '/' + k + '/') + '</small></span>' +
           '<span class="pg-state"><span class="chip-state ' + st[0] + '">' + esc(st[1]) + '</span>' + (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
           /* The pen alone, as every short table in Settings (revamp D). */
           (pg.picking ? '' : '<span class="hol-acts"><button class="iconbtn" type="button" data-p="edit" aria-label="Edit ' + esc(p.name) + '" title="Edit">' + PEN + '</button></span>') +
           '</' + tag + '>';
       }).join('');
     }).join('');
+    /* The system pages' own tick is drawn with the list: its state after. */
+    if (pg.picking) pgFoot();
   }
   function openPages(opener) {
     pgMsg(''); pg.picking = false; pg.picked = {};
@@ -1670,12 +1685,19 @@
     $('pgSelect').addEventListener('click', function () { pg.picking = !pg.picking; pg.picked = {}; pgMsg(''); paintPg(); });
     $('pgSetMany').addEventListener('click', function () { pgAsk(Object.keys(pg.picked), this); });
     $('pgAll').addEventListener('change', function () {
-      var on = this.checked;
+      var on = this.checked, was = pg.picked;
       pg.picked = {};
-      if (on) (pg.rows || []).forEach(function (p) { pg.picked[p.key] = true; });
+      pgSys().forEach(function (p) { if (was[p.key]) pg.picked[p.key] = true; });
+      if (on) pgMain().forEach(function (p) { pg.picked[p.key] = true; });
       paintPg();
     });
     $('pgList').addEventListener('change', function (e) {
+      if (e.target.id === 'pgSysAll') {
+        var on = e.target.checked;
+        pgSys().forEach(function (p) { if (on) pg.picked[p.key] = true; else delete pg.picked[p.key]; });
+        paintPg();
+        return;
+      }
       var t = e.target.closest('.pg-tick'); if (!t) return;
       var k = t.closest('.pg-row').getAttribute('data-key');
       if (t.checked) pg.picked[k] = true; else delete pg.picked[k];

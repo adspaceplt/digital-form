@@ -13581,9 +13581,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
     if (name === 'maintenance_state' || name === 'maintenance_set' || /^page_(states|states_all|set)$/.test(name)) {
       var mtNow = Date.now();
-      var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'];
+
+      var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify',
+        'careers', 'home', 'notfound', 'card'];
       var PG_NAME = { admin: 'Console', client: 'Client portal', review: 'Content Review', script: 'Video Scripts', details: 'Details form',
-        creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document' };
+        creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document',
+        careers: 'Candidate page', home: 'Front page', notfound: 'Page not found', card: 'Namecards' };
       var pgRow = function (k) {
         var rows = DB.app_flags || [];
         var f = rows.filter(function (x) { return x.key === 'page:' + k; })[0];
