@@ -136326,6 +136326,7 @@ grant execute on function public.quote_website_create(jsonb, jsonb, text) to ser
 
 -- END OF PREFERRED START DATE ------------------------------------------------
 
+-- ===========================================================================
 -- OFFER DECLINED OR EXPIRED TOLD (2026-11-21)
 -- ===========================================================================
 -- WHY: the user, 2026-11-21: "yess" to a colleague notice when a candidate
