@@ -960,7 +960,7 @@
     if (res.recognition == null || (!Number(res.rec_cap) && !Number(res.recognition))) return '';
     var raw = Number(res.recognition_raw), got = Number(res.recognition);
     return '<div><dt>Recognitions</dt><dd>' + esc(got ? '+' + num(got) : '0') +
-      (raw > got ? '<small>' + esc('Held at ' + num(got) + ' from ' + num(raw)) + '</small>' : '') + '</dd></div>';
+      (raw > got ? '<small>' + esc('Capped at ' + num(got) + ' from ' + num(raw)) + '</small>' : '') + '</dd></div>';
   }
   function roleLine(r) {
     var fam = r.member && r.member.role_family;
@@ -2730,8 +2730,8 @@
     ['VIC clients', [['ded_vic', 'Multiplier for an issue on a VIC client\'s work', 'times', 'VIC client multiplier']], '', 'months'],
     /* Recognitions (2026-11-22): what a confirmed one adds, the month's
        limit for each person, and whether management confirms each. */
-    ['Recognition', [['rec_points', 'Points for each recognition', 'points', 'Points for each recognition'],
-      ['rec_cap', 'Most points a month for each person (0 turns this off)', 'points', 'Most recognition points a month'],
+    ['Recognition', [['rec_points', 'Points per recognition', 'points', 'Points per recognition'],
+      ['rec_cap', 'Most points per person per month (0 turns this off)', 'points', 'Most recognition points per month'],
       ['rec_confirm', 'Management confirms each recognition', 'onoff', 'Management confirms each recognition']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
     ['Reminders (0 turns this off)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
@@ -3231,16 +3231,16 @@
     'own': 'You cannot recognise yourself. Choose a colleague.',
     'bad-colleague': 'Choose an active colleague.',
     'bad-category': 'Choose a category.',
-    'note-needed': 'Enter a note of at least 3 characters.',
-    'too-long': 'Keep the note to 500 characters.',
-    'too-many': 'Ten recognitions can be given in a day. Please try again tomorrow.',
-    'decided': 'This recognition has been decided, so it can no longer be withdrawn.',
+    'note-needed': 'Enter a note of 3 to 500 characters.',
+    'too-long': 'Enter a note of 3 to 500 characters.',
+    'too-many': 'You have given 10 recognitions today. Please try again tomorrow.',
+    'decided': 'This recognition has already been confirmed or declined, so it can no longer be withdrawn.',
     'not-found': 'This recognition no longer exists. Refresh the page.',
-    'bad-move': 'This step is not available for the recognition as it stands. Refresh the page.'
+    'bad-move': 'This recognition was changed by someone else. Refresh the page.'
   };
   function recSaid(d, decide) {
     if (d && d.error === 'own' && decide) return 'You cannot confirm or decline a recognition you gave or received. Please ask another manager.';
-    if (d && d.error === 'month-released') return (d.month || 'That month') + ' is shared, so the recognitions it counted stay as they are.';
+    if (d && d.error === 'month-released') return (d.month || 'That month') + ' has been shared. Revert it to draft to change its recognitions.';
     return (d && REC_SAID[d.error]) || said(d);
   }
   var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
@@ -3476,7 +3476,7 @@
     if (c.error) return card('Recognitions', '<p class="perf-quiet">' + esc(recSaid(c.error)) + '</p>', '', 'pvRecs');
     var list = c.rows || [], pts = Number(c.points), cap = Number(c.cap);
     var held = r.status !== 'draft';
-    var rule = cap > 0 ? '<p class="perf-quiet">' + esc(num(pts) + (pts === 1 ? ' point' : ' points') + ' each, up to ' + num(cap) + ' a month.') + '</p>'
+    var rule = cap > 0 ? '<p class="perf-quiet">' + esc(num(pts) + (pts === 1 ? ' point' : ' points') + ' per recognition, up to ' + num(cap) + ' per month.') + '</p>'
       : '<p class="perf-quiet">Recognitions add no points this month.</p>';
     var rows = list.map(function (x) {
       var here = x.status === 'confirmed' && x.period === r.period;
@@ -3487,7 +3487,7 @@
       var acts = can && x.status === 'waiting'
         ? '<div class="qnext-acts recog-acts"><button class="btn btn-sm" type="button" data-rd="declined" data-id="' + esc(x.id) + '">Decline</button>' +
           '<button class="btn btn-sm" type="button" data-rd="confirmed" data-id="' + esc(x.id) + '">Confirm</button></div>' : '';
-      var items = can && x.status !== 'waiting' && !(here && held) ? [['revert', 'Revert to waiting', 5]] : [];
+      var items = can && x.status !== 'waiting' && !(here && held) ? [['revert', 'Revert decision', 5]] : [];
       return '<div class="perf-breach recog-item" data-rec="' + esc(x.id) + '">' +
         '<div class="perf-breach-top"><span class="perf-breach-sev">' + esc('From ' + (x.giver || '')) + '</span>' +
           '<span class="perf-breach-pts">' + (here ? '+' + esc(num(pts)) : '') + '</span>' + recChip(x.status) +
@@ -3520,7 +3520,7 @@
       st.rvRecKey = null;
       sheetDirty = true;
       reread(function () {
-        msg('pvMsg', to === 'confirmed' ? 'Confirmed.' : to === 'declined' ? 'Declined.' : 'Reverted to waiting.', 'ok');
+        msg('pvMsg', to === 'confirmed' ? 'Confirmed.' : to === 'declined' ? 'Declined.' : 'Decision reverted.', 'ok');
       });
     });
   }

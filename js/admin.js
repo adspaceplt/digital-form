@@ -3363,7 +3363,7 @@
                     /* Recognition (2026-11-22): every step, whose month it is. */
                     'recognition.given': 'Recognition given', 'recognition.withdrawn': 'Recognition withdrawn',
                     'recognition.restored': 'Recognition restored', 'recognition.confirmed': 'Recognition confirmed',
-                    'recognition.declined': 'Recognition declined', 'recognition.reverted': 'Recognition reverted to waiting' };
+                    'recognition.declined': 'Recognition declined', 'recognition.reverted': 'Recognition decision reverted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
