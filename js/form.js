@@ -1138,7 +1138,8 @@
      not: a number (`type=number`, or `data-check="number"`), an amount
      (`data-check="amount"`, a number above 0), a date (the floor of §5 and
      the field's own min and max), an email (`ADspaceWords.emailOk`), a phone
-     (`type=tel` or `data-check="phone"`, 7 to 15 digits) and a web address
+     (`data-check="phone"`, or `type=tel` with the tel keyboard or autofill,
+     7 to 15 digits) and a web address
      (`type=url`, `inputmode=url` or `data-check="url"`,
      `ADspaceWords.absUrl`); a whole number where the field steps by one. A field's own
      `min` and `max` hold a number too.
@@ -1190,7 +1191,9 @@
     var t = el.tagName === 'INPUT' ? (el.type || 'text') : '';
     if (t === 'number') return 'number';
     if (t === 'email') return 'email';
-    if (t === 'tel') return 'phone';
+    /* A tel box asked for its number keyboard alone (a PIN) is no phone:
+       a phone says so by its keyboard or its autofill. */
+    if (t === 'tel' && (el.getAttribute('inputmode') === 'tel' || /^tel/.test(el.getAttribute('autocomplete') || ''))) return 'phone';
     if (t === 'url') return 'url';
     /* A box laid out for an address (inputmode url) holds one. */
     if (el.getAttribute('inputmode') === 'url') return 'url';
