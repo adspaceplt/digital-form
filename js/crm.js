@@ -4252,7 +4252,7 @@
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
         ['Read from', baRead(v.basis)]
       ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">This analysis is a starting hypothesis to test.</p>' : '') +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">Written from little history: no reports, post results or Meta figures. Check each section before use.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],

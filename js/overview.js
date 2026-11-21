@@ -963,7 +963,7 @@
           return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };
         });
       } },
-      { key: 'reasons', title: 'Why clients paused or left', can: canClients,
+      { key: 'reasons', title: 'Reasons clients paused or left', can: canClients,
         all: function () { return ['Clients', '/admin/?s=clients', 'clients']; },
         load: function () {
         return figuresFor('now').then(function (f) {

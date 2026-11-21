@@ -1399,7 +1399,7 @@
   var NE_SAID = {
     'send-off': window.ADspaceWords.line.emailSendOff,
     'bad-recipient': 'That address is no longer listed for this client or supplier. Choose another address.',
-    'bad-copy': 'Copy up to five addresses, none the same as the recipient.',
+    'bad-copy': 'Choose up to five addresses to copy, other than the recipient.',
     'bad-email': 'Enter a valid email address.',
     'bad-subject': window.ADspaceWords.line.subject,
     'bad-body': window.ADspaceWords.line.message,
