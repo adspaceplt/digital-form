@@ -97,7 +97,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261121x">
+<link rel="stylesheet" href="/css/portal.css?v=20261122a">
 <link rel="stylesheet" href="/css/console.css?v=20261122an">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -1255,17 +1255,14 @@
           </div>
 
           <div class="rec-pane" data-pane="brand" hidden>
-        <!-- The brand, read first: where to find them, the logo, and how to
-             speak for them. Edit opens the same groups in a sheet. -->
-        <section class="pane-form">
-          <div class="viewhead pane-form-head">
-            <span class="headmark"><h2>Brand profile</h2></span>
-            <span class="muted" id="crmBrandSummary"></span>
-            <button class="btn btn-sm" id="crmBrandEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
-          </div>
-          <div class="readgroups" id="crmBrandRead"></div>
-          <div class="msg" id="crmBrandNote"></div>
-        </section>
+        <!-- The Brand tab in working order (2026-11-22, the user approved the
+             restructure): Brand profile, Social accounts, Brand analysis,
+             Content brief, White label, each a part with its own short Edit.
+             The parts are drawn by js/crm.js (`paintBrandRead`); one sheet
+             edits each part, showing only that part's fields. -->
+        <div class="brand-ready" id="crmBrandReady" hidden></div>
+        <div class="msg" id="crmBrandNote"></div>
+        <div class="brand-parts" id="crmBrandRead"></div>
         <div class="sheet" id="crmBrandSheet" hidden>
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmBrandTitle">
             <div class="sheet-head">
@@ -1273,7 +1270,7 @@
               <button class="iconbtn" id="crmBrandClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
             <div class="sheet-body" id="crmBrandBody">
-              <section class="fsec">
+              <section class="fsec" data-bmode="profile">
                 <h4 class="fsec-h">Website and office</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
@@ -1282,23 +1279,10 @@
                     <input class="input" id="crmPhone" type="tel" placeholder="07-123 4567"></div>
                 </div>
               </section>
-              <!-- The same four handles and the same logo Content Review draws
-                   on a mockup: one row, edited in either place. -->
-              <section class="fsec">
-                <h4 class="fsec-h">Social handles</h4>
-                <div class="row fgrid">
-                  <div><label class="field-label" for="crmSocialIg">Instagram</label>
-                    <input class="input" id="crmSocialIg" placeholder="@adspace.advertising"></div>
-                  <div><label class="field-label" for="crmSocialFb">Facebook page</label>
-                    <input class="input" id="crmSocialFb" placeholder="ADspace Advertising"></div>
-                  <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
-                    <input class="input" id="crmSocialTiktok" placeholder="@adspace.advertising"></div>
-                  <div><label class="field-label" for="crmSocialXhs">rednote</label>
-                    <input class="input" id="crmSocialXhs" placeholder="ADspace"></div>
-                </div>
-              </section>
-              <section class="fsec">
-                <h4 class="fsec-h">Logo and notes</h4>
+              <!-- The same logo Content Review draws on a mockup: one row,
+                   edited in either place. -->
+              <section class="fsec" data-bmode="profile">
+                <h4 class="fsec-h">Logo</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmLogo">Logo</label>
                     <div class="logorow">
@@ -1310,14 +1294,10 @@
                       <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
                 </div>
-                <div class="row">
-                  <div><label class="field-label" for="crmNotes">Brand notes</label>
-                    <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
-                </div>
               </section>
               <!-- The content brief (2026-10-10): what the content is for and how it
                    speaks; Write with AI reads it for captions and scripts. -->
-              <section class="fsec">
+              <section class="fsec" data-bmode="audience">
                 <h4 class="fsec-h">Audience and pillars</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmBrAudience">Audience</label>
@@ -1332,7 +1312,7 @@
                     <textarea class="input textarea" id="crmBrPillars" rows="2" maxlength="1000" placeholder="One point per line"></textarea></div>
                 </div>
               </section>
-              <section class="fsec">
+              <section class="fsec" data-bmode="voice">
                 <h4 class="fsec-h">Voice and references</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmBrTone">Tone of voice</label>
@@ -1350,8 +1330,14 @@
                   <div><label class="field-label" for="crmBrHooks">Proven hooks</label>
                     <textarea class="input textarea" id="crmBrHooks" rows="2" maxlength="1000" placeholder="One point per line"></textarea></div>
                 </div>
+                <!-- Brand notes, kept as Other notes (the user, 2026-11-22, D3):
+                     the same column, read by every AI draft. -->
+                <div class="row">
+                  <div><label class="field-label" for="crmNotes">Other notes</label>
+                    <textarea class="input textarea" id="crmNotes" rows="3" placeholder="Optional"></textarea></div>
+                </div>
               </section>
-              <section class="fsec" id="crmWlSec">
+              <section class="fsec" id="crmWlSec" data-bmode="wl">
                 <h4 class="fsec-h">Reports</h4>
                 <label class="tickline">
                   <input type="checkbox" id="crmWl"> <span>White label</span>
@@ -3660,7 +3646,7 @@
                  content calendar lives in Google Drive), the files and links,
                  the time, the history and the rest of the details. -->
             <details class="qmore" id="dwMore">
-              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, time, activity</span></summary>
+              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, stage timeline, activity</span></summary>
               <div class="qmore-body">
             <section class="qcard" id="dwDescSec">
               <div class="qcard-head">
@@ -3718,9 +3704,11 @@
               <dl class="tfacts" id="taskMore"></dl>
             </section>
             <section class="qcard" id="dwTimeSec">
-              <h3 class="qcard-title">Time records</h3>
+              <div class="qcard-head">
+                <h3 class="qcard-title">Stage timeline</h3>
+                <span class="stl-head" id="dwTimeSum"></span>
+              </div>
               <div id="dwTimeList"></div>
-              <dl class="tfacts" id="dwTime" hidden></dl>
             </section>
             <section class="qcard" id="dwLogSec">
               <h3 class="qcard-title">Recent activity</h3>
@@ -6783,9 +6771,9 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/hrdocs.js?v=20261121zzs"></script>
 <script src="/js/hrforms.js?v=20261120zzzp"></script>
 <script src="/js/checklists.js?v=20261121zzzz"></script>
-<script src="/js/crm.js?v=20261121zzzzb"></script>
+<script src="/js/crm.js?v=20261122"></script>
 <script src="/js/sales.js?v=20261117zzzf"></script>
-<script src="/js/team.js?v=20261121zzv"></script>
+<script src="/js/team.js?v=20261122"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
 <script src="/js/onboard.js?v=20261120zzzzzg"></script>
 <script src="/js/handbook.js?v=20261121zt"></script>
@@ -6795,7 +6783,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261120zzzp"></script>
 <script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
 <script src="/js/campaigns.js?v=20261121zzzz"></script>
-<script src="/js/ops.js?v=20261121zzzzb"></script>
+<script src="/js/ops.js?v=20261122a"></script>
 <script src="/js/perf.js?v=20261121x"></script>
 <script src="/js/health.js?v=20261120zt"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>
