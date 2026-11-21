@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122d">
-<link rel="stylesheet" href="/css/console.css?v=20261122e">
+<link rel="stylesheet" href="/css/console.css?v=20261122zm">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -157,7 +157,7 @@
 <script src="/js/maintenance.js?v=20261121zzzzb"></script>
 <script src="/js/announce.js?v=20261120t"></script>
 <script src="/js/notice.js?v=20261120zt"></script>
-<script src="/js/whatsapp.js?v=20261121zzzz"></script>
+<script src="/js/whatsapp.js?v=20261122zm"></script>
 <script src="/js/mailtpl.js?v=20261121zzw"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
@@ -6686,46 +6686,57 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- ON DEMAND (2026-11-22): each section's script, and the helpers it
+     calls, are fetched by js/admin.js (ADspaceAdmin.need) only when the
+     section, one of its records or something calling it first asks; the
+     shared mechanisms above and the scripts below load with the page.
+     "first": what a script reads as it loads (fetched before it); "uses":
+     what it calls later (fetched with it for its section). Its ?v= stamps
+     are bumped with every other. -->
+<script type="application/json" id="lazyScripts">
+{
+  "documents": {"src": "/js/documents.js?v=20261121zb"},
+  "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
+  "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
+  "reports": {"src": "/js/reports.js?v=20261121zzzzb", "uses": ["documents", "smreport"]},
+  "register": {"src": "/js/register.js?v=20261122r", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261121zzzzb", "uses": ["letters", "register", "bukku"]},
+  "hiring": {"src": "/js/hiring.js?v=20261121zzzzb", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261121zzzz"},
+  "invoices": {"src": "/js/invoices.js?v=20261121zzzz", "uses": ["payments", "crm"]},
+  "payments": {"src": "/js/payments.js?v=20261119j", "uses": ["invoices", "sales"]},
+  "engage": {"src": "/js/engage.js?v=20261117zzzf", "uses": ["smreport", "reports"]},
+  "quotes": {"src": "/js/quotes.js?v=20261121zzzzb", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261121zzs", "uses": ["documents", "seal"]},
+  "seal": {"src": "/js/seal.js?v=20261121zzt", "uses": ["documents"]},
+  "hrdocs": {"src": "/js/hrdocs.js?v=20261121zzs", "uses": ["documents", "seal"]},
+  "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
+  "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
+  "crm": {"src": "/js/crm.js?v=20261122zm", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "sales": {"src": "/js/sales.js?v=20261117zzzf"},
+  "team": {"src": "/js/team.js?v=20261122", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
+  "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
+  "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
+  "frames": {"src": "/js/frames.js?v=20261117zzzf"},
+  "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
+  "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
+  "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
+  "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
+  "perf": {"src": "/js/perf.js?v=20261122b", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "health": {"src": "/js/health.js?v=20261120zt", "uses": ["perf"]},
+  "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
+  "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
+  "analytics": {"src": "/js/analytics.js?v=20261122zm", "uses": ["documents", "crm", "sales"]},
+  "settings": {"src": "/js/settings.js?v=20261122zm", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+}
+</script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122c"></script>
-<script src="/js/documents.js?v=20261121zb"></script>
-<script src="/js/letters.js?v=20261120zzzzzd"></script>
-<script src="/js/smreport.js?v=20261120zzzp"></script>
-<script src="/js/reports.js?v=20261121zzzzb"></script>
-<script src="/js/register.js?v=20261122r"></script>
-<script src="/js/suppliers.js?v=20261121zzzzb"></script>
-<script src="/js/hiring.js?v=20261121zzzzb"></script>
-<script src="/js/bukku.js?v=20261121zzzz"></script>
-<script src="/js/invoices.js?v=20261121zzzz"></script>
-<script src="/js/payments.js?v=20261119j"></script>
-<script src="/js/engage.js?v=20261117zzzf"></script>
-<script src="/js/quotes.js?v=20261121zzzzb"></script>
-<script src="/js/quotepdf.js?v=20261121zzs"></script>
-<script src="/js/seal.js?v=20261121zzt"></script>
-<script src="/js/hrdocs.js?v=20261121zzs"></script>
-<script src="/js/hrforms.js?v=20261120zzzp"></script>
-<script src="/js/checklists.js?v=20261122a"></script>
-<script src="/js/crm.js?v=20261122a"></script>
-<script src="/js/sales.js?v=20261117zzzf"></script>
-<script src="/js/team.js?v=20261122"></script>
-<script src="/js/namecard.js?v=20261117zzzf"></script>
-<script src="/js/onboard.js?v=20261120zzzzzg"></script>
-<script src="/js/handbook.js?v=20261121zt"></script>
-<script src="/js/frames.js?v=20261117zzzf"></script>
-<script src="/js/animatic.js?v=20261117zzzf"></script>
-<script src="/js/scripts.js?v=20261121zzzz"></script>
-<script src="/js/scriptpdf.js?v=20261120zzzp"></script>
-<script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
-<script src="/js/campaigns.js?v=20261121zzzz"></script>
-<script src="/js/ops.js?v=20261122d"></script>
-<script src="/js/perf.js?v=20261122b"></script>
-<script src="/js/health.js?v=20261120zt"></script>
-<script src="/js/xlsx.js?v=20261117zzzf"></script>
-<script src="/js/personnel.js?v=20261120zt"></script>
-<script src="/js/search.js?v=20261119i"></script>
-<script src="/js/agent.js?v=20261121zzzz"></script>
+<script src="/js/admin.js?v=20261122zm"></script>
+<script src="/js/ops.js?v=20261122zm"></script>
+<script src="/js/search.js?v=20261122zm"></script>
+<script src="/js/agent.js?v=20261122zm"></script>
 <script src="/js/overview.js?v=20261122e"></script>
-<script src="/js/analytics.js?v=20261122c"></script>
-<script src="/js/settings.js?v=20261121zzy"></script>
 </body>
 </html>

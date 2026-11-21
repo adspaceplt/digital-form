@@ -5735,20 +5735,11 @@
      are shut by their own controls; a scroll used to take the bell with
      these, so it never opened on a page scrolled down (the user,
      2026-11-20). */
-  function shutMenus() {
-    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu):not(.notif-menu)'), function (m) {
-      m.hidden = true;
-    });
-    Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) {
-      b.setAttribute('aria-expanded', 'false');
-    });
-  }
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
-  });
-  // A creators list ⋯ is placed on the viewport, so a scroll that really moved closes it.
-  window.ADspaceMenu.onScroll(shutMenus);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
+  /* Every ⋯ shut: js/admin.js's one copy (`ADspaceAdmin.shutMenus`), which
+     also shuts them on a press elsewhere, Escape and a scroll for every
+     section (ON DEMAND, 2026-11-22: this script held it, and is now fetched
+     only for Creator Campaigns). */
+  function shutMenus() { if (bridge.shutMenus) bridge.shutMenus(); }
 
   /* One step back up the line. Posts and results stay where they are, so
      stepping back out of Posted and forward again does not lose the numbers

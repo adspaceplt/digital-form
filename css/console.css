@@ -6221,3 +6221,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* The system pages' own tick heads their group, the rows' tick (EVERY PAGE AVAILABLE). */
 .pg-sysall { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .pg-sysall input { margin: 0 2px 0 0; }
+
+/* ON DEMAND (2026-11-22): a section whose scripts are still on their way
+   is drawn as the console's own skeleton, never an empty page
+   (`sectionHeld`, js/admin.js). */
+.console.is-fetching #consoleBoot { display: block; }
+.console.is-fetching .console-body:not(#consoleBoot) { display: none; }

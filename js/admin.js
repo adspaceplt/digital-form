@@ -366,7 +366,7 @@
   /* The person's digital namecard (js/namecard.js). */
   $('myCard').addEventListener('click', function () {
     shutAcct();
-    if (window.ADspaceCard) window.ADspaceCard.openMine($('acctBtn'));
+    needThen(['namecard'], false, function () { if (window.ADspaceCard) window.ADspaceCard.openMine($('acctBtn')); }).catch(function () {});
   });
   /* Passkeys are the person's own way in, drawn only where this browser can
      use one (js/passkey.js decides). */
@@ -537,7 +537,11 @@
         if (/^adspace-[a-z]+-(notes|inputs):|^adspace_drafts_/.test(k)) localStorage.removeItem(k);
       });
     } catch (e) { /* private mode */ }
-    var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve();
+    /* A PDF kept by an earlier visit is let go even where this visit never
+       fetched js/documents.js. */
+    return need(['documents']).then(function () {
+      var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : null;
+    }).catch(function () {});
   }
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
@@ -1437,6 +1441,27 @@
      calls `ops`: the route is named for what a person does on it and the
      permission for what it governs, and the mapping lives here rather than
      being spelled out in both vocabularies everywhere. */
+  /* Every part a row of Settings answers to (`ADspaceSettings.allowed`,
+     kept here since 2026-11-22 so the rail's mark and search ask it before
+     js/settings.js is fetched): a colleague holding any of them, or
+     Suppliers, WhatsApp or Services at Full Access (Supplier emails,
+     WhatsApp templates, Rate card wording), or Performance at View. */
+  var SETTINGS_KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering', 'ops.workflows'];
+  var SETTINGS_FULL = ['suppliers', 'whatsapp', 'services'];
+  function settingsAllowed() {
+    return SETTINGS_KEYS.some(function (k) { return may(k, 'work'); }) ||
+      SETTINGS_FULL.some(function (k) { return may(k, 'manage'); }) || may('team.performance', 'view');
+  }
+  /* Analytics' tabs (js/analytics.js asks this one copy, ON DEMAND,
+     2026-11-22): the trends at Full Access on their sections, the cards
+     moved from the Dashboard's Team detail at theirs (`groupCan`). `part`
+     asks one of the two alone. */
+  function analyticsTab(k, part) {
+    var trends = k === 'sales' ? may('clients', 'manage') && may('clients.leads', 'manage') : k === 'clients' ? may('clients', 'manage') : false;
+    var name = k === 'sales' ? 'Sales' : k === 'ops' ? 'Operations' : '', O = window.ADspaceOverview;
+    var moved = Boolean(name && O && O.groupCan && O.groupCan(name));
+    return part === 'trends' ? Boolean(trends) : part === 'moved' ? moved : Boolean(trends) || moved;
+  }
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
     if (name === 'activity') {
@@ -1453,7 +1478,7 @@
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
     /* Settings (2026-10-10): any colleague holding one of its granted parts. */
-    if (name === 'settings') return Boolean(window.ADspaceSettings && window.ADspaceSettings.allowed());
+    if (name === 'settings') return settingsAllowed();
     /* The Handbook is every colleague's to read (only an admin changes it),
        so it has no level of its own on the ladder. */
     if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
@@ -1469,10 +1494,7 @@
        the page and never opens a card. */
     /* Analytics (2026-10-25): each chart follows its section's access since
        phase 3 (2026-11-13); only its AI analysis is the granted part. */
-    if (name === 'analytics') {
-      var an = window.ADspaceAnalytics;
-      return an && an.allowed ? an.allowed() : may('team.analytics', 'work');
-    }
+    if (name === 'analytics') return ['sales', 'clients', 'ops'].some(function (k) { return analyticsTab(k); });
     /* The Dashboard is every colleague's (the revamp, 2026-11-13): its Me
        tab is their own work; the group's switch (`overview` No Access) now
        hides only its Team tabs (js/overview.js `teamOk`). A colleague who
@@ -2495,6 +2517,118 @@
     }).join('');
   }
 
+  /* ON DEMAND (2026-11-22; the user: a first visit fetched every section's
+     script, 1.9 MB in 83 requests). Each section's script, and the helpers
+     it calls, are listed in admin/index.html (`#lazyScripts`: its address
+     with its ?v= stamp, `first` what it reads as it loads, `uses` what it
+     calls later) and fetched here only when the section, one of its records
+     or something calling it (search, the Assistant, the bell, a deep link)
+     first asks. `need(keys, whole)` answers once each has run: `whole`
+     brings everything the scripts call, else only what they read as they
+     load. Scripts run in the page's own order (`async = false`), so one is
+     never run before what it reads; a fetch that fails is let go, so the
+     next ask fetches it again. `need('*')` fetches them all. */
+  var LAZY = (function () {
+    try { return JSON.parse(document.getElementById('lazyScripts').textContent) || {}; } catch (e) { return {}; }
+  })();
+  var LAZY_ORDER = Object.keys(LAZY), lazyAsked = {}, lazyRan = {};
+  function lazyOne(k) {
+    if (lazyAsked[k]) return lazyAsked[k];
+    lazyAsked[k] = new Promise(function (ok, bad) {
+      var el = document.createElement('script');
+      el.src = LAZY[k].src;
+      el.async = false;
+      el.onload = function () { lazyRan[k] = true; ok(); };
+      el.onerror = function () {
+        delete lazyAsked[k];
+        if (el.parentNode) el.parentNode.removeChild(el);
+        bad(new Error('Failed to fetch ' + k));
+      };
+      document.body.appendChild(el);
+    });
+    return lazyAsked[k];
+  }
+  function lazyKeys(keys, whole) {
+    var want = {};
+    var add = function (k) {
+      if (!LAZY[k] || want[k]) return;
+      want[k] = true;
+      (LAZY[k].first || []).forEach(add);
+      if (whole) (LAZY[k].uses || []).forEach(add);
+    };
+    (keys === '*' ? LAZY_ORDER : [].concat(keys || [])).forEach(add);
+    return LAZY_ORDER.filter(function (k) { return want[k]; });
+  }
+  function need(keys, whole) { return Promise.all(lazyKeys(keys, whole).map(lazyOne)).then(function () {}); }
+  function needHeld(keys, whole) { return lazyKeys(keys, whole).every(function (k) { return lazyRan[k]; }); }
+  /* What runs at a press runs in that press where everything is already
+     here (a tab opened at the press stays the press's), else once it is. */
+  function needThen(keys, whole, fn) {
+    if (needHeld(keys, whole)) { fn(); return Promise.resolve(); }
+    return need(keys, whole).then(fn);
+  }
+  /* The scripts each section draws with. The Dashboard reads only a
+     helper or two of each (a source's name, a status's words, the sales
+     figures), so it fetches those scripts alone, each where its card is
+     drawn for this colleague; every other section brings all it calls. */
+  function sectionJs(name) {
+    var m = function (k, l) { return !meLoaded || may(k, l); };
+    var J = {
+      overview: [[m('reports', 'view') && 'smreport', m('clients.billing', 'manage') && 'invoices', m('clients', 'view') && 'crm', 'sales',
+        m('team.performance', 'view') && 'perf'].filter(Boolean), false],
+      analytics: [['analytics'], true],
+      clients: [['crm'], true], services: [['crm'], true],
+      team: [['team', 'perf'], true], mine: [['perf'], true],
+      reports: [['reports'], true], register: [['register'], true],
+      suppliers: [['suppliers'], true], handbook: [['handbook'], true],
+      settings: [['settings'], true], scripts: [['scripts'], true],
+      campaigns: [['campaigns'], true], links: [['namecard'], true]
+    }[name];
+    return J || [[], false];
+  }
+  function needSection(name) { var j = sectionJs(name); return need(j[0], j[1]); }
+  function whenSection(names, fn) {
+    var all = [].concat(names).map(sectionJs);
+    var held = all.every(function (j) { return needHeld(j[0], j[1]); });
+    if (held) { fn(); return Promise.resolve(); }
+    return Promise.all(all.map(function (j) { return need(j[0], j[1]); })).then(fn);
+  }
+  /* A section whose scripts are still on their way is drawn as the
+     console's own skeleton (`#consoleBoot`), its Still loading… line after
+     the wait; one that could not be fetched says so with Try again. */
+  var BOOT_SKEL = '';
+  var fetchSeq = 0;
+  function sectionHeld(name) {
+    var j = sectionJs(name), con = $('console'), box = $('consoleBoot');
+    if (needHeld(j[0], j[1])) {
+      if (con) con.classList.remove('is-fetching');
+      if (box) box.removeAttribute('aria-busy');
+      return true;
+    }
+    var seq = ++fetchSeq;
+    if (box && !BOOT_SKEL) BOOT_SKEL = box.innerHTML;
+    if (box && BOOT_SKEL) box.innerHTML = BOOT_SKEL;
+    if (con) con.classList.add('is-fetching');
+    if (box) box.setAttribute('aria-busy', 'true');
+    if (box && window.ADspaceState && ADspaceState.stillLoading) ADspaceState.stillLoading(box.querySelector('.skel'));
+    need(j[0], j[1]).then(function () {
+      if (seq !== fetchSeq || section !== name) return;
+      if (box) box.removeAttribute('aria-busy');
+      showSection(name);
+    }).catch(function () {
+      if (seq !== fetchSeq || section !== name || !box) return;
+      box.removeAttribute('aria-busy');
+      box.removeAttribute('aria-hidden');
+      /* A script that did not arrive is a connection that failed: said in
+         the offline line's words (js/state.js reads it so). */
+      window.ADspaceState.failLine(box, SECTION_TITLE[name], 'Failed to fetch', function () {
+        box.setAttribute('aria-hidden', 'true');
+        showSection(name);
+      });
+    });
+    return false;
+  }
+
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'clients';
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
@@ -2549,6 +2683,7 @@
       if (name === k) mark.setAttribute('aria-current', 'page'); else mark.removeAttribute('aria-current');
     });
     showActivityLink();
+    if (!sectionHeld(name)) return;
     // Campaigns reads the address before it writes it, because on a reload the
     // address is the only record of which campaign or tab was open. Writing
     // first, with nothing open yet, blanked exactly the part it needed.
@@ -2741,19 +2876,27 @@
      What you were typing is not here; that is the form's own memory. */
   /* A client's address is its slug, the readable one the Clients section
      writes. Older links carrying a UUID still resolve, so nothing shared
-     before this stops working. Both live in js/crm.js, which owns clients. */
-  function clientKey(c) {
-    var CRM = window.ADspaceCRM;
-    return (CRM && CRM.keyOf ? CRM.keyOf(c) : '') || (c && c.id) || '';
-  }
+     before this stops working. Kept here, js/crm.js asking these, since
+     Content Review reads an address before (or without) js/crm.js being
+     fetched (ON DEMAND, 2026-11-22). */
+  var CLIENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function clientKey(c) { return (c && (c.slug || c.id)) || ''; }
+  /* Asked of the right column either way, because Postgres refuses a
+     non-UUID against a uuid column. */
   function clientByKey(key, then) {
-    var CRM = window.ADspaceCRM;
-    if (CRM && CRM.byKey) { CRM.byKey(key, then); return; }
-    db.from('clients').select(API.CLIENT_COLS).eq('id', key).single()
-      .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
+    if (!key) { then(null); return; }
+    db.from('clients').select(API.CLIENT_COLS).eq(CLIENT_UUID.test(key) ? 'id' : 'slug', key).single()
+      .then(function (r) {
+        if (r.error || !r.data) { then(null); return; }
+        API.withBilling(r.data).then(function () { then(r.data); });
+      }, function () { then(null); });
   }
 
-  function setUrl() { history.replaceState(null, '', urlOf(queryNow())); }
+  /* While a section's scripts are on their way the address is the only
+     record of the client, task or tab asked for: it is left alone until
+     the section draws (ON DEMAND, 2026-11-22). */
+  function addressHeld() { var j = sectionJs(section); return !needHeld(j[0], j[1]); }
+  function setUrl() { if (addressHeld()) return; history.replaceState(null, '', urlOf(queryNow())); }
 
   function queryNow() {
     var q = [];
@@ -2817,6 +2960,7 @@
      repaint. A local navigation inside a record is different — it is a move a
      person made, so it pushes an entry and Back and Forward walk the panes. */
   function pushUrl() {
+    if (addressHeld()) return;
     var before = location.pathname + location.search;
     var after = urlOf(queryNow());
     if (after !== before) history.pushState(null, '', after);
@@ -6908,6 +7052,10 @@
     /* Open a section from outside the rail: the bell opens the task a row
        names, after writing the address the section reads on entry. */
     show: function (name) { visitSection(name); },
+    /* ON DEMAND (2026-11-22): a section's scripts, fetched on first ask. */
+    need: need, needThen: needThen, needSection: needSection, whenSection: whenSection,
+    settingsAllowed: settingsAllowed,
+    clientKey: clientKey, clientByKey: clientByKey, analyticsTab: analyticsTab,
     /* ===== Console search (js/search.js) =====
        Land where the address says, the way a reload does: a content set is
        reached through its client, which only this file opens. */
@@ -8576,4 +8724,20 @@
       msg('importMsg', 'Not imported. The connection was lost. Please try again.', 'err');
     });
   });
+
+  /* Every ⋯ in the console shuts on a press outside a menu, its head or a
+     row's acts, on Escape and on a scroll that carried it from its button
+     (js/campaigns.js held this for every section until it was fetched only
+     for Creator Campaigns; ON DEMAND, 2026-11-22). The account menu and the
+     bell keep their own. Registered last here, so it runs where it did. */
+  function shutMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu):not(.notif-menu)'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
+  });
+  window.ADspaceMenu.onScroll(shutMenus);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
+  window.ADspaceAdmin.shutMenus = shutMenus;
 })();
