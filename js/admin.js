@@ -1972,6 +1972,37 @@
       { at: '#rhEdit .rp-aidraft [data-a="aidraft"]', text: 'Write with AI drafts the commentary from the figures and your notes. Read it before submitting.' },
       { at: '#rhEdit .rp-ainotes > summary', text: 'Notes for the draft: reasons, changes, the goal and next month\'s budget. They are kept in this browser only.' },
       { at: '#rhEdit .rp-ailang', text: 'The language Write with AI drafts in.' }] },
+    'reports.review': { name: 'Review and publish', steps: [
+      { at: '#rhEdit [data-a="confirm"]', text: 'Confirm records that you have reviewed the report. A manager then publishes it.' },
+      { at: '#rhEdit [data-a="publish"]', text: 'Publish makes the report readable on the client\'s link and keeps its PDF as it was sent.' },
+      { at: '#rhEdit [data-a="return"]', text: 'Send back returns the report to its writer as a draft for corrections.' }] },
+    /* Batch 2 (2026-11-21): the screens inside Creator Campaigns, Messages,
+       the Dashboard and Analytics, each met once. */
+    'campaigns.record': { name: 'Campaign', steps: [
+      { at: '#campTabs', text: 'Each tab holds one part of the campaign: its creators, schedule, the client\'s selection and its finance.' },
+      { at: '#campCopy', text: 'Copy the client\'s link to send it. The client chooses their creators on it.' },
+      { at: '#campPublish', text: 'This button takes the campaign\'s next step. Publish shows its creators to the client on their link.' }] },
+    'campaigns.roster': { name: 'Creators List', steps: [
+      { at: '#showAddCreator', text: 'Add creator saves a creator with their profiles, rate and contact details.' },
+      { at: '#rosterList .crm-group-head', text: 'Creators are grouped by fee. Inactive creators are in a group of their own.' },
+      { at: '#rosterList .cr-row:not(.crm-head)', text: 'Open a creator to see their bookings, payments and payment details.' }] },
+    'campaigns.payments': { name: 'Payments', steps: [
+      { at: '#cpqList .crm-group-head', text: 'Each payment moves from Details to review to Ready to bill, Draft in Bukku, Awaiting payment and Paid.' },
+      { at: '#cpqList .cpq-act .btn', text: 'The button on each row takes its next step: Review, Create bill, Link to Bukku or Open in Bukku.' },
+      { at: '#cpqRead', text: 'Read from Bukku updates each bill\'s status once it is posted or paid in Bukku.' }] },
+    'whatsapp.email': { name: 'Email', steps: [
+      { at: '#emlList .eml-row:not(.crm-head)', text: 'Every email the portal has sent, with its status. Press one to read it in full.' },
+      { at: '#emlMonth', text: 'Emails are listed by month. Type and Status narrow the list.' },
+      { at: '#emlNew', text: 'New email writes to a client, a supplier or a creator from a template.' }] },
+    'overview.team': { name: 'Team', steps: [
+      { at: '#ovwStages', text: 'Open work at each stage, with the colleagues holding it.' },
+      { at: '#ovwPeople button.ovw-tr', text: 'Each colleague\'s open, late and delivered work. Press a colleague to open their work.' },
+      { at: '#ovwClientsMonth button.ovw-tr', text: 'Each client\'s posts, report and meeting this month. Press a client to open their month in My Work.' }] },
+    'analytics.tab': { name: 'Charts', steps: [
+      { at: '#anlBody .anl-ai [data-a="write"]', text: 'Write with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.' },
+      { at: '#anlBody .anl-lead [data-card]', text: 'The main trend of this tab, month by month. A dashed line, where shown, is the forecast.' },
+      { at: '#anlBody .anl-page .ovw-kpi', text: 'Each tile shows a figure and its change on the previous period.' },
+      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse or Steady compares a figure with the previous period.' }] },
     'reports.check': { name: 'Check and submit', steps: [
       { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
       { at: '#rhEdit [data-a="submit"]', text: 'Submit asks who reviews the report, then sends it to them.' }] }
@@ -1993,7 +2024,19 @@
       var on = document.querySelector('#rhEdit:not([hidden]) .rp-step.is-on');
       if (!on) return q.get('report') ? '' : 'reports';
       var k = on.getAttribute('data-step');
+      if (k === 'check' && document.querySelector('#rhEdit [data-a="confirm"], #rhEdit [data-a="publish"]')) return 'reports.review';
       return k === 'text' ? 'reports.text' : k === 'check' ? 'reports.check' : 'reports.entry';
+    }
+    if (section === 'campaigns') {
+      if (shownSheet('campWork')) return 'campaigns.record';
+      if (shownSheet('payView')) return 'campaigns.payments';
+      if (shownSheet('rosterView')) return shownSheet('rosterList') ? 'campaigns.roster' : '';
+    }
+    if (section === 'whatsapp' && shownSheet('emlPane')) return 'whatsapp.email';
+    if (section === 'overview' && document.querySelector('#ovwPages .tab.is-on[data-page="summary"]')) return 'overview.team';
+    if (section === 'analytics') {
+      var t0 = document.querySelector('#anlTabs .tab');
+      if (t0 && !t0.classList.contains('is-on')) return 'analytics.tab';
     }
     return section;
   }
