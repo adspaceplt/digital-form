@@ -180,6 +180,12 @@ Malaysia and Singapore context: buying behaviour, bilingual audiences (English, 
 Budget realism: where a monthly ad budget is given, weigh it against the benchmarks given (Meta in Malaysia). The ad spend that reaches Meta is the budget times the ad spend share given (Meta's tax is taken first); each ad set needs at least the daily budget given; an ad set needs about 50 results a week to leave the learning phase. Say how many ad sets the budget carries and the results it can expect at the benchmark cost per result, as a range. Call the benchmarks benchmarks, never the client's own results.
 Commercial angle: where ADspace's services fit this brand now, what must be fixed before paid traffic is sent (a trust leak, the website, tracking, the lead form), and the order to do it in.
 
+WHO THE CLIENT IS
+Before anything else, read every place the record names: the website, each handle given (Instagram, Facebook, TikTok, rednote) and the Meta accounts linked (meta_accounts), so the analysis describes this client and no other business. Where the name matches more than one business, page or profile and the record does not settle which one is the client, set identity.certain to false, list each candidate in identity.candidates (its name, its main address and one line on how it differs from the others), and keep every other section short; never choose one yourself. Where team_choice is given, a colleague has chosen the client: analyse that one alone and set identity.certain to true.
+
+WHAT ELSE YOU ARE GIVEN
+quotation: the client's latest standing quotation (its plan, platforms, monthly advertising budget and term): what the client has been offered. client_feedback: the client's own change requests on content and the captions they approved, which show the tone and the words they accept or refuse; use them for the tone of voice and the words to avoid, and never quote a request back word for word. calls_and_visits: the team's latest notes of calls and visits, which name the client's goals, pains and the competitors they mention. In team_inputs, a value listed under derived was worked out from the quotation or the ad accounts rather than told by the team; weigh it so.
+
 WHAT TO WRITE
 What it is: the entity, its parent group where there is one, where it is by the places buyers know, and the facts that matter to a buyer, each with its source label; a fact two sources disagree on is marked to confirm.
 What works: what the brand already does well, each tied to a figure, a post, a review or a page.
@@ -236,6 +242,9 @@ const SCHEMA = obj({
   next_question: str('The one question to ask the client next'),
   brief: obj({ audience: str('The audience, in one or two sentences'), pains: str('Their pains, in one or two sentences'),
     pillars: list('Content pillars, one a line'), tone: str('The tone of voice, in one or two sentences') }),
+  identity: obj({ certain: { type: 'boolean', description: 'True where the record and the research settle which business the client is' },
+    candidates: { type: 'array', description: 'Where it is not settled: each business, page or profile that could be the client', items: obj({
+      name: str('Its name'), url: str('Its main address, https'), note: str('How it differs from the others, in one line') }) } }),
   sources: { type: 'array', description: 'The web pages read and used', items: obj({ url: str('The address'), title: str('A short title') }) }
 });
 const SUBMIT = { name: 'submit_analysis', description: 'Submit the finished brand analysis.', strict: true, input_schema: SCHEMA };
@@ -305,6 +314,11 @@ Deno.serve(async (req) => {
   const clientId = String(body && body.client_id || '');
   if (!/^[0-9a-f-]{36}$/i.test(clientId)) return json({ error: 'bad-request' }, 400, origin);
   const notes = words(body && body.notes, 3000);
+  /* The business a colleague chose where the name matched more than one
+     (2026-11-22, the user: the analysis never guesses the brand). */
+  const chRaw = (body && typeof body.choice === 'object' && body.choice) || null;
+  const choice = chRaw && text(chRaw.name, 160) ? { name: text(chRaw.name, 160),
+    url: /^https:\/\//i.test(text(chRaw.url, 300)) ? text(chRaw.url, 300) : null } : null;
   /* What the team knows up front (2026-10-15, the client analysis
      playbook): the objective, a monthly ad budget and the ad account. */
   const inRaw = (body && typeof body.inputs === 'object' && body.inputs) || {};
@@ -401,6 +415,57 @@ Deno.serve(async (req) => {
       views: t.result_views, engagements: t.result_engagements }));
     basis.post_results = rs.error ? 'not-read' : results.length;
 
+    /* What the portal already holds about the client (2026-11-22, the
+       Brand tab restructure): the latest standing quotation, the client's
+       own feedback on content, and the team's last five notes of calls and
+       visits (the user's D2), each read as the caller, one refused left
+       out. No contact's name is read, and numbers and emails are masked. */
+    const qt = await db.from('quotations').select('ref, selection, lines, status, issued_at')
+      .eq('client_id', clientId).is('removed_at', null).neq('status', 'not_proceeding').order('issued_at', { ascending: false }).limit(1);
+    const q0 = qt.error ? null : ((qt.data || [])[0] as Record<string, unknown> | undefined) || null;
+    let quotation: Record<string, unknown> | null = null;
+    let quoteBudget: number | null = null;
+    if (q0) {
+      const sel = (q0.selection && typeof q0.selection === 'object' ? q0.selection : {}) as Record<string, unknown>;
+      const adsSel = Array.isArray(sel.ads) ? sel.ads as Record<string, unknown>[] : [];
+      const monthly = adsSel.filter((a) => (a.freq || 'monthly') === 'monthly').reduce((t, a) => t + (Number(a.budget) || 0), 0);
+      quoteBudget = monthly > 0 ? Math.round(monthly * 100) / 100 : null;
+      const lines = Array.isArray(q0.lines) ? q0.lines as Record<string, unknown>[] : [];
+      const plan = lines.find((l) => l.kind === 'plan');
+      quotation = {
+        reference: text(q0.ref, 60), issued: String(q0.issued_at || '').slice(0, 10),
+        plan: plan ? text(plan.label, 160) : null,
+        platforms: Array.from(new Set(((Array.isArray(sel.platforms) ? sel.platforms : []) as unknown[]).concat(adsSel.map((a) => a.platform)).map((x) => text(x, 40)).filter(Boolean))),
+        monthly_ad_budget_rm: quoteBudget, term_months: Number(sel.term) || null
+      };
+    }
+    basis.quotation = qt.error ? 'not-read' : quotation ? quotation.reference : null;
+
+    const bt = await db.from('batches').select('id').eq('client_id', clientId).order('created_at', { ascending: false }).limit(40);
+    const bIds = bt.error ? [] : (bt.data || []).map((b: Record<string, unknown>) => String(b.id));
+    let changeNotes: string[] = [], approved: string[] = [];
+    if (bIds.length) {
+      const ps = await db.from('posts').select('id, caption, created_at').in('batch_id', bIds).order('created_at', { ascending: false }).limit(150);
+      const pl = ps.error ? [] : (ps.data || []) as Record<string, unknown>[];
+      const pIds = pl.map((x) => String(x.id));
+      if (pIds.length) {
+        const rv = await db.from('reviews').select('post_id, decision, note, created_at').in('post_id', pIds).order('created_at', { ascending: false }).limit(600);
+        const rl = rv.error ? [] : (rv.data || []) as Record<string, unknown>[];
+        changeNotes = rl.filter((r) => r.decision === 'changes' && text(r.note, 10)).slice(0, 20).map((r) => words(r.note, 300));
+        const latest: Record<string, string> = {};
+        rl.forEach((r) => { const k = String(r.post_id); if (!(k in latest)) latest[k] = String(r.decision); });
+        approved = pl.filter((x) => latest[String(x.id)] === 'approved' && text(x.caption, 10)).slice(0, 20).map((x) => words(x.caption, 400));
+      }
+    }
+    basis.review_notes = changeNotes.length;
+    basis.approved_captions = approved.length;
+
+    const tc = await db.from('client_touches').select('kind, happened_at, summary, next_action')
+      .eq('client_id', clientId).order('happened_at', { ascending: false }).limit(5);
+    const calls = tc.error ? [] : (tc.data || []).map((t: Record<string, unknown>) => ({
+      kind: text(t.kind, 20), day: String(t.happened_at || '').slice(0, 10), note: words(t.summary, 600), next: words(t.next_action, 200) || null }));
+    basis.calls = tc.error ? 'not-read' : calls.length;
+
     /* Meta, only where the switch and the part allow it for the caller and
        the client links what is read. */
     const meta: Record<string, unknown> = {};
@@ -483,6 +548,30 @@ Deno.serve(async (req) => {
       };
     }
 
+    /* What the team did not say is worked out from what is held, and kept
+       with the version so the next run, on any device, offers it again: the
+       budget from the quotation, the objective from the ad spend, the ad
+       account from whether it spent (2026-11-22, the user's D4). */
+    const derived: string[] = [];
+    if (inputs.monthly_ad_budget_rm == null && quoteBudget) { inputs.monthly_ad_budget_rm = quoteBudget; derived.push('budget'); }
+    const spendBy: Record<string, number> = {};
+    ((meta.ads_last_six_months || []) as { objective: string; by_age: { spend: number }[] }[]).forEach((o) => {
+      spendBy[o.objective] = (spendBy[o.objective] || 0) + o.by_age.reduce((t, x) => t + (Number(x.spend) || 0), 0);
+    });
+    const spent = Object.values(spendBy).reduce((t, v) => t + v, 0);
+    const OBJ_OF = (o: string) => /LEAD/i.test(o) ? 'enquiries' : /MESSAG|ENGAGEMENT/i.test(o) ? 'messages'
+      : /TRAFFIC|LINK|SALES|CONVERSION|CATALOG/i.test(o) ? 'traffic' : /AWARENESS|REACH|VIDEO/i.test(o) ? 'awareness' : '';
+    let objKey = OBJECTIVES[String(inRaw.objective || '')] ? String(inRaw.objective) : '';
+    if (!objKey && spent > 0) {
+      const top = Object.entries(spendBy).sort((x, y) => y[1] - x[1])[0];
+      objKey = top ? OBJ_OF(top[0]) : '';
+      if (objKey) { inputs.objective = OBJECTIVES[objKey]; derived.push('objective'); }
+    }
+    let accKey = ACCOUNTS[String(inRaw.account || '')] ? String(inRaw.account) : '';
+    if (!accKey && meta.ads_last_six_months) { accKey = spent > 0 ? 'mature' : 'new'; inputs.ad_account = ACCOUNTS[accKey]; derived.push('account'); }
+    basis.inputs = { objective: objKey || null, budget: inputs.monthly_ad_budget_rm, account: accKey || null,
+      notes: notes || null, derived };
+
     const igPosts = meta.instagram ? ((meta.instagram as Record<string, unknown[]>).posts || []).length : 0;
     const fbPosts = meta.facebook ? ((meta.facebook as Record<string, unknown[]>).posts || []).length : 0;
     const hypothesis = !reps.length && !results.length && !igPosts && !fbPosts && !meta.ads_last_six_months;
@@ -519,7 +608,12 @@ Deno.serve(async (req) => {
       brief: Object.keys(brief).length ? brief : null,
       brand_notes: words(c.brand_notes, 1500) || null,
       team_notes: notes || null,
-      team_inputs: inputs, benchmarks: bench,
+      team_inputs: Object.assign({}, inputs, { derived }), benchmarks: bench,
+      team_choice: choice,
+      meta_accounts: link ? { instagram: (link.instagram as { name?: string } | null)?.name || null,
+        facebook_page: (link.page as { name?: string } | null)?.name || null,
+        ad_accounts: ((link.ad_accounts || []) as { name: string }[]).map((x) => text(x.name, 120)) } : null,
+      quotation, client_feedback: { change_requests: changeNotes, approved_captions: approved }, calls_and_visits: calls,
       history: hypothesis ? 'little' : 'some',
       published_reports: reports, post_results: results, meta
     };
@@ -582,6 +676,16 @@ Deno.serve(async (req) => {
     await db.rpc('ai_draft_tokens', { p_id: pressId, p_in: input, p_out: output, p_model: usedModel }).then(() => null, () => null);
     await db.rpc('ai_draft_searches', { p_id: pressId, p_n: searches }).then(() => null, () => null);
     if (!answer) { await done(false); return { error: Date.now() - started > 120000 ? 'ai-slow' : 'ai-incomplete' }; }
+
+    /* Not settled which business the client is, and no colleague has chosen:
+       nothing is saved and the press is not counted; the candidates go back
+       to be chosen from. */
+    const idt = (answer.identity && typeof answer.identity === 'object') ? answer.identity : null;
+    const cands = idt && Array.isArray(idt.candidates) ? (idt.candidates as Record<string, unknown>[])
+      .map((x) => ({ name: text(x && x.name, 160), url: /^https:\/\//i.test(text(x && x.url, 300)) ? text(x && x.url, 300) : null, note: words(x && x.note, 200) }))
+      .filter((x) => x.name).slice(0, 5) : [];
+    if (!choice && idt && idt.certain === false && cands.length >= 2) { await done(false); return { error: 'ambiguous', candidates: cands }; }
+    basis.choice = choice;
 
     const analysis = tidy(answer);
     if (!analysis.positioning.now || !analysis.audiences.length) { await done(false); return { error: 'ai-incomplete' }; }

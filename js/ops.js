@@ -9211,9 +9211,9 @@
        the person's own record, a dispute opens the team's month. */
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
       if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
-      /* A reminder, an initiative decided or a request to talk opens the
-         My records view it is about (2026-10-07). */
-      var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
+      /* A reminder, a recognition or a request to talk opens the My
+         records view it is about (2026-10-07; Recognition 2026-11-22). */
+      var mv = x.kind === 'perf.recognition' ? 'recognition'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
       if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);

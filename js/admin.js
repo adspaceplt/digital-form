@@ -2158,7 +2158,7 @@
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     noaccess:  'The sections your account can open.',
-    mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
+    mine:      'Your own reviews, recognitions, HR letters and health check-ins.',
     settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };
   var INTRO_SHOWS = 3;
@@ -2227,7 +2227,7 @@
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
       { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯ menu.' }] },
     mine: { name: 'My records', steps: [
-      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you can see them here.' }] },
+      { at: '#mineViews', text: 'Your reviews, recognitions, letters and health check-ins. Only you can see them here.' }] },
     /* A screen of its own inside a section (2026-10-10; the user: "the
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
@@ -3359,7 +3359,11 @@
   var PERF_STEP = { released: 'Review shared', disputed: 'Query raised', decided: 'Query answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
                     returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted',
-                    opened: 'Review opened', 'self.saved': 'Self-rating saved' };
+                    opened: 'Review opened', 'self.saved': 'Self-rating saved',
+                    /* Recognition (2026-11-22): every step, whose month it is. */
+                    'recognition.given': 'Recognition given', 'recognition.withdrawn': 'Recognition withdrawn',
+                    'recognition.restored': 'Recognition restored', 'recognition.confirmed': 'Recognition confirmed',
+                    'recognition.declined': 'Recognition declined', 'recognition.reverted': 'Recognition decision reverted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the

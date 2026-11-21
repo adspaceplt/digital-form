@@ -969,7 +969,7 @@
         body: 'Write with AI will read the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, without any client\'s name, and write an analysis for management. ' +
           d.left + (d.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Write',
-        fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 3, required: false, placeholder: 'Optional', value: was }]
+        fields: [{ name: 'notes', label: 'Notes', rows: 3, required: false, placeholder: 'Optional', value: was }]
       }, function (v) {
         var notes = String(v.notes || '').trim();
         try { if (notes) localStorage.setItem(key, notes); else localStorage.removeItem(key); } catch (e) {}
