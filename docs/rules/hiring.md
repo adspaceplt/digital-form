@@ -297,9 +297,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - an offer or contract past its reply-by with no answer is filed once
     (`hiring_docs_expire`, every fifteen minutes) and the candidate emailed
     by `hiring-mail`'s drain (woken by the database with the wake secret;
-    `hiring_expire_mail_claim` takes each row once); no notice goes to
-    colleagues (the user, 2026-11-20); candidate notices stay the Owners'
-    (`hiring_tell` unchanged);
+    `hiring_expire_mail_claim` takes each row once), and its Owners told
+    once (`hiring.doc_expired`, An offer or A contract expired with no
+    reply); a declined offer tells them once too (`hiring.declined`): each
+    through `hiring_tell_once`, `dedupe_key` `{kind}:{document}:{colleague}`,
+    the notice opening the candidate, never its name
+    (`2026-11-21-offer-declined-or-expired-told.sql`; the user, 2026-11-21:
+    "yess", reversing 2026-11-20's email alone);
   - Make colleague carries the confirmed contract's salary into Personnel
     (trigger `hiring_candidates_pay_to_personnel`; never a figure on screen
     or in a history line; a salary already set is left alone);
