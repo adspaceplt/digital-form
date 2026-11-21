@@ -401,7 +401,7 @@
       record: { at: vAt(4, '02:42:15'), email: 'client@example.com', in_contacts: true, ip: '192.0.2.10', country: 'MY', device: vDevice } },
     submitted_at: vAt(4, '06:05:44'), submitted_by: 'Mei Ling Chan', reviewer_name: 'Alex Tan', reviewed_at: vAt(5, '01:16:09'), reviewed_by: 'Alex Tan',
     reviewed_role: 'Managing Director', seal_key: 'private/' + V.id + '/sample.pdf', seal_sha: '0'.repeat(64), seal_pages_sha: '0'.repeat(64),
-    sealed_at: vAt(5, '01:16:12'), sealed_by: 'Alex Tan', removed_at: null, removed_by: null, replaces: null, doc_code: 'SAMP3Q88' });
+    sealed_at: vAt(5, '01:16:12'), sealed_by: 'Alex Tan', removed_at: null, removed_by: null, replaces: null, doc_code: 'SAMP3Q88', commence_on: '1988-02-01' });
   DB.signing_steps = [
     { id: 'dvs1', doc_kind: 'quotation', doc_id: 'dvq1', step: 'opened', at: vAt(4, '02:38:02'), ip: '192.0.2.10', country: 'MY', device: vDevice },
     { id: 'dvs2', doc_kind: 'quotation', doc_id: 'dvq1', step: 'code', at: vAt(4, '02:41:37'), email: 'client@example.com', in_contacts: true, ip: '192.0.2.10', device: vDevice }];
