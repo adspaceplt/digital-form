@@ -622,6 +622,7 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 Open below; before them none (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop); the five found on 2026-11-18 fixed 2026-11-19.
+- 2026-11-21: `weight` fails on main (bcd2ca6) for three pages no release today budgeted: /quote/ 0.5 KB, /verify/ 0.5 KB and /careers/ 0.2 KB over their budgets (found by the guides batch 2 release, which touches none of them).
 - 2026-11-20: the quotation PDF drawn in the demo (the sealed sample's
   Download) prints ADspace's wordmark, ADSPACE PLT and the ADspace Service
   Terms and Rate Card lines, typed in `js/quotepdf.js` rather than read
