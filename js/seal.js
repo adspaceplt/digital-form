@@ -96,7 +96,9 @@
      confirmed (Signed), how, the address, the country and the device. */
   function row(st) {
     var party = 'the ' + String(st.party || 'Client').toLowerCase(), by;
-    if (st.team) by = (st.by || 'ADspace') + (st.role ? ', ' + st.role : '') + (st.by && st.by !== 'ADspace' ? ', ADspace' : '');
+    /* The agency's own name (the demo's sample agency on sample data). */
+    var ag = (window.ADSPACE_CONFIG || {}).agencyName || 'ADspace';
+    if (st.team) by = (st.by || ag) + (st.role ? ', ' + st.role : '') + (st.by && st.by !== ag ? ', ' + ag : '');
     else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : party;
     var rest = st.step === 'code' ? 'to ' + (st.email || '') :
       st.step === 'sent' ? [VIA[st.via] || '', 'by ' + by].filter(Boolean).join(' ') :
