@@ -163,14 +163,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Reminders (`2026-10-07-my-hr-reminders.sql`, `my_hr_remind()`, pg_cron
   `my-hr-reminders` 09:05 MYT): one notice a colleague a day at most, naming
   only what is owed: on the 1st and `remind_again_days` (3) on, last month's
-  self-rating and reflection (the review list only); `remind_before_days`
-  (3) before the month ends, its reflection; the same before each half
-  month ends, the health check-in, only to a colleague whose agreement
+  self-rating (the review list only); `remind_before_days` (3) before each
+  half month ends, the health check-in, only to a colleague whose agreement
   stands, the days held to the half's own (a February's second half is
   reminded on its first day at the latest;
   `2026-10-18-half-month-reminder-always-comes.sql`). Both days are Performance settings (Reminders, 0 to 14, 0 sends
-  none). The bell and a push open the view (`perf.remind`, `perf.reflect`,
-  `health.remind`, tag `my-hr`); never a score or a note.
+  none). The bell and a push open the view (`perf.remind`, `health.remind`, tag
+  `my-hr`); never a score or a note.
 - An admin deletes a member's month in any state (`perf_delete`: the
   performance part at Manage, a live unlock and admin; never their own), from
   the row's ⋯ and the review's ⋯, with the name and month typed back
@@ -180,33 +179,30 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (Record deleted), and `perf_deleted` keeps a printed reference so
   `/verify/` answers it Void. There is no restore.
 <!-- Performance rewards (2026-09-28) -->
-- Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
-  `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
-  - My records (`?s=mine`, the account menu's first item; never My
-    performance, the user, 2026-10-06: it holds more than reviews; never My
-    HR, 2026-10-07: it read oddly) is five views
-    (`#mineViews`, `view=` in the address, Reviews left out): Reviews,
-    Initiatives, Reflection, Letters, Health, all behind the fresh proof
-    (`perf_mine_gate()`, the card Your records are locked).
-  - An initiative (title 3 to 140, Improves: Client work, Process, Tool, SOP,
-    Other; details; an https link) is logged in this month as Proposed and
-    edited while Proposed; Withdraw (Undo in place, Restore in the ⋯) is its
-    author's way out. Management (`team.performance` Work, a live unlock)
-    moves it Proposed → Adopted / Not now (each asks, with an optional note
-    the author reads, and tells the author, `perf.initiative`) → Done (the
-    month it is done); Revert back to Proposed never asks. Performance's
-    Initiatives view (`view=initiatives`) lists everyone's but the caller's,
-    by state (Not now and Withdrawn shut). Nobody decides their own (`own`).
-  - The review sheet shows beside the scores the colleague's initiatives
-    logged or done in that month and, once they share it, their reflection
-    (`perf_review_context`); nothing scores itself: the reviewer still
-    scores Initiative and improvement.
-  - A reflection is Proud of, Found hard, Want to learn, for this month or
-    last, until that month is final (`bad-month`, `final`); Share with
-    management asks first, Stop sharing never asks; management reads it
-    only while shared, and it is never scored.
-  - Every step is filed in the review trail (`initiative.*`,
-    `reflection.shared` / `unshared`); `perf_activity` does not list them.
+- Recognition (`2026-11-22-recognition.sql`, `perf_recognitions`, RLS on,
+  no policy, no grant): My records is Reviews, Recognition, Letters,
+  Personnel, Health (`#mineViews`, `view=`), behind the fresh proof
+  (`perf_mine_gate()`). Recognise (`perf_recognition_give`: Colleague, any
+  active one but oneself and the system account; Category helped, effort,
+  praise; Note 3 to 500; ten a day; the same press again answers the first)
+  tells the receiver who and the category (`perf.recognition`), never
+  points; Received and Given list each newest first, no points; the giver
+  withdraws one waiting (`perf_recognition_withdraw`, Undo where it
+  happened). Management (`team.performance` Work, a live unlock) confirms
+  or declines it on the month's review sheet (`perf_review_recognitions`,
+  `perf_recognition_decide`; Revert decision in its ⋯), never one they
+  gave or received (`own`). It counts in the month given, else, where that
+  month is shared or its quarter or half confirmed, in the month confirmed
+  or the next month neither holds (`perf_recognition_month`); a shared
+  month keeps what it counted (`month-released`). `perf_calc` adds
+  `rec_points` a confirmed one, held to `rec_cap` (0 turns it off), after
+  the issues (`recognition`, `recognition_raw`); `rec_confirm` off counts
+  one as it is given; all three Performance settings (Months, Recognition).
+  The printed record takes a Recognitions column only where they added
+  marks. Every step is in the Activity record under Performance
+  (`recognition.*`). Initiatives and the reflection are off the pages
+  (2026-11-22); `perf_initiatives`, `perf_reflections` and their functions
+  are kept, and no reminder asks for a reflection.
 - Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
   Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
   the period's first quarter).
