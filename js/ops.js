@@ -5451,7 +5451,7 @@
           visits.push({ key: s.from_value.stage_key, skip: true, reason: (s.detail && s.detail.reason) || '', from: at, to: at, notes: [] });
         });
       var d = m.detail || {};
-      cur = { key: m.to_value.stage_key, from: at, actor: m, round: Number(d.round) || 0, notes: [],
+      cur = { key: m.to_value.stage_key, from: at, actor: m, round: Number(d.round) || 0, notes: d.note ? [String(d.note)] : [],
               recorded: m.recorded_at && CK.day(m.recorded_at) !== CK.day(m.created_at) ? m.recorded_at : null };
     });
     if (cur) {
