@@ -112,9 +112,7 @@
         return pdf.save().then(S.sha256).then(function (pagesSha) {
           info.pagesSha = pagesSha; info.signedPages = signedN; info.total = signedN + opts.extraPages;
           S.addRecord(pdf, PDF, got[0], got[1], info);
-          return pdf.save().then(function (bytes) {
-            return S.sha256(bytes).then(function (sha) { return { bytes: bytes, sha: sha, pagesSha: pagesSha }; });
-          });
+          return pdf.save().then(S.finish).then(function (f) { return { bytes: f.bytes, sha: f.sha, pagesSha: pagesSha }; });
         });
       }).then(function (out) {
         if (!seal) return new Blob([out], { type: 'application/pdf' });
