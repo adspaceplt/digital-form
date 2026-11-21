@@ -1256,7 +1256,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     else a tab, a report's step or a sheet, as `guideKey()` reads the page
     (`settings`, `whatsapp.templates`, `whatsapp.compose`, `arrange`,
     `mine.health` before agreeing and `mine.checkin` after, `team.health`,
-    `reports.entry`, `reports.text`, `reports.check`), offered as the screen
+    `reports.entry`, `reports.text`, `reports.check`, `reports.review`;
+    batch 2, 2026-11-21: `campaigns.record`, `campaigns.roster`,
+    `campaigns.payments`, `whatsapp.email`, `overview.team`, and
+    `analytics.tab` on any Analytics tab after the first), offered as the screen
     first appears (an address change, or the page settling after a sheet, a
     tab or a step is drawn); on a phone the tab bar's guide (`phone`: the
     sections, More, the name that arranges them) comes first, then the
