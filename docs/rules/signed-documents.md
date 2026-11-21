@@ -38,7 +38,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   refused; the owner password is 32 random bytes made in the browser for
   that one file (`crypto.getRandomValues`) and never stored, sent or
   logged. The library is `@pdfsmaller/pdf-encrypt` 1.2.0 (jsDelivr,
-  pinned by hash, fetched at the seal alone, after pdf-lib). The whole
+  pinned by hash), fetched with `js/sealprotect.js` at the seal alone,
+  after pdf-lib, never by a page (a client page's weight is unchanged);
+  `seal.js` fetches that file under its own `?v=`, so a change to it
+  bumps `seal.js`'s stamp. The whole
   file's SHA-256 is of the encrypted bytes, so Download and /verify/'s
   file check meet the file kept; the signed pages' hash on the Record page
   is of the pages before the Record and the protection. Every other PDF is
