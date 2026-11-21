@@ -566,11 +566,10 @@ section holds only what is true of the project as a whole.
 ### Open security findings
 - The audit of 2026-11-07 (run 1, 0a858d0) and its scoped second run of
   2026-11-09 (5bd5452, the seven areas run 1 left): every confirmed finding
-  of both closed the day it was found (`docs/DECISIONS.md`). Open, each the
-  owner's to check: `private/`'s links are signed with a key of their own
-  (`cf_private_files_private`, `cf_private_files_key_id`; CloudFront key
-  group `adspace-portal-private`, 2026-11-21), and the media pass's group
-  leaves the `private/*` behaviour once the owner takes it off. The eight AI functions' `npm:@anthropic-ai/sdk` import is
+  of both closed the day it was found (`docs/DECISIONS.md`). Closed
+  2026-11-21: `private/` trusts only its own key group
+  (`adspace-portal-private`, `cf_private_files_key_id`); checked live, a
+  media pass is refused there, by its own path and by a dot-segment one. The eight AI functions' `npm:@anthropic-ai/sdk` import is
   pinned to 1.10.0 and deployed (2026-11-21); `tests/fnpins.js` fails any
   `npm:`, `jsr:` or esm.sh import without an exact version. A creator's signed uploads are counted a
   booking a day since 2026-11-09; an S3 lifecycle rule and an AWS Budgets
