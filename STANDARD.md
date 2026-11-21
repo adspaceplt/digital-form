@@ -623,6 +623,12 @@ None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop); the five found on 2026-11-18 fixed 2026-11-19; the
 demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
+- 2026-11-21, `demo` (found running switched-off acts, release B, which
+  touches neither file): "no page error" once read `window.__demoSeed is
+  not a function`, the engine (`demo/engine.js`) run on a page whose
+  `demo/seed.js` had not arrived; the same run again passed. Its cause (a
+  seed request cut off by the suite's next navigation, or a seed load that
+  failed) is to be found; held here until it ships.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
