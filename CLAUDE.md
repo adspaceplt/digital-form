@@ -791,7 +791,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   cover, never a lock: the database keeps answering, but the quotation
   website covered makes nothing (`quote_website_create` `unavailable`).
   - A row of `app_flags` a page (`page:{key}`: admin, client, review,
-    script, details, creators, creator, quote, supplier, verify; RLS on, no
+    script, details, creators, creator, quote, supplier, verify, careers, and the system pages home, notfound, card; RLS on, no
     policy, no grant), its `kind` (`upgrade` Upgrade in progress, `paused`
     Temporarily unavailable), window, note, Chinese note and whether its
     cover offers Chat on WhatsApp. `page_states()` (anon) answers every page
@@ -802,9 +802,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     → Temporarily unavailable · until … · note", Malaysia time);
     `page_states_all()` reads them for Settings. `maintenance_state` and
     `maintenance_set`, for a page served before, read and set every page.
-  - Every portal page loads it after `api.js` but `/`, the 404, `/card/` and `/careers/`,
-    so the front door, short links, every colleague's namecard (a
-    printed QR's page) and a candidate's page stay up; a page reads its own row by its address. A
+  - Every portal page loads it (after `api.js`; `/` and the 404, which hold
+    no database library, ask `page_states` by `fetch`), the system pages
+    included (`home` the front door, `notfound` the 404 by its tag's
+    `data-page`, `card` namecards; EVERY PAGE AVAILABLE, 2026-11-21, the
+    user: "makes all pages up, including the main page"); a page reads its
+    own row by its address. Short links (the Worker) are not a page. A
     client page covers itself under its own bar (`.maint-cover`, z-index 39;
     the rest `inert`): Upgrade in progress / 系统升级中 (`W.maintTitle`;
     `maintText` The portal will be available again shortly. / 系统将稍后恢复使用。;
@@ -829,8 +832,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Console: Upgrade in progress until …, Turn off ending the
     console's alone). Settings, Portal: Page availability (`team.upgrade`,
-    All pages available or n pages unavailable) opens `#pgSheet`: the ten pages
-    by group (Team, Clients, Creators, Public), each one line at a desk (the
+    All pages available or n pages unavailable) opens `#pgSheet`: the pages
+    by group (Team, Clients, Creators, Public with the Candidate page), then
+    System pages (Front page, Page not found, Namecards) under their own
+    heading, whose tick chooses the three while Select all never does; each one line at a desk (the
     name and its address, the state and when, the pen; on a phone the name
     over its address, the state over when, the pen beside), revamp D,
     2026-11-04; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The

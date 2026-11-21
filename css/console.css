@@ -6136,3 +6136,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .sendwhy.is-dock p { font-size: 14px; }
 /* A Messages switch under a portal switch that is off stands still. */
 .switch[data-off] { opacity: .42; }
+/* The system pages' own tick heads their group, the rows' tick (EVERY PAGE AVAILABLE). */
+.pg-sysall { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.pg-sysall input { margin: 0 2px 0 0; }
