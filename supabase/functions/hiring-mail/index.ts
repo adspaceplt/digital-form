@@ -42,7 +42,17 @@
  *                                     mailbox to contact, and closed
  *                                     (`hiring_expire_mail_done`);
  *   againOf (with any of these)    the Email log's Send again: the same
- *                                     email drawn afresh, filed as sent again
+ *                                     email drawn afresh, filed as sent again;
+ *   byHand (with any of these)     a card's Email candidate where the email
+ *                                     did not go: a send by hand.
+ *
+ * Automatic, or by hand (CANDIDATE EMAILS, 2026-11-21): each step's email,
+ * and the expiry drain's, is an automatic email, its words the candidate
+ * template's (`hiring_email_templates`, Settings, Messages: Email
+ * templates, Candidates), sent only while `hiring_mail_gate` reads the
+ * portal's Email, Automatic emails and the template on; else it is filed Not
+ * sent (`off: ...`) and the step stands. againOf and byHand ask the gate's
+ * `hand` (the portal's Email, Send by email and the group's Send email).
  *   { key, docId, kind: 'code', device }  the candidate's own press on their
  *                                     page, with no sign-in: a six-digit
  *                                     code to read that document, made by
@@ -87,135 +97,81 @@ function signOff(m: Record<string, any>): string {
   return m.system || !String(m.sender || '').trim() ? 'Yours sincerely,\nADspace Hiring Team' : 'Yours sincerely,\n' + m.sender + '\nADspace';
 }
 
-/* The words, as a formal letter (DESIGN.md §6): a fact a paragraph. */
-export function words(m: Record<string, any>): { subject: string; heading: string; body: string; block: string } {
-  const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
-  if (m.kind === 'doc') {
-    return {
-      subject: title + ': ' + m.ref,
-      heading: 'Your ' + title,
-      body: 'Dear ' + m.name + ',\n\n' +
-        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been sent to you again ' + (m.doc === 'contract' ? 'for your signature.' : 'for your reply.') +
-          (m.returned_note ? '\n\nReason: ' + m.returned_note : '')
-          : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
-        'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
-        'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + signOff(m),
-      block: button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
-    };
-  }
-  const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
-  const close = signOff(m);
-  /* A document that expired with no reply (2026-11-20). */
-  if (m.kind === 'expired') {
-    return {
-      subject: title + ' expired: ' + m.ref,
-      heading: title + ' expired',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'The ' + title + ' ' + m.ref + ' dated ' + m.sent + ' has expired, as no reply was received by ' + m.reply_by + ' (Malaysia time).\n\n' +
-        'Please contact ADspace at ' + m.contact + '.\n\n' + close,
-      block: ''
-    };
-  }
-  /* A document confirmed, and a confirmed interview cancelled (2026-11-20). */
-  if (m.kind === 'confirmed') {
-    return {
-      subject: title + ' confirmed: ' + m.ref,
-      heading: title + ' confirmed',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Your ' + title + ' ' + m.ref + (m.position ? ' for the position of ' + m.position : '') +
-        ' has been confirmed and countersigned by ADSPACE PLT.\n\n' +
-        'The confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + close,
-      block: button('View your application', PAGE + m.key)
-    };
-  }
-  if (m.kind === 'cancelled') {
-    return {
-      subject: 'Interview cancelled: ' + m.position,
-      heading: 'Interview cancelled',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Your interview for the position of ' + m.position + ' on ' + m.when + ' (Malaysia time) has been cancelled.' +
-        (m.mode === 'online' ? ' The Google Meet link sent earlier no longer applies.' : '') + '\n\n' +
-        'ADspace will contact you to arrange another time.\n\n' + close,
-      block: ''
-    };
-  }
-  /* The interview held, and its decision date moved (2026-11-20). */
-  if (m.kind === 'held') {
-    return {
-      subject: 'Thank you for your interview: ' + m.position,
-      heading: 'Thank you for your interview',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for attending the interview for the position of ' + m.position + '.\n\n' +
-        'ADspace will inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
-        'The details are also on your application page.\n\n{invoices}\n\n' + close,
-      block: button('View your application', PAGE + m.key)
-    };
-  }
-  if (m.kind === 'moved') {
-    return {
-      subject: 'Decision date updated: ' + m.position,
-      heading: 'Decision date updated',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your patience following the interview for the position of ' + m.position + '. ' +
-        'ADspace requires additional time to consider your application.\n\n' +
-        'ADspace will now inform you of the outcome by ' + m.decide_by + ' (Malaysia time).\n\n' +
-        (m.decide_note ? m.decide_note + '\n\n' : '') +
-        'The details are also on your application page.\n\n{invoices}\n\n' + close,
-      block: button('View your application', PAGE + m.key)
-    };
-  }
-  if (m.kind === 'pool') {
-    return {
-      subject: 'Your application: ' + m.position,
-      heading: 'Your application',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given ADspace. ' +
-        'There is no suitable opening for you at this time. ADspace would like to keep your application for ' + m.months +
-        ' months and may contact you about future positions.\n\n' +
-        'Please indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
-      block: button('View your application', PAGE + m.key)
-    };
-  }
-  if (m.kind === 'not') {
-    return {
-      subject: 'Your application: ' + m.position,
-      heading: 'Your application',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given ADspace. ' +
-        'After careful consideration, ADspace will not be proceeding with your application.\n\n' +
-        'ADspace wishes you every success in your search.\n\n' + close,
-      block: ''
-    };
-  }
-  if (m.kind === 'invite') {
-    const times = (m.times || []).map((t: string) => '• ' + t + ' (Malaysia time)').join('\n');
-    return {
-      subject: 'Interview invitation: ' + m.position,
-      heading: 'Interview invitation',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your application for the position of ' + m.position + '. ADspace would like to invite you to an interview of ' +
-        m.minutes + ' minutes ' + where + ' at one of the following times:\n\n' + times + '\n\n' +
-        (m.note ? m.note + '\n\n' : '') +
-        'Please choose a time on your application page' + (m.reply_by ? ' by ' + m.reply_by + ' (Malaysia time)' : '') +
-        '. If none of these times is suitable, please indicate this on the same page.\n\n{invoices}\n\n' +
-        signOff(m),
-      block: button('Choose a time', PAGE + m.key)
-    };
-  }
-  /* The office as the candidate's page names it, with its directions on our
-     own short link, the sending domain's (2026-11-19). */
-  const place = m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + m.link
-    : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP;
+/* Each email's name, as Settings, Messages: Email templates lists it. */
+export const NAMES: Record<string, string> = {
+  invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+  held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Keep in talent pool', not: 'Not proceed',
+  doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
+};
+/* The template an email is written from (CANDIDATE EMAILS, 2026-11-21). */
+export function templateOf(m: Record<string, any>): string {
+  return m.kind === 'doc' ? (m.returned ? 'doc_again' : 'doc') : String(m.kind || '');
+}
+
+/* The fields hiring-mail fills (`template_fields('candidate')`), from the
+   database's answer alone. */
+export function fields(m: Record<string, any>): Record<string, string> {
+  const contract = m.doc === 'contract';
   return {
-    subject: 'Interview confirmed: ' + m.position,
-    heading: 'Interview confirmed',
-    body: 'Dear ' + m.name + ',\n\n' +
-      'Your interview for the position of ' + m.position + ' is confirmed for ' + m.when + ' (Malaysia time), for ' + m.minutes + ' minutes.\n\n' +
-      place + '\n\n' + (m.note ? m.note + '\n\n' : '') +
-      'The details are also on your application page.\n\n{invoices}\n\n' +
-      signOff(m),
-    block: button('View your application', PAGE + m.key)
+    'candidate name': String(m.name || ''),
+    position: String(m.position || ''),
+    'interview length': m.minutes == null ? '' : String(m.minutes),
+    where: m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office',
+    times: (m.times || []).map((t: string) => '• ' + t + ' (Malaysia time)').join('\n'),
+    'reply by': String(m.reply_by || ''),
+    note: String((m.kind === 'moved' ? m.decide_note : m.kind === 'invite' || m.kind === 'confirm' ? m.note : '') || ''),
+    time: String(m.when || ''),
+    /* The office as the candidate's page names it, with its directions on our
+       own short link, the sending domain's (2026-11-19). */
+    place: m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
+      : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
+    'google meet line': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
+    'decision date': String(m.decide_by || ''),
+    months: m.months == null ? '' : String(m.months),
+    document: contract ? 'Employment Contract' : 'Employment Offer',
+    reference: String(m.ref || ''),
+    'what to do': contract ? 'sign it' : 'reply',
+    'for what': contract ? 'for your signature' : 'for your reply',
+    reason: m.returned_note ? 'Reason: ' + m.returned_note : '',
+    'document date': String(m.sent || ''),
+    contact: String(m.contact || ''),
+    'sign-off': signOff(m),
+    /* The button's place, which the layout lays as a block. */
+    button: '{invoices}'
   };
+}
+
+/* A template's words with its fields filled: a field left empty that
+   stands as its own paragraph leaves with it, and an invitation or a
+   document with no reply-by or position drops the words naming it, so the
+   words read as hiring-mail wrote them before they were editable. A field
+   it does not fill stays as typed (the editor refuses one on save). */
+export function fill(text: string, v: Record<string, string>): string {
+  const key = (k: string) => k.toLowerCase().replace(/\s+/g, ' ').trim();
+  let t = String(text || '');
+  t = t.replace(/\n\n\{\s*([^{}]*?)\s*\}(?=\n\n|$)/g, (all, k) => v[key(k)] === '' ? '' : all);
+  if (!v['reply by']) t = t.replace(/ by \{\s*reply by\s*\}( \(Malaysia time\))?/gi, '');
+  if (!v.position) t = t.replace(/ for the position of \{\s*position\s*\}/gi, '');
+  t = t.replace(/\{\s*([^{}]*?)\s*\}/g, (all, k) => { const x = v[key(k)]; return x == null ? all : x; });
+  return t.replace(/[ \t]+\n/g, '\n');
+}
+
+/* The words, as a formal letter (DESIGN.md §6): the template's subject and
+   message (Settings, Messages: Email templates, Candidates), the heading and
+   the button the email's own. */
+export function words(m: Record<string, any>, tpl: { subject: string; body: string }): { subject: string; heading: string; body: string; block: string } {
+  const v = fields(m), title = v.document;
+  const subject = fill(tpl.subject, v).replace(/\s+/g, ' ').trim(), body = fill(tpl.body, v);
+  const heading = ({
+    doc: 'Your ' + title, expired: title + ' expired', confirmed: title + ' confirmed', cancelled: 'Interview cancelled',
+    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Your application', not: 'Your application',
+    invite: 'Interview invitation', confirm: 'Interview confirmed'
+  } as Record<string, string>)[String(m.kind)] || 'Your application';
+  const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
+    : m.kind === 'invite' ? button('Choose a time', PAGE + m.key)
+    : m.kind === 'expired' || m.kind === 'cancelled' || m.kind === 'not' ? ''
+    : button('View your application', PAGE + m.key);
+  return { subject, heading, body, block };
 }
 
 /* The caller's address as Cloudflare saw it: never the first
@@ -254,6 +210,14 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
 }
 
+/* Why an automatic email is not sent, as the Email log files it: the
+   portal's Email or Automatic emails off, or its own template off. */
+export function offOf(g: Record<string, any>, tpl: Record<string, any>, kind: string): string {
+  if (!g.auto) return 'off: Automatic emails are off.';
+  if (!tpl.on) return 'off: ' + (NAMES[kind] || 'This email') + ' is turned off in Email templates.';
+  return '';
+}
+
 /* The expiry emails the database queued (2026-11-20): woken by the database
    alone, each claimed once and closed; a send is never repeated by itself. */
 async function drain(req: Request, origin: string | null): Promise<Response> {
@@ -265,10 +229,22 @@ async function drain(req: Request, origin: string | null): Promise<Response> {
   const { data, error } = await db.rpc('hiring_expire_mail_claim');
   if (error) return json({ error: 'claim' }, 200, origin);
   const who = await sender('careers');
+  /* An automatic email (CANDIDATE EMAILS, 2026-11-21): sent only while the
+     portal's Email, Automatic emails and its own template are on; else
+     filed Not sent, never sent later. */
+  const gate = await db.rpc('hiring_mail_gate', { p_kinds: ['expired'] });
+  const g = (gate.data || {}) as Record<string, any>, tpl = g.tpl && g.tpl.expired;
   let sent = 0;
   for (const m of (data as Record<string, any>[]) || []) {
-    if (!EMAIL.test(String(m.to || ''))) { await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' }); continue; }
-    const w = words(m);
+    if (!EMAIL.test(String(m.to || '')) || gate.error || !tpl) { await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' }); continue; }
+    const w = words(m, tpl);
+    const off = offOf(g, tpl, 'expired');
+    if (off) {
+      await fileSent({ kind: 'hiring_expired', ref: m.id, to: m.to, to_name: m.name, subject: w.subject, body: w.body,
+        reference: m.ref, status: 'failed', error: off });
+      await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' });
+      continue;
+    }
     const r = await resend({
       from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
       html: layout({ heading: w.heading, body: w.body, preheader: w.subject }), text: w.body
@@ -307,7 +283,31 @@ Deno.serve(async (req) => {
   if (!m || m.error) return json({ error: (m && m.error) || 'denied' }, 200, origin);
   if (!EMAIL.test(String(m.to || ''))) return json({ error: 'bad-email' }, 200, origin);
 
-  const w = words(m);
+  /* Automatic, or by hand (CANDIDATE EMAILS, 2026-11-21): a step's email is
+     an automatic email, sent only while the portal's Email, Automatic emails
+     and its own template are on, else filed Not sent and the step left done;
+     Send again in the Email log and Email candidate on a card are sends by
+     hand, asking the portal's Email, Send by email and the group's Send
+     email. */
+  const again = /^[0-9a-f-]{36}$/.test(String(b.againOf || '')) ? String(b.againOf) : '';
+  const byHand = Boolean(again) || b.byHand === true;
+  const tk = templateOf(m);
+  const gate = await db.rpc('hiring_mail_gate', { p_kinds: [tk] });
+  const g = (gate.data || {}) as Record<string, any>, tpl = g.tpl && g.tpl[tk];
+  if (gate.error || g.error || !tpl) return json({ error: gate.error ? 'needs-update' : g.error || 'needs-update' }, 200, origin);
+  if (byHand && !g.hand) return json({ error: 'send-off' }, 200, origin);
+  const w = words(m, tpl);
+  const off = byHand ? '' : offOf(g, tpl, tk);
+  const done = (st: string, err: string | null) => isDoc ? db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: st, p_error: err })
+    : isConfirmed ? db.rpc('hiring_confirmed_mail_done', { p_doc: id, p_status: st, p_error: err })
+    : outcome ? db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: st, p_error: err })
+    : db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: st, p_error: err });
+  if (off) {
+    await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
+      body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status: 'failed', error: off });
+    await done('failed', off);
+    return json({ ok: true, skipped: g.auto ? 'template-off' : 'auto-off' }, 200, origin);
+  }
   const who = await sender('careers');
   const msg: Record<string, unknown> = {
     from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
@@ -321,7 +321,6 @@ Deno.serve(async (req) => {
   /* Sent again from Messages' Email log (SEND AGAIN, 2026-11-18): a key of
      its own, so Resend never answers it with the first send, and filed as
      sending that email again. */
-  const again = /^[0-9a-f-]{36}$/.test(String(b.againOf || '')) ? String(b.againOf) : '';
   /* A decision date's key carries the date, so a date moved is emailed
      again. */
   const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
@@ -330,9 +329,6 @@ Deno.serve(async (req) => {
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
     body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
     again_of: again || undefined });
-  if (isDoc) await db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: status, p_error: error || null });
-  else if (isConfirmed) await db.rpc('hiring_confirmed_mail_done', { p_doc: id, p_status: status, p_error: error || null });
-  else if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
-  else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });
+  await done(status, error || null);
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);
 });

@@ -35,7 +35,13 @@
     'no-code': 'Keep {code} in the message, where the code goes.',
     'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its lock screen.'
   };
-  var REC = [['clients', 'Clients'], ['suppliers', 'Suppliers'], ['creators', 'Creators'], ['codes', 'Sign-in and codes']];
+  var REC = [['clients', 'Clients'], ['suppliers', 'Suppliers'], ['creators', 'Creators'], ['candidates', 'Candidates'], ['codes', 'Sign-in and codes']];
+  /* The candidate emails (CANDIDATE EMAILS, 2026-11-21): each an automatic
+     email with its own switch, hiring-mail's words before they were
+     editable. */
+  var HM_WORD = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Keep in talent pool', not: 'Not proceed',
+    doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired' };
   /* The two Supabase sends: their words are set in Supabase's dashboard
      (docs/SIGN-IN-EMAILS.md), so they are listed and never edited here. */
   var SUPABASE = [['Sign-in code', 'Your ADspace sign-in code'],
@@ -85,7 +91,8 @@
       sup() ? soft(rpc('email_templates_list')) : null,
       sup() ? soft(rpc('supplier_email_templates_list')) : null,
       biz() ? soft(rpc('creator_email_templates_get')) : null,
-      biz() ? soft(rpc('code_email_template_get')) : null
+      biz() ? soft(rpc('code_email_template_get')) : null,
+      biz() ? soft(rpc('hiring_email_templates_get')) : null
     ]).then(function (a) {
       st.fields = a[0] || {};
       var out = [];
@@ -122,6 +129,11 @@
             return saveWith('creator_email_templates_save', { p_rows: [{ purpose: t.purpose, on: v.on, subject: v.subject, body: v.body,
               to_email: t.purpose === 'review' ? v.to : null }] });
           } });
+      });
+      ((a[8] && a[8].rows) || []).forEach(function (t) {
+        out.push({ id: 'candidate:' + t.kind, rec: 'candidates', sec: /^(doc|doc_again|confirmed|expired)$/.test(t.kind) ? 'Offers and contracts' : 'Interviews and outcomes',
+          name: HM_WORD[t.kind] || t.kind, kind: 'candidate', sw: true, on: Boolean(t.on), subject: t.subject, body: t.body,
+          save: function (v) { return saveWith('hiring_email_templates_save', { p_rows: [{ kind: t.kind, on: v.on, subject: v.subject, body: v.body }] }); } });
       });
       if (a[7]) {
         var c = a[7];
@@ -212,7 +224,7 @@
   }
 
   /* ---- The editor -------------------------------------------------------- */
-  var KIND_FIELDS = { client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code' };
+  var KIND_FIELDS = { client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code', candidate: 'candidate' };
   function fieldsOf(kind) { return st.fields[KIND_FIELDS[kind]] || []; }
   var last = null;
 

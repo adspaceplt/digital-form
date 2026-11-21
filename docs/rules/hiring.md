@@ -224,6 +224,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   needs). The sections are Settings, Hiring: Welcome
   Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
   refusing a line naming a password, passcode or PIN with a value).
+- The candidate emails are automatic emails (`2026-11-21-candidate-emails.sql`;
+  the user, 2026-11-21: "the interviews emails ... should all be automatic
+  emails", "the process should be continued, just to show an alert"): the
+  invitation, confirmation, cancellation, thank-you and new decision date,
+  both outcomes, an offer or contract sent and sent again, its confirmation
+  and its expiry. Their words are `hiring_email_templates` (Settings,
+  Messages: Email templates, Candidates; `team.settings`; each with its own
+  switch; fields `template_fields('candidate')`; seeded with hiring-mail's
+  words, byte for byte, `tests/hiringmailfn.js`), filled by hiring-mail
+  (`fill`: a field left empty on its own paragraph leaves with it). A step's
+  email goes only while `hiring_mail_gate` reads the portal's Email,
+  Automatic emails and its template on; else the step stands, nothing is
+  sent and the email is filed Not sent (`off: Automatic emails are off.`,
+  the card then offering Email candidate). Each step's question says so
+  first, in a warn line in place of its Email {name} tick (`mailFields`).
+  Email candidate on a card and Send again in the Email log are sends by
+  hand (`byHand`, `againOf`: the portal's Email, Send by email and the
+  group's Send email; `data-send`). The verification code goes whatever
+  the switches.
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 - Hiring records held (`2026-11-17-hiring-records-held.sql`; the review

@@ -1023,6 +1023,7 @@
       html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details · ' + esc(cur.ref) + '</h4>' +
         (open ? '<span class="crr-acts"><button class="btn btn-sm" type="button" id="cpayDecline">Decline</button>' +
           '<button class="btn btn-sm btn-primary" type="button" id="cpayApprove">Approve</button></span>' : addBtn) + '</div>' +
+        (open && autoMailOff((payFor && payFor.name) || 'The creator', 'the approval') ? '<p class="msg warn">' + esc(autoMailOff((payFor && payFor.name) || 'The creator', 'the approval')) + '</p>' : '') +
         '<dl class="ovfacts">' +
           '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
           fact(cur.added_by ? 'Added' : 'Submitted', day(cur.created_at)) +
@@ -1763,8 +1764,19 @@
         '<section class="fsec"><h4 class="fsec-h">Contact</h4><dl class="ovfacts">' + fact('Email', cur.email) + fact('WhatsApp', window.ADspaceAPI.phoneWord(cur.whatsapp)) + '</dl></section>' +
         (jobs.length ? '<section class="fsec"><h4 class="fsec-h">Bookings waiting on these details</h4><dl class="ovfacts">' +
           jobs.map(function (j) { return '<div><dt class="cpq-mono">' + esc(j.job) + '</dt><dd>' + esc(j.campaign + (j.posted_on ? ' · Posted ' + cpqDay(j.posted_on) : '')) + '</dd></div>'; }).join('') + '</dl></section>' : '') +
+        (work && autoMailOff(r.name || 'The creator', 'the approval') ? '<p class="msg warn">' + esc(autoMailOff(r.name || 'The creator', 'the approval')) + '</p>' : '') +
         '<p class="msg" id="cpqSheetMsg" role="status"></p>';
     }).catch(function (e) { UI.failLine($('cpqSheetBody'), 'The payment details', e.message, function () { cpqReview(reqId); }); });
+  }
+  /* Approving sends the creator an automatic email (Details approved): while
+     Automatic emails or the portal's Email is off, the approval still
+     stands, and the sheet says first that no email will go (SEND SWITCHES,
+     2026-11-21). */
+  function autoMailOff(name, what) {
+    var A = window.ADspaceAdmin, M = window.ADspaceMoney;
+    if (A && A.sendState && A.sendState('email').portal) return 'Email is turned off for the portal. ' + name + ' will not receive ' + what + ' by email.';
+    var v = M && M.setting ? M.setting('auto_email_on') : null;
+    return v != null && Number(v) !== 1 ? 'Automatic emails are off. ' + name + ' will not receive ' + what + ' by email.' : '';
   }
   function cpqDecide(ok, note) {
     var q = cpqReq; if (!q) return Promise.resolve('');

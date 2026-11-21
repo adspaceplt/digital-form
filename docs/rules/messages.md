@@ -42,7 +42,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   a supplier, Send again) and Send on WhatsApp (`client_wa_on`, seeded On:
   every WhatsApp sent by hand, the composer, a quotation, a letter, a
   report, a feedback request, a reminder, Send quotation), Automatic emails
-  and Automatic WhatsApp beside them for what the portal sends by itself;
+  and Automatic WhatsApp beside them for what the portal sends by itself
+  (a creator's payment emails and every candidate email, `hiring_mail_gate`;
+  a step that sends one goes ahead while it is off, warning first);
   then the group's Send email and Send WhatsApp (who may send by hand). A
   Messages switch under a portal switch that is off stands still and reads
   Off for the whole portal. A send act the group may not take is hidden; one
