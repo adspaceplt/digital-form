@@ -1386,7 +1386,7 @@
     'clients.documents': 'Letters of Offer and client letters: issue, sign and void.',
     'clients.requests': 'Changes the client asks for in the portal.',
     'clients.calls': 'Calls, visits and meetings logged.',
-    'clients.brand': 'Brand profile, content brief, Meta accounts and Brand analysis.',
+    'clients.brand': 'Brand profile, social accounts, Meta accounts, Brand analysis and content brief.',
     'clients.checklists': 'The Onboarding Checklist and Pre-Advertising Checklist.',
     'clients.leads': 'Leads, Contacted and Proposal sent.',
     'clients.past': 'Past clients.',
