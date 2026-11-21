@@ -83,6 +83,8 @@
       if (r.error || !r.data) { if (loading === p) loading = null; return null; }
       ROWS = (r.data.settings || []).map(function (x) { return { key: x.key, from: String(x.from).slice(0, 10), value: x.value, by: x.by, at: x.at }; });
       TAX.rate = setting('sst_pct') / 100; TAX.label = taxLabel();
+      /* Read afresh: what follows a switch (a send drawn off) repaints. */
+      try { document.dispatchEvent(new CustomEvent('adspace-settings')); } catch (e) { /* an old browser */ }
       return r.data;
     }).catch(function () { if (loading === p) loading = null; return null; });
     return p;

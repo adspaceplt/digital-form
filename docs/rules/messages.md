@@ -31,6 +31,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Team View and a client contact's at Clients: Contacts View on a client in
   scope (a sign-in link's words never kept); a new sender files the same
   way. Supabase's own sign-in codes are not the portal's to log.
+- The send switches (`2026-11-21-send-switches.sql`; the user, 2026-11-21,
+  on a mockup: "if its disabled then it wouldnt show... misunderstanding
+  that the function is on", "why not just make it disabled"). Three tiers,
+  top to bottom: Settings, Portal: Email and WhatsApp (`email_on`,
+  `whatsapp_on`), off sending nothing below; Settings, Messages: Send by
+  email (`client_email_on`: every email a colleague sends by hand, template
+  or not: a quotation, a Letter of Offer, a client letter, an overdue
+  reminder, an invoice email, a supplier's emails, New email to a client or
+  a supplier, Send again) and Send on WhatsApp (`client_wa_on`, seeded On:
+  every WhatsApp sent by hand, the composer, a quotation, a letter, a
+  report, a feedback request, a reminder, Send quotation), Automatic emails
+  and Automatic WhatsApp beside them for what the portal sends by itself;
+  then the group's Send email and Send WhatsApp (who may send by hand). A
+  Messages switch under a portal switch that is off stands still and reads
+  Off for the whole portal. A send act the group may not take is hidden; one
+  Settings has switched off stays drawn, disabled, its reason said at a
+  press, a hover or the keyboard's focus (`data-send`, `#sendWhy`,
+  `ADspaceAdmin.sendState`), a sheet's own Send alike. A sign-in code, an
+  invitation and a verification code are never held by any switch.
 - New email (`#emlNew` on the Email bar, Messages at Work;
   `2026-11-04-new-email.sql` and its SQL Editor part; the user, 2026-11-04):
   `#nemSheet` asks For (Client, Supplier, Other as a segment): a client's

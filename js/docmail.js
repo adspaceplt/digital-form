@@ -3,8 +3,8 @@
  * contacts, by hand, beside Send on WhatsApp. Nothing goes by itself.
  *
  *   ADspaceDocMail.may(kind)          whether this colleague may send one
- *                                     (never while Send by email is off in
- *                                     Business settings, `client_email_on`):
+ *                                     (the group's Send email; Send by email
+ *                                     off draws the act disabled, `data-send`):
  *                                     Clients: Quotations (`quotation`),
  *                                     Clients: Letters (`offer`), Letters or
  *                                     Documents: Client documents (`letter`),
@@ -64,15 +64,11 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function bridge() { return window.ADspaceAdmin || {}; }
   function mayAt(key, level) { var b = bridge(); return Boolean(b.may && b.may(key, level)); }
-  /* Send by email is on (Business settings, `client_email_on`, from a day). */
-  function on() {
-    var M = window.ADspaceMoney;
-    return Boolean(M && M.setting && Number(M.setting('client_email_on', window.ADspaceClock.today())) === 1);
-  }
   function may(kind) {
-    /* The portal's Email switch and the group's Send email (GROUP
-       SWITCHES, 2026-11-17), then Send by email itself. */
-    if (!on() || !mayAt('send.email', 'work')) return false;
+    /* The group's Send email (GROUP SWITCHES, 2026-11-17). The portal's
+       Email and Send by email draw the act disabled with their reason
+       (`data-send`, SEND SWITCHES, 2026-11-21), never hide it. */
+    if (!mayAt('send.email', 'work')) return false;
     if (kind === 'quotation') return mayAt('clients.quotes', 'work');
     if (kind === 'offer') return mayAt('clients.documents', 'work');
     if (kind === 'letter') return mayAt('clients.documents', 'work') || mayAt('register.documents', 'work');
