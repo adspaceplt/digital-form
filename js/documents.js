@@ -790,10 +790,11 @@
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
       if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, faint);
       /* A document /verify/ answers on the AL template (a quotation) names
-         its Document ID on every page, in the bottom margin's left where an
-         ACL letter names its reference: clear of the page count. A
-         performance record carries it in its own reference line instead. */
-      else if (p.code) p.text('Document ID ' + p.code, M, at(G.refAt), G.ref, font, faint);
+         its Document ID on every page at the bottom margin's left, on the
+         page count's own baseline, so the foot reads as one line (the user,
+         2026-11-21: "not inline same row?"). A performance record carries it
+         in its own reference line instead. */
+      else if (p.code) p.text('Document ID ' + p.code, M, at(G.countAt), G.ref, font, faint);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
