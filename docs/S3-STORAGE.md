@@ -450,7 +450,9 @@ CloudFront already holds from 6a. Do 6a first.
 3. CloudFront → the distribution behind `mycdn.adspace.me` → **Behaviors** →
    **Create behavior**: path pattern `private/*`, the bucket as origin,
    **Redirect HTTP to HTTPS**, **Restrict viewer access: Yes** → **Trusted
-   key groups** → `adspace-portal-media`, cache policy **CachingDisabled**.
+   key groups** → `adspace-portal-private` (its own key since 2026-11-21,
+   `cf_private_files_key_id`; never the media pass's group), cache policy
+   **CachingDisabled**.
    **Create**.
 4. Tell Claude. Claude switches the links over (`cf_private_ready` in
    `app_secrets`; no page changes) and checks that an invoice opens on

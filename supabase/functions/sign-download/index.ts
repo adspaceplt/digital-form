@@ -40,8 +40,12 @@
  * Once CloudFront serves `private/*` behind the portal's key group
  * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
  * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
- * signed with the media pass's key (`cf_media_private`, `cf_media_key_id`).
- * Until then it is an S3 presigned link.
+ * signed with private/'s own key (`cf_private_files_private`,
+ * `cf_private_files_key_id`; CloudFront key group `adspace-portal-private`),
+ * never the media pass's, so a pass for content/ can open nothing here
+ * (2026-11-21, the open CloudFront finding); the media pass's key
+ * (`cf_media_private`, `cf_media_key_id`) only while private/'s own is not
+ * yet stored. Until then it is an S3 presigned link.
  *
  * AWS credentials are the upload key's (`AWS_ACCESS_KEY_ID`,
  * `AWS_SECRET_ACCESS_KEY`), which needs s3:GetObject on `private/*`
@@ -94,18 +98,21 @@ function unpem(text: string): Uint8Array {
 async function cdnLink(path: string): Promise<string | null> {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data } = await admin.from('app_secrets').select('key, value')
-    .in('key', ['cf_private_ready', 'cf_media_private', 'cf_media_key_id']);
+    .in('key', ['cf_private_ready', 'cf_private_files_private', 'cf_private_files_key_id', 'cf_media_private', 'cf_media_key_id']);
   const s: Record<string, string> = {};
   (data || []).forEach((r: { key: string; value: string }) => { s[r.key] = r.value; });
-  if (s.cf_private_ready !== 'on' || !s.cf_media_private || !s.cf_media_key_id) return null;
+  const own = !!(s.cf_private_files_private && s.cf_private_files_key_id);
+  const pem = own ? s.cf_private_files_private : s.cf_media_private;
+  const keyId = own ? s.cf_private_files_key_id : s.cf_media_key_id;
+  if (s.cf_private_ready !== 'on' || !pem || !keyId) return null;
   const resource = `${CDN}/${path}`;
   const expires = Math.floor(Date.now() / 1000) + EXPIRES;
   const policy = JSON.stringify({
     Statement: [{ Resource: resource, Condition: { DateLessThan: { 'AWS:EpochTime': expires } } }]
   });
-  const key = await crypto.subtle.importKey('pkcs8', unpem(s.cf_media_private), ALG, false, ['sign']);
+  const key = await crypto.subtle.importKey('pkcs8', unpem(pem), ALG, false, ['sign']);
   const sig = await crypto.subtle.sign(ALG.name, key, new TextEncoder().encode(policy));
-  return `${resource}?Expires=${expires}&Signature=${cfSafe(b64(sig))}&Key-Pair-Id=${s.cf_media_key_id}`;
+  return `${resource}?Expires=${expires}&Signature=${cfSafe(b64(sig))}&Key-Pair-Id=${keyId}`;
 }
 
 /* The caller's own address, passed on when this function asks for the

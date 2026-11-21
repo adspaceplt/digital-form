@@ -2258,7 +2258,10 @@ learned about an area is written in its file, never here.
   report's kept PDF and every report picture, `private/{client}/thumbs/`,
   read through S3 links sign-download signs, the bucket's CORS allowing
   GET and PUT from the portal; S3-STORAGE §7) once §5 is done;
-  `private/` is closed to CloudFront by the bucket policy. `content/` is
+  `private/` reaches CloudFront only through its own `private/*` behaviour,
+  each link signed by `sign-download` for one file with `private/`'s own
+  key (`cf_private_files_private`, `cf_private_files_key_id`, key group
+  `adspace-portal-private`), never the media pass's (2026-11-21). `content/` is
   served only with the media pass (§6 done; CloudFront's `content/*`
   behaviour requires it since 2026-10-09) (`media-pass` signs with a
   key it made and keeps in `app_secrets`, `cf_media_private`; CloudFront's
