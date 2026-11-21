@@ -1694,6 +1694,10 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    Copy copies (2026-11-21: a performance record's close mark cut at 390). */
 .qhead-top .rec-token { margin-left: -6px; display: block; flex: 0 1 auto; min-width: 0; line-height: var(--ctl-h);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A task's number is short and its head's own control: it keeps its whole
+   width and the stage beside it gives way (2026-11-21: matrix read #WT01008
+   12px wide at 320 once the number could give way). */
+#taskDrawer .qhead-top .rec-token { flex: 0 0 auto; }
 .qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto; }
 .qhead-end .chip { align-self: center; }
 /* The task's stage in its head: the list's own select, at the list's width. */
