@@ -286,7 +286,7 @@
     hiring_delete: 'p_id p_name', hiring_link: 'p_id p_reset', careers_read: 'p_key',
     hiring_invite: 'p_id p_slots p_minutes p_mode p_note p_idem', hiring_interviews_of: 'p_id', hiring_interview_cancel: 'p_interview',
     hiring_interview_approve: 'p_interview', hiring_interview_meet_prepare: 'p_interview', hiring_interview_set_meet: 'p_interview p_link p_event',
-    hiring_busy_may: '', hiring_mail_prepare: 'p_interview p_kind', hiring_mail_done: 'p_interview p_kind p_status p_error',
+    hiring_busy_may: '', hiring_mail_prepare: 'p_interview p_kind', hiring_mail_gate: 'p_kinds', hiring_email_templates_get: '', hiring_email_templates_save: 'p_rows', hiring_mail_done: 'p_interview p_kind p_status p_error',
     hiring_interview_held: 'p_interview p_decide_by', hiring_decide_by_change: 'p_interview p_decide_by p_note', hiring_decide_by_suggest: '',
     careers_pick: 'p_key p_slot', careers_none: 'p_key p_note', careers_pool: 'p_key p_yes',
     hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
@@ -5350,8 +5350,36 @@ function cardSlugFree(name, self, email) {
     'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
     'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
     meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
-    code: ['name', 'code', 'minutes', 'purpose']
+    code: ['name', 'code', 'minutes', 'purpose'],
+    candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'place', 'google meet notice',
+      'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
+
+  var HM_SEED = [{"kind": "invite", "on_send": true, "subject": "Interview invitation: {position}", "body": "Dear {candidate name},\n\nThank you for your application for the position of {position}. ADspace would like to invite you to an interview of {interview length} minutes {where} at one of the following times:\n\n{times}\n\n{note}\n\nPlease choose a time on your application page by {reply by} (Malaysia time). If none of these times is suitable, please indicate this on the same page.\n\n{button}\n\n{sign-off}"}, {"kind": "confirm", "on_send": true, "subject": "Interview confirmed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} is confirmed for {time} (Malaysia time), for {interview length} minutes.\n\n{place}\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "held", "on_send": true, "subject": "Thank you for your interview: {position}", "body": "Dear {candidate name},\n\nThank you for attending the interview for the position of {position}.\n\nADspace will inform you of the outcome by {decision date} (Malaysia time).\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "moved", "on_send": true, "subject": "Decision date updated: {position}", "body": "Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "cancelled", "on_send": true, "subject": "Interview cancelled: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}"}, {"kind": "pool", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}"}, {"kind": "not", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}"}, {"kind": "doc", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "doc_again", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "confirmed", "on_send": true, "subject": "{document} confirmed: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "expired", "on_send": true, "subject": "{document} expired: {reference}", "body": "Dear {candidate name},\n\nThe {document} {reference} dated {document date} has expired, as no reply was received by {reply by} (Malaysia time).\n\nPlease contact ADspace at {contact}.\n\n{sign-off}"}];
+  function hmTpl() {
+    if (!DB.hiring_email_templates) DB.hiring_email_templates = JSON.parse(JSON.stringify(HM_SEED));
+    return DB.hiring_email_templates;
+  }
+  function hiringGate(kinds) {
+    var m = opsMe(), tpl = {};
+    hmTpl().forEach(function (t) { if ((kinds || []).indexOf(t.kind) > -1) tpl[t.kind] = { on: t.on_send, subject: t.subject, body: t.body }; });
+    var day = appToday(), auto = appSet('auto_email_on', day);
+    return { ok: true, auto: portalOn('email_on') && (auto == null || Number(auto) === 1), hand: Boolean(m) && sendOk('email'), tpl: tpl };
+  }
+
+  function hireGate(body, tk, done, file) {
+    var g = hiringGate([tk]), t = g.tpl[tk], hand = Boolean(body.againOf) || body.byHand === true;
+    if (!t) return Promise.resolve({ data: { error: 'needs-update' }, error: null });
+    if (hand && !g.hand) return Promise.resolve({ data: { error: 'send-off' }, error: null });
+    if (hand || (g.auto && t.on)) return null;
+    var why = !g.auto ? 'off: Automatic emails are off.' : 'off: This email is turned off in Email templates.';
+    DB.system_emails = DB.system_emails || [];
+    DB.system_emails.push(Object.assign({ id: nid('se'), kind: 'hiring_' + tk.replace('doc_again', 'doc'), status: 'failed', error: why, body: '',
+      sent_by: (opsMe() || {}).id || null, created_at: new Date().toISOString() }, file || {}));
+    window.__hireMailOff = (window.__hireMailOff || []).concat([{ kind: tk, why: why }]);
+    persist();
+    return done('failed').then(function () { return { data: { ok: true, skipped: g.auto ? 'template-off' : 'auto-off' }, error: null }; });
+  }
   function tplCheck(text, kind) {
     var re = /\{\s*([^{}]*?)\s*\}/g, m, list = TPL_FIELDS[kind] || [];
     while ((m = re.exec(String(text || '')))) {
@@ -14306,6 +14334,36 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
+    if (name === 'hiring_mail_gate') return Promise.resolve({ data: opsMe() ? hiringGate(args.p_kinds) : { error: 'denied' }, error: null });
+    if (name === 'hiring_email_templates_get' || name === 'hiring_email_templates_save') {
+      var heOut;
+      if (!opsMe() || !opsGranted('team.settings', 'work')) heOut = { error: 'denied' };
+      else if (name === 'hiring_email_templates_get') {
+        var heOrd = ['invite', 'confirm', 'cancelled', 'held', 'moved', 'pool', 'not', 'doc', 'doc_again', 'confirmed', 'expired'];
+        heOut = { ok: true, rows: hmTpl().slice().sort(function (a, b) { return heOrd.indexOf(a.kind) - heOrd.indexOf(b.kind); })
+          .map(function (t) { return { kind: t.kind, on: t.on_send, subject: t.subject, body: t.body, updated_at: t.updated_at || null, updated_by: t.updated_by || null }; }) };
+      } else {
+        var heMv = [], heW = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled', held: 'Thank you for your interview',
+          moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed', doc: 'Employment document', doc_again: 'Employment document sent again',
+          confirmed: 'Document confirmed', expired: 'Document expired' };
+        (args.p_rows || []).some(function (x) {
+          var t = hmTpl().filter(function (y) { return y.kind === x.kind; })[0], on = x.on !== false;
+          if (!t) { heOut = { error: 'bad-request' }; return true; }
+          if (String(x.subject || '').trim().length < 3 || String(x.subject).length > 200) { heOut = { error: 'bad-subject', kind: t.kind }; return true; }
+          if (String(x.body || '').trim().length < 10 || String(x.body).length > 5000) { heOut = { error: 'bad-body', kind: t.kind }; return true; }
+          var bad = tplCheck(x.subject + ' ' + x.body, 'candidate');
+          if (bad) { heOut = Object.assign(bad, { kind: t.kind }); return true; }
+          if (t.on_send !== on || t.subject !== x.subject.trim() || t.body !== x.body.trim()) {
+            heMv.push(heW[t.kind] + (t.on_send !== on ? ': ' + (t.on_send ? 'Sent → Not sent' : 'Not sent → Sent') : ': wording changed'));
+            t.on_send = on; t.subject = x.subject.trim(); t.body = x.body.trim(); t.updated_at = new Date().toISOString(); t.updated_by = opsMe().name;
+          }
+          return false;
+        });
+        if (!heOut) { if (heMv.length) logAct('team.changed', 'Candidate emails', heMv.join(' · ')); heOut = { ok: true }; }
+      }
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(heOut)), error: null });
+    }
 
     if (name === 'code_email_template_get' || name === 'code_email_template_save') {
       var ceNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
@@ -15710,7 +15768,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
             meeting_link: iv.meeting_link || null, position: icand.position }, error: null });
         }
         if (name === 'hiring_mail_prepare') {
-          if (!sendOk('email')) return hNo('send-off');
           var mk = args.p_kind;
           if (mk === 'invite' && ['invited', 'none'].indexOf(hIvState(iv)) < 0) return hNo('not-open');
           if (mk === 'confirm' && iv.state !== 'confirmed') return hNo('not-confirmed');
@@ -15905,14 +15962,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
             seal: hd.seal_sha ? { sha: hd.seal_sha, pages_sha: hd.seal_pages_sha, at: hd.sealed_at } : undefined });
         }
         if (name === 'hiring_doc_mail_prepare') {
-          if (!sendOk('email')) return hNo('send-off');
           if (!keepsD) return hNo('denied');
           if (hd.state !== 'sent') return hNo('not-sent');
           return Promise.resolve({ data: { id: hd.id, kind: 'doc', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
             reply_by: hWhen(hd.reply_by), returned: !!hd.returned_note, returned_note: hd.returned_note || null, sender: hMe.name, system: !!hMe.system }, error: null });
         }
         if (name === 'hiring_confirmed_mail_prepare') {
-          if (!sendOk('email')) return hNo('send-off');
           if (!keepsD) return hNo('denied');
           if (hd.state !== 'confirmed') return hNo('not-confirmed');
           return Promise.resolve({ data: { id: hd.id, kind: 'confirmed', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
@@ -16108,7 +16163,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk({ was: was, email: oc !== 'proceed' });
       }
       if (name === 'hiring_outcome_mail_prepare') {
-        if (!sendOk('email')) return hNo('send-off');
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
         return Promise.resolve({ data: { id: hc.id, kind: hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,
@@ -17773,6 +17827,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var m = r.data || {};
             if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
             if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            var hoG = hireGate(ho, m.kind, function (st) { return rpc('hiring_outcome_mail_done', { p_id: ho.candidateId, p_status: st, p_error: null }); }, { to_email: m.to, ref_id: ho.candidateId });
+            if (hoG) return hoG;
             window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: m.kind, months: m.months }]);
             return rpc('hiring_outcome_mail_done', { p_id: ho.candidateId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
           });
@@ -17799,6 +17855,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var m = r.data || {};
             if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
             if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            var hcG = hireGate(hcb, 'confirmed', function (st) { return rpc('hiring_confirmed_mail_done', { p_doc: hcb.docId, p_status: st, p_error: null }); }, { to_email: m.to, ref_id: hcb.docId });
+            if (hcG) return hcG;
             var st = window.__mailStatus || 'sent';
             window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: 'confirmed', ref: m.ref, doc: m.doc }]);
             return rpc('hiring_confirmed_mail_done', { p_doc: hcb.docId, p_status: st, p_error: null }).then(function () {
@@ -17812,6 +17870,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var m = r.data || {};
             if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
             if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            var hdG = hireGate(hdb, m.returned ? 'doc_again' : 'doc', function (st) { return rpc('hiring_doc_mail_done', { p_doc: hdb.docId, p_status: st, p_error: null }); }, { to_email: m.to, ref_id: hdb.docId });
+            if (hdG) return hdG;
             window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: 'doc', ref: m.ref, doc: m.doc }]);
             return rpc('hiring_doc_mail_done', { p_doc: hdb.docId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
           });
@@ -17822,8 +17882,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var m = r.data || {};
             if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
             if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            var hmG = hireGate(hm, hm.kind, function (st) { return rpc('hiring_mail_done', { p_interview: hm.interviewId, p_kind: hm.kind, p_status: st, p_error: null }); }, { to_email: m.to, ref_id: hm.interviewId });
+            if (hmG) return hmG;
             var st = window.__mailStatus || 'sent';
-            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: hm.kind, times: m.times, when: m.when, link: m.link, againOf: hm.againOf || null }]);
+            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: hm.kind, times: m.times, when: m.when, link: m.link, againOf: hm.againOf || null, byHand: hm.byHand || null }]);
             if (hm.againOf) {
               DB.system_emails = DB.system_emails || [];
               DB.system_emails.push({ id: nid('se'), kind: 'hiring_' + hm.kind, to_email: m.to, to_name: m.name || null, subject: 'Interview', body: '',

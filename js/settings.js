@@ -419,7 +419,7 @@
         /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
            nothing the portal emails by itself goes; a colleague's send does. */
         biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'), off: !mailOn,
-          meta: !mailOn ? L.portalOffRow : autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
+          meta: !mailOn ? L.portalOffRow : autoOn('auto_email_on') ? 'On · Creator and candidate emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
            every email a colleague sends by hand. Off, each send act stays
            drawn, disabled with its reason. */
