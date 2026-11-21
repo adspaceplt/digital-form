@@ -28,7 +28,7 @@
  * off, as every console function.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import Anthropic from 'npm:@anthropic-ai/sdk';
+import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { cors, json } from '../_shared/cors.ts';
 
 /* The answer once ready, the connection held open by a space every few

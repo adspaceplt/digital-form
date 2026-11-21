@@ -49,7 +49,7 @@
  * caller itself.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import Anthropic from 'npm:@anthropic-ai/sdk';
+import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { cors, json } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
