@@ -407,8 +407,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - The name with Copy title; under it one line: the client, the format and
     the month, the month itself opening its Months view (never `content` or
     `Graphic:`).
-  - Next step, headed by the workflow's strip (`#dwSteps`, `paintSteps`:
-    done quiet, the current step named, the next said; never buttons), then
+  - Next step, headed by the workflow's strip (`#dwSteps`, `paintSteps`):
+    the line read in four phases (`PHASE_OF` from each stage's group:
+    Production, Review, Posting, Completion; a phase with no stage on the
+    line left out), a segment and its name a phase, done quiet, the stage in
+    hand named under its phase (a revision inside Review, On hold or
+    Blocked inside the phase it left), Posted by client under Posting for a
+    task the client posts, then Next: and the forward move; never buttons
+    (the simpler stages, 2026-11-22), then
     the report row on a month's report task, then Assigned to, Dates and
     Details (with Video for a task that has video details: Script and
     Footage readiness as selects saved by `ops_set_video`, since editing
@@ -806,3 +812,22 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (a month's meeting, a call or visit, an interview) carries
   `data-gate="meet"`, drawn disabled for an hour after `meet-create`
   answers `meet-not-set-up` in this browser; Paste a link stays.
+- The simpler stages (2026-11-22; every stage, move and refusal kept):
+  - The stage select (`stageCell`) is grouped: the stage it stands on, Next
+    (the forward move), Send back (the revision of the review in hand),
+    Other moves (On hold, Cancelled, Taken down), All stages (the line's
+    order, a stage out of reach greyed); each stage once. It replaced the one
+    fixed list of 2026-09-26.
+  - The board names each phase over its first column (`.bcol-phase`); an
+    empty revision column folds to a 56px labelled edge (`.is-fold`) and
+    opens while a card is dragged, so a drag reaches every move.
+  - Client posts (`2026-11-22-client-posts.sql`, `ops_tasks.client_posts`):
+    the task's ⋯, Mark group, Mark as posted by client / Mark as posted by
+    ADspace, until the task goes live (`ops_set_client_posts`: `not-owner`,
+    `no-live-stage`, `already-live`; filed `details_changed`), Undo where it
+    happened. Such a task is refused Live and Performance review
+    (`client-posts`, so `ops_mark_live` refuses and no result is recorded),
+    moves from Scheduled to Completed as a step with nothing skipped, and a
+    skip past them files Scheduled alone. The page reads its moves through
+    `nextsOf(t, s)`. No client default (the user: rare); Scheduled is kept.
+
