@@ -62,7 +62,7 @@
     ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at recorded_at',
     ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id script_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
-    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
+    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report client_posts',
     ops_template_variants: 'id template_id format estimate_minutes created_at',
     ops_video_details: 'task_id output_duration_seconds footage_duration_seconds subtitle_required motion_graphics_required aspect_ratios script_ready footage_ready shoot_required shoot_at variant_count',
     ops_work_sessions: 'id task_id team_member_id started_at ended_at minutes note source corrected_at corrected_by correction_reason created_at',
@@ -397,6 +397,7 @@
     ops_report: 'p_to p_from',
     ops_report_of: 'p_from p_to p_light',
     ops_reports: 'p_ranges',
+    ops_stage_times: 'p_from p_to',
     ops_timeliness: 'p_from p_to',
     ops_request_due_change: 'p_version p_value p_note p_reason p_task p_kind',
     ops_save_template: 'p_payload p_id',
@@ -411,6 +412,7 @@
     ops_set_recurring: 'p_payload p_task',
     ops_set_video: 'p_payload p_task',
     ops_set_results: 'p_task p_views p_engagements',
+    ops_set_client_posts: 'p_task p_on p_version',
     ops_stage: 'p_key p_workflow',
     ops_task_clients: 'p_tasks',
     ops_task_in_scope: 'p_task',
@@ -6016,9 +6018,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var SIDE = { blocked: 1, waiting: 1, kiv: 1, cancelled: 1 };
       var skipping = false, goingBack = false;
 
+      var byClient = false;
+      if (t.client_posts) {
+        if (args.p_next === 'live' || args.p_next === 'performance_review') return { error: 'client-posts' };
+        byClient = t.stage_key === 'scheduled' && args.p_next === 'completed';
+      }
       var back = opsHeldBack(t, cur);
       if (back && !OPS_HELD[args.p_next] && back.indexOf(args.p_next) < 0) return { error: 'held-resume', allowed: back };
       if (back && !OPS_HELD[args.p_next]) {
+
+      } else if (byClient) {
 
       } else if (!cur || cur.next_stage_keys.indexOf(args.p_next) < 0) {
 
@@ -6066,7 +6075,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (skipping) {
         DB.ops_workflow_stages.filter(function (x) {
           return x.workflow_id === t.workflow_id && x.position > cur.position && x.position < nxt.position && !SIDE[x.stage_group] &&
-            x.stage_group !== 'revision' && !x.retired;
+            x.stage_group !== 'revision' && !x.retired && !(t.client_posts && (x.key === 'live' || x.key === 'performance_review'));
         }).sort(function (a, b) { return a.position - b.position; }).forEach(function (x) {
           DB.ops_task_events.push({ id: opsId('ev'), task_id: args.p_task, event_type: 'stage_skipped',
             from_value: { stage_key: x.key }, to_value: { stage_key: args.p_next },
@@ -6947,6 +6956,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Object.assign({}, t);
     }
+
+    if (name === 'ops_set_client_posts') {
+      if (!opsAllowed('ops', 'work')) return { error: 'denied' };
+      t = opsTask(args.p_task);
+      if (!t) return { error: 'not-found' };
+      if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
+      var cpOn = Boolean(args.p_on);
+      if (Boolean(t.client_posts) === cpOn) return Object.assign({}, t);
+      if (!opsMayMove(t.id, opsMe())) return { error: 'not-owner' };
+      if (!opsStage(t.workflow_id, 'live')) return { error: 'no-live-stage' };
+      if (t.live_at || ['live', 'performance_review', 'taken_down'].indexOf(t.stage_key) > -1) return { error: 'already-live' };
+      var cpWas = Boolean(t.client_posts);
+      t.client_posts = cpOn; t.version = (t.version || 1) + 1; t.updated_at = now;
+      opsLog(t.id, 'details_changed', { client_posts: cpWas }, { client_posts: cpOn });
+      persist();
+      return Object.assign({}, t);
+    }
     if (name === 'ops_set_video') {
       if (!opsAllowed('ops', 'work')) return { error: 'denied' };
       var v = DB.ops_video_details.filter(function (x) { return x.task_id === args.p_task; })[0];
@@ -7656,6 +7682,52 @@ function opsCodeRange(cid, period, ty, src, seq) {
                             owner: nameOf(m.i.owner), owner_id: m.i.owner, kind: m.i.kind, due: m.i.due, delivered: m.i.done,
                             open: m.open, days: m.diff };
                  }) : null };
+    }
+
+    if (name === 'ops_stage_times') {
+      if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
+      var sFrom = new Date(args.p_from).getTime(), sTo = new Date(args.p_to).getTime();
+      var sTasks = {};
+      DB.ops_tasks.forEach(function (t) { if (scopeTaskMine(t) || scopeSeen(t.client_id, 'view')) sTasks[t.id] = t; });
+      var byTask = {};
+      DB.ops_task_events.filter(function (e) { return e.event_type === 'stage_changed' && sTasks[e.task_id] && e.to_value && e.to_value.stage_key; })
+        .sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })
+        .forEach(function (e) { (byTask[e.task_id] = byTask[e.task_id] || []).push(e); });
+      var kept = [];
+      Object.keys(byTask).forEach(function (id) {
+        var t = sTasks[id], mv = byTask[id], wf = (DB.ops_workflows.filter(function (w) { return w.id === t.workflow_id; })[0] || {}).key || '';
+        var stays = [];
+        var made = new Date(t.created_at).getTime(), first = new Date(mv[0].created_at).getTime();
+        if (mv[0].from_value && mv[0].from_value.stage_key && first > made) stays.push({ key: mv[0].from_value.stage_key, from: made, to: first });
+        mv.forEach(function (m, i) { if (mv[i + 1]) stays.push({ key: m.to_value.stage_key, from: new Date(m.created_at).getTime(), to: new Date(mv[i + 1].created_at).getTime() }); });
+        stays.forEach(function (x) {
+          if (x.to < sFrom || x.to >= sTo || x.to - x.from < 5 * 60000) return;
+          var own = DB.ops_task_assignees.filter(function (a) { return a.task_id === id && a.responsibility === 'owner'; })
+            .sort(function (a, b) { return new Date(a.assigned_at || a.started_at) - new Date(b.assigned_at || b.started_at); });
+          var at = own.filter(function (a) { var st = new Date(a.assigned_at || a.started_at).getTime(); return st <= x.from && (!a.ended_at || new Date(a.ended_at).getTime() > x.from); }).pop() || own[0];
+          kept.push({ task: id, wf: wf, wfId: t.workflow_id, key: x.key, mins: (x.to - x.from) / 60000, owner: at ? at.team_member_id : null });
+        });
+      });
+      var med = function (l) { l = l.slice().sort(function (a, b) { return a - b; }); var n = l.length; if (!n) return 0; return Math.round(n % 2 ? l[(n - 1) / 2] : (l[n / 2 - 1] + l[n / 2]) / 2); };
+      var gS = {};
+      kept.forEach(function (k) { var g = gS[k.wf + '|' + k.key] = gS[k.wf + '|' + k.key] || { k: k, m: [], t: {} }; g.m.push(k.mins); g.t[k.task] = 1; });
+      var stagesOut = Object.keys(gS).map(function (x) {
+        var g = gS[x], st = opsStage(g.k.wfId, g.k.key) || {};
+        return { workflow: g.k.wf, stage_key: g.k.key, label: st.label || g.k.key, position: st.position || 999, stage_group: st.stage_group || null,
+                 n: g.m.length, tasks: Object.keys(g.t).length, median_minutes: med(g.m) };
+      }).sort(function (a, b) { return a.workflow < b.workflow ? -1 : a.workflow > b.workflow ? 1 : a.position - b.position; });
+      var gP = {};
+      kept.forEach(function (k) {
+        var p0 = gP[k.owner || ''] = gP[k.owner || ''] || { id: k.owner, t: {}, st: {} };
+        p0.t[k.task] = 1; (p0.st[k.wf + '|' + k.key] = p0.st[k.wf + '|' + k.key] || []).push(k.mins);
+      });
+      var peopleOut = Object.keys(gP).map(function (x) {
+        var p0 = gP[x], m0 = DB.team_members.filter(function (m) { return m.id === p0.id; })[0];
+        var so = {}; Object.keys(p0.st).forEach(function (k) { so[k] = { n: p0.st[k].length, median_minutes: med(p0.st[k]) }; });
+        return { id: p0.id, name: (m0 && m0.name) || '', tasks: Object.keys(p0.t).length, stages: so };
+      }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+      var allT = {}; kept.forEach(function (k) { allT[k.task] = 1; });
+      return JSON.parse(JSON.stringify({ stages: stagesOut, people: peopleOut, tasks: Object.keys(allT).length }));
     }
     if (name === 'ops_report') {
       if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };

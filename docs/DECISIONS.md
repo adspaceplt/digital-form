@@ -6077,7 +6077,6 @@ releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
 - The rest of the report (CMP-7 to CMP-16, CMP-M1, CMP-M2, RPT-2, RPT-4,
   RPT-5, RPT-7, RPT-8, WA-2 to WA-5) follows in the next releases.
 
-
 ### 2026-10-22 — The client pages' review findings (release 2 of 3)
 The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/client/report.txt).
 Built: CP-1, CP-3 to CP-12 (CP-2 shipped with BE-3 in release 1). Left for
@@ -6180,7 +6179,6 @@ The user, 2026-10-22: "Fix all", the approved mockups.
 - MINE-1 Rate yourself was a card a month each over a button saying the
   same; it is one card, a row a month, Due on the newest still to rate.
 - Skipped: none. All 29 findings of the internal report are built.
-
 
 ### 2026-10-22 — The client pages' review findings (release 2b)
 The rest of the client review: CP-13 to CP-17.
@@ -6496,7 +6494,6 @@ gate, owed, months and audit reads, `vic_clients`). A new lead takes the
 colleague keying it; a change after is Clients Full Access alone
 (`clients_sales_by_guard`). Clients handed over before carry none until set.
 Measured by `levels` §19b, `scope`, `sql`.
-
 
 ### 2026-10-23 · Controls at Apple's sizes
 The user, comparing the Apple Store's filter sheet: "the buttons seem wrong".
@@ -6875,7 +6872,6 @@ sentence.
   profile save, notifications, a link's preview) asks the same count.
 - The shared wait words hold their figure and unit on one line: the 1280
   shot of the lock line broke "15 / minutes".
-
 
 ### 2026-10-27 — The short link host's cover takes the portal's bar
 - The user, from a phone on hi.adspace.me: the Link not recognised page drew
@@ -7427,7 +7423,6 @@ read and set every page for a tab served before.
   an entity just saved or added opens so the change stays in sight (the
   suite caught an edit invisible in a shut row). `tests/entities.js`.
 
-
 ### 2026-10-29 · Primary, never main; the new pages' words read as a letter
 - **Reported:** "Client section > button Make main for main entity why not
   use Make primary. Who says make main so weird. Could you also check other
@@ -7537,7 +7532,6 @@ read and set every page for a tab served before.
   are `is-tight` alone (a phone's width), so a desk's pane keeps each chip
   its own width as the Overview's contact details do.
 
-
 ### 2026-10-30 · An unlinked client links to Bukku rather than sending to it
 - **Reported:** the user, from a phone screenshot of a billing entity's
   band reading Not linked with Send to Bukku: "Can u use link bukku
@@ -7571,7 +7565,6 @@ read and set every page for a tab served before.
   right edge (`.bk-person`), its own line under the words on a phone.
 - **Mistake noted:** a matching rule changed in one direction (the send)
   must change in every reader of it (the read, the take, the stand-in).
-
 
 ### 2026-10-30 · A Bukku customer is added as a billing entity in one press; the Bukku code copies
 - **Reported:** Add entity took three steps to bring in a company Bukku
@@ -8167,7 +8160,6 @@ an admin too; the step turns the per-report switch off, as `reports` does,
 and reads the question's current words. ops' numbering stays as logged in
 STANDARD.md.
 
-
 **2026-11-04 — Industries review fixes, and the walk's two faults.** The
 review of the Industries release found four faults. A rename carried onto
 the clients through the clients table's own guards, so a colleague holding
@@ -8313,7 +8305,6 @@ grey like Urgent delivery's (the grey dot, Delayed) with no band of its
 own, and the Dashboard lists it until it goes live. A planned post with
 no task cannot be marked, so 6 tasks against 8 planned stays refused
 until the 2 are added in My Work.
-
 
 ### 2026-11-05 · A label is a noun
 The user flagged "Why it goes now" on Reports' Submit question ("should this
@@ -8538,7 +8529,6 @@ client on any stamp, so `quotes` passed. The trigger now runs on every
 write, a paper signature and a Letter of Offer move the lead too, through
 one function, and `tests/sql.js` drives the real triggers.
 
-
 ### 2026-11-06 · Scene frames drawn by Claude, and the animatic
 The user, after Gemini refused every picture (its prepaid credits spent):
 "Claude couldnt draw but able to generate motions n clips right why not do
@@ -8708,7 +8698,6 @@ Letters Work alone, a stale Preview reloads the sheet, and an Issue still
 on its way acts only on the sheet that sent it
 (`2026-11-07-letter-of-offer-fixes.sql`).
 
-
 ### 2026-11-07 · Play drew blank frames
 The user pressed Play on a script whose scenes Claude had drawn and saw only
 the Scene tag on white. A drawn frame for print already names its SVG
@@ -8870,7 +8859,6 @@ user: "all four shows same width left right").
   campaigns numbered ACC001 and ACC002 an hour earlier, on no bill yet, were
   renumbered CC001 and CC002 by hand with the code trigger held off.
 
-
 ### 2026-11-08 · Creator payment details (Creator R2)
 - The user, after approving the payment flow: details asked once from the
   first booking with the AP01 Jotform's fields, a change going back for
@@ -8893,7 +8881,6 @@ user: "all four shows same width left right").
   (`creator-mail`), woken as the WhatsApp queue is; the page sends no words.
   They join the existing status webhook, sweep, retention and Email log
   rather than a parallel copy.
-
 
 ### 2026-11-09 · Emails in the brand palette; Sales by as a Clients filter
 - The user, with a phone screenshot of the sign-in code: "Email template
@@ -8979,7 +8966,6 @@ and what to do. Rate limits stay figures in the function, as the link,
 device and invitation counts do. The bucket's lifecycle rule and a budget
 alarm remain the owner's.
 
-
 ### 2026-11-09 · Creator payments sheet (Creator R4)
 - The user, 2026-11-08: a row added to the payments spreadsheet on
   approval, the full bank number in it, the columns matched by their
@@ -9059,7 +9045,6 @@ phone's two-column row keeps its shape), the Bukku chip on the list (the
 sheet's Bukku band says it), and the row opening a record page (the ⋯
 Payment details opens the sheet holding the details, Bukku and payments for
 every creator).
-
 
 ### 2026-11-10: creator payments, the code review's fixes
 The review of Creator R1 to R5 (the user: review once R1 to R5 are built,
@@ -9146,7 +9131,6 @@ It is `billMoney` now, and `camp`'s foot total, which R3 had moved to the
 wrong figure (RM 935.00) to pass, reads RM 935 again; the same pass found `clockOf` declared twice in
 scripts.js (alike in effect), now once. `tests/jsdupes.js` fails any
 script declaring a function twice at its top level.
-
 
 ### 2026-11-10: the full gate on a9ba590
 Every suite passed but two. uxaudit met the creator page's tab strip
@@ -9524,7 +9508,6 @@ band (a client, a billing entity, a supplier, a creator) and the Settings
 row; its navy reads as nothing on the dark theme, so a copy with the navy
 made light stands in there. Client pages and emails keep no Bukku branding.
 
-
 ### 2026-11-11 · WhatsApp greets by the whole name
 The user sent Kai Sin's greeting as "Kai": a contact with no salutation, a
 creator and a colleague were greeted by the first word of their name, which
@@ -9792,7 +9775,6 @@ emails keep #a1a1a1, the previews read #767676.
   database holds approved. `creator` passed on main; it had been run on a
   tests checkout behind #67.
 
-
 - 2026-11-12, the console read whole, section by section (step 3 of the
   sweep). Nine readers who did not write the words read every line of the
   console against §6 and fixed what broke, words only: My Work (80), Clients
@@ -9851,7 +9833,6 @@ a typed advertising budget repriced on change and disabled Create under the
 press, so a typed figure reprices on input alone; a selection of custom lines
 alone was refused `empty` by quote_price before they were added
 (`quote_base`). Letters issued before stay as they are.
-
 
 ### 2026-11-12 · The console revamp: section marks, glass and the Dashboard
 
@@ -10094,7 +10075,6 @@ each row's white ground covered it at the sides and foot. The edge is now an
 outline offset one pixel inward, painted above what the card holds; a
 card's focus ring is restated after it.
 
-
 ### 2026-11-12 — The day's gate after the v3 revamp
 The full gate on 664feaf found seven problems, six from today's layout.
 The filter pills drew their chevron in the mute ink beside soft words
@@ -10259,7 +10239,6 @@ The user: a line's description in Build quote "shouldnt be dead end when inside 
 ### 2026-11-13 · The rail at 212px, its marks a row of their own
 The user, on a client record at a narrowed window: "the left panel could width could be smaller, yet u need to solve the four buttons below". The desk rail was 244px, its rows wide with empty room, and the record's tab strip clipped (Brand cut) beside it. The rail is now 212px; the foot's four marks (Arrange sections, Handbook, Settings, Activity record) take one row from the sections' left edge and the build line reads under them, since the four marks and the build no longer fit one line. The phone's More keeps the one line. `run` and `appver` measure the new order.
 
-
 ### 2026-11-13 · Words stay inside their boxes as the window narrows
 The user: "now the text could flow out beyond a card, which is weird". Needs
 attention ran into the next row at 1180 (#1090), and nothing measured between
@@ -10296,7 +10275,6 @@ line past its cover names its band (Additional advertising budget coverage,
 RM 4,000 to RM 8,000). Quotations already made keep their lines as sent
 (`2026-11-13-quotation-ads-one-line.sql`).
 
-
 ### 2026-11-13 · Messages reads its figures in the header line; no second Filters mark
 The user, on a screenshot of Messages: "is this good layout design". Two rows
 of figures stood over the list, four of them nought (the queue) and the
@@ -10315,7 +10293,6 @@ Status column's (queued, failed in the last 7 days).
 - 2026-11-13 · The console's head at a desk was 32px in at the left, 20 at the right, 9 above the title and 5 under its line (the user: "left right paddings feels not visually balance"). It is now 90px on every section with its words centred and 32px both sides, the body's own inset; `--head-h` carries the 90 so every sticky offset follows. Measured with a scratch script on the rendered head at 1280 and 1440.
 ### 2026-11-13 · A quotation's ⋯ holds Edit, not Duplicate
 The user, told that Edit stayed on the quotation row because the ⋯ was full at seven: "Remove Duplicate, move Edit into the menu". Duplicate leaves the quotation's ⋯ (Build quote makes a new quotation; the expired refusal now says Use Build quote to quote again.), so Edit takes its place in the ⋯ on a typical quotation. The cap counts the items shown (`fitMenus`, run again once the WhatsApp items are revealed): only where Send on WhatsApp and Send by email are both shown would the ⋯ hold eight, and Edit then moves onto the row.
-
 
 - 2026-11-13 · Space and corners on a record (the user: "so many dummy spaces", then "all rounded corners are not consistent??"). The console head came down from 90px to 76 (its words still centred, 13px above and below), a record's Back lost its own 14px over the body's 20, and a record part's head and empty line lost 2px each. The rail's cards and a record's part cards had been left out of the squircle list, so they drew a round corner beside the head card's squircle; they joined it. `tests/corners.js` counted a box as drawn only by its ground, border or shadow and so never saw the outlined cards; it counts an outline now, and fails on the old CSS.
 
@@ -10361,7 +10338,6 @@ their fee from the bill Bukku already holds. The copy review moved every
 - 2026-11-13 · Creator payment details sent to review reached nobody but the finance email (the user: "when creator submitted payment, it doesnt prompt notification … i had the email accidentally not on, and we didnt even know"). A first build told admins and `campaigns.pay` Work, which no Marketing colleague holds; the user: "these should land to Marketing Department personnel". Trigger `creator_pay_requests_notice` tells the active Marketing department colleagues who can open the Creators List (`2026-11-13-creator-details-notice.sql`), and the Creator Campaigns rail row, the Creators tab and the phone's tab count the sets waiting in red. A notice's console link (this one, and the payment request's) now opens in place, not in a second console tab.
 
 - 2026-11-13 · My Work's Assigned to took two presses (the user: "when clicking, it requires a second click to select another personnel … and the design is not refine here"): the first press swapped the name for a plain select, the second opened it, and the cell's clip cut the hover fill against the disc. One press now opens the colleagues as the finder under the name (`ADspaceForm.find`, any list length), the name kept in place, and the person reads as a pill (the disc 4px inside, the fill round the pair). Found with it: the filter pills put on the bar's line (#1114) pushed the count and the acts of My Work's Months to a second line; where the line cannot hold them the pills now take their own row (`fitPills`).
-
 
 ### 2026-11-13 · Create bill asks the amount; no standard fee
 The user, on a posted booking with no fee and no Create bill: "lets not set a standard bill but then allow to manually enter an amount or prompt a window to enter the amount befor creating bill". Create bill now stands on every posted booking without a bill (creator linked, account chosen) and asks the amount, prefilled with the fee where set; the amount is saved as the booking's fee, then the bill is made. The Standard fee row is gone from the Payment pane; its table and function stay in the database, unused, and the rows already saved are cleared by hand so no new booking takes one.
@@ -10483,7 +10459,6 @@ The audit's lean read found 23 classes no page, script or function draws any mor
 ### 2026-11-15 · Slots hold every booking
 The audit found Reinstate wrote a withdrawn creator straight back to Confirmed, so a campaign of three slots could hold four bookings: only the confirm functions and the campaign's own slot floor held the count. Trigger `campaign_options_slots_hold` now refuses a booking moved in from outside the booked states while every slot is booked (`over-slots`), whoever writes it, and the card says "Every slot is booked. Add a slot or withdraw a creator first."
 
-
 ### 2026-11-15 · Neutral palette on the brand's monochrome
 The user: "move to my palette; but if readability is a concern then needs to match changes u suggest … usually i use #f5f5f5 with #515151". The ink ramp and the borders had kept a warm hue (`--ink #1b1a17`, `--ink-soft #524e47`, `--ink-mute #6b6760`, `--line #e2dfd8`; dark `#f2efec`, `#cdc8c3`, `#ada8a3`, `#3e3b38`) against neutral grounds. They are now neutral greys on the brand's monochrome: light `--ink #1a1a1a`, `--ink-soft #515151`, `--ink-mute #666666`, `--line #e0e0e0`, `--fill #1a1a1a`, the tonal fills off `#1a1a1a`; dark `#f0f0f0`, `#c9c9c9`, `#a9a9a9`, `#3c3c3c`, `--on-fill #1a1a1a`, `--field #323232`, `--seg-on #555555`; Internal's and the Dashboard's graphite section marks neutral too. Each value holds the luminance it replaced, so every contrast pair holds or rises (measured: `--ink-mute` on the darkest light ground it meets, `--field` #f0f0f0, 4.93 → 5.04; on `--line-soft` 4.76 → 4.86). `#a1a1a1` was not used for words (2.58:1 on white); it stays the contact chip's edge and an email's fine print. `#cfd0d4` was weighed for `--line` and not taken: `--line` is every table rule and the foot's rule, and 1.54:1 drew a row grid heavier than the hairlines the console keeps. PDFs, emails and the links Worker keep their own inks (the Worker would need its own deploy).
 
@@ -10559,7 +10534,6 @@ set's and template's tasks): indexed.
 ### 2026-11-15 · Completed is never churn, and a client leaving Active is counted once
 A one-time client whose project had finished went to Past with no reason that fitted (Budget, Results, Moved in-house, Business closed, No reply, Other), and the Dashboard and Analytics counted every Active to Past move as churn, so finished one-off jobs read as lost clients. The brief then changed during the build (the user, relayed by the dispatching session): the team moves an Active client whose engagement ends to Paused for a 60 to 90 day holding period, then perhaps Past, and a lead that does not proceed to Paused while someone follows up. So `ADspaceSales` now reads each client's history as events (`eventsOf`), each counted once: Churned at the first move out of Active, Completed in its place where that move or the Paused to Past after it gives the new reason Completed (key `completed`), Lost at a lead's first move into Paused or Past, Won at a lead's first Active (a lost lead too), Resumed and Win-back for a former Active client returning. Completed is offered only for a move to Past of a client once Active, and the database holds it to Past (`clients_stage_reason`, `2026-11-15-completed-reason.sql`). Deliberately changed expectation: the sales suite's client F (Active to Paused, then Past, then Paused in one month) was not churned under the old rule, since its month ended in Paused; it is churned now. Found while building: the crm suite seeded the reason `inhouse`, which the live check refuses; the stand-in, now holding the check, refused it too, and the seed reads `in_house`.
 
-
 ### 2026-11-15 · Payments on a card, a shots-only walk, the stand-in's content pieces
 The phase 2 audit (the user: "Ok fix all 21"), findings 8, 17 and 18. Creator Campaigns' Payments drew each group's rows as a bare `.cpq-list`, so they sat on the grey page where every other directory sits on a white card; the list is now `.cpq-list.crm-table.softpanel`, read at 1280 and 390 in both themes beside Clients. Reading the phone screenshot found the bar's Create n bills squeezed into the 32px glyph box: `cmdbar.js` wires the primary while it is still empty, and the count's `textContent` then wrote over the glyph; the count now goes into the button's `.btn-word` and its name, so the phone draws the plus as every bar does. A `SHOTS=1` (and `MEASURE=1`) walk of `uxaudit` measures nothing per screen but still judged strips and glyphs at its end, so it ended PROBLEM with every strip "measured at no width"; it now ends "shots only". The stand-in's Package B still read "4 contents" and "contents each month" after the live Rate Card moved to content pieces (2026-10-27); its name and detail, and the suites' seeds and expectations that copied them, read content pieces. Left as it is: the rate card PDF's "contents / month" (`js/ratecardpdf.js`), the team's own card format.
 
@@ -10576,7 +10550,6 @@ Letter of Offer's signing cell as a text field (a signature field since the
 execution block's change; `pdfreal` now holds that it is one), and the
 `head` diagnostic pressed Add creators before opening the Creators pane.
 `crm`, `analytics` and `tabbar` passed, so their logged defects are struck.
-
 
 ### 2026-11-16 · The letterhead takes the report's golden margin
 The user, on a printed quotation: the 54pt sides read as too much white
@@ -10642,7 +10615,6 @@ four tabs whole before). The seeded candidate no longer holds Aisyah as an
 interviewer: a place on a candidate draws Team, which moved what Marketing
 sees in `team`; the suite adds her itself. `rail_order_set` keeps `hiring`
 among its keys (harmless: no rail item sends it).
-
 
 ### 2026-11-17 · Every button that acts is shaded
 The user, 2026-11-16: on a white card a text-only button (Add service, Issue document, Show more) read as words, "we don't even know if it's a button". `.btn-quiet` now takes the tonal ground of `.btn`; words alone stay only for Cancel beside the view's blue primary, found by `:has(> .btn-primary, > .btn-go)` so no screen names it. Build quote's line buttons went first (#1163).
@@ -10784,7 +10756,6 @@ to Bukku's contact terms; the reference `{quotation ref} · {cycle day}`
 (` · Ads`) is searched before any invoice is made, so a second press or one
 made by hand is never doubled.
 
-
 - **2026-11-17, Sign-in and codes (SEAL-SPEC decision 9).** The signing code
   quote-request emailed had its words in the function, the one email the
   team could not read or change in Email templates. It is now Verification
@@ -10835,7 +10806,6 @@ a delete code) still applies. What may be requested is a list in the
 database (`delete_kinds`): a call it does not name is made and refused as
 before. Not yet: a record reading Delete requested in place, a row in the
 admin's Waiting for you, and bulk Delete selected (still Full control).
-
 
 ### 2026-11-17 · A candidate's tabs fade at their edge, and the interview head wraps at 320
 The day's full gate on c6b17ab (tests ade9d22) found three faults in Hiring.
@@ -10978,7 +10948,6 @@ longer shows the browser's error, Loading… is the portal's own word.
 Messages: a template the portal cannot send says to choose another.
 `settings`, `suppliers`, `whatsapp`, `holidays`, `depts`, `taxcodes` pass.
 
-
 ### 2026-11-17 · Hiring step E1: Make colleague, the Welcome Kit and onboarding
 The user approved the step E mockups ("Pproved") and E was split into E1 (Make colleague,
 the Welcome Kit, the Onboarding tab) and E2 (/verify/, Documents, Bukku). Make colleague
@@ -11008,7 +10977,6 @@ note of online meetings already booked sat under Time 1's date as a half row
 within a same day": the seeded window of 3 days became 14, the setting's
 most, so the three times may sit on different days a week or more apart.
 
-
 ### 2026-11-17 · Every user group can be deleted, its members moved
 The user: "why never give Team > Groups not able to delete?? i thot i have
 given multiple instructions to have delete options for every create". Delete
@@ -11033,7 +11001,6 @@ Found: `sql`'s push check runs the 2026-09-27 migration, never the schema's
 last word, so the new title is checked by running this band's function on a
 re-subscribed creator device. `sql`, `perf`, `ops`, `lettersql`, `policies`
 pass; `demo` fails on the creator's page as already logged (#1189).
-
 
 ### 2026-11-17 · The group panel in two parts
 The user: "whole sections control > each section deeper control > and the
@@ -11455,4 +11422,8 @@ deployed again. The two Supabase dashboard templates in
 - 2026-11-22 · Recognition (the user approved the mockup https://claude.ai/artifact/9ysyED1i8Z7n5GshVj3kDB, on the condition that every word was swept for formal corporate English and read by a second reader first). A colleague recognises another in My records (Colleague, Category: Helped a colleague, Extra effort, Client praise; Note), never themselves; the receiver is told who and the category, never points; the giver may withdraw one still waiting, with Undo. Management confirms or declines each beside the month's review, never one they gave or received, and a confirmed one adds `rec_points` (1) to the final score after the issues, held to `rec_cap` (3, 0 turns the points off), with `rec_confirm` (on) as Performance settings from a quarter on. It counts in the month given, or, where that month's review is already shared or its quarter or half confirmed, in the month confirmed (or the next month neither holds), so a shared or finalised month never changes; a confirmed one counted in a shared month refuses Revert decision. Every step is in the Activity record under Performance (`perf_activity`). Initiatives and Reflection left My records, Performance and the review sheet; `perf_initiatives` and `perf_reflections` and their functions are kept, and the reminders no longer ask for a reflection. The `growth` suite (those screens) was deleted with them; `recognition` and `perf` §38 take their place. The second reader (copy review) found nine lines: seven fixed (Capped at, per in the labels, one refusal for the note's length, Revert decision, a refusal naming its next step); kept as the user approved them: the category Helped a colleague and the tab Recognition; the health reminder's day (`to_char`, unchanged from before) is left for a release that touches that line.
 - 2026-11-22 · The Brand tab, release B: the analysis fed from what the portal holds (D2, D4) and the user's four additions the same night: read every profile on the record and the linked Meta accounts; where the name matches more than one business, ask the colleague which and never guess (`ambiguous`, nothing saved or counted, the run made again on `choice`); handles filled from Meta only where the system user reaches the account, the row saying Not linked in Meta otherwise; the analysis's wording made plainer (the Run question names everything read, the little-history warning reads as a sentence). Inputs are kept in `basis.inputs` (no column added); the page's quotation read filters Cancelled in the page because the stand-in holds no `.neq` and a stand-in is never more generous than PostgREST.
 - 2026-11-22 · Analytics by when it is acted on (the user approved the Analytics review, https://claude.ai/artifact/9knpkX9jn8A3oujfkRFCZL, with all its recommendations, on the condition that card sizes hold with folds open and shut at a desk and on a phone). Each tab now reads Act now, This week, then Monthly review and Reference as folds shut until opened. Five cards said again elsewhere left (Won, Churned, the Sales copy of Reasons paused or left, the On time and Delivered tiles); Reports published became a line on Reports for the month, since a lone tile would stand alone on its row. On time by month left the Dashboard's Team tab for Analytics' Operations; People takes its row. The AI analysis opens Monthly review, its headline on the shut fold. Busiest months and the forecast are left unsaid until they hold their months. Built first with Sales moves beside Clients who moved and Leads to clients beside Busiest months as the review drew them; the screenshots showed a long gap under the shorter table card, so each takes its own row. Where work waits carries `WAIT_VIEWS` for Time in stage, which another session was building and had not merged. `tests/analytics.js` measures every row's heights, a cell alone and the 12px step at 1280 and 390, folds open and shut.
+
+- 2026-11-22 · Simpler stages and Client posts, release 2 (the stage timeline proposal; decisions: no client default, keep Scheduled). Every stage and move kept; what a person meets changed. The phases were swept before building: the draft's Make, Post and Close were refused as coined, and the second reader refused Publishing (Publish means making content visible to a client in Content Review, scripts and reports), so the phases read Production, Review, Posting, Completion. The stage select's one fixed list (2026-09-26, "your stage listing keeps jumping around") gives way to groups the user approved: the stage it stands on and All stages keep every move findable in one place, and Next leads. Client posts replaces skipping Live and Performance review with a typed reason each time: 5 live tasks had skipped Live "Posting by client" (the proposal counted 8 across both stages) and were marked by the migration, their skip records kept. `ops_transition_task` was restated whole from HELD TASKS RESUME WHERE THEY LEFT with every refusal kept; `ops_mark_live` and `ops_set_results` needed no restating, since a task refused Live never gains a live date. `tests/stages.js`, `tests/ops.js` (CLIENT POSTS).
+
+- 2026-11-22 · Time in stage, release 3 (the user, 2026-11-22: build it now from the moves already held, not after three months; merged into Where work waits as its second view, with the Analytics session). Where work waits' own view reads `ops_report`'s spans, which count the stage a task stands on and every catch-up press, so a new function, `ops_stage_times`, answers closed stays of 5 minutes or more and who held each; nothing is stored. Words swept and read by a second reader before building: the view uses the card's own span words (`spanOf`, never a second form such as 2d 6h), the finding line was dropped (the bars already say it), a bar reads Across n tasks; "Time in stage" kept as the user named it. Its segment exposed a fault in the shared card head: at 390 the title wrapped to three lines beside it, so on a narrow pane a card's views now take their own row (`tests/instage.js` measures it). The client view was left out: the card holds one table.
 - 2026-11-22 · ON DEMAND: the console fetches each section's scripts on first ask (the user approved). A first visit fetched every section's script with the page, 1,888,108 bytes compressed in 83 requests (`tests/weight.js`, signed in at the Dashboard), most of it for sections the visit never opened. The section scripts now leave the page's tags for one list in admin/index.html (`#lazyScripts`): each one's address with its `?v=` stamp, so the stamp bump, the worker's store (`admin/sw.js`) and Refresh app read them as before; `first`, what it reads as it loads (`crm.js` keeps `ADspaceDocs` and hooks `ADspaceEngage` at its own level, `letters.js` and `register.js` keep theirs), and `uses`, every listed global it names. `ADspaceAdmin.need(keys, whole)` fetches them in the page's own order (`async = false`, so a script never runs before what it reads), `whole` bringing everything they call. Each section asks its own as `showSection` draws it (`sectionJs`), so every way in reaches it alike: the rail, the tab bar, a deep link, Back and Forward, a notice. Meanwhile the console's skeleton stands in its place (`.is-fetching`, `#consoleBoot` with `aria-busy`, Still loading… after the wait), the address is left alone (`setUrl` and `pushUrl` wait: the client or task asked for is named only there), and a failed fetch is said by `failLine` with Try again (`{Section} could not be loaded.`, the offline line), each fetch asked again next time. The always-loaded callers ask first: the bell's notices (`whenSection`, Perf, Team, Personnel, Settings), Waiting for you (a report's period and a candidate's step: smreport and hiring where the colleague is shown either), search (a row opens once its section's scripts are here, so its tab and filter draw as before, from the sheet and the Assistant alike; Settings' rows read once settings.js is), the Assistant's quotation state, sales figures and a stage's words, WhatsApp's report title and kept PDF, My namecard, and Sign out (the files a PDF left are let go even where documents.js was never fetched). Who may open Settings moved into js/admin.js (`settingsAllowed`), as the rail's mark and search ask it before settings.js is fetched. Considered and refused: one bundle fetched on the first press anywhere (it would only move the weight), proxies standing in for each global (their callers test a global's presence), and lifting the Dashboard's helpers out of crm.js and perf.js (a second copy of a source's words and a status's words). The Dashboard fetches what its cards read (`crm`, `perf`, `smreport`, `invoices`, `sales`, `documents`, `engage`, and `hiring` for Waiting for you), each only where that card is drawn for the colleague, so the admin's first visit measures 1,298,642 bytes in 56 requests (main the same hour: 1,895,928 in 83). The scripts are linked closely (Settings, Team and My records each reach most of the rest through what they call), so a first visit to those fetches nearly all of it; a lighter cut would mean fetching inside each caller, which waits for a measured need. `tests/settle.js` waits while `#consoleBoot` is busy (a script tag is no `fetch`), and `tests/lazy.js` holds the list to the scripts and walks it in the page. Found by the first broad run before the merge: js/admin.js decided two things from a section's script before any section drew, falling back quietly where the script was absent: a client's address (`clientKey`, `clientByKey` from crm.js: Content Review's `?client=laman-citra&set=b1` was asked as an id, found nothing and landed on the list; `caption`, `reflink`, `viewonly`, `menus`) and who may open Analytics (`ADspaceAnalytics.allowed`: the rail lost it; `overview`). Both rules now live once in js/admin.js, crm.js and analytics.js asking them, and the rule line says a decision the always-loaded code makes is its own. The second run found a third: every ⋯ in the console shut on a press elsewhere, Escape or a scroll only because js/campaigns.js, loaded on every visit, shut them all; a client's Calls and visits ⋯ stayed open after its question was cancelled (`crm`). That closer moved to the end of js/admin.js, where campaigns.js ran it, campaigns.js asking it (`ADspaceAdmin.shutMenus`), and `tests/lazy.js` presses outside a client's ⋯ on a visit that never fetched campaigns.js (it fails on the commit before). Eight suites called a section's script straight after load on the Dashboard; each asks `need` first (setup only, no check changed).

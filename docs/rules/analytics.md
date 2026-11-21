@@ -131,3 +131,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   once 24 are; until then neither is drawn nor said (2026-11-22).
 - A refused read is `failLine` with Try again (`tests/analytics.js`, the
   forecast's arithmetic included through `ADspaceAnalytics._forecast`).
+- Time in stage (2026-11-22, `ops_stage_times(p_from, p_to)`, `2026-11-22-time-in-stage.sql`,
+  My Work: Reports at View): Where work waits' second view, shown from the
+  moves already held. Every stay in a stage that ended in the period, from
+  the move into it (the task's making for its first stage) to the move
+  out, 5 minutes or more (a stage passed through is left out, as the task
+  card's timeline folds it), credited to whoever held the task as it began,
+  in the caller's client scope; calendar time. The view draws the content
+  workflow's working stages (Ready to start to Scheduled) by median, each
+  bar Across n tasks, in the card's own span words (`spanOf`); its figures
+  a table by colleague over Ready to start, In progress, AQC review and
+  Client review with All colleagues last, a cell on fewer than 5 stays a
+  dash. On a narrow pane a card's views take their own row under its title
+  (`tests/instage.js`).
+
