@@ -456,6 +456,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   clients and the departments at once, never one after another
   (2026-10-26); a `me()` asked again after a session refresh asks the VIC
   clients and departments again under it.
+- The console fetches a section's scripts on first ask (ON DEMAND,
+  2026-11-22): a section script is never a tag of `admin/index.html` but a
+  line of its `#lazyScripts` (address with `?v=`, `first` what it reads as
+  it loads, `uses` what it calls; `tests/lazy.js`); `showSection` draws
+  `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
+  always-loaded script calling a listed global asks `ADspaceAdmin.need`,
+  `needThen` or `whenSection` first.
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied; a

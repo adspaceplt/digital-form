@@ -2593,17 +2593,24 @@
   var fetchSeq = 0;
   function sectionHeld(name) {
     var j = sectionJs(name), con = $('console'), box = $('consoleBoot');
-    if (needHeld(j[0], j[1])) { if (con) con.classList.remove('is-fetching'); return true; }
+    if (needHeld(j[0], j[1])) {
+      if (con) con.classList.remove('is-fetching');
+      if (box) box.removeAttribute('aria-busy');
+      return true;
+    }
     var seq = ++fetchSeq;
     if (box && !BOOT_SKEL) BOOT_SKEL = box.innerHTML;
     if (box && BOOT_SKEL) box.innerHTML = BOOT_SKEL;
     if (con) con.classList.add('is-fetching');
+    if (box) box.setAttribute('aria-busy', 'true');
     if (box && window.ADspaceState && ADspaceState.stillLoading) ADspaceState.stillLoading(box.querySelector('.skel'));
     need(j[0], j[1]).then(function () {
       if (seq !== fetchSeq || section !== name) return;
+      if (box) box.removeAttribute('aria-busy');
       showSection(name);
     }).catch(function () {
       if (seq !== fetchSeq || section !== name || !box) return;
+      box.removeAttribute('aria-busy');
       box.removeAttribute('aria-hidden');
       /* A script that did not arrive is a connection that failed: said in
          the offline line's words (js/state.js reads it so). */
