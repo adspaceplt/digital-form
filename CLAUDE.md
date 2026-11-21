@@ -2456,6 +2456,11 @@ learned about an area is written in its file, never here.
   J31-2401-32100002, 61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100
   Johor Bahru, Johor, Malaysia, advertise@adspacestudios.com, (60)18 762 5233,
   adspacestudios.com. The bank line is blank.
+  Every PDF reads the issuer from it and the agency's name from
+  `agencyName` at the draw (the pen's wordmark, a quotation's lines, a
+  sealed copy's Record page), the Service Terms address from
+  `serviceTermsUrl`; never typed (2026-11-21: the demo's quotation printed
+  ADspace's; `tests/demo.js`).
 - Emails:  - support and issuer: advertise@adspacestudios.com (the client portal's
     contact line too);
   - every email the portal sends goes from `portal@sc.adspace.me` under its

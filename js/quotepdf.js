@@ -20,6 +20,13 @@
 (function () {
   'use strict';
   var D = function () { return window.ADspaceDocs; };
+  /* The issuer and the agency, read from the shared config at the draw, as
+     every PDF reads them (the demo's sample agency on sample data). */
+  function CFG() { return window.ADSPACE_CONFIG || {}; }
+  function agency() { return CFG().agencyName || 'ADspace'; }
+  function issuer() { return (window.ADSPACE_ORG || {}).name || 'ADSPACE PLT'; }
+  /* The Service Terms clause, left out where none is set. */
+  function termsAt(lead) { var u = CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
   var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
@@ -55,7 +62,7 @@
   }
   /* A period's last day: ADspaceClock's, one copy (2026-11-12). */
   function endOf(day, n) { return window.ADspaceClock.periodEnd(day, n); }
-  function fileName(q) { return 'ADspace Quotation ' + String(q.ref || '').replace(/\//g, '-') + '.pdf'; }
+  function fileName(q) { return agency() + ' Quotation ' + String(q.ref || '').replace(/\//g, '-') + '.pdf'; }
 
   /* opts: attention (the contact named), attentionRole, to { name, address }
      (the registered company where known, else the brand), cover (the team's
@@ -91,7 +98,7 @@
              of every page prints; one sealed before printed its uuid, which
              /verify/ still takes for a sealed copy. */
           info = { ref: q.ref, docId: opts.code || seal.record.id, kind: 'quotation', verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
-            sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ADSPACE PLT.' };
+            sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ' + issuer() + '.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
         var form = layout(pdf, PDF, got[0], got[1], q, opts);
@@ -100,7 +107,7 @@
       }).then(function () {
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
-        docs.meta(pdf, 'ADspace Quotation ' + q.ref, 'Quotation');
+        docs.meta(pdf, agency() + ' Quotation ' + q.ref, 'Quotation');
         if (!seal) return pdf.save();
         return pdf.save().then(S.sha256).then(function (pagesSha) {
           info.pagesSha = pagesSha; info.signedPages = signedN; info.total = signedN + opts.extraPages;
@@ -398,13 +405,14 @@
       /* Files and further filming (2026-11-12, the user's own sentence). */
       grp('Exclusions', ['Additional footage, working files and raw files are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
-          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An Advertising Budget above the highest tier of the ADspace Rate Card' : x; });
+          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An Advertising Budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
           return w.join(', ') + ' shall be quoted separately upon request.';
         })() : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
       grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. ' +
-        'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.',
-        'All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.']);
+        (termsAt('This Quotation, together with the ') ? termsAt('This Quotation, together with the ') + ', shall constitute the contract between the parties.'
+          : 'This Quotation shall constitute the contract between the parties.'),
+        'All rates are based on the ' + agency() + ' Rate Card v.' + q.version + '. E&OE.']);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
@@ -477,9 +485,9 @@
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
         ' is ' + amt(t.commitment, q) + incl + (t.once ? ', one-off items included.' : '.'));
     }
-    notes.push('This quotation becomes binding once accepted and signed on its acceptance page. Together with the ADspace ' +
-      'Service Terms at go.adspace.me/svc-terms, it forms the contract between the parties.');
-    notes.push('Rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');
+    notes.push('This quotation becomes binding once accepted and signed on its acceptance page.' +
+      (termsAt('') ? ' Together with the ' + termsAt('') + ', it forms the contract between the parties.' : ''));
+    notes.push('Rates are based on the ' + agency() + ' Rate Card v.' + q.version + '. E&OE.');
     room(30);
     y -= 8;
     text('TERMS', M, y, SM, book, mute);
@@ -515,8 +523,8 @@
     y -= v2 ? 30 : 24;
 
     var block = function (title) { text(title, M, y, v2 ? H2 : 11, reg); y -= v2 ? 14 : 12; };
-    // Issued for and on behalf of ADSPACE PLT: Prepared by, Reviewed by.
-    block('Issued for and on behalf of ADSPACE PLT');
+    // Issued for and on behalf of the issuer: Prepared by, Reviewed by.
+    block('Issued for and on behalf of ' + issuer());
     var rev = opts.reviewedBy || {};
     var halfW = FULL / 2, ih = 56;
     box(M, y - ih, halfW, ih);
@@ -576,7 +584,7 @@
         lines2.push(['IP address ' + (rec.ip || 'not recorded') + (rec.country ? ' (' + rec.country + ')' : ''),
           rec.fingerprint ? 'Document fingerprint ' + rec.fingerprint : ''].filter(Boolean).join(' · ') + '.');
       } else if (signer.via === 'paper') {
-        lines2.push('Signed on paper on ' + longDay(signer.day) + '; the signed copy is kept by ADspace.');
+        lines2.push('Signed on paper on ' + longDay(signer.day) + '; the signed copy is kept by ' + agency() + '.');
       }
       y -= 6;
       lines2.forEach(function (s) { wrap(s, FULL, SM, book).forEach(function (ln) { y -= 11; text(ln, M, y, SM, book, mute); }); });
