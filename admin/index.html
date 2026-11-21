@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261121x">
-<link rel="stylesheet" href="/css/console.css?v=20261121zc">
+<link rel="stylesheet" href="/css/console.css?v=20261121zzu">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -132,7 +132,7 @@
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261117zzzf"></script>
-<script src="/js/words.js?v=20261121z"></script>
+<script src="/js/words.js?v=20261121zzu"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261119"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
@@ -157,11 +157,11 @@
 <script src="/js/maintenance.js?v=20261120we"></script>
 <script src="/js/announce.js?v=20261120t"></script>
 <script src="/js/notice.js?v=20261120zt"></script>
-<script src="/js/whatsapp.js?v=20261120zzzzw"></script>
+<script src="/js/whatsapp.js?v=20261121zzu"></script>
 <script src="/js/mailtpl.js?v=20261120"></script>
-<script src="/js/docmail.js?v=20261120w"></script>
+<script src="/js/docmail.js?v=20261121zzu"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
-<script src="/js/money.js?v=20261120zzzzzg"></script>
+<script src="/js/money.js?v=20261121zzu"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
 <script src="/js/mockups.js?v=20261117zzzf"></script>
 </head>
@@ -437,6 +437,15 @@
         <p>Issues on VIC work count double in performance reviews.</p>
         <p class="vicpop-note" id="vicPopNote" hidden></p>
         <p class="vicpop-foot" id="vicPopFoot"></p>
+      </div>
+      <!-- A send by hand switched off in Settings (SEND SWITCHES, 2026-11-21):
+           why, from the act itself (js/admin.js `whyOpen`). -->
+      <div class="kmenu sendwhy" id="sendWhy" hidden role="dialog" aria-labelledby="sendWhyName">
+        <div class="popcard-head">
+          <span class="sendwhy-name" id="sendWhyName">Sending email</span>
+          <button class="iconbtn popcard-x" id="sendWhyHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <p id="sendWhyLine"></p>
       </div>
       <span class="console-spacer"></span>
       <!-- ===== The Assistant (js/agent.js): ask in words; every change waits
@@ -885,7 +894,7 @@
         <div class="bulkbar" id="odBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="odBulkAll"> <span id="odBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm btn-primary" id="odBulkSend" type="button" data-need="clients.billing:work">Send reminders</button>
+            <button class="btn btn-sm btn-primary" id="odBulkSend" type="button" data-send="email" data-need="clients.billing:work">Send reminders</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="odBulkDone" type="button">Done</button>
         </div>
@@ -926,7 +935,7 @@
           </div>
           <div class="msg" id="odMsg" role="status"></div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="odGo" type="button">Send</button>
+            <button class="btn btn-primary" id="odGo" type="button" data-send="email">Send</button>
             <button class="btn btn-quiet" id="odCancel" type="button">Cancel</button>
             <span class="lpicksum" id="odRvCount"></span>
           </div>
@@ -981,8 +990,8 @@
                 </button>
                 <div class="kmenu" id="crmClientMenu" hidden role="menu">
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-g="2" data-a="edit">Edit</button>
-                  <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-g="3" data-a="feedback" hidden>Request feedback</button>
-                  <button class="kmenu-item" id="crmIntroduce" type="button" role="menuitem" data-g="3" data-a="introduce" hidden>Introduce representative</button>
+                  <button class="kmenu-item" id="crmFeedback" type="button" data-send="whatsapp" role="menuitem" data-g="3" data-a="feedback" hidden>Request feedback</button>
+                  <button class="kmenu-item" id="crmIntroduce" type="button" data-send="whatsapp" role="menuitem" data-g="3" data-a="introduce" hidden>Introduce representative</button>
                   <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-g="4" data-a="restrict" hidden>Mark restricted</button>
                   <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-g="4" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
                   <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-g="4" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
@@ -1129,7 +1138,7 @@
         <section class="rec-part">
         <div class="viewhead" id="crmEmailsHead" hidden>
           <span class="headmark"><h2>Emails</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmNewEmail" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
+          <button class="btn btn-quiet btn-sm" id="crmNewEmail" type="button" data-send="email" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
         </div>
         <div id="crmEmails" hidden></div>
         </section>
@@ -4628,7 +4637,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="waCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="waNew" type="button" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New message</span></button>
+              <button class="btn btn-sm btn-primary" id="waNew" type="button" data-send="whatsapp" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New message</span></button>
             </span>
           </span>
         </div>
@@ -4651,7 +4660,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="emlCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New email</span></button>
+              <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-send="email" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New email</span></button>
             </span>
           </span>
         </div>
@@ -4708,7 +4717,7 @@
           <div class="msg" id="nemMsg" role="status"></div>
         </div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="nemSend" type="button">Send</button>
+          <button class="btn btn-primary" id="nemSend" type="button" data-send="email">Send</button>
           <button class="btn btn-quiet" id="nemCancel" type="button">Cancel</button>
         </div>
       </div>
@@ -4869,7 +4878,7 @@
           </section>
         </div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="waSend" type="button">Send</button>
+          <button class="btn btn-primary" id="waSend" type="button" data-send="whatsapp">Send</button>
           <button class="btn btn-quiet" id="waComposeCancel" type="button">Cancel</button>
         </div>
         <div class="msg" id="waComposeMsg" role="status"></div>
@@ -6589,7 +6598,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="msg" id="supMailMsg"></div>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-primary" id="supMailGo" type="button">Send</button>
+      <button class="btn btn-primary" id="supMailGo" type="button" data-send="email">Send</button>
       <button class="btn btn-quiet" id="supMailCancel" type="button">Cancel</button>
     </div>
   </div>
@@ -6635,7 +6644,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="msg" id="dmMsg" role="status"></div>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-primary" id="dmGo" type="button">Send</button>
+      <button class="btn btn-primary" id="dmGo" type="button" data-send="email">Send</button>
       <button class="btn btn-quiet" id="dmCancel" type="button">Cancel</button>
     </div>
   </div>
@@ -6755,25 +6764,25 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261121zt"></script>
+<script src="/js/admin.js?v=20261121zzu"></script>
 <script src="/js/documents.js?v=20261121zb"></script>
 <script src="/js/letters.js?v=20261120zzzzzd"></script>
 <script src="/js/smreport.js?v=20261120zzzp"></script>
-<script src="/js/reports.js?v=20261121zt"></script>
-<script src="/js/register.js?v=20261121zd"></script>
-<script src="/js/suppliers.js?v=20261120zt"></script>
+<script src="/js/reports.js?v=20261121zzu"></script>
+<script src="/js/register.js?v=20261121zzu"></script>
+<script src="/js/suppliers.js?v=20261121zzu"></script>
 <script src="/js/hiring.js?v=20261121zt"></script>
 <script src="/js/bukku.js?v=20261120w"></script>
-<script src="/js/invoices.js?v=20261120w"></script>
+<script src="/js/invoices.js?v=20261121zzu"></script>
 <script src="/js/payments.js?v=20261119j"></script>
 <script src="/js/engage.js?v=20261117zzzf"></script>
-<script src="/js/quotes.js?v=20261121zs"></script>
+<script src="/js/quotes.js?v=20261121zzu"></script>
 <script src="/js/quotepdf.js?v=20261121zzs"></script>
 <script src="/js/seal.js?v=20261121zzt"></script>
 <script src="/js/hrdocs.js?v=20261121zzs"></script>
 <script src="/js/hrforms.js?v=20261120zzzp"></script>
 <script src="/js/checklists.js?v=20261120zzzp"></script>
-<script src="/js/crm.js?v=20261121zt"></script>
+<script src="/js/crm.js?v=20261121zzu"></script>
 <script src="/js/sales.js?v=20261117zzzf"></script>
 <script src="/js/team.js?v=20261120cv"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
@@ -6784,8 +6793,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261121zt"></script>
 <script src="/js/scriptpdf.js?v=20261120zzzp"></script>
 <script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
-<script src="/js/campaigns.js?v=20261120zzzm"></script>
-<script src="/js/ops.js?v=20261120zzzm"></script>
+<script src="/js/campaigns.js?v=20261121zzu"></script>
+<script src="/js/ops.js?v=20261121zzu"></script>
 <script src="/js/perf.js?v=20261121x"></script>
 <script src="/js/health.js?v=20261120zt"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>
@@ -6794,6 +6803,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261120zt"></script>
 <script src="/js/overview.js?v=20261119i"></script>
 <script src="/js/analytics.js?v=20261121zt"></script>
-<script src="/js/settings.js?v=20261120zzzzzg"></script>
+<script src="/js/settings.js?v=20261121zzu"></script>
 </body>
 </html>

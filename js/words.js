@@ -331,6 +331,13 @@
        SWITCHES, 2026-11-17). */
     emailSendOff: 'Sending email is turned off for you. Please ask an admin.',
     whatsappSendOff: 'Sending WhatsApp is turned off for you. Please ask an admin.',
+    /* A send by hand drawn off by Settings (SEND SWITCHES, 2026-11-21): the
+       act stays drawn, disabled, and says which switch and where. */
+    emailPortalOff: 'Email is turned off for the portal. An admin can turn it on in Settings → Portal.',
+    emailHandOff: 'Send by email is turned off. An admin can turn it on in Settings → Messages.',
+    whatsappPortalOff: 'WhatsApp is turned off for the portal. An admin can turn it on in Settings → Portal.',
+    whatsappHandOff: 'Send on WhatsApp is turned off. An admin can turn it on in Settings → Messages.',
+    portalOffRow: 'Off for the whole portal',
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',

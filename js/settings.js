@@ -412,16 +412,19 @@
     /* Messages (the overnight review, 2026-11-10): what the portal sends
        and how, by channel, as the Messages section is (Email, WhatsApp). */
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
+    /* The portal's own switches over the Messages ones (SEND SWITCHES). */
+    var mailOn = autoOn('email_on'), waOn = autoOn('whatsapp_on'), L = window.ADspaceWords.line;
     add('messages', 'Messages', 'whatsapp', [
       ['Email', [
         /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
            nothing the portal emails by itself goes; a colleague's send does. */
-        biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'),
-          meta: autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
-        /* Send by email (2026-10-31): whether a quotation, a Letter of Offer
-           and a client letter offer it at all. */
-        biz && W.ADspaceDocMail && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: num('client_email_on') === 1,
-          meta: num('client_email_on') === 1 ? 'On · Quotations and letters' : 'Off', open: flipMail },
+        biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'), off: !mailOn,
+          meta: !mailOn ? L.portalOffRow : autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
+        /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
+           every email a colleague sends by hand. Off, each send act stays
+           drawn, disabled with its reason. */
+        biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
+          meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Every email sent by hand' : 'Off', open: flipMail },
         /* Every email's wording, by recipient, in one editor (2026-11-10). */
         (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
@@ -435,8 +438,13 @@
         biz && { id: 'resend', name: 'Sent again', kind: 'edit',
           meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
       ['WhatsApp', [
-        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'),
-          meta: autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
+        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'), off: !waOn,
+          meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
+        /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
+           colleague sends by hand. */
+        biz && { id: 'clientwaon', name: 'Send on WhatsApp', kind: 'switch', on: autoOn('client_wa_on'), off: !waOn,
+          meta: !waOn ? L.portalOffRow : autoOn('client_wa_on') ? 'On · Every WhatsApp sent by hand' : 'Off',
+          open: function (sw) { flipOwn(sw, 'clientwaon', 'manual_send_set', 'Send on WhatsApp', { p_channel: 'whatsapp' }); } },
         W.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp'),
           open: function (btn) { W.ADspaceWhatsApp.manage(btn); } },
         /* The content meeting's message to the client, copied from a month's
@@ -506,7 +514,10 @@
   function rowHtml(r) {
     var next = nextLine(r.id);
     var ctl = r.kind === 'switch'
-      ? '<button class="switch" type="button" role="switch" aria-checked="' + (r.on ? 'true' : 'false') + '" aria-label="' + esc(r.name) + '" data-a="' + r.id + '"></button>'
+      ? '<button class="switch" type="button" role="switch" aria-checked="' + (r.on ? 'true' : 'false') + '" aria-label="' + esc(r.name) + '" data-a="' + r.id + '"' +
+          /* A switch under a portal switch that is off stands still, its
+             own value kept (SEND SWITCHES, 2026-11-21). */
+          (r.off ? ' data-off disabled' : '') + '></button>'
       : r.kind === 'act'
         ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '">' + esc(r.act) + '</button>'
       : r.kind === 'edit'
@@ -695,7 +706,7 @@
 
   /* Send by email (2026-10-31): on or off from today through its own
      function, saved at the press and put back on a refusal. */
-  function flipMail(sw) { flipOwn(sw, 'clientmailon', 'client_email_set', 'Send by email'); }
+  function flipMail(sw) { flipOwn(sw, 'clientmailon', 'manual_send_set', 'Send by email', { p_channel: 'email' }); }
   /* A switch unset reads On, as the database seeds it. */
   function autoOn(key) { var v = num(key); return v == null || v === 1; }
   function flipAuto(sw, id, kind, word) { flipOwn(sw, id, 'auto_send_set', word, { p_kind: kind }); }

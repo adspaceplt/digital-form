@@ -496,7 +496,7 @@
                /* A client letter is emailed to the client's contact
                   (2026-10-31), by hand. */
                d.family === 'client' && d.client_id && d.source === 'portal' && !d.voided_at &&
-                 window.ADspaceDocMail && window.ADspaceDocMail.may('letter') && { a: 'mail', label: 'Send by email' }],
+                 window.ADspaceDocMail && window.ADspaceDocMail.may('letter') && { a: 'mail', label: 'Send by email', attrs: 'data-send="email"' }],
               [], [],
               [!d.voided_at && { a: 'void', label: 'Void', need: need + ':manage' },
                { a: 'del', label: 'Delete', need: need + ':manage' }]]) +

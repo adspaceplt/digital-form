@@ -968,6 +968,98 @@
   if ($('vicPopHide')) $('vicPopHide').addEventListener('click', function () { vicShut(true); });
   ADspaceMenu.onScroll(function () { vicShut(false); });
 
+  /* ---- A send by hand switched off (SEND SWITCHES, 2026-11-21) -----------
+     Every act that sends by email or WhatsApp carries `data-send` (`email`,
+     `whatsapp`): a button, a ⋯ item, a sheet's Send. While Settings has the
+     send off it stays drawn, `aria-disabled`, and never acts: a press, a
+     hover or the keyboard's focus opens `#sendWhy` from it, naming the
+     switch and where it is (the user, 2026-11-21: "why not just make it
+     disabled"). One painter for every screen: a node drawn later is painted
+     as it arrives, and every act again when the figures are read afresh. */
+  var sendPaintQueued = false;
+  function paintSends() {
+    sendPaintQueued = false;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-send]'), function (el) {
+      var st = sendState(el.getAttribute('data-send'));
+      if (st.on) {
+        if (!el.hasAttribute('data-send-off')) return;
+        el.removeAttribute('data-send-off'); el.removeAttribute('aria-disabled'); el.removeAttribute('aria-description');
+        return;
+      }
+      if (el.getAttribute('data-send-off') === st.reason) return;
+      el.setAttribute('data-send-off', st.reason);
+      el.setAttribute('aria-disabled', 'true');
+      el.setAttribute('aria-description', st.reason);
+    });
+  }
+  function queueSends() { if (!sendPaintQueued) { sendPaintQueued = true; (window.requestAnimationFrame || setTimeout)(paintSends); } }
+  if (window.MutationObserver) {
+    new MutationObserver(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        if (m.type === 'attributes' || Array.prototype.some.call(m.addedNodes, function (n) {
+          return n.nodeType === 1 && (n.hasAttribute('data-send') || (n.querySelector && n.querySelector('[data-send]')));
+        })) { queueSends(); return; }
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-send'] });
+  }
+  document.addEventListener('adspace-settings', function () { sendPaintQueued = false; paintSends(); });
+  var whyHeld = { el: null, timer: 0 };
+  function whyShut(back) {
+    var pop = $('sendWhy');
+    clearTimeout(whyHeld.timer);
+    if (!pop || pop.hidden) return;
+    pop.hidden = true;
+    var el = whyHeld.el;
+    whyHeld.el = null;
+    if (back && el && el.isConnected) el.focus();
+  }
+  function whyOpen(el) {
+    var pop = $('sendWhy');
+    if (!pop || !el) return;
+    clearTimeout(whyHeld.timer);
+    var ch = el.getAttribute('data-send');
+    $('sendWhyName').textContent = ch === 'whatsapp' ? 'Sending WhatsApp' : 'Sending email';
+    $('sendWhyLine').textContent = el.getAttribute('data-send-off') || '';
+    whyHeld.el = el;
+    pop.hidden = false;
+    /* A ⋯ item hangs the card from its menu's own button when the menu has
+       shut under it. */
+    var at = el;
+    if (!el.getClientRects().length) {
+      var menu = el.closest && el.closest('.kmenu');
+      at = (menu && menu.__btn) || (menu && menu.previousElementSibling) || document.activeElement || el;
+    }
+    ADspaceMenu.pop(at, pop, 'left');
+  }
+  /* Heard on the window, before any page's own press. */
+  window.addEventListener('click', function (e) {
+    var el = e.target.closest && e.target.closest('[data-send-off]');
+    if (el) {
+      e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
+      if (whyHeld.el === el && !$('sendWhy').hidden) whyShut(false); else whyOpen(el);
+      return;
+    }
+    if (!(e.target.closest && e.target.closest('#sendWhy'))) whyShut(false);
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest && e.target.closest('[data-send-off]');
+    if (el && e.target.matches(':focus-visible')) whyOpen(el);
+    else if (!(e.target.closest && e.target.closest('#sendWhy'))) whyShut(false);
+  });
+  document.addEventListener('mouseover', function (e) {
+    if (!fineHover || !fineHover.matches) return;
+    var el = e.target.closest && e.target.closest('[data-send-off]');
+    if (el) { if (whyHeld.el !== el || $('sendWhy').hidden) whyHeld.timer = setTimeout(function () { whyOpen(el); }, 150); else clearTimeout(whyHeld.timer); return; }
+    if (e.target.closest && e.target.closest('#sendWhy')) { clearTimeout(whyHeld.timer); return; }
+    if (whyHeld.el) { clearTimeout(whyHeld.timer); whyHeld.timer = setTimeout(function () { whyShut(false); }, 200); }
+  });
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('sendWhy') && !$('sendWhy').hidden) { e.stopImmediatePropagation(); e.stopPropagation(); whyShut(true); }
+  }, true);
+  if ($('sendWhyHide')) $('sendWhyHide').addEventListener('click', function () { whyShut(true); });
+  ADspaceMenu.onScroll(function () { whyShut(false); });
+
   /* Hiring (2026-11-16): the live candidates this colleague holds a place
      on, so the rail draws Hiring for an Owner or an interviewer without the
      part. A read that fails, or a database without it, draws nothing. */
@@ -1097,6 +1189,11 @@
        and `send.whatsapp` answer Full Access where the portal's switch and
        the group's are both on, else nothing; an admin holds the group's. */
     var sw = SWITCH_KEY[key];
+    /* A send by hand answers the group's switch alone (SEND SWITCHES,
+       2026-11-21): a colleague whose group may not send meets no send act,
+       and one Settings has switched off meets it drawn disabled with its
+       reason (`sendState`, `data-send`). */
+    if (sw && key.indexOf('send.') === 0) return me.is_admin || me.role === 'admin' || Boolean(me[sw]) ? 3 : 0;
     if (sw) return portalOn(sw) && (me.is_admin || me.role === 'admin' || Boolean(me[sw])) ? 3 : 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
@@ -1119,6 +1216,19 @@
     var M = window.ADspaceMoney;
     var v = M && M.setting ? M.setting(key, window.ADspaceClock ? window.ADspaceClock.today() : undefined) : null;
     return v == null || Number(v) === 1;
+  }
+  /* Whether a send by hand may go now, and why not (SEND SWITCHES,
+     2026-11-21): the portal's switch (Settings, Portal: Email, WhatsApp),
+     then the one for sends by hand under it (Settings, Messages: Send by
+     email, Send on WhatsApp). The group's switch is `may('send.email')`,
+     which hides the act instead. */
+  var HAND_KEY = { email: 'client_email_on', whatsapp: 'client_wa_on' };
+  function sendState(channel) {
+    var L = window.ADspaceWords.line;
+    if (!HAND_KEY[channel]) return { on: false, reason: '' };
+    if (!portalOn(channel + '_on')) return { on: false, reason: channel === 'email' ? L.emailPortalOff : L.whatsappPortalOff, portal: true };
+    if (!portalOn(HAND_KEY[channel])) return { on: false, reason: channel === 'email' ? L.emailHandOff : L.whatsappHandOff };
+    return { on: true, reason: '' };
   }
   /* `may('clients')` still reads as it always did and still means the
      everyday level, so nothing that asked the old question has changed its
@@ -6617,6 +6727,8 @@
     restore: function () { restoreView(); },
     /* ===== end console search ===== */
     may: may,
+    /* Whether a send by hand may go now, and why not (SEND SWITCHES). */
+    sendState: sendState,
     /* Whether a route opens for this person (the Assistant's Open, 2026-11-19). */
     sectionAllowed: function (name) { return sectionAllowed(name); },
     upgradeState: function () { return upgrade; },
