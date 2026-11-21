@@ -122,6 +122,9 @@
     m = Math.max(0, Math.round(Number(m) || 0));
     if (m < 60) return m + ' min';
     var h = Math.floor(m / 60), r = m % 60;
+    /* Two days read 2d, never 48h: a day and its hours, the minutes left
+       off once a span runs past a day (the stage timeline, 2026-11-22). */
+    if (h >= 24) return Math.floor(h / 24) + 'd ' + (h % 24) + 'h';
     return h + 'h' + (r ? ' ' + r + 'm' : '');
   }
   function plusDays(v, n) {
@@ -289,12 +292,10 @@
     view: 'list',          // list | board | calendar: three readings of one set of rows
     wf: null,              // the workflow the board lays out
     month: null,           // the first day of the month the calendar shows
-    week: [],              // this week's work sessions, for the capacity strip
     notifs: [],            // my unread notifications
     task: null,            // the open task, as ops_task_json returned it
     pane: 'work',
-    session: null,         // my one open work session, whichever task it is on
-    detail: { checklist: [], links: [], sessions: [], events: [], video: null },
+    detail: { checklist: [], links: [], events: [], video: null },
     moved: null,           // the last stage move, named on the row the repaint draws
     tick: null,
     selecting: false,      // the list's ticks are showing
@@ -830,18 +831,7 @@
     }).catch(function () {});
   }
 
-  /* My own open session, whichever task it is on: one a person, across every
-     task, which is a partial unique index in the database and not a hope. */
-  function loadSession(then) {
-    var me = bridge.me && bridge.me();
-    if (!me || !me.id) { state.session = null; if (then) then(); return; }
-    db.from('ops_work_sessions').select('*').eq('team_member_id', me.id)
-      .is('ended_at', null).limit(1)
-      .then(function (r) {
-        state.session = (!r.error && r.data && r.data[0]) || null;
-        if (then) then();
-      }).catch(function () { state.session = null; if (then) then(); });
-  }
+
 
   // ---- Everyday tasks, and the plain status every task is read by -------------
   /* A task is one finishable action. Most of them are on the everyday
@@ -2750,7 +2740,6 @@
     /* Under one client's Months the client is the page's, so a row leaves
        it out (2026-10-22, WRK-13). */
     var ctx = elsewhere ? (t.engagement_id && t.code_period ? monthWord(t.code_period) + ' content' : '') : (engName(t) || whoseWord(t));
-    var mine = state.session && state.session.task_id === t.id;
     var check = picking
       ? '<input type="checkbox" class="trow-pick" data-a="pick"' + (picked ? ' checked' : '') + ' aria-label="Select ' + esc(t.title || serialOf(t)) + '">'
       : every && mayMove(t) && p !== 'cancelled'
@@ -2775,7 +2764,6 @@
         (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
-          (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
           esc(ctx) + '</small>' +
         (fin ? '' : '<span class="task-facts">' + fmtTag(t) + checkBar(t) + remCount(t) + '</span>') + '</span></button>' +
       '<span class="trow-meta pr-end">' +
@@ -3101,7 +3089,6 @@
           var outs = (doneSt && doneSt.next_stage_keys) || ['todo', 'doing'];
           state.undone = { id: t.id, back: outs.indexOf(from) > -1 ? from : (outs.indexOf('doing') > -1 ? 'doing' : outs[0]), title: t.title };
         } else state.undone = null;
-        if (state.session && state.session.task_id === t.id && next === 'complete') { state.session = null; }
         done();
       }).catch(function (e) { if (ck) ck.disabled = false; rowNote(el, (e && e.message) || String(e)); });
   }
@@ -3588,11 +3575,11 @@
     $('dwCommentOpen').hidden = !work;
     $('dwCommentSec').hidden = !comments.length && !work;
 
-    paintDrawerTime(t);
+    paintTimeline(t);
 
     // Recent activity, and the whole of it on request.
     /* The talk is the Comments card's; what happened to the task is here. */
-    var rest = taskItems(state.detail.events.filter(function (e) { return !/^comment/.test(e.event_type); }));
+    var rest = taskItems(state.detail.events.filter(function (e) { return !/^comment/.test(e.event_type) && !TIMELINE_EVENTS[e.event_type]; }));
     var lines = window.ADspaceRecords.fold(rest).length;
     window.ADspaceRecords.paint($('dwLog'), rest, { limit: 3, empty: false });
     $('dwLogMore').hidden = lines <= 3;
@@ -4169,20 +4156,6 @@
           '<span><span class="tone ' + esc(tone || 'tone-plain') + '">' + esc(x.cancelled_at ? 'Cancelled' : x.stage) + '</span></span>' +
           '<span class="ovamt">' + (x.final_due_at ? esc(niceDate(x.final_due_at)) : '<span class="muted">—</span>') + '</span></a>';
       }).join('') + '</div>';
-  }
-
-  /* TIME: the stage table, said once, and the hours somebody recorded
-     where there are any. The table is the figure; a fact restating its
-     current row or its total said the same thing twice. */
-  function paintDrawerTime(t) {
-    var spans = stageSpans();
-    var rec = (state.detail.sessions || []).reduce(function (a, x) { return a + (Number(x.minutes) || 0); }, 0);
-    $('dwTime').innerHTML = rec ? frow('Recorded', esc(minutesWord(rec))) : '';
-    $('dwTime').hidden = !rec;
-    var box = $('dwTimeList');
-    box.innerHTML = '';
-    if (spans.length) box.appendChild(stageTable(spans));
-    $('dwTimeSec').hidden = !spans.length && !rec;
   }
 
   /* THE NEXT STEP, IN THE SHEET AND ON THE FULL RECORD ALIKE. One derived
@@ -4800,9 +4773,6 @@
       db.from('ops_tasks').select('*, clients(name, slug)').eq('id', id).maybeSingle(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
       db.from('ops_task_links').select('*').eq('task_id', id).order('created_at'),
-      db.from('ops_work_sessions')
-        .select('*, team_members!ops_work_sessions_team_member_id_fkey(name)')
-        .eq('task_id', id).order('started_at', { ascending: false }),
       /* Enough history that a comment and the correction made to it a week
          later are both read. */
       db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).limit(250),
@@ -4821,7 +4791,7 @@
     ]).then(function (r) {
       /* Who owns it is part of the record, so a refused read of the
          assignments is named rather than drawn as an unowned task. */
-      var bad = r[0].error || (r[5] && r[5].error);
+      var bad = r[0].error || (r[4] && r[4].error);
       if (bad) {
         msg('dwMsg', bad.message || 'That task could not be loaded.', 'err');
         return;
@@ -4850,9 +4820,9 @@
     msg('workMsg', 'This task no longer exists.', 'warn');
   }
   function readDone(r, t, after) {
-    state.due = (((r[7] && r[7].data) || [])[0]) || null;
-    state.rule = (((r[8] && r[8].data) || [])[0]) || null;
-    t.assignees = ((r[5] && r[5].data) || []).map(function (a) {
+    state.due = (((r[6] && r[6].data) || [])[0]) || null;
+    state.rule = (((r[7] && r[7].data) || [])[0]) || null;
+    t.assignees = ((r[4] && r[4].data) || []).map(function (a) {
       return { team_member_id: a.team_member_id, responsibility: a.responsibility,
                name: (a.team_members && a.team_members.name) || '' };
     });
@@ -4860,15 +4830,14 @@
     state.detail = {
       checklist: (r[1] && r[1].data) || [],
       links: (r[2] && r[2].data) || [],
-      sessions: (r[3] && r[3].data) || [],
-      events: (r[4] && r[4].data) || [],
-      video: (r[6] && r[6].data && r[6].data[0]) || null
+      events: (r[3] && r[3].data) || [],
+      video: (r[5] && r[5].data && r[5].data[0]) || null
     };
     /* The month's engagement, where the task has one: production waits on
        it, so the rail says where it stands. Read after the task, because the
        task is what names it; a refused read leaves no block. */
     var go = function () {
-      freshRefs(state.detail.links, function () { loadSession(function () { paintTask(); if (after) after(); }); });
+      freshRefs(state.detail.links, function () { paintTask(); if (after) after(); });
     };
     if (!t.engagement_id) { state.eng = null; state.engChecks = []; state.engCounts = null; go(); return; }
     Promise.all([
@@ -5429,93 +5398,217 @@
 
 
 
-  // ---- Time ----------------------------------------------------------------
-  /* HOW LONG THE WORK SAT IN EACH STAGE.
-     The question a person actually asks of a task is not "who had the timer
-     running" but "how long was this in Shooting" — so that is what the pane
-     leads with. Nothing new is recorded for it: every stage change is already
-     an `ops_task_events` row the record has read, and the durations fall out
-     of walking them in order.
-
-     A session somebody started and stopped is a different measure and stays
-     below, named for what it is. The two are never summed, which is the rule
-     this system has carried since phase 1: cycle time, stage time and active
-     work are three things. */
-  function stageSpans() {
-    var ev = (state.detail.events || []).filter(function (e) {
-      return e.event_type === 'stage_changed' || e.event_type === 'task_created';
-    }).slice().sort(function (a, b) {
-      return new Date(a.created_at) - new Date(b.created_at);
-    });
-    if (!ev.length) return [];
-    var spans = [], open = null;
-    ev.forEach(function (e) {
-      var at = new Date(e.created_at).getTime();
-      var to = (e.to_value && e.to_value.stage_key) || null;
-      /* The creation event names the stage the task started in; where it does
-         not, the first move's `from` does, which is the same fact. */
-      if (!to && e.event_type === 'task_created') {
-        to = (e.to_value && e.to_value.stage_key) || null;
-      }
-      if (open) { open.to = at; spans.push(open); open = null; }
-      if (to) open = { key: to, from: at, to: null };
-    });
-    if (!open && ev.length) {
-      var first = ev[0];
-      if (first.from_value && first.from_value.stage_key) {
-        open = { key: first.from_value.stage_key, from: new Date(first.created_at).getTime(), to: null };
-      }
-    }
-    if (open) {
-      var t = state.task;
-      var end = t && (t.completed_at || t.cancelled_at);
-      open.to = end ? new Date(end).getTime() : Date.now();
-      open.running = !end;
-      spans.push(open);
-    }
-    /* One row a stage, not one row a visit: a task that went back for a
-       revision and forward again spent its time in that stage twice, and the
-       figure being read is the total. The number of visits is worth saying,
-       because three visits to Revision is the finding. */
-    var by = {}, order = [];
-    spans.forEach(function (s) {
-      var mins = Math.max(0, Math.round((s.to - s.from) / 60000));
-      if (!by[s.key]) { by[s.key] = { key: s.key, mins: 0, visits: 0, running: false }; order.push(s.key); }
-      by[s.key].mins += mins;
-      by[s.key].visits += 1;
-      if (s.running) by[s.key].running = true;
-    });
-    return order.map(function (k) { return by[k]; });
+  // ---- Stage timeline --------------------------------------------------------
+  /* HOW LONG THE WORK SAT IN EACH STAGE, ONE VISIT A LINE (the user,
+     2026-11-22, in place of Time records: the timer was never used). Read
+     from the task's own events alone, so nothing new is recorded for it:
+     every move, skip and change of owner is already an `ops_task_events`
+     row the card has read. A visit is the stage, who moved the task there,
+     its dates and how long it stayed; a skipped stage reads Skipped with its
+     reason and no duration; visits under PASS_MIN minutes in a row fold into
+     one quiet line (a colleague catching the card up), and a stage visited
+     twice says its total on the last visit. Calendar time, as due dates
+     count. Each event the timeline holds leaves Recent activity
+     (`TIMELINE_EVENTS`). */
+  var PASS_MIN = 5;
+  var TIMELINE_EVENTS = {
+    task_created: 1, stage_changed: 1, stage_skipped: 1, assignment_changed: 1, handover: 1,
+    move_dated: 1, completed: 1, delivered: 1, cancelled: 1, reopened: 1,
+    blocked: 1, unblocked: 1, live_confirmed: 1
+  };
+  var TL_WORD = {
+    title: 'Stage timeline', soFar: 'So far', skipped: 'Skipped', total: 'Total',
+    passed: 'Moved through in under ' + PASS_MIN + ' minutes',
+    createdBy: 'Created by', assignedTo: 'Assigned to', movedBy: 'Moved by',
+    round: function (n) { return 'Round ' + n; },
+    since: function (w) { return 'Since ' + w; },
+    handed: function (w) { return 'Handed on to ' + w; },
+    reassigned: function (w) { return 'Reassigned to ' + w; },
+    taken: function (w) { return 'Taken by ' + w; },
+    live: function (d) { return 'Went live ' + d; },
+    blocked: function (r) { return r ? 'Blocked: ' + r : 'Blocked'; },
+    unblocked: 'Unblocked',
+    reopened: function (w) { return w ? 'Reopened by ' + w : 'Reopened'; },
+    recorded: function (d) { return 'Move recorded on ' + d; },
+    visits: function (n, w) { return 'In this stage ' + (n === 2 ? 'twice' : n + ' times') + ' \u00b7 ' + w + ' in total'; },
+    late: function (n) { return n + (n === 1 ? ' day late' : ' days late'); },
+    inTotal: function (w) { return w + ' in total'; }
+  };
+  function evAt(e) { return new Date(e.created_at).getTime(); }
+  function stagePos(t, k) {
+    var s = t && state.stages[t.workflow_id + '|' + k];
+    return s ? s.position : 999;
   }
-
-  /* One row a stage, in the workflow's own order, with how many times the
-     work came back to it (three visits to a revision is the finding) and the
-     time, and one Total under them. */
-  function stageTable(spans) {
+  function stageVisits() {
     var t = state.task;
-    var pos = function (k) {
-      var x = t && state.stages[t.workflow_id + '|' + k];
-      return x ? x.position : 999;
-    };
-    spans = spans.slice().sort(function (a, b) { return pos(a.key) - pos(b.key); });
-    var st = GRP.table('svc-row tstage-row', ['Stage', { text: 'Visits', cls: 'is-end' }, { text: 'Time', cls: 'is-end' }]);
-    spans.forEach(function (s) {
-      var row = document.createElement('div');
-      row.className = 'svc-row tstage-row';
-      row.innerHTML =
-        '<span class="svc-name"><b>' + esc(labelForKey(s.key)) + '</b>' +
-          (s.running ? '<small>Current stage</small>' : '') + '</span>' +
-        '<span class="tstage-n">' + esc(String(s.visits)) + '</span>' +
-        '<span class="tsess-mins">' + esc(minutesWord(s.mins)) + '</span>';
-      st.appendChild(row);
+    if (!t) return [];
+    var ev = (state.detail.events || []).slice().sort(function (a, b) { return evAt(a) - evAt(b); });
+    var made = ev.filter(function (e) { return e.event_type === 'task_created'; })[0];
+    var moves = ev.filter(function (e) { return e.event_type === 'stage_changed' && e.to_value && e.to_value.stage_key; });
+    var start = made ? evAt(made) : moves.length ? evAt(moves[0]) : null;
+    if (start === null) return [];
+    var firstKey = (moves[0] && moves[0].from_value && moves[0].from_value.stage_key) || (!moves.length && t.stage_key) || null;
+    var visits = [];
+    var cur = firstKey ? { key: firstKey, from: start, actor: made, first: true, notes: [] } : null;
+    moves.forEach(function (m) {
+      var at = evAt(m);
+      if (cur) { cur.to = at; visits.push(cur); }
+      ev.filter(function (e) { return e.event_type === 'stage_skipped' && evAt(e) === at && e.from_value; })
+        .sort(function (a, b) { return stagePos(t, a.from_value.stage_key) - stagePos(t, b.from_value.stage_key); })
+        .forEach(function (s) {
+          visits.push({ key: s.from_value.stage_key, skip: true, reason: (s.detail && s.detail.reason) || '', from: at, to: at, notes: [] });
+        });
+      var d = m.detail || {};
+      cur = { key: m.to_value.stage_key, from: at, actor: m, round: Number(d.round) || 0, notes: d.note ? [String(d.note)] : [],
+              recorded: m.recorded_at && CK.day(m.recorded_at) !== CK.day(m.created_at) ? m.recorded_at : null };
     });
-    var since = spans.reduce(function (a, s) { return a + s.mins; }, 0);
-    var cyc = document.createElement('div');
-    cyc.className = 'svc-row tstage-row is-total';
-    cyc.innerHTML = '<span class="svc-name"><b>Total</b></span>' +
-      '<span class="tstage-n"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
-    st.appendChild(cyc);
-    return st;
+    if (cur) {
+      var here = state.stages[t.workflow_id + '|' + cur.key];
+      var grp = here && here.stage_group;
+      var end = t.completed_at || t.cancelled_at;
+      if (grp === 'done' || grp === 'cancelled' || (here && here.is_terminal)) {
+        cur.end = true; cur.to = cur.from;
+      } else {
+        cur.to = end ? new Date(end).getTime() : Date.now();
+        cur.running = !end;
+      }
+      visits.push(cur);
+    }
+    var real = visits.filter(function (v) { return !v.skip; });
+    var holding = function (at) {
+      var hit = null;
+      real.forEach(function (v) { if (v.from <= at) hit = v; });
+      return hit;
+    };
+    var opening = function (at) {
+      return real.filter(function (v) { return v.from === at; })[0] || holding(at);
+    };
+    /* Who holds the task: the owner named at its making goes on the first
+       line; a change made on a move sits under the stage it led into, one
+       made between moves under the stage it was made in. */
+    ev.forEach(function (e) {
+      var at = evAt(e), d = e.detail || {}, to = e.to_value || {}, from = e.from_value || {};
+      if (e.event_type === 'assignment_changed') {
+        var who = nameOf(to.owner_id);
+        if (!who) return;
+        if (!from.owner_id && made && Math.abs(at - evAt(made)) <= 5000) {
+          if (real[0] && real[0].first) real[0].owner = who;
+          return;
+        }
+        var v = d.handover ? opening(at) : holding(at);
+        if (v) v.notes.push(d.taken ? TL_WORD.taken(who) : d.handover ? TL_WORD.handed(who) : TL_WORD.reassigned(who));
+      } else if (e.event_type === 'live_confirmed') {
+        var lv = holding(at);
+        if (lv && to.live_at) lv.notes.push(TL_WORD.live(shortDate(to.live_at)));
+      } else if (e.event_type === 'blocked') {
+        var bv = holding(at);
+        if (bv) bv.notes.push(TL_WORD.blocked(d.category ? reasonWord(d.category) : ''));
+      } else if (e.event_type === 'unblocked') {
+        var uv = holding(at);
+        if (uv) uv.notes.push(TL_WORD.unblocked);
+      } else if (e.event_type === 'reopened') {
+        var rv = opening(at);
+        if (rv) rv.notes.push(TL_WORD.reopened(whoName(e) || ''));
+      }
+    });
+    /* A stage visited more than once says how often and its time in total on
+       its last visit; a visit passed through is neither counted nor timed. */
+    var mins = function (v) { return Math.max(0, Math.round((v.to - v.from) / 60000)); };
+    real.forEach(function (v) {
+      v.mins = mins(v);
+      v.pass = !v.running && !v.end && v.mins < PASS_MIN;
+    });
+    var tally = {};
+    real.forEach(function (v) {
+      if (v.pass || v.end) return;
+      var k = tally[v.key] || (tally[v.key] = { n: 0, mins: 0, last: null });
+      k.n += 1; k.mins += v.mins; k.last = v;
+    });
+    Object.keys(tally).forEach(function (k) {
+      var x = tally[k];
+      if (x.n > 1) { x.last.visits = x.n; x.last.sum = x.mins; }
+    });
+    /* Visits passed through one after another read as one line. */
+    var out = [];
+    visits.forEach(function (v) {
+      var prev = out[out.length - 1];
+      if (v.pass && !v.notes.length && prev && prev.pass && !prev.notes.length) {
+        prev.keys.push(v.key); prev.to = v.to;
+        return;
+      }
+      if (v.pass) v.keys = [v.key];
+      out.push(v);
+    });
+    out.total = { from: start, to: (cur && (cur.end ? cur.from : cur.to)) || Date.now(), running: Boolean(cur && cur.running) };
+    return out;
+  }
+  /* A span of time as the card says it: 35 min, 19h 5m, 2d 6h. */
+  function spanWord(mins) { return minutesWord(mins); }
+  function whenWord(ms) { return shortDate(ms) + ', ' + CK.clock(ms); }
+  function visitDates(v) {
+    if (CK.day(v.from) === CK.day(v.to)) return whenWord(v.from) + ' to ' + CK.clock(v.to);
+    return whenWord(v.from) + ' to ' + whenWord(v.to);
+  }
+  function paintTimeline(t) {
+    var sec = $('dwTimeSec'), box = $('dwTimeList'), sum = $('dwTimeSum');
+    if (!sec || !box) return;
+    var vs = stageVisits();
+    sec.hidden = !vs.length;
+    box.innerHTML = '';
+    if (!vs.length) return;
+    var who = function (e) { return e ? esc(whoName(e) || 'System') : ''; };
+    var over = daysAway(t.current_final_due_at);
+    var late = isLate(t) && over !== null && over < 0;
+    var ol = document.createElement('ol');
+    ol.className = 'stl';
+    ol.setAttribute('aria-label', TL_WORD.title);
+    vs.forEach(function (v) {
+      var li = document.createElement('li');
+      var dot = v.skip || v.pass ? 'is-hollow' : v.running ? (late ? 'is-late' : 'is-now') : 'is-done';
+      li.className = 'stl-row' + (v.skip ? ' is-skip' : '') + (v.pass ? ' is-pass' : '');
+      var name = v.pass ? v.keys.map(labelForKey).join(', ') : labelForKey(v.key);
+      var round = !v.skip && !v.pass && v.round > 1 ? '<small> \u00b7 ' + esc(TL_WORD.round(v.round)) + '</small>' : '';
+      var dur = '';
+      if (!v.skip && !v.pass && !v.end) {
+        dur = '<span class="stl-dur' + (v.running && late ? ' is-late' : '') + '">' + esc(spanWord(v.mins)) +
+          (v.running ? '<small>' + esc(TL_WORD.soFar) + '</small>' : '') + '</span>';
+      }
+      var line;
+      if (v.skip) line = esc(TL_WORD.skipped) + (v.reason ? ' \u00b7 ' + esc(v.reason) : '');
+      else if (v.pass) line = esc(TL_WORD.passed) + ' \u00b7 ' + esc(whenWord(v.from));
+      else if (v.end) line = esc(whenWord(v.from)) + (v.actor ? ' \u00b7 ' + esc(TL_WORD.movedBy) + ' <b>' + who(v.actor) + '</b>' : '');
+      else {
+        line = esc(v.running ? TL_WORD.since(whenWord(v.from)) : visitDates(v));
+        if (v.first) {
+          line += v.actor ? ' \u00b7 ' + esc(TL_WORD.createdBy) + ' <b>' + who(v.actor) + '</b>' : '';
+          line += v.owner ? ' \u00b7 ' + esc(TL_WORD.assignedTo) + ' <b>' + esc(v.owner) + '</b>' : '';
+        } else if (v.actor) {
+          line += ' \u00b7 ' + esc(TL_WORD.movedBy) + ' <b>' + who(v.actor) + '</b>';
+        }
+        if (v.recorded) line += ' \u00b7 ' + esc(TL_WORD.recorded(shortDate(v.recorded)));
+      }
+      li.innerHTML = '<span class="stl-dot ' + dot + '" aria-hidden="true"></span>' +
+        '<span class="stl-name">' + esc(name) + round + '</span>' + dur +
+        '<span class="stl-line">' + line + '</span>' +
+        v.notes.map(function (n) { return '<span class="stl-note">' + esc(n) + '</span>'; }).join('') +
+        (v.visits ? '<span class="stl-sum">' + esc(TL_WORD.visits(v.visits, spanWord(v.sum))) + '</span>' : '');
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+    var total = Math.max(0, Math.round((vs.total.to - vs.total.from) / 60000));
+    var foot = document.createElement('div');
+    foot.className = 'stl-total';
+    foot.innerHTML = '<span>' + esc(TL_WORD.total) + '</span><b>' + esc(spanWord(total)) +
+      (vs.total.running ? ' <small>' + esc(TL_WORD.soFar) + '</small>' : '') + '</b>';
+    box.appendChild(foot);
+    /* The head says where the task stands and for how long, late in red. */
+    var open = vs.filter(function (v) { return v.running; })[0];
+    if (sum) {
+      sum.textContent = open
+        ? labelForKey(open.key) + ' \u00b7 ' + spanWord(open.mins) + (late ? ' \u00b7 ' + TL_WORD.late(Math.abs(over)) : '')
+        : TL_WORD.inTotal(spanWord(total));
+      sum.classList.toggle('is-late', Boolean(open && late));
+    }
   }
 
 
@@ -5525,7 +5618,6 @@
     assignment_changed: 'Reassigned', handover: 'Handed on', offered: 'Offered to the team',
     offer_withdrawn: 'Offer withdrawn', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
-    work_started: 'Work started', work_stopped: 'Work stopped', work_corrected: 'Hours corrected',
     revision_requested: 'Revision requested', revision_completed: 'Revision done',
     review_decision: 'Review decided', file_added: 'Link added', file_removed: 'Link removed',
     file_restored: 'Link restored', checklist_changed: 'Checklist changed',
@@ -5615,7 +5707,6 @@
         (from.value ? niceDate(from.value) + ' to ' : '') + niceDate(to.value) +
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
-    if (e.event_type === 'work_stopped') return minutesWord(to.minutes);
     if (e.event_type === 'checklist_changed') {
       if (to.renamed) return (from.label ? from.label + ' to ' : '') + to.label;
       if (to.removed) return to.label + ' removed';
@@ -6271,8 +6362,6 @@
     if (!t) return;
     var goes = [
       state.detail.events.length + (state.detail.events.length === 1 ? ' event' : ' events'),
-      state.detail.sessions.length ? state.detail.sessions.length +
-        (state.detail.sessions.length === 1 ? ' time entry' : ' time entries') : '',
       state.detail.links.length ? state.detail.links.length +
         (state.detail.links.length === 1 ? ' link' : ' links') : '',
       state.detail.checklist.length ? state.detail.checklist.length + ' checklist items' : ''
@@ -9142,9 +9231,9 @@
         when('team', function () { if (window.ADspacePerf) window.ADspacePerf.openTeam(); });
         return;
       }
-      /* A reminder, an initiative decided or a request to talk opens the
-         My records view it is about (2026-10-07). */
-      var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
+      /* A reminder, a recognition or a request to talk opens the My
+         records view it is about (2026-10-07; Recognition 2026-11-22). */
+      var mv = x.kind === 'perf.recognition' ? 'recognition'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
       when('mine', function () {

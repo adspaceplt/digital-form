@@ -458,12 +458,51 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-10-19-checklists-from-portal-onboarding.sql`). A client's passwords are
   never kept: the credentials item is a tick. The templates are edited in
   the migration, not in Settings, for now.
+- The Brand tab (2026-11-22; the user approved the restructure) is five
+  `rec-part` cards in working order (`paintBrandRead`): Brand profile (Logo,
+  Website, Office phone; Edit), Social accounts (`#crmMetaRead`: Instagram,
+  Facebook, TikTok, rednote, each its pen in place, Instagram and Facebook
+  with Linked in Meta: the account; Ad accounts; Edit Meta accounts), Brand
+  analysis (`#crmAnalysis`), Content brief (`#crmBrandBrief`: Audience and
+  pillars, Voice and references with Other notes, each its own Edit; a part
+  equal to what a confirmed version fills reads From Brand analysis, version
+  n, worked out on each paint, never stored), White label (`#crmWlBrands`,
+  drawn while on or at Reports: White label Work: the switch at the press
+  with Undo, turned on with no wide logo opening the sheet). One sheet
+  (`#crmBrandSheet`, `openBrandSheet(mode)`) shows one part's fields and
+  sends only what moved; nothing moved writes and files nothing. Over the
+  parts, `#crmBrandReady` reads Write with AI ready or not ready with what is
+  still needed, from the brief and the versions already read (as
+  `ai_brand_ready` answers), never a request of its own. Brand notes reads
+  Other notes (the user's D3); the column stays `brand_notes`. Linking an
+  Instagram account or a Page in Meta fills the client's empty handle with
+  its username (`@` and letters, digits, `.` and `_` alone) or the Page's
+  name, filed Filled from Meta (`handlesFromMeta`, D1); a typed handle is
+  never replaced. An Instagram or Facebook row with no link in Meta reads
+  Not linked in Meta. The handle is typed by hand. (the user, 2026-11-22:
+  filled from Meta only where the system user reaches the account).
+- Brand analysis fed from what the portal holds (2026-11-22, release B):
+  `brand-analysis` reads, as the caller, the latest standing quotation
+  (plan, platforms, monthly advertising budget, term), the client's last 20
+  change requests and 20 approved captions in Content Review, and the last
+  five notes of calls and visits (D2: no contact's name, numbers and emails
+  masked), with every handle and the linked Meta accounts' names; it keeps
+  what it was told or worked out with the version (`basis.inputs`: budget,
+  objective, ad account, notes, `derived`: the budget from the quotation,
+  the objective from the ad spend, the ad account from whether it spent),
+  read under the version as Ad plan. Run analysis opens on this browser's
+  answers, else the last version's, else the quotation's budget, each said
+  under its field (D4). Where the name matches more than one business and
+  the record does not settle it, the function saves nothing, counts nothing
+  and answers `ambiguous` with up to five candidates; the page asks Choose
+  the brand and runs again with `choice`, which the model analyses alone
+  (the user, 2026-11-22: never guess the brand).
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
   policy, no grant): a client, and each white-label brand, links ad accounts
   (up to 20), one Facebook Page and one Instagram account, each Meta's id and
   name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients: Brand at
   Work), never typed; a link Meta no longer shows stays offered. Read first
-  on the Brand pane (`#crmMetaRead`, Edit at Clients Work; a brand's from its
+  on Social accounts (`#crmMetaRead`, Edit Meta accounts at Clients Work; a brand's from its
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
   Work, `bad-brand`, `bad-asset`; writes through insert on conflict, so two
   first saves at once both stand, 2026-10-19) files `client.brand` from and
@@ -472,7 +511,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   user, 2026-10-09: "content not interesting"): one object of short texts
   (audience, pains, pillars, tone, avoid, competitors, hooks; 8,000
   characters in all), read with the record alone, read first on the Brand
-  pane (Content brief) and edited in the Brand profile (Audience and pillars;
+  tab (Content brief) and edited a part at a time (Audience and pillars;
   Voice and references), sent only where a part changed, filed
   `client.brand` by the parts' names. Write with AI reads it and the brand
   notes for captions and scripts, masked as the rest (`{brand}`,
@@ -495,7 +534,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Brand analysis (`2026-10-10-brand-analysis.sql`, `brand-analysis`; the
   user, 2026-10-10: "deep analysis of this clients … target audiences,
   SWOTs, advantages disadvantages, ads targetting"; "anyone could run it"):
-  the Brand pane's last read group (`#crmAnalysis`), Run analysis then Run
+  the Brand tab's third part (`#crmAnalysis`), Run analysis then Run
   again (the AI mark; asks first: what it reads, analyses left today, notes
   kept under `adspace-analysis-notes:{client id}`), for any colleague at
   Clients: Brand View on a client in scope. It reads as the caller the record

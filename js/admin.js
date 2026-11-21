@@ -2180,7 +2180,7 @@
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     noaccess:  'The sections your account can open.',
-    mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
+    mine:      'Your own reviews, recognitions, HR letters and health check-ins.',
     settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };
   var INTRO_SHOWS = 3;
@@ -2249,7 +2249,7 @@
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
       { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯ menu.' }] },
     mine: { name: 'My records', steps: [
-      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you can see them here.' }] },
+      { at: '#mineViews', text: 'Your reviews, recognitions, letters and health check-ins. Only you can see them here.' }] },
     /* A screen of its own inside a section (2026-10-10; the user: "the
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
@@ -2318,10 +2318,10 @@
       { at: '#ovwPeople button.ovw-tr', text: 'Each colleague\'s open, late and delivered work. Press a colleague to open their work.' },
       { at: '#ovwClientsMonth button.ovw-tr', text: 'Each client\'s posts, report and meeting this month. Press a client to open their month in My Work.' }] },
     'analytics.tab': { name: 'Charts', steps: [
-      { at: '#anlBody .anl-ai [data-a="write"]', text: 'Write with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.' },
-      { at: '#anlBody .anl-lead [data-card]', text: 'The main trend of this tab, month by month. A dashed line, where shown, is the forecast.' },
       { at: '#anlBody .anl-page .ovw-kpi', text: 'Each tile shows a figure and its change from the previous period.' },
-      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse or Steady compares a figure with the previous period.' }] },
+      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse, Steady or Above alert states how the figure moved.' },
+      { at: '#anlBody .anl-fold-head', text: 'Monthly review and Reference hold the charts read less often. Press a heading to open it.' },
+      { at: '#anlBody .anl-ai [data-a="write"]', text: 'Write with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.' }] },
     'reports.check': { name: 'Check and submit', steps: [
       { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
       { at: '#rhEdit [data-a="submit"]', text: 'Submit asks who reviews the report, then sends it to them.' }] }
@@ -3503,7 +3503,11 @@
   var PERF_STEP = { released: 'Review shared', disputed: 'Query raised', decided: 'Query answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
                     returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted',
-                    opened: 'Review opened', 'self.saved': 'Self-rating saved' };
+                    opened: 'Review opened', 'self.saved': 'Self-rating saved',
+                    /* Recognition (2026-11-22): every step, whose month it is. */
+                    'recognition.given': 'Recognition given', 'recognition.withdrawn': 'Recognition withdrawn',
+                    'recognition.restored': 'Recognition restored', 'recognition.confirmed': 'Recognition confirmed',
+                    'recognition.declined': 'Recognition declined', 'recognition.reverted': 'Recognition decision reverted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the

@@ -297,7 +297,7 @@
   function fail(host, what, e, again) {
     UI.failLine(host, what, (e && e.message) || '', again);
   }
-  function tiles(box, list) {
+  function tiles(box, list, more) {
     var wrap = document.createElement('div');
     wrap.className = 'ovw-groups is-one anl-tiles';
     wrap.innerHTML = '<section class="ovw-group"><div class="ovw-kpis"></div></section>';
@@ -315,6 +315,11 @@
       if (t.spark && t.spark.length > 1 && !isShort()) el.querySelector('.ovw-kpi-trend').innerHTML = CH.spark(t.spark);
       grid.appendChild(el);
     });
+    /* The Dashboard's own tiles join the row (Committed monthly value). */
+    if (more) more(grid);
+    var n = grid.children.length;
+    if (!n) { wrap.remove(); return; }
+    if (n < 4) grid.classList.add('is-n' + n);
   }
   function row(box, lead) {
     var grid = document.createElement('div');
@@ -357,14 +362,55 @@
     grid.appendChild(el);
     return el;
   }
-  /* What a section still needs before its trend is read: the months held
-     against the months asked, and when the rest arrive. */
-  function waitHtml(title, held, need, line) {
-    var w = Math.max(0, Math.min(1, held / need));
-    return '<div class="anl-wait"><div class="anl-wait-words"><b>' + esc(title) + '</b><span>' + esc(line) + '</span></div>' +
-      '<div class="anl-wait-bar"><span>' + esc(held + ' of ' + need + ' months') + '</span>' +
-      '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(w * 100) + '%"></i></span></div></div>';
+  /* Each tab by when it is acted on (2026-11-22, the user approving the
+     Analytics review): Act now, then This week, then Monthly review and
+     Reference as folds, shut until opened and kept so in this browser. A
+     band with nothing drawn in it leaves. */
+  var CHEV = '<svg class="anl-fold-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  function foldKey(k) { return 'adspace-anl-fold:' + tab + ':' + k; }
+  function bands(page) {
+    var band = function (k, title) {
+      var el = document.createElement('section');
+      el.className = 'anl-band';
+      el.setAttribute('data-band', k);
+      el.innerHTML = '<h3 class="ovw-group-h">' + esc(title) + '</h3>';
+      page.appendChild(el);
+      return el;
+    };
+    var fold = function (k, title) {
+      var el = document.createElement('details');
+      el.className = 'anl-fold';
+      el.setAttribute('data-band', k);
+      el.innerHTML = '<summary class="anl-fold-head"><span class="anl-fold-t">' + esc(title) + '</span><span class="anl-fold-sum"></span>' +
+        '<span class="anl-fold-rule" aria-hidden="true"></span>' + CHEV + '</summary><div class="anl-fold-body"></div>';
+      try { el.open = localStorage.getItem(foldKey(k)) === '1'; } catch (e) { /* shut */ }
+      el.addEventListener('toggle', function () {
+        try { if (el.open) localStorage.setItem(foldKey(k), '1'); else localStorage.removeItem(foldKey(k)); } catch (e) { /* not kept */ }
+      });
+      page.appendChild(el);
+      return el.querySelector('.anl-fold-body');
+    };
+    return { now: band('now', 'Act now'), week: band('week', 'This week'), month: fold('month', 'Monthly review'), ref: fold('ref', 'Reference') };
   }
+  /* A fold's line names what it holds, the AI analysis's headline first
+     where one is written. */
+  function foldSum(fold) {
+    var sum = fold.querySelector('.anl-fold-sum');
+    if (!sum) return;
+    var head = fold.getAttribute('data-headline');
+    var titles = Array.prototype.map.call(fold.querySelectorAll('.anl-fold-body .ovw-cardhead h3'), function (h) { return h.textContent.trim(); })
+      .filter(function (t) { return t && t !== 'AI analysis'; });
+    sum.textContent = head ? 'AI analysis: ' + head : titles.join(' · ');
+  }
+  function tidy(page) {
+    Array.prototype.forEach.call(page.querySelectorAll('.anl-band'), function (b) {
+      if (b.children.length < 2) b.remove();
+    });
+    Array.prototype.forEach.call(page.querySelectorAll('.anl-fold'), function (f) {
+      if (!f.querySelector('.anl-fold-body').children.length) f.remove(); else foldSum(f);
+    });
+  }
+
   function changeWord(now, before, digits) {
     var d = now - before;
     if (!d) return 'Level with ' + prevWord(period);
@@ -386,7 +432,7 @@
   function everActive(c) { return S().movesOf(c).some(function (m) { return m.to === 'active'; }); }
   function winRate(f) { var d = f.won.length + f.lost.length; return d ? { rate: f.won.length / d, won: f.won.length, decided: d } : null; }
 
-  function sales(box, cl) {
+  function sales(B, cl, K) {
     var r = rangeOf(period), pr = prevOf(period);
     var f = S().figures(cl, null, r), fp = S().figures(cl, null, pr);
     var tr = trendRange(), h = history(cl), keys = keysOf(tr), days = isDays();
@@ -400,29 +446,30 @@
       var note = document.createElement('p');
       note.className = 'anl-own anl-from';
       note.textContent = 'Leads are counted from ' + monthLong(leadsFrom()) + '.';
-      box.appendChild(note);
+      B.now.parentNode.insertBefore(note, B.now);
     }
-    tiles(box, [
+    /* Act now: the four figures, then What changed beside Pipeline now. */
+    tiles(B.now, [
       { key: 'leads', label: days ? 'New leads' : 'New leads per month', fig: days ? plain(lead) : one(lead), sub: cmp ? changeWord(lead, leadP, !days) : '',
         verdict: cmp ? judge(f.newLeads.length, fp.newLeads.length, 'up', 2) : null,
         spark: keys.map(function (k) { return per(k, 'newLeads'); }) },
       { key: 'win', label: 'Win rate', fig: wr ? pct(wr.rate) : '—',
         verdict: cmp && wr && wrP && wr.decided >= 3 && wrP.decided >= 3 ? judge(wr.rate, wrP.rate, 'up') : null,
         sub: wr ? wr.won + ' of ' + wr.decided + ' leads decided' + (cmp && wrP ? ' · ' + pct(wrP.rate) + ' before' : '') : 'No lead decided in the period' },
-      { key: 'toclient', label: 'Lead to client', fig: f.medianToWin == null ? '—' : daysWord(f.medianToWin),
-        verdict: f.won.length >= 3 && fp.won.length >= 3 ? judge(f.medianToWin, fp.medianToWin, 'down') : null,
-        sub: 'Median' + (fp.medianToWin == null ? '' : ' · ' + daysWord(fp.medianToWin) + ' before') },
       lostTile(f, fp, ch, keys, per)
-    ]);
-
-    var g1 = row(box, true);
-    trendCard(g1, h, keys, tr);
+    ], K ? function (grid) { K.tile(grid, 'value'); } : null);
+    var g1 = row(B.now, true);
     insights(g1, clientChanges(f, fp, n).filter(function (x) { return x.verdict && x.verdict.tone === 'late'; }).concat(salesChanges(f, fp, h, cmp)));
+    if (K) K.card(g1, 'pipeline');
 
-    var g2 = row(box);
-    season(g2, h);
-
-    var g3 = row(box);
+    /* Monthly review: the trend with how long a sale takes, then where
+       leads come from beside why they were lost. */
+    var tc = trendCard(row(B.month), h, keys, tr);
+    var med = { label: 'Lead to client', d: { word: f.medianToWin == null ? '—' : 'Median ' + daysWord(f.medianToWin),
+      verdict: f.won.length >= 3 && fp.won.length >= 3 ? judge(f.medianToWin, fp.medianToWin, 'down') : null,
+      note: fp.medianToWin == null ? '' : daysWord(fp.medianToWin) + ' before' } };
+    factLine(tc, med);
+    var g3 = row(B.month);
     var src = Object.keys(f.bySource).map(function (k) {
       var list = f.bySource[k], won = list.filter(everActive).length;
       return { label: srcWord(k), value: list.length, won: won };
@@ -436,6 +483,38 @@
     var lr = Object.keys(lost).map(function (k) { return { label: S().reasonWord(k), value: lost[k] }; })
       .sort(function (a, b) { return b.value - a.value; });
     chart(g3, 'lost', 'Why leads were lost', { kind: 'bars', inline: true, rows: lr, empty: 'No lead was lost in the period.' }, spanWord(r));
+    return h;
+  }
+  /* The Dashboard's Sales cards in their bands; Reference ends on the
+     busiest months once 24 full months are held, never a card waiting. */
+  function salesCards(B, K, h) {
+    if (K) {
+      /* Each a row of its own: tables of different lengths side by side
+         left a gap under the shorter (2026-11-22). */
+      K.row(B.week, ['moves']);
+      K.row(B.week, ['owners']);
+      K.row(B.week, ['moved']);
+      if (!h) K.row(B.month, ['sources']);
+      /* Without the lead trends no row of tiles is drawn, so the value by
+         client, which states the committed total, is read first. */
+      K.row(h ? B.month : B.now, ['valueby']);
+    }
+    if (K) K.row(B.ref, ['funnel']);
+    if (h && seasonOf(h, 'newLeads')) season(row(B.ref), h);
+  }
+  /* A fact read beside a chart's directions (Lead to client on the trend). */
+  function factLine(el, x) {
+    var dirs = el.querySelector('.anl-dirs');
+    if (!dirs) {
+      dirs = document.createElement('div');
+      dirs.className = 'anl-dirs';
+      var head = el.querySelector('.ovw-cardhead');
+      if (head) head.after(dirs); else el.insertBefore(dirs, el.firstChild);
+    }
+    var p = document.createElement('p');
+    p.className = 'anl-dir is-fact';
+    p.innerHTML = '<b>' + esc(x.label) + '</b>' + verdictHtml(x.d.verdict) + '<span>' + esc([x.d.word, x.d.note].filter(Boolean).join(' · ')) + '</span>';
+    dirs.appendChild(p);
   }
 
   /* Clients lost, judged on the period before and on the churn alert: churn
@@ -458,7 +537,6 @@
     });
     var series = [{ label: 'New leads' }, { label: 'New clients', tone: 'mute' }];
     var band = null, note = '', aside = '';
-    var full = fullKeys(h).length;
     if (fl) {
       /* The line of what happened ends at the last full month; the month
          still running is the forecast's first point, its count so far in
@@ -486,15 +564,15 @@
       note = monWord(ahead[0].key) + ' to ' + monWord(endK) + ' expected: ' + lo + ' to ' + hi + ' leads a month, ' + wl + ' to ' + wh +
         ' new clients. From the average of the last 6 full months' + (seasonOf(h, 'newLeads') ? ' and each month\'s usual share of the year.' : '.');
       aside = 'Forecast to ' + monWord(endK) + ' ' + endK.slice(0, 4);
-    } else if (r.open) {
-      aside = full >= 12 ? '' : 'Forecast from ' + monthLong(CK.addMonths(countsFrom(h) || CK.today().slice(0, 7), 12));
-      if (full < 12) note = 'A forecast is shown once 12 full months of data are available. ' + monthsWord(full) + (full === 1 ? ' has' : ' have') + ' been recorded.';
     }
+    /* Until 12 full months are held no forecast is drawn and nothing is said
+       of one (2026-11-22). */
     var el = chart(grid, 'trend', 'Leads and new clients by month', {
       kind: 'line', cats: cats, series: series, band: band, bandWord: band ? 'Likely range' : '', none: 'No figure'
     }, aside, note);
     el.classList.add('anl-trend');
     heading(el, [{ label: 'New leads', d: direction(h, 'newLeads', 'up') }, { label: 'New clients', d: direction(h, 'won', 'up') }]);
+    return el;
   }
   /* Where a chart's figures are heading, under its title. */
   function heading(el, list) {
@@ -594,15 +672,10 @@
   }
 
   /* Each calendar month's average new leads, from 24 full months; until
-     then, how many are held. */
+     then the card is left out (2026-11-22). */
   function season(grid, h) {
-    var se = seasonOf(h, 'newLeads'), full = fullKeys(h).length;
-    if (!se) {
-      card(grid, 'season', 'Busiest months for new leads', '',
-        waitHtml('Busiest months are shown once 24 full months of leads are available',
-          full, 24, full ? 'Leads are counted from ' + monthLong(countsFrom(h)) + '. The months show in ' + monthLong(CK.addMonths(countsFrom(h), 24)) + '.' : 'No leads recorded.'));
-      return;
-    }
+    var se = seasonOf(h, 'newLeads');
+    if (!se) return;
     var sorted = se.by.map(function (x) { return x.avg; }).slice().sort(function (a, b) { return a - b; });
     var level = function (v) {
       if (v === sorted[11]) return 4;
@@ -631,7 +704,7 @@
       .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
   }
   var MARKET = { MY: 'Malaysia', SG: 'Singapore' };
-  function clientsTab(box, cl) {
+  function clientsTab(B, cl) {
     var r = rangeOf(period), pr = prevOf(period);
     var f = S().figures(cl, null, r), fp = S().figures(cl, null, pr);
     var tr = trendRange(), h = history(cl), keys = keysOf(tr);
@@ -641,7 +714,8 @@
     var n = monthsIn(r), ch = churnOf(f, n);
     var lt = lostTile(f, fp, ch, keys, per);
     lt.key = 'left'; lt.label = 'Clients left';
-    tiles(box, [
+    /* Act now: the four figures, then the trend beside What changed. */
+    tiles(B.now, [
       { key: 'active', label: 'Active clients', fig: plain(f.activeEnd), sub: plain(f.activeStart) + ' at the start of ' + (r.days ? dayWord(r.from) : monthLong(keysOf(r)[0])),
         verdict: judge(f.activeEnd, f.activeStart, 'up', 2),
         spark: keys.map(function (k) { return per(k, 'active'); }) },
@@ -652,7 +726,7 @@
       { key: 'tenure', label: 'Time as a client', fig: med == null ? '—' : monthsWord(Math.round(med / 30.4)), sub: 'Median of active clients' }
     ]);
     var cur = CK.today().slice(0, 7);
-    var g1 = row(box, true);
+    var g1 = row(B.now, true);
     var ac = chart(g1, 'active', 'Active clients by month', {
       kind: 'columns', labels: true,
       cats: keys.map(function (k) { return { label: monWord(k), long: monthLong(k), values: [per(k, 'active')], tone: k === cur ? 'mute' : '' }; }),
@@ -660,25 +734,35 @@
     }, spanWord(tr));
     heading(ac, [{ label: 'Active clients', d: direction(h, 'active', 'up') }]);
     insights(g1, clientChanges(f, fp, n));
-    var g0 = row(box);
+    /* Monthly review: joined and left beside why clients paused or left;
+       Reference: the active clients by industry, market and length of stay. */
+    var g0 = row(B.month);
     var fl = chart(g0, 'flow', 'Clients joined and left', {
       kind: 'line', cats: keys.map(function (k) { return { label: monWord(k), long: monthLong(k), values: [per(k, 'won'), per(k, 'churned')] }; }),
       series: [{ label: 'Joined' }, { label: 'Left', tone: 'mute' }]
     }, spanWord(tr));
     heading(fl, [{ label: 'Joined', d: direction(h, 'won', 'up') }, { label: 'Left', d: direction(h, 'churned', 'down') }]);
-    var g2 = row(box);
-    chart(g2, 'industry', 'Active clients by industry', { kind: 'bars', inline: true, rows: groupCount(f.activeEndList, function (c) { return c.industry; }), empty: 'No active clients.' }, 'Now');
-    chart(g2, 'market', 'Active clients by market', { kind: 'bars', inline: true,
-      rows: groupCount(f.activeEndList, function (c) { var m = String(c.market || '').toUpperCase(); return MARKET[m] || m; }), empty: 'No active clients.' }, 'Now');
-    var g3 = row(box);
     var why = Object.keys(f.reasons).map(function (k) {
       var x = f.reasons[k];
       return { label: S().reasonWord(k), value: x.paused.length + x.past.length, note: [x.past.length ? x.past.length + ' left' : '', x.paused.length ? x.paused.length + ' paused' : ''].filter(Boolean).join(' · ') };
     }).sort(function (a, b) { return b.value - a.value; });
-    chart(g3, 'why', 'Reasons clients paused or left', { kind: 'bars', inline: true, rows: why, empty: 'No client paused or left in the period.' }, spanWord(r));
+    chart(g0, 'why', 'Reasons clients paused or left', { kind: 'bars', inline: true, rows: why, empty: 'No client paused or left in the period.' }, spanWord(r));
+    var g2 = row(B.ref);
+    chart(g2, 'industry', 'Active clients by industry', { kind: 'bars', inline: true, rows: groupCount(f.activeEndList, function (c) { return c.industry; }), empty: 'No active clients.' }, 'Now');
+    chart(g2, 'market', 'Active clients by market', { kind: 'bars', inline: true,
+      rows: groupCount(f.activeEndList, function (c) { var m = String(c.market || '').toUpperCase(); return MARKET[m] || m; }), empty: 'No active clients.' }, 'Now');
     var BANDS = [['Under 3 months', 0, 91], ['3 to 6 months', 91, 183], ['6 to 12 months', 183, 365], ['1 to 2 years', 365, 730], ['Over 2 years', 730, 1e9]];
-    chart(g3, 'stay', 'Active clients by length of stay', { kind: 'bars', inline: true, empty: 'No active clients.',
+    chart(row(B.ref), 'stay', 'Active clients by length of stay', { kind: 'bars', inline: true, empty: 'No active clients.',
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
+  }
+  /* Operations, all of it the Dashboard's cards: Where work waits and the
+     month's reports to act on now, then on time by person, then the months. */
+  function opsCards(B, K) {
+    K.row(B.now, ['waits']);
+    K.row(B.now, ['reports', 'bookings']);
+    K.row(B.week, ['ontimeby']);
+    K.row(B.month, ['ontime', 'tlmonth']);
+    K.row(B.month, ['tlkind']);
   }
 
   // ---- The AI analysis ------------------------------------------------------------------------
@@ -805,7 +889,7 @@
       '<p class="anl-ai-meta">Version ' + v.version + ' · ' + esc(v.period) + ' · Written by AI for ' + esc(v.by || 'a colleague') + ', ' +
         esc(CK.date(v.created_at) + ', ' + CK.clock(v.created_at, { space: true })) + '. Read before using.</p>';
   }
-  function aiCard(page, cl) {
+  function aiCard(box, cl) {
     var el = document.createElement('section');
     el.className = 'chartcard anl-ai';
     el.setAttribute('data-card', 'ai');
@@ -817,7 +901,7 @@
         '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="download">Download PDF</button>' +
         '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button></div></span></div></div>' +
       '<p class="msg" data-m="msg" role="status"></p><div class="anl-ai-body" data-m="body"></div>';
-    page.appendChild(el);
+    box.appendChild(el);
     var body = el.querySelector('[data-m="body"]');
     var msg = function (t, tone) { var m = el.querySelector('[data-m="msg"]'); m.textContent = t || ''; m.className = 'msg' + (t ? ' ' + (tone || 'err') : ''); };
     var paint = function (list) {
@@ -825,6 +909,11 @@
       shown = v ? v.id : null;
       el.querySelector('[data-m="more"]').hidden = !v;
       body.innerHTML = v ? readHtml(v) : '<p class="chart-empty">No analysis written.</p>';
+      var fold = el.closest('.anl-fold');
+      if (fold) {
+        if (v && v.analysis && v.analysis.headline) fold.setAttribute('data-headline', v.analysis.headline); else fold.removeAttribute('data-headline');
+        foldSum(fold);
+      }
     };
     var load = function () {
       UI.skeleton(body, 2);
@@ -875,7 +964,7 @@
         body: 'Write with AI will read the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, without any client\'s name, and write an analysis for management. ' +
           d.left + (d.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Write',
-        fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 3, required: false, placeholder: 'Optional', value: was }]
+        fields: [{ name: 'notes', label: 'Notes', rows: 3, required: false, placeholder: 'Optional', value: was }]
       }, function (v) {
         var notes = String(v.notes || '').trim();
         try { if (notes) localStorage.setItem(key, notes); else localStorage.removeItem(key); } catch (e) {}
@@ -1054,15 +1143,23 @@
           own.textContent = 'Your clients only.';
           page.appendChild(own);
         }
-        if (cl && canAi()) aiCard(page, cl);
-        if (cl) { if (tab === 'sales') sales(page, cl); else clientsTab(page, cl); }
+        var B = bands(page), K = null;
         if (moved(tab)) {
           var r = rangeOf(period), word = PERIODS.filter(function (p) { return p[0] === period; })[0][1];
-          O().forAnalytics(page, tab === 'sales' ? 'Sales' : 'Operations', {
+          K = O().forAnalytics(tab === 'sales' ? 'Sales' : 'Operations', {
             from: r.from, to: r.to, prev: prevOf(period), prevName: prevWord(period),
-            name: isShort() ? daySpan(period).name : period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
-            cl && tab === 'sales' ? ['sources'] : [], cl);
+            name: isShort() ? daySpan(period).name : period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() }, cl);
         }
+        /* The AI analysis opens Monthly review, its headline on the fold. */
+        if (cl && canAi()) aiCard(B.month, cl);
+        if (tab === 'sales') {
+          var h = cl ? sales(B, cl, K) : null;
+          if (!cl && K) K.row(B.now, ['pipeline']);
+          salesCards(B, K, h);
+        } else if (tab === 'clients') {
+          if (cl) clientsTab(B, cl);
+        } else if (K) opsCards(B, K);
+        tidy(page);
         /* A Dashboard tile pressed for its clients lands on its card. */
         var want = null;
         try { want = sessionStorage.getItem('adspace-anl-card'); sessionStorage.removeItem('adspace-anl-card'); } catch (e) { /* none */ }
