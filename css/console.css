@@ -1322,6 +1322,9 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rec-linktools > .row:only-child { grid-column: 1 / -1; justify-content: flex-end; }
 /* A link locked after wrong access codes: one line under the link, Clear at
    its right (second audit, item 4). */
+/* A line about the link (a page set unavailable, what will not be sent
+   by itself) runs the tools' width under them (SWITCHED-OFF ACTS). */
+.camp-client-tools > .msg, .rec-linktools > .msg { grid-column: 1 / -1; order: 1; margin: 0; }
 .linklock { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
 .linklock > .msg { margin: 0; flex: 1 1 240px; min-width: 0; }
 .linklock > .btn { flex: 0 0 auto; margin-left: auto; }
