@@ -4025,7 +4025,7 @@
       if (state.client !== c) return;
       paintSocial(c); paintLinks(c); railDone(c);
       msg('crmSocialMsg', 'Saved.', 'ok');
-    }).catch(function (e) { msg('crmSocialMsg', (e && e.message) || 'Not saved.', 'err'); paintSocial(c); });
+    }).catch(function (e) { msg('crmSocialMsg', 'Not saved. ' + ADspaceWords.en.offline, 'err'); paintSocial(c); });
   }
   /* The content brief, read in its two parts, each with its own Edit. A
      part an analysis wrote says which version, worked out each time from
@@ -4101,7 +4101,7 @@
       log('client.brand', c.name, 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On'));
       if (state.client === c) paintWlPart(c);
       return true;
-    }).catch(function (e) { paintWlPart(c); msg('crmWlMsg', (e && e.message) || 'Not saved.', 'err'); return false; });
+    }).catch(function (e) { paintWlPart(c); msg('crmWlMsg', 'Not saved. ' + ADspaceWords.en.offline, 'err'); return false; });
   }
   function pressWl(c) {
     var on = !c.white_label;
@@ -5013,7 +5013,7 @@
         if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
         Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
         log('client.brand', c.name, [changed(was, patch, [
-          ['website', 'Website'], ['phone', 'Phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
+          ['website', 'Website'], ['phone', 'Office phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
           briefMoved.length ? 'Content brief: ' + briefMoved.join(', ') + ' changed' : '',
           'white_label' in patch ? 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On') : '',
           'report_logo' in patch ? (patch.report_logo ? (was.report_logo ? 'Wide logo replaced' : 'Wide logo set') : 'Wide logo removed') : ''
