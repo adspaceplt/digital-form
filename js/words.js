@@ -126,6 +126,7 @@
     // what to enter. One reading for every form, console and client page.
     checkEnter: 'Enter the {x}.',
     checkChoose: 'Choose the {x}.',
+    checkChooseDate: 'Choose a date for {x}.',
     checkTick: 'Tick {x} to continue.',
     checkNumber: 'Enter a number.',
     checkWhole: 'Enter a whole number.',
@@ -233,6 +234,7 @@
 
     checkEnter: '请填写{x}。',
     checkChoose: '请选择{x}。',
+    checkChooseDate: '请选择{x}的日期。',
     checkTick: '请勾选{x}以继续。',
     checkNumber: '请输入数字。',
     checkWhole: '请输入整数。',

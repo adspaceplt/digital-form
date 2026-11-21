@@ -186,7 +186,7 @@
       var F = window.ADspaceForm, why = '';
       var need = r.spec.required !== false && !r.spec.tick;
       if (F && F.problem && !r.spec.tick) {
-        why = F.problem(r.input, { required: need, label: r.spec.label ? F.nameOf(r.spec.label) : '', need: r.spec.need, kind: r.spec.check });
+        why = F.problem(r.input, { required: need, label: r.spec.label ? F.nameOf(r.spec.label) : '', rawLabel: r.spec.label || '', need: r.spec.need, kind: r.spec.check });
       } else if (need && !v) why = r.spec.need || window.ADspaceWords.en.checkEnter.replace('{x}', r.spec.label || 'reason');
       if (why) {
         say(why);

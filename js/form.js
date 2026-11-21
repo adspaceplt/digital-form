@@ -1165,7 +1165,7 @@
   /* The field's own name, as its label reads it: an official term keeps
      its capitals (Registered Company Name), a plain label is lowered (the
      client name). */
-  function nameOf(el) {
+  function nameOf(el, keep) {
     var t = el.getAttribute('data-check-name') || '';
     if (!t) {
       var lab = el.id && document.querySelector('label[for="' + (window.CSS && CSS.escape ? CSS.escape(el.id) : el.id) + '"]');
@@ -1173,12 +1173,12 @@
       if (!lab && el.getAttribute('aria-labelledby')) lab = document.getElementById(el.getAttribute('aria-labelledby').split(' ')[0]);
       t = lab ? lab.textContent : (el.getAttribute('aria-label') || '');
     }
-    return plainName(t);
+    return plainName(t, keep);
   }
-  function plainName(t) {
+  function plainName(t, keep) {
     /* A unit in brackets after the name (Revenue (RM)) is no part of it. */
     t = String(t || '').replace(/\s*\((rm|s\$|%|myr|sgd)\)\s*$/i, '').replace(/\s+/g, ' ').replace(/[\s*:：?？]+$/, '').replace(/\s*\((optional|可选)\)$/i, '').trim();
-    if (zhPage()) return t;
+    if (zhPage() || keep) return t;
     var words = t.split(' ');
     /* Lowered only where the label is plain: its first word capitalised
        alone and no other word carrying a capital. */
@@ -1234,6 +1234,9 @@
     if (!v) {
       if (!req) return '';
       if (o.need) return o.need;
+      /* A date whose label names no date (From, Until) is asked as one:
+         Choose a date for From. */
+      if (kind === 'date' && !/date|day|month|日期|日|月/i.test(name)) return sayWord('checkChooseDate', o.rawLabel ? plainName(o.rawLabel, true) : nameOf(el, true));
       var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg;
       return sayWord(choose ? 'checkChoose' : 'checkEnter', name);
     }
