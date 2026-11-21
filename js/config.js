@@ -116,6 +116,9 @@ window.ADSPACE_CONFIG = {
 
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
+  /* The agency's Service Terms, named by every quotation (its PDF and
+     /quote/). Blank leaves the clause out. */
+  serviceTermsUrl: 'go.adspace.me/svc-terms',
   supportEmail: 'advertise@adspacestudios.com',
 
   // Reply-to on anything the portal sends on the team's behalf.

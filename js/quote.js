@@ -72,10 +72,11 @@
       detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
       waHint: 'Malaysian or Singaporean number', brand: 'Brand', industry: 'Industry', optional: 'Optional',
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
+      startOn: 'Preferred start date',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
-      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', consent: window.ADspaceWords.en.tickToContinue },
+      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
@@ -115,7 +116,7 @@
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
-        'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
+        'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.', 'bad-start-date': 'Choose a preferred start date from today onwards.',
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'ADspace will review this quotation and send it to you on WhatsApp.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found. Please check the link, or request a new quotation.', 'bad-answer': 'Answer both questions to proceed.',
@@ -193,10 +194,11 @@
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
       commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后']],
+      startOn: '期望开始日期',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
-      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', consent: window.ADspaceWords.zh.tickToContinue },
+      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', startOn: '请选择今天或之后的期望开始日期。', consent: window.ADspaceWords.zh.tickToContinue },
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
@@ -236,7 +238,7 @@
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
-        'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
+        'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。', 'bad-start-date': '请选择今天或之后的期望开始日期。',
         'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
         expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 将审核本报价，并通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价，请检查链接，或申请新的报价。', 'bad-answer': '请回答以上两个问题。',
@@ -345,7 +347,7 @@
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
       plan: null, mix: 0, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
-      contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', consent: false }, step: 'intro', idem: null };
+      contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', commence_on: '', consent: false }, step: 'intro', idem: null };
   }
   var S = blank();
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
@@ -563,6 +565,7 @@
     return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1><div class="qs-secs">' + h + '</div>', navFoot());
   }
 
+  function todayMY() { return window.ADspaceClock.today(); }
   function field(id, label, req, html, hint) {
     return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
       (hint ? '<span class="qs-hint">' + esc(hint) + '</span>' : '') + '<span class="msg" id="' + id + 'Msg"></span></div>';
@@ -580,6 +583,8 @@
         INDUSTRIES.map(function (i) { return '<option value="' + esc(i.name) + '"' + (c.industry === i.name ? ' selected' : '') + '>' + esc((lang === 'zh' && i.name_zh) || i.name) + '</option>'; }).join('') + '</select>') +
       field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
         t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + (c.commence === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
+      /* A day, optional, from today in Malaysia (PREFERRED START DATE, 2026-11-21). */
+      field('qsStartOn', t().startOn, false, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" value="' + esc(c.commence_on || '') + '">', t().optional) +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
   }
@@ -878,7 +883,7 @@
           sig + '<span class="msg" id="sgPadMsg"></span></div>' +
         '<label class="qs-consent"><input type="checkbox" id="sgAgree"' + (SG.agree ? ' checked' : '') + '>' + MARK +
           '<span class="qs-text">' + esc(f(s.agree, { c: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
-        '<a class="btn btn-quiet btn-sm qs-terms" href="https://go.adspace.me/svc-terms" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' +
+        (cfg.serviceTermsUrl ? '<a class="btn btn-quiet btn-sm qs-terms" href="' + esc(window.ADspaceWords.absUrl(cfg.serviceTermsUrl)) + '" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' : '') +
         '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signcode') + '</form>';
     }
     var boxes = '';
@@ -1199,19 +1204,21 @@
     c.salutation = $('qsSal') ? $('qsSal').value : '';
     c.name = $('qsName').value.replace(/\s+/g, ' ').trim(); c.email = $('qsEmail').value.trim();
     c.whatsapp = $('qsWa').value.trim(); c.brand = $('qsBrand').value.replace(/\s+/g, ' ').trim();
-    c.industry = $('qsInd').value; c.commence = $('qsStart').value; c.consent = $('qsConsent').checked;
+    c.industry = $('qsInd').value; c.commence = $('qsStart').value;
+    c.commence_on = $('qsStartOn') ? $('qsStartOn').value : ''; c.consent = $('qsConsent').checked;
     keep();
   }
   function checkDetails() {
     readDetails();
     var c = S.contact, first = null, bad = function (id, w) { say(id + 'Msg', w); var el = $(id); if (el) el.setAttribute('aria-invalid', 'true'); first = first || el; };
-    ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsStart', 'qsConsent'].forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
+    ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsStart', 'qsStartOn', 'qsConsent'].forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
     if (c.name.length < 2) bad('qsName', t().req.name);
     if (!ADspaceWords.emailOk(c.email)) bad('qsEmail', t().req.email);
     else if (FREE.test(c.email)) say('qsEmailMsg', t().freeMail, 'warn');
     if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
     if (c.brand.length < 2) bad('qsBrand', t().req.brand);
     if (!c.commence) bad('qsStart', t().req.commence);
+    if (c.commence_on && !(/^\d{4}-\d{2}-\d{2}$/.test(c.commence_on) && c.commence_on >= todayMY() && c.commence_on <= '2099-12-31')) bad('qsStartOn', t().req.startOn);
     if (!c.consent) bad('qsConsent', t().req.consent);
     if (first) first.focus();
     return !first;
@@ -1227,7 +1234,7 @@
     if (!S.idem || S.idemFor !== fp) { S.idem = key8(); S.idemFor = fp; keep(); }
     var body = { sel: selection(), idem: S.idem,
       contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
-        industry: S.contact.industry || null, commence: S.contact.commence, consent: true, lang: lang } };
+        industry: S.contact.industry || null, commence: S.contact.commence, commence_on: S.contact.commence_on || null, consent: true, lang: lang } };
     var C = window.ADspaceCaptcha;
     var token = C && C.on ? C.token(root().querySelector('[data-cf]')) : Promise.resolve(null);
     token.then(function (tk) {

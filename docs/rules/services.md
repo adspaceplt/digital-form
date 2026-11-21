@@ -313,7 +313,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (required on the page: Within 3 months, 3 to 6 months, More than 6 months;
   kept as the lead's Urgency to commence, moved on a lead asking again and
   named in the team's notice; no price reads it;
-  `2026-10-29-quotation-website-commence.sql`), consent; a free email is
+  `2026-10-29-quotation-website-commence.sql`), Preferred start date
+  (optional, a day from today in Malaysia to 2099, `commence_on` in the
+  contact, `bad-start-date`; kept as the lead's `clients.commence_on`,
+  shown and edited on the record beside Urgency to commence, moved on a
+  lead asking again and named in the team's notice;
+  `2026-11-21-preferred-start-date.sql`), consent; a free email is
   advised against, never refused), then the quotation priced by
   `quote_price` through `quote-request` (Turnstile, every request refused
   while the secret `TURNSTILE_SECRET` is unset; Verify JWT off), which calls
