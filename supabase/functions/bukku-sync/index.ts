@@ -1525,7 +1525,7 @@ Deno.serve(async (req) => {
 
     /* The accounts a creator's bill may post to (CREATOR FEES, 2026-11-13):
        the chart of accounts' expense and cost of sales accounts, read for
-       Settings, Accounting, Bukku. Read only, asked of bukku_config as taxes is. */
+       Settings, Money, Bukku. Read only, asked of bukku_config as taxes is. */
     if (action === 'accounts') {
       const me = await db.rpc('bukku_config');
       if (me.error) return json({ error: 'needs-update' }, 200, origin);
