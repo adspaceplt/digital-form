@@ -1153,7 +1153,10 @@
      `data-nocheck` is never held; one marked `data-check-partial` (a save
      that keeps what is there on purpose: Billing's details before Active, a
      script's draft) is held only for a value of the wrong kind, never for
-     one left empty. Hidden and disabled fields are not asked. The question sheet
+     one left empty. One marked `data-check-own` names its own empty fields
+     more fully than a label can (My Work's New: Post 1 needs its Draft due,
+     Due date and Post date.) and is held, as partial, for a wrong kind
+     alone. Hidden and disabled fields are not asked. The question sheet
      (js/confirm.js) asks `problem` of each of its fields. */
   function W2() { return window.ADspaceWords || {}; }
   function zhPage() { return /^zh/i.test(document.documentElement.lang || ''); }
@@ -1245,6 +1248,13 @@
       if (isNaN(n)) return sayWord(kind === 'amount' ? 'checkAmount' : 'checkNumber');
       if (kind === 'amount' && n <= 0) return sayWord('checkAmount');
       var lo = el.getAttribute('min'), hi = el.getAttribute('max');
+      var whole = el.getAttribute('step') === '1' || el.getAttribute('data-check') === 'whole';
+      /* A number held both ways names its range whole: Enter a whole
+         number from 0 to 200. */
+      if (lo !== null && lo !== '' && hi !== null && hi !== '' && !isNaN(Number(lo)) && !isNaN(Number(hi)) &&
+          (n < Number(lo) || n > Number(hi) || (whole && n !== Math.floor(n)))) {
+        return sayWord(whole ? 'checkWholeRange' : 'checkRange', null).replace('{a}', lo).replace('{b}', hi);
+      }
       if (lo !== null && lo !== '' && !isNaN(Number(lo)) && n < Number(lo)) return sayWord('checkFrom', lo);
       if (hi !== null && hi !== '' && !isNaN(Number(hi)) && n > Number(hi)) return sayWord('checkUpTo', hi);
       /* A count steps by one: a whole number (`step="1"`, `data-check="whole"`). */
@@ -1357,7 +1367,7 @@
     var b = e.target && e.target.closest ? e.target.closest('button, input[type="submit"]') : null;
     var scope = saveScope(b);
     if (!scope) return;
-    var hit = firstWrong(scope, b.hasAttribute('data-check-partial'));
+    var hit = firstWrong(scope, b.hasAttribute('data-check-partial') || b.hasAttribute('data-check-own'));
     if (!hit) return;
     e.preventDefault();
     e.stopImmediatePropagation();

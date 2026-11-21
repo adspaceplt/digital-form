@@ -1393,7 +1393,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     {label}. / Choose the {label}., 中文 on a 中文 page; `W.check*`).
     `ADspaceConfirm` asks it of every field; a page saving without a press
     asks `ADspaceForm.check(scope)`. `data-check-partial` (Billing's details
-    before Active, a script's draft) holds only a wrong kind;
+    before Active, a script's draft) holds only a wrong kind, as does
+    `data-check-own` (a form naming its empty fields more fully: My Work's
+    New names the post);
     `data-check-group` (a list's row) asks its required fields once one
     holds a value; `data-nocheck` is never held. A form never types its own
     required check again; a client page's own checks state its database
