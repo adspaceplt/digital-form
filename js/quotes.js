@@ -161,7 +161,7 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -177,6 +177,15 @@
     return (q.source === 'website' ? 'Website' : q.made_by || 'The team') + ' · ' + window.ADspaceClock.date(q.issued_at) +
       (q._revises ? ' · revises ' + q._revises : '');
   }
+  /* The day the client asked to start, kept on the quotation it asked on
+     (START DATE ON THE QUOTATION, 2026-11-21); a revision reads the day of
+     the quotation it revises, since the client asked it once. */
+  function askedStart(q) { return (q && (q._start || q.commence_on)) || null; }
+  function startNote(q) {
+    var d = askedStart(q);
+    return d ? 'The client asked for ' + window.ADspaceClock.date(d) + ' on this quotation. Service lines with their own start date keep it.'
+      : 'Service lines with their own start date keep it.';
+  }
 
   /* The client's quotations and, for each, the service lines made from it. */
   function load(ctx, done) {
@@ -190,6 +199,14 @@
           q._revised = by ? by.ref : null;
           var of = rows.filter(function (x) { return x.id === q.replaces; })[0];
           q._revises = of ? of.ref : null;
+        });
+        rows.forEach(function (q) {
+          var at = q, seen = {};
+          while (at && !at.commence_on && at.replaces && !seen[at.id]) {
+            seen[at.id] = true;
+            at = rows.filter(function (x) { return x.id === at.replaces; })[0];
+          }
+          q._start = at && at.commence_on ? at.commence_on : null;
         });
         done(rows);
       }).catch(function (e) { done(null, e); });
@@ -343,7 +360,8 @@
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
               (q.no_contact_at ? '<span class="chip qt-tag">Do not contact</span>' : '') +
-              '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small></span>' +
+              '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small>' +
+              (askedStart(q) ? '<small class="qt-start">' + wholeDays(esc('Preferred start ' + window.ADspaceClock.date(askedStart(q)))) + '</small>' : '') + '</span>' +
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
               (st[2] ? '<small>' + wholeDays(esc(st[2])) + '</small>' : '') + '</span>' +
@@ -1056,8 +1074,8 @@
         'Its lines will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
       /* Services start (2026-11-12, the user): the lines' first day, so the
          months they cover are read when a content month is made. */
-      fields: [{ name: 'start', label: 'Start date', type: 'date', required: false, value: nextFirst(),
-        note: 'Service lines with their own start date keep it.' }],
+      fields: [{ name: 'start', label: 'Start date', type: 'date', required: false, value: askedStart(q) || nextFirst(),
+        note: startNote(q) }],
       go: 'Approve' }, function (v) {
       var start = v && /^\d{4}-\d{2}-\d{2}$/.test(String(v.start || '')) ? v.start : '';
       go.disabled = true;
@@ -1225,7 +1243,7 @@
   function qiStart() {
     var me = QI, q = me.q, ctx = me.ctx;
     window.ADspaceConfirm.ask({ title: 'Set start date', go: 'Save', wait: true,
-      field: { label: 'Start date', type: 'date', need: 'Choose the start date.', note: 'Service lines with their own start date keep it.' }
+      field: { label: 'Start date', type: 'date', need: 'Choose the start date.', value: askedStart(q) || '', note: startNote(q) }
     }, function (v) {
       return ctx.db.rpc('quotation_lines_start', { p_id: q.id, p_start: String(v || '') }).then(function (r) {
         var e = r.error || (r.data && r.data.error);
