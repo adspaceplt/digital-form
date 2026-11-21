@@ -167,6 +167,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     (`getByLabel`), never into whatever holds focus: under a finger
     `ADspaceConfirm` focuses its card, never a field (2026-11-21:
     `cprofile` set a creator inactive at 390 with no reason).
+  - A suite that loads an edge function in Node swaps a package import by
+    a pattern taking any version, never its exact text (2026-11-21:
+    `analyticsfn` crashed on the AI client pinned to `@1.10.0`).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it

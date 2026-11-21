@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -12529,6 +12529,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         var wstart = String(wc.commence || '').trim() || null;
         if (wstart && ['1_3', '3_6', '6_plus'].indexOf(wstart) < 0) return qtOk({ error: 'bad-commence' });
+
+        var won = String(wc.commence_on || '').trim() || null;
+        if (won) {
+          var wonD = /^\d{4}-\d{2}-\d{2}$/.test(won) ? new Date(won + 'T00:00:00Z') : null;
+          var wNowMY = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+          if (!wonD || isNaN(wonD) || wonD.toISOString().slice(0, 10) !== won || won < wNowMY || won > '2099-12-31') return qtOk({ error: 'bad-start-date' });
+        }
+        var wonWord = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
         if (wc.consent !== true) return qtOk({ error: 'consent' });
         var wsel0 = args.p_sel;
         if (!wsel0 || typeof wsel0 !== 'object' || Array.isArray(wsel0) || (Array.isArray(wsel0.once) && wsel0.once.length > 20) ||
@@ -12551,13 +12559,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return ['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0 && (DB.client_contacts || []).some(function (k) {
             return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
         })[0];
+        var wnew = false;
         if (!wcl) {
           var wbase = wb.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'client', wslug = wbase, wk = 1;
           while (DB.clients.some(function (c) { return String(c.slug || '').toLowerCase() === wslug; })) { wk++; wslug = wbase + '-' + wk; }
           wcl = { id: nid('cl'), name: wb, stage: 'lead', industry: wi, source: 'website', market: /^65/.test(ww) ? 'SG' : 'MY', slug: wslug,
-            deal_note: 'Quotation requested on the website.', commence: wstart, owner: null, access_token: Math.random().toString(36).slice(2, 10),
+            deal_note: 'Quotation requested on the website.', commence: wstart, commence_on: won, owner: null, access_token: Math.random().toString(36).slice(2, 10),
             created_at: new Date().toISOString(), stage_since: new Date().toISOString(), stage_log: [] };
-          DB.clients.unshift(wcl);
+          DB.clients.unshift(wcl); wnew = true;
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
             is_primary: true, created_at: new Date().toISOString(), archived_at: null });
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
@@ -12566,6 +12575,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.edited', subject: wcl.name,
             detail: 'Urgency to commence: ' + (wsw[wcl.commence] || 'not set') + ' → ' + wsw[wstart], created_at: new Date().toISOString() });
           wcl.commence = wstart; wcl.updated_at = new Date().toISOString();
+        }
+        if (!wnew && won && wcl.commence_on !== won) {
+          DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.edited', subject: wcl.name,
+            detail: 'Preferred start date: ' + (wcl.commence_on ? wonWord(wcl.commence_on) : 'not set') + ' → ' + wonWord(won), created_at: new Date().toISOString() });
+          wcl.commence_on = won; wcl.updated_at = new Date().toISOString();
         }
         var wz = (String(wcl.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var whead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + wz;
@@ -12583,7 +12597,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
           wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn +
-          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · send by', wrow.id);
+          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') +
+          (won ? ' · Preferred start date ' + wonWord(won) : '') + ' · send by', wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
