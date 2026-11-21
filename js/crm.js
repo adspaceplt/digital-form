@@ -136,20 +136,12 @@
     var m = /^(.*)-(\d+)$/.exec(slug), base = m ? m[1] : slug, n = m ? Number(m[2]) + 1 : 2;
     return tries > 8 ? base + '-' + Date.now().toString(36) : base + '-' + n;
   }
-  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  /* What the address carries: a slug now, a UUID in anything shared before
-     this. Asked of the right column either way, because Postgres refuses a
-     non-UUID against a uuid column. */
-  function clientByKey(key, then) {
-    if (!key) { then(null); return; }
-    db.from('clients').select(API.CLIENT_COLS).eq(UUID.test(key) ? 'id' : 'slug', key).single()
-      .then(function (r) {
-        if (r.error || !r.data) { then(null); return; }
-        API.withBilling(r.data).then(function () { then(r.data); });
-      }, function () { then(null); });
-  }
+  /* A client's address and the client it names: js/admin.js's one copy
+     (`ADspaceAdmin.clientKey`, `clientByKey`), a slug now, a UUID in
+     anything shared before. */
+  function clientByKey(key, then) { bridge.clientByKey(key, then); }
   // The address of a client, wherever one is built.
-  function keyOf(c) { return (c && (c.slug || c.id)) || ''; }
+  function keyOf(c) { return bridge.clientKey(c); }
   /* Who logged a call or visit, by name. Entries logged before 2026-10-15
      hold the sign-in email; it is read as the colleague's name, and an
      address no active colleague holds is left unsaid. */

@@ -110,18 +110,13 @@
      where any of its cards is readable, the trends at Full Access on their
      sections as before, the cards moved from the Dashboard's Team detail at
      theirs; only the AI analysis asks Analytics (`team.analytics`). */
+  /* The rule is js/admin.js's one copy (`ADspaceAdmin.analyticsTab`), asked
+     by the rail before this script is fetched (ON DEMAND, 2026-11-22). */
   function allowed() { return TABS.some(function (t) { return canTab(t[0]); }); }
   var TABS = [['sales', 'Sales'], ['clients', 'Clients'], ['ops', 'Operations']];
   function O() { return window.ADspaceOverview; }
-  function trends(k) {
-    if (k === 'sales') return may('clients', 'manage') && may('clients.leads', 'manage');
-    if (k === 'clients') return may('clients', 'manage');
-    return false;
-  }
-  function moved(k) {
-    var name = k === 'sales' ? 'Sales' : k === 'ops' ? 'Operations' : '';
-    return Boolean(name && O() && O().groupCan && O().groupCan(name));
-  }
+  function trends(k) { return bridge.analyticsTab(k, 'trends'); }
+  function moved(k) { return bridge.analyticsTab(k, 'moved'); }
   function canTab(k) { return trends(k) || moved(k); }
   function canAi() { return may('team.analytics', 'work') && trends('sales') && trends('clients'); }
   /* A group that sees its own clients alone reads its own figures: said

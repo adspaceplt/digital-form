@@ -1452,6 +1452,16 @@
     return SETTINGS_KEYS.some(function (k) { return may(k, 'work'); }) ||
       SETTINGS_FULL.some(function (k) { return may(k, 'manage'); }) || may('team.performance', 'view');
   }
+  /* Analytics' tabs (js/analytics.js asks this one copy, ON DEMAND,
+     2026-11-22): the trends at Full Access on their sections, the cards
+     moved from the Dashboard's Team detail at theirs (`groupCan`). `part`
+     asks one of the two alone. */
+  function analyticsTab(k, part) {
+    var trends = k === 'sales' ? may('clients', 'manage') && may('clients.leads', 'manage') : k === 'clients' ? may('clients', 'manage') : false;
+    var name = k === 'sales' ? 'Sales' : k === 'ops' ? 'Operations' : '', O = window.ADspaceOverview;
+    var moved = Boolean(name && O && O.groupCan && O.groupCan(name));
+    return part === 'trends' ? Boolean(trends) : part === 'moved' ? moved : Boolean(trends) || moved;
+  }
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
     if (name === 'activity') {
@@ -1484,10 +1494,7 @@
        the page and never opens a card. */
     /* Analytics (2026-10-25): each chart follows its section's access since
        phase 3 (2026-11-13); only its AI analysis is the granted part. */
-    if (name === 'analytics') {
-      var an = window.ADspaceAnalytics;
-      return an && an.allowed ? an.allowed() : may('team.analytics', 'work');
-    }
+    if (name === 'analytics') return ['sales', 'clients', 'ops'].some(function (k) { return analyticsTab(k); });
     /* The Dashboard is every colleague's (the revamp, 2026-11-13): its Me
        tab is their own work; the group's switch (`overview` No Access) now
        hides only its Team tabs (js/overview.js `teamOk`). A colleague who
@@ -2869,16 +2876,20 @@
      What you were typing is not here; that is the form's own memory. */
   /* A client's address is its slug, the readable one the Clients section
      writes. Older links carrying a UUID still resolve, so nothing shared
-     before this stops working. Both live in js/crm.js, which owns clients. */
-  function clientKey(c) {
-    var CRM = window.ADspaceCRM;
-    return (CRM && CRM.keyOf ? CRM.keyOf(c) : '') || (c && c.id) || '';
-  }
+     before this stops working. Kept here, js/crm.js asking these, since
+     Content Review reads an address before (or without) js/crm.js being
+     fetched (ON DEMAND, 2026-11-22). */
+  var CLIENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function clientKey(c) { return (c && (c.slug || c.id)) || ''; }
+  /* Asked of the right column either way, because Postgres refuses a
+     non-UUID against a uuid column. */
   function clientByKey(key, then) {
-    var CRM = window.ADspaceCRM;
-    if (CRM && CRM.byKey) { CRM.byKey(key, then); return; }
-    db.from('clients').select(API.CLIENT_COLS).eq('id', key).single()
-      .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
+    if (!key) { then(null); return; }
+    db.from('clients').select(API.CLIENT_COLS).eq(CLIENT_UUID.test(key) ? 'id' : 'slug', key).single()
+      .then(function (r) {
+        if (r.error || !r.data) { then(null); return; }
+        API.withBilling(r.data).then(function () { then(r.data); });
+      }, function () { then(null); });
   }
 
   /* While a section's scripts are on their way the address is the only
@@ -7040,6 +7051,7 @@
     /* ON DEMAND (2026-11-22): a section's scripts, fetched on first ask. */
     need: need, needThen: needThen, needSection: needSection, whenSection: whenSection,
     settingsAllowed: settingsAllowed,
+    clientKey: clientKey, clientByKey: clientByKey, analyticsTab: analyticsTab,
     /* ===== Console search (js/search.js) =====
        Land where the address says, the way a reload does: a content set is
        reached through its client, which only this file opens. */
