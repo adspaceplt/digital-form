@@ -365,7 +365,7 @@
         (out.outcome === 'pool' ? fact('Talent pool', esc(POOL[out.pool_consent] || '') + (out.pool_until ? ' · until ' + esc(day(out.pool_until)) : '')) : '') +
         (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + ' · ' + esc(when(out.mail_at)), out.mail === 'sent' ? '' : 'is-warn') : '') + '</dl>' +
         (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && out.mail !== 'sent'
-            ? '<button class="btn btn-sm" type="button" data-h="outmail" data-send="email">Email candidate</button>' : '') +
+            ? '<button class="btn btn-sm" type="button" data-h="outmail" data-gate="email">Email candidate</button>' : '') +
           (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
       decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Not proceed</button>' +
@@ -655,14 +655,14 @@
       acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview held</button>';
     if (live && i.held_at && i.decide_by && undecided()) {
       acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
-      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-send="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
+      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
     }
     if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
     /* A confirmed interview cancelled (2026-11-20): Email candidate where
        its cancellation did not go, while no newer interview was sent. */
     if (can && i.state === 'cancelled' && i.approved_at && (i.cancel_mail === 'failed' || i.cancel_mail === 'unknown') && state.interviews[0] === i)
-      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-send="email" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
     if (live && i.state === 'invited' && i.invite_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
     var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
@@ -831,7 +831,7 @@
       }
       if (d.state === 'sent') {
         if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpreview"' + id + '>Preview PDF</button>';
-        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail" data-send="email"' + id + '>Email candidate</button>';
+        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail" data-gate="email"' + id + '>Email candidate</button>';
         item(4, 'docmark', 'Mark signed'); item(2, 'docreplace', 'Replace'); if (!d.expired) item(5, 'docwithdraw', 'Withdraw');
       }
       if (d.state === 'withdrawn') {
@@ -846,7 +846,7 @@
       }
       if (d.state === 'confirmed') acts += '<button class="btn btn-sm" type="button" data-h="docseal"' + id + '>Download</button>';
       if (d.state === 'confirmed' && (d.confirm_mail === 'failed' || d.confirm_mail === 'unknown'))
-        acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail" data-send="email"' + id + '>Email candidate</button>';
+        acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail" data-gate="email"' + id + '>Email candidate</button>';
       if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Open signed copy');
       if (d.state !== 'draft') item(1, 'docrecord', 'Show document record');
       if (part && ['sent', 'withdrawn', 'declined', 'signed', 'confirmed'].indexOf(d.state) >= 0) item(6, 'docvoid', 'Void', true);
@@ -1193,7 +1193,7 @@
     var g = state.gate, c = state.rec || {};
     if (!g || !g.tpl) return '';
     var t = g.tpl[tk], what = noun || MAIL_NOUN[tk] || 'this email';
-    var portal = window.ADspaceAdmin && window.ADspaceAdmin.sendState && window.ADspaceAdmin.sendState('email').portal;
+    var portal = window.ADspaceAdmin && window.ADspaceAdmin.gateState && window.ADspaceAdmin.gateState('email').portal;
     if (!g.auto) return window.ADspaceWords.line.autoMailOff(c.name, what, portal);
     if (t && !t.on) return MAIL_NAME[tk] + ' is turned off in Email templates. ' + c.name + ' will not receive ' + what + ' by email.';
     return '';

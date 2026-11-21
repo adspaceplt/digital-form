@@ -337,6 +337,13 @@
     emailHandOff: 'Send by email is turned off. An admin can turn it on in Settings → Messages.',
     whatsappPortalOff: 'WhatsApp is turned off for the portal. An admin can turn it on in Settings → Portal.',
     whatsappHandOff: 'Send on WhatsApp is turned off. An admin can turn it on in Settings → Messages.',
+    /* SWITCHED-OFF ACTS (2026-11-21): an AI act, a Bukku act. */
+    aiPortalOff: 'AI is turned off for the portal. An admin can turn it on in Settings → Portal.',
+    aiUseOff: function (what) { return 'The daily limit of ' + what + ' is set to 0. An admin can change it in Settings → AI.'; },
+    aiLimit: function (n, what) {
+      return 'Today’s limit of ' + n + ' ' + (n === 1 ? what[0] : what[1]) + ' is used. It resets at 12:00am. An admin can change the limit in Settings → AI.';
+    },
+    bukkuOff: 'Bukku is not connected to the portal. Please contact an admin.',
     portalOffRow: 'Off for the whole portal',
     /* An automatic email a step would send, said before the step while it
        will not go (CANDIDATE EMAILS, 2026-11-21): "Automatic emails are
@@ -344,6 +351,12 @@
     autoMailOff: function (name, what, portal) {
       return (portal ? 'Email is turned off for the portal. ' : 'Automatic emails are off. ') + name + ' will not receive ' + what + ' by email.';
     },
+    /* What Automatic WhatsApp sends by itself, warned where the team
+       relies on it (SWITCHED-OFF ACTS, 2026-11-21). */
+    autoWaOff: function (who, what, portal) {
+      return (portal ? 'WhatsApp is turned off for the portal. ' : 'Automatic WhatsApp is off. ') + who + ' will not receive ' + what + ' on WhatsApp.';
+    },
+    taskRemindOff: 'Task reminders are off. Nobody will be reminded of this task before it is due.',
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',

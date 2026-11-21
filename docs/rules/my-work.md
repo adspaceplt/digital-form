@@ -548,7 +548,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     counted apart ("2 for VIC clients"), and one that falls overdue after
     the colleague's last reminder is told at once, inside the window too
     (2026-10-15); both Business settings (Settings, My Work:
-    Task reminders, 0 sends none). Not sent on WhatsApp.
+    Task reminders, 0 sends none). Not sent on WhatsApp. At 0, Add task (the
+    quick sheet under Assigned to, a content task under its posts) says
+    first that nobody will be reminded (`.remind-off`,
+    `ADspaceWords.line.taskRemindOff`; SWITCHED-OFF ACTS, 2026-11-21); the
+    task is still added.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New

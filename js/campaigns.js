@@ -1066,8 +1066,8 @@
        (2026-11-12), so bills for their earlier job IDs are read. */
     html += '<div class="readgroup" id="cpayBukku"></div>';
     html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
-      '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="cpayBills" hidden></button>' +
-      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><p class="msg" id="cpayJobMsg" role="status"></p><div id="cpayJobs"></div></section>';
+      '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="cpayBills" data-gate="bukku" hidden></button>' +
+      '<button class="btn btn-sm" type="button" id="cpayRead" data-gate="bukku" hidden>Read from Bukku</button></span></div><p class="msg" id="cpayJobMsg" role="status"></p><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
@@ -1130,7 +1130,7 @@
       var sub = [esc(j.campaign || '')];
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
       if (d.pay) sub.push('<span class="cpay-part">' + (j.fee ? 'Fee ' + esc(billMoney(j.fee.amount, j.fee.currency)) : 'Fee not set') + '</span>');
-      var mk = ready.indexOf(j) > -1 ? '<button class="btn btn-sm cpay-mk" type="button" data-a="mkbill">Create bill</button>' : '';
+      var mk = ready.indexOf(j) > -1 ? '<button class="btn btn-sm cpay-mk" type="button" data-a="mkbill" data-gate="bukku">Create bill</button>' : '';
       var when = b ? [b.paid_on ? esc(day(b.paid_on)) : '', b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
         : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
       return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
@@ -1569,8 +1569,8 @@
         '<div class="cpq-act"><button class="btn btn-sm" type="button" data-a="review">Review</button></div></div>';
     }).join(''));
     section('ready', 'Ready to bill', ready, ready.map(function (j) {
-      var act = cpqBillable(j) ? '<button class="btn btn-sm" type="button" data-a="mkbill">Create bill</button>'
-        : !j.linked ? '<button class="btn btn-sm" type="button" data-a="open">Link to Bukku</button>' : '';
+      var act = cpqBillable(j) ? '<button class="btn btn-sm" type="button" data-a="mkbill" data-gate="bukku">Create bill</button>'
+        : !j.linked ? '<button class="btn btn-sm" type="button" data-a="open" data-gate="bukku">Link to Bukku</button>' : '';
       var late = j.pay_by && j.pay_by < ADspaceClock.today();
       return row(j, { top: amt(j), sub: sub(j), when: j.pay_by ? 'Pay by ' + esc(cpqDay(j.pay_by)) : '', late: late }, act);
     }).join(''));
@@ -1773,10 +1773,8 @@
      stands, and the sheet says first that no email will go (SEND SWITCHES,
      2026-11-21). */
   function autoMailOff(name, what) {
-    var A = window.ADspaceAdmin, M = window.ADspaceMoney;
-    if (A && A.sendState && A.sendState('email').portal) return window.ADspaceWords.line.autoMailOff(name, what, true);
-    var v = M && M.setting ? M.setting('auto_email_on') : null;
-    return v != null && Number(v) !== 1 ? window.ADspaceWords.line.autoMailOff(name, what) : '';
+    var A = window.ADspaceAdmin, o = A && A.autoOff ? A.autoOff('email') : null;
+    return o && o.off ? window.ADspaceWords.line.autoMailOff(name, what, o.portal) : '';
   }
   function cpqDecide(ok, note) {
     var q = cpqReq; if (!q) return Promise.resolve('');
@@ -2846,6 +2844,16 @@
     /* A draft's link opens nothing, so it offers no Copy link; Preview stays
        for the team (2026-10-27, CMP-20). */
     $('campCopy').hidden = !linkOpen;
+    /* A booking the client confirms on this link sends the creator's
+       WhatsApp by itself: while Automatic WhatsApp is off the selection
+       still works, and the link says first that none will go
+       (SWITCHED-OFF ACTS, 2026-11-21). */
+    var wa = window.ADspaceAdmin && window.ADspaceAdmin.autoOff ? window.ADspaceAdmin.autoOff('whatsapp') : null;
+    var waOff = $('campWaOff');
+    if (waOff) {
+      waOff.hidden = !(wa && wa.off && c.state === 'open');
+      waOff.textContent = waOff.hidden ? '' : W.line.autoWaOff('Creators', 'their booking confirmation', wa.portal);
+    }
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').className = 'chip ' + W.tone(c.state);
     var move = mayWork() ? publishMove(c.state) : null;
@@ -4951,7 +4959,7 @@
          again only before the shoot, as Resend booking (the user,
          2026-10-11: it read as a message button for every stage). */
       if ((o.state === 'confirmed' || o.state === 'pending_visit') &&
-          window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += window.ADspaceMenu.item('wasend', 'Resend booking', null, null, 'data-send="whatsapp"');
+          window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += window.ADspaceMenu.item('wasend', 'Resend booking', null, null, 'data-gate="whatsapp"');
       if (w) {
         items += menuItem('unbook', 'Revert to options');
         items += menuItem('withdraw', 'Withdraw');

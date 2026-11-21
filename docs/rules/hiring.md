@@ -241,7 +241,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   first, in a warn line in place of its Email {name} tick (`mailFields`).
   Email candidate on a card and Send again in the Email log are sends by
   hand (`byHand`, `againOf`: the portal's Email, Send by email and the
-  group's Send email; `data-send`). The verification code goes whatever
+  group's Send email; `data-gate`). The verification code goes whatever
   the switches.
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).

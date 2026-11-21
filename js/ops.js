@@ -1549,7 +1549,7 @@
             '<span class="wfy-acts">' + (r.request && mayDecide()
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
                 '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
-              : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind" data-send="whatsapp">Remind</button>' : '') + '</span>' +
+              : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind" data-gate="whatsapp">Remind</button>' : '') + '</span>' +
             /* Where it stands over how long it has waited, two lines as the
                title and its meta (the user, 2026-11-04: the submitter's name
                under them took a third line; the record names who). */
@@ -2316,6 +2316,19 @@
     return holAsked;
   }
   function holDayWords(d) { return Number(d.slice(8, 10)) + ' ' + MON_SHORT[Number(d.slice(5, 7)) - 1] + ' ' + d.slice(0, 4); }
+  /* Task reminders off (Settings, My Work: Task reminders at 0): the task
+     is still added, and its sheet says first that nobody will be reminded
+     (SWITCHED-OFF ACTS, 2026-11-21). One line under Assigned to's row, or
+     under a content task's posts. */
+  function remindNote(row) {
+    if (!row || !row.parentNode) return;
+    var M = window.ADspaceMoney, v = M && M.setting ? M.setting('task_remind_hours') : null;
+    var off = v != null && Number(v) === 0;
+    var note = row.nextElementSibling && row.nextElementSibling.classList.contains('remind-off') ? row.nextElementSibling : null;
+    if (!off) { if (note) note.remove(); return; }
+    if (!note) { note = document.createElement('p'); note.className = 'msg warn remind-off'; row.parentNode.insertBefore(note, row.nextSibling); }
+    note.textContent = window.ADspaceWords.line.taskRemindOff;
+  }
   function holNote(input) {
     if (!input || !HOL) return;
     var v = String(input.value || ''), name = /^\d{4}-\d{2}-\d{2}$/.test(v) ? HOL[v] : null;
@@ -4534,6 +4547,7 @@
       /* Switched to from the content form, which stayed on the screen while
          the months were read: the two change places in one frame, so there
          is never a moment with no sheet and the page showing through. */
+      remindNote($('qkOwner').closest('.row'));
       if (from) { sheet(from, false); from = null; sheet('quickSheet', true, true); }
       else sheet('quickSheet', true);
       /* A desk types straight in; under a finger the card takes focus, as
@@ -6420,6 +6434,7 @@
       $('ntClient').value = ntPrefill.client.id;
       ntLoadMonths();
     }
+    remindNote(document.querySelector('#ntPostsSec .pieces-foot'));
     sheet('taskSheet', true, swap);
   }
   function ntScopeChanged() {

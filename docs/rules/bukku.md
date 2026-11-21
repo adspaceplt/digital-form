@@ -288,3 +288,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`client_ad_debtor_set`), else the client's own; filed by
   `quotation_invoice_done` (`client.billing`). `quotation_invoices` and
   `client_ad_debtors` have RLS on, no policy, no grant.
+- Bukku not connected (SWITCHED-OFF ACTS, 2026-11-21): every act that asks
+  Bukku (Send to Bukku, Link to Bukku, Refresh, Use Bukku's, Create bill,
+  Create n bills, Read from Bukku, Overdue invoices' Refresh) carries
+  `data-gate="bukku"` and is drawn disabled with its reason while
+  `bukku_ready()` reads no nightly read (`job_beats` `bukku-nightly`) in
+  three days; Open in Bukku (a link to Bukku's own site) is never held.

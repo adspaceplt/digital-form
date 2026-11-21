@@ -6123,17 +6123,20 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prow > :is(.pr-lead, .pr-state, .pr-act) { min-height: 22px; display: flex; align-items: center; }
 .is-narrow .prow > .pr-act { height: 22px; }
 
-/* A send by hand switched off in Settings (SEND SWITCHES, 2026-11-21): the
-   act stays drawn, dimmed as any disabled control, but answers a press, a
-   hover and the keyboard's focus with why (`#sendWhy`), so it keeps its
+/* An act switched off in Settings (SEND SWITCHES, SWITCHED-OFF ACTS,
+   2026-11-21): the act stays drawn, dimmed as any disabled control, but answers a press, a
+   hover and the keyboard's focus with why (`#gateWhy`), so it keeps its
    pointer; a ⋯ item takes the mute ink. */
-.btn[data-send-off] { pointer-events: auto; }
-.kmenu-item[data-send-off] { color: var(--ink-mute); cursor: default; }
-.sendwhy.popcard { display: grid; gap: 8px; width: min(320px, calc(100vw - 16px)); padding: 14px 16px 16px; }
-.sendwhy.is-dock { padding: 18px 20px 20px; }
-.sendwhy-name { min-width: 0; font-size: 15px; font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
-.sendwhy p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
-.sendwhy.is-dock p { font-size: 14px; }
+.btn[data-gate-off] { pointer-events: auto; }
+.kmenu-item[data-gate-off] { color: var(--ink-mute); cursor: default; }
+/* The head's Ask and the Dashboard's questions, dimmed as a disabled
+   button is (SWITCHED-OFF ACTS, 2026-11-21). */
+.headlink[data-gate-off], .ovw-ask-q[data-gate-off] { opacity: .42; cursor: default; filter: saturate(.55); }
+.gatewhy.popcard { display: grid; gap: 8px; width: min(320px, calc(100vw - 16px)); padding: 14px 16px 16px; }
+.gatewhy.is-dock { padding: 18px 20px 20px; }
+.gatewhy-name { min-width: 0; font-size: 15px; font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
+.gatewhy p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.gatewhy.is-dock p { font-size: 14px; }
 /* A Messages switch under a portal switch that is off stands still. */
 .switch[data-off] { opacity: .42; }
 /* The system pages' own tick heads their group, the rows' tick (EVERY PAGE AVAILABLE). */

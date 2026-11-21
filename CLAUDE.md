@@ -1689,14 +1689,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     Automatic emails or Automatic WhatsApp); a sign-in code, an invitation
     and a verification code ask none. Sensitive details shuts client
     billing, creator payment details and supplier bank details, the two
-    payment parts following their section. The page asks `may('use.ai')`
-    (the portal's switch and the group's) and `may('send.email')`,
-    `may('send.whatsapp')` (the group's alone: not permitted, the act is
-    hidden); a send act carries `data-send` and, while
-    `ADspaceAdmin.sendState(channel)` reads it off, `js/admin.js` draws it
-    disabled, a press, hover or focus opening `#sendWhy` with the switch and
-    where to turn it on (`tests/sendswitch.js`); `:root.no-ai` hides every
-    button carrying the AI mark (`svg.ai-mark`) and the Assistant. The five
+    payment parts following their section. The page asks `may('use.ai')`,
+    `may('send.email')` and `may('send.whatsapp')` (the group's alone: not
+    permitted, the act is hidden; `:root.no-ai` hides every button carrying
+    the AI mark (`svg.ai-mark`) and the Assistant). An act Settings or a
+    daily limit stopped carries `data-gate` (`email`, `whatsapp`, `ai` or
+    `ai:{use}`, `bukku`; a button holding the AI mark is `ai` by itself) and,
+    while `ADspaceAdmin.gateState(key)` reads it off, `js/admin.js` draws it
+    disabled, a press, hover or focus opening `#gateWhy` with what stopped
+    it and who can change it: the portal's switch, the send by hand under
+    it, the portal's AI, the use's daily limit (`ai_uses_left()`, read as an
+    AI act is drawn, again as one is redrawn after 30s and on return), Bukku
+    not connected (`bukku_ready()`: no nightly read in three days); what the
+    portal sends by itself warns where the team relies on it
+    (`ADspaceAdmin.autoOff`, a `.msg.warn` line: an open campaign's Client
+    link, Add task under Task reminders at 0) and the step still stands
+    (`tests/sendswitch.js`, `tests/switchstate.js`). The five
     WhatsApp parts and the billing and payment parts are gone, their stored
     levels taken off (`2026-11-17-access-cleanup.sql`). `access_keys` (RLS
     on, no policy, no grant) lists every key and its tier, and `allowed()`

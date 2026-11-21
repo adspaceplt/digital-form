@@ -1069,7 +1069,7 @@
       !may('work') ? '' : r.sent_on
         ? '<button class="linkbtn rp-sentfact" type="button" data-a="sentfact" aria-label="Change sent date">' + esc(dayWord(r.sent_on)) + ' ' + PEN_MARK + '</button>'
         : '<span class="rp-sendacts"><button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>' +
-          '<button class="btn btn-sm rp-wasend" type="button" data-a="wasend" data-send="whatsapp" hidden>Send on WhatsApp</button></span>']);
+          '<button class="btn btn-sm rp-wasend" type="button" data-a="wasend" data-gate="whatsapp" hidden>Send on WhatsApp</button></span>']);
     if (r.brand_name) f.push(['For', r.brand_name]);
     if (r.on_request) f.push(['Requested', 'By the client']);
     if (st.partner) f.push(['Logo', st.partner.name]);
@@ -4099,7 +4099,7 @@
         '<div class="rp-airow"><div class="rp-ailang"><span class="rp-ailang-label" aria-hidden="true">Draft language</span>' +
           '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
-        '<button class="btn btn-sm btn-icon" type="button" data-a="aidraft">' + AI_GLYPH + 'Write with AI</button></div></div>' +
+        '<button class="btn btn-sm btn-icon" type="button" data-a="aidraft" data-gate="ai:draft">' + AI_GLYPH + 'Write with AI</button></div></div>' +
         /* Required (the user, 2026-11-03: "everyone needs to input
            something for the AI to read and draft better reports"). */
         '<div class="row rp-ainotes"><div><label class="field-label" for="rpAiNotes">Notes for the draft</label>' +
@@ -4577,7 +4577,7 @@
     box.innerHTML = '<div class="nb-grid"><div class="nb-main">' + (ed ? '<div class="rp-aidraft nb-src">' +
         '<div class="rp-airow"><div class="nb-srcw"><b>' + esc(src[0]) + '</b><span>' + esc(src[1]) + '</span></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="nbleft" hidden></span>' +
-        '<button class="btn btn-sm btn-primary btn-icon" type="button" data-a="nbwrite">' + AI_GLYPH + 'Write with AI</button></div></div>' +
+        '<button class="btn btn-sm btn-primary btn-icon" type="button" data-a="nbwrite" data-gate="ai:next">' + AI_GLYPH + 'Write with AI</button></div></div>' +
         '<div class="row rp-ainotes"><div><label class="field-label" for="rpNbNotes">Notes for the suggestions</label>' +
           '<textarea class="input" id="rpNbNotes" rows="2" placeholder="Offers, launches, new material"></textarea></div></div></div>' +
         '<div class="msg" data-m="nb"></div>' : '') +

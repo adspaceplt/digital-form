@@ -418,7 +418,7 @@
             '<button class="btn btn-sm" type="button" data-s="add">Add existing document</button></span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>',
       emails: '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
-          (work && s.email && may('send.email', 'work') ? '<button class="btn btn-sm" type="button" data-s="mail" data-send="email">Send email</button>' : '') + '</div>' +
+          (work && s.email && may('send.email', 'work') ? '<button class="btn btn-sm" type="button" data-s="mail" data-gate="email">Send email</button>' : '') + '</div>' +
           '<div id="supEmailList"><p class="muted">Loading.</p></div></section>'
     };
     /* A Pending supplier holding no details has nothing a document or an
@@ -631,7 +631,7 @@
     /* Switched off in Settings (SEND SWITCHES, 2026-11-21): the approval
        stands and nothing is offered; Send email on the record says why. */
     var A = window.ADspaceAdmin;
-    if (A && A.sendState && !A.sendState('email').on) return;
+    if (A && A.gateState && !A.gateState('email').on) return;
     window.ADspaceConfirm.ask({ title: 'Send the approval email?', go: 'Send email', cancel: 'Not now',
       body: (s.contact_name || nameOf(s)) + ' will be told by email that the registration is approved.' }, function () { openMail('approved', null, true); });
   }

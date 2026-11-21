@@ -268,7 +268,7 @@
              (`data-wa-ready`) and never for a prospect marked Do not contact,
              which quotation_send refuses (audit 2026-10-30). */
           if (maySet && awaiting(q)) {
-            if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready data-send="whatsapp" hidden type="button">Send quotation</button>');
+            if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready data-gate="whatsapp" hidden type="button">Send quotation</button>');
             acts.push('<button class="btn btn-sm" data-a="publish" type="button">Publish</button>');
           }
           /* A signed quotation is the contract: asked again, never revised
@@ -306,12 +306,12 @@
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
-              items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa data-send="whatsapp" hidden type="button" role="menuitem">Send on WhatsApp</button>');
+              items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa data-gate="whatsapp" hidden type="button" role="menuitem">Send on WhatsApp</button>');
             }
             /* Send by email beside it (2026-10-31): optional as WhatsApp is,
                never sent by itself. */
             if (window.ADspaceDocMail && window.ADspaceDocMail.may('quotation') && q.status !== 'not_proceeding' && !awaiting(q) && !q.no_contact_at) {
-              items.push('<button class="kmenu-item" data-g="3" data-a="mail" data-send="email" type="button" role="menuitem">Send by email</button>');
+              items.push('<button class="kmenu-item" data-g="3" data-a="mail" data-gate="email" type="button" role="menuitem">Send by email</button>');
             }
             /* The quotation-ready WhatsApp again, its link button the
                prospect's own (2026-10-30): a website quotation the team has
@@ -323,7 +323,7 @@
                 (q.source === 'website' ? !!q.access_key : !q.signed_at)) {
               /* The step an unsigned quotation waits on stands on the row
                  (2026-11-07: the ⋯ held ten). */
-              acts.push('<button class="btn btn-sm" data-a="resend" data-wa-ready data-send="whatsapp" hidden type="button">' +
+              acts.push('<button class="btn btn-sm" data-a="resend" data-wa-ready data-gate="whatsapp" hidden type="button">' +
                 (q.source === 'website' ? 'Resend on WhatsApp' : 'Send link on WhatsApp') + '</button>');
             }
             /* A signing on paper, keyed in by the team (2026-10-31). */
