@@ -1226,7 +1226,7 @@
               <div class="msg" id="crmBillMsg"></div>
             </div>
             <div class="sheet-foot">
-              <button class="btn btn-primary" id="crmBillSave" data-need="clients.billing:work" type="button">Save</button>
+              <button class="btn btn-primary" id="crmBillSave" data-check-partial data-need="clients.billing:work" type="button">Save</button>
               <button class="btn btn-quiet" id="crmBillCancel" type="button">Cancel</button>
             </div>
           </div>
@@ -2349,7 +2349,7 @@
                   <option value="graphic">Graphic</option>
                 </select></div>
               <div><label class="field-label" for="campSlots">Creators</label>
-                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" value="10"></div>
+                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" step="1" value="10"></div>
               <div><label class="field-label" for="campDeadline">Due date</label>
                 <input class="input" id="campDeadline" type="date"></div>
             </div>
@@ -4417,7 +4417,7 @@
         </div>
         <div class="sheet-body">
           <div class="row fgrid">
-            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" data-check="amount" autocomplete="off" aria-required="true"></div>
             <div><label class="field-label" for="rwFPro">Profit (RM)</label><input class="input" id="rwFPro" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
           </div>
           <div class="row fgrid">
@@ -5081,7 +5081,7 @@
         <div class="vs-editfoot">
           <div class="msg" id="vsMsg"></div>
           <div class="row acts">
-            <button class="btn btn-primary" id="vsSave" type="button">Save</button>
+            <button class="btn btn-primary" id="vsSave" data-check-partial type="button">Save</button>
             <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
           </div>
         </div>

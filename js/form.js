@@ -1139,7 +1139,8 @@
      (`data-check="amount"`, a number above 0), a date (the floor of §5 and
      the field's own min and max), an email (`ADspaceWords.emailOk`), a phone
      (`type=tel` or `data-check="phone"`, 7 to 15 digits) and a web address
-     (`type=url` or `data-check="url"`, `ADspaceWords.absUrl`). A field's own
+     (`type=url`, `inputmode=url` or `data-check="url"`,
+     `ADspaceWords.absUrl`); a whole number where the field steps by one. A field's own
      `min` and `max` hold a number too.
      It runs before the save itself: a press on a sheet's foot primary, a
      form's submit, or a button marked `data-check-save` (its scope the
@@ -1148,8 +1149,10 @@
      focused (its fold opened first, §reveal) and one line under it naming
      what to enter. A page that saves without a press (an Enter it answers
      itself) asks `ADspaceForm.check(scope)` first. A button marked
-     `data-nocheck` (a draft that keeps what is there on purpose) is never
-     held. Hidden and disabled fields are not asked. The question sheet
+     `data-nocheck` is never held; one marked `data-check-partial` (a save
+     that keeps what is there on purpose: Billing's details before Active, a
+     script's draft) is held only for a value of the wrong kind, never for
+     one left empty. Hidden and disabled fields are not asked. The question sheet
      (js/confirm.js) asks `problem` of each of its fields. */
   function W2() { return window.ADspaceWords || {}; }
   function zhPage() { return /^zh/i.test(document.documentElement.lang || ''); }
@@ -1189,6 +1192,8 @@
     if (t === 'email') return 'email';
     if (t === 'tel') return 'phone';
     if (t === 'url') return 'url';
+    /* A box laid out for an address (inputmode url) holds one. */
+    if (el.getAttribute('inputmode') === 'url') return 'url';
     return '';
   }
   function isRequired(el) {
@@ -1228,13 +1233,15 @@
       var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg;
       return sayWord(choose ? 'checkChoose' : 'checkEnter', name);
     }
-    if (kind === 'number' || kind === 'amount') {
+    if (kind === 'number' || kind === 'amount' || kind === 'whole') {
       var n = numOf(v);
       if (isNaN(n)) return sayWord(kind === 'amount' ? 'checkAmount' : 'checkNumber');
       if (kind === 'amount' && n <= 0) return sayWord('checkAmount');
       var lo = el.getAttribute('min'), hi = el.getAttribute('max');
       if (lo !== null && lo !== '' && !isNaN(Number(lo)) && n < Number(lo)) return sayWord('checkFrom', lo);
       if (hi !== null && hi !== '' && !isNaN(Number(hi)) && n > Number(hi)) return sayWord('checkUpTo', hi);
+      /* A count steps by one: a whole number (`step="1"`, `data-check="whole"`). */
+      if ((el.getAttribute('step') === '1' || el.getAttribute('data-check') === 'whole') && n !== Math.floor(n)) return sayWord('checkWhole');
       return '';
     }
     if (kind === 'date') {
@@ -1263,13 +1270,13 @@
     return !!(d && !d.open && d.getClientRects().length);
   }
   var CHECKED = '[aria-required="true"], [required], [data-check], input[type="number"], input[type="email"], input[type="tel"], input[type="url"], input[type="date"], input[type="month"], input[type="datetime-local"], input.dmy';
-  function firstWrong(scope) {
+  function firstWrong(scope, partial) {
     if (!scope || !scope.querySelectorAll) return null;
     var list = scope.querySelectorAll(CHECKED);
     for (var i = 0; i < list.length; i++) {
       var el = list[i];
       if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !asked(el)) continue;
-      var why = problem(el);
+      var why = problem(el, partial ? { required: false } : null);
       if (why) return { el: el, why: why };
     }
     return null;
@@ -1309,8 +1316,8 @@
   }
   /* `check(scope)`: true when every field in it may be saved; otherwise the
      first wrong one is focused and named, and false. */
-  function check(scope) {
-    var hit = firstWrong(scope);
+  function check(scope, partial) {
+    var hit = firstWrong(scope, partial);
     if (!hit) return true;
     refuse(hit);
     return false;
@@ -1332,7 +1339,7 @@
     var b = e.target && e.target.closest ? e.target.closest('button, input[type="submit"]') : null;
     var scope = saveScope(b);
     if (!scope) return;
-    var hit = firstWrong(scope);
+    var hit = firstWrong(scope, b.hasAttribute('data-check-partial'));
     if (!hit) return;
     e.preventDefault();
     e.stopImmediatePropagation();
