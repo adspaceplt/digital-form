@@ -1226,7 +1226,7 @@
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' +
           secMore([['pickads', 'Select'],
             st.meta && (st.meta.ad_accounts || []).length ? ['metaads', 'Import from Meta', 'data-gate="meta:checks"'] : null,
-            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Add pictures from Meta', 'data-gate="meta:checks"'] : null]) : '') +
+            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Add pictures from Meta', 'data-gate="meta"'] : null]) : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
     } else if (k === 'text') {

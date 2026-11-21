@@ -985,7 +985,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     ranked across platforms.
   - Named `{client} {report} {period}.pdf`.
   - The first kind is the Social Media Accounts Report.
-- Meta switched off (SWITCHED-OFF ACTS, release B): Import from Meta and
-  Add pictures from Meta carry `data-gate="meta:checks"` (off while Meta
-  checks are off, or Meta answered `not-connected` within the hour), Edit
-  Meta accounts `data-gate="meta"`; each drawn disabled with its reason.
+- Meta switched off (SWITCHED-OFF ACTS, release B): Import from Meta
+  carries `data-gate="meta:checks"` (off while Meta checks are off, or Meta
+  answered `not-connected` within the hour); Add pictures from Meta (a
+  creative's picture, read whatever Meta checks) and Edit Meta accounts
+  carry `data-gate="meta"`; each drawn disabled with its reason.
