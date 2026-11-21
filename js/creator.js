@@ -138,7 +138,7 @@
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Posted on',
       countPeriod: 'Results period: {a} to {b}', periodWait: 'ADspace will set the results period shortly.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
-      linkWrong: 'This is not a {p} post link. Please paste the link to your {p} post.', numWrong: 'Enter whole numbers.',
+      linkWrong: 'This is not a {p} post link. Please paste the link to your {p} post.', numWrong: 'Enter whole numbers.', dateWrong: 'Choose a published date no later than today.',
       rateHead: 'Your experience', foldHead: 'Booking details',
       rateStar: function (n) { return n + ' out of 5'; },
       rateThanks: 'Thank you.',
@@ -205,7 +205,7 @@
       postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '实际发布日期',
       countPeriod: '统计期间：{a} 至 {b}', periodWait: 'ADspace 将尽快设定数据统计期间。',
       views: '播放量', engagements: '互动量', impressions: '曝光量',
-      linkWrong: '这不是{p}的帖子链接，请粘贴您在{p}发布的帖子链接。', numWrong: '请输入整数。',
+      linkWrong: '这不是{p}的帖子链接，请粘贴您在{p}发布的帖子链接。', numWrong: '请输入整数。', dateWrong: '请选择不晚于今天的发布日期。',
       rateHead: '合作体验', foldHead: '合作详情',
       rateStar: function (n) { return n + '星（满分5星）'; },
       rateThanks: '感谢您的评分。',
@@ -992,6 +992,10 @@
         nums[k] = Number(n); any = true;
       });
       if (bad) return { box: box, bad: t().numWrong };
+      /* A post is published by today (creator_post_save refuses a day after
+         tomorrow, `date`; REQUIRED FIELDS, 2026-11-22). */
+      var pub = v.published || '';
+      if (pub && (!window.ADspaceForm.dateOk(pub, 'date') || pub > window.ADspaceClock.addDays(window.ADspaceClock.today(), 1))) return { box: box, bad: t().dateWrong };
       return { box: box, plat: plat, args: {
         p_code: code, p_option: b.id, p_platform: plat, p_url: url || null,
         p_published: v.published || null,
@@ -1018,6 +1022,7 @@
             if ((r && r.error) || d.error) {
               outcome.push({ plat: x.plat, values: read(x.box), err: d.error === 'link' ? fill(t().linkWrong, { p: platsOf(x.plat)[0] || x.plat })
                 : d.error === 'number' ? t().numWrong
+                : d.error === 'date' ? t().dateWrong
                 : d.error === 'period' ? t().periodWait : t().failText });
             } else outcome.push({ plat: x.plat });
           }).catch(function () { outcome.push({ plat: x.plat, values: read(x.box), err: t().failText }); });

@@ -1269,6 +1269,17 @@
     var d = el.closest('details');
     return !!(d && !d.open && d.getClientRects().length);
   }
+  /* A row of a list that grows (`data-check-group`: an agreement's ad
+     accounts) asks its required fields only once it is in use: one of them
+     holds a value. A row left holding a default alone (a start date) is no
+     row, as the form reads it. */
+  function unused(el) {
+    var g = el.closest && el.closest('[data-check-group]');
+    if (!g) return false;
+    return !Array.prototype.some.call(g.querySelectorAll('[aria-required="true"], [required]'), function (f) {
+      return String(f.value == null ? '' : f.value).trim() !== '';
+    });
+  }
   var CHECKED = '[aria-required="true"], [required], [data-check], input[type="number"], input[type="email"], input[type="tel"], input[type="url"], input[type="date"], input[type="month"], input[type="datetime-local"], input.dmy';
   function firstWrong(scope, partial) {
     if (!scope || !scope.querySelectorAll) return null;
@@ -1276,7 +1287,7 @@
     for (var i = 0; i < list.length; i++) {
       var el = list[i];
       if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !asked(el)) continue;
-      var why = problem(el, partial ? { required: false } : null);
+      var why = problem(el, partial || unused(el) ? { required: false } : null);
       if (why) return { el: el, why: why };
     }
     return null;

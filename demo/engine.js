@@ -697,6 +697,41 @@
         return { code: 'PGRST204', message: "Could not find the '" + k + "' column of '" + table + "' in the schema cache" };
       }
     }
+    return reqRefusal(table, obj);
+  }
+
+  var REQ_EMAIL = /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i;
+  var REQ_RULES = {
+    clients: [['name', 'clients_name_given', 'name'], ['finance_email', 'clients_finance_email_shape', 'email']],
+    client_contacts: [['name', 'client_contacts_name_given', 'name'], ['email', 'client_contacts_email_shape', 'email']],
+    team_members: [['name', 'team_members_name_given', 'name'], ['email', 'team_members_email_shape', 'email']],
+    creators: [['name', 'creators_name_given', 'name'], ['client_rate', 'creators_client_rate_range', 'rate']],
+    campaigns: [['title', 'campaigns_title_given', 'name'], ['slots', 'campaigns_slots_one', 'one'], ['deadline', 'campaigns_deadline_range', 'date']],
+    campaign_options: [['rate', 'campaign_options_rate_range', 'rate'], ['visit_date', 'campaign_options_dates_range', 'date'],
+      ['submission_due', 'campaign_options_dates_range', 'date'], ['planned_publish', 'campaign_options_dates_range', 'date'],
+      ['posted_on', 'campaign_options_dates_range', 'date'], ['pay_by', 'campaign_options_dates_range', 'date']],
+    client_services: [['label', 'client_services_label_given', 'name'], ['tenure', 'client_services_tenure_one', 'one']],
+    services: [['name', 'services_name_given', 'name'], ['rate', 'services_rate_floor', 'floor']]
+  };
+  function reqBad(kind, v) {
+    if (kind === 'name') return v == null || !String(v).trim();
+    if (v == null || v === '') return false;
+    if (kind === 'email') return !!String(v).trim() && !REQ_EMAIL.test(String(v));
+    if (kind === 'rate') return !(Number(v) >= 0 && Number(v) <= 1000000);
+    if (kind === 'floor') return !(Number(v) >= 0);
+    if (kind === 'one') return !(Number(v) >= 1);
+    if (kind === 'date') { var d = String(v).slice(0, 10); return d < '2023-08-14' || d > '2099-12-31'; }
+    return false;
+  }
+  function reqRefusal(table, obj) {
+    var rules = REQ_RULES[table];
+    if (!rules || !obj) return null;
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      if (Object.prototype.hasOwnProperty.call(obj, r[0]) && reqBad(r[2], obj[r[0]])) {
+        return { code: '23514', message: 'new row for relation "' + table + '" violates check constraint "' + r[1] + '"' };
+      }
+    }
     return null;
   }
   var CLOSED_FNS = { ops_change_due_date: true, submit_review: true };
@@ -11693,6 +11728,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return q.id === args.p_post_id && (DB.batches || []).some(function (x) { return x.id === q.batch_id && x.client_id === sc.id && x.published; });
       })[0];
       if (!sp) return Promise.resolve({ data: { error: 'not_found' }, error: null });
+
+      if (!String(args.p_reviewer || '').trim()) return Promise.resolve({ data: { error: 'name_required' }, error: null });
       var cap = null, capZh = null;
       if (args.p_decision === 'changes') {
         if (args.p_caption != null && args.p_caption !== (sp.caption || '')) cap = args.p_caption;
@@ -17569,6 +17606,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (stubPast(DB.campaigns.filter(function (x) { return x.access_token === args.p_token; })[0])) {
         return Promise.resolve({ data: { error: 'not-found' }, error: null });
       }
+
+      if (!String(args.p_reviewer || '').trim()) return Promise.resolve({ data: { error: 'name-required' }, error: null });
+      if (args.p_decision === 'changes' && !String(args.p_note || '').trim()) return Promise.resolve({ data: { error: 'note-required' }, error: null });
       var oo = DB.campaign_options.filter(function (x) { return x.id === args.p_option; })[0];
       if (!oo) return Promise.resolve({ data: { error: 'not-found' }, error: null });
 
