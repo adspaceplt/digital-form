@@ -80905,7 +80905,7 @@ end $$;
 --     off: the message a prospect is sent when the website makes their
 --     quotation (WhatsApp, Templates).
 --   * `app_settings_set` takes `quote_reply_days` (Contact within, 1 to 10
---     working days; Settings, Accounting: Tax and terms).
+--     working days; Settings, Money: Tax and terms).
 --   * `quote_website_request` and `quotation_billing` are dropped, and
 --     `quotations.billing` with them: the Letter of Offer is the sales
 --     team's to send, the billing details coming through the client's
@@ -107532,7 +107532,7 @@ grant execute on function public.ops_months_not_invoiced() to authenticated;
 
 -- BUKKU'S CREATOR ID FIELD ----------------------------------------------------
 -- The user, 2026-11-10: "bukku id supplier id, how about Creator id i have
--- added new one". Settings, Accounting, Bukku chooses a third Bukku contact
+-- added new one". Settings, Money, Bukku chooses a third Bukku contact
 -- field, the one that holds the Creator ID:
 --
 --   1. `bukku_settings.field_creator` (Bukku's own id).
@@ -118493,7 +118493,7 @@ create or replace trigger campaign_options_approval_gate
 -- WHAT IT CHANGES
 --   * `bukku_settings.bill_item_sku`, `bill_class_code`, `bill_account_code`
 --     (the item's SKU, the classification code, the account's code), seeded
---     once P995, 037 and 6000-03; Settings, Accounting, Bukku edits them.
+--     once P995, 037 and 6000-03; Settings, Money, Bukku edits them.
 --   * `bukku_bill_set(p_sku, p_class, p_account, p_account_code, p_name)`
 --     (`team.settings`): the three, and the account chosen from Bukku's list
 --     kept as before (`bill_account`, `bill_account_name`); `bad-sku`,
@@ -124072,7 +124072,7 @@ drop function if exists public.client_row_seen(text, text, text);
 --
 -- WHAT IT ADDS
 --   * `bukku_settings.budget_account_code`: the account the advertising
---     budget's line posts to (Settings, Accounting, Bukku; `bukku_invoice_set`).
+--     budget's line posts to (Settings, Money, Bukku; `bukku_invoice_set`).
 --   * `client_ad_debtors`: the Bukku contact a client's advertising budget is
 --     invoiced to (`client_ad_debtor_set`), else the client's own contact.
 --   * `quotation_invoices`: one row a quotation, cycle and kind (service or
