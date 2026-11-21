@@ -1535,7 +1535,7 @@
     pgFoot();
     box.innerHTML = PG_GROUPS.map(function (g) {
       var sys = g[1][0] === 'home';
-      return (sys && pg.picking ? '<h4 class="fsec-h pg-grp"><label class="tickline pg-sysall"><input type="checkbox" id="pgSysAll"> ' + esc(g[0]) + '</label></h4>'
+      return (sys && pg.picking ? '<h4 class="fsec-h pg-grp"><label class="pg-sysall"><input type="checkbox" id="pgSysAll"> ' + esc(g[0]) + '</label></h4>'
         : '<h4 class="fsec-h pg-grp">' + esc(g[0]) + '</h4>') + g[1].map(function (k) {
         var p = pgOf(k);
         if (!p) return '';
