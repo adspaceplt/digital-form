@@ -1587,7 +1587,7 @@
     db.from('activity_log').select('*').eq('subject', c.name)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
-        if (r.error) { UI.failLine(box, 'The timeline', r.error.message, loadClientLog); return; }
+        if (r.error) { UI.failLine(box, 'Activity', r.error.message, loadClientLog); return; }
         var rows = r.data || [];
         /* Kept so the rail can show the last three without a second read: the
            record has already paid for this one. */

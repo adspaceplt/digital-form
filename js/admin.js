@@ -1985,7 +1985,7 @@
     'campaigns.record': { name: 'Campaign', steps: [
       { at: '#campTabs', text: 'Each tab holds one part of the campaign: its creators, schedule, the client\'s selection and its finance.' },
       { at: '#campCopy', text: 'Copy the client\'s link to send it. The client chooses their creators on it.' },
-      { at: '#campPublish', text: 'The campaign\'s next step stands here. Publish shows its creators to the client on their link.' }] },
+      { at: '#campPublish', text: 'Publish shows the campaign\'s creators to the client on their link.' }] },
     'campaigns.roster': { name: 'Creators List', steps: [
       { at: '#showAddCreator', text: 'Add creator saves a creator with their profiles, rate and contact details.' },
       { at: '#rosterList .crm-group-head', text: 'Creators are grouped by fee. Inactive creators are in a group of their own.' },

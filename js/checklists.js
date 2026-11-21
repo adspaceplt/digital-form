@@ -550,7 +550,7 @@
       if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#ckBaSheet .sheet-card');
     }
     box.querySelector('[data-m="body"]').innerHTML =
-      (row.hypothesis ? '<p class="msg warn ck-ba-hyp">This analysis is a starting hypothesis to test.</p>' : '') +
+      (row.hypothesis ? '<p class="msg warn ck-ba-hyp">Written from little history: no reports, post results or Meta figures. Check each section before use.</p>' : '') +
       sec('Brand positioning', fact([['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         ['Competitors', esc((p.competitors || []).join(', '))]])) +
       sec('Target audiences', fact((a.audiences || []).map(function (x) { return [x.name, esc([x.who, x.pains].filter(Boolean).join(' · '))]; }))) +
