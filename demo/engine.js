@@ -15443,10 +15443,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         .sort(function (a, b) { return a.invited_at < b.invited_at ? 1 : -1; }); };
 
       var hDayEnd = function (iso, n) { var C = window.ADspaceClock; return C.at(C.addDays(C.day(iso), n), '18:00').toISOString(); };
-      var hTell = function (c, kind, title, body) {
+
+      var hTell = function (c, kind, title, body, key) {
         DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).forEach(function (p) {
+          var dk = key ? key + ':' + p.team_member_id : null;
+          if (dk && (DB.ops_notifications || []).some(function (n) { return n.dedupe_key === dk; })) return;
           (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: p.team_member_id, kind: kind, title: title, body: body,
-            link: 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' + c.id, created_at: new Date().toISOString(), read_at: null });
+            link: 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' + c.id, dedupe_key: dk, created_at: new Date().toISOString(), read_at: null });
         });
       };
 
@@ -15569,7 +15572,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (ad.kind !== 'offer') return hNo('bad-request');
           ad.state = 'declined'; ad.answered_at = hNowIso; ad.decline_note = String(ap.note || '').trim() || null;
           DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document', detail: ad.serial + ' declined', created_at: hNowIso });
-          hTell(ac, 'hiring.declined', 'A candidate declined an offer', ad.serial + '.');
+          hTell(ac, 'hiring.declined', 'A candidate declined an offer', ad.serial + '. Open the candidate to decide the next step.', 'hiring.declined:' + ad.id);
           return hOk({});
         }
         if ((args.p_answer === 'accept') !== (ad.kind === 'offer') || ['accept', 'sign'].indexOf(args.p_answer) < 0) return hNo('bad-request');
