@@ -566,7 +566,7 @@
         '<img src="' + esc(p.url) + '" alt="" loading="lazy" decoding="async"></a>';
     /* Redraw asks the changes and revises the drawing from itself, round
        after round (2026-11-07). */
-    var redraw = work && p && p.kind === 'ai' && st.drawReady ? '<button class="btn btn-sm btn-icon" type="button" data-pic="redraw">' + AI_GLYPH + 'Redraw</button>' : '';
+    var redraw = work && p && p.kind === 'ai' && st.drawReady ? '<button class="btn btn-sm btn-icon" type="button" data-pic="redraw" data-gate="ai:picture">' + AI_GLYPH + 'Redraw</button>' : '';
     var act = !work ? '' : sc.photo_url
       ? '<button class="btn btn-sm" type="button" data-pic="remove">Remove</button>'
       : '<label class="btn btn-sm vs-pic-add">' + ICON.camera + 'Add photo<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-pic="add" hidden></label>';
@@ -580,7 +580,7 @@
       '<button class="btn btn-sm btn-icon" type="button" id="vsPlay">' + ICON.play + 'Play</button>' : '';
     if (!may('work') || !st.drawReady) return play ? '<span class="vs-draw">' + play + '</span>' : '';
     return '<span class="vs-draw"><span class="vs-draw-left" id="vsDrawLeft">' + (st.drawLeft == null ? '' : esc(String(st.drawLeft)) + ' left today') + '</span>' +
-      play + '<button class="btn btn-sm btn-icon" type="button" id="vsDraw">' + AI_GLYPH + 'Draw with AI</button></span>';
+      play + '<button class="btn btn-sm btn-icon" type="button" id="vsDraw" data-gate="ai:picture">' + AI_GLYPH + 'Draw with AI</button></span>';
   }
   /* What is seen: the timing and camera over it, the on-screen text and the
      sound under it, each only where set. */

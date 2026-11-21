@@ -195,7 +195,7 @@
     var html = '<button class="backlink ck-back" type="button" data-a="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>All checklists</button>' +
       '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Version ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
       '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-      (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
+      (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" data-gate="ai:checklist" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
       '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>' +
       '<button class="btn btn-sm" type="button" data-a="pdf">Download</button></div>' +

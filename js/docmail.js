@@ -4,7 +4,7 @@
  *
  *   ADspaceDocMail.may(kind)          whether this colleague may send one
  *                                     (the group's Send email; Send by email
- *                                     off draws the act disabled, `data-send`):
+ *                                     off draws the act disabled, `data-gate`):
  *                                     Clients: Quotations (`quotation`),
  *                                     Clients: Letters (`offer`), Letters or
  *                                     Documents: Client documents (`letter`),
@@ -67,7 +67,7 @@
   function may(kind) {
     /* The group's Send email (GROUP SWITCHES, 2026-11-17). The portal's
        Email and Send by email draw the act disabled with their reason
-       (`data-send`, SEND SWITCHES, 2026-11-21), never hide it. */
+       (`data-gate`, SEND SWITCHES, 2026-11-21), never hide it. */
     if (!mayAt('send.email', 'work')) return false;
     if (kind === 'quotation') return mayAt('clients.quotes', 'work');
     if (kind === 'offer') return mayAt('clients.documents', 'work');

@@ -657,7 +657,7 @@
         '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
         '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span>' +
         /* Each unpaid invoice sent by email, due or not (2026-11-04). */
-        (d.send && may('send.email', 'work') ? '<span class="od-act"><button class="btn btn-sm" type="button" data-a="send" data-send="email" data-id="' + esc(String(l.id)) + '" aria-label="' + esc('Send invoice ' + l.number) + '">Send invoice</button></span>' : '') + '</div>';
+        (d.send && may('send.email', 'work') ? '<span class="od-act"><button class="btn btn-sm" type="button" data-a="send" data-gate="email" data-id="' + esc(String(l.id)) + '" aria-label="' + esc('Send invoice ' + l.number) + '">Send invoice</button></span>' : '') + '</div>';
     };
     var body = cos.length > 1 ? cos.map(function (k) {
       var mine = rows.filter(function (l) { return l.contact === k; });
@@ -665,7 +665,7 @@
     }).join('') : '<div class="od-mini">' + rows.map(rowHtml).join('') + '</div>';
     host.classList.toggle('od-sends', !!d.send && may('send.email', 'work'));
     host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4>' +
-      (d.send && may('send.email', 'work') && late.length ? '<button class="btn btn-sm" type="button" data-a="remind" data-send="email">Send reminder</button>' : '') + '</div>' +
+      (d.send && may('send.email', 'work') && late.length ? '<button class="btn btn-sm" type="button" data-a="remind" data-gate="email">Send reminder</button>' : '') + '</div>' +
       (rows.length ? body : '<p class="muted od-none">No unpaid invoices.</p>') +
       (rem.length ? '<h4 class="fsec-h od-sent-h">Emails sent</h4><div class="inv-log-t od-log">' +
         '<div class="r hd"><span>When</span><span>Invoices</span><span>Sent by</span><span>Status</span></div>' +

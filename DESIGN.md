@@ -1138,9 +1138,11 @@ screenshotted, and the push names any line it could not settle.
   reload.
 - **Progressive disclosure**: a step appears when its stage is reached. What
   cannot apply yet is hidden, not disabled, and leaves again when reverted,
-  with one exception (the user, 2026-11-21): an act switched off in Settings
-  is drawn disabled with its reason (`data-send`, `#sendWhy`); one the person
-  is not permitted is hidden. What a client may not see is withheld by the
+  with one exception (the user, 2026-11-21): an act switched off in Settings,
+  or past its daily limit, is drawn disabled with its reason (`data-gate`,
+  `#gateWhy`); one the person is not permitted is hidden; what the portal
+  would send by itself, switched off, is one `.msg.warn` line where the step
+  that relies on it is taken, never a disabled act. What a client may not see is withheld by the
   function.
 - **Serial position**: it governs the rail's two ends, not a pair of buttons
   (that is motor memory: one order, one anchor).

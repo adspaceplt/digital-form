@@ -517,8 +517,8 @@
         : '<p class="emptyline">' + window.ADspaceWords.line.bodyGone + '</p>') +
       /* A New email sent again opens filled, its file to attach again. */
       (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
-        ? '<div class="row acts"><button class="btn" type="button" data-a="again" data-send="email">Send again</button></div>'
-        : mlCanAgain(x) ? '<div class="row acts"><button class="btn" type="button" data-a="resend" data-send="email">Send again</button></div>' +
+        ? '<div class="row acts"><button class="btn" type="button" data-a="again" data-gate="email">Send again</button></div>'
+        : mlCanAgain(x) ? '<div class="row acts"><button class="btn" type="button" data-a="resend" data-gate="email">Send again</button></div>' +
             '<p class="msg" id="emlMsg" role="status" hidden></p>' : '');
     var rs = $('emlSheetBody').querySelector('[data-a="resend"]');
     if (rs) rs.addEventListener('click', function () { mlResend(x, rs); });

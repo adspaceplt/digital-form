@@ -815,7 +815,7 @@
     el.className = 'chartcard anl-ai';
     el.setAttribute('data-card', 'ai');
     el.innerHTML = '<div class="ovw-cardhead"><h3>AI analysis</h3><div class="anl-ai-acts"><span class="anl-ai-left" data-m="left"></span>' +
-      '<button class="btn btn-sm" type="button" data-a="write">' + (AI ? AI.glyph : '') + '<span>Write with AI</span></button>' +
+      '<button class="btn btn-sm" type="button" data-a="write" data-gate="ai:analytics">' + (AI ? AI.glyph : '') + '<span>Write with AI</span></button>' +
       '<span class="team-act" data-m="more" hidden><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions for the AI analysis" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" data-menu hidden role="menu">' +
         '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="versions">Show versions</button>' +

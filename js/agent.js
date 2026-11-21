@@ -1650,6 +1650,11 @@
     if (!box.hidden) return;
     /* AI off for the portal or the group (GROUP SWITCHES, 2026-11-17). */
     if (document.documentElement.classList.contains('no-ai')) return;
+    /* AI off for the portal, or the day's questions used: ⌘ J and a
+       question typed on the Dashboard say why from the Ask button, as a
+       press on it does (SWITCHED-OFF ACTS, 2026-11-21). */
+    var A = window.ADspaceAdmin;
+    if (A && A.gateState && !A.gateState('ai:agent').on) { if (A.gateWhy) A.gateWhy(btn); return; }
     /* A desk types straight in; under a finger the card takes focus, as
        every sheet does, so the keyboard does not rise over it. */
     var desk = !matchMedia('(pointer: coarse)').matches;
@@ -1700,5 +1705,5 @@
     }
   });
 
-  window.ADspaceAgent = { open: open, ask: function (t) { open(); ask(t); }, _tools: { read: READ, change: CHANGE }, scheduled: readSched };
+  window.ADspaceAgent = { open: open, ask: function (t) { var A = window.ADspaceAdmin; open(); if (!(A && A.gateState && !A.gateState('ai:agent').on)) ask(t); }, _tools: { read: READ, change: CHANGE }, scheduled: readSched };
 })();

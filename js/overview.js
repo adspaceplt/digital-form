@@ -2053,7 +2053,7 @@
       var c = d.tasks.filter(function (t) { return t.client; })[0];
       if (c) qs.push('Summarise ' + c.client + '’s month');
       var tr = wrap.querySelector('#ovwAskTry');
-      tr.innerHTML = qs.slice(0, 2).map(function (q) { return '<button class="ovw-ask-q" type="button">' + esc(q) + '</button>'; }).join('');
+      tr.innerHTML = qs.slice(0, 2).map(function (q) { return '<button class="ovw-ask-q" type="button" data-gate="ai:agent">' + esc(q) + '</button>'; }).join('');
       tr.addEventListener('click', function (e) {
         var b = e.target.closest('.ovw-ask-q');
         if (b) AG.ask(b.textContent);

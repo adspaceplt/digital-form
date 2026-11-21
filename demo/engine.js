@@ -126,6 +126,8 @@
     ai_draft_claim: 'p_report',
     ai_caption_claim: 'p_batch',
     ai_caption_left: '',
+    ai_uses_left: '',
+    bukku_ready: '',
     ai_script_claim: 'p_script',
     ai_picture_claim: 'p_script p_count',
     ai_picture_left: '',
@@ -9078,6 +9080,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return aiCaptionRoom(me);
     }
 
+    if (name === 'ai_uses_left') {
+      if (!me) return { error: 'denied' };
+      var ulSince = aiDay(), ulOut = {};
+      [['caption', 'caption'], ['draft', 'drafts'], ['check', 'checks'], ['next', 'next'], ['script', 'script'], ['picture', 'picture'],
+       ['analysis', 'analysis'], ['checklist', 'checklist'], ['analytics', 'analytics'], ['agent', 'agent']].forEach(function (u) {
+        var lim = aiCap(me.id, u[1]);
+        var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === me.id && x.purpose === u[0] && x.outcome !== 'failed' &&
+          new Date(x.created_at).getTime() >= ulSince; }).length;
+        ulOut[u[0]] = { limit: lim, left: Math.max(0, lim - used) };
+      });
+      return { ok: true, uses: ulOut, next: new Date(ulSince + 864e5).toISOString() };
+    }
+
     if (name === 'ai_agent_left' || name === 'ai_agent_claim') {
       if (!me) return { error: 'denied' };
       var agSince = aiDay(), agLim = aiCap(me.id, 'agent');
@@ -10608,7 +10623,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: asOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^ai_next_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_uses_left$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^ai_next_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -14563,6 +14578,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
         return r ? JSON.stringify(k === 'client' ? [r.legal_name, r.company_no, r.billing_address, r.client_code, r.finance_email] : [r.name, r.brn, r.address, r.code, r.email]) : null;
       };
+
+      if (name === 'bukku_ready') {
+        if (!bkMe) return bkNo('denied');
+        if (!DB.job_beats) DB.job_beats = [{ job: 'bukku-nightly', ran_at: new Date().toISOString(), ok: true, detail: null }];
+        return bkOk({ connected: DB.job_beats.some(function (b) { return b.job === 'bukku-nightly' && Date.parse(b.ran_at) > Date.now() - 3 * 864e5; }) });
+      }
       if (name === 'bukku_config') {
         if (!bkMe || !(opsAllowed('clients.billing', 'work') || opsAllowed('suppliers', 'work') || opsGranted('team.settings', 'work'))) return bkNo('denied');
         return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,

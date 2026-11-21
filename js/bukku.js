@@ -169,7 +169,7 @@
          Bukku holds (2026-10-30, the user: "use link bukku instead of send
          to bukku"); Bukku then holds its billing. A supplier still sends. */
       var linkFirst = !linked && (holds(kind) || linkOnly);
-      var acts = (work && !gap && !(linked && linkOnly) ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
+      var acts = (work && !gap && !(linked && linkOnly) ? '<button class="btn btn-sm" type="button" data-bk="send" data-gate="bukku">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
       host.innerHTML = '<div class="bk-l">' + MARK + '' + (linked ? codeOf(d.code || String(d.contact_id)) : '') + state + '</div>' +
@@ -220,13 +220,13 @@
         var copy = d.read_at ? ' The details shown were read on ' + when(d.read_at) + '.' : '';
         host.innerHTML = head + '<span class="chip-state is-warn">Not read</span></div>' +
           '<p class="bk-sub">' + esc(said(r)) + esc(copy) + '</p>' +
-          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Try again</button>' + menu + '</div>';
+          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Try again</button>' + menu + '</div>';
       } else if (r.held) {
         /* What moved in Bukku is said for a minute and a half after the read, through the repaint it brings. */
         var moved = (r.changed || []).length && Date.now() - r.at < 90000 ? (r.changed || []).map(function (f) { return WORD[f] || f; }) : [];
         host.innerHTML = head + '<span class="chip-state is-ok">Linked</span></div>' +
           (via || '<p class="bk-sub">Billing details from Bukku · Read ' + esc(when(new Date(r.at).toISOString())) + '</p>') +
-          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Refresh</button>' + menu + '</div>' +
+          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Refresh</button>' + menu + '</div>' +
           (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the last read: ' + esc(moved.join(', ')) + '.</p>' : '') +
           (r.values && r.values.person && r.person_in === false
             ? '<div class="bk-person"><p class="msg warn">Bukku\'s billing person, ' + esc(r.values.person) + ', is not in Contacts.</p>' +
@@ -235,8 +235,8 @@
       } else {
         var rows = (r.differs || []);
         host.innerHTML = head + '<span class="chip-state is-warn">Differs from Bukku</span></div>' +
-          (work ? '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' +
-            '<button class="btn btn-sm" type="button" data-bk="hold">Use Bukku\'s</button>' + menu + '</div>' : '') +
+          (work ? '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="send" data-gate="bukku">Send to Bukku</button>' +
+            '<button class="btn btn-sm" type="button" data-bk="hold" data-gate="bukku">Use Bukku\'s</button>' + menu + '</div>' : '') +
           '<div class="bk-table bk-diff" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
             '<span role="columnheader">Portal</span><span role="columnheader">Bukku</span></div>' +
           rows.map(function (x) {

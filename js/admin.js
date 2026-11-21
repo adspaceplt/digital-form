@@ -968,45 +968,99 @@
   if ($('vicPopHide')) $('vicPopHide').addEventListener('click', function () { vicShut(true); });
   ADspaceMenu.onScroll(function () { vicShut(false); });
 
-  /* ---- A send by hand switched off (SEND SWITCHES, 2026-11-21) -----------
-     Every act that sends by email or WhatsApp carries `data-send` (`email`,
-     `whatsapp`): a button, a ⋯ item, a sheet's Send. While Settings has the
-     send off it stays drawn, `aria-disabled`, and never acts: a press, a
-     hover or the keyboard's focus opens `#sendWhy` from it, naming the
-     switch and where it is (the user, 2026-11-21: "why not just make it
-     disabled"). One painter for every screen: a node drawn later is painted
-     as it arrives, and every act again when the figures are read afresh. */
-  var sendPaintQueued = false;
-  function paintSends() {
-    sendPaintQueued = false;
-    Array.prototype.forEach.call(document.querySelectorAll('[data-send]'), function (el) {
-      var st = sendState(el.getAttribute('data-send'));
+  /* ---- An act switched off (SEND SWITCHES, SWITCHED-OFF ACTS, 2026-11-21)
+     Every act Settings or a daily limit can stop carries `data-gate`: a
+     send by hand (`email`, `whatsapp`), an AI act (`ai`, or `ai:{use}` for
+     its daily limit; a button holding the AI mark is `ai` by itself) and a
+     Bukku act (`bukku`). While it is stopped it stays drawn,
+     `aria-disabled`, and never acts: a press, a hover or the keyboard's
+     focus opens `#gateWhy` from it, naming what stopped it and who can
+     change it (the user, 2026-11-21: "why not just make it disabled"). An
+     act the colleague's group is not permitted is hidden, never drawn here.
+     One painter for every screen: a node drawn later is painted as it
+     arrives, and every act again when the figures are read afresh. */
+  var gatePaintQueued = false;
+  var AI_SEL = 'svg.ai-mark';
+  function paintGates() {
+    gatePaintQueued = false;
+    /* A button carrying the AI mark is an AI act wherever it is drawn. */
+    Array.prototype.forEach.call(document.querySelectorAll(AI_SEL), function (svg) {
+      var b = svg.closest('button, .btn');
+      if (b && !b.hasAttribute('data-gate')) b.setAttribute('data-gate', 'ai');
+    });
+    var ai = false, bk = false;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-gate]'), function (el) {
+      var key = el.getAttribute('data-gate');
+      if (key.indexOf('ai') === 0) ai = true;
+      if (key === 'bukku') bk = true;
+      var st = gateState(key);
       if (st.on) {
-        if (!el.hasAttribute('data-send-off')) return;
-        el.removeAttribute('data-send-off'); el.removeAttribute('aria-disabled'); el.removeAttribute('aria-description');
+        if (!el.hasAttribute('data-gate-off')) return;
+        el.removeAttribute('data-gate-off'); el.removeAttribute('aria-disabled'); el.removeAttribute('aria-description');
         return;
       }
-      if (el.getAttribute('data-send-off') === st.reason) return;
-      el.setAttribute('data-send-off', st.reason);
+      if (el.getAttribute('data-gate-off') === st.reason) return;
+      el.setAttribute('data-gate-off', st.reason);
       el.setAttribute('aria-disabled', 'true');
       el.setAttribute('aria-description', st.reason);
     });
+    /* What a gate reads is asked only once an act that needs it is drawn. */
+    if (ai) readAiUses(false);
+    if (bk) readBukku(false);
   }
-  function queueSends() { if (!sendPaintQueued) { sendPaintQueued = true; (window.requestAnimationFrame || setTimeout)(paintSends); } }
+  function queueGates() { if (!gatePaintQueued) { gatePaintQueued = true; (window.requestAnimationFrame || setTimeout)(paintGates); } }
   if (window.MutationObserver) {
     new MutationObserver(function (list) {
       for (var i = 0; i < list.length; i++) {
         var m = list[i];
         if (m.type === 'attributes' || Array.prototype.some.call(m.addedNodes, function (n) {
-          return n.nodeType === 1 && (n.hasAttribute('data-send') || (n.querySelector && n.querySelector('[data-send]')));
-        })) { queueSends(); return; }
+          if (n.nodeType !== 1) return false;
+          /* An AI act redrawn (Writing, then Write with AI) asks its day's
+             figures again, at most once a half minute. */
+          if (n.matches(AI_SEL) || (n.querySelector && n.querySelector(AI_SEL))) return true;
+          return n.hasAttribute('data-gate') || Boolean(n.querySelector && n.querySelector('[data-gate]'));
+        })) { queueGates(); return; }
       }
-    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-send'] });
+    }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-gate'] });
   }
-  document.addEventListener('adspace-settings', function () { sendPaintQueued = false; paintSends(); });
+  document.addEventListener('adspace-settings', function () { gatePaintQueued = false; paintGates(); });
+  /* The colleague's AI uses today (`ai_uses_left`): read once an AI act is
+     drawn, again as one is redrawn after a half minute, and on return to
+     the tab. A read that fails leaves every act on: the press is refused
+     as before. */
+  var aiUses = null, aiUsesAt = 0, aiUsesOut = false;
+  function readAiUses(force) {
+    if (aiUsesOut || !me || !may('use.ai', 'work')) return;
+    if (!force && aiUsesAt && Date.now() - aiUsesAt < 30000) return;
+    aiUsesOut = true; aiUsesAt = Date.now();
+    db.rpc('ai_uses_left').then(function (r) {
+      aiUsesOut = false;
+      aiUses = r && !r.error && r.data && r.data.ok ? r.data : null;
+      paintGatesNow();
+    }, function () { aiUsesOut = false; });
+  }
+  /* Whether Bukku is connected (`bukku_ready`): read once a visit as the
+     first Bukku act is drawn, again on return after ten minutes. */
+  var bukku = { connected: null, at: 0, out: false };
+  function readBukku(force) {
+    if (bukku.out || !me) return;
+    if (bukku.at && (!force || Date.now() - bukku.at < 600000)) return;
+    bukku.out = true; bukku.at = Date.now();
+    db.rpc('bukku_ready').then(function (r) {
+      bukku.out = false;
+      bukku.connected = r && !r.error && r.data && r.data.ok ? r.data.connected !== false : null;
+      paintGatesNow();
+    }, function () { bukku.out = false; });
+  }
+  function paintGatesNow() { gatePaintQueued = false; paintGates(); }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible' || !me) return;
+    if (document.querySelector('[data-gate^="ai"]')) readAiUses(true);
+    if (document.querySelector('[data-gate="bukku"]')) readBukku(true);
+  });
   var whyHeld = { el: null, timer: 0 };
   function whyShut(back) {
-    var pop = $('sendWhy');
+    var pop = $('gateWhy');
     clearTimeout(whyHeld.timer);
     if (!pop || pop.hidden) return;
     pop.hidden = true;
@@ -1015,12 +1069,11 @@
     if (back && el && el.isConnected) el.focus();
   }
   function whyOpen(el) {
-    var pop = $('sendWhy');
+    var pop = $('gateWhy');
     if (!pop || !el) return;
     clearTimeout(whyHeld.timer);
-    var ch = el.getAttribute('data-send');
-    $('sendWhyName').textContent = ch === 'whatsapp' ? 'WhatsApp' : 'Email';
-    $('sendWhyLine').textContent = el.getAttribute('data-send-off') || '';
+    $('gateWhyName').textContent = gateState(el.getAttribute('data-gate')).title || '';
+    $('gateWhyLine').textContent = el.getAttribute('data-gate-off') || '';
     whyHeld.el = el;
     pop.hidden = false;
     /* A ⋯ item hangs the card from its menu's own button when the menu has
@@ -1034,30 +1087,30 @@
   }
   /* Heard on the window, before any page's own press. */
   window.addEventListener('click', function (e) {
-    var el = e.target.closest && e.target.closest('[data-send-off]');
+    var el = e.target.closest && e.target.closest('[data-gate-off]');
     if (el) {
       e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
-      if (whyHeld.el === el && !$('sendWhy').hidden) whyShut(false); else whyOpen(el);
+      if (whyHeld.el === el && !$('gateWhy').hidden) whyShut(false); else whyOpen(el);
       return;
     }
-    if (!(e.target.closest && e.target.closest('#sendWhy'))) whyShut(false);
+    if (!(e.target.closest && e.target.closest('#gateWhy'))) whyShut(false);
   }, true);
   document.addEventListener('focusin', function (e) {
-    var el = e.target.closest && e.target.closest('[data-send-off]');
+    var el = e.target.closest && e.target.closest('[data-gate-off]');
     if (el && e.target.matches(':focus-visible')) whyOpen(el);
-    else if (!(e.target.closest && e.target.closest('#sendWhy'))) whyShut(false);
+    else if (!(e.target.closest && e.target.closest('#gateWhy'))) whyShut(false);
   });
   document.addEventListener('mouseover', function (e) {
     if (!fineHover || !fineHover.matches) return;
-    var el = e.target.closest && e.target.closest('[data-send-off]');
-    if (el) { if (whyHeld.el !== el || $('sendWhy').hidden) whyHeld.timer = setTimeout(function () { whyOpen(el); }, 150); else clearTimeout(whyHeld.timer); return; }
-    if (e.target.closest && e.target.closest('#sendWhy')) { clearTimeout(whyHeld.timer); return; }
+    var el = e.target.closest && e.target.closest('[data-gate-off]');
+    if (el) { if (whyHeld.el !== el || $('gateWhy').hidden) whyHeld.timer = setTimeout(function () { whyOpen(el); }, 150); else clearTimeout(whyHeld.timer); return; }
+    if (e.target.closest && e.target.closest('#gateWhy')) { clearTimeout(whyHeld.timer); return; }
     if (whyHeld.el) { clearTimeout(whyHeld.timer); whyHeld.timer = setTimeout(function () { whyShut(false); }, 200); }
   });
   window.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && $('sendWhy') && !$('sendWhy').hidden) { e.stopImmediatePropagation(); e.stopPropagation(); whyShut(true); }
+    if (e.key === 'Escape' && $('gateWhy') && !$('gateWhy').hidden) { e.stopImmediatePropagation(); e.stopPropagation(); whyShut(true); }
   }, true);
-  if ($('sendWhyHide')) $('sendWhyHide').addEventListener('click', function () { whyShut(true); });
+  if ($('gateWhyHide')) $('gateWhyHide').addEventListener('click', function () { whyShut(true); });
   ADspaceMenu.onScroll(function () { whyShut(false); });
 
   /* Hiring (2026-11-16): the live candidates this colleague holds a place
@@ -1186,15 +1239,15 @@
     if (!key) return 0;
     if (!me) return 0;
     /* The switches (GROUP SWITCHES, 2026-11-17): `use.ai`, `send.email`
-       and `send.whatsapp` answer Full Access where the portal's switch and
-       the group's are both on, else nothing; an admin holds the group's. */
+       and `send.whatsapp` answer Full Access where the group's is on, else
+       nothing; an admin holds the group's. The portal's switch draws the
+       act disabled instead (`gateState`). */
     var sw = SWITCH_KEY[key];
-    /* A send by hand answers the group's switch alone (SEND SWITCHES,
-       2026-11-21): a colleague whose group may not send meets no send act,
-       and one Settings has switched off meets it drawn disabled with its
-       reason (`sendState`, `data-send`). */
-    if (sw && key.indexOf('send.') === 0) return me.is_admin || me.role === 'admin' || Boolean(me[sw]) ? 3 : 0;
-    if (sw) return portalOn(sw) && (me.is_admin || me.role === 'admin' || Boolean(me[sw])) ? 3 : 0;
+    /* A send by hand and AI answer the group's switch alone (SEND
+       SWITCHES, SWITCHED-OFF ACTS, 2026-11-21): a colleague whose group may
+       not meets no such act, and one Settings has switched off meets it
+       drawn disabled with its reason (`gateState`, `data-gate`). */
+    if (sw) return me.is_admin || me.role === 'admin' || Boolean(me[sw]) ? 3 : 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
     /* Client billing, creator payments and supplier bank details answer
@@ -1217,18 +1270,46 @@
     var v = M && M.setting ? M.setting(key, window.ADspaceClock ? window.ADspaceClock.today() : undefined) : null;
     return v == null || Number(v) === 1;
   }
-  /* Whether a send by hand may go now, and why not (SEND SWITCHES,
-     2026-11-21): the portal's switch (Settings, Portal: Email, WhatsApp),
-     then the one for sends by hand under it (Settings, Messages: Send by
-     email, Send on WhatsApp). The group's switch is `may('send.email')`,
-     which hides the act instead. */
+  /* Whether a stopped act may go now, and why not (SEND SWITCHES,
+     SWITCHED-OFF ACTS, 2026-11-21). A send by hand: the portal's switch
+     (Settings, Portal: Email, WhatsApp), then the one for sends by hand
+     under it (Settings, Messages: Send by email, Send on WhatsApp). AI: the
+     portal's switch (Settings, Portal: AI), then the use's daily limit
+     (Settings, AI). Bukku: connected. The group's own switch is
+     `may('send.email')`, `may('use.ai')`, which hides the act instead. */
   var HAND_KEY = { email: 'client_email_on', whatsapp: 'client_wa_on' };
-  function sendState(channel) {
+  var GATE_ON = { on: true, reason: '', title: '' };
+  /* Each AI use as its daily limit names it, one and several. */
+  var AI_USE = { caption: ['caption written with AI', 'captions written with AI'],
+    draft: ['report draft written with AI', 'report drafts written with AI'],
+    check: ['commentary check with AI', 'commentary checks with AI'], next: ['Next batch run', 'Next batch runs'],
+    script: ['script written with AI', 'scripts written with AI'], picture: ['scene picture drawn with AI', 'scene pictures drawn with AI'],
+    analysis: ['brand analysis with AI', 'brand analyses with AI'], checklist: ['checklist written with AI', 'checklists written with AI'],
+    analytics: ['Analytics analysis with AI', 'Analytics analyses with AI'], agent: ['question to the Assistant', 'questions to the Assistant'] };
+  function gateState(key) {
     var L = window.ADspaceWords.line;
-    if (!HAND_KEY[channel]) return { on: false, reason: '' };
-    if (!portalOn(channel + '_on')) return { on: false, reason: channel === 'email' ? L.emailPortalOff : L.whatsappPortalOff, portal: true };
-    if (!portalOn(HAND_KEY[channel])) return { on: false, reason: channel === 'email' ? L.emailHandOff : L.whatsappHandOff };
-    return { on: true, reason: '' };
+    var k = String(key || ''), base = k.split(':')[0], use = k.split(':')[1];
+    if (base === 'ai') {
+      if (!portalOn('ai_on')) return { on: false, title: 'AI', reason: L.aiPortalOff, portal: true };
+      var u = use && AI_USE[use] && aiUses && aiUses.uses ? aiUses.uses[use] : null;
+      if (u && Number(u.limit) === 0) return { on: false, title: 'AI', reason: L.aiUseOff(AI_USE[use][1]) };
+      if (u && Number(u.left) <= 0) return { on: false, title: 'AI', reason: L.aiLimit(Number(u.limit), AI_USE[use]) };
+      return GATE_ON;
+    }
+    if (base === 'bukku') return bukku.connected === false ? { on: false, title: 'Bukku', reason: L.bukkuOff } : GATE_ON;
+    if (!HAND_KEY[base]) return GATE_ON;
+    var title = base === 'email' ? 'Email' : 'WhatsApp';
+    if (!portalOn(base + '_on')) return { on: false, title: title, reason: base === 'email' ? L.emailPortalOff : L.whatsappPortalOff, portal: true };
+    if (!portalOn(HAND_KEY[base])) return { on: false, title: title, reason: base === 'email' ? L.emailHandOff : L.whatsappHandOff };
+    return { on: true, reason: '', title: title };
+  }
+  /* What the portal sends by itself (Settings, Messages: Automatic emails,
+     Automatic WhatsApp), under the portal's switch: never a disabled act,
+     since the step still stands; the screen that relies on it warns
+     (SWITCHED-OFF ACTS, 2026-11-21). */
+  function autoOff(channel) {
+    if (!portalOn(channel + '_on')) return { off: true, portal: true };
+    return { off: !portalOn(channel === 'email' ? 'auto_email_on' : 'auto_whatsapp_on'), portal: false };
   }
   /* `may('clients')` still reads as it always did and still means the
      everyday level, so nothing that asked the old question has changed its
@@ -1341,9 +1422,11 @@
     var sheet = document.getElementById('accessHide');
     if (!sheet) { sheet = document.createElement('style'); sheet.id = 'accessHide'; document.head.appendChild(sheet); }
     sheet.textContent = rules.length ? rules.join(',\n') + ' { display: none !important; }' : '';
-    /* No AI for this colleague: every Write with AI, the Assistant and
-       Draw with AI step away (GROUP SWITCHES, 2026-11-17). */
+    /* No AI for this colleague's group: every Write with AI, the Assistant
+       and Draw with AI step away (GROUP SWITCHES, 2026-11-17); the portal's
+       switch draws them disabled instead (SWITCHED-OFF ACTS). */
     document.documentElement.classList.toggle('no-ai', !may('use.ai', 'work'));
+    paintGatesNow();
     /* ===== Console search (js/search.js): drawn once the ladder is known. */
     if (window.ADspaceSearch) window.ADspaceSearch.access();
   }
@@ -3953,7 +4036,7 @@
   function capIdle(b) { if (b) { b.disabled = false; b.innerHTML = AI_GLYPH + 'Write with AI'; } }
   function capButton() {
     return may('review.sets', 'work')
-      ? '<div class="capwrite"><button class="btn btn-sm btn-icon" data-f="capwrite" type="button">' + AI_GLYPH + 'Write with AI</button></div>' +
+      ? '<div class="capwrite"><button class="btn btn-sm btn-icon" data-f="capwrite" data-gate="ai:caption" type="button">' + AI_GLYPH + 'Write with AI</button></div>' +
         '<div class="msg capmsg" data-m="cap" role="status"></div>'
       : '';
   }
@@ -6728,7 +6811,9 @@
     /* ===== end console search ===== */
     may: may,
     /* Whether a send by hand may go now, and why not (SEND SWITCHES). */
-    sendState: sendState,
+    gateState: gateState,
+    gateWhy: function (el) { whyOpen(el); },
+    autoOff: autoOff,
     /* Whether a route opens for this person (the Assistant's Open, 2026-11-19). */
     sectionAllowed: function (name) { return sectionAllowed(name); },
     upgradeState: function () { return upgrade; },

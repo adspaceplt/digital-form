@@ -44,13 +44,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   report, a feedback request, a reminder, Send quotation), Automatic emails
   and Automatic WhatsApp beside them for what the portal sends by itself
   (a creator's payment emails and every candidate email, `hiring_mail_gate`;
-  a step that sends one goes ahead while it is off, warning first);
+  a step that sends one goes ahead while it is off, warning first; Automatic
+  WhatsApp's booking confirmation is warned on an open campaign's Client
+  link, `#campWaOff`, through `ADspaceAdmin.autoOff`);
   then the group's Send email and Send WhatsApp (who may send by hand). A
   Messages switch under a portal switch that is off stands still and reads
   Off for the whole portal. A send act the group may not take is hidden; one
   Settings has switched off stays drawn, disabled, its reason said at a
-  press, a hover or the keyboard's focus (`data-send`, `#sendWhy`,
-  `ADspaceAdmin.sendState`), a sheet's own Send alike. A sign-in code, an
+  press, a hover or the keyboard's focus (`data-gate`, `#gateWhy`,
+  `ADspaceAdmin.gateState`), a sheet's own Send alike. A sign-in code, an
   invitation and a verification code are never held by any switch.
 - New email (`#emlNew` on the Email bar, Messages at Work;
   `2026-11-04-new-email.sql` and its SQL Editor part; the user, 2026-11-04):

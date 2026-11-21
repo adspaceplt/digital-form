@@ -4229,7 +4229,7 @@
     var AI = (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '';
     acts.innerHTML = !may ? '' :
       (v && !v.confirmed_at && !busy ? '<button class="btn btn-sm btn-primary" type="button" data-a="ba-confirm" id="crmAnalysisConfirm">Confirm</button>' : '') +
-      '<button class="btn btn-sm" type="button" data-a="ba-run" id="crmAnalysisRun"' + (busy ? ' disabled aria-busy="true"' : '') + '>' + AI +
+      '<button class="btn btn-sm" type="button" data-a="ba-run" data-gate="ai:analysis" id="crmAnalysisRun"' + (busy ? ' disabled aria-busy="true"' : '') + '>' + AI +
         (busy ? 'Running' : list.length ? 'Run again' : 'Run analysis') + '</button>' +
       (v && (v.confirmed_at || baDeletable(v)) ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
@@ -5020,9 +5020,9 @@
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' },
                  /* A template message to this contact, sent at the press
                     (2026-10-31): the composer opens on them. */
-                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-send="whatsapp"' },
+                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-gate="whatsapp"' },
                  /* Messages' New email, opened on this contact (2026-11-04). */
-                 mailMsg && ct.email && { a: 'mail', label: 'Send email', attrs: 'data-send="email"' }],
+                 mailMsg && ct.email && { a: 'mail', label: 'Send email', attrs: 'data-gate="email"' }],
                 [],
                 [ct.portal_access ? { a: 'unportal', label: 'Revoke access' } : { a: 'portal', label: 'Enable access' }],
                 [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
@@ -6700,9 +6700,9 @@
             [],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
-            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true, attrs: 'data-send="whatsapp"' },
+            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true, attrs: 'data-gate="whatsapp"' },
              /* Send by email beside it (2026-10-31), optional as WhatsApp. */
-             mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email', attrs: 'data-send="email"' }],
+             mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email', attrs: 'data-gate="email"' }],
             [st === 'issued' && { a: 'sign', label: 'Mark signed', need: 'clients.documents:work' },
              st === 'signed' && { a: 'unsign', label: 'Mark not signed', need: 'clients.documents:work' }],
             [],
