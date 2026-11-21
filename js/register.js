@@ -1038,7 +1038,7 @@
     }).join('');
     box.innerHTML = sca.rows.map(function (r, i) {
       var k = 'docSca' + i;
-      return '<div class="sca-row" data-i="' + i + '">' +
+      return '<div class="sca-row" data-check-group data-i="' + i + '">' +
         '<div class="sca-row-head"><span class="fsec-h">Account ' + (i + 1) + '</span>' +
           (sca.rows.length > 1 ? '<button class="iconbtn" type="button" data-x="' + i + '" aria-label="Remove account ' + (i + 1) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>' : '') + '</div>' +
@@ -1047,7 +1047,7 @@
           '<div><label class="field-label" for="' + k + 'a">Ad account</label><input class="input" id="' + k + 'a" data-f="account" list="docScaAccts" aria-required="true" placeholder="Account name or ID"></div>' +
         '</div>' +
         '<div class="row fgrid-3">' +
-          '<div><label class="field-label" for="' + k + 's">Ad spend per month (' + (marketOf(r.client_id) === 'SG' ? 'S$' : 'RM') + ')</label><input class="input" id="' + k + 's" data-f="spend" inputmode="decimal" aria-required="true" placeholder="2,500.00"></div>' +
+          '<div><label class="field-label" for="' + k + 's">Ad spend per month (' + (marketOf(r.client_id) === 'SG' ? 'S$' : 'RM') + ')</label><input class="input" id="' + k + 's" data-f="spend" inputmode="decimal" data-check="amount" aria-required="true" placeholder="2,500.00"></div>' +
           '<div><label class="field-label" for="' + k + 'b">Start date</label><input class="input" id="' + k + 'b" data-f="start" type="date"></div>' +
           '<div><label class="field-label" for="' + k + 'e">End date</label><input class="input" id="' + k + 'e" data-f="end" type="date"></div>' +
         '</div></div>';

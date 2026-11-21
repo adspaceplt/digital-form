@@ -1383,6 +1383,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nosum`, stays off the line).
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
+  - The one save check (§10, the user, 2026-11-22: required fields saved
+    empty): a sheet foot's primary, a form's submit or a `data-check-save`
+    button is held while a field in its scope is required and empty (spaces
+    alone too) or not of its kind (`type=number`, `email`, `tel`, `url`,
+    `inputmode=url`, a date, `data-check` `amount` above 0, `whole`,
+    `number`, `phone`, `url`; `min`, `max`, `step="1"`): the first wrong
+    field focused, its fold opened, one `.check-note` under it (Enter the
+    {label}. / Choose the {label}., 中文 on a 中文 page; `W.check*`).
+    `ADspaceConfirm` asks it of every field; a page saving without a press
+    asks `ADspaceForm.check(scope)`. `data-check-partial` (Billing's details
+    before Active, a script's draft) holds only a wrong kind, as does
+    `data-check-own` (a form naming its empty fields more fully: My Work's
+    New names the post);
+    `data-check-group` (a list's row) asks its required fields once one
+    holds a value; `data-nocheck` is never held. A form never types its own
+    required check again; a client page's own checks state its database
+    function's lengths and shapes beyond it.
   - `ADspaceForm.title` sets formal names in title case.
   - `ADspaceForm.named` / `sequence`: every client or colleague offered in a
     console select reads code first (`AC190 · Brand`, `AD014 · Xue Yi`), A to
