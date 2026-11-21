@@ -791,6 +791,20 @@
 
   }
   window.__DB = DB;
+
+  [['__meet', 'meet'], ['__meta', 'meta']].forEach(function (k) {
+    var v = window[k[0]];
+    try {
+      Object.defineProperty(window, k[0], { configurable: true, enumerable: true,
+        get: function () { return v; },
+        set: function (x) {
+          v = x;
+          if (!x) return;
+          if (window.ADspaceAdmin && window.ADspaceAdmin.gateLearn) window.ADspaceAdmin.gateLearn(k[1], false);
+          else try { localStorage.removeItem('adspace-gate-off:' + k[1]); } catch (e) {  }
+        } });
+    } catch (e) {  }
+  });
   window.__persist = persist;
 
   var GUIDE_KEYS = ['overview', 'work', 'clients', 'whatsapp', 'review', 'scripts', 'suppliers', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook', 'mine', 'analytics',

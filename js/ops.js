@@ -7289,7 +7289,7 @@
           ? '<button class="tdate" type="button" data-a="meet" aria-label="' + esc('Meeting, ' + meetingWord(e) + '. Change') + '">' + esc(meetingWord(e)) + PEN_SVG + '</button>'
           : esc(meetingWord(e))) + '</span>' +
         (can && (bookable || !(e.meeting_at || e.meeting_na)) ? '<span class="eng-meetacts">' +
-          (bookable ? '<button class="btn btn-sm" data-a="book" type="button">Create Google Meet</button>' : '') +
+          (bookable ? '<button class="btn btn-sm" data-a="book" data-gate="meet" type="button">Create Google Meet</button>' : '') +
           (e.meeting_at || e.meeting_na ? '' : '<button class="btn btn-sm" data-a="meet" type="button">Set meeting</button>') +
         '</span>' : '') +
       '</div>' +

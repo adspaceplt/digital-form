@@ -484,3 +484,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `no-contact`, `wa-off`, `no-number`; within `wa_repeat_hours` `recent`
   with when and by whom, asked again in warn; filed under the colleague)
   (`tests/quotesite.js`, `tests/sql.js`).
+- Website quotations at 0 (Settings, Messages; SWITCHED-OFF ACTS, release
+  B): a waiting website quotation's Send quotation carries
+  `data-gate="whatsapp quotewa"` and is drawn disabled with its reason, and
+  the client's Quotations lead with one `.msg.warn` line (`#qtWaOff`); Send
+  by email stays.

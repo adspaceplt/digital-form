@@ -344,6 +344,19 @@
       return 'Today’s limit of ' + n + ' ' + (n === 1 ? what[0] : what[1]) + ' has been reached. It resets at 12:00am. An admin can change the limit in Settings → AI.';
     },
     bukkuOff: 'Bukku is not connected to the portal. Please contact an admin.',
+    /* Release B: Google Meet, Meta, a website quotation on WhatsApp, and a
+       link whose page is set unavailable or upgrading. */
+    meetOff: 'Google Meet is not set up for the portal. Please contact an admin.',
+    metaOff: 'Meta is not connected to the portal. Please contact an admin.',
+    metaChecksOff: 'Meta checks are turned off. An admin can turn them on in Settings → Reports.',
+    quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
+    quoteWaOffAll: 'Website quotations are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
+    pageOff: function (name, kind, until) {
+      return name + ' is set to ' + kind + (until ? ' until ' + until : '') + '. Anyone opening this link will see the notice page instead.';
+    },
+    pageAhead: function (name, kind, from) {
+      return name + ' will be set to ' + kind + ' from ' + from + '. From then, anyone opening this link will see the notice page instead.';
+    },
     portalOffRow: 'Off for the whole portal',
     /* An automatic email a step would send, said before the step while it
        will not go (CANDIDATE EMAILS, 2026-11-21): "Automatic emails are

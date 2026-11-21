@@ -228,6 +228,14 @@
       (shown.length ? '<span class="tab-n part-n">' + shown.length + '</span>' : '') + '</span>' +
       (maySet ? '<button class="btn btn-quiet btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
+    /* Settings, Messages: Website quotations at 0 (SWITCHED-OFF ACTS,
+       release B): a website quotation waiting for the team cannot go on
+       WhatsApp, so the part says so once, and Send quotation stays drawn,
+       disabled with the same words (`data-gate="whatsapp quotewa"`). */
+    var A = window.ADspaceAdmin;
+    if (maySet && A && A.gateState && !A.gateState('quotewa').on && shown.some(awaiting)) {
+      html += '<p class="msg warn" id="qtWaOff">' + esc(window.ADspaceWords.line.quoteWaOffAll) + '</p>';
+    }
     /* What needs the team first, then what stands, then what is settled,
        then what is over (Expired, Revised, Cancelled); each newest first
        as read (2026-11-03). */
@@ -268,7 +276,7 @@
              (`data-wa-ready`) and never for a prospect marked Do not contact,
              which quotation_send refuses (audit 2026-10-30). */
           if (maySet && awaiting(q)) {
-            if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready data-gate="whatsapp" hidden type="button">Send quotation</button>');
+            if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready data-gate="whatsapp quotewa" hidden type="button">Send quotation</button>');
             acts.push('<button class="btn btn-sm" data-a="publish" type="button">Publish</button>');
           }
           /* A signed quotation is the contract: asked again, never revised
@@ -598,7 +606,7 @@
   function linkCard(q, ctx, item, anchorBtn) {
     if (!linkPop) {
       linkPop = document.createElement('div');
-      linkPop.className = 'kmenu rp-idspop qt-linkpop'; linkPop.id = 'qtLinkPop'; linkPop.hidden = true; linkPop.tabIndex = -1;
+      linkPop.className = 'kmenu rp-idspop qt-linkpop'; linkPop.id = 'qtLinkPop'; linkPop.setAttribute('data-page-link', 'quote'); linkPop.hidden = true; linkPop.tabIndex = -1;
       linkPop.setAttribute('role', 'dialog'); linkPop.setAttribute('aria-labelledby', 'qtLinkTitle');
       document.body.appendChild(linkPop);
       linkPop.addEventListener('click', function (e) { e.stopPropagation(); });
