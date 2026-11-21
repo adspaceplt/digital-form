@@ -117,16 +117,8 @@
 
   /* What the database said, in the team's words. */
   var SAID = {
-    'title': 'Enter a title of at least 3 characters.',
-    'title-long': 'Keep the initiative to 140 characters.',
-    'improves': 'Choose what it improves.',
-    'link': 'Enter a link that starts with https://.',
-    'decided': 'It has been decided. Ask for it to be moved back to Proposed first.',
     'bad-month': 'Choose this month or last month.',
     'final': 'That month is final.',
-    'empty': 'Write at least one line first.',
-    'too-long': 'Keep each line to 1,000 characters.',
-    'own': 'You cannot decide on your own initiative. Please ask another manager.',
     'bad-move': 'This step is not available for the review as it stands. Refresh the page.',
     'no-code': 'No master code is set. Please ask an admin to set one.',
     'code-needed': 'Locked. Enter the master code again.',
@@ -242,7 +234,7 @@
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
       /* The rewards views (2026-09-28) and the quarter or period they show. */
       var pv = q.get('view'), qq = q.get('q');
-      if (pv === 'quarters' || pv === 'company' || pv === 'commission' || pv === 'initiatives') st.pv = pv;
+      if (pv === 'quarters' || pv === 'company' || pv === 'commission') st.pv = pv;
       if (/^\d{4}-(01|04|07|10)$/.test(qq || '') && qq + '-01' >= FIRST_QUARTER) {
         if (st.pv === 'quarters') st.q = qq + '-01';
         if (st.pv === 'company') st.pf = halfOf(qq + '-01');
@@ -812,15 +804,14 @@
     var html = nextCard(r, res) + resultCard(r, res) +
       (manage() ? (draft ? rateForm(r, res) : rateRead(r)) : '') +
       (draft ? scoreForm(r, res) : scoreRead(r, res)) +
-      (manage() ? ctxCards(r) : '') +
-      breachCard(r, draft) + planCard(r) + disputeCard(r, res) +
+      breachCard(r, draft) + (manage() ? recCard(r) : '') + planCard(r) + disputeCard(r, res) +
       (manage() ? historyCard(r) : '');
     $('pvBody').innerHTML = html;
     $('pvFoot').innerHTML = st.foot || '';
     $('pvFoot').hidden = !st.foot;
     if ($('pvHist') && window.ADspaceRecords) window.ADspaceRecords.paint($('pvHist'), historyItems(r));
     wireSheet(r);
-    if (manage()) loadCtx(r);
+    if (manage()) { wireRecCard(); loadRecsFor(r); }
   }
 
   function card(title, inner, act, id) {
@@ -953,6 +944,7 @@
       '<dl class="tfacts perf-facts perf-sums">' +
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
         '<div><dt>Issues</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at ' + esc(num(Math.abs(res.cap != null ? res.cap : res.deduction))) + ' from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
+        recSum(res) +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
         '<div><dt>Next step</dt><dd>' + esc(ACTION[res.grade] || '') + '</dd></div>' +
         (path ? '<div><dt>If repeated</dt><dd>' + esc(path[0]) + '<small>' + esc(path[1]) + '</small></dd></div>' : '') +
@@ -961,6 +953,15 @@
       '');
   }
 
+  /* Recognitions (2026-11-22): what the month's confirmed recognitions
+     added, after the issues, and the limit where it held them. A result
+     from before them, or a month with the points off and none, names none. */
+  function recSum(res) {
+    if (res.recognition == null || (!Number(res.rec_cap) && !Number(res.recognition))) return '';
+    var raw = Number(res.recognition_raw), got = Number(res.recognition);
+    return '<div><dt>Recognitions</dt><dd>' + esc(got ? '+' + num(got) : '0') +
+      (raw > got ? '<small>' + esc('Capped at ' + num(got) + ' from ' + num(raw)) + '</small>' : '') + '</dd></div>';
+  }
   function roleLine(r) {
     var fam = r.member && r.member.role_family;
     return fam ? '<small class="perf-std">' + esc(ROLE_WORD[fam] + ': ' + ROLE_STD[fam]) + '</small>' : '';
@@ -1596,8 +1597,7 @@
         paintMine();
         loadSelf();
         loadMineRewards();
-        if (st.mv === 'initiatives') loadMineInits();
-        if (st.mv === 'reflection') loadRefl();
+        if (st.mv === 'recognition') loadRecs();
         if (st.mv === 'letters') loadLetters();
         if (st.mv === 'health') loadHealth();
     if (st.mv === 'personnel') loadPersonnel();
@@ -1975,12 +1975,14 @@
       GRADES.map(function (gr) { var on = gr[0] === res.grade; return { t: gr[2], f: on ? med : book, fill: on ? MARK : null, color: on ? INK : SOFT, size: TY.small }; })
     ]);
     y -= SP.line;
-    var q = W / 4;
-    table([{ w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }],
-      ['Base score', 'Deductions', 'Final score', 'Reward eligible'],
-      [[pnum(res.base) + ' / 100', res.deduction ? num(res.deduction) : '0',
+    /* Recognitions take a column only where they added marks (2026-11-22). */
+    var recAdd = Number(res.recognition) > 0;
+    var q = W / (recAdd ? 5 : 4);
+    table((recAdd ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]).map(function () { return { w: q, align: 'center' }; }),
+      ['Base score', 'Deductions'].concat(recAdd ? ['Recognitions'] : []).concat(['Final score', 'Reward eligible']),
+      [[pnum(res.base) + ' / 100', res.deduction ? num(res.deduction) : '0'].concat(recAdd ? ['+' + num(res.recognition)] : []).concat([
         { t: pnum(res.final) + ' / 100', f: med, size: TY.figure },
-        res.complete ? (res.eligible ? 'Yes' : 'No') : none]]);
+        res.complete ? (res.eligible ? 'Yes' : 'No') : none])]);
     var notes = [];
     if (res.capped) notes.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
     if (res.review) notes.push('Management will follow up.');
@@ -2289,7 +2291,7 @@
   }
 
   // The views -------------------------------------------------------------------------
-  var PANE = { months: 'perfMonths', quarters: 'perfQuarters', company: 'perfCompany', commission: 'perfCommission', initiatives: 'perfInits' };
+  var PANE = { months: 'perfMonths', quarters: 'perfQuarters', company: 'perfCompany', commission: 'perfCommission' };
   function setPv(v, quiet) {
     if (!PANE[v]) v = 'months';
     st.pv = v;
@@ -2318,7 +2320,6 @@
     if (st.pv === 'quarters') loadQuarter();
     else if (st.pv === 'company') loadPeriod();
     else if (st.pv === 'commission') loadCommission();
-    else if (st.pv === 'initiatives') loadInits();
     else loadMonth();
   }
 
@@ -2727,6 +2728,11 @@
       ['ded_cap', 'Most taken off per month', 'points', 'Most points off per month']], 'fgrid-3', 'months'],
     /* An issue on a VIC client's work (2026-10-15): its points times this. */
     ['VIC clients', [['ded_vic', 'Multiplier for an issue on a VIC client\'s work', 'times', 'VIC client multiplier']], '', 'months'],
+    /* Recognitions (2026-11-22): what a confirmed one adds, the month's
+       limit for each person, and whether management confirms each. */
+    ['Recognition (0 turns this off)', [['rec_points', 'Points per recognition', 'points', 'Points per recognition'],
+      ['rec_cap', 'Most points per person per month', 'points', 'Most recognition points per month'],
+      ['rec_confirm', 'Management confirms each recognition', 'onoff', 'Management confirms each recognition']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
     ['Reminders (0 turns this off)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
       ['remind_again_days', 'Days after the 1st to remind again', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
@@ -2755,6 +2761,7 @@
     if (kind === 'remind') return Number(v) === 0 ? 'None' : Number(v) + (Number(v) === 1 ? ' day' : ' days');
     if (kind === 'points') return Number(v) + (Number(v) === 1 ? ' point' : ' points');
     if (kind === 'times') return '×' + Number(v);
+    if (kind === 'onoff') return Number(v) ? 'On' : 'Off';
     return String(Number(v));
   }
   /* A label read back without its unit, which the value then carries. */
@@ -2782,6 +2789,11 @@
       return '<section class="fsec" data-view="' + g[3] + '"' + (g[3] === rwSet.view ? '' : ' hidden') + '><h4 class="fsec-h">' + esc(g[0]) + '</h4>' + (admin
         ? '<div class="row' + (g[1].length > 1 ? ' ' + (g[2] || 'fgrid') : '') + '">' + g[1].map(function (f) {
             var v = setAt(f[0], from);
+            if (f[2] === 'onoff') {
+              return '<div><label class="field-label" for="rwS_' + f[0] + '">' + esc(f[1]) + '</label>' +
+                '<select class="select" id="rwS_' + f[0] + '" data-key="' + f[0] + '" data-was="' + (v == null ? '' : v) + '">' +
+                '<option value="1"' + (Number(v) ? ' selected' : '') + '>On</option><option value="0"' + (Number(v) ? '' : ' selected') + '>Off</option></select></div>';
+            }
             return '<div><label class="field-label" for="rwS_' + f[0] + '">' + esc(f[1]) + '</label>' +
               '<input class="input" id="rwS_' + f[0] + '" data-key="' + f[0] + '" data-was="' + (v == null ? '' : v) + '" type="text" inputmode="decimal" autocomplete="off" value="' +
               (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
@@ -2834,7 +2846,7 @@
     openSettings(opener, view);
   }
   function openSettings(opener, view) {
-    rwSet.view = view || (st.pv === 'initiatives' ? 'months' : st.pv) || 'months';
+    rwSet.view = view || st.pv || 'months';
     if ($('rwSView').value !== rwSet.view) $('rwSView').value = rwSet.view;
     msg('rwSMsg', '');
     $('rwSFields').innerHTML = '';
@@ -2860,14 +2872,14 @@
   $('rwSCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('rwSSave').addEventListener('click', function () {
     var vals = {}, bad = null;
-    Array.prototype.forEach.call($('rwSFields').querySelectorAll('input[data-key]'), function (el) {
+    Array.prototype.forEach.call($('rwSFields').querySelectorAll('[data-key]'), function (el) {
       if (bad) return;
       var k = el.getAttribute('data-key'), kind = RW_LABEL[k][2];
       var raw = String(el.value || '').replace(/[,\s]/g, '').replace(/^RM/i, '').replace(/%$/, '');
       var v = /^\d+(\.\d{1,2})?$/.test(raw) ? Number(raw) : NaN;
       if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct' || kind === 'points') && v > 100) ||
           (kind === 'units' && v > 10) || (kind === 'days' && (v < 1 || v > 30 || v % 1)) ||
-          (kind === 'remind' && (v > 14 || v % 1)) || (kind === 'times' && (v < 1 || v > 10))) { bad = el; return; }
+          (kind === 'remind' && (v > 14 || v % 1)) || (kind === 'times' && (v < 1 || v > 10)) || (kind === 'onoff' && v > 1)) { bad = el; return; }
       if (String(v) !== String(Number(el.getAttribute('data-was')))) vals[k] = v;
     });
     if (bad) {
@@ -3205,81 +3217,68 @@
   // ---- End of performance rewards ------------------------------------------------------
 
 
-  // ---- Initiatives and the monthly reflection (2026-10-04) ------------------------------
-  /* What a colleague started and their own three lines on the month. The
-     initiatives sit beside Initiative and improvement in the review; the
-     reflection reaches management only once its author shares it, and is
-     never scored (2026-10-04-initiatives-reflection.sql). */
-  var IMPROVES = { client: 'Client work', process: 'Process', tool: 'Tool', sop: 'SOP', other: 'Other' };
-  var INIT_STATE = { proposed: ['Proposed', 'is-warn'], adopted: ['Adopted', 'is-warn'], done: ['Done', 'is-ok'],
-                     not_now: ['Not now', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
-  var INIT_ORDER = ['proposed', 'adopted', 'done', 'not_now', 'withdrawn'];
-  function initChip(s) { var w = INIT_STATE[s] || [s, '']; return chip(w[0], w[1]); }
-  var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  function shutInitMenus() {
-    Array.prototype.forEach.call(document.querySelectorAll('#mineInitList .kmenu, #piList .kmenu'), function (m) { m.hidden = true; });
-    Array.prototype.forEach.call(document.querySelectorAll('#mineInitList .kmenu-btn, #piList .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  // ---- Recognition (2026-11-22) ------------------------------------------------------------
+  /* A colleague recognises another (2026-11-22-recognition.sql): the
+     receiver is told, never the points; management confirms or declines
+     each beside the month's review, and a confirmed one adds the month's
+     points to it, held to the month's limit. Initiatives and Reflection
+     have left the pages; their records are kept. */
+  var REC_CAT = { helped: 'Helped a colleague', effort: 'Extra effort', praise: 'Client praise' };
+  var REC_STATE = { waiting: ['Awaiting confirmation', 'is-warn'], confirmed: ['Confirmed', 'is-ok'],
+                    declined: ['Declined', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
+  function recChip(s) { var w = REC_STATE[s] || [s, '']; return chip(w[0], w[1]); }
+  var REC_SAID = {
+    'own': 'You cannot recognise yourself. Choose a colleague.',
+    'bad-colleague': 'Choose an active colleague.',
+    'bad-category': 'Choose a category.',
+    'note-needed': 'Enter a note of 3 to 500 characters.',
+    'too-long': 'Enter a note of 3 to 500 characters.',
+    'too-many': 'You have given 10 recognitions today. Please try again tomorrow.',
+    'decided': 'This recognition has already been confirmed or declined, so it can no longer be withdrawn.',
+    'not-found': 'This recognition no longer exists. Refresh the page.',
+    'bad-move': 'This recognition was changed by someone else. Refresh the page.'
+  };
+  function recSaid(d, decide) {
+    if (d && d.error === 'own' && decide) return 'You cannot confirm or decline a recognition you gave or received. Please ask another manager.';
+    if (d && d.error === 'month-released') return (d.month || 'That month') + ' has been shared. Revert it to draft to change its recognitions.';
+    return (d && REC_SAID[d.error]) || said(d);
   }
-  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutInitMenus);
+  var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  function shutRecMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#mineRecList .kmenu, #pvRecs .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#mineRecList .kmenu-btn, #pvRecs .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutRecMenus);
   document.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('#mineInitList .team-act, #piList .team-act')) shutInitMenus();
+    if (!e.target.closest || !e.target.closest('#mineRecList .team-act, #pvRecs .team-act')) shutRecMenus();
   });
-  /* One row: the initiative over what it improves and when, its state, and
-     a ⋯ holding only what the reader may press. */
-  function initRow(i, items, who) {
-    var el = document.createElement('div');
-    el.className = 'crm-row init-row' + (i.status === 'withdrawn' || i.status === 'not_now' ? ' is-off' : '');
-    el.setAttribute('data-init', i.id);
-    var meta = [who ? i.name : '', IMPROVES[i.improves], i.month].filter(Boolean);
-    if (i.done_month && i.done_month !== i.month) meta.push('done ' + i.done_month);
-    var note = i.note ? (i.decided_by ? i.decided_by + ': ' : '') + i.note : '';
-    el.innerHTML =
-      '<span class="init-name"><b>' + esc(i.title) + '</b><small>' + esc(meta.join(' · ')) + '</small>' +
-        (i.detail ? '<small class="init-detail">' + esc(i.detail) + '</small>' : '') +
-        (note ? '<small class="init-note">' + esc(note) + '</small>' : '') +
-        (i.link ? '<a class="plink init-link" href="' + esc(i.link) + '" target="_blank" rel="noopener">Open link</a>' : '') +
-      '</span>' +
-      '<span class="init-state">' + initChip(i.status) + '</span>' +
-      '<span class="team-act">' + (items.length
-        ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + MENU_DOTS + '</button>' +
-          '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
-            return '<button class="kmenu-item' + (x[2] ? ' is-danger' : '') + '" data-a="' + x[0] + '" type="button">' + esc(x[1]) + '</button>';
-          }).join('') + '</div>' : '') + '</span>';
+  /* A ⋯ of the items given ([data-a, words, group]), opened from its button. */
+  function recMenu(items) {
+    if (!items.length) return '';
+    return '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + MENU_DOTS + '</button>' +
+      '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
+        return '<button class="kmenu-item" data-a="' + x[0] + '" data-g="' + x[2] + '" type="button" role="menuitem">' + esc(x[1]) + '</button>';
+      }).join('') + '</div>';
+  }
+  function wireRecMenu(el) {
     var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
-    if (btn) btn.addEventListener('click', function (e) {
+    if (!btn) return;
+    btn.addEventListener('click', function (e) {
       e.stopPropagation();
       var open = menu.hidden;
-      shutInitMenus();
+      shutRecMenus();
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
-      if (open) window.ADspaceMenu.place(btn, menu);
-    });
-    return el;
-  }
-  function initGroups(box, list, route, rowOf) {
-    var G = window.ADspaceGroup;
-    box.innerHTML = '';
-    INIT_ORDER.forEach(function (k) {
-      var rows = list.filter(function (i) { return i.status === k; });
-      if (!rows.length) return;
-      box.appendChild(G.section({
-        route: route, key: k, name: INIT_STATE[k][0], count: rows.length,
-        shut: G.shut(route, k, k === 'not_now' || k === 'withdrawn'),
-        table: function () {
-          var t = G.table('init-row', ['Initiative', 'Status', '']);
-          G.more(t, rows, 30, '', rowOf);
-          return t;
-        }
-      }));
+      if (open) { if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu); window.ADspaceMenu.place(btn, menu); }
     });
   }
 
   // The colleague's own --------------------------------------------------------------------
   function mvFromUrl() {
     var v = new URLSearchParams(location.search).get('view');
-    return v === 'initiatives' || v === 'reflection' || v === 'letters' || v === 'health' || v === 'personnel' ? v : 'reviews';
+    return v === 'recognition' || v === 'letters' || v === 'health' || v === 'personnel' ? v : 'reviews';
   }
-  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl', letters: 'mineLetters',
+  var MV = { reviews: 'mineReviews', recognition: 'mineRecog', letters: 'mineLetters',
              personnel: 'minePersonnel', health: 'mineHealth' };
   /* The employee record (js/personnel.js, 2026-11-16), behind the same proof. */
   function loadPersonnel() { if (window.ADspacePersonnel) window.ADspacePersonnel.enterMine(); }
@@ -3301,8 +3300,7 @@
     var b = e.target.closest('.acttab');
     if (!b || b.getAttribute('data-mv') === st.mv) return;
     setMv(b.getAttribute('data-mv'));
-    if (st.mv === 'initiatives') loadMineInits();
-    if (st.mv === 'reflection') loadRefl();
+    if (st.mv === 'recognition') loadRecs();
     if (st.mv === 'letters') loadLetters();
     if (st.mv === 'health') loadHealth();
     if (st.mv === 'personnel') loadPersonnel();
@@ -3357,293 +3355,174 @@
       then(d);
     });
   }
-  function loadMineInits() {
-    if (!st.inits) UI.skeleton($('mineInitList'), 2);
-    mineCall('perf_initiatives_mine', {}, function (d) {
-      if (d.error) { UI.failLine($('mineInitList'), 'Your initiatives', said(d), loadMineInits); return; }
-      st.inits = d.initiatives || [];
-      paintMineInits();
+  /* The colleague's recognitions: Received over Given, each newest first;
+     Recognise stands in the bar, and a waiting one given is the giver's to
+     withdraw. No points are shown here. */
+  function loadRecs() {
+    if (!st.recs) UI.skeleton($('mineRecList'), 2);
+    mineCall('perf_recognitions_mine', {}, function (d) {
+      if (d.error) { UI.failLine($('mineRecList'), 'Your recognitions', recSaid(d), loadRecs); return; }
+      st.recs = d;
+      paintRecs();
     });
   }
-  function paintMineInits() {
-    var list = st.inits || [], box = $('mineInitList');
-    var live = list.filter(function (i) { return i.status !== 'withdrawn'; }).length;
-    $('mineInitCount').textContent = live ? live + (live === 1 ? ' initiative' : ' initiatives') : '';
-    /* Log initiative stands in the bar; the empty line does not offer it
-       again (ux-audit MINE-2, 2026-10-14). */
-    if (!list.length) { UI.emptyLine(box, 'No initiatives.'); return; }
-    initGroups(box, list, 'mine-inits', function (i) {
-      var items = i.status === 'proposed' ? [['edit', 'Edit'], ['withdraw', 'Withdraw', true]]
-                : i.status === 'withdrawn' ? [['restore', 'Restore']] : [];
-      var el = initRow(i, items, false);
-      var on = function (a, f) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutInitMenus(); f(); }); };
-      on('edit', function () { openInit(i, el.querySelector('[data-a="menu"]')); });
-      on('withdraw', function () { withdrawInit(i, false); });
-      on('restore', function () { withdrawInit(i, true); });
-      return el;
+  function recRow(x, given) {
+    var el = document.createElement('div');
+    el.className = 'crm-row recog-row prow' + (x.status === 'declined' ? ' is-off' : '');
+    el.setAttribute('data-rec', x.id);
+    var items = given && x.status === 'waiting' ? [['withdraw', 'Withdraw', 5]] : [];
+    el.innerHTML =
+      '<span class="init-name pr-main"><b>' + esc(given ? 'To ' + (x.name || '') : (x.giver || '')) + '</b>' +
+        '<small>' + esc([REC_CAT[x.category], dateWord(x.given_on)].filter(Boolean).map(function (v) { return String(v).replace(/ /g, ' '); }).join(' · ')) + '</small>' +
+        '<small class="init-detail">' + esc(x.note) + '</small></span>' +
+      '<span class="init-state pr-state">' + recChip(x.status) + '</span>' +
+      (items.length ? '<span class="team-act pr-act">' + recMenu(items) + '</span>' : '');
+    wireRecMenu(el);
+    var w = el.querySelector('[data-a="withdraw"]');
+    if (w) w.addEventListener('click', function () { shutRecMenus(); withdrawRec(x, false); });
+    return el;
+  }
+  function paintRecs() {
+    var d = st.recs || {}, got = d.received || [], gave = d.given || [], box = $('mineRecList'), G = window.ADspaceGroup;
+    var n = got.length + gave.length;
+    $('mineRecCount').textContent = n ? n + (n === 1 ? ' recognition' : ' recognitions') : '';
+    if (!n) { UI.emptyLine(box, 'No recognitions.'); return; }
+    box.innerHTML = '';
+    [['received', 'Received', got, false], ['given', 'Given', gave, true]].forEach(function (g) {
+      if (!g[2].length) return;
+      box.appendChild(G.section({
+        route: 'mine-recs', key: g[0], name: g[1], count: g[2].length, shut: G.shut('mine-recs', g[0], false),
+        table: function () {
+          var t = G.table('recog-row prow', ['Recognition', 'Status', '']);
+          G.more(t, g[2], 30, '', function (x) { return recRow(x, g[3]); });
+          return t;
+        }
+      }));
     });
   }
-  /* Withdraw takes a proposal back and Restore returns it; neither asks. */
-  function withdrawInit(i, back) {
-    mineCall('perf_initiative_withdraw', { p_id: i.id, p_back: back }, function (d) {
-      if (d.error) { msg('mineInitMsg', said(d), 'err'); return; }
-      st.inits = st.inits.map(function (x) { return x.id === i.id ? d.initiative : x; });
-      paintMineInits();
-      msg('mineInitMsg', '');
-      if (!back) initUndo(d.initiative);
+  /* Withdraw takes back a recognition still waiting; Undo puts it back. */
+  function withdrawRec(x, back) {
+    mineCall('perf_recognition_withdraw', { p_id: x.id, p_back: back }, function (d) {
+      if (d.error) { msg('mineRecMsg', recSaid(d), 'err'); return; }
+      st.recs = null;
+      loadRecs();
+      msg('mineRecMsg', back ? 'Undone.' : '');
+      if (!back && bridge.undoHere) bridge.undoHere('Recognition withdrawn.', function () { withdrawRec(x, true); }, $('mineRecList'));
     });
   }
-  /* The way back, drawn over the list for 8 seconds; Restore in the ⋯
-     stays after. */
-  var initUndoTimer = null;
-  function initUndo(i) {
-    var host = $('mineInitList'), bar = host.parentNode.querySelector(':scope > .undobar-here');
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.className = 'undobar undobar-here';
-      host.parentNode.insertBefore(bar, host);
-    }
-    bar.hidden = false;
-    bar.innerHTML = '<span>' + esc(i.title + ' withdrawn.') + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
-    bar.querySelector('button').addEventListener('click', function () { shut(); withdrawInit(i, true); });
-    clearTimeout(initUndoTimer);
-    initUndoTimer = setTimeout(shut, 8000);
+  /* Recognise: a colleague (never oneself), the category and a note. The
+     active colleagues are read once a visit, code first. */
+  var recPeople = null;
+  function readRecPeople(then) {
+    if (recPeople) { then(); return; }
+    if (!db) { recPeople = []; then(); return; }
+    db.from('team_members').select('id, name, staff_code, active, system').eq('active', true).then(function (res) {
+      var F = window.ADspaceForm, mine = (me() || {}).id;
+      recPeople = (res && !res.error && res.data || []).filter(function (p) { return !p.system && p.id !== mine; })
+        .sort(F && F.byStaff ? F.byStaff : function () { return 0; });
+      then();
+    }).catch(function () { recPeople = []; then(); });
   }
-  function openInit(i, opener) {
-    st.initEdit = i || null;
-    $('initSheetTitle').textContent = i ? 'Edit initiative' : 'Log initiative';
-    $('initSave').textContent = i ? 'Save' : 'Log';
-    $('initTitle').value = i ? i.title : '';
-    $('initImproves').value = i ? i.improves : 'client';
-    $('initDetail').value = i ? (i.detail || '') : '';
-    $('initLink').value = i ? (i.link || '') : '';
-    msg('initMsg', '');
-    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('initImproves'));
-    window.ADspaceSheet.show($('initSheet'), { opener: opener || $('mineInitAdd') });
+  function openRecognise(opener) {
+    readRecPeople(function () {
+      var F = window.ADspaceForm;
+      $('rgnWho').innerHTML = '<option value="">Choose</option>' + recPeople.map(function (p) {
+        return '<option value="' + esc(p.id) + '">' + esc(F && F.named ? F.named(p.staff_code, p.name) : p.name) + '</option>';
+      }).join('');
+      $('rgnCat').value = 'helped';
+      $('rgnNote').value = '';
+      msg('rgnMsg', '');
+      if (F && F.paint) F.paint($('rgnCat'));
+      window.ADspaceSheet.show($('rgnSheet'), { opener: opener || $('mineRecAdd') });
+    });
   }
-  $('mineInitAdd').addEventListener('click', function () { openInit(null, this); });
-  $('initClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('initCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('initSave').addEventListener('click', function () {
-    var b = this, t = $('initTitle').value.trim(), l = $('initLink').value.trim();
-    if (t.length < 3) { msg('initMsg', SAID.title, 'err'); $('initTitle').focus(); return; }
-    if (l && !/^https:\/\/\S+$/.test(l)) { msg('initMsg', SAID.link, 'err'); $('initLink').focus(); return; }
+  $('mineRecAdd').addEventListener('click', function () { openRecognise(this); });
+  $('rgnClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rgnCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rgnSave').addEventListener('click', function () {
+    var b = this, to = $('rgnWho').value, note = $('rgnNote').value.trim();
+    if (!to) { msg('rgnMsg', REC_SAID['bad-colleague'], 'err'); $('rgnWho').focus(); return; }
+    if (note.length < 3) { msg('rgnMsg', REC_SAID['note-needed'], 'err'); $('rgnNote').focus(); return; }
     b.disabled = true;
-    var was = st.initEdit;
-    mineCall('perf_initiative_save', { p_id: was ? was.id : null, p_title: t, p_improves: $('initImproves').value,
-                                       p_detail: $('initDetail').value, p_link: l }, function (d) {
+    mineCall('perf_recognition_give', { p_to: to, p_category: $('rgnCat').value, p_note: note }, function (d) {
       b.disabled = false;
-      if (d.error) { msg('initMsg', said(d), 'err'); return; }
+      if (d.error) { msg('rgnMsg', recSaid(d), 'err'); return; }
       window.ADspaceSheet.clean();
       window.ADspaceSheet.close();
-      st.inits = was ? (st.inits || []).map(function (x) { return x.id === was.id ? d.initiative : x; })
-                     : [d.initiative].concat(st.inits || []);
-      paintMineInits();
-      msg('mineInitMsg', was ? 'Saved.' : 'Logged.', 'ok');
-    });
-  });
-
-  /* This month and last; a month's lines stay open until its review is final. */
-  function reflMonths() {
-    var cur = thisMonth();
-    return [cur, addMonths(cur, -1)];
-  }
-  function fillReflMonths() {
-    var sel = $('mineReflMonth');
-    if (sel.options.length) return;
-    sel.innerHTML = reflMonths().map(function (p) { return '<option value="' + p + '">' + esc(monthWord(p)) + '</option>'; }).join('');
-    $('mineReflMonths').innerHTML = reflMonths().map(function (p, i) {
-      return '<button class="acttab btn-sm' + (i ? '' : ' is-on') + '" type="button" data-p="' + p + '" aria-pressed="' + (i ? 'false' : 'true') + '">' + esc(monthWord(p)) + '</button>';
-    }).join('');
-  }
-  $('mineReflMonths').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-p]');
-    if (!b || b.getAttribute('data-p') === $('mineReflMonth').value) return;
-    $('mineReflMonth').value = b.getAttribute('data-p');
-    Array.prototype.forEach.call(this.querySelectorAll('.acttab'), function (x) {
-      var on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on));
-    });
-    $('mineReflMonth').dispatchEvent(new Event('change'));
-  });
-  $('mineReflMonth').addEventListener('change', function () { st.refl = null; $('mineReflWrite').hidden = true; loadRefl(); });
-  $('mineReflWrite').addEventListener('click', function () { openRefl(this); });
-  function loadRefl() {
-    fillReflMonths();
-    if (!st.refl) UI.skeleton($('mineReflBox'), 1);
-    var p = $('mineReflMonth').value;
-    mineCall('perf_reflection_mine', { p_period: p }, function (d) {
-      if (p !== $('mineReflMonth').value) return;
-      if (d.error) { UI.failLine($('mineReflBox'), 'Your reflection', said(d), loadRefl); return; }
-      st.refl = d;
-      paintRefl();
-    });
-  }
-  var REFL = [['proud', 'Proud of'], ['hard', 'Found hard'], ['learn', 'Want to learn']];
-  function paintRefl() {
-    var f = st.refl, box = $('mineReflBox');
-    if (!f) return;
-    var any = f.proud || f.hard || f.learn;
-    /* Write reflection stands in the bar beside the month it is for
-       (ux-audit MINE-4, 2026-10-14). */
-    $('mineReflWrite').hidden = !(f.open && !any);
-    if (!any) { UI.emptyLine(box, 'No reflection.'); return; }
-    var shared = Boolean(f.shared_at);
-    box.innerHTML =
-      '<div class="ovcard refl-card">' +
-        '<div class="ovsec"><div class="ovsec-head refl-head"><h3>' + esc(f.month) + '</h3>' +
-          '<span class="refl-ctl">' + (shared ? chip('Shared', 'is-ok') : '') +
-          (f.open ? '<button class="btn btn-sm" data-a="edit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>' : '') +
-          '</span></div>' +
-        REFL.map(function (q) {
-          return '<div class="refl-line"><span class="refl-q">' + esc(q[1]) + '</span>' +
-            (f[q[0]] ? '<span class="refl-a">' + esc(f[q[0]]) + '</span>' : '<span class="perf-dash">—</span>') + '</div>';
-        }).join('') +
-        /* Inside the padded section, never on the card's bare edge
-           (2026-10-20, MINE-1). */
-        (f.open ? '<div class="row acts refl-acts">' +
-          (shared ? '<button class="btn" data-a="unshare" type="button">Stop sharing</button>'
-                  : '<button class="btn btn-go" data-a="share" type="button">Share</button>') + '</div>' : '') +
-      '</div></div>';
-    var on = function (a, f2) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { f2(b); }); };
-    on('edit', function (b) { openRefl(b); });
-    on('share', function (b) { shareRefl(true, b); });
-    on('unshare', function (b) { shareRefl(false, b); });
-  }
-  /* Sharing hands the lines to management, so it asks; stopping never does. */
-  function shareRefl(on, b) {
-    var go = function () {
-      b.disabled = true;
-      mineCall('perf_reflection_share', { p_period: st.refl.period, p_on: on }, function (d) {
-        b.disabled = false;
-        if (d.error) { msg('mineReflMsg', said(d), 'err'); return; }
-        st.refl = d; paintRefl();
-        msg('mineReflMsg', on ? 'Shared.' : 'No longer shared.', 'ok');
-      });
-    };
-    if (!on) { go(); return; }
-    window.ADspaceConfirm.ask({
-      title: 'Share your reflection?',
-      body: 'Management reads it beside your ' + st.refl.month + ' review. It is never scored.',
-      go: 'Share'
-    }, go);
-  }
-  function openRefl(opener) {
-    var f = st.refl || {};
-    $('reflSheetTitle').textContent = 'Reflection, ' + (f.month || '');
-    $('reflProud').value = f.proud || '';
-    $('reflHard').value = f.hard || '';
-    $('reflLearn').value = f.learn || '';
-    msg('reflMsg', '');
-    window.ADspaceSheet.show($('reflSheet'), { opener: opener || $('mineReflMonth') });
-  }
-  $('reflClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('reflCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('reflSave').addEventListener('click', function () {
-    var b = this;
-    if (!($('reflProud').value.trim() || $('reflHard').value.trim() || $('reflLearn').value.trim())) {
-      msg('reflMsg', SAID.empty, 'err'); $('reflProud').focus(); return;
-    }
-    b.disabled = true;
-    mineCall('perf_reflection_save', { p_period: st.refl.period, p_proud: $('reflProud').value,
-                                       p_hard: $('reflHard').value, p_learn: $('reflLearn').value }, function (d) {
-      b.disabled = false;
-      if (d.error) { msg('reflMsg', said(d), 'err'); return; }
-      window.ADspaceSheet.clean();
-      window.ADspaceSheet.close();
-      st.refl = d; paintRefl();
-      msg('mineReflMsg', 'Saved.', 'ok');
+      st.recs = null;
+      loadRecs();
+      msg('mineRecMsg', 'Sent.', 'ok');
     });
   });
 
   // Management ------------------------------------------------------------------------------
-  function loadInits() {
-    opened();
-    if (!st.pinits) UI.skeleton($('piList'), 3);
-    call('perf_initiatives', { p_token: token }, function (d) {
-      if (d.error === 'code-needed' || d.error === 'no-code') return;
-      if (d.error) { UI.failLine($('piList'), 'Initiatives', said(d), loadInits); return; }
-      st.pinits = d.initiatives || [];
-      paintInits();
-    });
-  }
-  $('piFind').addEventListener('input', function () {
-    var v = this.value.trim().toLowerCase();
-    if (v === st.piFind) return;
-    st.piFind = v; paintInits();
-  });
-  function paintInits() {
-    var all = st.pinits || [], q = st.piFind || '';
-    var rows = !q ? all : all.filter(function (i) { return (i.title + ' ' + (i.name || '')).toLowerCase().indexOf(q) > -1; });
-    $('piCount').textContent = !all.length ? '' : rows.length === all.length
-      ? all.length + (all.length === 1 ? ' initiative' : ' initiatives') : rows.length + ' of ' + all.length;
-    var box = $('piList');
-    if (!all.length) { UI.emptyLine(box, 'No initiatives.'); return; }
-    if (!rows.length) { UI.emptyLine(box, 'No matches.', 'Clear search', function () { $('piFind').value = ''; st.piFind = ''; paintInits(); }); return; }
-    var work = may('team.performance', 'work');
-    initGroups(box, rows, 'team-inits', function (i) {
-      var items = !work ? [] : i.status === 'proposed' ? [['adopted', 'Adopt'], ['not_now', 'Not now']]
-                : i.status === 'adopted' ? [['done', 'Mark done'], ['proposed', 'Revert']] : [['proposed', 'Revert']];
-      var el = initRow(i, items, true);
-      items.forEach(function (x) {
-        var b = el.querySelector('[data-a="' + x[0] + '"]');
-        b.addEventListener('click', function () { shutInitMenus(); decideInit(i, x[0], el.querySelector('[data-a="menu"]')); });
-      });
-      return el;
-    });
-  }
-  /* Adopt and Not now ask, with a note the colleague reads; Mark done and
-     Revert are steps that are taken back, and ask nothing. */
-  function decideInit(i, to, opener) {
-    var go = function (note) {
-      call('perf_initiative_decide', { p_token: token, p_id: i.id, p_status: to, p_note: note || null }, function (d) {
-        if (d.error) { msg('piMsg', said(d), 'err'); return; }
-        st.pinits = (st.pinits || []).map(function (x) { return x.id === i.id ? d.initiative : x; });
-        if (window.ADspaceGroup && window.ADspaceGroup.keep) window.ADspaceGroup.keep('team-inits', to);
-        paintInits();
-        msg('piMsg', to === 'proposed' ? 'Reverted to Proposed.' : (INIT_STATE[to][0] + '.'), 'ok');
-        st.ctxKey = null;
-      });
-    };
-    if (to !== 'adopted' && to !== 'not_now') { go(null); return; }
-    if (opener && opener.focus) opener.focus();
-    window.ADspaceConfirm.ask({
-      title: (to === 'adopted' ? 'Adopt ' : 'Not now: ') + i.title,
-      body: i.name + ' will be told.',
-      go: to === 'adopted' ? 'Adopt' : 'Not now',
-      fields: [{ name: 'note', label: 'Note', required: false }]
-    }, function (v) { go(v && v.note); });
-  }
-
-  /* Beside the scores in the review sheet: the month's initiatives and,
-     once shared, the colleague's reflection. Read once a review. */
-  function loadCtx(r) {
+  /* Beside the month's review: what was given in the month and what counts
+     in it, read once a review; Confirm and Decline a waiting one, Revert to
+     waiting in its ⋯; never one the reader gave (the database also refuses
+     one they received, which their own review never shows). */
+  function loadRecsFor(r) {
     var key = r.team_member_id + '|' + r.period;
-    if (st.ctxKey === key) return;
-    st.ctxKey = key; st.ctx = null;
-    call('perf_review_context', { p_token: token, p_member: r.team_member_id, p_period: r.period }, function (d) {
-      if (st.ctxKey !== key) return;
-      st.ctx = d.error ? { error: d } : d;
+    if (st.rvRecKey === key) return;
+    st.rvRecKey = key; st.rvRecs = null;
+    call('perf_review_recognitions', { p_token: token, p_member: r.team_member_id, p_period: r.period }, function (d) {
+      if (st.rvRecKey !== key) return;
+      st.rvRecs = d.error ? { error: d } : d;
       if (st.rec && st.rec.team_member_id + '|' + st.rec.period === key) paintSheet();
     });
   }
-  function ctxCards(r) {
-    var c = st.ctx;
-    if (!c || st.ctxKey !== r.team_member_id + '|' + r.period) return '';
-    if (c.error) return card('Initiatives', '<p class="ctx-none">' + esc(said(c.error)) + '</p>');
-    var list = c.initiatives || [];
-    var inits = card('Initiatives', list.length
-      ? '<div class="ctx-inits">' + list.map(function (i) {
-          return '<div class="ctx-init"><span><b>' + esc(i.title) + '</b><small>' +
-            esc([IMPROVES[i.improves], i.status === 'done' && i.done_month ? 'done ' + i.done_month : 'logged ' + i.month].join(' · ')) +
-            '</small></span>' + initChip(i.status) + '</div>';
-        }).join('') + '</div>'
-      : '<p class="ctx-none">None this month.</p>');
-    var f = c.reflection;
-    var refl = f ? card('Reflection', REFL.map(function (q) {
-      return f[q[0]] ? '<div class="refl-line"><span class="refl-q">' + esc(q[1]) + '</span><span class="refl-a">' + esc(f[q[0]]) + '</span></div>' : '';
-    }).join('')) : '';
-    return inits + refl;
+  function recCard(r) {
+    var c = st.rvRecs;
+    if (!c || st.rvRecKey !== r.team_member_id + '|' + r.period) return '';
+    if (c.error) return card('Recognitions', '<p class="perf-quiet">' + esc(recSaid(c.error)) + '</p>', '', 'pvRecs');
+    var list = c.rows || [], pts = Number(c.points), cap = Number(c.cap);
+    var held = r.status !== 'draft';
+    var rule = cap > 0 ? '<p class="perf-quiet">' + esc(num(pts) + (pts === 1 ? ' point' : ' points') + ' per recognition, up to ' + num(cap) + ' per month.') + '</p>'
+      : '<p class="perf-quiet">Recognitions add no points this month.</p>';
+    var rows = list.map(function (x) {
+      var here = x.status === 'confirmed' && x.period === r.period;
+      var meta = [REC_CAT[x.category], dateWord(x.given_on),
+        x.status !== 'waiting' && x.decided_by ? (x.status === 'confirmed' ? 'Confirmed by ' : 'Declined by ') + x.decided_by : '',
+        x.status === 'confirmed' && !here && x.period_month ? 'Counts in ' + x.period_month : ''].filter(Boolean);
+      var can = canWork() && !x.mine;
+      var acts = can && x.status === 'waiting'
+        ? '<div class="qnext-acts recog-acts"><button class="btn btn-sm" type="button" data-rd="declined" data-id="' + esc(x.id) + '">Decline</button>' +
+          '<button class="btn btn-sm" type="button" data-rd="confirmed" data-id="' + esc(x.id) + '">Confirm</button></div>' : '';
+      var items = can && x.status !== 'waiting' && !(here && held) ? [['revert', 'Revert decision', 5]] : [];
+      return '<div class="perf-breach recog-item" data-rec="' + esc(x.id) + '">' +
+        '<div class="perf-breach-top"><span class="perf-breach-sev">' + esc('From ' + (x.giver || '')) + '</span>' +
+          '<span class="perf-breach-pts">' + (here ? '+' + esc(num(pts)) : '') + '</span>' + recChip(x.status) +
+          (items.length ? '<span class="team-act perf-breach-act">' + recMenu(items) + '</span>' : '') + '</div>' +
+        '<p class="perf-breach-what">' + esc(x.note) + '</p>' +
+        '<small>' + esc(meta.join(' · ')) + '</small>' + acts + '</div>';
+    }).join('');
+    return card('Recognitions', rule + (list.length ? rows : '<p class="perf-quiet">None this month.</p>'), '', 'pvRecs');
+  }
+  function wireRecCard() {
+    var box = $('pvRecs');
+    if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll('.recog-item'), function (el) { wireRecMenu(el); });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-rd]'), function (b) {
+      b.addEventListener('click', function () { decideRec(b.getAttribute('data-id'), b.getAttribute('data-rd'), b); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="revert"]'), function (b) {
+      b.addEventListener('click', function () {
+        shutRecMenus();
+        decideRec(b.closest('[data-rec]').getAttribute('data-rec'), 'waiting', b.closest('.recog-item').querySelector('[data-a="menu"]'));
+      });
+    });
+  }
+  /* Confirm, Decline and Revert to waiting never ask: each has its way back. */
+  function decideRec(id, to, b) {
+    if (b) b.disabled = true;
+    call('perf_recognition_decide', { p_token: token, p_id: id, p_status: to }, function (d) {
+      if (b) b.disabled = false;
+      if (d.error) { msg('pvMsg', recSaid(d, true), 'err'); return; }
+      st.rvRecKey = null;
+      sheetDirty = true;
+      reread(function () {
+        msg('pvMsg', to === 'confirmed' ? 'Confirmed.' : to === 'declined' ? 'Declined.' : 'Decision reverted.', 'ok');
+      });
+    });
   }
 
   window.ADspacePerf = {
@@ -3673,7 +3552,6 @@
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
       if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };
       if (st.pv === 'commission') return { tab: 'performance', view: 'commission' };
-      if (st.pv === 'initiatives') return { tab: 'performance', view: 'initiatives' };
       return { tab: 'performance', m: st.period.slice(0, 7) };
     },
     /* My records: the view, Reviews left out of the address. */
@@ -3695,7 +3573,7 @@
     openLetters: function () { st.mv = 'letters'; st.letters = null; if (bridge.show) bridge.show('mine'); },
     /* A reminder opens the view it points at (2026-10-07), read again. */
     openView: function (v) {
-      st.mv = MV[v] ? v : 'reviews'; st.refl = null; st.inits = null; st.letters = null;
+      st.mv = MV[v] ? v : 'reviews'; st.recs = null; st.letters = null;
       if (bridge.show) bridge.show('mine');
     },
     /* The colleague's own call, for js/health.js: a stale proof puts the
