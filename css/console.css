@@ -3086,6 +3086,29 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* Brand analysis (2026-10-10): the client's AI analysis read first on the
    Brand pane; Confirm and Run again at the head's right, a section a
    question under it, each label beside its value as the other groups. */
+/* The Brand tab in working order (2026-11-22): five parts, each a card
+   of its own; the ready line for Write with AI above them. */
+.brand-parts { display: flex; flex-direction: column; gap: 16px; }
+.brand-parts:empty { display: none; }
+.brand-ready { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin: 0 0 16px; font-size: 13px; }
+.brand-ready-miss { color: var(--ink-soft); }
+#crmBrandNote:not(:empty) { margin: 0 0 12px; }
+.bp-part .bp-body { padding: 2px 15px 14px; }
+.bp-part .bp-body:empty { display: none; }
+.bp-part .ovfacts > div { grid-template-columns: 190px minmax(0, 1fr); }
+.is-tight .bp-part .ovfacts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.bp-part > .viewhead > .ba-acts { margin-left: auto; }
+.bp-part .readgroup { padding: 14px 0; }
+.bp-part .readgroup:first-child { border-top: 0; padding-top: 2px; }
+.bp-part .readgroup:last-child { padding-bottom: 0; }
+.bp-part .readgroup-head { margin-bottom: 10px; }
+.bp-part dd.mfield { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; }
+.bp-part dd.mfield > .mval { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.bp-part dd.mfield.is-empty > .mval { color: var(--ink-mute); }
+.bp-part dd.mfield > .tl-pen { flex: 0 0 auto; }
+.bp-part .is-missing { color: var(--err); font-weight: 600; }
+.bs-meta, .bp-src { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); white-space: normal; }
+.bp-part .widelogo.is-read { margin-bottom: 0; }
 .ba-acts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .ba-acts .team-act { margin-block: -3px; }
 /* On a tight pane the acts take the line under the name, at the right edge
