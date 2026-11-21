@@ -23,6 +23,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Edit (`hiring_save`, over the row as read, `stale`) and the link
   (`hiring_link`, Reset link) are the part's or the Owner's; an Interviewer
   reads no link.
+- The candidate's step (`2026-11-21-candidate-step.sql`; the user,
+  2026-11-21): while the candidate's latest step on their page waits on the
+  team (`hiring_step`: a time chosen, other times asked for, an offer
+  accepted, a contract signed, an offer declined with no offer made since),
+  the list's state reads it in amber (`STEP`: Time chosen, New times
+  requested, Offer accepted, Contract signed, Offer declined) in place of
+  the stage, the record's head keeping the stage; it waits in the
+  Dashboard's Waiting for you (`hiring_waiting()`, never an email or a note)
+  for whoever may act: the part and the Owners, an accepted offer or signed
+  contract the part alone (Confirm is the part's). An invitation's New
+  times requested is amber in the record too, as everything waiting on the
+  team.
 - The list is a card a stage (New first, Removed last and shut); a record
   is Overview (Details, the CV, Candidate page with Copy link and Preview),
   People and Activity (`hiring_events`, never the Activity record: a
