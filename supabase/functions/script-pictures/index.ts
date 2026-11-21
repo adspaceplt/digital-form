@@ -40,7 +40,7 @@
  *          claude-opus-5-5), plus the platform's SUPABASE_URL and
  *          SUPABASE_ANON_KEY. Verify JWT off: the caller is asked here.
  */
-import Anthropic from 'npm:@anthropic-ai/sdk';
+import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 

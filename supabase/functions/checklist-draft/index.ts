@@ -33,7 +33,7 @@
  * JWT off, as every console function.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import Anthropic from 'npm:@anthropic-ai/sdk';
+import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { cors, json } from '../_shared/cors.ts';
 
 /* A Business setting as app_setting(key, at) answers it: the newest row
