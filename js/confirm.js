@@ -187,7 +187,7 @@
       var need = r.spec.required !== false && !r.spec.tick;
       if (F && F.problem && !r.spec.tick) {
         why = F.problem(r.input, { required: need, label: r.spec.label ? F.nameOf(r.spec.label) : '', need: r.spec.need, kind: r.spec.check });
-      } else if (need && !v) why = r.spec.need || 'Enter the ' + String(r.spec.label || 'reason').toLowerCase() + '.';
+      } else if (need && !v) why = r.spec.need || window.ADspaceWords.en.checkEnter.replace('{x}', r.spec.label || 'reason');
       if (why) {
         say(why);
         r.input.setAttribute('aria-invalid', 'true');

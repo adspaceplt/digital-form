@@ -495,8 +495,8 @@
        its own min and max are held here too (a meeting from today, an end
        after its start). */
     if (ok && el.__dmy && v) {
-      if (el.min && v < el.min && el.min > FLOOR) { ok = false; word = 'Choose a date from ' + dmyOf(el.min) + '.'; }
-      else if (el.max && v > el.max && el.max < CEIL) { ok = false; word = 'Choose a date up to ' + dmyOf(el.max) + '.'; }
+      if (el.min && v < el.min && el.min > FLOOR) { ok = false; word = sayWord('checkDateFrom', dmyOf(el.min)); }
+      else if (el.max && v > el.max && el.max < CEIL) { ok = false; word = sayWord('checkDateUpTo', dmyOf(el.max)); }
     }
     if (!ok && clear) {
       el.value = '';
@@ -758,7 +758,7 @@
     var el = e.target;
     if (!el || !el.__dmy) return;
     var raw = VALUE.get.call(el).trim();
-    if (raw && !el.__iso) { el.setAttribute('aria-invalid', 'true'); dateNote(el, true, 'Enter the date as DD/MM/YYYY.'); }
+    if (raw && !el.__iso) { el.setAttribute('aria-invalid', 'true'); dateNote(el, true, sayWord('checkDmy')); }
   }, true);
   var dmyWatch = window.MutationObserver ? new MutationObserver(function (list) {
     list.forEach(function (m) {
@@ -1176,7 +1176,8 @@
     return plainName(t);
   }
   function plainName(t) {
-    t = String(t || '').replace(/\s+/g, ' ').replace(/[\s*:：?？]+$/, '').replace(/\s*\((optional|可选)\)$/i, '').trim();
+    /* A unit in brackets after the name (Revenue (RM)) is no part of it. */
+    t = String(t || '').replace(/\s*\((rm|s\$|%|myr|sgd)\)\s*$/i, '').replace(/\s+/g, ' ').replace(/[\s*:：?？]+$/, '').replace(/\s*\((optional|可选)\)$/i, '').trim();
     if (zhPage()) return t;
     var words = t.split(' ');
     /* Lowered only where the label is plain: its first word capitalised
@@ -1225,7 +1226,7 @@
     /* A DD/MM/YYYY box holding part of a date reads empty as a value. */
     if (el.__dmy) {
       var shown = VALUE.get.call(el).trim();
-      if (shown && !el.__iso) return 'Enter the date as DD/MM/YYYY.';
+      if (shown && !el.__iso) return sayWord('checkDmy');
     }
     if (el.validity && el.validity.badInput) return sayWord(kind === 'amount' ? 'checkAmount' : 'checkNumber');
     raw = el.value == null ? '' : String(el.value);
@@ -1249,8 +1250,8 @@
     }
     if (kind === 'date') {
       if (!dateOk(v, kindOf(el))) return FLOOR_WORD;
-      if (el.min && v < el.min && el.min > FLOOR) return 'Choose a date from ' + dmyOf(el.min) + '.';
-      if (el.max && v > el.max && el.max < CEIL) return 'Choose a date up to ' + dmyOf(el.max) + '.';
+      if (el.min && v < el.min && el.min > FLOOR) return sayWord('checkDateFrom', dmyOf(el.min));
+      if (el.max && v > el.max && el.max < CEIL) return sayWord('checkDateUpTo', dmyOf(el.max));
       return '';
     }
     if (kind === 'email') return W2().emailOk && !W2().emailOk(v) ? sayWord('checkEmail') : '';

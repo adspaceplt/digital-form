@@ -135,6 +135,9 @@
     checkEmail: 'Enter a valid email address.',
     checkPhone: 'Enter a valid phone number.',
     checkUrl: 'Enter a web address.',
+    checkDmy: 'Enter the date as DD/MM/YYYY.',
+    checkDateFrom: 'Choose a date from {x}.',
+    checkDateUpTo: 'Choose a date up to {x}.',
     push: {
       label: 'Notifications', onWord: 'on', on: 'Turn on', off: 'Turn off',
       isOn: 'Notifications are on for this device.',
@@ -239,6 +242,9 @@
     checkEmail: '请输入有效的电邮地址。',
     checkPhone: '请输入有效的电话号码。',
     checkUrl: '请输入有效的网址。',
+    checkDmy: '请按 日/月/年 格式输入日期。',
+    checkDateFrom: '请选择不早于{x}的日期。',
+    checkDateUpTo: '请选择不晚于{x}的日期。',
     push: {
       label: '通知', onWord: '已开启', on: '开启', off: '关闭',
       isOn: '此设备已开启通知。',
