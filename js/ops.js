@@ -4057,7 +4057,7 @@
         if (opts) html += '<optgroup label="Content Review posts">' + opts + '</optgroup>';
       }
       sel.innerHTML = n ? '<option value="">Choose a post or script</option>' + html
-        : '<option value="">' + (failed ? 'Unable to load' : 'Nothing to link') + '</option>';
+        : '<option value="">' + (failed ? 'Unable to load' : 'No posts or scripts') + '</option>';
       sel.disabled = false;
     }).catch(function () {
       sel.innerHTML = '<option value="">Unable to load records</option>';

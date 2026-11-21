@@ -903,7 +903,7 @@
      live work counted, whatever the caller's own client scope. */
   var HELD_KINDS = [['tasks', 'Open tasks'], ['months', 'Months they manage'], ['meetings', 'Meetings they lead'],
     ['repeats', 'Repeating tasks'], ['reviews', 'Reports waiting for their review'], ['extensions', 'Extension requests waiting on them'],
-    ['templates', 'Task templates assigning them by default']];
+    ['templates', 'Task templates assigned to them']];
   function heldBy(m, then) {
     var none = { clients: [], campaigns: [] };
     db.rpc('team_work_held', { p_member: m.id }).then(function (r) {

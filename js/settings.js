@@ -333,7 +333,7 @@
            this long is signed out each night. */
         biz && { id: 'idle', name: 'Signed-in devices', kind: 'edit',
           meta: num('session_idle_days') == null ? '' : num('session_idle_days') === 0 ? 'Off'
-            : 'After ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
+            : 'Signed out after ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
@@ -797,7 +797,7 @@
      copy does not match (VERIFY DETAILS, 2026-11-20). */
   var BOX_NOTE = { general: 'Replies to client emails, invitations and all other emails.', hr: 'Replies to emails sent to candidates.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
-    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the Document verification page when no document matches.' };
+    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the Verify document page when a document does not match.' };
   function openMailboxes() {
     db.rpc('mail_senders_read').then(function (r) {
       var d = (r && r.data) || {};
