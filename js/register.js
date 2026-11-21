@@ -364,7 +364,7 @@
       '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
       '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([
-          [q.sealed_at && { a: 'sealed', label: 'Download' }, { a: 'record', label: 'Open client' }]]) + '</div></span>';
+          [q.sealed_at && { a: 'sealed', label: 'Download PDF' }, { a: 'record', label: 'Open client' }]]) + '</div></span>';
     wireMenu(el);
     var cp = el.querySelector('[data-a="copy"]');
     if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
@@ -404,7 +404,7 @@
       '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
       '<span class="team-act">' + (d.seal_path
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([[{ a: 'sealed', label: 'Download' }]]) + '</div>'
+          '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([[{ a: 'sealed', label: 'Download PDF' }]]) + '</div>'
         : '') + '</span>';
     wireMenu(el);
     var cp = el.querySelector('[data-a="copy"]');
@@ -480,11 +480,11 @@
         : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             window.ADspaceMenu.items([
-              [d.source === 'portal' && { a: 'download', label: 'Download' },
+              [d.source === 'portal' && { a: 'download', label: 'Download PDF' },
                d.file_url && { a: 'open', label: 'Open file' },
                /* Its record: the Document ID, the steps and how many times it
                   was checked on /verify/ (VERIFY CHECKS COUNTED, 2026-11-21). */
-               d.source === 'portal' && window.ADspaceSeal && { a: 'record', label: 'Record' }],
+               d.source === 'portal' && window.ADspaceSeal && { a: 'record', label: 'Show document record' }],
               [d.source === 'manual' && { a: 'edit', label: 'Edit', need: need + ':work' },
                /* A portal document is corrected by reissuing it: the same
                   serial, the earlier version kept and voided as Reissued. */

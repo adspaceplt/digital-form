@@ -226,7 +226,7 @@
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
           var items = [];
-          if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
+          if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>');
           /* The quotation's link (2026-11-08): one item opening a card with
              the address, Copy link and Preview, so the ⋯ keeps to seven.
              Copy link is the prospect's own link, to send again by hand,
@@ -238,7 +238,7 @@
           var canPreview = !!(q.access_key && !q.removed_at);
           if (canCopy || canPreview) {
             items.push('<button class="kmenu-item" data-g="1" data-a="linkcard" type="button" role="menuitem"' +
-              (canCopy ? ' data-copy' : '') + (canPreview ? ' data-preview' : '') + '>Link</button>');
+              (canCopy ? ' data-copy' : '') + (canPreview ? ' data-preview' : '') + '>Show quotation link</button>');
           }
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
@@ -336,8 +336,8 @@
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           /* The signed document's record (SIGNED DOCUMENT SEAL, 2026-11-17):
              every step to the second, and its seal once confirmed. */
-          if (q.signed_at && !q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="record" type="button" role="menuitem">Record</button>');
-          if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
+          if (q.signed_at && !q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="record" type="button" role="menuitem">Show document record</button>');
+          if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>');
           if (edit) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
@@ -359,7 +359,7 @@
          one line a removed quotation, what it was and who removed it when,
          Restore on the line and Delete in its ⋯. */
       if (showRemoved) html += '<div class="qt-gone" id="qtGoneList">' + gone.map(function (q) {
-        var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>'];
+        var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>'];
         if (mayDelete) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
         return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + esc(q.ref) + '</b>' +
           '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
@@ -1182,7 +1182,7 @@
      the contact chosen for it, with no tax. */
   var QI = null;
   var QI_SAID = {
-    'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date when approving the quotation.',
+    'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date first.',
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
     creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Money, Bukku.',
     nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Money, Tax codes.',
@@ -1222,6 +1222,19 @@
       paintInvoices(d);
     }).catch(function (e) { if (QI === me) window.ADspaceState.failLine($('qiBody'), 'The invoices', said(e), loadInvoices); });
   }
+  function qiStart() {
+    var me = QI, q = me.q, ctx = me.ctx;
+    window.ADspaceConfirm.ask({ title: 'Set start date', go: 'Save', wait: true,
+      field: { label: 'Start date', type: 'date', need: 'Choose the start date.', note: 'Service lines with their own start date keep it.' }
+    }, function (v) {
+      return ctx.db.rpc('quotation_lines_start', { p_id: q.id, p_start: String(v || '') }).then(function (r) {
+        var e = r.error || (r.data && r.data.error);
+        if (e) return said(e);
+        if (QI === me) loadInvoices();
+        return '';
+      }).catch(function (e) { return said(e); });
+    });
+  }
   function qiDay(v) { return v ? window.ADspaceClock.date(String(v).slice(0, 10)) : ''; }
   function paintInvoices(d) {
     var me = QI, ctx = me.ctx, work = ctx.may('clients.billing', 'work');
@@ -1234,7 +1247,11 @@
       (budget ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
         (work ? ' <button class="linkbtn" data-qi="debtor" type="button">Change</button>' : '') + '</dd>' : '') +
       '</dl>';
-    if (!d.start) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-start']) + '</p>';
+    /* The start may be set after approval too (quotation_lines_start asks
+       an approved quotation): a signed and sealed quotation is never sent
+       back for a date (the user, 2026-11-21). */
+    if (!d.start) h += '<p class="msg warn qi-note">The start date is not set.' +
+      (ctx.may('clients.quotes', 'work') ? ' <button class="btn btn-sm" data-qi="start" type="button">Set start date</button>' : '') + '</p>';
     if (budget && !d.budget_account) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-budget-account']) + '</p>';
     if (!rows.length) h += '<p class="emptyline">Nothing to invoice.</p>';
     else h += '<div class="qi-list">' + rows.map(function (x) {
@@ -1328,6 +1345,7 @@
         if (!b) return;
         if (b.getAttribute('data-qi') === 'make') qiMake(b);
         else if (b.getAttribute('data-qi') === 'debtor') qiDebtor(b);
+        else if (b.getAttribute('data-qi') === 'start') qiStart();
       });
     }
   }
