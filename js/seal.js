@@ -407,9 +407,7 @@
   }
 
   // ---- Print only: the sealed file's protection ---------------------------
-  /* js/sealprotect.js (AES-256, print only; 2026-11-21) is fetched at the
-     seal alone, under this file's own ?v= stamp: a change to it bumps
-     seal.js's stamp too. */
+  /* js/sealprotect.js, at the seal alone, under this file's ?v=. */
   var V = (/\?v=[^&#]+/.exec((document.currentScript || {}).src || '') || [''])[0], protWait = null;
   function finish(bytes) {
     protWait = protWait || new Promise(function (ok, bad) {
