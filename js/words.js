@@ -122,6 +122,25 @@
     /* Notifications on this device (js/push.js), on both client-facing pages
        that offer them. `client` and `creator` say what each page's device
        will hear about. */
+    // What a save refuses (js/form.js §10): the field's own name, then
+    // what to enter. One reading for every form, console and client page.
+    checkEnter: 'Enter the {x}.',
+    checkChoose: 'Choose the {x}.',
+    checkChooseDate: 'Choose a date for {x}.',
+    checkTick: 'Tick {x} to continue.',
+    checkNumber: 'Enter a number.',
+    checkWhole: 'Enter a whole number.',
+    checkRange: 'Enter a number from {a} to {b}.',
+    checkWholeRange: 'Enter a whole number from {a} to {b}.',
+    checkAmount: 'Enter an amount above 0.',
+    checkFrom: 'Enter a number from {x}.',
+    checkUpTo: 'Enter a number up to {x}.',
+    checkEmail: 'Enter a valid email address.',
+    checkPhone: 'Enter a valid phone number.',
+    checkUrl: 'Enter a web address.',
+    checkDmy: 'Enter the date as DD/MM/YYYY.',
+    checkDateFrom: 'Choose a date from {x}.',
+    checkDateUpTo: 'Choose a date up to {x}.',
     push: {
       label: 'Notifications', onWord: 'on', on: 'Turn on', off: 'Turn off',
       isOn: 'Notifications are on for this device.',
@@ -215,6 +234,23 @@
     }
 ,
 
+    checkEnter: '请填写{x}。',
+    checkChoose: '请选择{x}。',
+    checkChooseDate: '请选择{x}的日期。',
+    checkTick: '请勾选{x}以继续。',
+    checkNumber: '请输入数字。',
+    checkWhole: '请输入整数。',
+    checkRange: '请输入{a}至{b}之间的数字。',
+    checkWholeRange: '请输入{a}至{b}之间的整数。',
+    checkAmount: '请输入大于0的金额。',
+    checkFrom: '请输入不小于{x}的数字。',
+    checkUpTo: '请输入不大于{x}的数字。',
+    checkEmail: '请输入有效的电邮地址。',
+    checkPhone: '请输入有效的电话号码。',
+    checkUrl: '请输入有效的网址。',
+    checkDmy: '请按 日/月/年 格式输入日期。',
+    checkDateFrom: '请选择不早于{x}的日期。',
+    checkDateUpTo: '请选择不晚于{x}的日期。',
     push: {
       label: '通知', onWord: '已开启', on: '开启', off: '关闭',
       isOn: '此设备已开启通知。',
