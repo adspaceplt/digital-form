@@ -309,13 +309,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
-  Singapore WhatsApp number, brand, industry, Planned commencement
-  (required on the page: Within 3 months, 3 to 6 months, More than 6 months;
-  kept as the lead's Urgency to commence, moved on a lead asking again and
-  named in the team's notice; no price reads it;
-  `2026-10-29-quotation-website-commence.sql`), Preferred start date
-  (optional, a day from today in Malaysia to 2099, `commence_on` in the
-  contact, `bad-start-date`; kept on the quotation it was asked on,
+  Singapore WhatsApp number, brand, industry, Planned commencement, the
+  one question for the start (ONE START QUESTION, 2026-11-21; the user:
+  "Yes"; required on the page: Within 3 months, 3 to 6 months, More than 6
+  months or On a specific date, which alone opens Preferred start date,
+  required then; the period kept as the lead's Urgency to commence, worked
+  out from a date chosen (`startPeriod`: up to the day before the same day
+  three months on, Within 3 months; six, 3 to 6 months; else More than 6
+  months), moved on a lead asking again and named in the team's notice; no
+  price reads it; `2026-10-29-quotation-website-commence.sql`), the
+  Preferred start date (a day from today in Malaysia to 2099,
+  `commence_on` in the contact, `bad-start-date`; kept on the quotation it was asked on,
   `quotations.commence_on`, never the client (`clients.commence_on` is
   read and written by nothing, left for a later drop), named in the team's
   notice, read on the quotation's row as Preferred start {date} under where

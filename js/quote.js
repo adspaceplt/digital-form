@@ -10,14 +10,14 @@
  *   3 Customise             extra contents, languages, the advertising
  *                           budget, the commitment, the one-off items
  *   4 Your details          name, work email, WhatsApp, brand, industry,
- *                           consent; View quotation makes the quotation
+ *                           Planned commencement (a period, or On a
+ *                           specific date and the day), consent; View
+ *                           quotation makes the quotation
  *   5 Your quotation        priced by the database (`quote-request`, then
  *                           `quote_website_read` by its key, `?q=` in the
  *                           address), the rates at once; Download; beside
- *                           it Ready to proceed: when they would start and
- *                           whether they decide, then Proceed with this
- *                           quotation (`quote_proceed`, 2026-10-26), else
- *                           the colleague who took the lead. The link shows the latest revision the
+ *                           it Accept this quotation, else the colleague
+ *                           who took the lead. The link shows the latest revision the
  *                           team made of it. No billing is asked: the Letter
  *                           of Offer is the sales team's.
  *
@@ -71,7 +71,7 @@
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
       detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
       waHint: 'Malaysian or Singaporean number', brand: 'Brand', industry: 'Industry', optional: 'Optional',
-      commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
+      commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months'], ['date', 'On a specific date']],
       startOn: 'Preferred start date',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
@@ -87,13 +87,8 @@
       payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
-      propT: 'Ready to proceed?', propP: 'ADspace will contact you to finalise the details and prepare your onboarding plan.',
-      startQ: 'Preferred start', starts: [['month', 'Within a month'], ['quarter', 'In 1 to 3 months']],
-      decQ: 'Decision maker', decs: [['yes', 'I am the decision maker'], ['others', 'Others will be involved in the decision']],
-      propAsk: 'Proceed with this quotation', propAsking: 'Sending…', propNeed: 'Select your preferred start and whether you are the decision maker.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
       reviewNote: 'Your quotation will appear on this page once it has been sent.',
-      propDone: 'Request received', propBy: 'ADspace will contact you by {d} to finalise the details.',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
@@ -193,7 +188,7 @@
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
-      commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后']],
+      commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后'], ['date', '指定日期']],
       startOn: '期望开始日期',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
@@ -209,13 +204,8 @@
       payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
-      propT: '准备好开始了吗？', propP: 'ADspace 将与您联系，确认细节并准备您的启动计划。',
-      startQ: '期望开始时间', starts: [['month', '一个月内'], ['quarter', '一至三个月内']],
-      decQ: '决策人', decs: [['yes', '本人为决策人'], ['others', '需与他人商议']],
-      propAsk: '确认此报价', propAsking: '提交中…', propNeed: '请选择期望开始时间，并确认您是否为决策人。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       reviewNote: '报价发送后，此页面将显示报价详情。',
-      propDone: '已收到您的确认', propBy: 'ADspace 将于 {d} 前与您联系，确认细节。',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
@@ -581,10 +571,13 @@
       field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
       field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
         INDUSTRIES.map(function (i) { return '<option value="' + esc(i.name) + '"' + (c.industry === i.name ? ' selected' : '') + '>' + esc((lang === 'zh' && i.name_zh) || i.name) + '</option>'; }).join('') + '</select>') +
+      /* One question for the start (ONE START QUESTION, 2026-11-21; the user:
+         "Yes"): a period, or On a specific date, which opens the day, from
+         today in Malaysia, the period then worked out from it (`startPeriod`). */
       field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
-        t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + (c.commence === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
-      /* A day, optional, from today in Malaysia (PREFERRED START DATE, 2026-11-21). */
-      field('qsStartOn', t().startOn, false, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" value="' + esc(c.commence_on || '') + '">', t().optional) +
+        t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + ((c.commence_on ? 'date' : c.commence) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
+      '<div id="qsStartOnBox"' + (c.commence_on || c.commence === 'date' ? '' : ' hidden') + '>' +
+      field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>' +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
   }
@@ -1205,8 +1198,16 @@
     c.name = $('qsName').value.replace(/\s+/g, ' ').trim(); c.email = $('qsEmail').value.trim();
     c.whatsapp = $('qsWa').value.trim(); c.brand = $('qsBrand').value.replace(/\s+/g, ' ').trim();
     c.industry = $('qsInd').value; c.commence = $('qsStart').value;
-    c.commence_on = $('qsStartOn') ? $('qsStartOn').value : ''; c.consent = $('qsConsent').checked;
+    c.commence_on = c.commence === 'date' && $('qsStartOn') ? $('qsStartOn').value : ''; c.consent = $('qsConsent').checked;
     keep();
+  }
+  /* The lead's Urgency to commence, the date's period where a day is chosen:
+     on or before the day before the same day three months on, Within 3
+     months; six, 3 to 6 months; else More than 6 months. */
+  function startPeriod(c) {
+    if (c.commence !== 'date') return c.commence;
+    var C = window.ADspaceClock, today = todayMY();
+    return c.commence_on <= C.periodEnd(today, 3) ? '1_3' : c.commence_on <= C.periodEnd(today, 6) ? '3_6' : '6_plus';
   }
   function checkDetails() {
     readDetails();
@@ -1218,7 +1219,7 @@
     if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
     if (c.brand.length < 2) bad('qsBrand', t().req.brand);
     if (!c.commence) bad('qsStart', t().req.commence);
-    if (c.commence_on && !(/^\d{4}-\d{2}-\d{2}$/.test(c.commence_on) && c.commence_on >= todayMY() && c.commence_on <= '2099-12-31')) bad('qsStartOn', t().req.startOn);
+    else if (c.commence === 'date' && !(/^\d{4}-\d{2}-\d{2}$/.test(c.commence_on) && c.commence_on >= todayMY() && c.commence_on <= '2099-12-31')) bad('qsStartOn', t().req.startOn);
     if (!c.consent) bad('qsConsent', t().req.consent);
     if (first) first.focus();
     return !first;
@@ -1234,7 +1235,7 @@
     if (!S.idem || S.idemFor !== fp) { S.idem = key8(); S.idemFor = fp; keep(); }
     var body = { sel: selection(), idem: S.idem,
       contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
-        industry: S.contact.industry || null, commence: S.contact.commence, commence_on: S.contact.commence_on || null, consent: true, lang: lang } };
+        industry: S.contact.industry || null, commence: startPeriod(S.contact), commence_on: S.contact.commence_on || null, consent: true, lang: lang } };
     var C = window.ADspaceCaptcha;
     var token = C && C.on ? C.token(root().querySelector('[data-cf]')) : Promise.resolve(null);
     token.then(function (tk) {
@@ -1315,18 +1316,6 @@
       paint();
     }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
   }
-  function propose(btn) {
-    var k = new URLSearchParams(location.search).get('q');
-    var st = root().querySelector('input[name="pStart"]:checked'), dc = root().querySelector('input[name="pDecider"]:checked');
-    if (!st || !dc) { say('qsSideMsg', t().propNeed); (root().querySelector('input[name="' + (st ? 'pDecider' : 'pStart') + '"]') || btn).focus(); return; }
-    btn.disabled = true; btn.textContent = t().propAsking;
-    db.rpc('quote_proceed', { p_key: k, p_start: st.value, p_decider: dc.value }).then(function (r) {
-      var d = (r && r.data) || {};
-      if (r.error || d.error) { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
-      Q.proceed_at = d.at; Q.proceed_due = d.due; Q.stage = 'ready';
-      $('qsSide').innerHTML = sideHtml(Q);
-    }).catch(function () { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err.any); });
-  }
   function pdf(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
@@ -1376,7 +1365,7 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', previewBar); else previewBar();
     setTimeout(previewBar, 600);
     document.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('#qsRoot [data-a="propose"], #qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"], ' +
+      var b = e.target.closest && e.target.closest('#qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"], ' +
         '#qsRoot [data-a="signcode"], #qsRoot [data-a="signresend"], #qsRoot [data-a="signfinish"]');
       if (b) previewRefuse(e);
     }, true);
@@ -1398,7 +1387,6 @@
     if (a === 'next') next();
     else if (a === 'start') go('need');
     else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
-    else if (a === 'propose') propose(b);
     else if (a === 'decline') { $('qsSide').innerHTML = declineHtml(); decorate(); var dw = $('qsDeclineWhy'); if (dw) dw.focus(); }
     else if (a === 'declineback') { $('qsSide').innerHTML = sideHtml(Q); decorate(); var dg = $('qsSide').querySelector('[data-a="decline"]'); if (dg) dg.focus(); }
     else if (a === 'declinego') declineSend(b);
@@ -1464,8 +1452,12 @@
       }
       keep(); paint(); return;
     }
-    else if (nm === 'pStart' || nm === 'pDecider') { say('qsSideMsg', ''); }
     else if (id === 'sgAgree') { if (SG) SG.agree = el.checked; el.removeAttribute('aria-invalid'); say('sgAgreeMsg', ''); return; }
+    else if (id === 'qsStart') {
+      var dayBox = $('qsStartOnBox');
+      if (dayBox) dayBox.hidden = el.value !== 'date';
+      el.removeAttribute('aria-invalid'); say('qsStartMsg', ''); return;
+    }
     else if (id === 'qsConsent') { el.removeAttribute('aria-invalid'); say('qsConsentMsg', ''); }
     else if (id === 'qsBudget') { S.budget = Number(el.value); }
     else if (id === 'qsTerm') { S.term = Number(el.value); }
