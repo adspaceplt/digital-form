@@ -662,8 +662,8 @@
      bar }`. */
   var SALES = [
     kindTile('leads', 'New leads', 'newLeads', 'up'),
-    kindTile('won', 'Won', 'won', 'up'),
-    kindTile('churned', 'Churned', 'churned', 'down'),
+    /* Won and Churned left Analytics (2026-11-22): Clients joined and Clients
+       lost say the same there. */
     /* Committed monthly value for whoever may open a client's Services, from
        the lines that part opens; Active clients for everyone else. */
     { key: 'value', sec: 'clients', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
@@ -726,15 +726,6 @@
         var n = completed(r[0]);
         return { fig: String(n), sub: delta(n, completed(r[1])), trend: trendOf(n, completed(r[1]), 'up', 2), spark: r[2].map(function (x) { return completed(x.d); }) };
       });
-    } },
-    { key: 'published', title: function () { return 'Reports published, ' + lastMonth().short; }, sec: 'reports', can: canReports, load: function () {
-      return R.owed().then(function (items) {
-        var done = items.filter(function (x) { return x.status === 'published'; }).length;
-        var open = items.filter(function (x) { return x.status !== 'published'; });
-        var due = open.map(function (x) { return x.due; }).filter(Boolean).sort()[0];
-        return { fig: done + ' of ' + items.length, bar: items.length ? done / items.length : 0,
-                 sub: !items.length ? 'None owed' : open.length ? open.length + ' owed' + (due ? ' · due ' + shortDate(due) : '') : 'All published' };
-      });
     } }
   ];
 
@@ -753,7 +744,9 @@
      ceo"): Summary, what a director reads first, and Detail, the same
      period read further, a page of its own reached from the strip and from
      the foot of the Summary, never folded away as if it mattered less. Each
-     row is a grid of cards; the second row of Detail runs three across. */
+     row is a grid of cards. */
+  /* On time by month left the Dashboard's Team tab for Analytics'
+     Operations (2026-11-22); Active clients by month is Analytics' own. */
   var PAGE1 = [
     [
       /* Delivery (the team's: client review by its due date) and posting
@@ -775,16 +768,6 @@
             table: { heads: ['Month', 'Delivered on time', 'Posted on time'], rows: cats.map(function (c) {
               return [c.long, cell(c.met, c.n, c.values[0]), cell(c.pm, c.pn, c.values[1])];
             }) } };
-        });
-      } },
-      { key: 'active', title: 'Active clients by month', can: canClients,
-        all: function () { return ['Clients', '/admin/?s=clients', 'clients']; }, load: function () {
-        return figuresFor('six').then(function (f) {
-          if (!f.months.some(function (m) { return m.active; })) return { empty: 'No active clients in the last six months.' };
-          var last = f.months.length - 1;
-          /* The month still running is drawn lighter: its figure is so far. */
-          return { kind: 'columns', labels: true, cats: f.months.map(function (m, i) { return { label: m.label, long: m.long, values: [m.active], tone: i === last ? 'mute' : '' }; }),
-                   series: [{ label: 'Active clients' }] };
         });
       } }
     ]
@@ -856,7 +839,7 @@
             ['Paused', String(f.paused.length), f.pausedNow.length + ' paused now'],
             ['Resumed', String(f.resumed.length), 'Paused back to Active'],
             ['Win-backs', String(f.winback.length), 'Past back to Active'],
-            ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
+            ['Lead to client', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
             /* A one-time project finished as agreed is never churn (2026-11-15). */
             ['Completed', String(f.completed.length), 'Moved from Active to Past when the project was finished', true],
@@ -962,25 +945,15 @@
           if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
           return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };
         });
-      } },
-      { key: 'reasons', title: 'Reasons clients paused or left', can: canClients,
-        all: function () { return ['Clients', '/admin/?s=clients', 'clients']; },
-        load: function () {
-        return figuresFor('now').then(function (f) {
-          var word = S().reasonWord || function (k) { return k || 'Not given'; };
-          var rowsOf = Object.keys(f.reasons).map(function (k) {
-            var r = f.reasons[k], pa = r.paused.length, le = r.past.length;
-            return { label: word(k), value: pa + le, note: [pa ? pa + ' paused' : '', le ? le + ' left' : ''].filter(Boolean).join(' · ') };
-          }).sort(function (a, b) { return b.value - a.value; });
-          if (!rowsOf.length) return { empty: 'No client paused or left ' + periodName(period) + '.' };
-          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'Clients' };
-        });
       } }
       ]
     ]],
     ['Operations', [
       [
-      { key: 'waits', title: 'Where work waits', can: canFigures,
+      /* Where work waits holds its views (2026-11-22, the user: Time in stage
+         joins it as one card): WAIT_VIEWS, a segment at its head once two
+         are drawn. */
+      { key: 'waits', title: 'Where work waits', can: canFigures, views: function () { return WAIT_VIEWS; },
         all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
           /* Each stage's open work beside its time (the Report's Open work by
@@ -1068,12 +1041,18 @@
           if (!items.length) return { empty: 'No reports owed.' };
           var n = function (st) { return items.filter(function (x) { return x.status === st; }).length; };
           var lateNone = items.some(function (x) { return x.status === 'none' && x.late; });
-          return { kind: 'pie', total: true, rows: [{ label: 'Published', value: n('published'), tone: 'ok' }, { label: 'In review', value: n('review'), tone: 'warn' },
+          /* Reports published sits with the month's reports (2026-11-22): how
+             many are out, how many are owed and the first date due. */
+          var open = items.filter(function (x) { return x.status !== 'published'; });
+          var due = open.map(function (x) { return x.due; }).filter(Boolean).sort()[0];
+          var note = n('published') + ' of ' + items.length + ' published' + (open.length ? ' · ' + open.length + ' owed' + (due ? ' · next due ' + shortDate(due) : '') : '');
+          return { note: note, kind: 'pie', total: true, rows: [{ label: 'Published', value: n('published'), tone: 'ok' }, { label: 'In review', value: n('review'), tone: 'warn' },
             { label: 'Confirmed', value: n('confirmed'), tone: 'warn' }, { label: 'Draft', value: n('draft'), tone: 'off' },
             { label: 'Not started', value: n('none'), tone: lateNone ? 'err' : 'off' }] };
         });
       } },
-      { key: 'bookings', title: 'Creator bookings', can: canCamps, all: ['Creator Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
+      /* Drawn only while a booking is in production (2026-11-22). */
+      { key: 'bookings', title: 'Creator bookings', can: canCamps, hideEmpty: true, all: ['Creator Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
         return R.bookings().then(function (list) {
           var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
           if (!list.length) return { empty: 'No open bookings.' };
@@ -1086,6 +1065,9 @@
     ]]
   ];
   var CHARTS = PAGE1.concat(PAGE2[0][1], PAGE2[1][1]);
+  /* Further views of Where work waits, each { key, word, can, load }: Time
+     in stage joins here, never as a card of its own (2026-11-22). */
+  var WAIT_VIEWS = [];
 
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
@@ -1093,7 +1075,7 @@
   var ALL = [].concat(SOURCES, SALES, OPS, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
   /* What Team draws: Needs attention's sources, the four figures, Work by
-     person, Clients this month and the on-time trend. */
+     person and Clients this month. */
   function teamAny() {
     return SOURCES.some(function (c) { return c.can(); }) || canFigures() || canTeamWork() ||
       SALES.concat(OPS).some(function (t) { return LEAD.indexOf(t.key) > -1 && t.can(); });
@@ -1172,29 +1154,6 @@
     box.appendChild(grid);
     list.forEach(function (t) { tile(grid, t); });
   }
-  function tiles(box, only) {
-    /* On Analytics (`only`) the period's own Delivered and On time join
-       their group; Oldest late and New leads stay the Dashboard's. */
-    var rest = function (t) { return (only ? ['late', 'leads'] : LEAD).indexOf(t.key) < 0 && t.can(); };
-    var groups = [['Sales', SALES, 'ovwSales'], ['Operations', OPS, 'ovwOps']].filter(function (g) { return !only || g[0] === only; }).map(function (g) {
-      return { head: g[0], list: g[1].filter(rest), id: g[2] };
-    }).filter(function (g) { return g.list.length; });
-    if (!groups.length) return;
-    var wrap = document.createElement('div');
-    wrap.className = 'ovw-groups' + (groups.length === 1 ? ' is-one' : '');
-    box.appendChild(wrap);
-    groups.forEach(function (g) {
-      var sec = document.createElement('section');
-      sec.className = 'ovw-group';
-      sec.id = g.id;
-      sec.innerHTML = '<h3 class="ovw-group-h"></h3><div class="ovw-kpis is-n' + g.list.length + '"></div>';
-      /* The tab already names the group on Analytics. */
-      if (only) sec.firstChild.remove(); else sec.firstChild.textContent = g.head;
-      wrap.appendChild(sec);
-      var grid = sec.querySelector('.ovw-kpis');
-      g.list.forEach(function (t) { tile(grid, t); });
-    });
-  }
   /* A chart's title with its way out at the right edge ("Sales ›"), the
      section it is read from. */
   function headOf(card, title, all) {
@@ -1218,17 +1177,56 @@
   }
   function chart(grid, c) {
     var title = titleOf(c), all = typeof c.all === 'function' ? c.all() : c.all;
+    /* A card of several views (Where work waits): its own view first, then
+       each further one this colleague may read; a segment once two show. */
+    var views = c.views ? [{ key: '', word: 'Median time', load: c.load }].concat(c.views().filter(function (v) { return !v.can || v.can(); })) : null;
+    if (views && views.length < 2) views = null;
+    var view = 0;
     var el = document.createElement('div');
     el.className = 'chartcard ovw-card';
     el.setAttribute('data-card', c.key);
     el.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
-    headOf(el, title, all);
+    var head = function (card) {
+      headOf(card, title, all);
+      if (!views) return;
+      var sel = document.createElement('select');
+      sel.className = 'select select-sm';
+      sel.setAttribute('data-seg', '');
+      sel.setAttribute('aria-label', 'View: ' + title);
+      sel.innerHTML = views.map(function (v, i) { return '<option value="' + i + '"' + (i === view ? ' selected' : '') + '>' + esc(v.word) + '</option>'; }).join('');
+      sel.addEventListener('change', function () { view = Number(sel.value) || 0; run(); });
+      var h = card.querySelector('.ovw-cardhead');
+      var go0 = h.querySelector('.ovgo');
+      if (go0) h.insertBefore(sel, go0); else h.appendChild(sel);
+      if (window.ADspaceForm && window.ADspaceForm.segment) window.ADspaceForm.segment(sel);
+    };
+    head(el);
     grid.appendChild(el);
-    var body = el.querySelector('.ovw-body');
+    /* A card drawn only while it holds something (Creator bookings) leaves
+       with its row's room; a band left with nothing leaves too. */
+    var gone = function () {
+      var band = el.closest('.anl-band');
+      el.remove();
+      if (!grid.children.length) grid.remove();
+      if (band && !band.querySelector('.chartcard')) band.remove();
+    };
     var run = function () {
+      var body = el.querySelector('.ovw-body');
+      if (!body) {
+        /* A drawn chart swapped back to its card for another view. */
+        var fresh = document.createElement('div');
+        fresh.className = 'chartcard ovw-card';
+        fresh.setAttribute('data-card', c.key);
+        fresh.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
+        head(fresh);
+        el.replaceWith(fresh); el = fresh;
+        body = el.querySelector('.ovw-body');
+      }
       UI.skeleton(body, 3);
-      Promise.resolve().then(function () { return c.load(); }).then(function (out) {
+      var load = views ? views[view].load : c.load;
+      Promise.resolve().then(function () { return load(); }).then(function (out) {
         if (!el.isConnected) return;
+        if (out.empty && c.hideEmpty) { gone(); return; }
         /* An empty card's line stands in the middle of the room its row gives
            it (ux-audit OVW-2, 2026-10-15). */
         el.classList.toggle('is-empty', Boolean(out.empty));
@@ -1242,46 +1240,72 @@
         var drawn = holder.firstElementChild;
         if (drawn) {
           drawn.classList.add('ovw-card'); drawn.setAttribute('data-card', c.key);
-          headOf(drawn, title, all);
+          head(drawn);
+          /* One line of what the chart sums up, under its head (Reports for
+             the month: how many are published and owed). */
+          if (out.note) {
+            var note = document.createElement('p');
+            note.className = 'anl-note';
+            note.textContent = out.note;
+            var hd = drawn.querySelector('.ovw-cardhead');
+            if (hd) hd.after(note);
+          }
+          var had = el.contains(document.activeElement);
           el.replaceWith(drawn); el = drawn;
+          if (had && views) { var s0 = el.querySelector('select[data-seg]'); if (s0) s0.focus({ preventScroll: true }); }
         }
       }).catch(function (e) { if (el.isConnected) fail(body, title, e, run); });
     };
     run();
-  }
-  /* A page's rows of cards: two across, three where a row holds three, one
-     card alone taking its row. */
-  function charts(box, rows) {
-    rows.forEach(function (row) {
-      var live = row.filter(function (c) { return c.can(); });
-      if (!live.length) return;
-      var grid = document.createElement('div');
-      grid.className = 'chartgrid ovw-grid' + (live.length === 3 ? ' is-three' : '');
-      box.appendChild(grid);
-      live.forEach(function (c) { chart(grid, c); });
-    });
   }
   /* Team detail moved to Analytics (phase 3, 2026-11-13; the user:
      "Analytics follows each chart's section access"): Analytics asks
      whether a group holds any card it may read, and draws that group's
      tiles and charts on its own period. */
   function groupOf(name) { return PAGE2.filter(function (g) { return g[0] === name; })[0]; }
+  /* The tiles Analytics draws from here: Committed monthly value on Sales
+     (2026-11-22: Won, Churned, On time, Delivered and Reports published
+     left it, each said again elsewhere). */
+  var ANL_TILES = ['value'];
   function groupCan(name) {
     var g = groupOf(name), list = name === 'Sales' ? SALES : OPS;
-    return list.some(function (t) { return ['late', 'leads'].indexOf(t.key) < 0 && t.can(); }) ||
-      Boolean(g && g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }));
+    return list.some(function (t) { return ANL_TILES.indexOf(t.key) > -1 && t.can(); }) ||
+      Boolean(g && g[1].some(function (row) { return row.some(function (c) { return c.can(); }); })) ||
+      (name === 'Operations' && PAGE1[0].some(function (c) { return c.can(); }));
   }
-  function forAnalytics(box, name, spec, skip, clients) {
+  /* Analytics places each card itself (2026-11-22, by when it is acted on):
+     the kit reads on Analytics' period and draws one tile or one row of
+     cards where it is asked, each at its own access. */
+  function forAnalytics(name, spec, clients) {
     period = spec;
     memo = {};
     /* Analytics hands over the clients it already read (the Dashboard's
        columns among them), so one visit reads every client once (audit 2026-11-15). */
     if (Array.isArray(clients)) memo.clients = Promise.resolve(clients);
-    tiles(box, name);
-    Array.prototype.forEach.call(box.querySelectorAll('[id^="ovw"]'), function (n) { n.removeAttribute('id'); });
-    var g = groupOf(name);
-    /* A card Analytics already draws on the tab is left out (`skip`). */
-    if (g) charts(box, g[1].map(function (row) { return row.filter(function (c) { return (skip || []).indexOf(c.key) < 0; }); }));
+    var g = groupOf(name), defs = [].concat.apply([], g ? g[1] : []).concat(name === 'Operations' ? PAGE1[0] : []);
+    var find = function (k) { return defs.filter(function (c) { return c.key === k; })[0]; };
+    var tileOf = function (k) { return ANL_TILES.indexOf(k) > -1 ? SALES.concat(OPS).filter(function (t) { return t.key === k; })[0] : null; };
+    return {
+      can: function (k) { var c = find(k) || tileOf(k); return Boolean(c && c.can()); },
+      /* Drawn without its section mark: Analytics' own tiles carry none. */
+      tile: function (grid, k) {
+        var t = tileOf(k);
+        if (!t || !t.can()) return;
+        var bare = {};
+        Object.keys(t).forEach(function (x) { if (x !== 'sec') bare[x] = t[x]; });
+        tile(grid, bare);
+      },
+      card: function (grid, k) { var c = find(k); if (c && c.can()) chart(grid, c); },
+      row: function (box, keys) {
+        var live = keys.map(find).filter(function (c) { return c && c.can(); });
+        if (!live.length) return null;
+        var grid = document.createElement('div');
+        grid.className = 'chartgrid ovw-grid';
+        box.appendChild(grid);
+        live.forEach(function (c) { chart(grid, c); });
+        return grid;
+      }
+    };
   }
   /* Two pages (the revamp, 2026-11-13; the user: the Dashboard for every
      colleague): Me, each colleague's own work, offered to everyone; Team,
@@ -1360,6 +1384,9 @@
     focusCard(here);
   }
   function focusCard(c) {
+    /* A card in a shut fold (Monthly review) opens it first. */
+    var fold = c.closest('details');
+    if (fold && !fold.open) fold.open = true;
     c.scrollIntoView({ block: 'start' });
     var h = c.querySelector('.ovw-cardhead h3');
     if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
@@ -2278,8 +2305,8 @@
           window.ADspaceAdmin.counts('overview', [[open, 'open tasks'], late ? [late, 'late', 'late'] : null]);
         }).catch(function () {});
       }
-      /* Team (the revamp, phase 2, 2026-11-13): People beside the on-time
-         trend, then Clients this month beside Needs attention, each pair
+      /* Team (the revamp, phase 2, 2026-11-13): People across the row,
+         then Clients this month beside Needs attention, each pair
          on the golden proportion; one over the other in a narrow pane. */
       var pairOf = function (fill) {
         var pr = document.createElement('div');
@@ -2291,11 +2318,8 @@
       };
       TEAM.stages(box);
       pairOf(function (pr) { TEAM.timely(pr); TEAM.delays(pr); });
-      pairOf(function (pr) {
-        TEAM.people(pr);
-        var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];
-        if (ontime) chart(pr, ontime);
-      });
+      /* On time by month moved to Analytics' Operations (2026-11-22). */
+      pairOf(function (pr) { TEAM.people(pr); });
       pairOf(function (pr) { TEAM.clients(pr); list(pr); });
     }
     if (keep) window.scrollTo(0, y);

@@ -1004,11 +1004,14 @@
      cannot disagree, because they are the same row. `social_*` is backfilled
      into it and no longer written. */
   var BRAND = [
-    ['crmWebsite', 'website'], ['crmPhone', 'phone'],
-    ['crmSocialIg', 'handle_ig'], ['crmSocialFb', 'handle_fb'],
-    ['crmSocialTiktok', 'handle_tiktok'], ['crmSocialXhs', 'handle_xhs'],
-    ['crmLogo', 'logo_url']
+    ['crmWebsite', 'website'], ['crmPhone', 'phone'], ['crmLogo', 'logo_url']
   ];
+  /* The four handles are changed where they are read, on Social accounts
+     (2026-11-22): each a pen in its row. */
+  var HANDLES = [['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'], ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote']];
+  /* What the rail's Profile counts of the brand: the profile, the handles
+     and the notes, as before the parts were split. */
+  var BRAND_KEYS = BRAND.map(function (f) { return f[1]; }).concat(HANDLES.map(function (h) { return h[0]; }));
   /* When the client wants to start. Three bands, because a lead gives you a
      rough answer and a date nobody has agreed is a false precision. No dash in
      the words: "1 to 3 months", as the copy rules have it everywhere else. */
@@ -1359,7 +1362,6 @@
        nothing in it can be pressed. */
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
-    $('crmBrandEdit').hidden = !(canWork && mayPart('clients.brand', 'work'));
     $('crmClientMenuWrap').hidden = !canWork && !mayPart('clients', 'manage');
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
@@ -1404,7 +1406,17 @@
        well, so a record printed "Lead 10 days · Active today" under Details
        and the same durations again in the rail. */
 
-    // Website, phone and the social pages, as things to open rather than read.
+    paintLinks(c);
+
+    fillBilling(c);
+    paintBilling(c);
+    fillBrand(c);
+    paintBrandRead(c);
+    msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
+    afterOpen(c, same, restoring);
+  }
+  // Website, phone and the social pages, as things to open rather than read.
+  function paintLinks(c) {
     var links = [];
     if (c.website) links.push(linkChip(c.website, 'Website', true));
     if (c.phone)   links.push(linkChip('tel:+' + window.ADspaceAPI.waNumber(c.phone), window.ADspaceAPI.phoneWord(c.phone), false));
@@ -1418,16 +1430,8 @@
       if (c[p[0]]) links.push(linkChip(profileUrl(p[0], c[p[0]]), p[1], true));
     });
     $('crmLinks').innerHTML = links.join('');
-
-    fillBilling(c);
-    paintBilling(c);
-    fillBrand(c);
-    paintBrandRead(c);
-    var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
-    $('crmBrandSummary').textContent =
-      [linksOn ? linksOn + ' of ' + BRAND.length : '', c.brand_notes ? 'Notes' : '']
-        .filter(Boolean).join(' · ') || 'Not set';
-    msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
+  }
+  function afterOpen(c, same, restoring) {
     shutContact();
     shutTouch();
     shutService();
@@ -2166,7 +2170,7 @@
     if (!block || !box) return;
     var parts = [
       ['Billing', BILLING_REQUIRED.length - billingMissing(c).length, BILLING_REQUIRED.length],
-      ['Brand profile', BRAND.filter(function (f) { return c[f[1]]; }).length + (c.brand_notes ? 1 : 0), BRAND.length + 1],
+      ['Brand profile', BRAND_KEYS.filter(function (k) { return c[k]; }).length + (c.brand_notes ? 1 : 0), BRAND_KEYS.length + 1],
       ['Contacts', Math.min((state.contacts || []).length, 1), 1],
       ['Services', Math.min((state.services || []).length, 1), 1]
     ];
@@ -3934,41 +3938,216 @@
     ['crmBrAvoid', 'avoid', 'Topics and words to avoid'], ['crmBrRivals', 'competitors', 'Competitors'],
     ['crmBrHooks', 'hooks', 'Proven hooks']];
   function briefOf(c) { return (c && c.brief && typeof c.brief === 'object') ? c.brief : {}; }
+  /* THE BRAND TAB IN WORKING ORDER (2026-11-22; the user approved the
+     restructure): Brand profile, Social accounts, Brand analysis, Content
+     brief, then White label, each a part of its own with its own short
+     Edit, the way Services runs Quotations and Service lines. Every stored
+     key stays where it was; only where it is read and edited moves. */
+  function brandWork(c) { return bandMay((c && c.stage) || 'lead', 'work') && mayPart('clients.brand', 'work'); }
+  function bpFacts(rows) {
+    return '<dl class="ovfacts">' + rows.map(function (r) {
+      var dd = r[1] ? '<dd' + (r[2] ? ' class="is-pre"' : '') + '>' + r[1] + '</dd>' : '<dd class="is-empty">—</dd>';
+      return '<div><dt>' + esc(r[0]) + '</dt>' + dd + '</div>';
+    }).join('') + '</dl>';
+  }
+  function bpHead(title, acts, after) {
+    return '<div class="viewhead"><span class="headmark"><h2>' + esc(title) + '</h2>' + (after || '') + '</span>' + (acts || '') + '</div>';
+  }
+  function bpEdit(mode, label, id) {
+    return '<button class="btn btn-sm" type="button" data-bp="' + mode + '"' + (id ? ' id="' + id + '"' : '') +
+      (label ? ' aria-label="' + esc(label) + '"' : '') + '>' + PEN + 'Edit</button>';
+  }
   function paintBrandRead(c) {
     var box = $('crmBrandRead');
     if (!box) return;
-    var handle = function (k, label) {
-      return c[k] ? '<a class="plink" href="' + esc(profileUrl(k, c[k])) + '" target="_blank" rel="noopener">' + esc(c[k]) + '</a>' : '';
-    };
+    var work = brandWork(c);
     var site = c.website ? '<a class="plink" href="' + esc(/^https?:/i.test(c.website) ? c.website : 'https://' + c.website) +
       '" target="_blank" rel="noopener">' + esc(c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '')) + '</a>' : '';
     var logo = c.logo_url ? '<span class="readlogo"><img src="' + esc(c.logo_url) + '" alt="" onerror="this.remove()"></span>Set' : '';
+    var wlShown = Boolean(c.white_label) || mayPart('reports.whitelabel', 'work');
     box.innerHTML =
-      readGroup('Website and office', [['Website', site], ['Office phone', c.phone ? esc(window.ADspaceAPI.phoneWord(c.phone)) : '']]) +
-      readGroup('Social handles', [
-        ['Instagram', handle('handle_ig')], ['Facebook', handle('handle_fb')],
-        ['TikTok', handle('handle_tiktok')], ['rednote', c.handle_xhs ? esc(c.handle_xhs) : '']
-      ]) +
-      readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
-      readGroup('Content brief', BRIEF.map(function (f) { var v = briefOf(c)[f[1]]; return [f[2], v ? esc(v) : '', false, true]; })) +
-      /* White label is one group (the user, 2026-10-15): the switch, the
-         wide logo and the brands it covers, read together. */
-      (c.white_label ? '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">White label</h4><dl class="ovfacts">' +
-        '<div><dt>White label</dt><dd>On</dd></div>' +
-        '<div><dt>Wide logo</dt>' + (c.report_logo ? '<dd><span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span></dd>'
-          : '<dd class="is-missing">Required</dd>') + '</div>' +
-        '<div><dt>Brands</dt><dd data-m="list"></dd></div></dl></section>' : '') +
-      '<section class="readgroup meta-links" id="crmMetaRead"><div class="readgroup-head"><h4 class="fsec-h">Meta</h4>' +
-        (mayPart('clients.brand', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
-        '</div><div data-m="list"></div></section>' +
-      '<section class="readgroup ba" id="crmAnalysis"><div class="readgroup-head"><h4 class="fsec-h">Brand analysis</h4>' +
-        '<span class="ba-acts" data-m="acts"></span></div><p class="msg capmsg" id="crmAnalysisMsg"></p><div data-m="body"></div></section>';
-    if (c.white_label) loadBrands(c);
+      '<section class="rec-part bp-part" id="crmBrandProfile">' +
+        bpHead('Brand profile', work ? bpEdit('profile', 'Edit Brand profile', 'crmBrandEdit') : '') +
+        '<div class="bp-body">' + bpFacts([['Logo', logo], ['Website', site],
+          ['Office phone', c.phone ? esc(window.ADspaceAPI.phoneWord(c.phone)) : '']]) + '</div></section>' +
+      '<section class="rec-part bp-part meta-links" id="crmMetaRead">' +
+        bpHead('Social accounts', work ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit Meta accounts</button>' : '') +
+        '<p class="msg" id="crmSocialMsg"></p><div class="bp-body" data-m="list"></div></section>' +
+      '<section class="rec-part bp-part ba" id="crmAnalysis">' +
+        bpHead('Brand analysis', '<span class="ba-acts" data-m="acts"></span>') +
+        '<p class="msg capmsg" id="crmAnalysisMsg"></p><div class="bp-body" data-m="body"></div></section>' +
+      '<section class="rec-part bp-part" id="crmBrandBrief">' + bpHead('Content brief') +
+        '<div class="bp-body" data-m="body"></div></section>' +
+      (wlShown ? '<section class="rec-part bp-part wl-brands" id="crmWlBrands"></section>' : '');
+    paintSocial(c);
+    paintBrief(c);
+    if (wlShown) paintWlPart(c);
     loadMeta(c);
     loadAnalysis(c);
+    paintReady(c);
     var me0 = $('crmMetaRead').querySelector('[data-a="meta"]');
     if (me0) me0.addEventListener('click', function () { metaSheet(c, null, this); });
   }
+  /* Social accounts: a row a platform, the handle the mockups and drafts
+     read, and for Instagram and Facebook the account linked in Meta beside
+     it; then the ad accounts. A handle is changed in place by its pen. */
+  function paintSocial(c) {
+    var host = $('crmMetaRead');
+    if (!host || state.client !== c) return;
+    var list = host.querySelector('[data-m="list"]');
+    var work = brandWork(c), metaRead = metaFor === c.id;
+    var own = (metaRead && metaLinks.filter(function (l) { return !l.brand_id; })[0]) || {};
+    var names = function (v) { return (Array.isArray(v) ? v : v ? [v] : []).map(function (x) { return esc(x.name); }).join(', '); };
+    var pen = function (k, label) {
+      return work ? '<button class="tl-pen" type="button" data-bp="handle" data-k="' + k + '" aria-label="Edit ' + esc(label) + '">' + PEN + '</button>' : '';
+    };
+    var row = function (k, label, linked) {
+      var v = c[k];
+      var val = v ? (k === 'handle_xhs' ? esc(v) : '<a class="plink" href="' + esc(profileUrl(k, v)) + '" target="_blank" rel="noopener">' + esc(v) + '</a>') : '—';
+      return '<div><dt>' + esc(label) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + '"><span class="mval"><span class="bs-val" data-v="' + k + '">' + val + '</span>' +
+        (linked ? '<span class="bs-meta">Linked in Meta: ' + linked + '</span>' : linked === '' && metaRead ? '<span class="bs-meta">Not linked in Meta. The handle is typed by hand.</span>' : '') +
+        '</span>' + pen(k, label) + '</dd></div>';
+    };
+    list.innerHTML = '<dl class="ovfacts bs-facts">' +
+      row('handle_ig', 'Instagram', names(own.instagram)) + row('handle_fb', 'Facebook', names(own.page)) +
+      row('handle_tiktok', 'TikTok') + row('handle_xhs', 'rednote') +
+      '<div><dt>Ad accounts</dt>' + (names(own.ad_accounts) ? '<dd>' + names(own.ad_accounts) + '</dd>' : '<dd class="is-empty">—</dd>') + '</div></dl>';
+  }
+  function saveHandle(c, k, v) {
+    var h = HANDLES.filter(function (x) { return x[0] === k; })[0];
+    var was = {}, patch = {};
+    was[k] = c[k] || null; patch[k] = v || null;
+    if (was[k] === patch[k]) { paintSocial(c); return; }
+    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) { msg('crmSocialMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error.message, 'err'); paintSocial(c); return; }
+      if (!(r.data || []).length) { msg('crmSocialMsg', 'Not saved. The database refused the request.', 'err'); paintSocial(c); return; }
+      c[k] = patch[k];
+      log('client.brand', c.name, changed(was, patch, [[k, h[1]]]));
+      if (state.client !== c) return;
+      paintSocial(c); paintLinks(c); railDone(c);
+      msg('crmSocialMsg', 'Saved.', 'ok');
+    }).catch(function (e) { msg('crmSocialMsg', 'Not saved. ' + ADspaceWords.en.offline, 'err'); paintSocial(c); });
+  }
+  /* The content brief, read in its two parts, each with its own Edit. A
+     part an analysis wrote says which version, worked out each time from
+     the confirmed versions as `brand_analysis_confirm` fills it; a part
+     typed by a colleague says nothing. */
+  var BRIEF_PARTS = { audience: ['audience', 'pains', 'pillars'], voice: ['tone', 'avoid', 'competitors', 'hooks'] };
+  function briefFromAnalysis(a, k) {
+    a = a || {};
+    var arr = function (x) { return Array.isArray(x) ? x : []; };
+    var t = function (x) { return String(x == null ? '' : x).trim(); };
+    var v = '';
+    if (k === 'audience') v = t(a.brief && a.brief.audience) || arr(a.audiences).map(function (s) { return t([s && s.name, s && s.who].filter(function (x) { return x != null && x !== ''; }).join(': ')); }).join('\n');
+    else if (k === 'pains') v = t(a.brief && a.brief.pains) || arr(a.audiences).filter(function (s) { return t(s && s.pains); }).map(function (s) { return t(s.pains); }).join('\n');
+    else if (k === 'pillars') v = (arr(a.brief && a.brief.pillars).length ? a.brief.pillars : arr(a.content && a.content.pillars)).map(t).join('\n');
+    else if (k === 'tone') v = t(a.brief && a.brief.tone);
+    else if (k === 'competitors') v = arr(a.positioning && a.positioning.competitors).map(t).join(', ');
+    return t(v).slice(0, 1000);
+  }
+  function briefSource(c, k) {
+    if (ba.id !== c.id || !ba.versions) return '';
+    var now = String(briefOf(c)[k] || '').trim();
+    if (!now) return '';
+    var v = ba.versions.filter(function (x) { return x.confirmed_at && briefFromAnalysis(x.analysis, k) === now; })[0];
+    return v ? 'From Brand analysis, version ' + v.version : '';
+  }
+  function paintBrief(c) {
+    var host = $('crmBrandBrief');
+    if (!host || state.client !== c) return;
+    var work = brandWork(c), b = briefOf(c);
+    var rows = function (keys) {
+      return keys.map(function (k) {
+        var f = BRIEF.filter(function (x) { return x[1] === k; })[0], src = briefSource(c, k);
+        return [f[2], b[k] ? esc(b[k]) + (src ? '<span class="bp-src">' + esc(src) + '</span>' : '') : '', true];
+      });
+    };
+    var group = function (mode, title, list) {
+      return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' +
+        (work ? bpEdit(mode, 'Edit ' + title) : '') + '</div>' + bpFacts(list) + '</section>';
+    };
+    host.querySelector('[data-m="body"]').innerHTML =
+      group('audience', 'Audience and pillars', rows(BRIEF_PARTS.audience)) +
+      group('voice', 'Voice and references', rows(BRIEF_PARTS.voice).concat([['Other notes', c.brand_notes ? esc(c.brand_notes) : '', true]]));
+  }
+  /* White label (2026-10-07; a part of its own since 2026-11-22): the switch
+     acts at the press with Undo; turned on with no wide logo it opens the
+     sheet, since the reports need the logo. */
+  function paintWlPart(c) {
+    var host = $('crmWlBrands');
+    if (!host || state.client !== c) return;
+    var can = mayPart('reports.whitelabel', 'work') && bandMay(c.stage || 'lead', 'work');
+    var on = Boolean(c.white_label);
+    var sw = can ? '<button class="switch" type="button" role="switch" id="crmWlSwitch" data-bp="wl-switch" aria-checked="' + String(on) +
+      '" aria-label="White label"></button>' : '';
+    host.innerHTML = bpHead('White label', sw) + '<p class="msg" id="crmWlMsg"></p>' +
+      '<div class="bp-body">' + (can ? '' : bpFacts([['White label', on ? 'On' : 'Off']])) +
+      (on || c.report_logo ? '<dl class="ovfacts"><div><dt>Wide logo</dt><dd class="mfield"><span class="mval">' +
+        (c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '<span class="is-missing">Required</span>') + '</span>' +
+        (can ? '<button class="tl-pen" type="button" data-bp="wl" aria-label="Edit Wide logo">' + PEN + '</button>' : '') + '</dd></div>' +
+        (on ? '<div><dt>Brands</dt><dd data-m="list"></dd></div>' : '') + '</dl>' : '') + '</div>';
+    if (on) loadBrands(c);
+  }
+  function setWl(c, on) {
+    var was = { white_label: Boolean(c.white_label) }, patch = { white_label: on };
+    var sw = $('crmWlSwitch');
+    if (sw) { sw.setAttribute('aria-checked', String(on)); sw.disabled = true; }
+    return db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) {
+        paintWlPart(c);
+        msg('crmWlMsg', r.error ? (/denied|whitelabel|white_label/i.test(r.error.message || '') ? 'You do not have permission to change white label settings. Please ask an admin.' : r.error.message) : 'Not saved. The database refused the request.', 'err');
+        return false;
+      }
+      c.white_label = on;
+      log('client.brand', c.name, 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On'));
+      if (state.client === c) paintWlPart(c);
+      return true;
+    }).catch(function (e) { paintWlPart(c); msg('crmWlMsg', 'Not saved. ' + ADspaceWords.en.offline, 'err'); return false; });
+  }
+  function pressWl(c) {
+    var on = !c.white_label;
+    if (on && !c.report_logo) { openBrandSheet('wl', $('crmWlSwitch'), true); return; }
+    setWl(c, on).then(function (ok) {
+      if (!ok || state.client !== c) return;
+      undoBar(on ? 'Turned on.' : 'Turned off.', function () { setWl(c, !on); }, $('crmWlMsg'));
+    });
+  }
+  /* Write with AI reads the brief's Audience, Content pillars and Tone of
+     voice and a confirmed Brand analysis (`ai_brand_ready`); the tab says
+     once whether they are all held, from what it has already read. */
+  function paintReady(c) {
+    var el = $('crmBrandReady');
+    if (!el || state.client !== c) return;
+    var ai = !(window.ADspaceAdmin && window.ADspaceAdmin.may) || window.ADspaceAdmin.may('use.ai');
+    if (!ai || ba.id !== c.id || !ba.versions) { el.hidden = true; return; }
+    var b = briefOf(c), need = [];
+    [['audience', 'Audience'], ['pillars', 'Content pillars'], ['tone', 'Tone of voice']].forEach(function (x) {
+      if (!String(b[x[0]] || '').trim()) need.push(x[1]);
+    });
+    if (!ba.versions.some(function (x) { return x.confirmed_at; })) need.push('a confirmed Brand analysis');
+    el.hidden = false;
+    el.innerHTML = need.length
+      ? '<span class="chip-state is-warn">Write with AI not ready</span><span class="brand-ready-miss">Still needed: ' +
+        esc(need.length < 2 ? need[0] : need.slice(0, -1).join(', ') + ' and ' + need[need.length - 1]) + '.</span>'
+      : '<span class="chip-state is-ok">Write with AI ready</span>';
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('#crmBrandRead [data-bp]');
+    var c = state.client;
+    if (!t || !c) return;
+    var a = t.getAttribute('data-bp');
+    if (a === 'profile' || a === 'audience' || a === 'voice' || a === 'wl') { openBrandSheet(a, t); return; }
+    if (a === 'wl-switch') { pressWl(c); return; }
+    if (a === 'handle') {
+      var k = t.getAttribute('data-k'), h = HANDLES.filter(function (x) { return x[0] === k; })[0];
+      var host = t.parentNode.querySelector('.bs-val[data-v="' + k + '"]');
+      if (host && !c[k]) host.textContent = '';
+      if (!h || !host) return;
+      msg('crmSocialMsg', '');
+      window.ADspaceAsk.rename(host, t, { value: c[k] || '', label: h[1], saveLabel: 'Save ' + h[1], allowEmpty: true, max: 120,
+        save: function (v) { saveHandle(c, k, v); } });
+    }
+  });
   /* The brands a white-label client is serviced for (2026-10-07): each its
      own report a month, picked on New report and in a report's White label.
      Added and renamed here, stood down, never removed. */
@@ -4038,11 +4217,7 @@
      ADspace's system user can see (the `meta-import` function), never typed.
      A white-label client's brands each link their own, from the brand's ⋯
      (Meta accounts), read in that sheet. */
-  var metaSeq = 0, metaSheetSeq = 0, metaLinks = [];
-  function metaFacts(l) {
-    var names = function (v) { return Array.isArray(v) ? v.map(function (x) { return esc(x.name); }).join(', ') : v ? esc(v.name) : ''; };
-    return [['Ad accounts', names(l && l.ad_accounts)], ['Facebook Page', names(l && l.page)], ['Instagram', names(l && l.instagram)]];
-  }
+  var metaSeq = 0, metaSheetSeq = 0, metaLinks = [], metaFor = null;
   function loadMeta(c) {
     var host = $('crmMetaRead');
     if (!host) return;
@@ -4051,18 +4226,13 @@
       if (seq !== metaSeq || state.client !== c) return;
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) {
-        metaLinks = [];
+        metaLinks = []; metaFor = null;
         list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'The Meta accounts could not be loaded.') + '</p>';
         return;
       }
       metaLinks = d.links || [];
-      var own = metaLinks.filter(function (l) { return !l.brand_id; })[0];
-      var dl = function (rows) {
-        return '<dl class="ovfacts">' + rows.map(function (r) {
-          return '<div><dt>' + esc(r[0]) + '</dt>' + (r[1] ? '<dd>' + r[1] + '</dd>' : '<dd class="is-empty">—</dd>') + '</div>';
-        }).join('') + '</dl>';
-      };
-      list.innerHTML = dl(metaFacts(own));
+      metaFor = c.id;
+      paintSocial(c);
     }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be loaded.</p>'; });
   }
   /* BRAND ANALYSIS (2026-10-10; the user: "deep analysis of this clients
@@ -4088,7 +4258,8 @@
     'client-scope': 'You do not have access to this client. Please ask an admin.',
     'not-found': 'This analysis is no longer available.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
-    'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
+    'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.',
+    ambiguous: 'More than one business matches this client. Run the analysis again and choose the brand.'
   };
   function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
@@ -4182,11 +4353,27 @@
     b = b || {};
     var bits = [];
     var n = function (v, one, many) { return typeof v === 'number' && v > 0 ? v + ' ' + (v === 1 ? one : many) : ''; };
-    bits.push(n(b.reports, 'report', 'reports'), n(b.post_results, 'post result', 'post results'));
+    bits.push(n(b.reports, 'report', 'reports'), n(b.post_results, 'post result', 'post results'),
+      typeof b.quotation === 'string' && b.quotation ? 'Quotation ' + b.quotation : '',
+      n(b.review_notes, 'change request', 'change requests'), n(b.approved_captions, 'approved caption', 'approved captions'),
+      n(b.calls, 'call or visit note', 'call and visit notes'));
     var m = b.meta && typeof b.meta === 'object' ? b.meta : {};
     bits.push(n(m.instagram, 'Instagram post', 'Instagram posts'), n(m.facebook, 'Facebook post', 'Facebook posts'),
       m.followers ? 'Instagram followers' : '', n(m.ads, 'ad objective', 'ad objectives'), n(b.web_searches, 'web search', 'web searches'));
     return bits.filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
+  }
+  /* What the run was told or worked out (2026-11-22): the monthly ad
+     budget, the objective and the ad account, each worked-out one named so. */
+  var BA_OBJ = { enquiries: 'Enquiries (lead form)', messages: 'Messages (WhatsApp)', traffic: 'Website visits or sales', awareness: 'Awareness' };
+  function baPlan(b) {
+    var i = b && b.inputs;
+    if (!i) return '';
+    var d = i.derived || [];
+    var from = function (k, w) { return d.indexOf(k) > -1 ? ' (' + w + ')' : ''; };
+    return [i.budget ? MON.money(Number(i.budget), 'MY') + ' per month' + from('budget', 'from the quotation') : '',
+      BA_OBJ[i.objective] ? BA_OBJ[i.objective] + from('objective', 'from the ad accounts') : '',
+      i.account ? (i.account === 'mature' ? 'Mature ad account' : 'New ad account') + from('account', 'from the ad accounts') : '']
+      .filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
   }
   /* A version is deleted at Clients: Brand Full Access (2026-10-31), never
      the latest confirmed one: Write with AI reads it. */
@@ -4220,6 +4407,8 @@
   function paintAnalysis(c) {
     var host = $('crmAnalysis');
     if (!host || state.client !== c) return;
+    /* What the versions say moves the brief's sources and the ready line. */
+    paintBrief(c); paintReady(c);
     var acts = host.querySelector('[data-m="acts"]'), body = host.querySelector('[data-m="body"]');
     var may = mayPart('clients.brand', 'view');
     var list = ba.versions || [];
@@ -4250,9 +4439,10 @@
         ['Version', esc('Version ' + v.version + ' · ' + baDay(v.created_at) + (v.by ? ' · ' + v.by : '')) +
           (latest ? '' : ' <button class="linkbtn" type="button" data-a="ba-latest">Show latest</button>')],
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
-        ['Read from', baRead(v.basis)]
-      ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">Written from little history: no reports, post results or Meta figures. Check each section before use.</p>' : '') +
+        ['Read from', baRead(v.basis)],
+        ['Ad plan', baPlan(v.basis)]
+      ].filter(function (r) { return (r[0] !== 'Confirmed' || v.confirmed_at) && (r[0] !== 'Ad plan' || r[1]); })) +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
@@ -4313,8 +4503,17 @@
     btn.disabled = true;
     /* No brief first (2026-10-15): the analysis writes it, from the
        website, the handles and Meta; confirming fills what is empty. */
-    Promise.all([db.rpc('ai_analysis_left')]).then(function (both) {
-      var q = both[0];
+    /* The question opens on what the portal holds (2026-11-22, the user's
+       D4): this browser's last answers, else the last version's inputs,
+       which the function keeps with it, else the latest quotation's monthly
+       advertising budget. A refused read of quotations offers nothing. */
+    Promise.all([db.rpc('ai_analysis_left'),
+      db.from('quotations').select('ref, selection, status').eq('client_id', c.id).is('removed_at', null)
+        .order('issued_at', { ascending: false }).limit(5).then(function (r) {
+          return (r && !r.error && (r.data || []).filter(function (x) { return x.status !== 'not_proceeding'; })[0]) || null;
+        }, function () { return null; })
+    ]).then(function (both) {
+      var q = both[0], quote = both[1];
       btn.disabled = false;
       var left = (q && q.data) || {};
       if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
@@ -4325,18 +4524,28 @@
          it could have been told; kept in this browser with the notes. */
       var was = {};
       try { was = JSON.parse(baKeep(ikey) || '{}') || {}; } catch (e0) { was = {}; }
+      var lastV = (ba.id === c.id && ba.versions || [])[0];
+      var kept = (lastV && lastV.basis && lastV.basis.inputs) || {};
+      var said = {};
+      if (!was.budget && kept.budget) { was.budget = String(kept.budget); said.budget = 'From Brand analysis, version ' + lastV.version; }
+      var qb = quote && quote.selection && Array.isArray(quote.selection.ads) ? quote.selection.ads.filter(function (a) { return (a.freq || 'monthly') === 'monthly'; })
+        .reduce(function (t, a) { return t + (Number(a.budget) || 0); }, 0) : 0;
+      if (!was.budget && qb > 0) { was.budget = String(qb); said.budget = 'From quotation ' + quote.ref; }
+      if (!was.objective && kept.objective) { was.objective = kept.objective; said.objective = 'From Brand analysis, version ' + lastV.version; }
+      if (!was.account && kept.account) was.account = kept.account;
+      var notesWas = baKeep(key) || (kept.notes ? String(kept.notes) : '');
       window.ADspaceConfirm.ask({
         title: 'Run analysis',
-        body: 'The analysis reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
+        body: 'The analysis reads the website, every social profile, the linked Meta accounts and competitors on the web, with the brief, published reports, post results, the latest quotation, the client\'s feedback on content and the last five notes of calls and visits. ' +
           left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Run',
         fields: [
-          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
-          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
+          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '', note: said.budget || '' },
+          { name: 'objective', label: 'Objective', required: false, value: was.objective || '', note: said.objective || '',
             choices: [['', 'Not decided'], ['enquiries', 'Enquiries (lead form)'], ['messages', 'Messages (WhatsApp)'], ['traffic', 'Website visits or sales'], ['awareness', 'Awareness']] },
           { name: 'account', label: 'Ad account', required: false, value: was.account || '', seg: true,
             choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
-          { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }],
+          { name: 'notes', label: 'Notes', rows: 4, required: false, placeholder: 'Optional', value: notesWas }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
           return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
@@ -4346,25 +4555,50 @@
         var inputs = { objective: v.objective || '', budget: String(v.budget == null ? '' : v.budget).trim(), account: v.account || '' };
         baKeep(key, notes);
         baKeep(ikey, inputs.objective || inputs.budget || inputs.account ? JSON.stringify(inputs) : '');
-        ba.running = c.id;
-        paintAnalysis(c);
-        db.functions.invoke('brand-analysis', { body: { client_id: c.id, notes: notes,
-          inputs: { objective: inputs.objective || null, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } } }).then(function (res) {
-          var d = res && res.data;
-          if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
-          ba.running = null;
-          if (ba.id === c.id && ba.versions) { ba.versions.unshift(d.analysis); ba.show = null; }
-          paintAnalysis(c);
-          if (ba.id !== c.id) return;
-          baMsg('Written by AI. Read before confirming.', 'ok');
-        }).catch(function (e) {
-          ba.running = null;
-          paintAnalysis(c);
-          if (state.client !== c) return;
-          baMsg(baSaid(e));
-        });
+        baInvoke(c, { client_id: c.id, notes: notes,
+          inputs: { objective: inputs.objective || null, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } });
       });
     }).catch(function (e) { btn.disabled = false; baMsg(baSaid(e)); });
+  }
+  /* A run, and where the name matched more than one business (2026-11-22,
+     the user: the analysis never guesses the brand), the candidates asked
+     of the colleague, the run made again on the one chosen; the run that
+     stopped there is not counted. */
+  function baInvoke(c, body) {
+    ba.running = c.id;
+    paintAnalysis(c);
+    db.functions.invoke('brand-analysis', { body: body }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
+      ba.running = null;
+      if (ba.id === c.id && ba.versions) { ba.versions.unshift(d.analysis); ba.show = null; }
+      paintAnalysis(c);
+      if (ba.id !== c.id) return;
+      baMsg('Written by AI. Read before confirming.', 'ok');
+    }).catch(function (e) {
+      ba.running = null;
+      paintAnalysis(c);
+      if (state.client !== c) return;
+      var cands = e && e.message === 'ambiguous' && e.d && Array.isArray(e.d.candidates) ? e.d.candidates : null;
+      if (cands && cands.length > 1 && !body.choice) { baChoose(c, body, cands); return; }
+      baMsg(baSaid(e));
+    });
+  }
+  function baChoose(c, body, cands) {
+    var host = function (u) { return u ? String(u).replace(/^https:\/\/(www\.)?/i, '').replace(/\/.*$/, '') : ''; };
+    window.ADspaceConfirm.ask({
+      title: 'Choose the brand',
+      body: 'More than one business matches ' + c.name + '. Choose the one to analyse. The earlier run was not counted.',
+      go: 'Run',
+      fields: [{ name: 'pick', label: 'Brand', required: true, need: 'Choose a brand.', value: '',
+        choices: [['', 'Choose a brand']].concat(cands.map(function (x, i) {
+          return [String(i), [x.name, host(x.url), x.note].filter(Boolean).join(' · ')];
+        })) }]
+    }, function (v) {
+      var x = cands[Number(v.pick)];
+      if (!x) return;
+      baInvoke(c, Object.assign({}, body, { choice: { name: x.name, url: x.url || null } }));
+    });
   }
   /* The brief a confirmed analysis filled, read back onto the record. */
   /* The Brand pane drawn again with the brief the analysis filled; `then`
@@ -4498,11 +4732,29 @@
             shutSheet(id);
             msg('crmBrandNote', 'Saved.', 'ok');
             loadMeta(c);
+            if (!b) handlesFromMeta(c, pickOf(igs, $('crmMetaIg').value), pickOf(pages, $('crmMetaPage').value));
           }).catch(function () { save.disabled = false; msg('crmMetaMsg', 'Not saved. Please try again.', 'err'); });
         };
       }).catch(function () { if (seq === metaSheetSeq) failLine(body, 'Meta accounts', 'Meta did not answer.', load); });
     };
     load();
+  }
+  /* A handle left empty is filled from the account just linked in Meta
+     (2026-11-22, the user's D1): Instagram's username, the Page's name. A
+     handle a colleague typed is never replaced. */
+  function handlesFromMeta(c, ig, page) {
+    var patch = {}, was = {};
+    if (!String(c.handle_ig || '').trim() && ig && /^[A-Za-z0-9._]{1,30}$/.test(ig.name || '')) patch.handle_ig = '@' + ig.name;
+    if (!String(c.handle_fb || '').trim() && page && String(page.name || '').trim()) patch.handle_fb = String(page.name).trim().slice(0, 120);
+    if (!Object.keys(patch).length) return;
+    Object.keys(patch).forEach(function (k) { was[k] = c[k] || null; });
+    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) return;
+      Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+      log('client.brand', c.name, 'Filled from Meta: ' + changed(was, patch, HANDLES));
+      if (state.client !== c) return;
+      paintSocial(c); paintLinks(c); railDone(c);
+    }).catch(function () {});
   }
   var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   function brandAsk(c, b) {
@@ -4527,8 +4779,6 @@
     $('crmNotes').value = c.brand_notes || '';
     BRIEF.forEach(function (f) { $(f[0]).value = briefOf(c)[f[1]] || ''; });
     paintLogoPreview();
-    /* Reports: White label at Work (2026-10-07), a granted part. */
-    $('crmWlSec').hidden = !mayPart('reports.whitelabel', 'work');
     $('crmWl').checked = Boolean(c.white_label);
     wlLogo = c.report_logo || null;
     $('crmWlFile').value = '';
@@ -4577,10 +4827,26 @@
     logoPng(f).then(function (url) { wlLogo = url; paintWl(); msg('crmBrandMsg', ''); })
       .catch(function (e) { msg('crmBrandMsg', e.message, 'err'); });
   });
-  $('crmBrandEdit').addEventListener('click', function () {
-    fillBrand(state.client); msg('crmBrandMsg', ''); msg('crmBrandNote', '');
-    openSheet('crmBrandSheet', this);
-  });
+  /* One sheet edits each part, showing that part's fields alone
+     (2026-11-22): Brand profile, Audience and pillars, Voice and
+     references (with Other notes), White label. */
+  var BMODE = { profile: 'Brand profile', audience: 'Audience and pillars', voice: 'Voice and references', wl: 'White label' };
+  function openBrandSheet(mode, opener, wlOn) {
+    if (!state.client || !BMODE[mode]) return;
+    state.bmode = mode;
+    fillBrand(state.client);
+    if (wlOn) { $('crmWl').checked = true; paintWl(); }
+    var title = BMODE[mode];
+    Array.prototype.forEach.call($('crmBrandBody').querySelectorAll('[data-bmode]'), function (sec) {
+      sec.hidden = sec.getAttribute('data-bmode') !== mode;
+      var h = sec.querySelector('.fsec-h');
+      /* A part of one section needs no heading under the sheet's own. */
+      if (h) h.hidden = h.textContent.trim() === title;
+    });
+    $('crmBrandTitle').textContent = title;
+    msg('crmBrandMsg', ''); msg('crmBrandNote', '');
+    openSheet('crmBrandSheet', opener);
+  }
   $('crmBrandCancel').addEventListener('click', function () {
     shutSheet('crmBrandSheet'); fillBrand(state.client); msg('crmBrandMsg', '');
   });
@@ -4769,45 +5035,58 @@
   }
 
   $('crmBrandSave').addEventListener('click', function () {
-    var was = Object.assign({}, state.client);
-    var patch = { brand_notes: val('crmNotes') || null };
-    BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    var c = state.client, mode = state.bmode || 'profile';
+    if (!c) return;
+    var was = Object.assign({}, c), patch = {};
     was.white_label = Boolean(was.white_label); was.report_logo = was.report_logo || null;
-    if (!$('crmWlSec').hidden && $('crmWl').checked && !wlLogo) {
-      msg('crmBrandMsg', 'Upload the wide logo for reports.', 'err');
-      $('crmWlUp').focus();
-      return;
-    }
-    /* The brief is one object; only the parts that hold words are kept,
-       and it is sent only where a part changed. */
-    var brief = {}, briefWas = briefOf(was), briefMoved = [];
-    BRIEF.forEach(function (f) {
-      var v = val(f[0]);
-      if (v) brief[f[1]] = v;
-      if ((v || '') !== (briefWas[f[1]] || '')) briefMoved.push(f[2]);
-    });
-    if (briefMoved.length) patch.brief = Object.keys(brief).length ? brief : null;
-    if (!$('crmWlSec').hidden) {
+    /* Only the part's own fields are sent, and only where they moved. */
+    if (mode === 'profile') BRAND.forEach(function (f) { var v = val(f[0]) || null; if (v !== (was[f[1]] || null)) patch[f[1]] = v; });
+    if (mode === 'voice') { var n = val('crmNotes') || null; if (n !== (was.brand_notes || null)) patch.brand_notes = n; }
+    if (mode === 'wl') {
+      if ($('crmWl').checked && !wlLogo) {
+        msg('crmBrandMsg', 'Upload the wide logo for reports.', 'err');
+        $('crmWlUp').focus();
+        return;
+      }
       if ($('crmWl').checked !== was.white_label) patch.white_label = $('crmWl').checked;
       if (wlLogo !== was.report_logo) patch.report_logo = wlLogo;
     }
-    db.from('clients').update(patch).eq('id', state.client.id)
+    /* The brief is one object; only the parts that hold words are kept,
+       and it is sent only where a part changed. */
+    var briefMoved = [];
+    if (mode === 'audience' || mode === 'voice') {
+      var brief = Object.assign({}, briefOf(was)), briefWas = briefOf(was);
+      BRIEF.filter(function (f) { return BRIEF_PARTS[mode].indexOf(f[1]) > -1; }).forEach(function (f) {
+        var v = val(f[0]);
+        if (v) brief[f[1]] = v; else delete brief[f[1]];
+        if ((v || '') !== (briefWas[f[1]] || '')) briefMoved.push(f[2]);
+      });
+      if (briefMoved.length) patch.brief = Object.keys(brief).length ? brief : null;
+    }
+    /* A Save that changes nothing writes and files nothing. */
+    if (!Object.keys(patch).length) {
+      if (window.ADspaceSheet) window.ADspaceSheet.clean();
+      shutSheet('crmBrandSheet');
+      return;
+    }
+    $('crmBrandSave').disabled = true;
+    db.from('clients').update(patch).eq('id', c.id)
       .select('id').then(function (r) {
-        if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change the content brief and brand notes. Please ask an admin.' : r.error.message, 'err'); return; }
+        $('crmBrandSave').disabled = false;
+        if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change the content brief and other notes. Please ask an admin.' : r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
-        Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
-        log('client.brand', state.client.name, [changed(was, patch, [
-          ['website', 'Website'], ['phone', 'Phone'], ['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
-          ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote'], ['logo_url', 'Logo'], ['brand_notes', 'Brand notes']]),
+        Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+        log('client.brand', c.name, [changed(was, patch, [
+          ['website', 'Website'], ['phone', 'Office phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
           briefMoved.length ? 'Content brief: ' + briefMoved.join(', ') + ' changed' : '',
           'white_label' in patch ? 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On') : '',
           'report_logo' in patch ? (patch.report_logo ? (was.report_logo ? 'Wide logo replaced' : 'Wide logo set') : 'Wide logo removed') : ''
         ].filter(Boolean).join('; '));
         if (window.ADspaceSheet) window.ADspaceSheet.clean();
         shutSheet('crmBrandSheet');
-        openClient(state.client);
+        openClient(c);
         msg('crmBrandNote', 'Saved.', 'ok');
-      });
+      }).catch(function (e) { $('crmBrandSave').disabled = false; msg('crmBrandMsg', (e && e.message) || 'Not saved.', 'err'); });
   });
 
   // ---- Contacts -----------------------------------------------------------

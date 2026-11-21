@@ -58,8 +58,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   late red, its count in the middle and who holds it under it, opening My
   Work's board), then People (`#ovwPeople`: each colleague's open work as
   a bar on one scale, its late part red, then open, late, delivered and
-  on time from `ops_report`, a row opening their record's Work) beside On
-  time by month, then Clients this month (`#ovwClientsMonth`: each client
+  on time from `ops_report`, a row opening their record's Work) across its
+  row (On time by month moved to Analytics' Operations, 2026-11-22), then Clients this month (`#ovwClientsMonth`: each client
   whose content month is this month, its posts done green, late red and
   open grey on one bar, its report and its meeting) beside Needs
   attention. Delivery against due date (`#ovwTimely`, 2026-11-18; the
@@ -109,8 +109,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     revision never counted again; audit 2026-11-15) plus `late_open`, the open work late
     by the late rule (`2026-10-19-on-time-counts-late-open-work.sql`),
     reading a dash where nothing was due; the on-time and posted rings are
-    gone, posting read in the trend), then Work by person beside On time
-    by month and Clients this month beside Needs attention
+    gone, posting read in the trend), then Work by person and Clients this month beside Needs attention
     (`#ovwAttention`, `.ovw-pair`; Work by stage left with phase 2,
     2026-11-13): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
@@ -128,10 +127,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     then what has not started; five rows, then Show N more, a tonal toggle
     with its chevron that reads Show fewer once open and folds the list
     back to five (the user, 2026-10-12: "5 show only"); a row writes the
-    record's address and opens it as search does; then Sales (Won,
-    Churned, Committed monthly value)
-    and Operations (Open tasks, Reports published for last
-    month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
+    record's address and opens it as search does; then Sales (Committed
+    monthly value; Won and Churned gone 2026-11-22, Reports published now
+    a line on Analytics' Reports for the month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
     period before (`on Sept`, `on last quarter`) and its trend
     (`ADspaceChart.spark`) where it has a history; every tile keeps the
     trend's room, so a row of tiles stands one height; a label wraps onto a

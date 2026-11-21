@@ -381,8 +381,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   appended once each where the template holds them nowhere; the team edits
   them in Templates as any other.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
-- Time records: one stage table in workflow order (Stage, Visits, Time, a
-  Total row); the sheet shows it open, with Recorded only where there is any.
+- Stage timeline (in place of Time records, 2026-11-22; `paintTimeline`,
+  `stageVisits`): one line a visit to a stage, read from `ops_task_events`
+  alone (nothing recorded for it): the stage (Round n on a revisit), its
+  time on the right (35 min, 19h 5m, 2d 6h; calendar time), its dates and
+  who moved it there under it (the first line Created by and Assigned to),
+  a change of owner under the stage it led into (Handed on to, on the move)
+  or was made in (Reassigned to, Taken by), Went live, Blocked and Reopened
+  likewise; a skipped stage reads Skipped with its reason and no time;
+  visits under 5 minutes in a row fold into one quiet line (Moved through
+  in under 5 minutes); a stage visited more than once says how often and
+  its time in total on its last visit; the open stage counts on (So far),
+  red with its dot once the task is late; a Total foot. Every event it
+  holds (`TIMELINE_EVENTS`) leaves the card's Recent activity, never the
+  Activity record. The timer's reads are gone; `ops_work_sessions` and its
+  functions stay until a migration of their own.
 - A draft link is optional. Without one the step asks Channel (`#stepVia`,
   WhatsApp / Other; the user, 2026-10-11: "no need type in where to send
   every single time"): WhatsApp files Sent to the client on WhatsApp., Other
@@ -400,8 +413,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Details (with Video for a task that has video details: Script and
     Footage readiness as selects saved by `ops_set_video`, since editing
     waits on footage), Checklist and Remarks stay open (Remarks: the
-    comments, Add remark, Post); Brief, Files and links, Time records and
-    Recent activity fold under More (`#dwMore`, shut each open).
+    comments, Add remark, Post); Brief, Files and links, Stage timeline
+    and Recent activity fold under More (`#dwMore`, shut each open).
   - A month's report task (`source_type` `report_social` / `report_ads`)
     carries its report (`paintReportRow`; the month's own, never one on
     request): once made, where it stands and

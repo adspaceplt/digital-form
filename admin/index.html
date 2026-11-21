@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261121x">
-<link rel="stylesheet" href="/css/console.css?v=20261121zzzz">
+<link rel="stylesheet" href="/css/portal.css?v=20261122b">
+<link rel="stylesheet" href="/css/console.css?v=20261122c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261121x"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261122d"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -496,8 +496,8 @@
             <span class="acct-who-text"><b id="acctWhoName" hidden></b><span id="whoami"></span></span>
             <button class="iconbtn acct-x" id="acctClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
-          <!-- A person's own HR records (reviews, initiatives, reflection,
-               letters) are theirs, so they sit with who you are rather than
+          <!-- A person's own HR records (reviews, recognitions, letters) are
+               theirs, so they sit with who you are rather than
                among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My records
@@ -1255,17 +1255,14 @@
           </div>
 
           <div class="rec-pane" data-pane="brand" hidden>
-        <!-- The brand, read first: where to find them, the logo, and how to
-             speak for them. Edit opens the same groups in a sheet. -->
-        <section class="pane-form">
-          <div class="viewhead pane-form-head">
-            <span class="headmark"><h2>Brand profile</h2></span>
-            <span class="muted" id="crmBrandSummary"></span>
-            <button class="btn btn-sm" id="crmBrandEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
-          </div>
-          <div class="readgroups" id="crmBrandRead"></div>
-          <div class="msg" id="crmBrandNote"></div>
-        </section>
+        <!-- The Brand tab in working order (2026-11-22, the user approved the
+             restructure): Brand profile, Social accounts, Brand analysis,
+             Content brief, White label, each a part with its own short Edit.
+             The parts are drawn by js/crm.js (`paintBrandRead`); one sheet
+             edits each part, showing only that part's fields. -->
+        <div class="brand-ready" id="crmBrandReady" hidden></div>
+        <div class="msg" id="crmBrandNote"></div>
+        <div class="brand-parts" id="crmBrandRead"></div>
         <div class="sheet" id="crmBrandSheet" hidden>
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmBrandTitle">
             <div class="sheet-head">
@@ -1273,7 +1270,7 @@
               <button class="iconbtn" id="crmBrandClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
             <div class="sheet-body" id="crmBrandBody">
-              <section class="fsec">
+              <section class="fsec" data-bmode="profile">
                 <h4 class="fsec-h">Website and office</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
@@ -1282,23 +1279,10 @@
                     <input class="input" id="crmPhone" type="tel" data-check="phone" placeholder="07-123 4567"></div>
                 </div>
               </section>
-              <!-- The same four handles and the same logo Content Review draws
-                   on a mockup: one row, edited in either place. -->
-              <section class="fsec">
-                <h4 class="fsec-h">Social handles</h4>
-                <div class="row fgrid">
-                  <div><label class="field-label" for="crmSocialIg">Instagram</label>
-                    <input class="input" id="crmSocialIg" placeholder="@adspace.advertising"></div>
-                  <div><label class="field-label" for="crmSocialFb">Facebook page</label>
-                    <input class="input" id="crmSocialFb" placeholder="ADspace Advertising"></div>
-                  <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
-                    <input class="input" id="crmSocialTiktok" placeholder="@adspace.advertising"></div>
-                  <div><label class="field-label" for="crmSocialXhs">rednote</label>
-                    <input class="input" id="crmSocialXhs" placeholder="ADspace"></div>
-                </div>
-              </section>
-              <section class="fsec">
-                <h4 class="fsec-h">Logo and notes</h4>
+              <!-- The same logo Content Review draws on a mockup: one row,
+                   edited in either place. -->
+              <section class="fsec" data-bmode="profile">
+                <h4 class="fsec-h">Logo</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmLogo">Logo</label>
                     <div class="logorow">
@@ -1310,14 +1294,10 @@
                       <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
                 </div>
-                <div class="row">
-                  <div><label class="field-label" for="crmNotes">Brand notes</label>
-                    <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
-                </div>
               </section>
               <!-- The content brief (2026-10-10): what the content is for and how it
                    speaks; Write with AI reads it for captions and scripts. -->
-              <section class="fsec">
+              <section class="fsec" data-bmode="audience">
                 <h4 class="fsec-h">Audience and pillars</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmBrAudience">Audience</label>
@@ -1332,7 +1312,7 @@
                     <textarea class="input textarea" id="crmBrPillars" rows="2" maxlength="1000" placeholder="One point per line"></textarea></div>
                 </div>
               </section>
-              <section class="fsec">
+              <section class="fsec" data-bmode="voice">
                 <h4 class="fsec-h">Voice and references</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmBrTone">Tone of voice</label>
@@ -1350,8 +1330,14 @@
                   <div><label class="field-label" for="crmBrHooks">Proven hooks</label>
                     <textarea class="input textarea" id="crmBrHooks" rows="2" maxlength="1000" placeholder="One point per line"></textarea></div>
                 </div>
+                <!-- Brand notes, kept as Other notes (the user, 2026-11-22, D3):
+                     the same column, read by every AI draft. -->
+                <div class="row">
+                  <div><label class="field-label" for="crmNotes">Other notes</label>
+                    <textarea class="input textarea" id="crmNotes" rows="3" placeholder="Optional"></textarea></div>
+                </div>
               </section>
-              <section class="fsec" id="crmWlSec">
+              <section class="fsec" id="crmWlSec" data-bmode="wl">
                 <h4 class="fsec-h">Reports</h4>
                 <label class="tickline">
                   <input type="checkbox" id="crmWl"> <span>White label</span>
@@ -3660,7 +3646,7 @@
                  content calendar lives in Google Drive), the files and links,
                  the time, the history and the rest of the details. -->
             <details class="qmore" id="dwMore">
-              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, time, activity</span></summary>
+              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, stage timeline, activity</span></summary>
               <div class="qmore-body">
             <section class="qcard" id="dwDescSec">
               <div class="qcard-head">
@@ -3718,9 +3704,11 @@
               <dl class="tfacts" id="taskMore"></dl>
             </section>
             <section class="qcard" id="dwTimeSec">
-              <h3 class="qcard-title">Time records</h3>
+              <div class="qcard-head">
+                <h3 class="qcard-title">Stage timeline</h3>
+                <span class="stl-head" id="dwTimeSum"></span>
+              </div>
               <div id="dwTimeList"></div>
-              <dl class="tfacts" id="dwTime" hidden></dl>
             </section>
             <section class="qcard" id="dwLogSec">
               <h3 class="qcard-title">Recent activity</h3>
@@ -4229,7 +4217,6 @@
             <button class="acttab btn-sm" data-pv="quarters" type="button" aria-pressed="false">Quarters</button>
             <button class="acttab btn-sm" data-pv="company" type="button" aria-pressed="false">Bonus and trip</button>
             <button class="acttab btn-sm" data-pv="commission" type="button" aria-pressed="false">Commission</button>
-            <button class="acttab btn-sm" data-pv="initiatives" type="button" aria-pressed="false">Initiatives</button>
           </span></div>
           <div id="perfMonths">
           <div class="cmdbar">
@@ -4302,21 +4289,6 @@
             </div>
             <div class="msg" id="rwCMsg"></div>
             <div id="rwCList" data-narrow="780"></div>
-          </div>
-          <!-- What colleagues started, to adopt, put on hold or mark done;
-               the member's own never appear here. -->
-          <div id="perfInits" hidden>
-            <div class="cmdbar">
-              <span class="cmdbar-find">
-                <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-                <input class="input input-sm" id="piFind" type="search" placeholder="Search name or initiative" aria-label="Search initiatives">
-              </span>
-              <span class="cmdbar-end">
-                <span class="cmdbar-quiet"><span class="cmdbar-count" id="piCount"></span></span>
-              </span>
-            </div>
-            <div class="msg" id="piMsg"></div>
-            <div id="piList" data-narrow="640"></div>
           </div>
         </div>
       </div>
@@ -5176,14 +5148,12 @@
         <div class="msg" id="mineLockMsg"></div>
       </section>
       <div class="msg" id="mineMsg"></div>
-      <!-- Once unlocked: the member's reviews, what they started, and their
-           own lines on the month, one view each. Initiatives feed Initiative
-           and improvement; a reflection reaches management only once shared. -->
+      <!-- Once unlocked: the member's reviews, their recognitions, letters,
+           employee record and health, one view each. -->
       <div id="mineOpen" data-swipe="mineViews" hidden>
         <div class="actstrip perf-views"><span class="cmdbar-views actviews" id="mineViews" role="group" aria-label="View">
           <button class="acttab btn-sm is-on" data-mv="reviews" type="button" aria-pressed="true">Reviews</button>
-          <button class="acttab btn-sm" data-mv="initiatives" type="button" aria-pressed="false">Initiatives</button>
-          <button class="acttab btn-sm" data-mv="reflection" type="button" aria-pressed="false">Reflection</button>
+          <button class="acttab btn-sm" data-mv="recognition" type="button" aria-pressed="false">Recognition</button>
           <button class="acttab btn-sm" data-mv="letters" type="button" aria-pressed="false">Letters</button>
           <button class="acttab btn-sm" data-mv="personnel" type="button" aria-pressed="false">Personnel</button>
           <button class="acttab btn-sm acttab-health" data-mv="health" type="button" aria-pressed="false"><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
@@ -5198,32 +5168,19 @@
                hours and commissions, drawn only where there is something. -->
           <div id="mineRewards" data-narrow="780"></div>
         </div>
-        <div id="mineInits" hidden>
+        <!-- Recognition (js/perf.js, 2026-11-22): what colleagues gave the
+             colleague and what they gave, Recognise in the bar. -->
+        <div id="mineRecog" hidden>
           <div class="cmdbar">
             <span class="cmdbar-end">
-              <span class="cmdbar-quiet"><span class="cmdbar-count" id="mineInitCount"></span></span>
+              <span class="cmdbar-quiet"><span class="cmdbar-count" id="mineRecCount"></span></span>
               <span class="cmdbar-acts">
-                <button class="btn btn-sm btn-primary" id="mineInitAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log initiative</button>
+                <button class="btn btn-sm btn-primary" id="mineRecAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Recognise</button>
               </span>
             </span>
           </div>
-          <div class="msg" id="mineInitMsg"></div>
-          <div id="mineInitList" data-narrow="640"></div>
-        </div>
-        <div id="mineRefl" hidden>
-          <div class="cmdbar">
-            <!-- The month reflected on is a view in the bar at every width, never
-                 behind Filters (2026-10-20, MINE-5); the select stays the source. -->
-            <select class="select select-sm" id="mineReflMonth" aria-label="Month" data-nofilter hidden></select>
-            <span class="cmdbar-views" id="mineReflMonths" role="group" aria-label="Month"></span>
-            <span class="cmdbar-end">
-              <span class="cmdbar-acts">
-                <button class="btn btn-sm btn-primary" id="mineReflWrite" type="button" hidden>Write reflection</button>
-              </span>
-            </span>
-          </div>
-          <div class="msg" id="mineReflMsg"></div>
-          <div id="mineReflBox" data-narrow="640"></div>
+          <div class="msg" id="mineRecMsg"></div>
+          <div id="mineRecList" data-narrow="640"></div>
         </div>
         <!-- HR letters issued to the colleague and shared with them
              (2026-10-06): their own alone, each redrawn on Download. -->
@@ -5262,71 +5219,35 @@
       </div>
     </div>
 
-    <!-- Log or edit an initiative: what it is, what it improves, and where
-         it can be read. -->
-    <div class="sheet" id="initSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="initSheetTitle" tabindex="-1">
+    <!-- Recognise a colleague (2026-11-22): who, the category and a note. -->
+    <div class="sheet" id="rgnSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rgnSheetTitle" tabindex="-1">
         <div class="sheet-head">
-          <h3 id="initSheetTitle">Log initiative</h3>
-          <button class="iconbtn" id="initClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <h3 id="rgnSheetTitle">Recognise</h3>
+          <button class="iconbtn" id="rgnClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sheet-body">
           <div class="row"><div class="field">
-            <label class="field-label" for="initTitle">Initiative</label>
-            <textarea class="input" id="initTitle" maxlength="140" aria-required="true" autocomplete="off" placeholder="Batch the shoots by location" rows="1" data-oneline></textarea>
+            <label class="field-label" for="rgnWho">Colleague</label>
+            <select class="select" id="rgnWho" aria-required="true"></select>
           </div></div>
           <div class="row"><div class="field">
-            <label class="field-label" for="initImproves">Area</label>
-            <select class="select" id="initImproves">
-              <option value="client">Client work</option>
-              <option value="process">Process</option>
-              <option value="tool">Tool</option>
-              <option value="sop">SOP</option>
-              <option value="other">Other</option>
+            <label class="field-label" for="rgnCat">Category</label>
+            <select class="select" id="rgnCat" data-seg aria-required="true">
+              <option value="helped">Helped a colleague</option>
+              <option value="effort">Extra effort</option>
+              <option value="praise">Client praise</option>
             </select>
           </div></div>
           <div class="row"><div class="field">
-            <label class="field-label" for="initDetail">Details</label>
-            <textarea class="input" id="initDetail" rows="4" maxlength="2000" placeholder="Optional"></textarea>
+            <label class="field-label" for="rgnNote">Note</label>
+            <textarea class="input" id="rgnNote" rows="3" maxlength="500" aria-required="true"></textarea>
           </div></div>
-          <div class="row"><div class="field">
-            <label class="field-label" for="initLink">Link</label>
-            <textarea class="input" id="initLink" inputmode="url" autocomplete="off" placeholder="https://adspace.me" rows="1" data-oneline spellcheck="false" autocapitalize="off"></textarea>
-          </div></div>
-          <div class="msg" id="initMsg"></div>
+          <div class="msg" id="rgnMsg"></div>
         </div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="initSave" type="button">Log</button>
-          <button class="btn btn-quiet" id="initCancel" type="button">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- The member's three lines on a month. -->
-    <div class="sheet" id="reflSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="reflSheetTitle" tabindex="-1">
-        <div class="sheet-head">
-          <h3 id="reflSheetTitle">Reflection</h3>
-          <button class="iconbtn" id="reflClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-        </div>
-        <div class="sheet-body">
-          <div class="row"><div class="field">
-            <label class="field-label" for="reflProud">Proud of</label>
-            <textarea class="input" id="reflProud" rows="3" maxlength="1000"></textarea>
-          </div></div>
-          <div class="row"><div class="field">
-            <label class="field-label" for="reflHard">Found hard</label>
-            <textarea class="input" id="reflHard" rows="3" maxlength="1000"></textarea>
-          </div></div>
-          <div class="row"><div class="field">
-            <label class="field-label" for="reflLearn">Want to learn</label>
-            <textarea class="input" id="reflLearn" rows="3" maxlength="1000"></textarea>
-          </div></div>
-          <div class="msg" id="reflMsg"></div>
-        </div>
-        <div class="sheet-foot">
-          <button class="btn btn-primary" id="reflSave" type="button">Save</button>
-          <button class="btn btn-quiet" id="reflCancel" type="button">Cancel</button>
+          <button class="btn btn-primary" id="rgnSave" type="button">Recognise</button>
+          <button class="btn btn-quiet" id="rgnCancel" type="button">Cancel</button>
         </div>
       </div>
     </div>
@@ -6765,7 +6686,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261121zzzzb"></script>
+<script src="/js/admin.js?v=20261122c"></script>
 <script src="/js/documents.js?v=20261121zb"></script>
 <script src="/js/letters.js?v=20261120zzzzzd"></script>
 <script src="/js/smreport.js?v=20261120zzzp"></script>
@@ -6782,10 +6703,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/seal.js?v=20261121zzt"></script>
 <script src="/js/hrdocs.js?v=20261121zzs"></script>
 <script src="/js/hrforms.js?v=20261120zzzp"></script>
-<script src="/js/checklists.js?v=20261121zzzz"></script>
-<script src="/js/crm.js?v=20261121zzzzb"></script>
+<script src="/js/checklists.js?v=20261122a"></script>
+<script src="/js/crm.js?v=20261122a"></script>
 <script src="/js/sales.js?v=20261117zzzf"></script>
-<script src="/js/team.js?v=20261121zzv"></script>
+<script src="/js/team.js?v=20261122"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
 <script src="/js/onboard.js?v=20261120zzzzzg"></script>
 <script src="/js/handbook.js?v=20261121zt"></script>
@@ -6795,15 +6716,15 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261120zzzp"></script>
 <script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
 <script src="/js/campaigns.js?v=20261121zzzz"></script>
-<script src="/js/ops.js?v=20261121zzzzb"></script>
-<script src="/js/perf.js?v=20261121x"></script>
+<script src="/js/ops.js?v=20261122b"></script>
+<script src="/js/perf.js?v=20261122b"></script>
 <script src="/js/health.js?v=20261120zt"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>
 <script src="/js/personnel.js?v=20261120zt"></script>
 <script src="/js/search.js?v=20261119i"></script>
 <script src="/js/agent.js?v=20261121zzzz"></script>
-<script src="/js/overview.js?v=20261121zzzz"></script>
-<script src="/js/analytics.js?v=20261121zzzz"></script>
+<script src="/js/overview.js?v=20261122c"></script>
+<script src="/js/analytics.js?v=20261122c"></script>
 <script src="/js/settings.js?v=20261121zzy"></script>
 </body>
 </html>
