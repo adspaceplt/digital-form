@@ -569,9 +569,9 @@ section holds only what is true of the project as a whole.
   of both closed the day it was found (`docs/DECISIONS.md`). Open, each the
   owner's to check: media passes and private links share one CloudFront key
   group (`--path-as-is` dot-segment requests, or a key group of its own for
-  `private/`); seven edge functions import `npm:@anthropic-ai/sdk` with no
-  version and none has a lock file (pin each to the version deployed, read
-  back from the live bundle). A creator's signed uploads are counted a
+  `private/`). The eight AI functions' `npm:@anthropic-ai/sdk` import is
+  pinned to 1.10.0 and deployed (2026-11-21); `tests/fnpins.js` fails any
+  `npm:`, `jsr:` or esm.sh import without an exact version. A creator's signed uploads are counted a
   booking a day since 2026-11-09; an S3 lifecycle rule and an AWS Budgets
   alarm stay the owner's. Not yet hunted: the client portal's one sign-in (`portal_work`,
   `portal_link_pass`, its sign-out), new since run 1.
