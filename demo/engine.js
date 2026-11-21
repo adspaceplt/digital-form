@@ -88,6 +88,7 @@
     health_wordings: 'version care terms made_at',
     health_log: 'id team_member_id kind wording created_at',
     health_checkins: 'team_member_id half body mind sleep energy workload note created_at updated_at',
+    health_moods: 'id team_member_id period period_start mood workload feelings influences note load_minutes late_minutes cap_minutes created_at updated_at',
     health_talks: 'id team_member_id with_id note status created_at closed_at closed_by',
     perf_rewards: 'kind period snapshot confirmed_by confirmed_at',
     perf_settings: 'key from_period value set_by set_at',
@@ -466,6 +467,7 @@
     health_mine: '',
     health_consent: 'p_on p_wording',
     health_checkin_save: 'p_scores p_note p_half',
+    health_mood_save: 'p_start p_mood p_workload p_feelings p_influences p_note',
     health_talk_ask: 'p_with p_note',
     health_talk_set: 'p_id p_status',
     health_talk_delete: 'p_id',
@@ -3013,6 +3015,60 @@ function cardSlugFree(name, self, email) {
       scales: { body: c.body, mind: c.mind, sleep: c.sleep, energy: c.energy, workload: c.workload },
       note: c.note || null, at: c.updated_at };
   }
+
+  function healthWeek(day) {
+    var d = new Date(day + 'T00:00:00Z'), back = (d.getUTCDay() + 6) % 7;
+    return new Date(d.getTime() - back * 864e5).toISOString().slice(0, 10);
+  }
+  function healthAddDays(day, n) { return new Date(new Date(day + 'T00:00:00Z').getTime() + n * 864e5).toISOString().slice(0, 10); }
+  function healthMyDay(iso) { return iso ? new Date(new Date(iso).getTime() + 8 * 36e5).toISOString().slice(0, 10) : null; }
+  function healthLoad(member, day) {
+    var t = DB.team_members.filter(function (x) { return x.id === member; })[0];
+    if (!t) return null;
+    var ws = healthWeek(day), we = healthAddDays(ws, 6);
+    var cap = t.capacity_minutes_week != null ? Number(t.capacity_minutes_week) : Math.round(Number(appSet('health_cap_default', day) || 45) * 60);
+    var near = Number(appSet('health_near_pct', day) || 90), each = Math.round(Number(appSet('health_task_hours', day) || 2) * 60);
+    var load = 0, late = 0, n = 0, nl = 0, ne = 0;
+    (DB.ops_tasks || []).forEach(function (k) {
+      if (k.completed_at || k.cancelled_at || k.archived_at) return;
+      if (!(DB.ops_task_assignees || []).some(function (a) { return a.task_id === k.id && a.team_member_id === member && a.responsibility === 'owner' && !a.ended_at; })) return;
+      var dd = healthMyDay(!k.first_draft_submitted_at && k.current_first_draft_due_at ? k.current_first_draft_due_at : k.current_final_due_at);
+      if (!dd || dd > we) return;
+      var mins = k.estimate_minutes != null ? Number(k.estimate_minutes) : each;
+      load += mins; n++; if (k.estimate_minutes == null) ne++;
+      if (dd < day) { late += mins; nl++; }
+    });
+    var measured = !(t.is_admin || t.role === 'admin' || t.system || cap <= 0);
+    return { week: ws, week_end: we, measured: measured, cap: cap, load: load, late: late, tasks: n, late_tasks: nl, no_estimate: ne,
+      pct: cap > 0 ? Math.round(load * 100 / cap) : null, near: near, heavy: measured && load * 100 >= cap * near };
+  }
+  function healthMoodJson(c) {
+    var end = c.period === 'week' ? healthAddDays(c.period_start, 6)
+      : (function () { var y = Number(c.period_start.slice(0, 4)), mo = Number(c.period_start.slice(5, 7)); return c.period_start.slice(0, 8) + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'); })();
+    return { id: c.id, period: c.period, start: c.period_start, end: end, mood: c.mood, workload: c.workload,
+      feelings: (c.feelings || []).slice(), influences: (c.influences || []).slice(), note: c.note || null,
+      load: c.load_minutes == null ? null : c.load_minutes, late: c.late_minutes == null ? null : c.late_minutes,
+      cap: c.cap_minutes == null ? null : c.cap_minutes, at: c.created_at, updated_at: c.updated_at };
+  }
+  function healthPeriod(member, day) {
+    var l = healthLoad(member, day), kind, s, e;
+    if (l && l.heavy) { kind = 'week'; s = healthWeek(day); e = healthAddDays(s, 6); }
+    else {
+      kind = 'month'; s = day.slice(0, 8) + '01';
+      var y = Number(day.slice(0, 4)), mo = Number(day.slice(5, 7));
+      e = day.slice(0, 8) + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0');
+    }
+    var cur = (DB.health_moods || []).filter(function (k) {
+
+      var ke = healthMoodJson(k).end, at = healthMyDay(k.created_at), d = at < k.period_start ? k.period_start : at > ke ? ke : at;
+      return k.team_member_id === member && d >= s && d <= e;
+    }).sort(function (x, y) {
+      return ((y.period === kind && y.period_start === s) - (x.period === kind && x.period_start === s)) || (x.created_at < y.created_at ? 1 : -1);
+    })[0];
+    return { kind: kind, start: s, end: e, load: l, due: !cur, current: cur ? healthMoodJson(cur) : null };
+  }
+  var HEALTH_FEEL = ['Calm', 'Content', 'Motivated', 'Confident', 'Grateful', 'Hopeful', 'Tired', 'Stressed', 'Anxious', 'Frustrated', 'Overwhelmed', 'Sad'];
+  var HEALTH_INFL = ['Workload', 'Clients', 'Colleagues', 'Family', 'Friends', 'Health', 'Sleep', 'Finances'];
   function healthRpc(name, a, guardOk) {
     var m = opsMe(), nowIso = new Date().toISOString();
     var who = function (id) { var t = DB.team_members.filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; };
@@ -3024,8 +3080,31 @@ function cardSlugFree(name, self, email) {
       var hu = DB.perf_unlocks.filter(function (x) { return x.token === a.p_token && x.team_member_id === m.id && x.expires > Date.now(); })[0];
       if (!hu) return { error: 'code-needed' };
       hu.expires = Date.now() + 15 * 60000;
-      var h0 = healthHalf(healthToday());
-      return { half: h0, half_end: healthHalfEnd(h0),
+      var h0 = healthHalf(healthToday()), d0 = healthToday(), w0 = healthAddDays(healthWeek(d0), -77);
+      var moodsSeen = (DB.health_moods || []).filter(function (k) {
+        var c9 = DB.health_consents.filter(function (x) { return x.team_member_id === k.team_member_id; })[0];
+        var t9 = DB.team_members.filter(function (x) { return x.id === k.team_member_id; })[0];
+        return c9 && t9 && t9.active !== false && healthAgreed(k.team_member_id) && (k.updated_at || k.created_at) >= c9.agreed_at;
+      });
+      var dayOf = function (k) { var ke = healthMoodJson(k).end, at = healthMyDay(k.created_at); return at < k.period_start ? k.period_start : at > ke ? ke : at; };
+      var trend = [];
+      for (var wi = 0; wi < 12; wi++) {
+        var wk = healthAddDays(w0, wi * 7);
+        var inW = moodsSeen.filter(function (k) { return healthWeek(dayOf(k)) === wk; });
+        var av = inW.length ? Math.round(inW.reduce(function (x, k) { return x + k.mood; }, 0) / inW.length * 10) / 10 : null;
+        trend.push({ week: wk, n: inW.length, avg: inW.length >= 3 ? av : null });
+      }
+      var nearB = Number(appSet('health_near_pct', d0) || 90);
+      var bands = [1, 2, 3].map(function (b) {
+        var inB = moodsSeen.filter(function (k) {
+          if (!(k.cap_minutes > 0) || k.load_minutes == null || dayOf(k) < w0) return false;
+          var r = k.load_minutes * 100 / k.cap_minutes;
+          return (r < 50 ? 1 : r < nearB ? 2 : 3) === b;
+        });
+        var av2 = inB.length ? Math.round(inB.reduce(function (x, k) { return x + k.mood; }, 0) / inB.length * 10) / 10 : null;
+        return { band: b, n: inB.length, avg: inB.length >= 3 ? av2 : null };
+      });
+      return { half: h0, half_end: healthHalfEnd(h0), today: d0, trend: trend, bands: bands,
         people: DB.team_members.filter(function (t) { return t.active !== false; }).slice()
           .sort(function (x, y) { return String(x.staff_code || '~' + x.name).localeCompare(String(y.staff_code || '~' + y.name), 'en', { numeric: true }); })
           .map(function (t) {
@@ -3033,6 +3112,9 @@ function cardSlugFree(name, self, email) {
             return { id: t.id, name: t.name, staff_code: t.staff_code || null, designation: t.designation || null,
               department: t.department || null, role: t.role || null,
               consent: c ? { agreed_at: c.agreed_at, withdrawn_at: c.withdrawn_at || null, current: (c.wording || 1) >= healthWordingNow() } : null,
+              period: (function () { var pp = healthPeriod(t.id, d0); if (!healthAgreed(t.id)) pp.current = null; return pp; })(),
+              moods: c && healthAgreed(t.id) ? (DB.health_moods || []).filter(function (k) { return k.team_member_id === t.id && (k.updated_at || k.created_at) >= c.agreed_at; })
+                .sort(function (x, y) { return x.created_at < y.created_at ? 1 : -1; }).slice(0, 26).map(healthMoodJson) : [],
               checkins: c && healthAgreed(t.id) ? DB.health_checkins.filter(function (k) { return k.team_member_id === t.id && (k.updated_at || k.created_at) >= c.agreed_at; })
                 .sort(function (x, y) { return x.half < y.half ? 1 : -1; }).slice(0, 12).map(healthCheckinJson) : [] };
           }),
@@ -3058,6 +3140,9 @@ function cardSlugFree(name, self, email) {
       return { consent: c ? { agreed_at: c.agreed_at, withdrawn_at: c.withdrawn_at || null, wording: c.wording || 1 } : null,
         wording: wn ? { version: wn.version, care: wn.care.slice(), terms: wn.terms.slice(), made_at: wn.made_at } : null,
         half: h, half_end: healthHalfEnd(h),
+        period: healthPeriod(m.id, healthToday()),
+        moods: (DB.health_moods || []).filter(function (k) { return k.team_member_id === m.id; })
+          .sort(function (x, y) { return x.created_at < y.created_at ? 1 : -1; }).slice(0, 26).map(healthMoodJson),
         history: DB.health_checkins.filter(function (k) { return k.team_member_id === m.id; })
           .sort(function (x, y) { return x.half < y.half ? 1 : -1; }).slice(0, 12).map(healthCheckinJson),
         asked: DB.health_talks.filter(function (k) { return k.team_member_id === m.id; }).sort(order).slice(0, 20)
@@ -3100,6 +3185,26 @@ function cardSlugFree(name, self, email) {
       if (!row) { row = { team_member_id: m.id, half: h1, created_at: nowIso }; DB.health_checkins.push(row); }
       HEALTH_SCALES.forEach(function (k2) { row[k2] = sc[k2]; });
       row.note = String(a.p_note || '').trim() || null; row.updated_at = nowIso;
+      return mine();
+    }
+    if (name === 'health_mood_save') {
+      if (!healthAgreed(m.id)) return { error: 'no-consent' };
+      var pd = healthPeriod(m.id, healthToday());
+      if (a.p_start !== pd.start) return { error: 'stale-period', period: pd };
+      if (a.p_mood == null) return { error: 'no-mood' };
+      if (!(a.p_mood >= 1 && a.p_mood <= 7) || a.p_mood % 1) return { error: 'bad-tag' };
+      if (a.p_workload == null) return { error: 'no-workload' };
+      if (!(a.p_workload >= 1 && a.p_workload <= 5) || a.p_workload % 1) return { error: 'bad-tag' };
+      var fe = a.p_feelings || [], inf = a.p_influences || [];
+      if (fe.some(function (x) { return HEALTH_FEEL.indexOf(x) < 0; }) || inf.some(function (x) { return HEALTH_INFL.indexOf(x) < 0; })) return { error: 'bad-tag' };
+      if (String(a.p_note || '').length > 1000) return { error: 'too-long' };
+      var uniq = function (arr) { return arr.filter(function (x, i) { return arr.indexOf(x) === i; }).sort(); };
+      var mr = DB.health_moods.filter(function (x) { return x.team_member_id === m.id && x.period === pd.kind && x.period_start === a.p_start; })[0];
+      if (!mr) { mr = { id: opsId('hm'), team_member_id: m.id, period: pd.kind, period_start: a.p_start, created_at: nowIso }; DB.health_moods.push(mr); }
+      mr.mood = a.p_mood; mr.workload = a.p_workload; mr.feelings = uniq(fe); mr.influences = uniq(inf);
+      mr.note = String(a.p_note || '').trim() || null; mr.updated_at = nowIso;
+      mr.load_minutes = pd.load ? pd.load.load : null; mr.late_minutes = pd.load ? pd.load.late : null;
+      mr.cap_minutes = pd.load && pd.load.measured ? pd.load.cap : null;
       return mine();
     }
     if (name === 'health_talk_ask') {
@@ -3210,7 +3315,7 @@ function cardSlugFree(name, self, email) {
 
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7,
 
-    health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
+    health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
 
     hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
 
@@ -3228,7 +3333,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
     work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
@@ -3848,7 +3953,7 @@ function cardSlugFree(name, self, email) {
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
-          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
+          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_decision_days' && (v < 1 || v > 30 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
@@ -3876,7 +3981,7 @@ function cardSlugFree(name, self, email) {
         .sort(function (x, y) { return x.from_date < y.from_date ? -1 : 1; }).pop();
       if (row && from > today && before && Number(before.value) === to) {
         DB.app_settings.splice(DB.app_settings.indexOf(row), 1);
-        var fmt = function (x) { return (key === 'meta_checks' || key === 'client_email_on') ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
+        var fmt = function (x) { return (key === 'meta_checks' || key === 'client_email_on' || key === 'health_alert') ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
         DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',
           detail: APP_WORD[key][0] + ': planned change withdrawn · ' + fmt(was) + ' from ' + dayWord(from) + ', stays ' + fmt(to), created_at: now });
         moved.push(key);
@@ -3905,7 +4010,7 @@ function cardSlugFree(name, self, email) {
         return;
       }
       DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',
-        detail: APP_WORD[key][0] + ': ' + (key === 'meta_checks' ? (was === 1 ? 'On' : 'Off') + ' → ' + (to === 1 ? 'On' : 'Off')
+        detail: APP_WORD[key][0] + ': ' + (key === 'meta_checks' || key === 'health_alert' ? (was === 1 ? 'On' : 'Off') + ' → ' + (to === 1 ? 'On' : 'Off')
           : (was == null ? 'not set' : APP_PRE(key) + was + APP_WORD[key][1]) + ' → ' + APP_PRE(key) + to + APP_WORD[key][1]) +
           ' · from ' + dayWord(from), created_at: now });
       moved.push(key);

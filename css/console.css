@@ -3217,7 +3217,7 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* The averages are the summary card's own content: the chart draws no box of
    its own inside it. */
 #healthAvg > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
-.health-prow { grid-template-columns: minmax(0, 1fr) repeat(5, 72px) 128px 16px; cursor: pointer; }
+.health-prow { grid-template-columns: minmax(0, 1fr) 160px 150px 88px 16px; cursor: pointer; }
 .health-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
 .health-line { display: none; }
 .health-at { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
@@ -3231,6 +3231,60 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
    take the line the position held. */
 .is-narrow .health-who.has-line .health-code { display: none; }
 .is-narrow .crm-head.health-prow { display: none; }
+
+/* The check-in since 2026-11-22: the mood on seven discs, larger towards
+   either end, the chosen one Health's pink with its word under the row;
+   the feelings and influences as tonal toggles, the chosen in Health's
+   tint; on a phone three steps over a 4px track. */
+.hc-steps { margin: 0 0 6px; font-size: 12px; color: var(--ink-mute); }
+.hc-track { height: 4px; margin: 0 0 16px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.hc-track > i { display: block; height: 100%; background: var(--fill); transition: width var(--t) var(--ease); }
+.hc-step { display: grid; gap: 16px; }
+.hc-step + .hc-step { margin-top: 16px; }
+.hc-q { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
+.hc-q > legend { padding: 0; margin-bottom: 8px; }
+.hc-opt { margin-left: 6px; font-weight: 400; color: var(--ink-mute); }
+.hc-mood { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.hc-dot { position: relative; display: grid; place-items: center; height: var(--tap); cursor: pointer; }
+.hc-dot > input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.hc-dot > span { display: block; border-radius: 50%; background: var(--tonal); transition: transform var(--t-fast) var(--ease), background var(--t-fast); pointer-events: none; }
+.hc-dot:nth-child(1) > span, .hc-dot:nth-child(7) > span { width: 34px; height: 34px; }
+.hc-dot:nth-child(2) > span, .hc-dot:nth-child(6) > span { width: 28px; height: 28px; }
+.hc-dot:nth-child(3) > span, .hc-dot:nth-child(5) > span { width: 22px; height: 22px; }
+.hc-dot:nth-child(4) > span { width: 18px; height: 18px; }
+.hc-dot > input:checked + span { background: var(--health); box-shadow: 0 0 0 3px var(--health-bg); }
+.hc-dot > input:focus-visible + span { outline: 2px solid var(--action-ring); outline-offset: 3px; }
+.hc-dot:active > span { transform: scale(.94); }
+@media (hover: hover) { .hc-dot:hover > input:not(:checked) + span { background: var(--tonal-hover); } }
+.hc-moodword { margin: 0; min-height: 24px; text-align: center; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.hc-ends { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--ink-mute); }
+.hc-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.hc-tag[aria-pressed="true"] { background: var(--health-bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--health); }
+/* What the colleague reads back: the words of each answer, a low one a
+   warn word, never a colour alone. */
+.health-why { margin: 0 0 12px; font-size: 12.5px; color: var(--ink-mute); }
+.health-pair .health-why { margin: 8px 0 0; }
+.health-word.is-low { color: var(--warn); font-weight: 500; }
+.facts.hm-facts dd { white-space: normal; }
+.facts.hm-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-narrow .facts.hm-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-narrow .facts.hm-facts > :nth-child(5) { grid-column: 1 / -1; }
+.hm-table .health-hrow, .hm-table .health-trow { grid-template-columns: minmax(0, 1fr) 150px 130px 88px; }
+.health-when b { display: block; font-weight: 500; }
+.health-when small { display: block; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.is-narrow .hm-table .health-trow { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.is-narrow .hm-table .health-when { grid-column: auto; font-weight: 400; }
+.is-narrow .hm-table .health-cell { display: block; text-align: right; }
+.is-narrow .hm-table .health-cell.hm-work, .is-narrow .hm-table .health-cell.hm-per { display: none; }
+/* Team: Health's figures, then the two charts side by side (1.618 : 1),
+   one over the other when narrow. */
+.health-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-narrow .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.is-narrow .health-pair { grid-template-columns: minmax(0, 1fr); }
+#healthTrend > .chartcard, #healthBands > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
+.health-col { font-size: 13.5px; min-width: 0; }
+.hp-week { color: var(--ink-soft); white-space: nowrap; }
 
 /* =========================================================================
    WAITING FOR YOU (2026-10-08): the decisions somebody is waiting on this
