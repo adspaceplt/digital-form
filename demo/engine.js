@@ -281,7 +281,7 @@
     client_details_used: 'p_id p_client',
     client_contact_make_primary: 'p_contact',
     suppliers_list: '',
-    hiring_mine: '', hiring_list: '', hiring_get: 'p_id', hiring_add: 'p_values p_idem', hiring_save: 'p_id p_values p_expected',
+    hiring_mine: '', hiring_list: '', hiring_waiting: '', hiring_get: 'p_id', hiring_add: 'p_values p_idem', hiring_save: 'p_id p_values p_expected',
     hiring_person_set: 'p_id p_member p_role', hiring_person_remove: 'p_id p_member', hiring_remove: 'p_id p_restore',
     hiring_delete: 'p_id p_name', hiring_link: 'p_id p_reset', careers_read: 'p_key',
     hiring_invite: 'p_id p_slots p_minutes p_mode p_note p_idem', hiring_interviews_of: 'p_id', hiring_interview_cancel: 'p_interview',
@@ -15689,7 +15689,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hRow = function (c, role) {
         return { id: c.id, name: c.name, position: c.position, source: c.source, stage: c.stage, created_at: c.created_at, last_step_at: c.last_step_at,
           removed_at: c.removed_at || null, role: role,
-          owners: DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).map(function (p) { return hName(p.team_member_id); }).sort() };
+          owners: DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).map(function (p) { return hName(p.team_member_id); }).sort(),
+          step: (hStep(c) || {}).step, step_at: (hStep(c) || {}).at };
+      };
+
+      var hStep = function (c) {
+        if (!c || c.removed_at || ['hired', 'closed', 'pool'].indexOf(c.stage) >= 0) return null;
+        var out = [];
+        var iv0 = (DB.hiring_interviews || []).filter(function (i) { return i.candidate_id === c.id && i.state !== 'cancelled' && i.state !== 'replaced'; })
+          .sort(function (a, b) { return a.invited_at < b.invited_at ? 1 : -1; })[0];
+        if (iv0 && (iv0.state === 'picked' || iv0.state === 'none')) out.push({ step: iv0.state, at: iv0.state === 'picked' ? (iv0.picked_at || iv0.updated_at) : iv0.updated_at });
+        var docs = (DB.hiring_docs || []).filter(function (d) { return d.candidate_id === c.id; });
+        docs.forEach(function (d) {
+          if (d.state === 'signed') out.push({ step: d.kind === 'offer' ? 'accepted' : 'signed', at: d.signed_at || d.updated_at });
+          if (d.kind === 'offer' && d.state === 'declined' && d.answered_at && c.stage === 'offer' &&
+              !docs.some(function (n) { return n.kind === 'offer' && n.id !== d.id && n.made_at > d.answered_at; })) out.push({ step: 'declined', at: d.answered_at });
+        });
+        out.sort(function (a, b) { return String(a.at || '') < String(b.at || '') ? 1 : -1; });
+        return out[0] || null;
       };
       var SRC = ['jobstreet', 'linkedin', 'indeed', 'referral', 'website', 'walk_in', 'other'];
       var hValues = function (p) {
@@ -15705,6 +15722,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       if (name === 'hiring_mine') {
         return hOk({ admin: hAdmin, count: DB.hiring_people.filter(function (p) { var c = hFind(p.candidate_id); return p.team_member_id === hMe.id && c && !c.removed_at; }).length });
+      }
+      if (name === 'hiring_waiting') {
+        return hOk({ rows: DB.hiring_candidates.filter(function (c) {
+          var st = hStep(c);
+          if (!st) return false;
+          if (hAdmin) return true;
+          return ['picked', 'none', 'declined'].indexOf(st.step) >= 0 &&
+            DB.hiring_people.some(function (p) { return p.candidate_id === c.id && p.team_member_id === hMe.id && p.role === 'owner'; });
+        }).map(function (c) { var st = hStep(c); return { id: c.id, name: c.name, position: c.position, step: st.step, at: st.at }; })
+          .sort(function (a, b) { return String(a.at) < String(b.at) ? -1 : 1; }) });
       }
       if (name === 'hiring_list') {
         return hOk({ admin: hAdmin, rows: DB.hiring_candidates.slice().sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })

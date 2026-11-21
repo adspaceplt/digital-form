@@ -52,7 +52,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `approval_reminder_days` (3, Due dates); Remind (tonal, while the
     approval reminder's template is on and `ADspaceWhatsApp.may('approval')`)
     opens the composer on the client's main contact with what waits and its
-    link (the review page, the selection page) filled in.
+    link (the review page, the selection page) filled in. A candidate
+    (2026-11-21) whose latest step on their page waits on the team
+    (`hiring_waiting()`, read only where `ADspaceAdmin.hiringOk()`): Time
+    chosen, New times requested or Offer declined to its Owners and the
+    part, Offer accepted or Contract signed to the part, the position under
+    the name, opening the candidate; it stays until a colleague acts.
 - The read is bounded, and open work is not part of the bound. Open work is
   read in full, a thousand rows a page in id order (`readPages`) and put back
   in the final date's order; finished work is read from the period on (three
