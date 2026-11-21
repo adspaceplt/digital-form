@@ -550,11 +550,35 @@ button.appver {
 .is-narrow .task-top > b { flex: 1 1 auto; }
 .task-top > .task-pri { flex: 0 0 auto; }
 .bcard-foot > .task-pri { flex: 0 0 auto; }
-.tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-/* Time in each stage: the stage, how often the work came back to it, and the
-   time, both figures on the right edge. */
-.tstage-row { grid-template-columns: minmax(0, 1fr) 72px 110px; }
-.tstage-n { font-size: 13px; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+/* The stage timeline (2026-11-22): one visit a line, a dot on a hairline,
+   the stage and its time on one line, its dates and who under it, a hand-on
+   or a note under that. A skip and a pass-through are quiet, with a hollow
+   dot and no time; the open visit counts on, red once late. */
+.stl-head { font-size: 12.5px; color: var(--ink-mute); text-align: right; font-variant-numeric: tabular-nums; }
+.stl-head.is-late { color: var(--err); }
+.stl { list-style: none; margin: 0; padding: 0; }
+.stl-row { position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; column-gap: 10px; padding: 0 0 12px; }
+.stl-row::before { content: ""; position: absolute; left: 7.5px; top: 14px; bottom: 0; width: 1px; background: var(--line); }
+.stl-row:last-child { padding-bottom: 0; }
+.stl-row:last-child::before { display: none; }
+.stl-dot { width: 9px; height: 9px; border-radius: 50%; margin: 6px 0 0 3.5px; background: var(--dot-ok); }
+.stl-dot.is-now { background: var(--dot-wait); }
+.stl-dot.is-late { background: var(--dot-late); }
+.stl-dot.is-hollow { background: transparent; box-shadow: inset 0 0 0 1.5px var(--dot-off); }
+.stl-name { font-weight: 500; overflow-wrap: anywhere; }
+.stl-name small { font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
+.stl-row.is-skip .stl-name, .stl-row.is-pass .stl-name { font-weight: 400; color: var(--ink-soft); }
+.stl-dur { font-weight: 500; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stl-dur small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-mute); }
+.stl-dur.is-late, .stl-dur.is-late small { color: var(--err); }
+.stl-line, .stl-note, .stl-sum { grid-column: 2 / 4; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.stl-line b { font-weight: 500; color: var(--ink-soft); }
+.stl-note { color: var(--ink-soft); }
+.stl-sum { font-size: 12px; }
+.stl-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.stl-total > span { font-size: 12.5px; color: var(--ink-mute); }
+.stl-total b { font-weight: 500; }
+.stl-total small { font-size: 12px; font-weight: 400; color: var(--ink-mute); }
 .ovsec-title + .crm-table { margin-bottom: 0; }
 .is-narrow .rec-id.rec-id-plain .rec-ctl { align-self: center; }
 .rec-name .rec-pen:active { transform: scale(.97); }
@@ -1688,7 +1712,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .task-owner:has(> .tinline-pick) { overflow: visible; }
 .task-due { display: block; }
 .task-row > .team-act { justify-self: end; }
-.trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
 
 .qhead-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
 .qhead-top .tcheck { margin: 0 0 0 -10px; }
@@ -2403,18 +2426,20 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .rw-row:not(.has-act) > .team-act { display: none; }
 .is-narrow .rw-row > .team-act { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
 .is-narrow .crm-head.rw-row { display: none; }
-/* ---- Initiatives and the monthly reflection (2026-10-04) ----
-   A row is the initiative over what it improves and when, its state, then
-   the ⋯; a decision's note and a link go under the name. */
-.init-row { grid-template-columns: minmax(0, 1fr) var(--state-w) var(--ctl-h); padding-top: 10px; padding-bottom: 10px; }
-.init-name .init-link { align-self: flex-start; margin-top: 6px; }
-.init-row > .team-act { align-self: start; margin-block: calc((20px - var(--ctl-h)) / 2); }
-/* The state sits on the title's line, as the ⋯ does (2026-10-27, MINE-8). */
-.init-row > .init-state { align-self: start; display: flex; align-items: center; min-height: 20px; }
-.is-narrow .init-row > .init-name { grid-area: who; }
-.is-narrow .init-row > .init-state { grid-area: state; justify-self: end; }
-.is-narrow .init-row > .team-act { grid-area: act; }
-.is-narrow .crm-head.init-row { display: none; }
+/* ---- Recognition (2026-11-22) ----
+   A row is who gave it (or to whom) over its category and day, the note
+   under them, its status on the title's line, then the ⋯; on a phone the
+   phone row (`.prow`). */
+.recog-row { grid-template-columns: minmax(0, 1fr) 176px var(--ctl-h); padding-top: 10px; padding-bottom: 10px; }
+.crm-head.recog-row { padding: 12px 15px 8px; }
+.recog-row.is-off > :not(.team-act) { opacity: .55; }
+.recog-row > .team-act { align-self: start; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.recog-row > .init-state { align-self: start; display: flex; align-items: center; min-height: 20px; }
+/* Beside the review: the giver, the points and the status on one line, the
+   note under them, Decline and Confirm under its facts. */
+.recog-item .perf-breach-pts { color: var(--ink); }
+.recog-item .perf-breach-top > .chip { margin-left: 0; flex: 0 0 auto; }
+.recog-acts { margin-top: 8px; }
 
 /* My performance > Letters: the letter, its state, Download at the edge. */
 .ml-row { grid-template-columns: minmax(0, 1fr) 132px; align-items: center; }
@@ -2423,13 +2448,10 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .ml-row > .ml-act { grid-area: act; }
 .is-narrow .crm-head.ml-row { display: none; }
 
-/* The reflection reads as the card's own section: each question beside its
-   answer, the answer keeping the lines it was written in. */
+/* A card's head with its controls at the right, and an answer keeping the
+   lines it was written in (Health). */
 .refl-head { justify-content: space-between; }
 .refl-ctl { display: flex; align-items: center; gap: 8px; }
-.refl-line { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; padding: 4px 0; }
-.refl-line + .refl-line { margin-top: 4px; }
-.refl-q { font-size: 13px; color: var(--ink-mute); }
 .refl-a { white-space: pre-line; overflow-wrap: anywhere; }
 .refl-acts { margin-top: 12px; }
 /* Rate yourself: one card, a row a month (MINE-1, 2026-10-22). */
@@ -2449,8 +2471,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 #mineSelf > * { margin: 0; }
 .self-said { margin: 4px 0 0; }
 .perf-cat-self { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
-.ctx-inits { display: flex; flex-direction: column; gap: 8px; }
-.ctx-init { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 /* The Notify tick sits between the step's line and its actions. */
 .qnext .perf-notify { margin-top: 12px; }
 
