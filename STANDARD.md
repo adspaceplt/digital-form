@@ -637,6 +637,13 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   five times by hand under four-way load after. Its cause (a section script
   fetched on demand that did not arrive under load, or the record's own
   reads) is to be found; held here until it ships.
+- 2026-11-22, `phone`, `reflink` and `whatsapp` (found in the run of the
+  on-demand console scripts, `7f66bd0`; the same on main `574edd3` with its
+  own suites, so from REQUIRED FIELDS, #1322): a period with no end refused
+  by name and nothing restored after the action (`phone`), saving without a
+  record naming what is missing (`reflink`), an address that is no address
+  refused where it was typed and Send again to an address no longer listed
+  (`whatsapp`). Held here until it ships.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
