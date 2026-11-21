@@ -182,7 +182,7 @@
       : 'Open until ' + window.ADspaceClock.date(per.end, { named: true });
     var html = card(HEART + esc(periodTitle(per)),
       cur ? '<button class="btn btn-sm" data-a="checkin" type="button">' + PEN + 'Edit</button>' : '',
-      (per.kind === 'week' ? '<p class="health-why">Asked weekly while your planned work this week is near your weekly capacity.</p>' : '') +
+      (per.kind === 'week' ? '<p class="health-why">This check-in is weekly while your planned work is near your weekly capacity.</p>' : '') +
       (cur ? moodFacts(cur, 'facts')
           : '<p class="health-lead">How are you feeling today?</p>' +
             '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="checkin" type="button">Check in</button></div>'),
@@ -593,10 +593,10 @@
     kp.className = 'ovw-kpis health-kpis';
     kp.id = 'healthKpis';
     kp.innerHTML = [
-      ['Average mood, 4 weeks', avg4 == null ? '—' : avg4.toFixed(1), avg4 == null ? 'Fewer than 3 check-ins a week' : moodWord(Math.round(avg4))],
+      ['Average mood over 4 weeks', avg4 == null ? '—' : avg4.toFixed(1), avg4 == null ? 'Fewer than 3 check-ins per week' : moodWord(Math.round(avg4))],
       ['Check-ins this period', standing.length ? done.length + ' of ' + standing.length : '—',
         standing.length ? (standing.length - done.length ? (standing.length - done.length) + ' due' : 'All checked in') : 'No colleague has agreed'],
-      ['Weekly check-ins', String(weekly.length), 'Near their weekly capacity'],
+      ['Weekly check-ins', String(weekly.length), 'Colleagues near their weekly capacity'],
       ['Open talks', String(open.length), open.length ? 'Asked ' + dateWord(open[open.length - 1].at) : 'None']
     ].map(function (k) {
       return '<article class="chartcard ovw-kpi"><span class="ovw-kpi-label">' + esc(k[0]) + '</span><b class="ovw-kpi-fig">' + esc(k[1]) +

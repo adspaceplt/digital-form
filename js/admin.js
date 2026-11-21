@@ -2259,7 +2259,7 @@
       { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and removes your answers from Team: Health.' }] },
     'team.health': { name: 'Health', steps: [
       { at: '#healthKpis', text: 'This period\'s average mood, check-ins, weekly check-ins and open talks.' },
-      { at: '#healthTrend', text: 'Average mood by week. A week with fewer than 3 check-ins is not shown.' },
+      { at: '#healthTrend', text: 'Average mood by week, over 12 weeks.' },
       { at: '#teamHealthBox .health-prow', text: 'Press a colleague to see their check-ins and this week\'s planned work. Answers are shown only while their agreement is in place.' }] },
     'reports.entry': { name: 'Report', steps: [
       { at: '#rhEdit .rp-steps', text: 'Four steps, each with a summary of what it contains. Press a step to open it.' },
