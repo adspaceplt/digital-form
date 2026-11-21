@@ -43,6 +43,9 @@
      read itself, with the public key, as the front door asks its holidays. */
   function rpc(name, args) {
     if (API && API.client && API.client.rpc) return Promise.resolve(API.client.rpc(name, args));
+    /* A page that loads js/api.js and holds no client (a demo whose sample
+       data did not arrive, a library that failed) reaches no database. */
+    if (API || window.ADSPACE_DEMO) return Promise.resolve({ error: { message: 'no client' } });
     var cfg = window.ADSPACE_CONFIG || {};
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.fetch) return Promise.resolve({ error: { message: 'no client' } });
     return fetch(cfg.supabaseUrl + '/rest/v1/rpc/' + name, { method: 'POST',
@@ -50,7 +53,7 @@
       body: JSON.stringify(args || {}) })
       .then(function (r) { return r.json().then(function (d) { return r.ok ? { data: d } : { error: d || { message: String(r.status) } }; }); });
   }
-  function canAsk() { return Boolean((API && API.client && API.client.rpc) || ((window.ADSPACE_CONFIG || {}).supabaseUrl && window.fetch)); }
+  function canAsk() { return Boolean((API && API.client && API.client.rpc) || (!API && !window.ADSPACE_DEMO && (window.ADSPACE_CONFIG || {}).supabaseUrl && window.fetch)); }
   /* A quotation link already sent keeps opening while the quotation
      website is only paused: the builder alone is covered. */
   function mine(all) {
