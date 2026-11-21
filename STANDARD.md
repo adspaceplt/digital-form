@@ -572,8 +572,8 @@ section holds only what is true of the project as a whole.
   media pass is refused there, by its own path and by a dot-segment one. The eight AI functions' `npm:@anthropic-ai/sdk` import is
   pinned to 1.10.0 and deployed (2026-11-21); `tests/fnpins.js` fails any
   `npm:`, `jsr:` or esm.sh import without an exact version. A creator's signed uploads are counted a
-  booking a day since 2026-11-09; an S3 lifecycle rule and an AWS Budgets
-  alarm stay the owner's. Not yet hunted: the client portal's one sign-in (`portal_work`,
+  booking a day since 2026-11-09; an AWS Budgets alarm is set (the owner,
+  2026-11-21); the S3 lifecycle rule's storage-class half stays held. Not yet hunted: the client portal's one sign-in (`portal_work`,
   `portal_link_pass`, its sign-out), new since run 1.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
