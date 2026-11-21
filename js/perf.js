@@ -2730,8 +2730,8 @@
     ['VIC clients', [['ded_vic', 'Multiplier for an issue on a VIC client\'s work', 'times', 'VIC client multiplier']], '', 'months'],
     /* Recognitions (2026-11-22): what a confirmed one adds, the month's
        limit for each person, and whether management confirms each. */
-    ['Recognition', [['rec_points', 'Points per recognition', 'points', 'Points per recognition'],
-      ['rec_cap', 'Most points per person per month (0 turns this off)', 'points', 'Most recognition points per month'],
+    ['Recognition (0 turns this off)', [['rec_points', 'Points per recognition', 'points', 'Points per recognition'],
+      ['rec_cap', 'Most points per person per month', 'points', 'Most recognition points per month'],
       ['rec_confirm', 'Management confirms each recognition', 'onoff', 'Management confirms each recognition']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
     ['Reminders (0 turns this off)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
