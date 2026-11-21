@@ -800,8 +800,8 @@
         set: function (x) {
           v = x;
           if (!x) return;
-          try { localStorage.removeItem('adspace-gate-off:' + k[1]); } catch (e) {  }
           if (window.ADspaceAdmin && window.ADspaceAdmin.gateLearn) window.ADspaceAdmin.gateLearn(k[1], false);
+          else try { localStorage.removeItem('adspace-gate-off:' + k[1]); } catch (e) {  }
         } });
     } catch (e) {  }
   });
