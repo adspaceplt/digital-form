@@ -1226,7 +1226,7 @@
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' +
           secMore([['pickads', 'Select'],
             st.meta && (st.meta.ad_accounts || []).length ? ['metaads', 'Import from Meta'] : null,
-            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Pictures from Meta'] : null]) : '') +
+            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Add pictures from Meta'] : null]) : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
     } else if (k === 'text') {
@@ -2486,9 +2486,9 @@
     /* Download (2026-10-07): the file itself under its own name, to send;
        Preview PDF's tab holds a passing address and the browser's own name. */
     var M = window.ADspaceMenu;
-    var items = [M.item('download', 'Download')];
+    var items = [M.item('download', 'Download PDF')];
     /* Every version the client was given, each its own file (2026-10-07). */
-    if ((st.openVersions || []).length) items.push(M.item('versions', 'Versions'));
+    if ((st.openVersions || []).length) items.push(M.item('versions', 'Show versions'));
     /* A report in review from before reviewers is given one the same way. */
     if (r.status === 'review' && may('work') &&
         (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {

@@ -3994,7 +3994,7 @@
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
               (can ? '<button class="kmenu-item" data-g="2" data-a="rename" type="button" role="menuitem">Rename</button>' : '') +
-              (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" type="button" role="menuitem">Meta accounts</button>' : '') +
+              (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" type="button" role="menuitem">Edit Meta accounts</button>' : '') +
               (can ? '<button class="kmenu-item" data-g="2" data-a="logo" type="button" role="menuitem">' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</button>' +
               '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' + (b.active ? 'Set inactive' : 'Set active') + '</button>' : '') +
             '</div></span>' : '');
@@ -6694,7 +6694,7 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
-            [{ a: 'download', label: 'Download' }],
+            [{ a: 'download', label: 'Download PDF' }],
             /* No Replace: the Letter of Offer is no longer issued
                (2026-11-12); a changed deal is a new quotation. */
             [],

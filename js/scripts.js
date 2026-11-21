@@ -690,7 +690,7 @@
     });
     $('vsRecCtl').innerHTML =
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
-      menuOf('vsRecMore', '<button class="kmenu-item" data-g="1" data-a="download" type="button" role="menuitem">Download</button>' +
+      menuOf('vsRecMore', '<button class="kmenu-item" data-g="1" data-a="download" type="button" role="menuitem">Download PDF</button>' +
         (may('work') ? '<button class="kmenu-item" data-g="5" data-a="reset" type="button" role="menuitem">Reset link</button>' : ''));
     wireHead();
     paintLink();

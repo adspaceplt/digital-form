@@ -192,8 +192,8 @@
     /* A link says Link once, in its version cell (2026-10-20, HBK-1). */
     var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
-    if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Versions</button>';
-    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Who acknowledged</button>';
+    if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Show versions</button>';
+    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Show who acknowledged</button>';
     if (admin) {
       items += '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>';
       if (!d.archived_at) items += '<button class="kmenu-item" data-g="4" data-a="req" type="button" role="menuitem">' + (d.required ? 'Mark optional' : 'Mark required') + '</button>';
