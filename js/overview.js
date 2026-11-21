@@ -1068,6 +1068,33 @@
   /* Further views of Where work waits, each { key, word, can, load }: Time
      in stage joins here, never as a card of its own (2026-11-22). */
   var WAIT_VIEWS = [];
+  /* Time in stage (2026-11-22, the stage timeline proposal): how long the
+     content workflow's working stages hold work once it has left them, a
+     stage passed through in under 5 minutes left out (`ops_stage_times`),
+     then each colleague's median in the stages most work waits in; a figure
+     on fewer than 5 stays reads a dash. */
+  var STAY_FLOOR = 5;
+  var STAY_GROUPS = { ready: 1, active: 1, internal_review: 1, revision: 1, client_review: 1, approved: 1, scheduled: 1 };
+  WAIT_VIEWS.push({ key: 'instage', word: 'Time in stage', can: canFigures, load: function () {
+    return once('stagetimes:' + period, function () {
+      var r = rangeOf(period);
+      return db.rpc('ops_stage_times', { p_from: r.from.toISOString(), p_to: r.to.toISOString() }).then(rows);
+    }).then(function (d) {
+      var st = (d.stages || []).filter(function (x) { return x.workflow === 'content' && STAY_GROUPS[x.stage_group] && Number(x.n) > 0; });
+      if (!st.length) return { empty: 'No task left a stage ' + periodName(period) + '.' };
+      var cols = st.filter(function (x) { return ['ready', 'active', 'internal_review', 'client_review'].indexOf(x.stage_group) > -1; });
+      var cell = function (o) { return o && Number(o.n) >= STAY_FLOOR ? spanOf(o.median_minutes) : '\u2014'; };
+      var people = (d.people || []).filter(function (m) {
+        return m.id && cols.some(function (c) { return m.stages && m.stages['content|' + c.stage_key]; });
+      });
+      return { kind: 'bars', rows: st.map(function (x) {
+          return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, note: 'Across ' + x.tasks + (Number(x.tasks) === 1 ? ' task' : ' tasks') };
+        }), fmt: function (v) { return spanOf(v); },
+        table: { heads: ['Colleague'].concat(cols.map(function (c) { return c.label || c.stage_key; })), rows: people.map(function (m) {
+          return [m.name || '\u2014'].concat(cols.map(function (c) { return cell(m.stages['content|' + c.stage_key]); }));
+        }).concat([['All colleagues'].concat(cols.map(function (c) { return cell(c); }))]) } };
+    });
+  } });
 
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here

@@ -397,6 +397,7 @@
     ops_report: 'p_to p_from',
     ops_report_of: 'p_from p_to p_light',
     ops_reports: 'p_ranges',
+    ops_stage_times: 'p_from p_to',
     ops_timeliness: 'p_from p_to',
     ops_request_due_change: 'p_version p_value p_note p_reason p_task p_kind',
     ops_save_template: 'p_payload p_id',
@@ -7681,6 +7682,52 @@ function opsCodeRange(cid, period, ty, src, seq) {
                             owner: nameOf(m.i.owner), owner_id: m.i.owner, kind: m.i.kind, due: m.i.due, delivered: m.i.done,
                             open: m.open, days: m.diff };
                  }) : null };
+    }
+
+    if (name === 'ops_stage_times') {
+      if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
+      var sFrom = new Date(args.p_from).getTime(), sTo = new Date(args.p_to).getTime();
+      var sTasks = {};
+      DB.ops_tasks.forEach(function (t) { if (scopeTaskMine(t) || scopeSeen(t.client_id, 'view')) sTasks[t.id] = t; });
+      var byTask = {};
+      DB.ops_task_events.filter(function (e) { return e.event_type === 'stage_changed' && sTasks[e.task_id] && e.to_value && e.to_value.stage_key; })
+        .sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })
+        .forEach(function (e) { (byTask[e.task_id] = byTask[e.task_id] || []).push(e); });
+      var kept = [];
+      Object.keys(byTask).forEach(function (id) {
+        var t = sTasks[id], mv = byTask[id], wf = (DB.ops_workflows.filter(function (w) { return w.id === t.workflow_id; })[0] || {}).key || '';
+        var stays = [];
+        var made = new Date(t.created_at).getTime(), first = new Date(mv[0].created_at).getTime();
+        if (mv[0].from_value && mv[0].from_value.stage_key && first > made) stays.push({ key: mv[0].from_value.stage_key, from: made, to: first });
+        mv.forEach(function (m, i) { if (mv[i + 1]) stays.push({ key: m.to_value.stage_key, from: new Date(m.created_at).getTime(), to: new Date(mv[i + 1].created_at).getTime() }); });
+        stays.forEach(function (x) {
+          if (x.to < sFrom || x.to >= sTo || x.to - x.from < 5 * 60000) return;
+          var own = DB.ops_task_assignees.filter(function (a) { return a.task_id === id && a.responsibility === 'owner'; })
+            .sort(function (a, b) { return new Date(a.assigned_at || a.started_at) - new Date(b.assigned_at || b.started_at); });
+          var at = own.filter(function (a) { var st = new Date(a.assigned_at || a.started_at).getTime(); return st <= x.from && (!a.ended_at || new Date(a.ended_at).getTime() > x.from); }).pop() || own[0];
+          kept.push({ task: id, wf: wf, wfId: t.workflow_id, key: x.key, mins: (x.to - x.from) / 60000, owner: at ? at.team_member_id : null });
+        });
+      });
+      var med = function (l) { l = l.slice().sort(function (a, b) { return a - b; }); var n = l.length; if (!n) return 0; return Math.round(n % 2 ? l[(n - 1) / 2] : (l[n / 2 - 1] + l[n / 2]) / 2); };
+      var gS = {};
+      kept.forEach(function (k) { var g = gS[k.wf + '|' + k.key] = gS[k.wf + '|' + k.key] || { k: k, m: [], t: {} }; g.m.push(k.mins); g.t[k.task] = 1; });
+      var stagesOut = Object.keys(gS).map(function (x) {
+        var g = gS[x], st = opsStage(g.k.wfId, g.k.key) || {};
+        return { workflow: g.k.wf, stage_key: g.k.key, label: st.label || g.k.key, position: st.position || 999, stage_group: st.stage_group || null,
+                 n: g.m.length, tasks: Object.keys(g.t).length, median_minutes: med(g.m) };
+      }).sort(function (a, b) { return a.workflow < b.workflow ? -1 : a.workflow > b.workflow ? 1 : a.position - b.position; });
+      var gP = {};
+      kept.forEach(function (k) {
+        var p0 = gP[k.owner || ''] = gP[k.owner || ''] || { id: k.owner, t: {}, st: {} };
+        p0.t[k.task] = 1; (p0.st[k.wf + '|' + k.key] = p0.st[k.wf + '|' + k.key] || []).push(k.mins);
+      });
+      var peopleOut = Object.keys(gP).map(function (x) {
+        var p0 = gP[x], m0 = DB.team_members.filter(function (m) { return m.id === p0.id; })[0];
+        var so = {}; Object.keys(p0.st).forEach(function (k) { so[k] = { n: p0.st[k].length, median_minutes: med(p0.st[k]) }; });
+        return { id: p0.id, name: (m0 && m0.name) || '', tasks: Object.keys(p0.t).length, stages: so };
+      }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+      var allT = {}; kept.forEach(function (k) { allT[k.task] = 1; });
+      return JSON.parse(JSON.stringify({ stages: stagesOut, people: peopleOut, tasks: Object.keys(allT).length }));
     }
     if (name === 'ops_report') {
       if (!opsGranted('ops.reports', 'view')) return { error: 'denied' };
