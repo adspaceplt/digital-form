@@ -341,7 +341,7 @@
     aiPortalOff: 'AI is turned off for the portal. An admin can turn it on in Settings → Portal.',
     aiUseOff: function (what) { return 'The daily limit of ' + what + ' is set to 0. An admin can change it in Settings → AI.'; },
     aiLimit: function (n, what) {
-      return 'Today’s limit of ' + n + ' ' + (n === 1 ? what[0] : what[1]) + ' is used. It resets at 12:00am. An admin can change the limit in Settings → AI.';
+      return 'Today’s limit of ' + n + ' ' + (n === 1 ? what[0] : what[1]) + ' has been reached. It resets at 12:00am. An admin can change the limit in Settings → AI.';
     },
     bukkuOff: 'Bukku is not connected to the portal. Please contact an admin.',
     portalOffRow: 'Off for the whole portal',

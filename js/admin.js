@@ -1282,8 +1282,8 @@
   /* Each AI use as its daily limit names it, one and several. */
   var AI_USE = { caption: ['caption written with AI', 'captions written with AI'],
     draft: ['report draft written with AI', 'report drafts written with AI'],
-    check: ['report check with AI', 'report checks with AI'], next: ['next batch written with AI', 'next batches written with AI'],
-    script: ['script written with AI', 'scripts written with AI'], picture: ['picture drawn with AI', 'pictures drawn with AI'],
+    check: ['commentary check with AI', 'commentary checks with AI'], next: ['Next batch run', 'Next batch runs'],
+    script: ['script written with AI', 'scripts written with AI'], picture: ['scene picture drawn with AI', 'scene pictures drawn with AI'],
     analysis: ['brand analysis with AI', 'brand analyses with AI'], checklist: ['checklist written with AI', 'checklists written with AI'],
     analytics: ['Analytics analysis with AI', 'Analytics analyses with AI'], agent: ['question to the Assistant', 'questions to the Assistant'] };
   function gateState(key) {
