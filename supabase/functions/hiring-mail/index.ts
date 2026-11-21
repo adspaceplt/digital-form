@@ -100,7 +100,7 @@ function signOff(m: Record<string, any>): string {
 /* Each email's name, as Settings, Messages: Email templates lists it. */
 export const NAMES: Record<string, string> = {
   invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
-  held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Keep in talent pool', not: 'Not proceed',
+  held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
   doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
 };
 /* The template an email is written from (CANDIDATE EMAILS, 2026-11-21). */
@@ -125,13 +125,13 @@ export function fields(m: Record<string, any>): Record<string, string> {
        own short link, the sending domain's (2026-11-19). */
     place: m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
       : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
-    'google meet line': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
+    'google meet notice': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
     'decision date': String(m.decide_by || ''),
     months: m.months == null ? '' : String(m.months),
     document: contract ? 'Employment Contract' : 'Employment Offer',
     reference: String(m.ref || ''),
-    'what to do': contract ? 'sign it' : 'reply',
-    'for what': contract ? 'for your signature' : 'for your reply',
+    'requested action': contract ? 'sign it' : 'reply',
+    purpose: contract ? 'for your signature' : 'for your reply',
     reason: m.returned_note ? 'Reason: ' + m.returned_note : '',
     'document date': String(m.sent || ''),
     contact: String(m.contact || ''),

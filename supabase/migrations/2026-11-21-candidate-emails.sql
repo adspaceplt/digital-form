@@ -13,7 +13,7 @@
 --     seeded with the words hiring-mail sends today, unchanged: Interview
 --     invitation (`invite`), Interview confirmed (`confirm`), Thank you for
 --     your interview (`held`), Decision date updated (`moved`), Interview
---     cancelled (`cancelled`), Keep in talent pool (`pool`) and Not proceed
+--     cancelled (`cancelled`), Talent pool (`pool`) and Not proceed
 --     (`not`), the two outcomes; Employment document (`doc`) and Employment
 --     document sent again (`doc_again`); Document confirmed (`confirmed`);
 --     Document expired (`expired`).
@@ -65,15 +65,15 @@ insert into public.hiring_email_templates (kind, subject, body) values
   ('moved', 'Decision date updated: {position}',
    E'Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}'),
   ('cancelled', 'Interview cancelled: {position}',
-   E'Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet line}\n\nADspace will contact you to arrange another time.\n\n{sign-off}'),
+   E'Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}'),
   ('pool', 'Your application: {position}',
    E'Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}'),
   ('not', 'Your application: {position}',
    E'Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}'),
   ('doc', '{document}: {reference}',
-   E'Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {what to do} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}'),
+   E'Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}'),
   ('doc_again', '{document}: {reference}',
-   E'Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {for what}.\n\n{reason}\n\nPlease read it on your application page and {what to do} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}'),
+   E'Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}'),
   ('confirmed', '{document} confirmed: {reference}',
    E'Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}'),
   ('expired', '{document} expired: {reference}',
@@ -97,7 +97,7 @@ language sql immutable set search_path = public as $$
     when 'meeting' then array['meeting', 'date', 'time', 'month', 'channel', 'link']
     when 'code' then array['name', 'code', 'minutes', 'purpose']
     when 'candidate' then array['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note',
-      'time', 'place', 'google meet line', 'decision date', 'months', 'document', 'reference', 'what to do', 'for what',
+      'time', 'place', 'google meet notice', 'decision date', 'months', 'document', 'reference', 'requested action', 'purpose',
       'reason', 'document date', 'contact', 'sign-off', 'button']
   end $$;
 revoke all on function public.template_fields(text) from public, anon, authenticated;
@@ -173,7 +173,7 @@ begin
        (coalesce((x->>'on')::boolean, true), btrim(x->>'subject'), btrim(x->>'body')) then
       v_word := case t.kind when 'invite' then 'Interview invitation' when 'confirm' then 'Interview confirmed'
         when 'cancelled' then 'Interview cancelled' when 'held' then 'Thank you for your interview'
-        when 'moved' then 'Decision date updated' when 'pool' then 'Keep in talent pool' when 'not' then 'Not proceed'
+        when 'moved' then 'Decision date updated' when 'pool' then 'Talent pool' when 'not' then 'Not proceed'
         when 'doc' then 'Employment document' when 'doc_again' then 'Employment document sent again'
         when 'confirmed' then 'Document confirmed' else 'Document expired' end;
       v_moved := v_moved || (v_word ||

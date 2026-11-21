@@ -340,7 +340,7 @@
      (Standard for any other), 1 to 5 a criterion, with a recommendation; the
      part or the Owner decides Proceed, Keep in talent pool or Not proceed,
      Reopen the way back. The decision's note stays with the team. */
-  var REC = { proceed: 'Proceed', pool: 'Keep in talent pool', not: 'Not proceed' };
+  var REC = { proceed: 'Proceed', pool: 'Talent pool', not: 'Not proceed' };
   var OUTCOME = { proceed: ['Proceed', 'is-ok'], pool: ['Talent pool', 'is-off'], not: ['Not proceed', 'is-off'] };
   var POOL = { asked: 'Waiting for the candidate to agree', yes: 'Agreed', no: 'Declined' };
   function scoresPane(c, keeps) {
@@ -1179,7 +1179,7 @@
     held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision',
     confirmed: 'the confirmation' };
   var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Keep in talent pool', not: 'Not proceed',
+    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed' };
   function readGate() {
     state.gate = null;
@@ -1194,7 +1194,7 @@
     if (!g || !g.tpl) return '';
     var t = g.tpl[tk], what = noun || MAIL_NOUN[tk] || 'this email';
     var portal = window.ADspaceAdmin && window.ADspaceAdmin.sendState && window.ADspaceAdmin.sendState('email').portal;
-    if (!g.auto) return (portal ? 'Email is turned off for the portal. ' : 'Automatic emails are off. ') + c.name + ' will not receive ' + what + ' by email.';
+    if (!g.auto) return window.ADspaceWords.line.autoMailOff(c.name, what, portal);
     if (t && !t.on) return MAIL_NAME[tk] + ' is turned off in Email templates. ' + c.name + ' will not receive ' + what + ' by email.';
     return '';
   }

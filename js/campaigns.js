@@ -1774,9 +1774,9 @@
      2026-11-21). */
   function autoMailOff(name, what) {
     var A = window.ADspaceAdmin, M = window.ADspaceMoney;
-    if (A && A.sendState && A.sendState('email').portal) return 'Email is turned off for the portal. ' + name + ' will not receive ' + what + ' by email.';
+    if (A && A.sendState && A.sendState('email').portal) return window.ADspaceWords.line.autoMailOff(name, what, true);
     var v = M && M.setting ? M.setting('auto_email_on') : null;
-    return v != null && Number(v) !== 1 ? 'Automatic emails are off. ' + name + ' will not receive ' + what + ' by email.' : '';
+    return v != null && Number(v) !== 1 ? window.ADspaceWords.line.autoMailOff(name, what) : '';
   }
   function cpqDecide(ok, note) {
     var q = cpqReq; if (!q) return Promise.resolve('');
