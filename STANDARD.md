@@ -629,6 +629,14 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
+- 2026-11-22, `entities` and `quotes` (found in the run of the on-demand
+  console scripts, snapshot `d91198b`): each timed out once, waiting for a
+  control on a client record just reopened from its address (Add entity's
+  search, Build quote), under the gate's three-at-a-time load; both passed
+  in the run before main's latest two releases merged in (`300a2a2`) and
+  five times by hand under four-way load after. Its cause (a section script
+  fetched on demand that did not arrive under load, or the record's own
+  reads) is to be found; held here until it ships.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
