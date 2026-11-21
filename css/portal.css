@@ -2082,6 +2082,9 @@ dd > .linkbtn::before { inset: 3px 0; }
 .verify-history .verify-day { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* A Chinese date (2026年11月19日) takes a wider column, whole on one line. */
 .verify-history li:lang(zh) { grid-template-columns: 124px minmax(0, 1fr); }
+/* How many times the document has been checked: one small line under the
+   steps (VERIFY CHECKS COUNTED, 2026-11-21). */
+:root[data-face="client"] .verify-panel .verify-checks, .verify-checks { margin: 4px 0 0; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .verify-out .verify-file-out { font-size: 14px; margin: 0; text-align: center; }
 @media (max-width: 640px) {
   .verify-panel form:not(.verify-ask) { flex-direction: column; }

@@ -682,7 +682,7 @@
     team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', hiring_register: ''
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', verify_checks_of: 'p_kind p_id', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2449,8 +2449,24 @@ function cardSlugFree(name, self, email) {
     if (window.__verifyLocked) return { found: false, locked: true, minutes: window.__verifyLocked };
     var f = verifyFind(a.p_serial);
     if (!f) return { found: false };
+    verifyCheckNote(f);
     return { found: true, serial: f.serial, kind: f.kind, state: f.state, issued_month: f.issued ? f.issued.slice(0, 7) : null,
       sealed: !!f.sealed, more: true, by_day: verifyByDay(f) };
+  }
+
+  function verifyCheckNote(f) {
+    if (!f || !f.src || !f.id || opsMe()) return;
+    var day = appToday(), addr = String(window.__verifyAddr || 'here');
+    var rows = DB.verify_checks = DB.verify_checks || [];
+    if (rows.some(function (r) { return r.kind === f.src && r.doc_id === f.id && r.day === day && r.addr === addr; })) return;
+    rows.push({ kind: f.src, doc_id: f.id, day: day, addr: addr });
+    var tot = DB.verify_check_totals = DB.verify_check_totals || [];
+    var t = tot.filter(function (r) { return r.kind === f.src && r.doc_id === f.id; })[0];
+    if (t) t.n++; else tot.push({ kind: f.src, doc_id: f.id, n: 1 });
+  }
+  function verifyCheckCount(kind, id) {
+    var t = (DB.verify_check_totals || []).filter(function (r) { return r.kind === kind && r.doc_id === id; })[0];
+    return t ? t.n : 0;
   }
 
   function legalBox() {
@@ -2476,7 +2492,8 @@ function cardSlugFree(name, self, email) {
     }
     if (!ok) return { no_match: true, contact: contact };
     return { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
-      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed, history: f.steps, contact: contact };
+      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed,
+      checks: Math.max(1, verifyCheckCount(f.src, f.id)), history: f.steps, contact: contact };
   }
 
   function issueLetter(a) {
@@ -10732,6 +10749,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
     if (name === 'verify_details')     return Promise.resolve({ data: verifyDetails(args), error: null });
     if (name === 'doc_code_of')        return Promise.resolve({ data: docCodeOf(args), error: null });
+
+    if (name === 'verify_checks_of') {
+      if (!opsMe()) return Promise.resolve({ data: null, error: null });
+      if (!args.p_id || ['document', 'letter', 'quotation', 'hiring', 'perf'].indexOf(args.p_kind) < 0) return Promise.resolve({ data: 0, error: null });
+      return Promise.resolve({ data: verifyCheckCount(args.p_kind, args.p_id), error: null });
+    }
     if (name === 'verify_file') {
       if (window.__verifyLocked) return Promise.resolve({ data: { locked: true, minutes: window.__verifyLocked }, error: null });
       var vh = String(args.p_sha || '').toLowerCase(), vs = String(args.p_serial || '').toUpperCase();

@@ -481,7 +481,10 @@
           '<div class="kmenu" data-menu hidden>' +
             window.ADspaceMenu.items([
               [d.source === 'portal' && { a: 'download', label: 'Download' },
-               d.file_url && { a: 'open', label: 'Open file' }],
+               d.file_url && { a: 'open', label: 'Open file' },
+               /* Its record: the Document ID, the steps and how many times it
+                  was checked on /verify/ (VERIFY CHECKS COUNTED, 2026-11-21). */
+               d.source === 'portal' && window.ADspaceSeal && { a: 'record', label: 'Record' }],
               [d.source === 'manual' && { a: 'edit', label: 'Edit', need: need + ':work' },
                /* A portal document is corrected by reissuing it: the same
                   serial, the earlier version kept and voided as Reissued. */
@@ -531,6 +534,20 @@
       LET.download(d, function (warn) { if (warn) say(warn, 'err'); });
     });
     on('open', function () { var u = window.ADspaceWords.absUrl(d.file_url); if (u) window.open(u, '_blank', 'noopener'); });
+    /* A portal letter's Record of this Document, the sheet a quotation's
+       and an offer's open: its state, its Document ID, how many times it
+       was checked on /verify/ (one read as it opens) and its steps. */
+    if (!offer && !perf) on('record', function () {
+      window.ADspaceSeal.open({ title: 'Record of this Document', sub: nameOf(d.kind) + ' ' + d.serial,
+        opener: el.querySelector('[data-a="menu"]'), checks: { kind: 'document', id: d.id },
+        load: function () {
+          return (DOCS && DOCS.codeOf ? DOCS.codeOf('document', d.id) : Promise.resolve('')).then(function (code) {
+            return { id: code || '—', ref: d.serial, stateWord: d.voided_at ? ['Void', 'is-danger'] : ['Valid', 'is-ok'],
+              steps: [{ step: 'issued', at: d.created_at, by: d.issued_by }].concat(d.voided_at
+                ? [{ step: 'voided', at: d.voided_at, by: d.voided_by, note: d.void_reason }] : []) };
+          });
+        } });
+    });
     /* The letter's own acts live on the record that priced it, so the row
        carries the way there rather than a copy of them. The address is
        written first, the way the bell opens a task, because the Clients

@@ -410,6 +410,9 @@
     body: { en: 'We write regarding your account with us.' }, signatory: { name: 'Alex Tan', designation: 'Managing Director' }, signed: true,
     closing: 'Yours sincerely,', languages: ['en'], issued_by: 'Alex Tan', source: 'portal', idem_key: null, created_at: '1988-01-08T02:00:00Z',
     voided_at: '1988-01-12T03:00:00Z', voided_by: 'Alex Tan', void_reason: 'Issued in error.', replaces: null, note: null, file_url: null, doc_code: 'SAMP4V88' });
+  /* How many times each sample has been checked on /verify/ (VERIFY CHECKS
+     COUNTED, 2026-11-21). */
+  DB.verify_check_totals = [{ kind: 'letter', doc_id: 'dvo1', n: 4 }, { kind: 'quotation', doc_id: 'dvq1', n: 12 }, { kind: 'document', doc_id: 'dvd1', n: 1 }];
 
   /* What happened lately, newest first in the record. */
   var ACTS = [['Mei Ling Chan', 'task.moved', 0.1], ['Nur Aina', 'client.touch', 0.3], ['Daniel Wong', 'task.moved', 0.5], ['Ravi Kumar', 'client.added', 1],
