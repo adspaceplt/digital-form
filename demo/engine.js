@@ -330,7 +330,7 @@
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
     client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
     client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
-    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', auto_send_set: 'p_kind p_on', portal_switch_set: 'p_key p_on',
+    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', manual_send_set: 'p_channel p_on', auto_send_set: 'p_kind p_on', portal_switch_set: 'p_key p_on',
     delete_request_kinds: '', delete_request_file: 'p_kind p_args p_reason', delete_requests_list: '', delete_request_withdraw: 'p_id',
     delete_request_decide: 'p_id p_approve p_note', delete_request_done: 'p_id p_ok p_error',
     get_scripts: 'p_token',
@@ -3166,6 +3166,8 @@ function cardSlugFree(name, self, email) {
 
     client_email_on: 1,
 
+    client_wa_on: 1,
+
     report_post_links: 1,
 
     creator_pay_days_myr: 10, creator_pay_days_other: 21,
@@ -5233,7 +5235,12 @@ function cardSlugFree(name, self, email) {
     return true;
   }
   function portalOn(key) { var v = appSet(key, appToday()); return v == null || Number(v) === 1; }
-  function sendOk(channel) { var m = opsMe(); return Boolean(m) && portalOn(channel + '_on') && swOf(m, channel + '_on'); }
+
+  function manualOn(channel) {
+    var v = appSet(channel === 'email' ? 'client_email_on' : 'client_wa_on', appToday());
+    return portalOn(channel + '_on') && (v == null || Number(v) === 1);
+  }
+  function sendOk(channel) { var m = opsMe(); return Boolean(m) && manualOn(channel) && swOf(m, channel + '_on'); }
   var GRANTED_KEYS = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'ops.numbering': 1, 'ops.override': 1,
     'team.performance': 1, 'team.perfadmin': 1, 'team.settings': 1, 'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1,
     'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1, 'reports.whitelabel': 1,
@@ -15068,7 +15075,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return drOk({ state: 'approved' });
       }
     }
-    if (/^client_email|^auto_send_set$|^portal_switch_set$/.test(name)) {
+    if (/^client_email|^auto_send_set$|^manual_send_set$|^portal_switch_set$/.test(name)) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
@@ -15148,6 +15155,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.app_settings.push({ key: asKey, from_date: asDay, value: asTo, set_by: cmMe.id, set_at: new Date().toISOString() });
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
           detail: (args.p_kind === 'email' ? 'Automatic emails: ' : 'Automatic WhatsApp: ') + (asWas === 1 ? 'On' : 'Off') + ' → ' + (asTo ? 'On' : 'Off') + ' · from ' + asDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
+      if (name === 'manual_send_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var msKey = { email: 'client_email_on', whatsapp: 'client_wa_on' }[args.p_channel];
+        if (!msKey) return spNo('bad-kind');
+        var msDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), msTo = args.p_on ? 1 : 0;
+        var msWas = appSet(msKey, msDay); msWas = msWas == null ? 1 : Number(msWas);
+        if (msWas === msTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === msKey && x.from_date === msDay); });
+        DB.app_settings.push({ key: msKey, from_date: msDay, value: msTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: (args.p_channel === 'email' ? 'Send by email: ' : 'Send on WhatsApp: ') + (msWas === 1 ? 'On' : 'Off') + ' → ' + (msTo ? 'On' : 'Off') + ' · from ' + msDay, created_at: new Date().toISOString() });
         return spOk();
       }
       if (name === 'client_email_set') {
