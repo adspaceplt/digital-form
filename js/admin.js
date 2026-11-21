@@ -2297,8 +2297,8 @@
       { at: '#ovwClientsMonth button.ovw-tr', text: 'Each client\'s posts, report and meeting this month. Press a client to open their month in My Work.' }] },
     'analytics.tab': { name: 'Charts', steps: [
       { at: '#anlBody .anl-page .ovw-kpi', text: 'Each tile shows a figure and its change from the previous period.' },
-      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse or Steady compares a figure with the previous period.' },
-      { at: '#anlBody .anl-fold-head', text: 'Monthly review and Reference hold the charts read at the end of each month. Press a heading to open it.' },
+      { at: '#anlBody .anl-page .anl-verdict', text: 'Better, Worse, Steady or Above alert states how the figure moved.' },
+      { at: '#anlBody .anl-fold-head', text: 'Monthly review and Reference hold the charts read less often. Press a heading to open it.' },
       { at: '#anlBody .anl-ai [data-a="write"]', text: 'Write with AI analyses the figures on this tab: their health, risks, what is working and recommended actions.' }] },
     'reports.check': { name: 'Check and submit', steps: [
       { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },

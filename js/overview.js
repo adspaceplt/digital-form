@@ -839,7 +839,7 @@
             ['Paused', String(f.paused.length), f.pausedNow.length + ' paused now'],
             ['Resumed', String(f.resumed.length), 'Paused back to Active'],
             ['Win-backs', String(f.winback.length), 'Past back to Active'],
-            ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
+            ['Lead to client', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
             /* A one-time project finished as agreed is never churn (2026-11-15). */
             ['Completed', String(f.completed.length), 'Moved from Active to Past when the project was finished', true],
@@ -1045,7 +1045,7 @@
              many are out, how many are owed and the first date due. */
           var open = items.filter(function (x) { return x.status !== 'published'; });
           var due = open.map(function (x) { return x.due; }).filter(Boolean).sort()[0];
-          var note = n('published') + ' of ' + items.length + ' published' + (open.length ? ' · ' + open.length + ' owed' + (due ? ' · first due ' + shortDate(due) : '') : '');
+          var note = n('published') + ' of ' + items.length + ' published' + (open.length ? ' · ' + open.length + ' owed' + (due ? ' · next due ' + shortDate(due) : '') : '');
           return { note: note, kind: 'pie', total: true, rows: [{ label: 'Published', value: n('published'), tone: 'ok' }, { label: 'In review', value: n('review'), tone: 'warn' },
             { label: 'Confirmed', value: n('confirmed'), tone: 'warn' }, { label: 'Draft', value: n('draft'), tone: 'off' },
             { label: 'Not started', value: n('none'), tone: lateNone ? 'err' : 'off' }] };

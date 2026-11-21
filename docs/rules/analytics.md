@@ -33,7 +33,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   length of stay. Operations: Act now Where work waits (its views
   `WAIT_VIEWS`, a segment once two are drawn: Time in stage joins there,
   never as a card), Reports for the month (its line `n of N published ·
-  n owed · first due`) beside Creator bookings, drawn only while a booking
+  n owed · next due`) beside Creator bookings, drawn only while a booking
   is in production (`hideEmpty`); This week On time by person; Monthly
   review On time by month (from the Dashboard's Team tab) beside On time
   or early by month (`tlmonth`), then Delivery by kind of work (`tlkind`).
