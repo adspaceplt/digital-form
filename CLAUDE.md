@@ -374,6 +374,10 @@ added to all three in the same push.
   carries one, never inside `.claude/` (agents' worktrees live there).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
+- A new portal page joins Page availability in the same push that builds it
+  (the user, 2026-11-21: "Every new pages added should also go into the
+  availability section"): its key taken by `page_set`, the page loading
+  `js/maintenance.js`, its row in `#pgSheet`.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
   pane that walks empty is a pane nobody has measured.
 - The deploy is confirmed from the GitHub Pages workflow run for the merge

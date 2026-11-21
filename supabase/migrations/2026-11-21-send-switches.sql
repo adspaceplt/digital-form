@@ -38,9 +38,11 @@
 -- `manual_send_set(text, boolean)` and `manual_send_on(text)`; delete the
 -- `client_wa_on` rows of `app_settings`.
 
+/* A switch with a setter of its own (as Automatic emails), never a figure
+   app_settings_set takes. */
 insert into public.app_settings (key, from_date, value)
-select 'client_wa_on', date '2023-08-14', 1
- where not exists (select 1 from public.app_settings s where s.key = 'client_wa_on');
+select k, date '2023-08-14', 1 from (values ('client_wa_on')) v(k)
+ where not exists (select 1 from public.app_settings s where s.key = v.k);
 
 create or replace function public.manual_send_on(p_channel text)
 returns boolean language sql stable security definer set search_path = public as $$

@@ -424,7 +424,7 @@
            every email a colleague sends by hand. Off, each send act stays
            drawn, disabled with its reason. */
         biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
-          meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Every email sent by hand' : 'Off', open: flipMail },
+          meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Emails sent by colleagues' : 'Off', open: flipMail },
         /* Every email's wording, by recipient, in one editor (2026-11-10). */
         (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
@@ -443,7 +443,7 @@
         /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
            colleague sends by hand. */
         biz && { id: 'clientwaon', name: 'Send on WhatsApp', kind: 'switch', on: autoOn('client_wa_on'), off: !waOn,
-          meta: !waOn ? L.portalOffRow : autoOn('client_wa_on') ? 'On · Every WhatsApp sent by hand' : 'Off',
+          meta: !waOn ? L.portalOffRow : autoOn('client_wa_on') ? 'On · WhatsApp sent by colleagues' : 'Off',
           open: function (sw) { flipOwn(sw, 'clientwaon', 'manual_send_set', 'Send on WhatsApp', { p_channel: 'whatsapp' }); } },
         W.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp'),
           open: function (btn) { W.ADspaceWhatsApp.manage(btn); } },

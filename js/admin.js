@@ -1019,7 +1019,7 @@
     if (!pop || !el) return;
     clearTimeout(whyHeld.timer);
     var ch = el.getAttribute('data-send');
-    $('sendWhyName').textContent = ch === 'whatsapp' ? 'Sending WhatsApp' : 'Sending email';
+    $('sendWhyName').textContent = ch === 'whatsapp' ? 'WhatsApp' : 'Email';
     $('sendWhyLine').textContent = el.getAttribute('data-send-off') || '';
     whyHeld.el = el;
     pop.hidden = false;
