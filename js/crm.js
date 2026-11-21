@@ -976,7 +976,7 @@
   /* The head of the record: who they are and where they came from. */
   var FORM = [
     ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
-    ['crmSource', 'source'], ['crmCommence', 'commence'], ['crmClientCode', 'client_code']
+    ['crmSource', 'source'], ['crmCommence', 'commence'], ['crmCommenceOn', 'commence_on'], ['crmClientCode', 'client_code']
   ];
   /* The database's own words on the two rules it holds about a Client ID. */
   function saveWord(m) {
@@ -1192,7 +1192,7 @@
         }
         var moved = changed(state.editing, patch, [
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
-          ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
+          ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord], ['commence_on', 'Preferred start date', niceDate],
           ['deal_note', 'Enquiry']]);
         if (moved) log('client.edited', name, moved);
         shutForm();
@@ -1276,7 +1276,8 @@
       ['Industry', c.industry || null],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],
-      ['Planned commencement', c.commence ? commenceWord(c.commence) : null]
+      ['Planned commencement', c.commence ? commenceWord(c.commence) : null],
+      ['Preferred start date', c.commence_on ? niceDate(c.commence_on) : null]
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (f[1] == null ? '<span class="muted">Not set</span>' : esc(f[1])) + '</dd></div>';
