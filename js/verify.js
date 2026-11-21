@@ -260,7 +260,8 @@
       }
       detail = d; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
       paint(last);
-      var h = $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+      // Focus follows a request typed here, never an arrival by scan.
+      var h = !scanned && $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
     }).catch(function () { no(t().failed + '. ' + t().failedText); });
   }
   /* A refusal stays under the fields with what was typed; one met on
