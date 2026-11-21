@@ -59,7 +59,7 @@
       noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
       noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
-      checkedOnce: '已查验1次', checkedN: '已查验{n}次',
+      checkedOnce: '已核验1次', checkedN: '已核验{n}次',
       fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
