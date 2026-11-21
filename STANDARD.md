@@ -629,22 +629,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
-- 2026-11-22, `entities` and `quotes` (found in the run of the on-demand
-  console scripts, snapshot `d91198b`): each timed out once, waiting for a
-  control on a client record just reopened from its address (Add entity's
-  search, Build quote), under the gate's three-at-a-time load; both passed
-  in the run before main's latest two releases merged in (`300a2a2`) and
-  five times by hand under four-way load after. Its cause (a section script
-  fetched on demand that did not arrive under load, or the record's own
-  reads) is to be found; held here until it ships.
-- 2026-11-22, `phone`, `reflink` and `whatsapp` (found in the run of the
-  on-demand console scripts, `7f66bd0`; the same on main `574edd3` with its
-  own suites, so from REQUIRED FIELDS, #1322): a period with no end refused
-  by name and nothing restored after the action (`phone`), saving without a
-  record naming what is missing (`reflink`), an address that is no address
-  refused where it was typed and Send again to an address no longer listed
-  (`whatsapp`). Held here until it ships.
-
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

@@ -1178,10 +1178,13 @@
     }
     return plainName(t, keep);
   }
+  var NAMELESS = { to: 'recipient', cc: 'copy' };
   function plainName(t, keep) {
     /* A unit in brackets after the name (Revenue (RM)) is no part of it. */
     t = String(t || '').replace(/\s*\((rm|s\$|%|myr|sgd)\)\s*$/i, '').replace(/\s+/g, ' ').replace(/[\s*:：?？]+$/, '').replace(/\s*\((optional|可选)\)$/i, '').trim();
     if (zhPage() || keep) return t;
+    /* To is asked as the recipient. */
+    if (NAMELESS[t.toLowerCase()]) return NAMELESS[t.toLowerCase()];
     var words = t.split(' ');
     /* Lowered only where the label is plain: its first word capitalised
        alone and no other word carrying a capital. */
