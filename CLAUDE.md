@@ -374,6 +374,10 @@ added to all three in the same push.
   carries one, never inside `.claude/` (agents' worktrees live there).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
+- A new portal page joins Page availability in the same push that builds it
+  (the user, 2026-11-21: "Every new pages added should also go into the
+  availability section"): its key taken by `page_set`, the page loading
+  `js/maintenance.js`, its row in `#pgSheet`.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
   pane that walks empty is a pane nobody has measured.
 - The deploy is confirmed from the GitHub Pages workflow run for the merge
@@ -1669,14 +1673,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`reports_to`, never round to itself, `reports-loop`) under Main
     settings), then the section, then a tab, which never exceeds its
     section in `allowed()` and the page's `level()` alike (a granted part
-    aside). AI off answers `ai_cap` 0; a send off refuses `send-off`
-    (`send_ok`, `send_ok_of`, `wa_may_send`, each email's prepare or begin,
-    a quotation sent on WhatsApp; an automatic send asks the portal's switch
-    in `auto_send_on`, the narrower Automatic emails, Automatic WhatsApp and
-    Send by email standing under it); Sensitive details shuts client
+    aside). AI off answers `ai_cap` 0; a send off refuses `send-off`: a
+    send by hand asks `send_ok` / `send_ok_of` (`2026-11-21-send-switches.sql`:
+    the portal's switch, then Send by email `client_email_on` or Send on
+    WhatsApp `client_wa_on` (`manual_send_on`, `manual_send_set`), then the
+    group's), every email or WhatsApp a colleague sends by hand alike (each
+    email's prepare or begin, Send again, `wa_may_send`, a quotation sent on
+    WhatsApp); an automatic send asks `auto_send_on` (the portal's switch and
+    Automatic emails or Automatic WhatsApp); a sign-in code, an invitation
+    and a verification code ask none. Sensitive details shuts client
     billing, creator payment details and supplier bank details, the two
-    payment parts following their section. The page asks `may('use.ai')`,
-    `may('send.email')`, `may('send.whatsapp')`; `:root.no-ai` hides every
+    payment parts following their section. The page asks `may('use.ai')`
+    (the portal's switch and the group's) and `may('send.email')`,
+    `may('send.whatsapp')` (the group's alone: not permitted, the act is
+    hidden); a send act carries `data-send` and, while
+    `ADspaceAdmin.sendState(channel)` reads it off, `js/admin.js` draws it
+    disabled, a press, hover or focus opening `#sendWhy` with the switch and
+    where to turn it on (`tests/sendswitch.js`); `:root.no-ai` hides every
     button carrying the AI mark (`svg.ai-mark`) and the Assistant. The five
     WhatsApp parts and the billing and payment parts are gone, their stored
     levels taken off (`2026-11-17-access-cleanup.sql`). `access_keys` (RLS

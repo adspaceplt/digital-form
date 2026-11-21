@@ -4838,7 +4838,7 @@
      part read, as `email_new_begin` asks. */
   function mayMail() {
     return Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.newEmail &&
-      ADspaceAdmin.may('whatsapp', 'work') && mayPart('clients.contacts', 'view'));
+      ADspaceAdmin.may('whatsapp', 'work') && ADspaceAdmin.may('send.email', 'work') && mayPart('clients.contacts', 'view'));
   }
   /* The emails written to this client (`team_emails_of`): one read a visit
      to the record, and again after an email is sent from it; a contact
@@ -5020,9 +5020,9 @@
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' },
                  /* A template message to this contact, sent at the press
                     (2026-10-31): the composer opens on them. */
-                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp' },
+                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-send="whatsapp"' },
                  /* Messages' New email, opened on this contact (2026-11-04). */
-                 mailMsg && ct.email && { a: 'mail', label: 'Send email' }],
+                 mailMsg && ct.email && { a: 'mail', label: 'Send email', attrs: 'data-send="email"' }],
                 [],
                 [ct.portal_access ? { a: 'unportal', label: 'Revoke access' } : { a: 'portal', label: 'Enable access' }],
                 [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
@@ -6700,9 +6700,9 @@
             [],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
-            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
+            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true, attrs: 'data-send="whatsapp"' },
              /* Send by email beside it (2026-10-31), optional as WhatsApp. */
-             mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email' }],
+             mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email', attrs: 'data-send="email"' }],
             [st === 'issued' && { a: 'sign', label: 'Mark signed', need: 'clients.documents:work' },
              st === 'signed' && { a: 'unsign', label: 'Mark not signed', need: 'clients.documents:work' }],
             [],

@@ -1549,7 +1549,7 @@
             '<span class="wfy-acts">' + (r.request && mayDecide()
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
                 '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
-              : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind">Remind</button>' : '') + '</span>' +
+              : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind" data-send="whatsapp">Remind</button>' : '') + '</span>' +
             /* Where it stands over how long it has waited, two lines as the
                title and its meta (the user, 2026-11-04: the submitter's name
                under them took a third line; the record names who). */

@@ -134,10 +134,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   replaced) and a client letter's issued in the portal (Documents family
   `client`, not void) each offer Send by email in the Send group beside
   Send on WhatsApp; nothing goes by itself. Gated (the user, 2026-10-31:
-  "Enable or disable at business settings"): Settings, Clients: Send by
-  email, a switch (`client_email_on`, seeded Off; `client_email_set`,
-  `team.settings`, filed under Settings); Off, no record draws it and
-  prepare and begin refuse `email-off`. Access: Clients: Quotations,
+  "Enable or disable at business settings"): Settings, Messages: Send by
+  email, a switch over every email sent by hand since 2026-11-21 (see
+  `docs/rules/messages.md`, The send switches); Off, the act stays drawn,
+  disabled with its reason, and prepare and begin refuse `send-off`. Access: Clients: Quotations,
   Clients: Letters, Letters or Documents: Client documents at Work
   (`client_email_may`) with Clients: Contacts at View (its addresses are
   that part's; security audit 2026-11-07), the client in scope. One sheet (`#dmSheet`,

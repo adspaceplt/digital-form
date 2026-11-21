@@ -4939,7 +4939,7 @@
          again only before the shoot, as Resend booking (the user,
          2026-10-11: it read as a message button for every stage). */
       if ((o.state === 'confirmed' || o.state === 'pending_visit') &&
-          window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Resend booking');
+          window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += window.ADspaceMenu.item('wasend', 'Resend booking', null, null, 'data-send="whatsapp"');
       if (w) {
         items += menuItem('unbook', 'Revert to options');
         items += menuItem('withdraw', 'Withdraw');

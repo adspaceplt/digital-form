@@ -1137,8 +1137,11 @@ screenshotted, and the push names any line it could not settle.
 - **Doherty**: feedback under 400ms; a saving state on the button; never a
   reload.
 - **Progressive disclosure**: a step appears when its stage is reached. What
-  cannot apply yet is hidden, not disabled, and leaves again when reverted.
-  What a client may not see is withheld by the function.
+  cannot apply yet is hidden, not disabled, and leaves again when reverted,
+  with one exception (the user, 2026-11-21): an act switched off in Settings
+  is drawn disabled with its reason (`data-send`, `#sendWhy`); one the person
+  is not permitted is hidden. What a client may not see is withheld by the
+  function.
 - **Serial position**: it governs the rail's two ends, not a pair of buttons
   (that is motor memory: one order, one anchor).
 - **Visual weight**: the name, then the money, then the meta. The ⋯ is the

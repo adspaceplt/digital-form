@@ -1069,7 +1069,7 @@
       !may('work') ? '' : r.sent_on
         ? '<button class="linkbtn rp-sentfact" type="button" data-a="sentfact" aria-label="Change sent date">' + esc(dayWord(r.sent_on)) + ' ' + PEN_MARK + '</button>'
         : '<span class="rp-sendacts"><button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>' +
-          '<button class="btn btn-sm rp-wasend" type="button" data-a="wasend" hidden>Send on WhatsApp</button></span>']);
+          '<button class="btn btn-sm rp-wasend" type="button" data-a="wasend" data-send="whatsapp" hidden>Send on WhatsApp</button></span>']);
     if (r.brand_name) f.push(['For', r.brand_name]);
     if (r.on_request) f.push(['Requested', 'By the client']);
     if (st.partner) f.push(['Logo', st.partner.name]);
