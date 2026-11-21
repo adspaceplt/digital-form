@@ -333,7 +333,7 @@
            this long is signed out each night. */
         biz && { id: 'idle', name: 'Signed-in devices', kind: 'edit',
           meta: num('session_idle_days') == null ? '' : num('session_idle_days') === 0 ? 'Off'
-            : 'After ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
+            : 'Signed out after ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
@@ -398,7 +398,7 @@
       biz && { id: 'bench', name: 'Ad benchmarks', kind: 'edit',
         meta: num('bench_msg_target') == null ? '' : parts(['Messaging RM ' + num('bench_msg_target'), 'Lead form RM ' + num('bench_form_target')]) }]]]);
     var pin = num('ai_price_in'), pout = num('ai_price_out');
-    add('money', 'Money', 'services', [['', [
+    add('accounting', 'Accounting', 'services', [['', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
         meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%'].concat(num('quote_valid_days') == null ? [] : ['Quotation ' + plural(num('quote_valid_days'), 'day', 'days')])) },
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes'), open: openTax },
@@ -543,7 +543,7 @@
   var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
   var chosen = '';
-  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; }
+  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; if (chosen === 'money') chosen = 'accounting'; }
 
   function current(list) {
     return list.some(function (x) { return x.key === chosen; }) ? chosen : (list[0] ? list[0].key : '');
@@ -808,7 +808,7 @@
      copy does not match (VERIFY DETAILS, 2026-11-20). */
   var BOX_NOTE = { general: 'Replies to client emails, invitations and all other emails.', hr: 'Replies to emails sent to candidates.',
     payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
-    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the Document verification page when no document matches.' };
+    einvoice: 'Receives e-Invoice submissions only.', legal: 'Named on the Verify document page when a document does not match.' };
   function openMailboxes() {
     db.rpc('mail_senders_read').then(function (r) {
       var d = (r && r.data) || {};

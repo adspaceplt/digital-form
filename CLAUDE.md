@@ -663,7 +663,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   client's and a supplier's link alike, Analytics; Creators: Creator and
   campaign IDs, Creator payments, Creator payments sheet), My Work (Due
   dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
-  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Money (Tax
+  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Accounting (Tax
   and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
   Messages (Email: Automatic emails, Send by email, Email templates, Sent
   again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp

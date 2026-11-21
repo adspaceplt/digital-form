@@ -39,7 +39,7 @@
       fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match the sealed copy', fileFailed: 'Unable to check the file. Please try again.',
       state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' },
-      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed copy stored',
+      step: { issued: 'Issued', sent: 'Sent', signed: 'Signed by the recipient', confirmed: 'Confirmed by ADspace', sealed: 'Sealed',
         acknowledged: 'Acknowledged by the recipient', finalised: 'Finalised', declined: 'Declined', withdrawn: 'Withdrawn', voided: 'Void',
         replaced: 'Replaced', expired: 'Expired' }
     },
@@ -63,7 +63,7 @@
       fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
-      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '封存副本已存档',
+      step: { issued: '签发', sent: '发送', signed: '收件方签署', confirmed: 'ADspace 确认', sealed: '已封存',
         acknowledged: '收件方确认收悉', finalised: '定稿', declined: '已拒绝', withdrawn: '已撤回', voided: '已作废',
         replaced: '已替换', expired: '已过期' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
