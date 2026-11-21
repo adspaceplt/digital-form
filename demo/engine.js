@@ -62,7 +62,7 @@
     ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at recorded_at',
     ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id script_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
-    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
+    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report client_posts',
     ops_template_variants: 'id template_id format estimate_minutes created_at',
     ops_video_details: 'task_id output_duration_seconds footage_duration_seconds subtitle_required motion_graphics_required aspect_ratios script_ready footage_ready shoot_required shoot_at variant_count',
     ops_work_sessions: 'id task_id team_member_id started_at ended_at minutes note source corrected_at corrected_by correction_reason created_at',
@@ -410,6 +410,7 @@
     ops_set_recurring: 'p_payload p_task',
     ops_set_video: 'p_payload p_task',
     ops_set_results: 'p_task p_views p_engagements',
+    ops_set_client_posts: 'p_task p_on p_version',
     ops_stage: 'p_key p_workflow',
     ops_task_clients: 'p_tasks',
     ops_task_in_scope: 'p_task',
@@ -5906,9 +5907,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var SIDE = { blocked: 1, waiting: 1, kiv: 1, cancelled: 1 };
       var skipping = false, goingBack = false;
 
+      var byClient = false;
+      if (t.client_posts) {
+        if (args.p_next === 'live' || args.p_next === 'performance_review') return { error: 'client-posts' };
+        byClient = t.stage_key === 'scheduled' && args.p_next === 'completed';
+      }
       var back = opsHeldBack(t, cur);
       if (back && !OPS_HELD[args.p_next] && back.indexOf(args.p_next) < 0) return { error: 'held-resume', allowed: back };
       if (back && !OPS_HELD[args.p_next]) {
+
+      } else if (byClient) {
 
       } else if (!cur || cur.next_stage_keys.indexOf(args.p_next) < 0) {
 
@@ -5956,7 +5964,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (skipping) {
         DB.ops_workflow_stages.filter(function (x) {
           return x.workflow_id === t.workflow_id && x.position > cur.position && x.position < nxt.position && !SIDE[x.stage_group] &&
-            x.stage_group !== 'revision' && !x.retired;
+            x.stage_group !== 'revision' && !x.retired && !(t.client_posts && (x.key === 'live' || x.key === 'performance_review'));
         }).sort(function (a, b) { return a.position - b.position; }).forEach(function (x) {
           DB.ops_task_events.push({ id: opsId('ev'), task_id: args.p_task, event_type: 'stage_skipped',
             from_value: { stage_key: x.key }, to_value: { stage_key: args.p_next },
@@ -6834,6 +6842,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
       t.result_views = Number(rv); t.result_engagements = Number(re); t.result_at = now; t.result_by = (opsMe() || {}).id || null;
       t.version = (t.version || 1) + 1; t.updated_at = now;
       opsLog(t.id, 'results_set', rWas, { views: t.result_views, engagements: t.result_engagements });
+      persist();
+      return Object.assign({}, t);
+    }
+
+    if (name === 'ops_set_client_posts') {
+      if (!opsAllowed('ops', 'work')) return { error: 'denied' };
+      t = opsTask(args.p_task);
+      if (!t) return { error: 'not-found' };
+      if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
+      var cpOn = Boolean(args.p_on);
+      if (Boolean(t.client_posts) === cpOn) return Object.assign({}, t);
+      if (!opsMayMove(t.id, opsMe())) return { error: 'not-owner' };
+      if (!opsStage(t.workflow_id, 'live')) return { error: 'no-live-stage' };
+      if (t.live_at || ['live', 'performance_review', 'taken_down'].indexOf(t.stage_key) > -1) return { error: 'already-live' };
+      var cpWas = Boolean(t.client_posts);
+      t.client_posts = cpOn; t.version = (t.version || 1) + 1; t.updated_at = now;
+      opsLog(t.id, 'details_changed', { client_posts: cpWas }, { client_posts: cpOn });
       persist();
       return Object.assign({}, t);
     }

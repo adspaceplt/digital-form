@@ -7132,10 +7132,16 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    colour, the rest a hairline. Not buttons, and named for a screen reader. */
 .tsteps { margin: 0 0 14px; }
 .tsteps[hidden] { display: none; }
-.tsteps-bar { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
-.tsteps-bar li { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--line); }
-.tsteps-bar li.is-done { background: var(--line-ctl); }
-.tsteps-bar li.is-now { background: var(--fill); }
+/* The line in phases (2026-11-22): a segment a phase, its name under it, the
+   stage in hand named under the current phase. */
+.tsteps-bar { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.tsteps-bar li { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tph-bar { height: 4px; border-radius: 2px; background: var(--line); }
+.tsteps-bar li.is-done .tph-bar { background: var(--line-ctl); }
+.tsteps-bar li.is-now .tph-bar { background: var(--fill); }
+.tph-name { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.tsteps-bar li.is-now .tph-name { color: var(--ink); font-weight: 500; }
+.tph-at { margin-top: -4px; font-size: 12px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .tsteps-word b { color: var(--ink); font-weight: 600; }
 /* A blocker is the warn colour and says so in words; the list under it is

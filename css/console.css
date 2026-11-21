@@ -5532,6 +5532,20 @@ svg.sec {
 /* The board. */
 .bcol { background: var(--sunk); border-radius: 14px; padding: 10px; }
 .bcol-head { padding: 2px 4px; }
+/* The phase over its first column, and an empty revision column folded to
+   a narrow labelled edge that opens while a card is dragged (2026-11-22). */
+.bcol { grid-template-rows: auto auto 1fr; }
+.bcol-phase { margin: 0; padding: 0 4px; min-height: 18px; font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcol.is-fold { flex-basis: 56px; transition: flex-basis var(--t-slow) var(--ease); }
+.bcol.is-fold .bcol-head { flex-direction: column; align-items: center; gap: 8px; border-bottom: 0; }
+.bcol.is-fold .bcol-head h3 { writing-mode: vertical-rl; white-space: nowrap; overflow: visible; }
+.bcol.is-fold .bcol-n { margin-left: 0; }
+.bcol.is-fold .bcards { display: none; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) { flex-basis: 248px; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-head { flex-direction: row; align-items: baseline; border-bottom: 1px solid var(--line); }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-head h3 { writing-mode: horizontal-tb; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-n { margin-left: auto; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcards { display: grid; }
 .bcard { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--card-edge, var(--line-soft)); gap: 8px; }
 .bcard-tags { display: flex; align-items: center; gap: 6px; min-height: 20px; }
 .bcard-tags:not(:has(> :not(.bcard-grip))) .bcard-grip { margin-left: auto; }
