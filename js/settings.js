@@ -1490,7 +1490,11 @@
   function pgName(k) { var p = pgOf(k); return p ? p.name : k; }
   function pgState(p) {
     if (!p.set) return ['is-ok', 'Available', ''];
-    var due = window.ADspaceClock.due;
+    /* A date and a time each hold together, the line breaking only between
+       them (the user's phone, 2026-11-21: "22 / Nov 2026", "6:00 / am"). */
+    var due = function (v, o) {
+      return String(window.ADspaceClock.due(v, o)).split(', ').map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(', ');
+    };
     var w = p.on ? (p.ends_at ? 'Until ' + due(p.ends_at, { space: true }) : 'No end set')
       : 'From ' + due(p.starts_at, { space: true }) + (p.ends_at ? ' to ' + due(p.ends_at, { space: true }) : '');
     return [p.kind === 'paused' ? 'is-off' : 'is-warn', PG_WORD[p.kind] || PG_WORD.upgrade, w];
@@ -1659,7 +1663,9 @@
       return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve()).then(function () {
         pg.picking = false; pg.picked = {};
         paintPg();
-        pgMsg('Saved.', 'ok');
+        /* The Undo bar says Saved. where it happened; the message line
+           would say it twice (the user's phone, 2026-11-21). */
+        pgMsg('');
         fillLine('pages', null); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); });
         bridge.undoHere('Saved.', function () {
           /* Every page is put back that can be, and those that cannot are
