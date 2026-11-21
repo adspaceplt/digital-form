@@ -883,7 +883,8 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   unclear out of its row (the user, 2026-11-21: "can you not too short",
   "also check other parts menu wordings"): a bare noun takes its verb and
   object (Show versions, Show document record, Show quotation link, Show
-  who acknowledged, Open signed copy, Set access code, Edit Meta accounts,
+  who acknowledged, Open signed copy, Set access code (Show access code
+  to a reader at View), Edit Meta accounts,
   Add pictures from Meta), a download its file (Download PDF); a verb its
   row makes plain stays bare (Edit, Delete, Remove, Duplicate, Rename,
   Restore, Reset link, Void, Withdraw, Reopen).

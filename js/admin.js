@@ -1201,6 +1201,10 @@
     paintAcct(actor);
     /* What a Delete at Edit may request (js/delreq.js), read once. */
     if (window.ADspaceDelReq) window.ADspaceDelReq.load();
+    /* A View group reads Content Review's access code and sets nothing: the
+       item names what it does for the reader (the menu wording sweep,
+       2026-11-21). */
+    if ($('advancedToggle')) $('advancedToggle').textContent = may('review.settings', 'work') ? 'Set access code' : 'Show access code';
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });
@@ -3585,7 +3589,7 @@
     });
   });
 
-  /* The head's ⋯: Set access code, Reset link, Remove. */
+  /* The head's ⋯: Set access code (Show access code at View), Reset link, Remove. */
   function shutWsMenu() {
     $('wsMenu').hidden = true;
     $('wsMenuBtn').setAttribute('aria-expanded', 'false');
