@@ -81,6 +81,7 @@
     perf_events: 'id review_id team_member_id actor_id actor_email kind detail created_at',
     perf_initiatives: 'id team_member_id title improves detail link status period done_period decided_by decided_at note created_at updated_at',
     perf_people: 'team_member_id department role_family runs_ads reviewed updated_at email_code',
+    perf_recognitions: 'id giver_id team_member_id category note given_on status period decided_by decided_at created_at updated_at',
     perf_reflections: 'team_member_id period proud hard learn shared_at updated_at',
     perf_reviews: 'id team_member_id period status s_output s_accuracy s_delivery s_client s_comms s_initiative r_posting r_timeline r_satisfaction r_pacing r_sla notes improvement review_by reward_step serial reviewer_id released_at dispute_until acknowledged_at finalised_at finalised_by result version rev created_at updated_at evaluated_on opened_at doc_code',
     perf_self_ratings: 'team_member_id period s_output s_accuracy s_delivery s_client s_comms s_initiative saved_at',
@@ -479,6 +480,13 @@
     health_team: 'p_token',
     my_hr_remind: 'p_today',
     perf_initiatives_mine: '',
+    perf_recognition_give: 'p_to p_category p_note',
+    perf_recognition_withdraw: 'p_id p_back',
+    perf_recognitions_mine: '',
+    perf_review_recognitions: 'p_token p_member p_period',
+    perf_recognition_decide: 'p_token p_id p_status',
+    perf_recognition_month: 'p_member p_given p_today',
+    perf_recognition_json: 'x',
     my_letters: '',
     document_share: 'p_id p_on',
     perf_initiative_save: 'p_id p_title p_improves p_detail p_link',
@@ -2813,7 +2821,7 @@ function cardSlugFree(name, self, email) {
 
   function perfDb() {
     ['perf_people', 'perf_reviews', 'perf_breaches', 'perf_disputes', 'perf_events', 'perf_unlocks', 'perf_attempts',
-     'perf_initiatives', 'perf_reflections']
+     'perf_initiatives', 'perf_reflections', 'perf_recognitions']
       .forEach(function (k) { if (!DB[k]) DB[k] = []; });
     if (DB.perf_code === undefined) DB.perf_code = 'Orchid-2026';
   }
@@ -2904,7 +2912,11 @@ function cardSlugFree(name, self, email) {
     var raw = pgRound(br.reduce(function (a, b) { return a + perfDed(b, r.period); }, 0), 1);
     var l3 = br.some(function (b) { return b.severity === 3; }), l4 = br.some(function (b) { return b.severity === 4; });
     var cap = rwSet('ded_cap', r.period), ded = Math.max(raw, -cap);
-    var fin = Math.max(0, Math.min(100, Math.round((base + ded) * 10) / 10));
+
+    var rpts = rwSet('rec_points', r.period) || 0, rcap = rwSet('rec_cap', r.period) || 0;
+    var rn = (DB.perf_recognitions || []).filter(function (x) { return x.team_member_id === r.team_member_id && x.period === r.period && x.status === 'confirmed'; }).length;
+    var rraw = pgRound(rn * rpts, 1), rec = Math.min(rraw, rcap);
+    var fin = Math.max(0, Math.min(100, Math.round((base + ded + rec) * 10) / 10));
     var rawG = perfGrade(fin, r.period), R = 'ABCDE';
     var rk = Math.max(R.indexOf(rawG) + 1, l4 ? 4 : l3 ? 2 : 0), g = R.charAt(rk - 1);
     var prev = DB.perf_reviews.filter(function (x) {
@@ -2918,6 +2930,7 @@ function cardSlugFree(name, self, email) {
     var bm = perfBand(rt.sla, 90);
     var pts = function (b, a) { return b === 'green' ? a[0] : b === 'amber' ? a[1] : b === 'red' ? a[2] : null; };
     return { complete: complete, base: base, deduction: ded, deduction_raw: raw, final: fin, cap: cap,
+      recognition: rec, recognition_raw: rraw, recognitions: rn, rec_points: rpts, rec_cap: rcap,
       points: { 1: rwSet('ded_l1', r.period), 2: rwSet('ded_l2', r.period), 3: rwSet('ded_l3', r.period), 4: rwSet('ded_l4', r.period),
         repeat: rwSet('ded_repeat', r.period), late: rwSet('ded_late', r.period), vic: rwSet('ded_vic', r.period) }, raw_grade: rawG,
       grade: g, grade_word: PERF_WORD[g], capped: rk > R.indexOf(rawG) + 1 ? (l4 ? 'D' : 'B') : null,
@@ -3262,7 +3275,9 @@ function cardSlugFree(name, self, email) {
 
     ded_vic: 2,
 
-    remind_before_days: 3, remind_again_days: 3 };
+    remind_before_days: 3, remind_again_days: 3,
+
+    rec_points: 1, rec_cap: 3, rec_confirm: 1 };
   function rwDb() {
     ['perf_dept_scores', 'perf_rewards', 'perf_company', 'perf_commissions'].forEach(function (k) { if (!DB[k]) DB[k] = []; });
     if (!DB.perf_settings) DB.perf_settings = [];
@@ -4428,7 +4443,7 @@ function cardSlugFree(name, self, email) {
   }
   var RW_MONEY = ['prize_individual', 'prize_department', 'bonus_pool_revenue', 'trip_revenue'];
   var RW_SCORE = ['prize_department_min_total', 'flex_team_share', 'flex_member_min', 'bonus_pool_profit_pct', 'commission_min',
-    'grade_a', 'grade_b', 'grade_c', 'grade_d', 'ded_l1', 'ded_l2', 'ded_l3', 'ded_l4', 'ded_repeat', 'ded_late', 'ded_cap'];
+    'grade_a', 'grade_b', 'grade_c', 'grade_d', 'ded_l1', 'ded_l2', 'ded_l3', 'ded_l4', 'ded_repeat', 'ded_late', 'ded_cap', 'rec_points', 'rec_cap'];
   function rwSettingsRpc(name, a, m, now) {
     var err = perfCheck(a.p_token, name === 'perf_settings_set' ? 'work' : 'view');
     if (err) return { error: err };
@@ -4455,7 +4470,7 @@ function cardSlugFree(name, self, email) {
           (k === 'bonus_months_b' && (v > 6 || v !== Math.trunc(v))) || (/^units_/.test(k) && v > 10) ||
           (k === 'dispute_days' && (v < 1 || v > 30 || v !== Math.trunc(v))) ||
           ((k === 'remind_before_days' || k === 'remind_again_days') && (v > 14 || v !== Math.trunc(v))) ||
-          (k === 'ded_vic' && (v < 1 || v > 10))) return { error: 'bad-value', key: k };
+          (k === 'ded_vic' && (v < 1 || v > 10)) || (k === 'rec_confirm' && v !== 0 && v !== 1)) return { error: 'bad-value', key: k };
     }
     var band = function (x) { return x in vals ? vals[x] : rwSet(x, from); };
     if (!(band('grade_a') > band('grade_b') && band('grade_b') > band('grade_c') && band('grade_c') > band('grade_d') && band('grade_d') > 0)) return { error: 'bad-order' };
@@ -4847,6 +4862,100 @@ function cardSlugFree(name, self, email) {
       return { error: 'code-needed' };
     }
 
+    var REC_FN = ['perf_recognition_give', 'perf_recognition_withdraw', 'perf_recognitions_mine', 'perf_review_recognitions', 'perf_recognition_decide'];
+    if (REC_FN.indexOf(name) > -1) {
+      if (!DB.perf_recognitions) DB.perf_recognitions = [];
+      var rNow = now.toISOString();
+      var recName = function (id) { var t = DB.team_members.filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; };
+      var recMonthOf = function (d) { return String(d).slice(0, 7) + '-01'; };
+      var recJson = function (x) {
+        return { id: x.id, team_member_id: x.team_member_id, name: recName(x.team_member_id), giver_id: x.giver_id, giver: recName(x.giver_id),
+          category: x.category, note: x.note, given_on: x.given_on, month: perfMonth(recMonthOf(x.given_on)), status: x.status,
+          period: x.period || null, period_month: x.period ? perfMonth(x.period) : null, decided_by: x.decided_by ? recName(x.decided_by) : null,
+          decided_at: x.decided_at || null, created_at: x.created_at };
+      };
+      var shared = function (member, p) { return DB.perf_reviews.some(function (r) { return r.team_member_id === member && r.period === p && r.status !== 'draft'; }); };
+      var held = function (p) {
+        var q = p.slice(0, 5) + String(Math.floor((Number(p.slice(5, 7)) - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
+        return (DB.perf_rewards || []).some(function (w) { return w.kind === 'quarter' && w.period === q; });
+      };
+      var countsIn = function (member, given, today) {
+        var p = recMonthOf(given);
+        if (!shared(member, p) && !held(p)) return p;
+        var t = recMonthOf(today); if (t > p) p = t;
+        for (var n = 0; n < 36 && (shared(member, p) || held(p)); n++) p = perfNextPeriod(p);
+        return p;
+      };
+      var newestR = function (x, y) { return x.created_at < y.created_at ? 1 : -1; };
+      if (name === 'perf_review_recognitions' || name === 'perf_recognition_decide') {
+        var rerr = perfCheck(a.p_token, name === 'perf_recognition_decide' ? 'work' : 'view');
+        if (rerr) return { error: rerr };
+        if (name === 'perf_review_recognitions') {
+          var rp = perfPeriod(a.p_period);
+          if (!a.p_member || a.p_member === m.id) return { error: 'own-review' };
+          return { rows: DB.perf_recognitions.filter(function (x) {
+              return x.team_member_id === a.p_member && x.status !== 'withdrawn' && (x.period === rp || recMonthOf(x.given_on) === rp);
+            }).sort(function (x, y) { return x.given_on < y.given_on ? -1 : x.given_on > y.given_on ? 1 : x.created_at < y.created_at ? -1 : 1; })
+            .map(function (x) { return Object.assign(recJson(x), { mine: x.giver_id === m.id }); }),
+            points: rwSet('rec_points', rp), cap: rwSet('rec_cap', rp) };
+        }
+        var rx = DB.perf_recognitions.filter(function (x) { return x.id === a.p_id; })[0];
+        if (!rx || rx.status === 'withdrawn') return { error: 'not-found' };
+        if (rx.giver_id === m.id || rx.team_member_id === m.id) return { error: 'own' };
+        var to = a.p_status;
+        if (['confirmed', 'declined', 'waiting'].indexOf(to) < 0) return { error: 'bad-status' };
+        if (!((rx.status === 'waiting' && to !== 'waiting') || (rx.status !== 'waiting' && to === 'waiting'))) return { error: 'bad-move' };
+        if (rx.status === 'confirmed') {
+          if (shared(rx.team_member_id, rx.period)) return { error: 'month-released', month: perfMonth(rx.period) };
+          if (held(rx.period)) return { error: 'period-confirmed', kind: 'quarter', word: rwQWord(rx.period) };
+        }
+        var was = rx.status;
+        rx.status = to; rx.period = to === 'confirmed' ? countsIn(rx.team_member_id, rx.given_on, rwToday()) : null;
+        rx.decided_by = to === 'waiting' ? null : m.id; rx.decided_at = to === 'waiting' ? null : rNow; rx.updated_at = rNow;
+        perfLog(null, rx.team_member_id, 'recognition.' + (to === 'waiting' ? 'reverted' : to), { recognition: rx.id, from: was, period: rx.period || recMonthOf(rx.given_on) });
+        if (to === 'confirmed') perfNotify(rx.team_member_id, 'perf.recognition', 'Your recognition from ' + (recName(rx.giver_id) || 'a colleague') + ' was confirmed.', 'recognition:' + rx.id + ':confirmed:' + rNow);
+        return { ok: true, recognition: Object.assign(recJson(rx), { mine: false }) };
+      }
+      if (!m) return { error: 'not-team' };
+      if (guarded(m.id) && !fresh()) return { error: 'code-needed' };
+      if (name === 'perf_recognitions_mine') {
+        return { received: DB.perf_recognitions.filter(function (x) { return x.team_member_id === m.id && x.status !== 'withdrawn'; }).sort(newestR).map(recJson),
+                 given: DB.perf_recognitions.filter(function (x) { return x.giver_id === m.id && x.status !== 'withdrawn'; }).sort(newestR).map(recJson),
+                 confirm: Number(rwSet('rec_confirm', rwToday())) !== 0 };
+      }
+      if (name === 'perf_recognition_withdraw') {
+        var wx = DB.perf_recognitions.filter(function (x) { return x.id === a.p_id && x.giver_id === m.id; })[0];
+        if (!wx) return { error: 'not-found' };
+        if (wx.status !== (a.p_back ? 'withdrawn' : 'waiting')) return { error: 'decided' };
+        wx.status = a.p_back ? 'waiting' : 'withdrawn'; wx.updated_at = rNow;
+        perfLog(null, wx.team_member_id, a.p_back ? 'recognition.restored' : 'recognition.withdrawn', { recognition: wx.id, period: recMonthOf(wx.given_on) });
+        return { ok: true, recognition: recJson(wx) };
+      }
+
+      var note = String(a.p_note == null ? '' : a.p_note).trim(), today = rwToday();
+      if (!a.p_to) return { error: 'bad-colleague' };
+      if (a.p_to === m.id) return { error: 'own' };
+      var whom = DB.team_members.filter(function (t) { return t.id === a.p_to && t.active !== false && !t.system && !t.removed_at; })[0];
+      if (!whom) return { error: 'bad-colleague' };
+      if (['helped', 'effort', 'praise'].indexOf(a.p_category) < 0) return { error: 'bad-category' };
+      if (note.length < 3) return { error: 'note-needed' };
+      if (note.length > 500) return { error: 'too-long' };
+      var again = DB.perf_recognitions.filter(function (x) {
+        return x.giver_id === m.id && x.team_member_id === a.p_to && x.category === a.p_category && x.note === note &&
+          x.status !== 'withdrawn' && Date.rNow() - new Date(x.created_at).getTime() < 600000; })[0];
+      if (again) return { ok: true, again: true, recognition: recJson(again) };
+      if (DB.perf_recognitions.filter(function (x) { return x.giver_id === m.id && x.given_on === today; }).length >= 10) return { error: 'too-many' };
+      var on = Number(rwSet('rec_confirm', today)) !== 0;
+      var nr = { id: opsId('rg'), giver_id: m.id, team_member_id: a.p_to, category: a.p_category, note: note, given_on: today,
+        status: on ? 'waiting' : 'confirmed', period: on ? null : countsIn(a.p_to, today, today), decided_by: null,
+        decided_at: on ? null : rNow, created_at: rNow, updated_at: rNow };
+      DB.perf_recognitions.push(nr);
+      perfLog(null, nr.team_member_id, 'recognition.given', { recognition: nr.id, category: nr.category, period: nr.period || recMonthOf(today), confirmed: !on });
+      perfNotify(nr.team_member_id, 'perf.recognition', (m.name || '') + ' recognised you: ' +
+        { helped: 'Helped a colleague', effort: 'Extra effort', praise: 'Client praise' }[nr.category] + '.', 'recognition:' + nr.id + ':given');
+      return { ok: true, recognition: recJson(nr) };
+    }
+
     var INIT_MINE = ['perf_initiatives_mine', 'perf_initiative_save', 'perf_initiative_withdraw',
                      'perf_reflection_mine', 'perf_reflection_save', 'perf_reflection_share'];
     if (INIT_MINE.indexOf(name) > -1 || name === 'perf_initiatives' || name === 'perf_initiative_decide' || name === 'perf_review_context') {
@@ -5059,13 +5168,14 @@ function cardSlugFree(name, self, email) {
     }
     if (name === 'perf_activity') {
       if (!m || !perfGranted('view')) return { error: 'denied' };
-      var KEEP = ['released', 'opened', 'self.saved', 'disputed', 'decided', 'acknowledged', 'finalised', 'reopened', 'returned', 'printed', 'deleted'];
+      var KEEP = ['released', 'opened', 'self.saved', 'disputed', 'decided', 'acknowledged', 'finalised', 'reopened', 'returned', 'printed', 'deleted',
+                  'recognition.given', 'recognition.withdrawn', 'recognition.restored', 'recognition.confirmed', 'recognition.declined', 'recognition.reverted'];
       var tm = function (id) { return DB.team_members.filter(function (t) { return t.id === id; })[0] || {}; };
       return { rows: DB.perf_events.filter(function (e) { return KEEP.indexOf(e.kind) > -1 && e.team_member_id !== m.id; })
         .slice().reverse().slice(0, a.p_limit || 200).map(function (e) {
           var rv = DB.perf_reviews.filter(function (x) { return x.id === e.review_id; })[0] || {};
           return { at: e.created_at, kind: e.kind, member: tm(e.team_member_id).name,
-                   period: rv.period || ((e.kind === 'deleted' || e.kind === 'self.saved') && e.detail ? e.detail.period : null) || null,
+                   period: rv.period || ((e.kind === 'deleted' || e.kind === 'self.saved' || /^recognition\./.test(e.kind)) && e.detail ? e.detail.period : null) || null,
                    actor: e.actor_email, actor_name: tm(e.actor_id).name || null, auto: Boolean(e.detail && e.detail.auto) };
         }) };
     }
