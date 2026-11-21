@@ -1244,7 +1244,8 @@
       f.push({ name: 'minutes', label: 'Length', choices: [['30', '30 minutes'], ['45', '45 minutes'], ['60', '60 minutes'], ['90', '90 minutes']], seg: true, value: '45', head: 'Interview' });
       f.push({ name: 'mode', label: 'Location', choices: [['online', 'Google Meet'], ['office', 'At the office']], seg: true, value: 'online' });
       f.push({ name: 'note', label: 'Note to the candidate', rows: 2, required: false, placeholder: 'Optional' });
-      f = f.concat(mailFields('invite', false));
+      /* Its warning first: the form is long, and the line is read before the press. */
+      f = mailFields('invite', false).concat(f);
       var slots = function (v) {
         var out = [];
         [1, 2, 3].forEach(function (n) { if (v['d' + n] && v['t' + n]) out.push(C.at(v['d' + n], v['t' + n])); });
