@@ -463,8 +463,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
   always-loaded script calling a listed global asks `ADspaceAdmin.need`,
   `needThen` or `whenSection` first, and what it decides before any section
-  draws (who may open a section, a record's address) is its own, never a
-  listed script's (2026-11-22: Content Review read `laman-citra` as an id
+  draws (who may open a section, a record's address) and what it does for
+  every section (a ⋯ shut on a press elsewhere) is its own, never a listed
+  script's (2026-11-22: Content Review read `laman-citra` as an id
   and Analytics left the rail, crm.js and analytics.js not yet fetched).
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.

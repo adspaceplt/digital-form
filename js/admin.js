@@ -8720,4 +8720,20 @@
       msg('importMsg', 'Not imported. The connection was lost. Please try again.', 'err');
     });
   });
+
+  /* Every ⋯ in the console shuts on a press outside a menu, its head or a
+     row's acts, on Escape and on a scroll that carried it from its button
+     (js/campaigns.js held this for every section until it was fetched only
+     for Creator Campaigns; ON DEMAND, 2026-11-22). The account menu and the
+     bell keep their own. Registered last here, so it runs where it did. */
+  function shutMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu):not(.notif-menu)'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
+  });
+  window.ADspaceMenu.onScroll(shutMenus);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
+  window.ADspaceAdmin.shutMenus = shutMenus;
 })();
