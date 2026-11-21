@@ -238,6 +238,20 @@
      reference sealed today) is 33 modules at level M, 0.34mm each, over
      the 0.33mm a phone reads. */
   var QR = 32;
+  /* A module is never under 0.34mm (0.964pt): an address too long for 33
+     modules grows the code rather than shrinking what a phone reads. */
+  var QR_MODULE = 0.34 / 25.4 * 72;
+  /* What the QR code holds (the user, 2026-11-21: a scan passes straight
+     to the details, a shared link never does): the verify address, then
+     the Document ID in the fragment (`#d=`), which a browser never sends to
+     a server, a log or a referrer; /verify/ takes it out of the address at
+     once (js/verify.js). A copy with no Document ID holds the address
+     alone. The printed caption never carries it. */
+  function scanUrl(verifyUrl, docId) {
+    var url = String(verifyUrl || ''), code = String(docId || '');
+    if (!url || !/^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(code)) return url;
+    return url.replace(/#.*$/, '') + '#d=' + code.replace('-', '');
+  }
   /* A baseline in a line box of `lead` from its top. */
   function base(top, size, lead) { return top - (lead - size) / 2 - size * 0.8; }
   /* Words over lines of `max` (the first may be shorter): between words,
@@ -312,17 +326,19 @@
     var bodyTop = y;
     // The right column: the QR code, its caption, the signed pages' hash.
     var hash = String(info.pagesSha || ''), halves = [hash.slice(0, 32), hash.slice(32)].filter(Boolean);
-    var sideW = Math.max(T.sideW, QR, pn.width('Scan to check this copy', T.side, fm),
+    var qr = info.verifyUrl ? qrModules(scanUrl(info.verifyUrl, info.docId)) : null;
+    var side = qr ? Math.max(QR, qr.length * QR_MODULE) : QR;
+    var sideW = Math.max(T.sideW, side, pn.width('Scan to check this copy', T.side, fm),
       halves.reduce(function (w, h) { return Math.max(w, pn.width(h, T.side, f)); }, 0));
-    var addr = String(info.verifyUrl || '').replace(/^https?:\/\//, '').replace(/\?.*$/, '').replace(/\/$/, '');
-    var sy = bodyTop, qr = draw ? qrModules(info.verifyUrl) : null;
-    if (qr) {
-      var n = qr.length, u = QR / n, x0 = R - QR;
+    var addr = String(info.verifyUrl || '').replace(/^https?:\/\//, '').replace(/[?#].*$/, '').replace(/\/$/, '');
+    var sy = bodyTop;
+    if (qr && draw) {
+      var n = qr.length, u = side / n, x0 = R - side;
       for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
         if (qr[r][c]) pn.page.drawRectangle({ x: x0 + c * u, y: sy - (r + 1) * u, width: u + 0.05, height: u + 0.05, color: pn.strong });
       }
     }
-    sy -= QR + T.part;
+    sy -= side + T.part;
     right('Scan to check this copy', R, base(sy, T.side, T.sideLead), T.side, fm, pn.ink); sy -= T.sideLead;
     if (addr) { right(addr, R, base(sy, T.side, T.sideLead), T.side, f, pn.ink); sy -= T.sideLead; }
     sy -= T.part;
@@ -392,6 +408,6 @@
 
   window.ADspaceSeal = {
     device: device, sha256: sha256, when: when, rows: rows, panel: panel, stateOf: stateOf, open: open, checksOf: checksOf, checksWord: checksWord,
-    pagesFor: pagesFor, addRecord: addRecord, LOCK: LOCK
+    pagesFor: pagesFor, addRecord: addRecord, scanUrl: scanUrl, LOCK: LOCK
   };
 })();

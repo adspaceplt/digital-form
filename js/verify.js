@@ -236,27 +236,78 @@
       if (!code && !day) { say(a.by_day ? t().enterDay : t().enterCode, $('vCode')); return; }
       var go = $('vDetailGo');
       go.disabled = true; go.textContent = t().showing;
-      if (!db) { say(t().failedText); return; }
-      db.rpc('verify_details', { p_serial: a.serial, p_code: code || null, p_day: code ? null : day }).then(function (r) {
-        var d = r && r.data;
-        if (r.error || !d || d.error) { say(t().failed + '. ' + t().failedText); return; }
-        if (d.locked) { say(lockedLine(d.minutes)); return; }
-        if (!d.ok) {
-          say(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode'));
-          return;
-        }
-        detail = d; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
-        paint(last);
-        var h = $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
-      }).catch(function () { say(t().failed + '. ' + t().failedText); });
+      details(a, code, day, false);
     });
   }
-  /* A refusal stays under the fields with what was typed. */
-  function say(text, field) {
+  /* The details asked of `verify_details`: typed, or from a QR code's
+     Document ID (`scanned`, the reference it was scanned for), the same
+     call, refusals and count. A scanned ID refused falls back to the typed step with that refusal and an empty
+     field, and its pass is let go. */
+  function details(a, code, day, scanned) {
+    var no = function (text, field, wrong) {
+      if (scanned) { if (wrong) forgetPass(scanned); asking = true; typed = { code: '', day: '', open: false }; }
+      say(text, field, scanned);
+    };
+    if (!db) { no(t().failedText); return; }
+    db.rpc('verify_details', { p_serial: a.serial, p_code: code || null, p_day: code ? null : day }).then(function (r) {
+      var d = r && r.data;
+      if (last !== a) return;
+      if (r.error || !d || d.error) { no(t().failed + '. ' + t().failedText); return; }
+      if (d.locked) { no(lockedLine(d.minutes)); return; }
+      if (!d.ok) {
+        no(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode') || { id: 'vCode' }, true);
+        return;
+      }
+      detail = d; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
+      paint(last);
+      var h = $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+    }).catch(function () { no(t().failed + '. ' + t().failedText); });
+  }
+  /* A refusal stays under the fields with what was typed; one met on
+     arrival (a scanned ID) marks the field without taking the focus. */
+  function say(text, field, quiet) {
     askSaid = text;
     paint(last);
     var f = field && $(field.id);
-    if (f) { f.setAttribute('aria-invalid', 'true'); f.focus(); }
+    if (f) { f.setAttribute('aria-invalid', 'true'); if (!quiet) f.focus(); }
+  }
+
+  /* A QR code's pass (the user, 2026-11-21: "if they scan straight from a
+     qr code then it will create a session of that doc reference … sharing
+     the site link to others wont get them through"): the Document ID the
+     code carried, kept in this tab alone (sessionStorage) for the
+     reference it was scanned for, until `verify.passMinutes` after the
+     scan, so a refresh here opens the details again; another tab, a
+     shared link or a pass run out meets the typed step. */
+  var PASS = 'adspace-verify-pass:';
+  function passMinutes() {
+    var v = ((window.ADSPACE_CONFIG || {}).verify || {}).passMinutes;
+    return v > 0 ? v : 0;
+  }
+  function passKey(serial) { return PASS + String(serial || '').trim().toUpperCase(); }
+  function keepPass(serial, code) {
+    if (!passMinutes()) return;
+    try { sessionStorage.setItem(passKey(serial), JSON.stringify({ code: code, until: Date.now() + passMinutes() * 60000 })); } catch (e) {}
+  }
+  function readPass(serial) {
+    try {
+      var raw = sessionStorage.getItem(passKey(serial)), p = raw && JSON.parse(raw);
+      if (p && p.code && Date.now() < p.until) return String(p.code);
+      if (raw) sessionStorage.removeItem(passKey(serial));
+    } catch (e) {}
+    return '';
+  }
+  function forgetPass(serial) { try { sessionStorage.removeItem(passKey(serial)); } catch (e) {} }
+  /* The Document ID a QR code carries (`#d=`), taken out of the address and
+     the history before anything is asked, so the address on screen, shared
+     or bookmarked, holds the reference alone. */
+  function takeScan() {
+    var m = /(?:^#|&)d=([^&]*)/.exec(location.hash || '');
+    if (!m) return '';
+    try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) {}
+    var code = '';
+    try { code = decodeURIComponent(m[1]); } catch (e) { code = m[1]; }
+    return code.replace(/[^0-9A-Za-z-]/g, '').slice(0, 40);
   }
 
   /* Check a file: the PDF is hashed here and never leaves the device; only
@@ -319,7 +370,12 @@
     fileSaid = null; detail = null; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
-    var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial); };
+    var done = function (a) {
+      go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial);
+      // A pass held in this tab for this reference opens its details.
+      var code = a.found && a.more ? readPass(serial) : '';
+      if (code) details(a, code, '', serial);
+    };
     if (!db) { done({ failed: true }); return; }
     db.rpc('verify_serial', { p_serial: serial }).then(function (r) {
       if (r.error || !r.data) { done({ failed: true }); return; }
@@ -333,7 +389,17 @@
   });
   paintWords();
 
-  // A link may carry the reference, so a QR code lands on the answer.
+  // A link may carry the reference, so a QR code lands on the answer, and
+  // the code's Document ID becomes this tab's pass for it.
+  var scanned = takeScan();
   var given = new URLSearchParams(location.search).get('s');
+  if (given && scanned) keepPass(given, scanned);
   if (given) { $('vSerial').value = given; check(given); }
+  /* A code scanned into a tab already on this page changes the fragment
+     alone, which loads nothing: taken the same way. */
+  window.addEventListener('hashchange', function () {
+    var code = takeScan(), s = new URLSearchParams(location.search).get('s');
+    if (!code || !s) return;
+    keepPass(s, code); $('vSerial').value = s; check(s);
+  });
 })();
