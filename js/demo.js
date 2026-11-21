@@ -97,6 +97,7 @@
   var cfg = window.ADSPACE_CONFIG || {};
   cfg.brandLogo = mark();
   cfg.agencyName = NAME;
+  cfg.serviceTermsUrl = '';
   cfg.supportEmail = 'hello@example.com';
   cfg.accountEmail = 'hello@example.com';
   cfg.googleApiKey = '';

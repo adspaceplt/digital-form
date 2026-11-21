@@ -1689,8 +1689,12 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 
 .qhead-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
 .qhead-top .tcheck { margin: 0 0 0 -10px; }
-.qhead-top .rec-token { margin-left: -6px; }
-.qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+/* The number gives way before the state, the ⋯ and the close mark: one
+   line ending in an ellipsis where the head is narrow, the whole of it what
+   Copy copies (2026-11-21: a performance record's close mark cut at 390). */
+.qhead-top .rec-token { margin-left: -6px; display: block; flex: 0 1 auto; min-width: 0; line-height: var(--ctl-h);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto; }
 .qhead-end .chip { align-self: center; }
 /* The task's stage in its head: the list's own select, at the list's width. */
 .stagepick { display: inline-flex; align-self: center; }
@@ -3618,12 +3622,14 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .seal-lock { display: inline-flex; margin-right: 4px; vertical-align: -2px; }
 .seal-lock svg { width: 13px; height: 13px; }
 .seal-steps { list-style: none; margin: 0; padding: 0; }
-.seal-step { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.seal-step { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
 .seal-step:first-child { border-top: 0; }
 .seal-when { color: var(--ink-mute); font-variant-numeric: tabular-nums; font-size: 12.5px; white-space: nowrap; }
 .seal-what { min-width: 0; overflow-wrap: anywhere; }
 .seal-what b { font-weight: 600; }
 .seal-meta { display: block; color: var(--ink-mute); font-size: 12.5px; }
+/* How many times the copy was checked on /verify/, under the Verify fact. */
+.seal-checks { color: var(--ink-mute); font-size: 12.5px; }
 .is-narrow .seal-step { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .seal-acts { display: flex; justify-content: flex-end; margin-top: 12px; }
 .eml-body { background: var(--sunk); border-radius: var(--radius-sm); padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.55; color: var(--ink); }

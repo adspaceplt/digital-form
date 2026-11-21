@@ -883,7 +883,7 @@
           sig + '<span class="msg" id="sgPadMsg"></span></div>' +
         '<label class="qs-consent"><input type="checkbox" id="sgAgree"' + (SG.agree ? ' checked' : '') + '>' + MARK +
           '<span class="qs-text">' + esc(f(s.agree, { c: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
-        '<a class="btn btn-quiet btn-sm qs-terms" href="https://go.adspace.me/svc-terms" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' +
+        (cfg.serviceTermsUrl ? '<a class="btn btn-quiet btn-sm qs-terms" href="' + esc(window.ADspaceWords.absUrl(cfg.serviceTermsUrl)) + '" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' : '') +
         '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signcode') + '</form>';
     }
     var boxes = '';

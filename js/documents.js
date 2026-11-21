@@ -25,6 +25,9 @@
   var MON = window.ADspaceMoney;
   var ORG = window.ADSPACE_ORG || {};
   var CFG = window.ADSPACE_CONFIG || {};
+  /* The wordmark's words: the agency's own name (the demo's sample agency
+     on sample data), read at the draw. */
+  function agency() { return (window.ADSPACE_CONFIG || {}).agencyName || 'ADspace'; }
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
   var actor = bridge.actorName || bridge.actor || function () { return ''; };
@@ -723,11 +726,11 @@
     p.frameHead = function (first) {
       var wm = fonts.mark || fonts.bold;
       if (!acl) {
-        p.text('ADspace', M, at(G.markAt), G.mark, wm, ink);
+        p.text(agency(), M, at(G.markAt), G.mark, wm, ink);
         if (tpl === 'ALP') p.spaced(INTERNAL, (W - p.spacedWidth(INTERNAL, 8, med)) / 2, at(G.internalAt), 8, med, faint);
         return;
       }
-      p.text('ADspace', M, at(G.aclMarkAt), G.aclMark, wm, ink);
+      p.text(agency(), M, at(G.aclMarkAt), G.aclMark, wm, ink);
       if (logo) {
         var mw = logo.width * (G.mono / logo.height);
         p.page.drawImage(logo, { x: R - mw, y: at(G.monoAt) - G.mono, width: mw, height: G.mono });
