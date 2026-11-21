@@ -1130,6 +1130,227 @@
      closes it on the new value. */
   document.addEventListener('change', function (e) { if (findSel && e.target === findSel && findBox && !findBox.hidden) findClose(false); }, true);
 
+  /* ---- 10. A save refuses what its record cannot stand on --------------
+     One check for every form (the user, 2026-11-22: required fields could
+     be left empty and the record still saved). A field marked required
+     (`aria-required`, or `required`) refuses nothing typed, spaces alone
+     included; a field of a kind refuses a value that is not of it, empty or
+     not: a number (`type=number`, or `data-check="number"`), an amount
+     (`data-check="amount"`, a number above 0), a date (the floor of §5 and
+     the field's own min and max), an email (`ADspaceWords.emailOk`), a phone
+     (`type=tel` or `data-check="phone"`, 7 to 15 digits) and a web address
+     (`type=url` or `data-check="url"`, `ADspaceWords.absUrl`). A field's own
+     `min` and `max` hold a number too.
+     It runs before the save itself: a press on a sheet's foot primary, a
+     form's submit, or a button marked `data-check-save` (its scope the
+     nearest `[data-check-scope]`, form, sheet card or `.pane-form`) is
+     held while a field in its scope is wrong, the first wrong field
+     focused (its fold opened first, §reveal) and one line under it naming
+     what to enter. A page that saves without a press (an Enter it answers
+     itself) asks `ADspaceForm.check(scope)` first. A button marked
+     `data-nocheck` (a draft that keeps what is there on purpose) is never
+     held. Hidden and disabled fields are not asked. The question sheet
+     (js/confirm.js) asks `problem` of each of its fields. */
+  function W2() { return window.ADspaceWords || {}; }
+  function zhPage() { return /^zh/i.test(document.documentElement.lang || ''); }
+  function sayWord(key, x) {
+    var W = W2(), set = (zhPage() ? W.zh : W.en) || {};
+    var w = set[key] || (W.en || {})[key] || key;
+    return typeof w === 'function' ? w(x) : String(w).replace('{x}', x == null ? '' : x);
+  }
+  /* The field's own name, as its label reads it: an official term keeps
+     its capitals (Registered Company Name), a plain label is lowered (the
+     client name). */
+  function nameOf(el) {
+    var t = el.getAttribute('data-check-name') || '';
+    if (!t) {
+      var lab = el.id && document.querySelector('label[for="' + (window.CSS && CSS.escape ? CSS.escape(el.id) : el.id) + '"]');
+      if (!lab && el.closest) lab = el.closest('label');
+      if (!lab && el.getAttribute('aria-labelledby')) lab = document.getElementById(el.getAttribute('aria-labelledby').split(' ')[0]);
+      t = lab ? lab.textContent : (el.getAttribute('aria-label') || '');
+    }
+    return plainName(t);
+  }
+  function plainName(t) {
+    t = String(t || '').replace(/\s+/g, ' ').replace(/[\s*:：?？]+$/, '').replace(/\s*\((optional|可选)\)$/i, '').trim();
+    if (zhPage()) return t;
+    var words = t.split(' ');
+    /* Lowered only where the label is plain: its first word capitalised
+       alone and no other word carrying a capital. */
+    var plain = /^[A-Z][a-z]/.test(words[0] || '') && words.slice(1).every(function (w) { return w === w.toLowerCase(); });
+    return plain ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+  }
+  function kindToCheck(el) {
+    var k = el.getAttribute('data-check');
+    if (k) return k;
+    if (isDate(el)) return 'date';
+    var t = el.tagName === 'INPUT' ? (el.type || 'text') : '';
+    if (t === 'number') return 'number';
+    if (t === 'email') return 'email';
+    if (t === 'tel') return 'phone';
+    if (t === 'url') return 'url';
+    return '';
+  }
+  function isRequired(el) {
+    return el.getAttribute('aria-required') === 'true' || el.required === true;
+  }
+  /* A number as typed: commas and a currency's spaces allowed (1,234.50). */
+  function numOf(v) {
+    var s = String(v).replace(/[,\s]/g, '').replace(/^(rm|s\$|\$)/i, '');
+    return /^-?(\d+\.?\d*|\.\d+)$/.test(s) ? Number(s) : NaN;
+  }
+  function problem(el, o) {
+    o = o || {};
+    if (!el) return '';
+    var req = o.required != null ? !!o.required : isRequired(el);
+    var kind = o.kind || kindToCheck(el);
+    var name = o.label || nameOf(el);
+    var raw;
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      if (!req) return '';
+      if (el.type === 'radio' && el.name && el.form) {
+        var any = Array.prototype.some.call(el.form.querySelectorAll('input[type="radio"][name="' + el.name + '"]'), function (r) { return r.checked; });
+        return any ? '' : (o.need || sayWord('checkChoose', name));
+      }
+      return el.checked ? '' : (o.need || sayWord('checkTick', name));
+    }
+    /* A DD/MM/YYYY box holding part of a date reads empty as a value. */
+    if (el.__dmy) {
+      var shown = VALUE.get.call(el).trim();
+      if (shown && !el.__iso) return 'Enter the date as DD/MM/YYYY.';
+    }
+    if (el.validity && el.validity.badInput) return sayWord(kind === 'amount' ? 'checkAmount' : 'checkNumber');
+    raw = el.value == null ? '' : String(el.value);
+    var v = el.tagName === 'SELECT' ? raw : raw.trim();
+    if (!v) {
+      if (!req) return '';
+      if (o.need) return o.need;
+      var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg;
+      return sayWord(choose ? 'checkChoose' : 'checkEnter', name);
+    }
+    if (kind === 'number' || kind === 'amount') {
+      var n = numOf(v);
+      if (isNaN(n)) return sayWord(kind === 'amount' ? 'checkAmount' : 'checkNumber');
+      if (kind === 'amount' && n <= 0) return sayWord('checkAmount');
+      var lo = el.getAttribute('min'), hi = el.getAttribute('max');
+      if (lo !== null && lo !== '' && !isNaN(Number(lo)) && n < Number(lo)) return sayWord('checkFrom', lo);
+      if (hi !== null && hi !== '' && !isNaN(Number(hi)) && n > Number(hi)) return sayWord('checkUpTo', hi);
+      return '';
+    }
+    if (kind === 'date') {
+      if (!dateOk(v, kindOf(el))) return FLOOR_WORD;
+      if (el.min && v < el.min && el.min > FLOOR) return 'Choose a date from ' + dmyOf(el.min) + '.';
+      if (el.max && v > el.max && el.max < CEIL) return 'Choose a date up to ' + dmyOf(el.max) + '.';
+      return '';
+    }
+    if (kind === 'email') return W2().emailOk && !W2().emailOk(v) ? sayWord('checkEmail') : '';
+    if (kind === 'url') return W2().absUrl && !W2().absUrl(v) ? sayWord('checkUrl') : '';
+    if (kind === 'phone') {
+      var d = v.replace(/\D/g, '');
+      return /^[\d\s()+\-.]+$/.test(v) && d.length >= 7 && d.length <= 15 ? '' : sayWord('checkPhone');
+    }
+    return '';
+  }
+  /* Asked or not: a field the person cannot see or reach is not asked,
+     but one inside a shut fold is (the fold opens to it). */
+  function asked(el) {
+    if (el.disabled || el.readOnly && !el.__dmy) return false;
+    if (el.closest('[hidden], [inert], [data-nocheck]')) return false;
+    if (el.type === 'hidden') return false;
+    var seen = el.__seg || el.__hintBox || el;
+    if (seen.getClientRects().length) return true;
+    var d = el.closest('details');
+    return !!(d && !d.open && d.getClientRects().length);
+  }
+  var CHECKED = '[aria-required="true"], [required], [data-check], input[type="number"], input[type="email"], input[type="tel"], input[type="url"], input[type="date"], input[type="month"], input[type="datetime-local"], input.dmy';
+  function firstWrong(scope) {
+    if (!scope || !scope.querySelectorAll) return null;
+    var list = scope.querySelectorAll(CHECKED);
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !asked(el)) continue;
+      var why = problem(el);
+      if (why) return { el: el, why: why };
+    }
+    return null;
+  }
+  function noteOf(el) {
+    var host = noteHost(el.__seg || el);
+    var n = host.nextElementSibling;
+    return n && n.classList && n.classList.contains('check-note') ? n : null;
+  }
+  function unsay(el) {
+    var n = noteOf(el);
+    if (n) n.remove();
+    if (el.__checkSaid) { el.removeAttribute('aria-invalid'); el.__checkSaid = false; }
+  }
+  function sayAt(el, why) {
+    var host = noteHost(el.__seg || el);
+    var n = noteOf(el);
+    if (!n) {
+      n = document.createElement('p');
+      n.className = 'msg err check-note';
+      n.setAttribute('role', 'alert');
+      n.id = (el.id || 'field') + 'Check';
+      host.parentNode.insertBefore(n, host.nextSibling);
+    }
+    n.textContent = why;
+    el.setAttribute('aria-invalid', 'true');
+    el.__checkSaid = true;
+    var was = el.getAttribute('aria-describedby') || '';
+    if ((' ' + was + ' ').indexOf(' ' + n.id + ' ') < 0) el.setAttribute('aria-describedby', (was + ' ' + n.id).trim());
+  }
+  function refuse(hit) {
+    reveal(hit.el);
+    sayAt(hit.el, hit.why);
+    var f = hit.el.__seg ? (hit.el.__seg.querySelector('.is-on') || hit.el.__seg.firstElementChild) : hit.el;
+    try { f.focus({ preventScroll: false }); } catch (e) { try { f.focus(); } catch (x) {} }
+    if (f.scrollIntoView) { try { f.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+  }
+  /* `check(scope)`: true when every field in it may be saved; otherwise the
+     first wrong one is focused and named, and false. */
+  function check(scope) {
+    var hit = firstWrong(scope);
+    if (!hit) return true;
+    refuse(hit);
+    return false;
+  }
+  /* What a press saves: a sheet's foot primary saves its card, a submit its
+     form, a marked button its scope. */
+  function saveScope(b) {
+    if (!b || b.hasAttribute('data-nocheck') || b.disabled) return null;
+    if (b.hasAttribute('data-check-save')) {
+      return b.closest('[data-check-scope]') || b.form || b.closest('.sheet-card, .pane-form, form');
+    }
+    if (b.closest('.sheet-foot') && b.matches('.btn-primary, .btn-go') && !b.closest('#askSheet')) {
+      return b.closest('[data-check-scope]') || b.closest('.sheet-card');
+    }
+    if (b.form && (b.type === 'submit')) return b.form;
+    return null;
+  }
+  window.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('button, input[type="submit"]') : null;
+    var scope = saveScope(b);
+    if (!scope) return;
+    var hit = firstWrong(scope);
+    if (!hit) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    refuse(hit);
+  }, true);
+  window.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!f || f.hasAttribute('data-nocheck') || (e.submitter && e.submitter.hasAttribute('data-nocheck'))) return;
+    var hit = firstWrong(f);
+    if (!hit) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    refuse(hit);
+  }, true);
+  /* The line goes once the field is changed. */
+  document.addEventListener('input', function (e) { if (e.target && e.target.__checkSaid) unsay(e.target); }, true);
+  document.addEventListener('change', function (e) { if (e.target && e.target.__checkSaid) unsay(e.target); }, true);
+
   window.ADspaceForm = {
     title: title,
     named: named,
@@ -1157,7 +1378,14 @@
        changed in place opens its choices at the first press (My Work's
        Assigned to; the user, 2026-11-13: "it requires a second click"). */
     find: function (sel) { return findOpen(sel, '', true); },
-    FLOOR: FLOOR
+    FLOOR: FLOOR,
+    /* §10: the one save check. */
+    check: check,
+    problem: problem,
+    nameOf: plainName,
+    firstWrong: firstWrong,
+    say: sayAt,
+    unsay: unsay
   };
   function start() {
     scan();

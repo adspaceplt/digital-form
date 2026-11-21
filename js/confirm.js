@@ -180,11 +180,21 @@
     var i, r, v;
     for (i = 0; i < rows.length; i++) {
       r = rows[i]; v = valueOf(r);
-      if (r.spec.required !== false && !r.spec.tick && !v) {
-        say(r.spec.need || 'Please fill in this field.');
+      /* The one save check (js/form.js §10): nothing typed, spaces alone,
+         or a value not of the field's kind (a number, an amount, a date, an
+         email, a web address) is refused with the field named. */
+      var F = window.ADspaceForm, why = '';
+      var need = r.spec.required !== false && !r.spec.tick;
+      if (F && F.problem && !r.spec.tick) {
+        why = F.problem(r.input, { required: need, label: r.spec.label ? F.nameOf(r.spec.label) : '', need: r.spec.need, kind: r.spec.check });
+      } else if (need && !v) why = r.spec.need || 'Enter the ' + String(r.spec.label || 'reason').toLowerCase() + '.';
+      if (why) {
+        say(why);
+        r.input.setAttribute('aria-invalid', 'true');
         r.input.focus();
         return;
       }
+      r.input.removeAttribute('aria-invalid');
       if (r.spec.match && v.toLowerCase() !== String(r.spec.match).toLowerCase()) {
         say(r.spec.mismatch || 'That does not match. Enter it as shown above.');
         r.input.focus();
