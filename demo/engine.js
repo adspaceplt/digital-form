@@ -5356,7 +5356,7 @@ function cardSlugFree(name, self, email) {
   };
 
   function hMailSaid(s) {
-    return s === 'sent' ? ' emailed to the candidate.' : s === 'unknown' ? ' sent to the candidate, but its delivery could not be confirmed.'
+    return s === 'sent' ? ' emailed to the candidate.' : s === 'unknown' ? ' sent to the candidate, but its delivery could not be verified.'
       : ' could not be emailed to the candidate.';
   }
   function hDocName(d) { return (d.kind === 'offer' ? 'Employment Offer ' : 'Employment Contract ') + d.serial; }

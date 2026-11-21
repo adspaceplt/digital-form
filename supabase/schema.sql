@@ -137143,7 +137143,7 @@ revoke all on function public.page_name(text) from public, anon, authenticated;
 --     `hiring_outcome_mail_done`, `hiring_doc_mail_done`,
 --     `hiring_confirmed_mail_done`, `hiring_expire_mail_done`): {What}
 --     emailed to the candidate. / {What} sent to the candidate, but its
---     delivery could not be confirmed. / {What} could not be emailed to the
+--     delivery could not be verified. / {What} could not be emailed to the
 --     candidate. `hiring_interview_held`: Interview held. The decision is
 --     due by {when}.
 --   * Signed-in devices in the Activity record (`team_session_end`,
@@ -137279,7 +137279,7 @@ begin
     case p_kind when 'invite' then 'Interview invitation' when 'confirm' then 'Interview confirmation'
       when 'cancelled' then 'Interview cancellation' when 'held' then 'Decision date' else 'New decision date' end ||
     case p_status when 'sent' then ' emailed to the candidate.'
-    when 'unknown' then ' sent to the candidate, but its delivery could not be confirmed.'
+    when 'unknown' then ' sent to the candidate, but its delivery could not be verified.'
     else ' could not be emailed to the candidate.' end);
   return jsonb_build_object('ok', true);
 end $$;
@@ -137293,7 +137293,7 @@ begin
   if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-request'); end if;
   update public.hiring_candidates set outcome_mail = p_status, outcome_mail_at = now(), updated_at = now() where id = p_id;
   perform public.hiring_log(p_id, 'candidate.email', 'Decision' || case p_status when 'sent' then ' emailed to the candidate.'
-    when 'unknown' then ' sent to the candidate, but its delivery could not be confirmed.'
+    when 'unknown' then ' sent to the candidate, but its delivery could not be verified.'
     else ' could not be emailed to the candidate.' end);
   return jsonb_build_object('ok', true);
 end $$;
@@ -137310,7 +137310,7 @@ begin
   if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-request'); end if;
   update public.hiring_docs set mail = p_status, mail_at = now() where id = d.id;
   perform public.hiring_log(d.candidate_id, 'candidate.email', case d.kind when 'offer' then 'Employment Offer ' else 'Employment Contract ' end || d.serial || case p_status when 'sent' then ' emailed to the candidate.'
-    when 'unknown' then ' sent to the candidate, but its delivery could not be confirmed.'
+    when 'unknown' then ' sent to the candidate, but its delivery could not be verified.'
     else ' could not be emailed to the candidate.' end);
   return jsonb_build_object('ok', true);
 end $$;
@@ -137327,7 +137327,7 @@ begin
   if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-request'); end if;
   update public.hiring_docs set confirm_mail = p_status, confirm_mail_at = now() where id = d.id;
   perform public.hiring_log(d.candidate_id, 'candidate.email', 'Confirmation of ' || case d.kind when 'offer' then 'Employment Offer ' else 'Employment Contract ' end || d.serial || case p_status when 'sent' then ' emailed to the candidate.'
-    when 'unknown' then ' sent to the candidate, but its delivery could not be confirmed.'
+    when 'unknown' then ' sent to the candidate, but its delivery could not be verified.'
     else ' could not be emailed to the candidate.' end);
   return jsonb_build_object('ok', true);
 end $$;
@@ -137343,7 +137343,7 @@ begin
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
   insert into public.hiring_events (candidate_id, actor, action, detail)
   values (d.candidate_id, 'Portal', 'candidate.email', 'Expiry notice for ' || case d.kind when 'offer' then 'Employment Offer ' else 'Employment Contract ' end || d.serial || case p_status when 'sent' then ' emailed to the candidate.'
-    when 'unknown' then ' sent to the candidate, but its delivery could not be confirmed.'
+    when 'unknown' then ' sent to the candidate, but its delivery could not be verified.'
     else ' could not be emailed to the candidate.' end);
   return jsonb_build_object('ok', true);
 end $$;
