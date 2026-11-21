@@ -5537,7 +5537,7 @@
   /* A span of time as the card says it: 35 min, 19h 5m, 2d 6h. */
   function spanWord(mins) { return minutesWord(mins); }
   function whenWord(ms) { return shortDate(ms) + ', ' + CK.clock(ms); }
-  function spanDates(v) {
+  function visitDates(v) {
     if (CK.day(v.from) === CK.day(v.to)) return whenWord(v.from) + ' to ' + CK.clock(v.to);
     return whenWord(v.from) + ' to ' + whenWord(v.to);
   }
@@ -5570,7 +5570,7 @@
       else if (v.pass) line = esc(TL_WORD.passed) + ' \u00b7 ' + esc(whenWord(v.from));
       else if (v.end) line = esc(whenWord(v.from)) + (v.actor ? ' \u00b7 ' + esc(TL_WORD.movedBy) + ' <b>' + who(v.actor) + '</b>' : '');
       else {
-        line = esc(v.running ? TL_WORD.since(whenWord(v.from)) : spanDates(v));
+        line = esc(v.running ? TL_WORD.since(whenWord(v.from)) : visitDates(v));
         if (v.first) {
           line += v.actor ? ' \u00b7 ' + esc(TL_WORD.createdBy) + ' <b>' + who(v.actor) + '</b>' : '';
           line += v.owner ? ' \u00b7 ' + esc(TL_WORD.assignedTo) + ' <b>' + esc(v.owner) + '</b>' : '';
