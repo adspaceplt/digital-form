@@ -165,7 +165,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   active, `bukku_id`; RLS on, no policy, no grant), read by
   `tax_codes_list()` (the team), kept by `tax_codes_save(p_rows,
   p_replace)` (`team.settings`; `bad-row`; filed `team.changed` under Tax
-  codes); Settings, Money: Tax codes (`#taxSheet`: active first, highest
+  codes); Settings, Accounting: Tax codes (`#taxSheet`: active first, highest
   rate first, one no longer offered last; one table, Code · Rate · Name ·
   Offered, then the pen and a ⋯, revamp B, 2026-11-04; Edit, Add code, Read from Bukku,
   which lists Bukku's codes (`bukku-sync` `taxes`, asked of `bukku_config`

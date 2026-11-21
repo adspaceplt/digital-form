@@ -1587,7 +1587,7 @@
     db.from('activity_log').select('*').eq('subject', c.name)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
-        if (r.error) { UI.failLine(box, 'The timeline', r.error.message, loadClientLog); return; }
+        if (r.error) { UI.failLine(box, 'Activity', r.error.message, loadClientLog); return; }
         var rows = r.data || [];
         /* Kept so the rail can show the last three without a second read: the
            record has already paid for this one. */
@@ -4252,7 +4252,7 @@
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
         ['Read from', baRead(v.basis)]
       ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">This analysis is a starting hypothesis to test.</p>' : '') +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">Written from little history: no reports, post results or Meta figures. Check each section before use.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
@@ -6237,7 +6237,7 @@
   }
   function shutService() { shutSheet('crmServiceBox'); editingService = null; }
   /* The line's tax (2026-10-22): the client's SST, or one of the codes the
-     team bills with (Settings, Money: Tax codes). A code no longer offered
+     team bills with (Settings, Accounting: Tax codes). A code no longer offered
      stays shown on the line that holds it. */
   function fillTax(l) {
     var sel = $('svTax'), c = state.client || {};

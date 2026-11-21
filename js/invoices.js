@@ -52,7 +52,7 @@
   };
   SAID['bad-invoices'] = 'An invoice number could not be read. Refresh the page, then send.';
   SAID['bad-recipient'] = 'That address is no longer listed for this client. Refresh the page, then choose another address.';
-  SAID['bad-copy'] = 'Copy up to five of this client\'s contacts, none the same as the recipient.';
+  SAID['bad-copy'] = 'Choose up to five of this client\'s contacts to copy, other than the recipient.';
   function said(d) {
     if (d && d.error === 'unknown-field') return window.ADspaceWords.line.unknownField(d.field, d.fields);
     return (d && SAID[d.error]) || SAID.failed;

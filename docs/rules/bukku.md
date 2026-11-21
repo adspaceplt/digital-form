@@ -15,7 +15,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   What goes is `bukku_prepare`'s answer as the colleague (a company's name in
   capitals, a person's each word capitalised, `bukku_name_case`; the NRIC
   at `suppliers.pay` alone, the bank details never), the Client ID or
-  Supplier ID in the Bukku custom field chosen on Settings, Money, Bukku
+  Supplier ID in the Bukku custom field chosen on Settings, Accounting, Bukku
   (`bukku_config_set`, `team.settings`; `no-field` until chosen). An update
   reads the contact first and keeps Bukku's code, terms, accounts, groups,
   other people and addresses; its types gain Customer or Supplier and never
@@ -283,7 +283,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   percentage and SST rate's lines totalling the quotation's own figure to
   the cent (the group's last line carrying the sen rounding leaves,
   `2026-11-17-quotation-invoices-to-the-cent.sql`), its tax code
-  Bukku's; the budget on the account code set in Settings, Money, Bukku
+  Bukku's; the budget on the account code set in Settings, Accounting, Bukku
   (`bukku_invoice_set`), no tax, to the contact chosen for the client
   (`client_ad_debtor_set`), else the client's own; filed by
   `quotation_invoice_done` (`client.billing`). `quotation_invoices` and

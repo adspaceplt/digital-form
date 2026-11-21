@@ -309,7 +309,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator is a Bukku supplier contact (`bukku_links` kind `creator`), sent
   or linked from the payment details approved last on the Payment pane's Bukku
   band (the Creator ID in Bukku's Creator ID field, chosen beside the
-  Client ID and Supplier ID fields in Settings, Money, Bukku, else the
+  Client ID and Supplier ID fields in Settings, Accounting, Bukku, else the
   Supplier ID field while none is chosen, `bukku_settings.field_creator`,
   `2026-11-10-bukku-creator-id-field.sql`; the ID number at
   `campaigns.pay` View alone; read at the Creators List, sent, linked and
@@ -412,7 +412,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   {brand} ({campaign}) ({creator})`, the classification code and the account
   found by its code in the chart of accounts (Business settings
   `bukku_settings.bill_item_sku`, `bill_class_code`, `bill_account_code`,
-  seeded once P995, 037 and 6000-03, Settings, Money, Bukku, `bukku_bill_set`;
+  seeded once P995, 037 and 6000-03, Settings, Accounting, Bukku, `bukku_bill_set`;
   `no-product`, `no-bukku-account` before anything is sent, the claim let go;
   `2026-11-15-creator-bills-koc-fee.sql`; the user, 2026-11-15), no tax, due
   on `pay_by`; read back as Read from Bukku reads,
