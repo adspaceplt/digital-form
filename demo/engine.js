@@ -18942,6 +18942,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!abPlace) return Promise.resolve({ data: { error: 'no-source' }, error: null });
           var abC = baRpc('ai_analysis_claim', { p_client: ab0.client_id });
           if (abC.error) { persist(); return Promise.resolve({ data: abC, error: null }); }
+
+          if (window.__aiAnalysis.ambiguous && !ab0.choice) {
+            var abX = (DB.ai_drafts || []).filter(function (x) { return x.id === abC.id; })[0];
+            if (abX) abX.outcome = 'failed';
+            persist();
+            return Promise.resolve({ data: { error: 'ambiguous', candidates: JSON.parse(JSON.stringify(window.__aiAnalysis.ambiguous)) }, error: null });
+          }
           var abHist = (DB.sm_reports || []).some(function (x) { return x.client_id === ab0.client_id && x.status === 'published'; }) ||
             (DB.ops_tasks || []).some(function (x) { return x.client_id === ab0.client_id && x.result_views != null; });
           var abA = window.__aiAnalysis.analysis || {
@@ -18969,7 +18976,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
               budget: [{ objective: 'Messages', share: 60 }, { objective: 'Awareness', share: 40 }], realism: 'RM 3,000 a month leaves RM 2,512.50 for Meta: two ad sets at RM 30 a day.', test: 'Two hooks for the weekend bundle.' }
           };
           var abS = window.__aiAnalysis.sources || [{ url: 'https://adspace.me/', title: 'ADspace' }];
-          var abB = { reports: 0, post_results: 0, meta: 'off', web_searches: 6 };
+
+          var abIn = ab0.inputs || {}, abDer = [];
+          var abQ = (DB.quotations || []).filter(function (x) { return x.client_id === ab0.client_id && !x.removed_at && x.status !== 'not_proceeding'; })
+            .sort(function (x, y) { return String(y.issued_at).localeCompare(String(x.issued_at)); })[0];
+          var abQb = abQ && abQ.selection && Array.isArray(abQ.selection.ads) ? abQ.selection.ads.reduce(function (t, a) { return t + ((a.freq || 'monthly') === 'monthly' ? Number(a.budget) || 0 : 0); }, 0) : 0;
+          var abBud = abIn.budget || null;
+          if (!abBud && abQb) { abBud = abQb; abDer.push('budget'); }
+          var abB = { reports: 0, post_results: 0, meta: 'off', web_searches: 6, quotation: abQ ? abQ.ref : null,
+            review_notes: 0, approved_captions: 0, calls: (DB.client_touches || []).filter(function (x) { return x.client_id === ab0.client_id; }).slice(0, 5).length,
+            inputs: { objective: abIn.objective || null, budget: abBud, account: abIn.account || null, notes: ab0.notes || null, derived: abDer },
+            choice: ab0.choice || null };
           var abRow = baRpc('brand_analysis_save', { p_press: abC.id, p_analysis: abA, p_sources: abS, p_basis: abB, p_hypothesis: !abHist, p_model: 'claude-opus-5-5' });
           var abD = (DB.ai_drafts || []).filter(function (x) { return x.id === abC.id; })[0];
           if (abD) { abD.outcome = abRow.error ? 'failed' : 'drafted'; abD.input_tokens = 42000; abD.output_tokens = 6000; abD.model = 'claude-opus-5-5'; abD.web_searches = 6; }
