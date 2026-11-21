@@ -219,6 +219,7 @@
         return;
       }
       state.rec = d.candidate; state.role = d.role; state.people = d.people || []; state.events = d.events || [];
+      readGate();
       /* The candidate's interviews, read beside the record; a refused read is
          said in its pane alone. */
       return rpc('hiring_interviews_of', { p_id: id }).then(function (q) {
@@ -339,7 +340,7 @@
      (Standard for any other), 1 to 5 a criterion, with a recommendation; the
      part or the Owner decides Proceed, Keep in talent pool or Not proceed,
      Reopen the way back. The decision's note stays with the team. */
-  var REC = { proceed: 'Proceed', pool: 'Keep in talent pool', not: 'Not proceed' };
+  var REC = { proceed: 'Proceed', pool: 'Talent pool', not: 'Not proceed' };
   var OUTCOME = { proceed: ['Proceed', 'is-ok'], pool: ['Talent pool', 'is-off'], not: ['Not proceed', 'is-off'] };
   var POOL = { asked: 'Waiting for the candidate to agree', yes: 'Agreed', no: 'Declined' };
   function scoresPane(c, keeps) {
@@ -364,7 +365,7 @@
         (out.outcome === 'pool' ? fact('Talent pool', esc(POOL[out.pool_consent] || '') + (out.pool_until ? ' · until ' + esc(day(out.pool_until)) : '')) : '') +
         (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + ' · ' + esc(when(out.mail_at)), out.mail === 'sent' ? '' : 'is-warn') : '') + '</dl>' +
         (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && out.mail !== 'sent'
-            ? '<button class="btn btn-sm" type="button" data-h="outmail">Email candidate</button>' : '') +
+            ? '<button class="btn btn-sm" type="button" data-h="outmail" data-send="email">Email candidate</button>' : '') +
           (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
       decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Not proceed</button>' +
@@ -571,11 +572,11 @@
   /* The window before a decision's email goes (the user, 2026-11-20: 30 seconds). */
   var UNDO_MS = 30000;
   var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
-  function outcomeMail(id) {
+  function outcomeMail(id, hand) {
     var c = { id: id || state.rec.id };
-    return fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome' }).then(function (d) {
+    return fnCall('hiring-mail', { candidateId: c.id, kind: 'outcome', byHand: Boolean(hand) }).then(function (d) {
       if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return true;
+      return !d.skipped;
     });
   }
   function decide(o) {
@@ -584,7 +585,7 @@
       pool: c.name + ' will be asked on their page to agree to ADspace keeping their application. If they do not agree, their details will be deleted.',
       not: c.name + '\'s application will be closed. Their details will be deleted after the period set in Settings (Closed candidates kept).' }[o];
     var f = [{ name: 'note', label: 'Note', rows: 2, required: false, placeholder: 'Optional', note: 'Seen by the team only.' }];
-    if (mails) f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
+    if (mails) f = f.concat(mailFields(o, true));
     window.ADspaceConfirm.ask({ title: REC[o] + '?', go: REC[o], tone: o === 'not' ? 'warn' : '', wait: true, body: body, fields: f },
     function (v) {
       /* Keep in talent pool and Not proceed cancel a confirmed interview not
@@ -600,9 +601,9 @@
           /* The email waits out the Undo (2026-11-20): it goes only once the
              30 seconds pass with no Undo, and the database refuses it once
              the decision is reopened. */
-          var undone = false, wait = mails && v.mail;
+          var undone = false, wait = mails && mailWanted(o, v);
           load().then(function () {
-            msg('hirRecMsg', (wait ? 'Decided. The candidate will be emailed.' : 'Decided.') +
+            msg('hirRecMsg', (wait && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
               (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
             if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
               undone = true;
@@ -654,14 +655,14 @@
       acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview held</button>';
     if (live && i.held_at && i.decide_by && undecided()) {
       acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
-      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
+      if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-send="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
     }
     if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
     /* A confirmed interview cancelled (2026-11-20): Email candidate where
        its cancellation did not go, while no newer interview was sent. */
     if (can && i.state === 'cancelled' && i.approved_at && (i.cancel_mail === 'failed' || i.cancel_mail === 'unknown') && state.interviews[0] === i)
-      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-send="email" data-kind="cancelled" data-id="' + esc(i.id) + '">Email candidate</button>';
     if (live && i.state === 'invited' && i.invite_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
     var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
@@ -830,7 +831,7 @@
       }
       if (d.state === 'sent') {
         if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpreview"' + id + '>Preview PDF</button>';
-        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail"' + id + '>Email candidate</button>';
+        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail" data-send="email"' + id + '>Email candidate</button>';
         item(4, 'docmark', 'Mark signed'); item(2, 'docreplace', 'Replace'); if (!d.expired) item(5, 'docwithdraw', 'Withdraw');
       }
       if (d.state === 'withdrawn') {
@@ -845,7 +846,7 @@
       }
       if (d.state === 'confirmed') acts += '<button class="btn btn-sm" type="button" data-h="docseal"' + id + '>Download</button>';
       if (d.state === 'confirmed' && (d.confirm_mail === 'failed' || d.confirm_mail === 'unknown'))
-        acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail"' + id + '>Email candidate</button>';
+        acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail" data-send="email"' + id + '>Email candidate</button>';
       if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Open signed copy');
       if (d.state !== 'draft') item(1, 'docrecord', 'Show document record');
       if (part && ['sent', 'withdrawn', 'declined', 'signed', 'confirmed'].indexOf(d.state) >= 0) item(6, 'docvoid', 'Void', true);
@@ -977,24 +978,25 @@
       return window.ADspaceDocs.save(new Blob([bytes], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), tab);
     }).catch(function (e) { if (tab && tab.close) try { tab.close(); } catch (x) {} msg('hirRecMsg', e && e.message ? e.message : 'The document could not be generated. Please try again.', 'err'); });
   }
-  function docMail(d) {
-    return fnCall('hiring-mail', { docId: d.id, kind: 'doc' }).then(function (x) {
+  function docMail(d, hand) {
+    return fnCall('hiring-mail', { docId: d.id, kind: 'doc', byHand: Boolean(hand) }).then(function (x) {
       if (x.error) { msg('hirRecMsg', SAID[x.error] || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return true;
+      return !x.skipped;
     });
   }
   /* The candidate told that the document was confirmed (2026-11-20): its
      name and reference, never its terms. */
-  function confirmedMail(d) {
-    return fnCall('hiring-mail', { docId: d.id, kind: 'confirmed' }).then(function (x) {
+  function confirmedMail(d, hand) {
+    return fnCall('hiring-mail', { docId: d.id, kind: 'confirmed', byHand: Boolean(hand) }).then(function (x) {
       if (x.error) { msg('hirRecMsg', (x.error === 'not-confirmed' ? DOC_SAID[x.error] : SAID[x.error]) || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return true;
+      return !x.skipped;
     });
   }
   function docSend(d, b) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Send ' + DOC_WORD[d.kind] + '?', go: 'Send', wait: true,
-      body: 'ADspace will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.' },
+      body: 'ADspace will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.',
+      fields: mailFields(d.returned_note ? 'doc_again' : 'doc', false, 'the ' + DOC_WORD[d.kind]) },
     function () {
       return rpc('hiring_doc_send', { p_doc: d.id }).then(function (r) {
         var x = r.data || {};
@@ -1068,12 +1070,12 @@
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
       body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
-      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional' },
-        { name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] },
+      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional' }]
+        .concat(mailFields('confirmed', true)) },
     function (v) {
       return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
-        (v.mail ? confirmedMail(d) : Promise.resolve(false)).then(function (sent) { return openRec(c.id).then(function () { return sent; }); }).then(function (sent) {
+        (mailWanted('confirmed', v) ? confirmedMail(d) : Promise.resolve(false)).then(function (sent) { return openRec(c.id).then(function () { return sent; }); }).then(function (sent) {
           msg('hirRecMsg', sent ? 'Confirmed. The candidate was emailed.' : 'Confirmed.', 'ok');
           var now = (state.docs || []).filter(function (x) { return x.id === d.id; })[0];
           if (now) docSealed(now, null);
@@ -1166,16 +1168,54 @@
       });
     });
   }
+  /* The candidate emails are automatic (CANDIDATE EMAILS, 2026-11-21; the
+     user: "the process should be continued, just to show an alert"): each
+     step goes ahead whatever the switches, and its question says first when
+     its email will not go (`hiring_mail_gate`: the portal's Email,
+     Automatic emails and the email's own template). Read with the record;
+     a failed read warns of nothing. */
+  var GATE_KINDS = ['invite', 'confirm', 'held', 'moved', 'cancelled', 'pool', 'not', 'doc', 'doc_again', 'confirmed'];
+  var MAIL_NOUN = { invite: 'the interview invitation', confirm: 'the interview confirmation', cancelled: 'the cancellation',
+    held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision',
+    confirmed: 'the confirmation' };
+  var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
+    doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed' };
+  function readGate() {
+    state.gate = null;
+    rpc('hiring_mail_gate', { p_kinds: GATE_KINDS }).then(function (r) {
+      var g = r.data || {};
+      state.gate = r.error || g.error ? null : g;
+    }).catch(function () { state.gate = null; });
+  }
+  /* The warning before a step, or '' while its email will go. */
+  function mailOff(tk, noun) {
+    var g = state.gate, c = state.rec || {};
+    if (!g || !g.tpl) return '';
+    var t = g.tpl[tk], what = noun || MAIL_NOUN[tk] || 'this email';
+    var portal = window.ADspaceAdmin && window.ADspaceAdmin.sendState && window.ADspaceAdmin.sendState('email').portal;
+    if (!g.auto) return window.ADspaceWords.line.autoMailOff(c.name, what, portal);
+    if (t && !t.on) return MAIL_NAME[tk] + ' is turned off in Email templates. ' + c.name + ' will not receive ' + what + ' by email.';
+    return '';
+  }
+  /* A question's email part: the Email {name} tick while it will go, else
+     the warning in its place (the step still files the email Not sent). */
+  function mailFields(tk, tick, noun) {
+    var off = mailOff(tk, noun);
+    if (off) return [{ line: off, warn: true }];
+    return tick ? [{ name: 'mail', label: 'Email ' + state.rec.name, tick: true, value: 'on' }] : [];
+  }
+  function mailWanted(tk, v) { return Boolean(mailOff(tk)) || Boolean(v && v.mail); }
   function fnCall(name, body) {
     return db.functions.invoke(name, { body: body }).then(function (r) {
       if (r.error) return { error: 'not-sent' };
       return r.data || {};
     }).catch(function () { return { error: 'not-sent' }; });
   }
-  function sendMail(id, kind) {
-    return fnCall('hiring-mail', { interviewId: id, kind: kind }).then(function (d) {
+  function sendMail(id, kind, hand) {
+    return fnCall('hiring-mail', { interviewId: id, kind: kind, byHand: Boolean(hand) }).then(function (d) {
       if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
-      return true;
+      return !d.skipped;
     });
   }
   function busyLine() {
@@ -1204,6 +1244,8 @@
       f.push({ name: 'minutes', label: 'Length', choices: [['30', '30 minutes'], ['45', '45 minutes'], ['60', '60 minutes'], ['90', '90 minutes']], seg: true, value: '45', head: 'Interview' });
       f.push({ name: 'mode', label: 'Location', choices: [['online', 'Google Meet'], ['office', 'At the office']], seg: true, value: 'online' });
       f.push({ name: 'note', label: 'Note to the candidate', rows: 2, required: false, placeholder: 'Optional' });
+      /* Its warning first: the form is long, and the line is read before the press. */
+      f = mailFields('invite', false).concat(f);
       var slots = function (v) {
         var out = [];
         [1, 2, 3].forEach(function (n) { if (v['d' + n] && v['t' + n]) out.push(C.at(v['d' + n], v['t' + n])); });
@@ -1238,7 +1280,7 @@
     var t = i.slots[i.picked - 1];
     window.ADspaceConfirm.ask({ title: 'Approve interview?', go: 'Approve', wait: true,
       body: when(t) + ', ' + i.minutes + ' minutes, ' + (i.mode === 'online' ? 'by Google Meet. A Google Meet will be created on the shared calendar' : 'at the office. ' + c.name + ' will be emailed the confirmation') +
-        (i.mode === 'online' ? ', and ' + c.name + ' will be emailed the confirmation.' : '.') },
+        (i.mode === 'online' ? ', and ' + c.name + ' will be emailed the confirmation.' : '.'), fields: mailFields('confirm', false) },
     function () {
       return rpc('hiring_interview_approve', { p_interview: id }).then(function (r) {
         if (r.error || (r.data || {}).error) return said(r);
@@ -1279,7 +1321,7 @@
       body: renew ? 'Interview ' + i.round + ' on ' + due(i.slots[(i.picked || 1) - 1]) + ' will be cancelled' + (i.meeting_link ? ' and its Google Meet removed from the shared calendar' : '') + '. The new times are asked next.'
         : (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') +
         (told ? 'Send new times afterwards to arrange another interview.' : 'The candidate will not be emailed. Send new times to arrange another interview.'),
-      fields: told ? [{ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' }] : [] },
+      fields: told ? mailFields('cancelled', true) : [] },
     function (v) {
       var off = i.meeting_link ? fnCall('meet-create', { interviewId: id, action: 'delete' }) : Promise.resolve({});
       return off.then(function (m) {
@@ -1289,7 +1331,7 @@
         var kept = !!(m && m.error);
         return rpc('hiring_interview_cancel', { p_interview: id }).then(function (r) {
           if (r.error || (r.data || {}).error) return said(r);
-          (told && v && v.mail ? sendMail(id, 'cancelled') : Promise.resolve(false)).then(function (sent) {
+          (told && mailWanted('cancelled', v) ? sendMail(id, 'cancelled') : Promise.resolve(false)).then(function (sent) {
             openRec(c.id).then(function () {
               if (sent || kept) msg('hirRecMsg', (sent ? 'Cancelled. The candidate was emailed.' : 'Cancelled.') +
                 (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
@@ -1319,7 +1361,7 @@
       var from = at || d.at, f = [
         { name: 'day', label: 'Decision date', type: 'date', min: C.today(), value: C.day(from), half: true },
         { name: 'time', label: 'Time', type: 'time', value: C.time(from), half: true }].concat(more || []);
-      f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
+      f = f.concat(mailFields(at ? 'moved' : 'held', true));
       window.ADspaceConfirm.ask({ title: title, go: go, wait: true, fields: f,
         check: function (v) {
           var t = C.at(v.day, v.time);
@@ -1341,7 +1383,7 @@
       return rpc('hiring_interview_held', { p_interview: id, p_decide_by: at }).then(function (r) {
         if (r.error || (r.data || {}).error) return said(r);
         state.pane = 'interview';
-        (v.mail ? sendMail(id, 'held') : Promise.resolve(false)).then(function (sent) {
+        (mailWanted('held', v) ? sendMail(id, 'held') : Promise.resolve(false)).then(function (sent) {
           openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
         });
         return '';
@@ -1357,7 +1399,7 @@
         return rpc('hiring_decide_by_change', { p_interview: id, p_decide_by: at, p_note: String(v.note || '').trim() || null }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) return said(r);
-          (v.mail && !d.same ? sendMail(id, 'moved') : Promise.resolve(false)).then(function (sent) {
+          (mailWanted('moved', v) && !d.same ? sendMail(id, 'moved') : Promise.resolve(false)).then(function (sent) {
             openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
           });
           return '';
@@ -1460,13 +1502,13 @@
     on('docpay', function (b) { docPay(docOf(b), b); });
     on('docpreview', function (b) { docPreview(docOf(b), b); });
     on('docsend', function (b) { docSend(docOf(b), b); });
-    on('docmail', function (b) { b.disabled = true; docMail(docOf(b)).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('docmail', function (b) { b.disabled = true; docMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
     on('docwithdraw', function (b) { docWithdraw(docOf(b), false); });
     on('docrestore', function (b) { docWithdraw(docOf(b), true); });
     on('docmark', function (b) { docMark(docOf(b)); });
     on('docback', function (b) { docBack(docOf(b)); });
     on('docconfirm', function (b) { docConfirm(docOf(b), b); });
-    on('docconfirmmail', function (b) { b.disabled = true; confirmedMail(docOf(b)).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('docconfirmmail', function (b) { b.disabled = true; confirmedMail(docOf(b), true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
     on('docseal', function (b) { docSealed(docOf(b), b); });
     on('docscan', function (b) { openPath(docOf(b).signed.path, b); });
     on('docrecord', function (b) { docRecord(docOf(b), b); });
@@ -1478,7 +1520,7 @@
     on('ivmeet', function (b) { b.disabled = true; meetThenMail(b.getAttribute('data-id'), 'online'); });
     on('ivmail', function (b) {
       b.disabled = true;
-      sendMail(b.getAttribute('data-id'), b.getAttribute('data-kind')).then(function (ok) {
+      sendMail(b.getAttribute('data-id'), b.getAttribute('data-kind'), true).then(function (ok) {
         openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); });
       });
     });
@@ -1488,7 +1530,7 @@
     on('score', score);
     on('ivpdf', function (b) { window.ADspaceHrForms.download(b, 'sheet', c.name, function () { return Promise.resolve(sheetForm(c)); }, $('hirRecMsg')); });
     on('decide', function (b) { decide(b.getAttribute('data-o')); });
-    on('outmail', function (b) { b.disabled = true; outcomeMail().then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('outmail', function (b) { b.disabled = true; outcomeMail(null, true).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
     on('reopen', function () {
       rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (r) {
         if (r.error || (r.data || {}).error) { msg('hirRecMsg', said(r), 'err'); return; }

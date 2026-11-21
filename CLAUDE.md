@@ -663,7 +663,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   client's and a supplier's link alike, Analytics; Creators: Creator and
   campaign IDs, Creator payments, Creator payments sheet), My Work (Due
   dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
-  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Money (Tax
+  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Accounting (Tax
   and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
   Messages (Email: Automatic emails, Send by email, Email templates, Sent
   again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp
@@ -683,7 +683,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
-  creator emails; Sign-in and codes: Verification code, the one email every
+  creator emails; Candidates: the eleven candidate emails, each with its own
+  switch (`hiring_email_templates`, 2026-11-21); Sign-in and codes: Verification code, the one email every
   code the portal sends goes out in (`code_email_template`, its fields
   {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
   `code_email_template_save` at `team.settings`, read by `quote-request` and `hiring-mail`

@@ -5,7 +5,7 @@
  * the same registration number or name first, else a new one under Bukku's
  * own next code. What changes is shown field by field before it goes. The
  * Client ID and the Supplier ID ride in the Bukku custom fields chosen on
- * the Settings page (Money, Bukku). A supplier linked to a client is the
+ * the Settings page (Accounting, Bukku). A supplier linked to a client is the
  * same contact, typed Customer and Supplier.
  *
  *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku band, Unlink in its ⋯
@@ -46,7 +46,7 @@
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
     'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
     'bukku-gone': 'That contact is no longer in Bukku. Choose another.',
-    'no-field': 'Choose Bukku\'s Client ID and Supplier ID fields on the Settings page (Money, Bukku) first.',
+    'no-field': 'Choose Bukku\'s Client ID and Supplier ID fields on the Settings page (Accounting, Bukku) first.',
     linked: 'This record is already linked to a contact in Bukku. Refresh the page.',
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-offered': 'That Bukku contact does not match this record. Choose one of the contacts offered.',

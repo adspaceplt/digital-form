@@ -1139,7 +1139,7 @@
             a._set = b;
             return [['Set', b.title + ' · ' + n + (n === 1 ? ' post' : ' posts')], ['Client', (b.clients && b.clients.name) || ''],
                     ['Change', on ? 'Draft → Published' : 'Published → Draft'],
-                    ['Review link', on ? 'On the review link at once' : 'No longer on the review link']];
+                    ['Review link', on ? 'Shown at once' : 'Removed']];
           });
         });
       },

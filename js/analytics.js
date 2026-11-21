@@ -680,9 +680,9 @@
       var x = f.reasons[k];
       return { label: S().reasonWord(k), value: x.paused.length + x.past.length, note: [x.past.length ? x.past.length + ' left' : '', x.paused.length ? x.paused.length + ' paused' : ''].filter(Boolean).join(' · ') };
     }).sort(function (a, b) { return b.value - a.value; });
-    chart(g3, 'why', 'Why clients paused or left', { kind: 'bars', inline: true, rows: why, empty: 'No client paused or left in the period.' }, spanWord(r));
+    chart(g3, 'why', 'Reasons clients paused or left', { kind: 'bars', inline: true, rows: why, empty: 'No client paused or left in the period.' }, spanWord(r));
     var BANDS = [['Under 3 months', 0, 91], ['3 to 6 months', 91, 183], ['6 to 12 months', 183, 365], ['1 to 2 years', 365, 730], ['Over 2 years', 730, 1e9]];
-    chart(g3, 'stay', 'How long active clients have stayed', { kind: 'bars', inline: true, empty: 'No active clients.',
+    chart(g3, 'stay', 'Active clients by length of stay', { kind: 'bars', inline: true, empty: 'No active clients.',
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
   }
 
@@ -709,7 +709,7 @@
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
     if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. Please ask an admin to turn it on.'
-      : 'No analyses left today. The limit resets at 12:00 am.';
+      : 'No analyses left today. Resets at 12:00 am.';
     if (/function|schema cache|Failed to send/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return AI_SAID[k] || 'The analysis could not be written. Try again.';
   }

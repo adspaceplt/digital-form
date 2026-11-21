@@ -920,12 +920,12 @@
     'bad-amount': 'Enter the fee as an amount, for example 1200.', billed: 'This booking already has a bill in Bukku. Change the bill in Bukku, then Read from Bukku.',
     'not-posted': 'Move the booking to Posted first, then create its bill.', 'no-fee': 'Enter the creator fee first.',
     'currency-changed': 'The creator is now paid in another currency. Set the fee again, then create the bill.',
-    'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
+    'no-account': 'Choose the Bukku account for creator bills in Settings, Accounting, Bukku.',
     /* The KOC fee item (2026-11-15): Business settings, found in Bukku by SKU and code. */
-    'no-item': 'Set the item SKU and classification code for creator bills in Settings, Money, Bukku.',
-    'no-product': 'Bukku has no product with the item SKU chosen for creator bills. Check the SKU in Bukku, or in Settings, Money, Bukku.',
-    'no-bukku-account': 'Bukku has no account with the account code chosen for creator bills. Check the account in Bukku, or in Settings, Money, Bukku.',
-    'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
+    'no-item': 'Set the item SKU and classification code for creator bills in Settings, Accounting, Bukku.',
+    'no-product': 'Bukku has no product with the item SKU chosen for creator bills. Check the SKU in Bukku, or in Settings, Accounting, Bukku.',
+    'no-bukku-account': 'Bukku has no account with the account code chosen for creator bills. Check the account in Bukku, or in Settings, Accounting, Bukku.',
+    'no-fx': 'Set the S$ exchange rate in Settings, Accounting, Tax and terms first.',
     creating: 'This bill is already being created. Press Read from Bukku in a minute.',
     'not-confirmed': 'Bukku did not confirm the bill. Press Read from Bukku in a few minutes before you create it again.' };
   var payJobs = null;
@@ -1023,6 +1023,7 @@
       html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details · ' + esc(cur.ref) + '</h4>' +
         (open ? '<span class="crr-acts"><button class="btn btn-sm" type="button" id="cpayDecline">Decline</button>' +
           '<button class="btn btn-sm btn-primary" type="button" id="cpayApprove">Approve</button></span>' : addBtn) + '</div>' +
+        (open && autoMailOff((payFor && payFor.name) || 'The creator', 'the approval') ? '<p class="msg warn">' + esc(autoMailOff((payFor && payFor.name) || 'The creator', 'the approval')) + '</p>' : '') +
         '<dl class="ovfacts">' +
           '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
           fact(cur.added_by ? 'Added' : 'Submitted', day(cur.created_at)) +
@@ -1763,8 +1764,19 @@
         '<section class="fsec"><h4 class="fsec-h">Contact</h4><dl class="ovfacts">' + fact('Email', cur.email) + fact('WhatsApp', window.ADspaceAPI.phoneWord(cur.whatsapp)) + '</dl></section>' +
         (jobs.length ? '<section class="fsec"><h4 class="fsec-h">Bookings waiting on these details</h4><dl class="ovfacts">' +
           jobs.map(function (j) { return '<div><dt class="cpq-mono">' + esc(j.job) + '</dt><dd>' + esc(j.campaign + (j.posted_on ? ' · Posted ' + cpqDay(j.posted_on) : '')) + '</dd></div>'; }).join('') + '</dl></section>' : '') +
+        (work && autoMailOff(r.name || 'The creator', 'the approval') ? '<p class="msg warn">' + esc(autoMailOff(r.name || 'The creator', 'the approval')) + '</p>' : '') +
         '<p class="msg" id="cpqSheetMsg" role="status"></p>';
     }).catch(function (e) { UI.failLine($('cpqSheetBody'), 'The payment details', e.message, function () { cpqReview(reqId); }); });
+  }
+  /* Approving sends the creator an automatic email (Details approved): while
+     Automatic emails or the portal's Email is off, the approval still
+     stands, and the sheet says first that no email will go (SEND SWITCHES,
+     2026-11-21). */
+  function autoMailOff(name, what) {
+    var A = window.ADspaceAdmin, M = window.ADspaceMoney;
+    if (A && A.sendState && A.sendState('email').portal) return window.ADspaceWords.line.autoMailOff(name, what, true);
+    var v = M && M.setting ? M.setting('auto_email_on') : null;
+    return v != null && Number(v) !== 1 ? window.ADspaceWords.line.autoMailOff(name, what) : '';
   }
   function cpqDecide(ok, note) {
     var q = cpqReq; if (!q) return Promise.resolve('');

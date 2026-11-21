@@ -303,7 +303,9 @@
       if (f.head) elFields.appendChild(el('h4', 'fsec-h askhead', f.head));
       /* `line` is one mute line the row's whole width, with no field (the
          online meetings already booked, under an invitation's times). */
-      if (f.line != null) { if (f.line) elFields.appendChild(el('p', 'asknote askrow', f.line)); return; }
+      /* `warn` makes it the warn line, led by the amber dot (an automatic
+         email that will not go, SEND SWITCHES, 2026-11-21). */
+      if (f.line != null) { if (f.line) elFields.appendChild(el('p', f.warn ? 'msg warn askrow' : 'asknote askrow', f.line)); return; }
       /* `half` sets a field beside the next half one (a date and its time). */
       /* `third` sets three figures across a row (a section of three). */
       var wrap = el('div', 'askentry' + (f.half ? ' is-half' : '') + (f.third ? ' is-third' : ''));

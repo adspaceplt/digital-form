@@ -1202,10 +1202,10 @@
   var QI_SAID = {
     'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date first.',
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
-    creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Money, Bukku.',
-    nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Money, Tax codes.',
-    'no-fx': 'Set the Singapore dollar rate in Settings, Money, Tax and terms.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
-    'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Money, Bukku.',
+    creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Accounting, Bukku.',
+    nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
+    'no-fx': 'Set the Singapore dollar rate in Settings, Accounting, Tax and terms.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
+    'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Accounting, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
     withdrawn: 'This quotation has been withdrawn. No further invoices can be created from it.',
     'bad-request': 'This invoice could not be read. Refresh the page.'

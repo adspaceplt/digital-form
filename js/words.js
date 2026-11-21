@@ -338,6 +338,12 @@
     whatsappPortalOff: 'WhatsApp is turned off for the portal. An admin can turn it on in Settings → Portal.',
     whatsappHandOff: 'Send on WhatsApp is turned off. An admin can turn it on in Settings → Messages.',
     portalOffRow: 'Off for the whole portal',
+    /* An automatic email a step would send, said before the step while it
+       will not go (CANDIDATE EMAILS, 2026-11-21): "Automatic emails are
+       off. Jane Doe will not receive the interview invitation by email." */
+    autoMailOff: function (name, what, portal) {
+      return (portal ? 'Email is turned off for the portal. ' : 'Automatic emails are off. ') + name + ' will not receive ' + what + ' by email.';
+    },
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',
