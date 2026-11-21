@@ -550,11 +550,35 @@ button.appver {
 .is-narrow .task-top > b { flex: 1 1 auto; }
 .task-top > .task-pri { flex: 0 0 auto; }
 .bcard-foot > .task-pri { flex: 0 0 auto; }
-.tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-/* Time in each stage: the stage, how often the work came back to it, and the
-   time, both figures on the right edge. */
-.tstage-row { grid-template-columns: minmax(0, 1fr) 72px 110px; }
-.tstage-n { font-size: 13px; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+/* The stage timeline (2026-11-22): one visit a line, a dot on a hairline,
+   the stage and its time on one line, its dates and who under it, a hand-on
+   or a note under that. A skip and a pass-through are quiet, with a hollow
+   dot and no time; the open visit counts on, red once late. */
+.stl-head { font-size: 12.5px; color: var(--ink-mute); text-align: right; font-variant-numeric: tabular-nums; }
+.stl-head.is-late { color: var(--err); }
+.stl { list-style: none; margin: 0; padding: 0; }
+.stl-row { position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; column-gap: 10px; padding: 0 0 12px; }
+.stl-row::before { content: ""; position: absolute; left: 7.5px; top: 14px; bottom: 0; width: 1px; background: var(--line); }
+.stl-row:last-child { padding-bottom: 0; }
+.stl-row:last-child::before { display: none; }
+.stl-dot { width: 9px; height: 9px; border-radius: 50%; margin: 6px 0 0 3.5px; background: var(--dot-ok); }
+.stl-dot.is-now { background: var(--dot-wait); }
+.stl-dot.is-late { background: var(--dot-late); }
+.stl-dot.is-hollow { background: transparent; box-shadow: inset 0 0 0 1.5px var(--dot-off); }
+.stl-name { font-weight: 500; overflow-wrap: anywhere; }
+.stl-name small { font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
+.stl-row.is-skip .stl-name, .stl-row.is-pass .stl-name { font-weight: 400; color: var(--ink-soft); }
+.stl-dur { font-weight: 500; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stl-dur small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-mute); }
+.stl-dur.is-late, .stl-dur.is-late small { color: var(--err); }
+.stl-line, .stl-note, .stl-sum { grid-column: 2 / 4; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.stl-line b { font-weight: 500; color: var(--ink-soft); }
+.stl-note { color: var(--ink-soft); }
+.stl-sum { font-size: 12px; }
+.stl-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.stl-total > span { font-size: 12.5px; color: var(--ink-mute); }
+.stl-total b { font-weight: 500; }
+.stl-total small { font-size: 12px; font-weight: 400; color: var(--ink-mute); }
 .ovsec-title + .crm-table { margin-bottom: 0; }
 .is-narrow .rec-id.rec-id-plain .rec-ctl { align-self: center; }
 .rec-name .rec-pen:active { transform: scale(.97); }
@@ -1688,7 +1712,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .task-owner:has(> .tinline-pick) { overflow: visible; }
 .task-due { display: block; }
 .task-row > .team-act { justify-self: end; }
-.trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
 
 .qhead-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
 .qhead-top .tcheck { margin: 0 0 0 -10px; }
