@@ -151,8 +151,13 @@
     if (!state.find) return true;
     return [c.name, c.position, SOURCE[c.source] || ''].join(' ').toLowerCase().indexOf(state.find) > -1;
   }
-  function chip(c) {
-    var st = c.removed_at ? ['Removed', 'is-off'] : STAGE[c.stage] || STAGE.new;
+  /* The candidate's latest step on their page while it waits on the team
+     (`hiring_step`, 2026-11-21): the list reads it in place of the stage,
+     amber, until a colleague acts; the record's head keeps the stage, its
+     card saying the step. */
+  var STEP = { picked: 'Time chosen', none: 'New times requested', accepted: 'Offer accepted', signed: 'Contract signed', declined: 'Offer declined' };
+  function chip(c, step) {
+    var st = c.removed_at ? ['Removed', 'is-off'] : step && STEP[c.step] ? [STEP[c.step], 'is-warn'] : STAGE[c.stage] || STAGE.new;
     return '<span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>';
   }
   function paint() {
@@ -195,7 +200,7 @@
       '<span class="hir-src">' + esc(SOURCE[c.source] || '') + '</span>' +
       '<span class="hir-own' + (owners ? '' : ' is-none') + '">' + (owners ? esc(owners) : '<span class="muted">—</span>') + '</span>' +
       '<span class="hir-day">' + esc(day(c.created_at)) + '</span>' +
-      '<span class="hir-state">' + chip(c) + '</span>' +
+      '<span class="hir-state">' + chip(c, true) + '</span>' +
       /* A phone's second line: the position, then the source, each kept whole. */
       '<span class="hir-line">' + [c.position, SOURCE[c.source]].filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }).join(' · ') + '</span>' +
       '<span class="hir-go">' + CHEV + '</span>';
@@ -620,7 +625,7 @@
     });
   }
 
-  var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-danger'],
+  var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-warn'],
     confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
   /* Interview held (2026-11-20): a confirmed interview once it has taken
@@ -1771,7 +1776,7 @@
     hscRead();
   }
 
-  window.ADspaceHiring = { enter: enter, urlState: urlState, openScorecards: openScorecards };
+  window.ADspaceHiring = { enter: enter, urlState: urlState, openScorecards: openScorecards, STEP: STEP };
   /* Team opened on Hiring before this script arrived. */
   if ($('teamHiringPane') && !$('teamHiringPane').hidden) enter();
 })();
