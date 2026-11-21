@@ -30,6 +30,22 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   send and Preview hands that file over (`sign-download` `quotation`); one
   confirmed before, or whose keep failed, is sealed at its next Download by
   a colleague at Work. Gated on `s3.privateInvoices`.
+- A sealed copy is print only (2026-11-21; the user: "no annotation, no
+  edits etc. except printing only to the pdf"): `ADspaceSeal.finish`
+  writes it with PDF standard security, AES-256 R6, no user password
+  (it opens freely), printing (high quality) and accessibility reading
+  allowed, changes, notes, form filling, page assembly and copying
+  refused; the owner password is 32 random bytes made in the browser for
+  that one file (`crypto.getRandomValues`) and never stored, sent or
+  logged. The library is `@pdfsmaller/pdf-encrypt` 1.2.0 (jsDelivr,
+  pinned by hash), fetched with `js/sealprotect.js` at the seal alone,
+  after pdf-lib, never by a page (a client page's weight is unchanged);
+  `seal.js` fetches that file under its own `?v=`, so a change to it
+  bumps `seal.js`'s stamp. The whole
+  file's SHA-256 is of the encrypted bytes, so Download and /verify/'s
+  file check meet the file kept; the signed pages' hash on the Record page
+  is of the pages before the Record and the protection. Every other PDF is
+  unprotected, and a copy sealed before stays as it was.
 - The quotation's ⋯ Record (`#sealSheet`, `quotation_record`, Quotations
   View): State (Confirmed · sealed with the padlock), Document ID, SHA-256,
   Verify, and every step to the second (issued, sent on the link, WhatsApp

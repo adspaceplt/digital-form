@@ -406,8 +406,22 @@
     return pages.length;
   }
 
+  // ---- Print only: the sealed file's protection ---------------------------
+  /* js/sealprotect.js, at the seal alone, under this file's ?v=. */
+  var V = (/\?v=[^&#]+/.exec((document.currentScript || {}).src || '') || [''])[0], protWait = null;
+  function finish(bytes) {
+    protWait = protWait || new Promise(function (ok, bad) {
+      var s = document.createElement('script');
+      s.src = '/js/sealprotect.js' + V;
+      s.onload = ok;
+      s.onerror = function () { s.remove(); protWait = null; bad(new Error(window.ADspaceWords.line.pdfLib)); };
+      document.head.appendChild(s);
+    });
+    return protWait.then(function () { return window.ADspaceSealProtect(bytes, sha256); });
+  }
+
   window.ADspaceSeal = {
     device: device, sha256: sha256, when: when, rows: rows, panel: panel, stateOf: stateOf, open: open, checksOf: checksOf, checksWord: checksWord,
-    pagesFor: pagesFor, addRecord: addRecord, scanUrl: scanUrl, LOCK: LOCK
+    pagesFor: pagesFor, addRecord: addRecord, finish: finish, scanUrl: scanUrl, LOCK: LOCK
   };
 })();

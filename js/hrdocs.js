@@ -315,12 +315,10 @@
       var n = d.pdf.getPageCount();
       info.pagesSha = pagesSha; info.signedPages = n; info.total = n + (window.ADspaceSeal.pagesFor(d.PDF, d.fonts, info));
       S.addRecord(d.pdf, d.PDF, d.fonts, d.logo, info);
-      return d.pdf.save().then(function (b) {
-        return S.sha256(b).then(function (sha) {
-          var blob = new Blob([b], { type: 'application/pdf' });
-          blob.seal = { sha: sha, pagesSha: pagesSha };
-          return blob;
-        });
+      return d.pdf.save().then(S.finish).then(function (f) {
+        var blob = new Blob([f.bytes], { type: 'application/pdf' });
+        blob.seal = { sha: f.sha, pagesSha: pagesSha };
+        return blob;
       });
     });
   }
