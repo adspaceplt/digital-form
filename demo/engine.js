@@ -794,7 +794,9 @@
   var GUIDE_KEYS = ['overview', 'work', 'clients', 'whatsapp', 'review', 'scripts', 'suppliers', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook', 'mine', 'analytics',
 
     'settings', 'whatsapp.templates', 'whatsapp.compose', 'phone', 'arrange', 'mine.health', 'mine.checkin',
-    'team.health', 'reports.entry', 'reports.text', 'reports.check'];
+    'team.health', 'reports.entry', 'reports.text', 'reports.check',
+
+    'reports.review', 'campaigns.record', 'campaigns.roster', 'campaigns.payments', 'whatsapp.email', 'overview.team', 'analytics.tab'];
   function guidesFresh() { try { return !!window.__guidesFresh || sessionStorage.getItem('adspace-guides-fresh') === '1'; } catch (e) { return false; } }
   try {
 
