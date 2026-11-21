@@ -1347,6 +1347,20 @@
             url: '/admin/?s=reports&report=' + encodeURIComponent(r.id) });
         });
       }));
+    /* A candidate's step on their page that waits on you (2026-11-21): a
+       time chosen, other times asked for or an offer declined to the
+       candidate's Owners and the part; an offer accepted or a contract
+       signed to the part, which confirms it. It stays until a colleague
+       acts. */
+    var HIR = window.ADspaceHiring;
+    if (HIR && bridge.hiringOk && bridge.hiringOk()) jobs.push(got(db.rpc('hiring_waiting').then(function (r) {
+      return r.error || !r.data || r.data.error ? { error: r.error || r.data } : { data: r.data.rows || [] };
+    }), 'Hiring').then(function (list) {
+      (list || []).forEach(function (c) {
+        rows.push({ key: 'hir:' + c.id, section: 'team', at: c.at, title: c.name, state: HIR.STEP[c.step] || '',
+          meta: c.position, url: '/admin/?s=team&tab=hiring&candidate=' + encodeURIComponent(c.id) });
+      });
+    }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
     if (name) {
       if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creator Campaigns')
