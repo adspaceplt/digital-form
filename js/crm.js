@@ -4442,7 +4442,7 @@
         ['Read from', baRead(v.basis)],
         ['Ad plan', baPlan(v.basis)]
       ].filter(function (r) { return (r[0] !== 'Confirmed' || v.confirmed_at) && (r[0] !== 'Ad plan' || r[1]); })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures. Treat each section as a starting point and check it before use.</p>' : '') +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
@@ -4536,16 +4536,16 @@
       var notesWas = baKeep(key) || (kept.notes ? String(kept.notes) : '');
       window.ADspaceConfirm.ask({
         title: 'Run analysis',
-        body: 'The analysis reads the website, every social profile on the record, the linked Meta accounts and competitors on the web, with the brief, published reports, post results, the latest quotation, the client\'s feedback on content and the last five notes of calls and visits. ' +
+        body: 'The analysis reads the website, every social profile, the linked Meta accounts and competitors on the web, with the brief, published reports, post results, the latest quotation, the client\'s feedback on content and the last five notes of calls and visits. ' +
           left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Run',
         fields: [
           { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '', note: said.budget || '' },
-          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '', note: said.objective || '',
+          { name: 'objective', label: 'Objective', required: false, value: was.objective || '', note: said.objective || '',
             choices: [['', 'Not decided'], ['enquiries', 'Enquiries (lead form)'], ['messages', 'Messages (WhatsApp)'], ['traffic', 'Website visits or sales'], ['awareness', 'Awareness']] },
           { name: 'account', label: 'Ad account', required: false, value: was.account || '', seg: true,
             choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
-          { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: notesWas }],
+          { name: 'notes', label: 'Notes', rows: 4, required: false, placeholder: 'Optional', value: notesWas }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
           return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
