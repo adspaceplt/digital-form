@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261121x">
-<link rel="stylesheet" href="/css/console.css?v=20261122">
+<link rel="stylesheet" href="/css/portal.css?v=20261122a">
+<link rel="stylesheet" href="/css/console.css?v=20261122a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3646,7 +3646,7 @@
                  content calendar lives in Google Drive), the files and links,
                  the time, the history and the rest of the details. -->
             <details class="qmore" id="dwMore">
-              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, time, activity</span></summary>
+              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, stage timeline, activity</span></summary>
               <div class="qmore-body">
             <section class="qcard" id="dwDescSec">
               <div class="qcard-head">
@@ -3704,9 +3704,11 @@
               <dl class="tfacts" id="taskMore"></dl>
             </section>
             <section class="qcard" id="dwTimeSec">
-              <h3 class="qcard-title">Time records</h3>
+              <div class="qcard-head">
+                <h3 class="qcard-title">Stage timeline</h3>
+                <span class="stl-head" id="dwTimeSum"></span>
+              </div>
               <div id="dwTimeList"></div>
-              <dl class="tfacts" id="dwTime" hidden></dl>
             </section>
             <section class="qcard" id="dwLogSec">
               <h3 class="qcard-title">Recent activity</h3>
@@ -6781,7 +6783,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261120zzzp"></script>
 <script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
 <script src="/js/campaigns.js?v=20261121zzzz"></script>
-<script src="/js/ops.js?v=20261121zzzzb"></script>
+<script src="/js/ops.js?v=20261122a"></script>
 <script src="/js/perf.js?v=20261121x"></script>
 <script src="/js/health.js?v=20261120zt"></script>
 <script src="/js/xlsx.js?v=20261117zzzf"></script>

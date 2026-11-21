@@ -934,7 +934,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     Wide logo; Brand on the report.
 - Headings name their content: Task details, Posts, Schedule, Repeat,
   Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
-  details, Contact details, Task settings, Inclusions, Time records, Team
+  details, Contact details, Task settings, Inclusions, Stage timeline, Team
   member.
 - Messages:
   - a success is one or two words ("Saved.");
