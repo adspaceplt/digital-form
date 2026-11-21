@@ -6237,7 +6237,7 @@
   }
   function shutService() { shutSheet('crmServiceBox'); editingService = null; }
   /* The line's tax (2026-10-22): the client's SST, or one of the codes the
-     team bills with (Settings, Money: Tax codes). A code no longer offered
+     team bills with (Settings, Accounting: Tax codes). A code no longer offered
      stays shown on the line that holds it. */
   function fillTax(l) {
     var sel = $('svTax'), c = state.client || {};
