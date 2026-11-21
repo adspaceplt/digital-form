@@ -21,18 +21,14 @@
   /* A table's add row: its Add carries the plus, as Reports' does (gate 2026-11-05). */
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
-  /* Every part a row of this page answers to. The route is offered to a
-     colleague holding any of them, or Suppliers, WhatsApp or Services at
-     Full Access (Supplier emails, WhatsApp templates, Rate card wording)
-     (`ADspaceSettings.allowed`). */
-  var KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering', 'ops.workflows'];
-  var FULL = ['suppliers', 'whatsapp', 'services'];
+  /* Who the route is offered to is js/admin.js's one list
+     (`ADspaceAdmin.settingsAllowed`), asked before this script is fetched. */
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
   function full(k) { return Boolean(bridge.may && bridge.may(k, 'manage')); }
   /* Performance (2026-10-29): management at View reads the figures, behind
      the master code; only its admins change them (the sheet says so). */
   function perfMay() { return Boolean(bridge.may && bridge.may('team.performance', 'view')) && Boolean(window.ADspacePerf && window.ADspacePerf.openSettings); }
-  function allowed() { return KEYS.some(may) || FULL.some(full) || perfMay(); }
+  function allowed() { return Boolean(bridge.settingsAllowed && bridge.settingsAllowed()); }
   function say(text, tone) {
     var m = $('settingsMsg');
     if (!m) return;

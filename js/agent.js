@@ -31,6 +31,10 @@
 (function () {
   'use strict';
   var bridge = window.ADspaceAdmin || {};
+  /* A section's helper the Assistant reads (a quotation's state, the sales
+     figures, a stage's words), fetched first where this visit has not yet
+     (ON DEMAND, 2026-11-22); a fetch that fails answers as before. */
+  function fetched(keys) { return bridge.need ? bridge.need(keys).catch(function () {}) : Promise.resolve(); }
   var API = window.ADspaceAPI;
   var db = API && API.client;
   var SHEET = window.ADspaceSheet;
@@ -464,6 +468,8 @@
         .is('removed_at', null);
       if (a.client_id) q = q.eq('client_id', a.client_id);
       return q.order('issued_at', { ascending: false }).limit(40).then(rows).then(function (list) {
+        return fetched(['quotes']).then(function () { return list; });
+      }).then(function (list) {
         var Q = window.ADspaceQuotes;
         var out = list.map(function (x) {
           var by = list.filter(function (y) { return y.replaces === x.id; })[0];
@@ -579,7 +585,7 @@
       if (!O || !O.span) return Promise.resolve({ error: 'unavailable' });
       var keys = (O.PERIODS || []).map(function (p) { return p[0]; });
       var p = keys.indexOf(a.period) > -1 ? a.period : 'month';
-      var work = O.can.figures(), leads = O.can.leads() && window.ADspaceSales;
+      var work = O.can.figures(), leads = O.can.leads();
       if (!work && !leads) return Promise.resolve(noAccess('the Dashboard figures', 'Dashboard'));
       var s = O.span(p), out = { period: s.name, compared_with: s.prevName };
       var who = a.person_id || null;
@@ -615,6 +621,8 @@
       if (leads) jobs.push(API.readPages(function () {
         return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, bill_sgd').order('id');
       }).then(rows).then(function (cl) {
+        return fetched(['sales']).then(function () { return cl; });
+      }).then(function (cl) {
         var S = window.ADspaceSales, f = S.figures(cl, null, s.now), b = S.figures(cl, null, s.prev);
         var mine = function (list) { return who ? list.filter(function (c) { return c.sales_by === who; }) : list; };
         var names = function (list) { return mine(list).slice(0, 15).map(function (c) { return c.name; }); };
@@ -886,8 +894,10 @@
           var moved = (c.stage || 'lead') === 'lead'
             ? db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).select('id').then(function (q) {
                 if (q.error || !(q.data || []).length || !bridge.log) return;
-                var CRM = window.ADspaceCRM;
-                bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
+                return fetched(['crm']).then(function () {
+                  var CRM = window.ADspaceCRM;
+                  bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
+                });
               })
             : Promise.resolve();
           return moved.then(function () {

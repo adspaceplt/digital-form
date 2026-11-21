@@ -505,10 +505,14 @@
     /* Settings (2026-10-27, SET-9): a row by its name or its group's,
        read from the page's own list, so nothing is asked of the database;
        it opens the row's group with its control focused. */
-    { key: 'settings', head: 'Settings', local: true, can: function () { return Boolean(window.ADspaceSettings && window.ADspaceSettings.allowed()); },
+    { key: 'settings', head: 'Settings', local: true, can: function () { return Boolean(bridge.settingsAllowed && bridge.settingsAllowed()); },
+      /* The rows are the page's own list, so its script is fetched first
+         where this visit has not yet (ON DEMAND, 2026-11-22). */
       read: function (q) {
-        var S = window.ADspaceSettings;
-        return Promise.resolve({ rows: (S.rows ? S.rows() : []).filter(function (r) { return has(r.name, q) || has(r.groupName, q); }).slice(0, LIMIT) });
+        return (bridge.needSection ? bridge.needSection('settings') : Promise.resolve()).then(function () {
+          var S = window.ADspaceSettings;
+          return { rows: (S && S.rows ? S.rows() : []).filter(function (r) { return has(r.name, q) || has(r.groupName, q); }).slice(0, LIMIT) };
+        });
       },
       row: function (r) {
         return {
@@ -522,6 +526,20 @@
       } }
   ];
   function allowed() { return SOURCES.filter(function (s) { return s.can(); }); }
+  /* A row, opened once the section it opens has its scripts: they are
+     fetched first where this visit has not yet (ON DEMAND, 2026-11-22), so
+     the record, its tab and the list's filter are drawn as before, from
+     this sheet and from the Assistant alike; one that cannot be fetched
+     opens the section, which says so. */
+  var OPENS = { ops: 'work', calls: 'clients', creators: 'campaigns', hiring: 'team' };
+  function rowOf(src, x, q) {
+    var r = src.row(x, q), open = r.open, sec = OPENS[src.key] || src.key;
+    r.open = function () {
+      if (!bridge.whenSection) { open(); return; }
+      bridge.whenSection(sec, open).catch(function () { open(); });
+    };
+    return r;
+  }
   /* The same search answered as data (the Assistant, 2026-11-19): every
      section the person may read, the reads and rows above, a section that
      fails leaving the rest; each row keeps its `open`. */
@@ -536,7 +554,7 @@
       return {
         failed: answers.filter(function (a) { return a.r.error; }).map(function (a) { return a.src.head; }),
         groups: answers.filter(function (a) { return !a.r.error && (a.r.rows || []).length; }).map(function (a) {
-          return { head: a.src.head, rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return a.src.row(x, q); }) };
+          return { head: a.src.head, rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return rowOf(a.src, x, q); }) };
         })
       };
     });
@@ -637,7 +655,7 @@
       }
       var groups = answers.filter(function (a) { return !a.r.error; }).map(function (a) {
         return { key: a.src.key, glyph: a.src.glyph, head: a.src.head,
-          rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return a.src.row(x, q); }) };
+          rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return rowOf(a.src, x, q); }) };
       });
       if (!groups.some(function (g) { return g.rows.length; })) {
         status(function (el) { UI.emptyLine(el, 'No matches.'); });

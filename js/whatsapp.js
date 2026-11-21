@@ -133,6 +133,10 @@
   function db() { return API && API.client; }
   function $(id) { return document.getElementById(id); }
   function bridge() { return window.ADspaceAdmin || {}; }
+  /* A section's script this sheet reads, fetched first where this visit
+     has not yet (ON DEMAND, 2026-11-22); a fetch that fails answers as
+     before. */
+  function fetched(keys) { var B = bridge(); return B.need ? B.need(keys).catch(function () {}) : Promise.resolve(); }
   function may(key, level) { var b = bridge(); return Boolean(b.may && b.may(key, level || 'work')); }
   function esc(s) { return window.ADspaceWords.esc(s); }
   function said(e) {
@@ -1162,8 +1166,12 @@
     sel.innerHTML = '<option value="">Loading…</option>';
     sel.disabled = true;
     var mine = cx;
-    db().from('sm_reports').select('id, client_id, kind, title, period_start, period_end, brand_id, brand_name, status, sent_on')
-      .eq('client_id', clientId).eq('status', 'published').order('period_end', { ascending: false }).then(function (r) {
+    /* A report is named in its script's words (js/smreport.js), fetched
+       with the list where this visit has not yet (ON DEMAND, 2026-11-22). */
+    Promise.all([db().from('sm_reports').select('id, client_id, kind, title, period_start, period_end, brand_id, brand_name, status, sent_on')
+      .eq('client_id', clientId).eq('status', 'published').order('period_end', { ascending: false }),
+      fetched(['smreport'])]).then(function (both) {
+        var r = both[0];
         if (cx !== mine) return;
         cx.reports[clientId] = r.error ? { error: r.error } : { list: r.data || [] };
         fillReports(clientId);
@@ -1310,8 +1318,10 @@
         ? Promise.resolve().then(function () { return rep.doc.file(); })
           .then(function (f) { return toB64(f.blob).then(function (b) { return { b64: b, name: f.name }; }); })
         : isDoc
-        ? (window.ADspaceReports && window.ADspaceReports.keptPdf
-          ? window.ADspaceReports.keptPdf(rep.id) : Promise.reject({ code: 'bad-file' }))
+        ? fetched(['reports']).then(function () {
+            return window.ADspaceReports && window.ADspaceReports.keptPdf
+              ? window.ADspaceReports.keptPdf(rep.id) : Promise.reject({ code: 'bad-file' });
+          })
           .then(function (f) { return toB64(f.blob).then(function (b) { return { b64: b, name: f.name }; }); })
         : Promise.resolve(null);
       pdf.then(function (file) {

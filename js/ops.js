@@ -1293,9 +1293,17 @@
   function settled(p) {
     return p.then(function (r) { return r && !r.error ? (r.data || []) : null; }, function () { return null; });
   }
+  /* Waiting for you names a report's period and a candidate's step in
+     their scripts' words: fetched first where this colleague is shown
+     either (ON DEMAND, 2026-11-22); a fetch that fails still draws. */
   function loadWaiting() {
     var me = bridge.me && bridge.me();
     if (!me || !me.id) { state.waiting = []; paintWaiting(); return Promise.resolve(); }
+    var want = [may('reports', 'view') && 'smreport', bridge.hiringOk && bridge.hiringOk() && 'hiring'].filter(Boolean);
+    if (!bridge.need || !want.length) return waitingNow(me);
+    return bridge.need(want).catch(function () {}).then(function () { return waitingNow(me); });
+  }
+  function waitingNow(me) {
     var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
     var jobs = [];
     /* A refused or failed read is said, never drawn as nothing waiting
@@ -7810,7 +7818,9 @@
       var ic = el.querySelector('[data-a="invcheck"]');
       if (ic) ic.addEventListener('click', function () {
         ic.disabled = true;
-        checkInvoice(e).then(function (d) {
+        /* Bukku's refusal is said in its script's words (fetched with it). */
+        Promise.all([checkInvoice(e), bridge.need ? bridge.need(['bukku']).catch(function () {}) : null]).then(function (both) {
+          var d = both[0];
           ic.disabled = false;
           var m = el.querySelector('[data-a="msg"]');
           if (d && d.error) { if (m) { m.textContent = d.error === 'not-started'
@@ -9084,6 +9094,13 @@
   function openNotif(id) {
     var x = state.notifs.filter(function (n) { return n.id === id; })[0];
     if (!x) return;
+    /* What a notice opens below may be drawn by a section's own script,
+       fetched first where this visit has not yet (ON DEMAND, 2026-11-22);
+       one that cannot be fetched opens the section, which says so. */
+    var when = function (sec, fn) {
+      if (!bridge.whenSection) { fn(); return; }
+      bridge.whenSection(sec, fn).catch(function () { if (bridge.show) bridge.show(sec); });
+    };
     /* A notice opens nowhere: a press reads it where it is, its message
        whole, and marks it read; a second press folds it. */
     if (x.kind === 'notice' && !x.task_id) {
@@ -9121,14 +9138,19 @@
     /* A performance review is not a task: a released or answered month opens
        the person's own record, a dispute opens the team's month. */
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
-      if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
+      if (x.kind === 'perf.disputed') {
+        when('team', function () { if (window.ADspacePerf) window.ADspacePerf.openTeam(); });
+        return;
+      }
       /* A reminder, an initiative decided or a request to talk opens the
          My records view it is about (2026-10-07). */
       var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
-      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     /* An overseas request opens the colleague's record, where it is
@@ -9138,8 +9160,10 @@
     /* A usage notice opens Usage and limits in Settings (2026-11-18). */
     if (!x.task_id && /^usage\./.test(x.kind || '')) {
       history.replaceState(null, '', '/admin/?s=settings');
-      if (bridge.show) bridge.show('settings');
-      setTimeout(function () { if (window.ADspaceSettings && window.ADspaceSettings.openUsage) window.ADspaceSettings.openUsage(); }, 0);
+      when('settings', function () {
+        if (bridge.show) bridge.show('settings');
+        setTimeout(function () { if (window.ADspaceSettings && window.ADspaceSettings.openUsage) window.ADspaceSettings.openUsage(); }, 0);
+      });
       return;
     }
     /* A delete request opens the list it waits in (js/delreq.js). */
@@ -9149,7 +9173,8 @@
     }
     if (!x.task_id && x.kind === 'abroad.request') {
       var abName = String(x.title || '').split(' · ').slice(1).join(' · ').trim();
-      var abGo = function (id) {
+      var abGo = function (id) { when('team', function () { abGoNow(id); }); };
+      var abGoNow = function (id) {
         history.replaceState(null, '', '/admin/?s=team' + (id ? '&member=' + encodeURIComponent(id) : ''));
         if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
         if (bridge.show) bridge.show('team');
@@ -9175,12 +9200,18 @@
        The notice names nobody: its key carries the colleague's id alone. */
     if (!x.task_id && x.kind === 'personnel.request') {
       history.replaceState(null, '', '/admin/?s=mine&view=personnel');
-      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView('personnel');
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView('personnel');
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     if (!x.task_id && x.kind === 'personnel.probation') {
       var pm = (String(x.dedupe_key || '').match(/^personnel\.probation:([^:]+):/) || [])[1];
+      when('team', function () { probationNow(pm); });
+      return;
+    }
+    function probationNow(pm) {
       if (pm && window.ADspacePersonnel) window.ADspacePersonnel.probation(pm);
       history.replaceState(null, '', '/admin/?s=team' + (pm ? '&member=' + encodeURIComponent(pm) + '&mtab=personnel' : ''));
       if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
@@ -9192,8 +9223,10 @@
     /* A letter shared with the colleague opens their Letters. */
     if (!x.task_id && x.kind === 'hr.letter') {
       history.replaceState(null, '', '/admin/?s=mine&view=letters');
-      if (window.ADspacePerf && window.ADspacePerf.openLetters) window.ADspacePerf.openLetters();
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openLetters) window.ADspacePerf.openLetters();
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     /* A report's review, confirmation or send back opens the report. */
