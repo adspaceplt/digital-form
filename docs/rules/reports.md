@@ -812,7 +812,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The Ads and Posts step heads keep the import and Add on show; Select,
-    Import from Meta and Pictures from Meta sit behind one ⋯ (`secMore`),
+    Import from Meta and Add pictures from Meta sit behind one ⋯ (`secMore`),
     each item drawn where its button was, the ⋯ leaving once none can be
     pressed (2026-10-20, RPT-2). In a narrow pane a row's figures carry
     their unit (`rp-unit`: 12 results, / result, views).

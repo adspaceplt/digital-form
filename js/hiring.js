@@ -846,8 +846,8 @@
       if (d.state === 'confirmed') acts += '<button class="btn btn-sm" type="button" data-h="docseal"' + id + '>Download</button>';
       if (d.state === 'confirmed' && (d.confirm_mail === 'failed' || d.confirm_mail === 'unknown'))
         acts += '<button class="btn btn-sm" type="button" data-h="docconfirmmail"' + id + '>Email candidate</button>';
-      if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Signed copy');
-      if (d.state !== 'draft') item(1, 'docrecord', 'Record');
+      if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Open signed copy');
+      if (d.state !== 'draft') item(1, 'docrecord', 'Show document record');
       if (part && ['sent', 'withdrawn', 'declined', 'signed', 'confirmed'].indexOf(d.state) >= 0) item(6, 'docvoid', 'Void', true);
       if (part && d.state === 'void') item(6, 'docdelete', 'Delete', true);
     }

@@ -3585,7 +3585,7 @@
     });
   });
 
-  /* The head's ⋯: Access code, Reset link, Remove. */
+  /* The head's ⋯: Set access code, Reset link, Remove. */
   function shutWsMenu() {
     $('wsMenu').hidden = true;
     $('wsMenuBtn').setAttribute('aria-expanded', 'false');

@@ -26,7 +26,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `#hbGate`, the Handbook's bar and list hidden): Welcome to ADspace, {first
   name}, n of N acknowledged over a track, a step a file (Open, then
   Acknowledge), then Every file is acknowledged with Continue onto the
-  first section held. The ⋯'s Who acknowledged lists each colleague against
+  first section held. The ⋯'s Show who acknowledged lists each colleague against
   the current version (`handbook_acks`). The gate is the page's; the
   database refuses no read to a colleague with a file due, and Opened is
   the page's word that it asked for the file's link.

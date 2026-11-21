@@ -818,8 +818,8 @@
       '<button class="btn btn-sm" type="button" data-a="write">' + (AI ? AI.glyph : '') + '<span>Write with AI</span></button>' +
       '<span class="team-act" data-m="more" hidden><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions for the AI analysis" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" data-menu hidden role="menu">' +
-        '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="versions">Versions</button>' +
-        '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="download">Download</button>' +
+        '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="versions">Show versions</button>' +
+        '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="download">Download PDF</button>' +
         '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button></div></span></div></div>' +
       '<p class="msg" data-m="msg" role="status"></p><div class="anl-ai-body" data-m="body"></div>';
     page.appendChild(el);
