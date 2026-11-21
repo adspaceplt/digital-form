@@ -478,7 +478,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Instagram account or a Page in Meta fills the client's empty handle with
   its username (`@` and letters, digits, `.` and `_` alone) or the Page's
   name, filed Filled from Meta (`handlesFromMeta`, D1); a typed handle is
-  never replaced.
+  never replaced. An Instagram or Facebook row with no link in Meta reads
+  Not linked in Meta. The handle is typed by hand. (the user, 2026-11-22:
+  filled from Meta only where the system user reaches the account).
+- Brand analysis fed from what the portal holds (2026-11-22, release B):
+  `brand-analysis` reads, as the caller, the latest standing quotation
+  (plan, platforms, monthly advertising budget, term), the client's last 20
+  change requests and 20 approved captions in Content Review, and the last
+  five notes of calls and visits (D2: no contact's name, numbers and emails
+  masked), with every handle and the linked Meta accounts' names; it keeps
+  what it was told or worked out with the version (`basis.inputs`: budget,
+  objective, ad account, notes, `derived`: the budget from the quotation,
+  the objective from the ad spend, the ad account from whether it spent),
+  read under the version as Ad plan. Run analysis opens on this browser's
+  answers, else the last version's, else the quotation's budget, each said
+  under its field (D4). Where the name matches more than one business and
+  the record does not settle it, the function saves nothing, counts nothing
+  and answers `ambiguous` with up to five candidates; the page asks Choose
+  the brand and runs again with `choice`, which the model analyses alone
+  (the user, 2026-11-22: never guess the brand).
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
   policy, no grant): a client, and each white-label brand, links ad accounts
   (up to 20), one Facebook Page and one Instagram account, each Meta's id and

@@ -3995,9 +3995,9 @@
     var host = $('crmMetaRead');
     if (!host || state.client !== c) return;
     var list = host.querySelector('[data-m="list"]');
-    var own = metaLinks.filter(function (l) { return !l.brand_id; })[0] || {};
+    var work = brandWork(c), metaRead = metaFor === c.id;
+    var own = (metaRead && metaLinks.filter(function (l) { return !l.brand_id; })[0]) || {};
     var names = function (v) { return (Array.isArray(v) ? v : v ? [v] : []).map(function (x) { return esc(x.name); }).join(', '); };
-    var work = brandWork(c);
     var pen = function (k, label) {
       return work ? '<button class="tl-pen" type="button" data-bp="handle" data-k="' + k + '" aria-label="Edit ' + esc(label) + '">' + PEN + '</button>' : '';
     };
@@ -4005,7 +4005,8 @@
       var v = c[k];
       var val = v ? (k === 'handle_xhs' ? esc(v) : '<a class="plink" href="' + esc(profileUrl(k, v)) + '" target="_blank" rel="noopener">' + esc(v) + '</a>') : '—';
       return '<div><dt>' + esc(label) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + '"><span class="mval"><span class="bs-val" data-v="' + k + '">' + val + '</span>' +
-        (linked ? '<span class="bs-meta">Linked in Meta: ' + linked + '</span>' : '') + '</span>' + pen(k, label) + '</dd></div>';
+        (linked ? '<span class="bs-meta">Linked in Meta: ' + linked + '</span>' : linked === '' && metaRead ? '<span class="bs-meta">Not linked in Meta. The handle is typed by hand.</span>' : '') +
+        '</span>' + pen(k, label) + '</dd></div>';
     };
     list.innerHTML = '<dl class="ovfacts bs-facts">' +
       row('handle_ig', 'Instagram', names(own.instagram)) + row('handle_fb', 'Facebook', names(own.page)) +
@@ -4216,7 +4217,7 @@
      ADspace's system user can see (the `meta-import` function), never typed.
      A white-label client's brands each link their own, from the brand's ⋯
      (Meta accounts), read in that sheet. */
-  var metaSeq = 0, metaSheetSeq = 0, metaLinks = [];
+  var metaSeq = 0, metaSheetSeq = 0, metaLinks = [], metaFor = null;
   function loadMeta(c) {
     var host = $('crmMetaRead');
     if (!host) return;
@@ -4225,11 +4226,12 @@
       if (seq !== metaSeq || state.client !== c) return;
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) {
-        metaLinks = [];
+        metaLinks = []; metaFor = null;
         list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'The Meta accounts could not be loaded.') + '</p>';
         return;
       }
       metaLinks = d.links || [];
+      metaFor = c.id;
       paintSocial(c);
     }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be loaded.</p>'; });
   }
@@ -4256,7 +4258,8 @@
     'client-scope': 'You do not have access to this client. Please ask an admin.',
     'not-found': 'This analysis is no longer available.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
-    'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
+    'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.',
+    ambiguous: 'More than one business matches this client. Run the analysis again and choose the brand.'
   };
   function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
@@ -4350,11 +4353,27 @@
     b = b || {};
     var bits = [];
     var n = function (v, one, many) { return typeof v === 'number' && v > 0 ? v + ' ' + (v === 1 ? one : many) : ''; };
-    bits.push(n(b.reports, 'report', 'reports'), n(b.post_results, 'post result', 'post results'));
+    bits.push(n(b.reports, 'report', 'reports'), n(b.post_results, 'post result', 'post results'),
+      typeof b.quotation === 'string' && b.quotation ? 'Quotation ' + b.quotation : '',
+      n(b.review_notes, 'change request', 'change requests'), n(b.approved_captions, 'approved caption', 'approved captions'),
+      n(b.calls, 'call or visit note', 'call and visit notes'));
     var m = b.meta && typeof b.meta === 'object' ? b.meta : {};
     bits.push(n(m.instagram, 'Instagram post', 'Instagram posts'), n(m.facebook, 'Facebook post', 'Facebook posts'),
       m.followers ? 'Instagram followers' : '', n(m.ads, 'ad objective', 'ad objectives'), n(b.web_searches, 'web search', 'web searches'));
     return bits.filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
+  }
+  /* What the run was told or worked out (2026-11-22): the monthly ad
+     budget, the objective and the ad account, each worked-out one named so. */
+  var BA_OBJ = { enquiries: 'Enquiries (lead form)', messages: 'Messages (WhatsApp)', traffic: 'Website visits or sales', awareness: 'Awareness' };
+  function baPlan(b) {
+    var i = b && b.inputs;
+    if (!i) return '';
+    var d = i.derived || [];
+    var from = function (k, w) { return d.indexOf(k) > -1 ? ' (' + w + ')' : ''; };
+    return [i.budget ? MON.money(Number(i.budget), 'MY') + ' per month' + from('budget', 'from the quotation') : '',
+      BA_OBJ[i.objective] ? BA_OBJ[i.objective] + from('objective', 'from the ad accounts') : '',
+      i.account ? (i.account === 'mature' ? 'Mature ad account' : 'New ad account') + from('account', 'from the ad accounts') : '']
+      .filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
   }
   /* A version is deleted at Clients: Brand Full Access (2026-10-31), never
      the latest confirmed one: Write with AI reads it. */
@@ -4420,9 +4439,10 @@
         ['Version', esc('Version ' + v.version + ' · ' + baDay(v.created_at) + (v.by ? ' · ' + v.by : '')) +
           (latest ? '' : ' <button class="linkbtn" type="button" data-a="ba-latest">Show latest</button>')],
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
-        ['Read from', baRead(v.basis)]
-      ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
-      (v.hypothesis ? '<p class="msg warn ba-hypo">Written from little history: no reports, post results or Meta figures. Check each section before use.</p>' : '') +
+        ['Read from', baRead(v.basis)],
+        ['Ad plan', baPlan(v.basis)]
+      ].filter(function (r) { return (r[0] !== 'Confirmed' || v.confirmed_at) && (r[0] !== 'Ad plan' || r[1]); })) +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures. Treat each section as a starting point and check it before use.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
@@ -4483,8 +4503,17 @@
     btn.disabled = true;
     /* No brief first (2026-10-15): the analysis writes it, from the
        website, the handles and Meta; confirming fills what is empty. */
-    Promise.all([db.rpc('ai_analysis_left')]).then(function (both) {
-      var q = both[0];
+    /* The question opens on what the portal holds (2026-11-22, the user's
+       D4): this browser's last answers, else the last version's inputs,
+       which the function keeps with it, else the latest quotation's monthly
+       advertising budget. A refused read of quotations offers nothing. */
+    Promise.all([db.rpc('ai_analysis_left'),
+      db.from('quotations').select('ref, selection, status').eq('client_id', c.id).is('removed_at', null)
+        .order('issued_at', { ascending: false }).limit(5).then(function (r) {
+          return (r && !r.error && (r.data || []).filter(function (x) { return x.status !== 'not_proceeding'; })[0]) || null;
+        }, function () { return null; })
+    ]).then(function (both) {
+      var q = both[0], quote = both[1];
       btn.disabled = false;
       var left = (q && q.data) || {};
       if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
@@ -4495,18 +4524,28 @@
          it could have been told; kept in this browser with the notes. */
       var was = {};
       try { was = JSON.parse(baKeep(ikey) || '{}') || {}; } catch (e0) { was = {}; }
+      var lastV = (ba.id === c.id && ba.versions || [])[0];
+      var kept = (lastV && lastV.basis && lastV.basis.inputs) || {};
+      var said = {};
+      if (!was.budget && kept.budget) { was.budget = String(kept.budget); said.budget = 'From Brand analysis, version ' + lastV.version; }
+      var qb = quote && quote.selection && Array.isArray(quote.selection.ads) ? quote.selection.ads.filter(function (a) { return (a.freq || 'monthly') === 'monthly'; })
+        .reduce(function (t, a) { return t + (Number(a.budget) || 0); }, 0) : 0;
+      if (!was.budget && qb > 0) { was.budget = String(qb); said.budget = 'From quotation ' + quote.ref; }
+      if (!was.objective && kept.objective) { was.objective = kept.objective; said.objective = 'From Brand analysis, version ' + lastV.version; }
+      if (!was.account && kept.account) was.account = kept.account;
+      var notesWas = baKeep(key) || (kept.notes ? String(kept.notes) : '');
       window.ADspaceConfirm.ask({
         title: 'Run analysis',
-        body: 'The analysis reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
+        body: 'The analysis reads the website, every social profile on the record, the linked Meta accounts and competitors on the web, with the brief, published reports, post results, the latest quotation, the client\'s feedback on content and the last five notes of calls and visits. ' +
           left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Run',
         fields: [
-          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
-          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
+          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '', note: said.budget || '' },
+          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '', note: said.objective || '',
             choices: [['', 'Not decided'], ['enquiries', 'Enquiries (lead form)'], ['messages', 'Messages (WhatsApp)'], ['traffic', 'Website visits or sales'], ['awareness', 'Awareness']] },
           { name: 'account', label: 'Ad account', required: false, value: was.account || '', seg: true,
             choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
-          { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }],
+          { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: notesWas }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
           return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
@@ -4516,25 +4555,50 @@
         var inputs = { objective: v.objective || '', budget: String(v.budget == null ? '' : v.budget).trim(), account: v.account || '' };
         baKeep(key, notes);
         baKeep(ikey, inputs.objective || inputs.budget || inputs.account ? JSON.stringify(inputs) : '');
-        ba.running = c.id;
-        paintAnalysis(c);
-        db.functions.invoke('brand-analysis', { body: { client_id: c.id, notes: notes,
-          inputs: { objective: inputs.objective || null, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } } }).then(function (res) {
-          var d = res && res.data;
-          if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
-          ba.running = null;
-          if (ba.id === c.id && ba.versions) { ba.versions.unshift(d.analysis); ba.show = null; }
-          paintAnalysis(c);
-          if (ba.id !== c.id) return;
-          baMsg('Written by AI. Read before confirming.', 'ok');
-        }).catch(function (e) {
-          ba.running = null;
-          paintAnalysis(c);
-          if (state.client !== c) return;
-          baMsg(baSaid(e));
-        });
+        baInvoke(c, { client_id: c.id, notes: notes,
+          inputs: { objective: inputs.objective || null, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } });
       });
     }).catch(function (e) { btn.disabled = false; baMsg(baSaid(e)); });
+  }
+  /* A run, and where the name matched more than one business (2026-11-22,
+     the user: the analysis never guesses the brand), the candidates asked
+     of the colleague, the run made again on the one chosen; the run that
+     stopped there is not counted. */
+  function baInvoke(c, body) {
+    ba.running = c.id;
+    paintAnalysis(c);
+    db.functions.invoke('brand-analysis', { body: body }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
+      ba.running = null;
+      if (ba.id === c.id && ba.versions) { ba.versions.unshift(d.analysis); ba.show = null; }
+      paintAnalysis(c);
+      if (ba.id !== c.id) return;
+      baMsg('Written by AI. Read before confirming.', 'ok');
+    }).catch(function (e) {
+      ba.running = null;
+      paintAnalysis(c);
+      if (state.client !== c) return;
+      var cands = e && e.message === 'ambiguous' && e.d && Array.isArray(e.d.candidates) ? e.d.candidates : null;
+      if (cands && cands.length > 1 && !body.choice) { baChoose(c, body, cands); return; }
+      baMsg(baSaid(e));
+    });
+  }
+  function baChoose(c, body, cands) {
+    var host = function (u) { return u ? String(u).replace(/^https:\/\/(www\.)?/i, '').replace(/\/.*$/, '') : ''; };
+    window.ADspaceConfirm.ask({
+      title: 'Choose the brand',
+      body: 'More than one business matches ' + c.name + '. Choose the one to analyse. The earlier run was not counted.',
+      go: 'Run',
+      fields: [{ name: 'pick', label: 'Brand', required: true, need: 'Choose a brand.', value: '',
+        choices: [['', 'Choose a brand']].concat(cands.map(function (x, i) {
+          return [String(i), [x.name, host(x.url), x.note].filter(Boolean).join(' · ')];
+        })) }]
+    }, function (v) {
+      var x = cands[Number(v.pick)];
+      if (!x) return;
+      baInvoke(c, Object.assign({}, body, { choice: { name: x.name, url: x.url || null } }));
+    });
   }
   /* The brief a confirmed analysis filled, read back onto the record. */
   /* The Brand pane drawn again with the brief the analysis filled; `then`
