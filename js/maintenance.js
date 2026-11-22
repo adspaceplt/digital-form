@@ -300,7 +300,7 @@
   function marks() {
     var I = window.ADspaceIcons;
     if (!I) {
-      if (iconsAsked || !document.querySelector('[data-glyph], .cover .cover-panel')) return;
+      if (iconsAsked || ![].some.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) { return x.getClientRects().length; })) return;
       iconsAsked = true;
       var tag = document.createElement('script');
       tag.src = ICONS;

@@ -8772,7 +8772,8 @@ body.is-plain .ncmain { min-height: 0; padding: 0 16px; }
 .maint-cover {
   position: fixed; inset: 0; z-index: var(--z-cover);
   min-height: 0; margin: 0;
-  padding: calc(var(--head-h) + 24px) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  /* The optical centre every cover takes (the cover family, 2026-11-22). */
+  padding: calc(var(--head-h) + 24px) 16px calc(24px + 8vh + env(safe-area-inset-bottom, 0px));
   background: var(--card); overflow-y: auto;
 }
 body:not(:has(> .topbar)) .maint-cover { z-index: var(--z-drawer); padding-top: 24px; }
