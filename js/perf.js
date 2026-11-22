@@ -3376,7 +3376,7 @@
         '<small>' + esc([REC_CAT[x.category], dateWord(x.given_on)].filter(Boolean).map(function (v) { return String(v).replace(/ /g, ' '); }).join(' · ')) + '</small>' +
         '<small class="init-detail">' + esc(x.note) + '</small></span>' +
       '<span class="init-state pr-state">' + recChip(x.status) + '</span>' +
-      (items.length ? '<span class="team-act pr-act">' + recMenu(items) + '</span>' : '');
+      (items.length ? '<span class="team-act pr-act">' + recMenu(items) + '</span>' : '<span class="team-act" aria-hidden="true"></span>');
     wireRecMenu(el);
     var w = el.querySelector('[data-a="withdraw"]');
     if (w) w.addEventListener('click', function () { shutRecMenus(); withdrawRec(x, false); });
