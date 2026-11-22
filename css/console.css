@@ -4007,6 +4007,12 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .qi-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "what amt" "state act"; row-gap: 6px; }
 .is-narrow .qi-what { grid-area: what; } .is-narrow .qi-amt { grid-area: amt; text-align: right; }
 .is-narrow .qi-state { grid-area: state; } .is-narrow .qi-act { grid-area: act; }
+/* At Quotations View without Billing no amount is answered (2026-11-22):
+   the state takes the amount's place. */
+.qi-list.is-noamt .qi-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 132px; }
+.qi-what small .part { white-space: nowrap; }
+.is-narrow .qi-list.is-noamt .qi-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "what state" "act act"; }
+.is-narrow .qi-list.is-noamt .qi-act:empty { display: none; }
 .qt-gonename { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13.5px; }
 .qt-gonename b { font-weight: 600; flex: 0 0 auto; }
 .qt-gonename small { font-size: 12.5px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

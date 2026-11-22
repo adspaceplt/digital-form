@@ -266,7 +266,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   copy is sent (`cc_list`) and filed in `cc_email`, comma separated.
 - Quotation invoices (`2026-11-17-quotation-invoices.sql`; the user,
   2026-11-17, option B): an approved quotation's row act Invoices
-  (Clients: Billing View) opens `#qiSheet`, a row a billing cycle of the
+  (Clients: Billing View or Quotations View) opens `#qiSheet`, a row a billing cycle of the
   term from the day its confirmed lines start (`quotation_start`; the 16th
   runs to the 15th, never pro-rated) and a row a cycle for the advertising
   budget; Create in Bukku (Billing Work) asks `quotation_invoice_prep` as
@@ -288,6 +288,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`client_ad_debtor_set`), else the client's own; filed by
   `quotation_invoice_done` (`client.billing`). `quotation_invoices` and
   `client_ad_debtors` have RLS on, no policy, no grant.
+  A created cycle reads Paid or Unpaid from the nightly copy (`bukku_docs`
+  by the Bukku id filed, not gone; `2026-11-22-quotation-invoice-paid.sql`),
+  Draft until finance approves it in Bukku, its number on the line under
+  it. Invoices is offered at Clients: Quotations View as well as Billing
+  View: `quotation_invoices_of` answers the amounts, the budget's contact
+  and its account at Billing View alone (`billing`), `denied` below both.
 - Bukku not connected (SWITCHED-OFF ACTS, 2026-11-21): every act that asks
   Bukku (Send to Bukku, Link to Bukku, Refresh, Use Bukku's, Create bill,
   Create n bills, Read from Bukku, Overdue invoices' Refresh) carries
