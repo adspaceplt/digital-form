@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122d">
-<link rel="stylesheet" href="/css/console.css?v=20261122zm">
+<link rel="stylesheet" href="/css/console.css?v=20261122zn">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -142,7 +142,7 @@
 <script src="/js/confirm.js?v=20261122rb"></script>
 <script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122re"></script>
+<script src="/js/form.js?v=20261122rf"></script>
 <script src="/js/otp.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -4358,16 +4358,13 @@
           </button>
         </div>
         <div class="sheet-body">
-          <div class="row">
-            <div>
-              <label class="field-label" for="rwDDept">Department</label>
-              <select class="select" id="rwDDept" data-seg>
+          <div class="rw-view">
+              <select class="select" id="rwDDept" data-seg data-strip aria-label="Department">
                 <option value="creative">Creative</option>
                 <option value="marketing">Marketing</option>
               </select>
-            </div>
           </div>
-          <div id="rwDFields"></div>
+          <div id="rwDFields" data-swipe="rwDDeptStrip"></div>
           <label class="tickline"><input type="checkbox" id="rwDCrit"> <span>Unresolved critical issue</span></label>
           <p class="rw-total" id="rwDTotal"></p>
           <div class="msg" id="rwDMsg"></div>
@@ -4416,19 +4413,18 @@
           </button>
         </div>
         <div class="sheet-body">
-          <div class="row">
-            <div><label class="field-label" for="rwSView">Section</label>
-              <select class="select" id="rwSView" data-seg>
+          <div class="rw-view">
+              <select class="select" id="rwSView" data-seg data-strip aria-label="Section">
                 <option value="months">Months</option>
                 <option value="quarters">Quarters</option>
                 <option value="company">Bonus and trip</option>
                 <option value="commission">Commission</option>
-              </select></div>
+              </select>
           </div>
           <div class="row">
             <div><label class="field-label" for="rwSFrom">From</label><select class="select" id="rwSFrom"></select></div>
           </div>
-          <div id="rwSFields"></div>
+          <div id="rwSFields" data-swipe="rwSViewStrip"></div>
           <details class="fmore" id="rwSLog" hidden><summary>Changes</summary><div id="rwSLogList"></div></details>
           <div class="msg" id="rwSMsg"></div>
         </div>
@@ -4707,11 +4703,10 @@
         </div>
         <div class="sheet-body">
           <div class="mt-rec" id="mtRecRow" hidden>
-            <label class="field-label" id="mtRecL" for="mtRec">Recipient</label>
-            <select class="select select-sm" id="mtRec" data-seg aria-labelledby="mtRecL"></select>
+            <select class="select select-sm" id="mtRec" data-seg data-strip aria-label="Recipient"></select>
           </div>
           <div class="msg" id="mtMsg" role="status"></div>
-          <div id="mtList"></div>
+          <div id="mtList" data-swipe="mtRecStrip"></div>
         </div>
         <div class="sheet-foot">
           <button class="btn btn-quiet" id="mtDone" type="button">Close</button>
@@ -6061,11 +6056,10 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="sheet-body">
       <div class="hol-year" id="holYearRow" hidden>
-        <label class="field-label" id="holYearL" for="holYear">Year</label>
-        <select class="select select-sm" id="holYear" data-seg aria-labelledby="holYearL"></select>
+        <select class="select select-sm" id="holYear" data-seg data-strip aria-label="Year"></select>
       </div>
       <p class="msg" id="holMsg" role="status"></p>
-      <div id="holList"></div>
+      <div id="holList" data-swipe="holYearStrip"></div>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-quiet" id="holCancel" type="button">Close</button>
@@ -6737,6 +6731,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20261122zm"></script>
 <script src="/js/search.js?v=20261122zm"></script>
 <script src="/js/agent.js?v=20261122zm"></script>
-<script src="/js/overview.js?v=20261122e"></script>
+<script src="/js/overview.js?v=20261122f"></script>
 </body>
 </html>

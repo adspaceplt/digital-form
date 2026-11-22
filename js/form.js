@@ -43,8 +43,9 @@
     var keys = opts.map(function (o) { return o.value + '\u0001' + o.text + '\u0001' + (o.disabled ? 1 : 0); }).join('\u0002');
     if (seg.__keys !== keys) {
       seg.__keys = keys;
+      var strip = seg.__strip;
       seg.innerHTML = opts.map(function (o) {
-        return '<button type="button" role="radio" class="seg-opt" data-v="' +
+        return '<button type="button" ' + (strip ? 'class="acttab btn-sm" aria-pressed="false"' : 'role="radio" class="seg-opt"') + ' data-v="' +
           String(o.value).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"' +
           (o.disabled ? ' disabled' : '') + '>' +
           String(o.text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</button>';
@@ -54,10 +55,11 @@
     Array.prototype.forEach.call(seg.children, function (b) {
       var on = b.getAttribute('data-v') === v;
       b.classList.toggle('is-on', on);
+      if (seg.__strip) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); return; }
       b.setAttribute('aria-checked', on ? 'true' : 'false');
       b.tabIndex = on ? 0 : -1;
     });
-    if (!seg.querySelector('.is-on') && seg.firstElementChild) seg.firstElementChild.tabIndex = 0;
+    if (!seg.__strip && !seg.querySelector('.is-on') && seg.firstElementChild) seg.firstElementChild.tabIndex = 0;
     fit(seg);
     seg.classList.toggle('is-disabled', sel.disabled);
     Array.prototype.forEach.call(seg.children, function (b) { if (sel.disabled) b.disabled = true; });
@@ -79,7 +81,8 @@
     return w;
   }
   function fit(seg) {
-    if (!seg || !seg.clientWidth) return;
+    /* A view strip never wraps: it scrolls with its far edge faded (1c). */
+    if (!seg || !seg.clientWidth || seg.__strip) return;
     seg.classList.remove('is-wrap', 'is-stack', 'is-auto');
     /* A button cutting its words with an ellipsis reports no overflow of its
        own (Chromium, 2026-10-29: "Unavaila…" read as fitting), so the words
@@ -146,14 +149,35 @@
     }
   }
 
+  /* A choice that only changes what is shown (a list's recipient, a year,
+     a sheet's part, a card's view) is a screen moved to, not a value kept
+     (DESIGN.md §5: round chooses, rectangular acts): `data-strip` on the
+     select draws the view strip in place of the segment, the select still
+     the source of truth. One line on the tonal track, the thumb sliding,
+     scrolling sideways with its far edge faded and never wrapping; its id
+     is the select's with `Strip`, for a region's `data-swipe` (2026-11-22,
+     the user: Email templates' Recipient read as a choice to make). */
   function upgrade(sel) {
     if (!sel || sel.__seg) return;
-    var seg = document.createElement('div');
-    /* A small select beside a small button is a small segment (32px, 38
-       under a finger), the height of the button it sits with. */
-    seg.className = 'seg' + (sel.classList.contains('select-sm') ? ' is-sm' : '');
-    seg.id = 'seg' + (++ID);
-    seg.setAttribute('role', 'radiogroup');
+    var strip = sel.hasAttribute('data-strip');
+    var seg = document.createElement(strip ? 'span' : 'div');
+    var box = seg;
+    if (strip) {
+      box = document.createElement('div');
+      box.className = 'actstrip seg-strip';
+      box.appendChild(seg);
+      seg.className = 'cmdbar-views actviews';
+      seg.id = sel.id ? sel.id + 'Strip' : 'seg' + (++ID);
+      seg.setAttribute('role', 'group');
+      seg.__strip = true;
+    } else {
+      /* A small select beside a small button is a small segment (32px, 38
+         under a finger), the height of the button it sits with. */
+      seg.className = 'seg' + (sel.classList.contains('select-sm') ? ' is-sm' : '');
+      seg.id = 'seg' + (++ID);
+      seg.setAttribute('role', 'radiogroup');
+    }
+    seg.__box = box;
     var l = labelOf(sel);
     if (l) seg.setAttribute('aria-labelledby', l.id);
     else if (sel.getAttribute('aria-label')) seg.setAttribute('aria-label', sel.getAttribute('aria-label'));
@@ -161,7 +185,7 @@
     sel.classList.add('seg-src');
     sel.setAttribute('aria-hidden', 'true');
     sel.tabIndex = -1;
-    sel.parentNode.insertBefore(seg, sel.nextSibling);
+    sel.parentNode.insertBefore(box, sel.nextSibling);
     /* The label pointed at the select; pressing it now lands on the choice. */
     if (l) l.addEventListener('click', function (e) {
       if (sel.__seg !== seg) return;
@@ -170,8 +194,8 @@
       if (on) on.focus();
     });
     seg.addEventListener('click', function (e) {
-      var b = e.target.closest('.seg-opt');
-      if (!b || b.disabled) return;
+      var b = e.target.closest('.seg-opt, .acttab');
+      if (!b || b.disabled || b.parentNode !== seg) return;
       choose(sel, b.getAttribute('data-v'));
       b.focus();
     });
@@ -205,7 +229,8 @@
   function unsegment(sel) {
     var seg = sel && sel.__seg;
     if (!seg) return;
-    if (seg.parentNode) seg.parentNode.removeChild(seg);
+    var box = seg.__box || seg;
+    if (box.parentNode) box.parentNode.removeChild(box);
     sel.__seg = null;
     sel.classList.remove('seg-src');
     sel.removeAttribute('aria-hidden');
@@ -215,7 +240,7 @@
      the select (DESIGN.md §4). */
   function segFit(sel) {
     if (!sel) return;
-    if (sel.options.length <= 4) upgrade(sel); else unsegment(sel);
+    if (sel.options.length <= 4 || sel.hasAttribute('data-strip')) upgrade(sel); else unsegment(sel);
   }
 
   /* ---- 1b. The chosen option slides ------------------------------------ */
