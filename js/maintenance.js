@@ -298,9 +298,18 @@
      budgets). Its stamp is the icon set's own, bumped with it. */
   var ICONS = '/js/icons.js?v=20261122zzq', iconsAsked = false;
   function marks() {
-    var I = window.ADspaceIcons;
+    var I = window.ADspaceIcons, W = window.ADspaceWords;
+    var want = [].filter.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {
+      return x.getClientRects().length;
+    }).map(function (x) {
+      var g = x.getAttribute('data-glyph');
+      if (g === null) { var h = x.querySelector(':scope > h1, :scope > h2'); g = h && W && W.glyphOf ? W.glyphOf(h.textContent) : ''; }
+      var has = x.querySelector(':scope > .lockcard-mark');
+      return { x: x, g: g, has: has };
+    }).filter(function (o) { return !(o.has && o.has.getAttribute('data-mark') === o.g) && !(!o.has && !o.g); });
+    if (!want.length) return;
     if (!I) {
-      if (iconsAsked || ![].some.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) { return x.getClientRects().length; })) return;
+      if (iconsAsked) return;
       iconsAsked = true;
       var tag = document.createElement('script');
       tag.src = ICONS;
@@ -308,18 +317,13 @@
       document.head.appendChild(tag);
       return;
     }
-    var W = window.ADspaceWords;
-    [].forEach.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {
-      var g = x.getAttribute('data-glyph');
-      if (g === null) { var h = x.querySelector(':scope > h1, :scope > h2'); g = h && W && W.glyphOf ? W.glyphOf(h.textContent) : ''; }
-      var has = x.querySelector(':scope > .lockcard-mark');
-      if (has && has.getAttribute('data-mark') === g) return;
-      if (has) has.remove();
-      if (!g || !I.svg(g)) return;
+    want.forEach(function (o) {
+      if (o.has) o.has.remove();
+      if (!o.g || !I.svg(o.g)) return;
       /* After the wordmark where a notice leads with it (no bar above). */
-      var lead = x.querySelector(':scope > .cover-mark');
-      (lead || x).insertAdjacentHTML(lead ? 'afterend' : 'afterbegin',
-        '<span class="lockcard-mark" data-mark="' + g + '" aria-hidden="true">' + I.svg(g) + '</span>');
+      var lead = o.x.querySelector(':scope > .cover-mark');
+      (lead || o.x).insertAdjacentHTML(lead ? 'afterend' : 'afterbegin',
+        '<span class="lockcard-mark" data-mark="' + o.g + '" aria-hidden="true">' + I.svg(o.g) + '</span>');
     });
   }
   var refBusy = false;

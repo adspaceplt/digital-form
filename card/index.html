@@ -32,7 +32,7 @@
 <script src="/js/words.js?v=20261122zzr"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/api.js?v=20261121zs"></script>
-<script src="/js/maintenance.js?v=20261122zzu"></script>
+<script src="/js/maintenance.js?v=20261122zzv"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
 </head>
 <body class="ncpage">
@@ -45,6 +45,9 @@
   <section class="cover" id="ncCover" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel" data-glyph="userx">
+        <!-- Drawn here, as js/icons.js draws `userx`: the namecard holds its
+             request budget, so the notice never fetches the icon set. -->
+        <span class="lockcard-mark" data-mark="userx" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 11-5.7"/><path d="m17 15 4 4M21 15l-4 4"/></svg></span>
         <h2 id="ncCoverTitle"></h2>
         <p id="ncCoverText"></p>
         <!-- A visitor holding a namecard has no account manager: the office's
