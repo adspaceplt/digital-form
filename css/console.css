@@ -2691,12 +2691,12 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .anl-fold[open] > .anl-fold-head .anl-fold-chev { transform: rotate(90deg); }
 .anl-fold[open] > .anl-fold-head .anl-fold-sum { display: none; }
 .anl-fold-body { display: grid; gap: 12px; margin-top: 12px; min-width: 0; }
-.ovw-cardhead > select[data-seg] + .seg, .ovw-cardhead > .seg { margin-left: auto; }
+.ovw-cardhead > .actstrip.seg-strip { margin-left: auto; padding: 0; }
 /* On a narrow pane a card's views take their own row under its title, the
    title kept whole (2026-11-22: Where work waits read three lines beside
    Median time · Time in stage at 390). */
-.is-narrow .ovw-cardhead:has(> .seg) { flex-wrap: wrap; row-gap: 8px; }
-.is-narrow .ovw-cardhead > .seg { order: 3; flex: 1 0 100%; margin-left: 0; }
+.is-narrow .ovw-cardhead:has(> .seg-strip) { flex-wrap: wrap; row-gap: 8px; }
+.is-narrow .ovw-cardhead > .seg-strip { order: 3; flex: 1 0 100%; margin-left: 0; }
 .anl-dir.is-fact > b { font-weight: 500; }
 .anl-lead { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); }
 .is-narrow .anl-lead { grid-template-columns: minmax(0, 1fr); }
@@ -2820,8 +2820,6 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .dtrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
 .dtrow:last-child { border-bottom: 0; }
 /* Public holidays (2026-10-14): a holiday a row, Edit and its ⋯ at the right; a year at a time. */
-.hol-year { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-.hol-year .field-label { margin: 0; }
 .hol-acts { display: flex; align-items: center; gap: 4px; }
 /* Page availability (2026-10-29; compact, revamp D, 2026-11-04): a page
    a row of one line at a desk, the name with its address after it, the
@@ -4953,7 +4951,6 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
    shaded, never outlined); the editor the words at the left and the email as
    it reads at the right, stacked when narrow. A field the sender fills is a
    chip; one it cannot fill is marked in red words in the preview. */
-.mt-rec { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .mt-sec + .mt-sec { margin-top: 24px; }
 .mt-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; min-height: var(--ctl-h); }
 .mt-sec-head .fsec-h { margin: 0; }
@@ -5011,9 +5008,13 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .stg-hit > svg { width: 15px; height: 15px; color: var(--ink-mute); }
 .stg-hit .stg-name, .stg-hit .stg-meta { display: block; }
 @media (hover: hover) { .stg-hit:hover { background: var(--sunk); } }
-.mt-rec .field-label { margin: 0; }
-.mt-rec:has(> .seg.is-wrap) { flex-wrap: wrap; row-gap: 8px; }
-.mt-rec > .seg.is-wrap { flex-basis: 100%; }
+/* A sheet's view strip (`select[data-strip]`, js/form.js): what the sheet
+   shows, its own width at a desk and the column's on a phone, the strip's
+   12px to what it switches (2026-11-22: Recipient, Year, Section,
+   Department were segments). */
+.sheet-body > .actstrip.seg-strip:first-child, .sheet-body > :first-child > .actstrip.seg-strip { padding-top: 0; }
+.sheet-body .actstrip.seg-strip > .actviews { width: 100%; }
+.sheet-body .actstrip.seg-strip > .actviews > .acttab { flex: 1 0 auto; }
 
 /* A script's task (the content loop, 2026-11-10): its stage a mute line under it. */
 .vs-facts .vs-task-stage { display: block; font-size: 12.5px; color: var(--ink-mute); margin-top: 2px; }

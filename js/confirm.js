@@ -404,6 +404,8 @@
       elFields.appendChild(wrap);
       if (f.choices && f.seg && window.ADspaceForm && ADspaceForm.segment) {
         input.setAttribute('data-seg', '');
+        /* A question's segment is its answer: a value (tests/segkind.js). */
+        input.setAttribute('data-seg-value', '');
         ADspaceForm.segment(input);
       }
       /* An empty time field says what it wants: Safari otherwise draws the

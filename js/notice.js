@@ -171,7 +171,7 @@
         /* Four fields: one group, no section heads (DESIGN.md: sections from
            six fields). */
         '<div class="row"><div><label class="field-label" for="ntcTo">Send to</label>' +
-          '<select class="select" id="ntcTo" data-seg><option value="all">All colleagues</option><option value="some">Selected colleagues</option></select></div></div>' +
+          '<select class="select" id="ntcTo" data-seg data-seg-value><option value="all">All colleagues</option><option value="some">Selected colleagues</option></select></div></div>' +
         '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Colleagues</span>' +
           '<div class="meta-accs ntc-people" id="ntcPeople" role="group" aria-labelledby="ntcPeopleL"></div></div></div>' +
         '<div class="row"><div><label class="field-label" for="ntcTitle">Title</label>' +

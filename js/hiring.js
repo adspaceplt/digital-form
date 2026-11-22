@@ -516,10 +516,10 @@
       (crit.length ? '<section class="qcard"><h3 class="qcard-title">Scores</h3><p class="hir-card-line">' +
         esc((o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 is weak and 5 is strong') + '</p><div class="iv-fields">' +
         crit.map(function (k, n) {
-          return '<div class="field"><label class="field-label" for="hivC' + n + '">' + esc(k) + '</label><select class="select" id="hivC' + n + '" data-c="' + esc(k) + '" data-seg>' +
+          return '<div class="field"><label class="field-label" for="hivC' + n + '">' + esc(k) + '</label><select class="select" id="hivC' + n + '" data-c="' + esc(k) + '" data-seg data-seg-value>' +
             opts(5, mine.scores ? mine.scores[k] : '', '–') + '</select></div>';
         }).join('') +
-        '<div class="field"><label class="field-label" for="hivRec">Recommendation</label><select class="select" id="hivRec" data-seg>' +
+        '<div class="field"><label class="field-label" for="hivRec">Recommendation</label><select class="select" id="hivRec" data-seg data-seg-value>' +
           [['proceed', 'Proceed'], ['pool', 'Talent pool'], ['not', 'Not proceed']].map(function (x) {
             return '<option value="' + x[0] + '"' + ((mine.recommend || 'proceed') === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
           }).join('') + '</select></div></div></section>' : '');

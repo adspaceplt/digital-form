@@ -73,7 +73,7 @@
       '</select>';
   }
   function seg(id, k, opts, label) {
-    return '<select class="select" id="' + id + '" data-k="' + k + '" data-seg aria-label="' + esc(label) + '">' +
+    return '<select class="select" id="' + id + '" data-k="' + k + '" data-seg data-seg-value aria-label="' + esc(label) + '">' +
       opts.map(function (o) { return '<option value="' + o[0] + '"' + (typed[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
   }
   function paintForm() {

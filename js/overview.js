@@ -1205,7 +1205,7 @@
   function chart(grid, c) {
     var title = titleOf(c), all = typeof c.all === 'function' ? c.all() : c.all;
     /* A card of several views (Where work waits): its own view first, then
-       each further one this colleague may read; a segment once two show. */
+       each further one this colleague may read; a view strip once two show. */
     var views = c.views ? [{ key: '', word: 'Median time', load: c.load }].concat(c.views().filter(function (v) { return !v.can || v.can(); })) : null;
     if (views && views.length < 2) views = null;
     var view = 0;
@@ -1219,6 +1219,7 @@
       var sel = document.createElement('select');
       sel.className = 'select select-sm';
       sel.setAttribute('data-seg', '');
+      sel.setAttribute('data-strip', '');
       sel.setAttribute('aria-label', 'View: ' + title);
       sel.innerHTML = views.map(function (v, i) { return '<option value="' + i + '"' + (i === view ? ' selected' : '') + '>' + esc(v.word) + '</option>'; }).join('');
       sel.addEventListener('change', function () { view = Number(sel.value) || 0; run(); });
