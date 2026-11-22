@@ -142,12 +142,10 @@
        tasks, Work also creates them, Manage also assigns an owner. The four
        parts under it are the exception to the rule below. */
     ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
-    ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     /* A shoot's video scripts, approved by the client and ticked on the day
        (2026-10-09). */
     ['scripts',   'Video Scripts',     ['none', 'view', 'work', 'manage']],
-    ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
     /* Client reports are prepared here and published to the client portal.
        Their own section (2026-09-25), so a colleague can prepare reports
        without reading client records; Clients View still reads a client's
@@ -157,6 +155,9 @@
        Full control chooses the templates; the last of the Work chunk, as the
        rail and the panel's chunks read (N1, 2026-10-24). */
     ['whatsapp',  'Messages',          ['none', 'view', 'work', 'manage']],
+    ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
+    ['campaigns', 'Creators',          ['none', 'view', 'work', 'manage']],
+    ['suppliers', 'Suppliers',         ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -164,11 +165,10 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
-    ['suppliers', 'Suppliers',         ['none', 'view', 'work', 'manage']],
-    ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     /* Services: the rate card is read at View and changed at Full Access
        alone; no function asks Manage (N3, 2026-10-24). */
     ['services',  'Services',          ['none', 'view', 'manage']],
+    ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
   ];
@@ -216,12 +216,13 @@
        every letter with it. Each tab is a part, and the database decides
        which rows arrive: `activity_section()` maps a tag to the section the
        console files it under, and the read policy asks the part. */
-    activity:  [['ops', 'My Work'], ['clients', 'Clients'],
-                ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['whatsapp', 'Messages'], ['register', 'Documents'],
+    activity:  [['ops', 'My Work'], ['review', 'Content Review'], ['scripts', 'Video Scripts'],
+                ['reports', 'Reports'], ['whatsapp', 'Messages'],
+                ['clients', 'Clients'], ['campaigns', 'Creators'], ['suppliers', 'Suppliers'],
+                ['register', 'Documents'],
                 /* An HR letter's history, read with HR Letters too (S5). */
-                ['hr', 'HR Letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
-                ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
+                ['hr', 'HR Letters'], ['services', 'Services'], ['links', 'Short Links'],
+                ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
        Clients works its Billing pane unless somebody says otherwise. These
@@ -1302,7 +1303,7 @@
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets and posts.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
                work: 'Write scripts, publish them to the client and record the clips on the day.', manage: 'Also delete scripts.' },
-    campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
+    campaigns: { none: 'Creators is hidden.', view: 'Read campaigns and the Creators List.',
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
                 work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
@@ -1346,8 +1347,9 @@
      Work. Only the screen changed: the stored map, `adds()`, `offered()`,
      `PART_LEVELS` and every database check are as they were. */
   var CHUNKS = [
-    ['Work', ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp']],
-    ['Internal', ['register', 'suppliers', 'links', 'services', 'team', 'activity']]
+    ['Work', ['ops', 'review', 'scripts', 'reports', 'whatsapp']],
+    ['Partners', ['clients', 'campaigns', 'suppliers']],
+    ['Company', ['register', 'services', 'links', 'team', 'activity']]
   ];
   /* Each is on or off, and each is an admin's alone until a group is given
      it. Portal first (what changes the portal for everybody), then each
@@ -1356,9 +1358,9 @@
   var ADMIN_TOOLS = [
     ['Portal', ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'team.analytics']],
     ['My Work', ['ops.numbering', 'ops.override']],
-    ['Clients', ['clients.vic']],
-    ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
+    ['Clients', ['clients.vic']],
+    ['Creators', ['campaigns.files_delete']],
     ['Documents', ['register.types']],
     ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel', 'team.hiring', 'team.sessions']]
   ];
@@ -1427,7 +1429,7 @@
      sections control)"). Each section's Advanced holds everything deeper
      about it: its own parts, the admin tools that act on it, and its line
      of the Activity record. Layout only: every stored key is as before. */
-  var TOOL_HOME = { 'Portal': 'team', 'My Work': 'ops', 'Clients': 'clients', 'Creator Campaigns': 'campaigns',
+  var TOOL_HOME = { 'Portal': 'team', 'My Work': 'ops', 'Clients': 'clients', 'Creators': 'campaigns',
     'Reports': 'reports', 'Documents': 'register', 'Team': 'team' };
   var ACT_HOME = { hr: 'register', handbook: 'team' };
   /* What a section's Advanced holds, in order: parts, tools, its history. */

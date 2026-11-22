@@ -22,7 +22,7 @@ Each section gets two grades:
 | clients | Clients | `?s=clients` | crm.js, sales.js | Key in a lead; log a call; move to Active through billing; add a service line and issue the Letter of Offer (sales) | Intake 5 visible fields |
 | review | Content Review | `?s=review` | admin.js, mockups.js | New set, add assets, publish; act on a change request; confirm internally (marketing) | Publish 3 presses after upload |
 | scripts | Video Scripts | `?s=scripts` | scripts.js, scriptpdf.js | New script and its scenes; add the next video; share with the client; tick scenes and clip numbers on the day; download the PDF (marketing, crew) | Next video 1 press |
-| campaigns | Creator Campaigns | `?s=campaigns` | campaigns.js | New campaign; add and confirm creators; release a draft through QC; enter results (marketing) | QC 1 sheet |
+| campaigns | Creators | `?s=campaigns` | campaigns.js | New campaign; add and confirm creators; release a draft through QC; enter results (marketing) | QC 1 sheet |
 | register | Documents | `?s=register` | register.js, documents.js, letters.js | Issue a document with Preview; reissue or void; find by reference (admin, HR) | Issue 1 sheet |
 | reports | Reports | `?s=reports` | reports.js, smreport.js | Start a report; import posts or ads; Write draft and Check; submit, confirm, publish, mark as sent (marketing, reviewer) | One step a screen |
 | links | Short Links | `?s=links` | admin.js | Add a link; pause and resume; copy the QR (anyone) | Add 1 sheet |

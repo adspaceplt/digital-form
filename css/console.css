@@ -5301,11 +5301,19 @@ svg.sec {
 .navitem svg.sec, .navitem.is-on svg.sec { width: 14px; height: 14px; padding: 5px; border-radius: 7px; color: var(--sec); stroke-width: 2; }
 /* The rail's rhythm (the user, 2026-11-12: 46px rows were too tall, 34px
    too tight): a 40px row holding a 24px tile, the row about φ times the
-   tile, 8px of air above and below it; 12px from the tile to the word; 16px
-   between the groups; all on the 4px grid. */
+   tile, 8px of air above and below it; 12px from the tile to the word; all
+   on the 4px grid. The rows of a group touch, each its own fill (2026-11-22,
+   the user: the rail must not scroll), 8px between the groups, a group's
+   label one 16px line 4px over its rows, the rail 12px in at its top as the
+   sheet is, the mark 8px over the Dashboard, the foot 4px under the last
+   group. */
 .sidebar .navitem { padding-block: 8px; gap: 12px; }
-.sidebar .navgroup + .navgroup { margin-top: 16px; }
-.sidebar-brand { padding-bottom: 16px; }
+.sidebar .navgroup, .sidebar .sidebar-nav { gap: 0; }
+.sidebar .navgroup + .navgroup { margin-top: 8px; }
+.sidebar .sidebar-label { line-height: 16px; padding-bottom: 4px; }
+.sidebar-brand { padding-bottom: 8px; }
+.sidebar { padding-top: 12px; }
+.sidebar .sidebar-foot { margin-top: 4px; padding-top: 8px; }
 /* A 32px tile where a row leads with its section (Waiting for you,
    Engagements, the bell): the tile is the glyph's own ground. */
 :is(.wfy-tile, .cmonth-tile, .notif-tile):has(> svg.sec) { background: none; }

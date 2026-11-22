@@ -83,7 +83,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     filed `assistant.meeting`.
   - `propose_campaign` makes a creator campaign as New campaign does (a
     draft, its creators, its person in charge, a link key; Active clients;
-    Creator Campaigns: Campaigns at Work), filed `campaign.created` and
+    Creators: Campaigns at Work), filed `campaign.created` and
     `assistant.campaign`; no Undo (its way out is Delete, never the
     Assistant's).
   - `propose_publish_set` / `propose_unpublish_set` as the set's head does

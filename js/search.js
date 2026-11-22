@@ -211,6 +211,56 @@
           open: function () { go('/admin/?s=work&open=' + encodeURIComponent(t.id), 'work'); }
         };
       } },
+    { key: 'review', head: 'Content Review', can: function () { return may('review.sets'); },
+      read: function (q) {
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('batches').select('id, title, published, client_id, clients(id, slug, name)')
+            .or(orClient(any(['title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
+        });
+      },
+      row: function (s) {
+        var c = s.clients || {};
+        return {
+          id: 'set-' + s.id, name: s.title, code: '',
+          meta: [c.name, s.published ? 'Published' : 'Not published'],
+          open: function () {
+            go('/admin/?s=review&client=' + encodeURIComponent(clientKey(c) || s.client_id) + '&set=' + encodeURIComponent(s.id), 'review');
+          }
+        };
+      } },
+    { key: 'scripts', head: 'Video Scripts', can: function () { return may('scripts'); },
+      read: function (q) {
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('video_scripts').select('id, code, title, period, status, client_id, clients(name)')
+            .or(orClient(any(['code', 'title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
+        });
+      },
+      row: function (v) {
+        var m = /^(\d{4})-(\d{2})/.exec(v.period || '');
+        return {
+          id: 'script-' + v.id, name: v.title || v.code, code: v.title ? v.code : '',
+          meta: [(v.clients && v.clients.name), m ? MON[Number(m[2]) - 1] + ' ' + m[1] : '', v.status === 'shared' ? 'Published' : 'Draft'],
+          open: function () { go('/admin/?s=scripts&script=' + encodeURIComponent(v.id), 'scripts'); }
+        };
+      } },
+    /* Reports (2026-10-14): by the client's name or code, a white-label
+       brand's name, or the report's title; newest period first. */
+    { key: 'reports', head: 'Reports', can: function () { return may('reports'); },
+      read: function (q) {
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('sm_reports').select('id, kind, title, period_start, period_end, status, brand_name, client_id, clients(name, client_code)')
+            .or(orClient(any(['title', 'brand_name'], q), ids)).order('period_start', { ascending: false }).limit(LIMIT));
+        });
+      },
+      row: function (r) {
+        var c = r.clients || {};
+        return {
+          id: 'report-' + r.id, name: r.brand_name || c.name || '', code: r.brand_name ? '' : c.client_code,
+          meta: [(r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report') + ' · ' + dayOf(r.period_start) + ' to ' + dayOf(r.period_end),
+            REPORT_STATE[r.status] || ''],
+          open: function () { go('/admin/?s=reports&report=' + encodeURIComponent(r.id), 'reports'); }
+        };
+      } },
     { key: 'clients', head: 'Clients', can: function () { return may('clients'); },
       read: function (q) {
         /* The registered name is a Billing column the table withholds
@@ -279,39 +329,7 @@
           open: function () { go('/admin/?client=' + encodeURIComponent(clientKey(c)) + '&tab=calls', 'clients'); }
         };
       } },
-    { key: 'review', head: 'Content Review', can: function () { return may('review.sets'); },
-      read: function (q) {
-        return clientsFor(q).then(function (ids) {
-          return read(db.from('batches').select('id, title, published, client_id, clients(id, slug, name)')
-            .or(orClient(any(['title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
-        });
-      },
-      row: function (s) {
-        var c = s.clients || {};
-        return {
-          id: 'set-' + s.id, name: s.title, code: '',
-          meta: [c.name, s.published ? 'Published' : 'Not published'],
-          open: function () {
-            go('/admin/?s=review&client=' + encodeURIComponent(clientKey(c) || s.client_id) + '&set=' + encodeURIComponent(s.id), 'review');
-          }
-        };
-      } },
-    { key: 'scripts', head: 'Video Scripts', can: function () { return may('scripts'); },
-      read: function (q) {
-        return clientsFor(q).then(function (ids) {
-          return read(db.from('video_scripts').select('id, code, title, period, status, client_id, clients(name)')
-            .or(orClient(any(['code', 'title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
-        });
-      },
-      row: function (v) {
-        var m = /^(\d{4})-(\d{2})/.exec(v.period || '');
-        return {
-          id: 'script-' + v.id, name: v.title || v.code, code: v.title ? v.code : '',
-          meta: [(v.clients && v.clients.name), m ? MON[Number(m[2]) - 1] + ' ' + m[1] : '', v.status === 'shared' ? 'Published' : 'Draft'],
-          open: function () { go('/admin/?s=scripts&script=' + encodeURIComponent(v.id), 'scripts'); }
-        };
-      } },
-    { key: 'campaigns', head: 'Creator Campaigns', can: function () { return may('campaigns.campaigns'); },
+    { key: 'campaigns', head: 'Creators', can: function () { return may('campaigns.campaigns'); },
       read: function (q) {
         return clientsFor(q).then(function (ids) {
           return read(db.from('campaigns').select('id, title, state, client_id, clients(name)')
@@ -343,22 +361,22 @@
           open: function () { go('/admin/?s=campaigns&tab=roster&creator=' + encodeURIComponent(k.id), 'campaigns'); }
         };
       } },
-    /* Reports (2026-10-14): by the client's name or code, a white-label
-       brand's name, or the report's title; newest period first. */
-    { key: 'reports', head: 'Reports', can: function () { return may('reports'); },
+    /* Suppliers (SHELL-1, 2026-10-22): the table answers no browser, so the
+       list is its function's, read once a query and matched on the page by
+       name or Supplier ID. */
+    { key: 'suppliers', head: 'Suppliers', can: function () { return may('suppliers'); },
       read: function (q) {
-        return clientsFor(q).then(function (ids) {
-          return read(db.from('sm_reports').select('id, kind, title, period_start, period_end, status, brand_name, client_id, clients(name, client_code)')
-            .or(orClient(any(['title', 'brand_name'], q), ids)).order('period_start', { ascending: false }).limit(LIMIT));
-        });
+        return db.rpc('suppliers_list', {}).then(function (r) {
+          var d = (r && r.data) || {};
+          if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
+          return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }).slice(0, LIMIT) };
+        }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
       },
-      row: function (r) {
-        var c = r.clients || {};
+      row: function (x) {
         return {
-          id: 'report-' + r.id, name: r.brand_name || c.name || '', code: r.brand_name ? '' : c.client_code,
-          meta: [(r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report') + ' · ' + dayOf(r.period_start) + ' to ' + dayOf(r.period_end),
-            REPORT_STATE[r.status] || ''],
-          open: function () { go('/admin/?s=reports&report=' + encodeURIComponent(r.id), 'reports'); }
+          id: 'supplier-' + x.id, name: x.name || x.code, code: x.name ? x.code : '',
+          meta: [SUP_STATE[x.status] || ''],
+          open: function () { go('/admin/?s=suppliers&supplier=' + encodeURIComponent(x.id), 'suppliers'); }
         };
       } },
     { key: 'register', head: 'Documents',
@@ -399,22 +417,16 @@
           open: function () { go('/admin/?s=register', 'register', ['regFind', d.serial]); }
         };
       } },
-    /* Suppliers (SHELL-1, 2026-10-22): the table answers no browser, so the
-       list is its function's, read once a query and matched on the page by
-       name or Supplier ID. */
-    { key: 'suppliers', head: 'Suppliers', can: function () { return may('suppliers'); },
+    { key: 'services', head: 'Services', can: function () { return may('services'); },
       read: function (q) {
-        return db.rpc('suppliers_list', {}).then(function (r) {
-          var d = (r && r.data) || {};
-          if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
-          return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }).slice(0, LIMIT) };
-        }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
+        return read(db.from('services').select('slug, name, sku, category, active')
+          .or(any(['name', 'sku'], q)).order('position').limit(LIMIT));
       },
-      row: function (x) {
+      row: function (s) {
         return {
-          id: 'supplier-' + x.id, name: x.name || x.code, code: x.name ? x.code : '',
-          meta: [SUP_STATE[x.status] || ''],
-          open: function () { go('/admin/?s=suppliers&supplier=' + encodeURIComponent(x.id), 'suppliers'); }
+          id: 'service-' + s.slug, name: s.name, code: s.sku || '',
+          meta: [s.category, s.active === false ? 'Inactive' : ''],
+          open: function () { go('/admin/?s=services', 'services', ['svcFind', s.name]); }
         };
       } },
     { key: 'links', head: 'Short Links', can: function () { return may('links'); },
@@ -427,18 +439,6 @@
           id: 'link-' + l.slug, name: l.title || l.slug, code: l.title ? l.slug : '',
           meta: [l.active === false ? 'Paused' : '', hostOf(l.target_url)],
           open: function () { go('/admin/?s=links', 'links', ['linkSearch', l.slug]); }
-        };
-      } },
-    { key: 'services', head: 'Services', can: function () { return may('services'); },
-      read: function (q) {
-        return read(db.from('services').select('slug, name, sku, category, active')
-          .or(any(['name', 'sku'], q)).order('position').limit(LIMIT));
-      },
-      row: function (s) {
-        return {
-          id: 'service-' + s.slug, name: s.name, code: s.sku || '',
-          meta: [s.category, s.active === false ? 'Inactive' : ''],
-          open: function () { go('/admin/?s=services', 'services', ['svcFind', s.name]); }
         };
       } },
     { key: 'team', head: 'Team', can: function () { return may('team'); },

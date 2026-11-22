@@ -336,7 +336,7 @@
         });
     },
     list_campaigns: function (a) {
-      if (!may('campaigns.campaigns')) return Promise.resolve(noAccess('creator campaigns', 'Creator Campaigns'));
+      if (!may('campaigns.campaigns')) return Promise.resolve(noAccess('creator campaigns', 'Creators'));
       var q = db.from('campaigns').select('id, title, state, slots, owner, campaign_code, clients(name)');
       if (a.client_id) q = q.eq('client_id', a.client_id);
       return q.order('created_at', { ascending: false }).limit(15).then(rows).then(function (list) {
@@ -487,11 +487,11 @@
     },
     /* Creator Campaigns: Payments, every creator's payment work. */
     creator_payments: function (a) {
-      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creator payments', 'Creator Campaigns'));
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creator payments', 'Creators'));
       var from = CLOCK && CLOCK.addMonths ? CLOCK.addMonths(today().slice(0, 7) + '-01', -2) + '-01' : today().slice(0, 7) + '-01';
       if (/^\d{4}-\d{2}-\d{2}$/.test(String(a.paid_from || ''))) from = a.paid_from;
       return db.rpc('creator_payments_queue', { p_paid_from: from }).then(function (r) {
-        var g = fnData(r, 'creator payments', 'Creator Campaigns');
+        var g = fnData(r, 'creator payments', 'Creators');
         if (g.refused) return g.refused;
         var d = g.data, pay = d.pay === true && may('campaigns.pay'), t = today();
         var job = function (j) {
@@ -515,7 +515,7 @@
     },
     /* The Creators List: by name, Creator ID, platform or rate. */
     find_creators: function (a) {
-      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creators', 'Creator Campaigns'));
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess('creators', 'Creators'));
       var plat = PLATFORM_KEY[String(a.platform || '').toLowerCase().trim()] || null;
       var q = db.from('creators').select('id, name, creator_code, client_rate, active, creator_profiles(platform)');
       var words0 = clean(a.query || '');
@@ -541,9 +541,9 @@
     /* One creator's bookings and where each one's payment stands, as the
        creator's Payment pane reads them. */
     creator_bookings: function (a) {
-      if (!may('campaigns.creators')) return Promise.resolve(noAccess("a creator's bookings", 'Creator Campaigns'));
+      if (!may('campaigns.creators')) return Promise.resolve(noAccess("a creator's bookings", 'Creators'));
       return db.rpc('creator_bills_list', { p_creator: a.creator_id }).then(function (r) {
-        var g = fnData(r, "a creator's bookings", 'Creator Campaigns');
+        var g = fnData(r, "a creator's bookings", 'Creators');
         if (g.refused) return g.refused;
         var d = g.data, pay = d.pay === true && may('campaigns.pay');
         var bill = function (b) {
