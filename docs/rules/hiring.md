@@ -122,7 +122,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`{place}`), then, as Interview confirmed now closes too (where its
   template still reads as seeded), If you are unable to attend at this
   time, please contact ADspace to reschedule: with WhatsApp
-  (wa.me/adspace) and the careers mailbox (`{contact}`, the database's); its Resend key carries the new time and the move's own moment
+  (hi.adspace.me/whatsapp, the Short Link to wa.me/adspace) and the careers mailbox (`{contact}`, the database's); its Resend key carries the new time and the move's own moment
   (`moved_at`), so a retry never doubles and a second move emails again;
   sent, it stands as the confirmation (`confirm_mail`) and is filed in
   the candidate's history and the Email log (`hiring_rescheduled`);
