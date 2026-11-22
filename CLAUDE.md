@@ -1935,6 +1935,12 @@ only a one-line pointer to it (the user, 2026-11-22).
   still open in order with their rollback, and what waits on the user. A
   session opening on an open PR reads its latest handover first and
   continues its branch.
+- The session that starts others checks every one it started every 30
+  minutes while any runs (`list_sessions` children, a `send_later`
+  check-in), never waiting for a report: one blocked or idle with its PR
+  unmerged is unblocked, or its PR merged by the starting session; a
+  session's own brief says it merges without asking (the user,
+  2026-11-22: "Its not the first time its happening").
 - A release with a migration or a function states its order (pages,
   each migration, each function), what an old open tab meets at every
   intermediate state, what a failed step leaves and which steps reverse.
