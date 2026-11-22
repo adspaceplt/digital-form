@@ -376,6 +376,8 @@ added to all three in the same push.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
   carries one, never inside `.claude/` (agents' worktrees live there).
+  `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
+  it where a notice wants a glyph on a page holding no icon set (2026-11-22).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new portal page joins Page availability in the same push that builds it
@@ -534,15 +536,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   disallows nothing (a blocked page's noindex cannot be read), and
   `sitemap.xml` names `/` alone (`tests/seo.js`).
 - `404.html` is the portal's cover:
-  - English only, white, title 17px, line 14px;
-  - Client sign-in (`/client/`, the one blue), Visit website and Contact
-    support as `.btn-sm`, Client sign-in taking its own row on a phone
-    (2026-10-15); the portal's foot as static markup;
+  - English only, white, the cover family's own type and glyph (a document
+    with a question mark);
+  - Visit website and Contact support (its envelope) as tonal halves, no
+    Client sign-in (the user, 2026-11-22); the portal's foot as static markup;
   - no `noscript` redirect.
   - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied, the console's
-  sign-in, a quotation waiting for the team), with the same words on
+  sign-in, a quotation waiting for the team), drawn as the cover family
+  (DESIGN.md §4 Full-page state), with the same words on
   every client page (`js/words.js`). Where the browser holds a sign-in (the console, the
   client portal), every cover ends Reference {code}, the sign-in's code as a
   colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access
@@ -2197,7 +2200,9 @@ learned about an area is written in its file, never here.
   `me()`, so every policy and function refuses the colleague; client pages
   never ask them. `me()` answering nothing, the console asks `abroad_state()`
   and a held colleague meets the cover (`paintAbroad`, js/admin.js: Access
-  from {country} needs approval, Reason and Until, Request access; then
+  from {country} needs approval, Reason (Vacation, Work from home or
+  Other, which opens the reason typed; the word chosen is stored, 2026-11-22)
+  and Until, Request access; then
   Request sent with Change request and Check again; a decline, an end or a
   day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
   `bad-until` today to today plus `abroad_days`, a waiting request

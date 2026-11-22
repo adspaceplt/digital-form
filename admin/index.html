@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261122d">
-<link rel="stylesheet" href="/css/console.css?v=20261122zp">
+<link rel="stylesheet" href="/css/portal.css?v=20261122zzw">
+<link rel="stylesheet" href="/css/console.css?v=20261122zzw">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -131,19 +131,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/captcha.js?v=20261117zzzf"></script>
-<script src="/js/words.js?v=20261122rd"></script>
+<script src="/js/captcha.js?v=20261122zzs"></script>
+<script src="/js/words.js?v=20261122zzr"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
-<script src="/js/icons.js?v=20261119"></script>
+<script src="/js/icons.js?v=20261122zzq"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
-<script src="/js/acts.js?v=20261122zzp"></script>
+<script src="/js/acts.js?v=20261122zzq"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
 <script src="/js/confirm.js?v=20261122sk"></script>
 <script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
 <script src="/js/form.js?v=20261122rg"></script>
-<script src="/js/otp.js?v=20261117zzzf"></script>
+<script src="/js/otp.js?v=20261122zzq"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
 <script src="/js/menu.js?v=20261121zt"></script>
@@ -154,7 +154,7 @@
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261121zs"></script>
 <script src="/js/delreq.js?v=20261118"></script>
-<script src="/js/maintenance.js?v=20261121zzzzb"></script>
+<script src="/js/maintenance.js?v=20261122zzw"></script>
 <script src="/js/announce.js?v=20261120t"></script>
 <script src="/js/notice.js?v=20261122sk"></script>
 <script src="/js/whatsapp.js?v=20261122zm"></script>
@@ -184,32 +184,38 @@
        way in under it. -->
   <section class="cover" id="authPanel" hidden>
     <div class="cover-inner">
-      <div class="cover-panel">
-        <h2>Sign in</h2>
+      <div class="cover-panel" id="authCover" data-glyph="user">
+        <h2 id="authTitle">Sign in</h2>
         <p id="authSent">Enter your company email address.</p>
         <div id="authEmailStep" data-cf>
           <form onsubmit="return false">
-            <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com"
-                   autocomplete="email" aria-label="Company email">
-            <button class="btn btn-primary" id="authSend" type="button">Sign in</button>
+            <div class="field">
+              <label class="field-label" for="authEmail">Company email</label>
+              <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com" autocomplete="email">
+            </div>
+            <!-- Continue sends the code; the passkey, drawn by js/passkey.js
+                 only where this browser can use one, is the other way in
+                 (the ink button, the user, 2026-11-22). -->
+            <div class="cover-acts">
+              <button class="btn btn-primary" id="authSend" type="button">Continue</button>
+              <button class="btn btn-ink" id="authPasskey" type="button" hidden>Use passkey</button>
+            </div>
           </form>
-          <!-- Touch ID, Face ID or the device password instead of the email.
-               Drawn by js/passkey.js only where this browser can use one. -->
-          <button class="btn cover-alt" id="authPasskey" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Sign in with a passkey
-          </button>
         </div>
         <!-- The email carries a link and a code. The code is what works where a
              link cannot be opened into this window, such as the installed app. -->
         <div id="authCodeStep" hidden>
           <form onsubmit="return false">
-            <input class="input" id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code"
-                   maxlength="10" pattern="[0-9]*" spellcheck="false" aria-label="Sign-in code" data-otp-boxes>
+            <div class="field">
+              <label class="field-label" for="authCode">Sign-in code</label>
+              <input class="input" id="authCode" type="text" inputmode="numeric" autocomplete="one-time-code"
+                     maxlength="10" pattern="[0-9]*" spellcheck="false" data-otp-boxes>
+            </div>
             <button class="btn btn-primary" id="authVerify" type="button">Sign in</button>
           </form>
         </div>
         <div class="msg" id="authMsg"></div>
-        <button class="btn btn-quiet cover-alt" id="authBack" type="button" hidden>Use another email</button>
+        <button class="btn btn-quiet btn-sm cover-alt" id="authBack" type="button" hidden>Use another email</button>
       </div>
     </div>
   </section>
@@ -220,27 +226,38 @@
 <main class="shell" id="noTeamShell" hidden>
   <section class="cover">
     <div class="cover-inner">
-      <div class="cover-panel">
+      <div class="cover-panel" id="noTeamCover" data-glyph="block">
         <h2>Access denied</h2>
         <p><b id="noTeamWho"></b> has not been added to the team. Please contact an admin.</p>
         <p class="abroad-past" id="abroadPast" hidden></p>
-        <div class="abroad-ask" id="abroadAsk" hidden>
+        <!-- Overseas access asks why as a choice of three; Other opens the
+             reason typed (the user, 2026-11-22). The word chosen is what is
+             stored as the reason. -->
+        <form class="abroad-ask" id="abroadAsk" onsubmit="return false" hidden>
           <div class="field">
-            <label class="field-label" for="abroadWhy">Reason</label>
+            <label class="field-label" for="abroadKind">Reason</label>
+            <select class="select" id="abroadKind" data-seg data-seg-value>
+              <option value="Vacation">Vacation</option>
+              <option value="Work from home">Work from home</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field" id="abroadWhyRow" hidden>
+            <label class="field-label" for="abroadWhy">Other reason</label>
             <textarea class="input" id="abroadWhy" data-oneline rows="1" maxlength="300" aria-required="true" placeholder="Client shoot in Tokyo"></textarea>
           </div>
           <div class="field">
             <label class="field-label" for="abroadUntil">Until</label>
             <input class="input" id="abroadUntil" type="date" aria-required="true">
           </div>
-        </div>
+        </form>
         <p class="msg" id="abroadMsg" role="status"></p>
-        <div class="row" style="margin-top:18px;justify-content:center">
-          <button class="btn" id="noTeamOut" type="button" style="flex:0 0 auto">Sign out</button>
-          <button class="btn" id="abroadEdit" type="button" style="flex:0 0 auto" hidden>Change request</button>
-          <button class="btn btn-primary" id="abroadCheck" type="button" style="flex:0 0 auto" hidden>Check again</button>
-          <button class="btn btn-primary" id="abroadGo" type="button" style="flex:0 0 auto" hidden>Request access</button>
-          <button class="btn btn-primary" id="noTeamRetry" type="button" style="flex:0 0 auto" hidden>Try again</button>
+        <div class="cover-acts">
+          <button class="btn" id="noTeamOut" type="button">Sign out</button>
+          <button class="btn" id="abroadEdit" type="button" hidden>Change request</button>
+          <button class="btn btn-primary" id="abroadCheck" type="button" hidden>Check again</button>
+          <button class="btn btn-primary" id="abroadGo" type="button" hidden>Request access</button>
+          <button class="btn btn-primary" id="noTeamRetry" type="button" hidden>Try again</button>
         </div>
       </div>
     </div>
@@ -4197,11 +4214,10 @@
         <div id="teamHealthBox" data-narrow="780"></div>
       </div>
       <div id="teamPerfPane" hidden>
-        <div class="lockcard" id="perfLock" hidden>
-          <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <div class="lockcard" id="perfLock" data-glyph="lock" hidden>
           <h3 class="lockcard-title" id="perfLockTitle">Performance reviews are locked</h3>
+          <p class="lockcard-line">Unlocks for 15 minutes.</p>
           <form class="lockcard-form" id="perfLockForm" autocomplete="off">
-            <p class="lockcard-line">Unlocks for 15 minutes.</p>
             <label class="field-label" for="perfCode">Master code</label>
             <input class="input" id="perfCode" type="password" autocomplete="off" spellcheck="false" autocapitalize="off">
             <button class="btn btn-primary" id="perfUnlock" type="submit">Unlock</button>
@@ -4481,8 +4497,7 @@
     <div class="console-body" id="sectionNoAccess" hidden>
       <!-- A colleague whose group opens no section (2026-11-11): what they
            hold, and who gives the rest. -->
-      <div class="lockcard noaccess">
-        <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <div class="lockcard noaccess" data-glyph="block">
         <h3 class="lockcard-title">No access</h3>
         <p class="lockcard-line">Your account does not have access to any section. Please contact an admin.</p>
         <button class="btn" id="noAccessHandbook" type="button">Open Handbook</button>
@@ -5128,18 +5143,19 @@
     <div class="console-body" id="sectionMine" hidden>
       <!-- A member's own reviews open only for a session verified by a code
            emailed to them in the last 15 minutes. -->
-      <section class="lockcard" id="mineLock" hidden aria-labelledby="mineLockTitle">
-        <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <section class="lockcard" id="mineLock" data-glyph="lock" hidden aria-labelledby="mineLockTitle">
         <h3 class="lockcard-title" id="mineLockTitle">Your records are locked</h3>
         <p class="lockcard-line" id="mineLockLine"></p>
         <div class="lockcard-form">
           <input class="input" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
                  maxlength="10" aria-label="Code from the email" data-otp-boxes hidden>
           <button class="btn btn-primary" id="mineVerify" type="button" hidden>Verify</button>
-          <!-- Face ID, Touch ID or the device password, where this browser holds
-               a passkey (js/perf.js); the emailed code stays beside it. -->
-          <button class="btn btn-primary" id="minePasskey" type="button" hidden>Use passkey</button>
-          <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
+          <!-- Email a code (blue) and, where this browser holds a passkey,
+               Use passkey (the ink button) as halves (2026-11-22). -->
+          <div class="cover-acts">
+            <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
+            <button class="btn btn-ink" id="minePasskey" type="button" hidden>Use passkey</button>
+          </div>
         </div>
         <div class="msg" id="mineLockMsg"></div>
       </section>
@@ -6721,8 +6737,8 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261122b", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
-  "health": {"src": "/js/health.js?v=20261122zn", "uses": ["perf"]},
+  "perf": {"src": "/js/perf.js?v=20261122zzw", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "health": {"src": "/js/health.js?v=20261122zzw", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261122zm", "uses": ["documents", "crm", "sales"]},
@@ -6730,7 +6746,7 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122zn"></script>
+<script src="/js/admin.js?v=20261122zzw"></script>
 <script src="/js/ops.js?v=20261122zm"></script>
 <script src="/js/search.js?v=20261122zm"></script>
 <script src="/js/agent.js?v=20261122zm"></script>

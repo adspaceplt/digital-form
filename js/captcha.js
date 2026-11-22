@@ -95,7 +95,10 @@
       var row = btn.parentElement, cs = row && window.getComputedStyle(row);
       var inRow = cs && (/grid/.test(cs.display) ||
         (/flex/.test(cs.display) && !/column/.test(cs.flexDirection)));
-      (inRow ? row : btn).insertAdjacentElement('afterend', h);
+      /* A cover's form stacks its field over its act (the cover family,
+         2026-11-22): the box goes after the whole form, never between. */
+      var form = btn.closest('.cover-panel form');
+      (form || (inRow ? row : btn)).insertAdjacentElement('afterend', h);
     }
     owner.__cfHost = h;
     return h;

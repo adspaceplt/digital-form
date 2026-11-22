@@ -8,64 +8,71 @@
 <title>No connection</title>
 <script>try{var t=localStorage.getItem('adspace-theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <style>
-  /* Served by /admin/sw.js when the console cannot reach the network, so it
-     carries everything it needs: css/portal.css is not stored by the worker
-     (a stored stylesheet is how a stale console gets served), and this page
-     restates only the few tokens it draws with, at their portal values. It is
-     the cover the rest of the portal uses: the title says what happened, the
-     line says what to do, the one action does it. */
+  /* Served by /admin/sw.js when the console cannot reach the network. The
+     worker stores css/portal.css only under the stamp the console last
+     loaded, so this page carries its own copy of the master template (the
+     cover family, 2026-11-22): every page's bar with its rule, the notice
+     at the optical centre (the glyph in the locks' disc, the title at the
+     Display level, one line in the soft ink, the one act), and every page's
+     foot. Only the tokens it draws with, at their portal values. */
   :root {
-    --ink: #1a1a1a; --ink-soft: #515151; --card: #ffffff;
-    --fill: #1a1a1a; --on-fill: #ffffff; --action-ring: #8ab4f8;
+    --ink: #1a1a1a; --ink-soft: #515151; --ink-mute: #666666; --card: #ffffff; --line: #e0e0e0; --line-soft: #ececec;
+    --action: #0071e3; --action-hover: #0068d1; --on-action: #ffffff; --action-ring: #8ab4f8;
+    --head-h: 64px; --ctl-h: 34px; --radius-sm: 10px;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color-scheme: light;
   }
   :root[data-theme="dark"] {
-    --ink: #f0f0f0; --ink-soft: #c9c9c9; --card: #1f1f1f;
-    --fill: #f0f0f0; --on-fill: #1a1a1a;
+    --ink: #f0f0f0; --ink-soft: #c9c9c9; --ink-mute: #a9a9a9; --card: #1f1f1f; --line: #3c3c3c; --line-soft: #2e2e2e;
     color-scheme: dark;
   }
+  @media (pointer: coarse) { :root { --ctl-h: 36px; } }
   html, body { height: 100%; }
   body {
-    margin: 0; display: flex; flex-direction: column;
+    margin: 0; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
     background: var(--card); color: var(--ink); font: 14px/1.55 var(--font);
   }
-  .bar { height: 64px; display: flex; align-items: center; padding: 0 24px; flex: 0 0 auto; }
+  .bar { height: var(--head-h); flex: 0 0 auto; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--line); }
   .bar img { height: 26px; width: auto; display: block; }
   /* One flat colour on transparent, so it is inverted rather than shipped twice. */
   :root[data-theme="dark"] .bar img { filter: invert(1) brightness(1.15); }
-  .door { flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-    padding: 24px 24px calc(24px + 32px); }
-  /* The portal's cover (css/portal.css `.cover-panel`, 2026-11-20): the
-     title a small uppercase mark tracked 1.08px, the line the statement at
-     17px in ink. Slate Medium where the browser holds it, else the system
-     face at the same weight. */
-  .panel { max-width: 440px; width: 100%; text-align: center; }
-  h1 { margin: 0 0 12px; font: 500 13px/1.4 "ADspace Slate Medium", var(--font);
-    letter-spacing: 1.08px; text-transform: uppercase; }
-  p { margin: 0; color: var(--ink); font-size: 17px; line-height: 1.45; }
+  main { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; padding: 32px 24px calc(32px + 8vh); }
+  .panel { max-width: 400px; width: 100%; text-align: center; }
+  .mark { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 20px; border-radius: 50%; background: var(--line-soft); color: var(--ink-soft); }
+  .mark svg { width: 22px; height: 22px; }
+  h1 { margin: 0 0 8px; font: 600 24px/1.25 "ADspace Slate", var(--font); letter-spacing: -.02em; }
+  p { margin: 0; color: var(--ink-soft); font-size: 17px; line-height: 1.45; }
   button {
-    margin-top: 20px; min-width: 116px; min-height: 38px; padding: 0 16px;
-    border: 0; border-radius: 10px; background: var(--fill); color: var(--on-fill);
+    margin-top: 24px; width: 100%; min-height: var(--ctl-h); padding: 0 16px;
+    border: 0; border-radius: var(--radius-sm); background: var(--action); color: var(--on-action);
     font: 600 13px var(--font); cursor: pointer;
   }
+  @media (hover: hover) { button:hover { background: var(--action-hover); } }
   button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
-  @media (pointer: coarse) { button { min-height: 44px; } }
+  footer { flex: 0 0 auto; border-top: 1px solid var(--line); }
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); font-size: 12.5px; color: var(--ink-mute); }
+  .foot a { color: var(--ink-mute); text-decoration: none; }
   @media (max-width: 640px) {
-    .bar { height: 56px; padding: 0 16px; }
-    .door { padding: 20px 16px 48px; }
-    button { width: 100%; }
+    :root { --head-h: 56px; }
+    .bar { padding: 0 16px; }
+    main { padding: 24px 16px calc(24px + 6vh); }
+    h1 { font-size: 21px; }
+    .foot { padding-inline: 16px; gap: 10px; font-size: 12px; }
   }
 </style>
 </head>
 <body>
-  <div class="bar"><img src="/admin/icons/wordmark.png" alt="ADspace"></div>
-  <main class="door">
+  <header class="bar"><img src="/admin/icons/wordmark.png" alt="ADspace"></header>
+  <main>
     <div class="panel">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.8A15 15 0 0 1 6.3 6"/><path d="M10.7 5.1A15 15 0 0 1 22 8.8"/><path d="M5 12.5a10 10 0 0 1 4-2.2"/><path d="M15.5 10.8A10 10 0 0 1 19 12.5"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/><path d="m3 3 18 18"/></svg></span>
       <h1>No connection</h1>
       <p>Check the connection, then try again.</p>
       <button type="button" onclick="location.reload()">Try again</button>
     </div>
   </main>
+  <footer><div class="foot"><span>&copy; <span id="y">2026</span> ADSPACE PLT. All Rights Reserved.</span><a href="https://adspacestudios.com/legal/policies" target="_blank" rel="noopener">Terms of Service</a></div></footer>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
 </body>
 </html>

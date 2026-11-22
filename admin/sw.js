@@ -23,7 +23,7 @@
    every previewed PDF Unknown.pdf, because a blob: address has no name;
    Safari names a file after the last part of its address). The page hands
    the file over by message and opens that address (js/file-sw.js). */
-var VERSION = 'adspace-console-20261026a';
+var VERSION = 'adspace-console-20261122a';
 // The stamped files, kept across worker versions (Refresh app empties it).
 var ASSETS = 'adspace-console-assets';
 // A colleague's notifications, shown and opened (the one copy for every page).
