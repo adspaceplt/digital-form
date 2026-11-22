@@ -224,7 +224,7 @@
       if (r.error && /seconds|rate limit|too many/i.test(m)) { msg('authMsg', 'Please wait a minute before asking for another code.', 'err'); return; }
       if (r.error && !/signup|sign up|not allowed|not found|no user|invalid/i.test(m)) { msg('authMsg', 'Not sent. Please try again.', 'err'); return; }
       authEmailSent = email;
-      $('authSent').textContent = 'If ' + email + ' is registered, a code and a sign-in link have been sent to it.';
+      $('authSent').textContent = ADspaceWords.line.codeSent.replace('{email}', email);
       msg('authMsg', '');
       authStep(true);
     }, function () { b.disabled = false; msg('authMsg', 'Not sent. Please try again.', 'err'); });
