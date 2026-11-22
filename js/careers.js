@@ -84,9 +84,9 @@
     if (!i) return '';
     var head = '<h2 class="qs-sec-h">Interview</h2>';
     if (i.state === 'invited') {
-      return '<section class="qs-sec cr-iv" id="crIv">' + head +
+      return '<section class="qs-sec cr-iv" id="crIv"><h2 class="qs-sec-h">Choose an interview time</h2>' +
         '<dl class="ovfacts cr-facts">' + place(i, false) + '</dl>' +
-        '<p class="cr-next">Please choose a time' + (i.reply_by ? ' by ' + esc(when(i.reply_by)) : '') + '. All times are Malaysia time.</p>' +
+        '<p class="cr-next">' + (i.reply_by ? 'Please reply by ' + esc(when(i.reply_by)) + '. ' : '') + 'All times are Malaysia time.</p>' +
         (i.note ? '<p class="cr-note">' + esc(i.note) + '</p>' : '') +
         '<fieldset class="cr-picks" aria-label="Interview time">' + (i.slots || []).map(function (t, n) {
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
@@ -138,7 +138,7 @@
     if (d.stage !== 'pool' || !p) return '';
     if (p.consent === 'yes') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will keep your application until ' +
       esc(window.ADspaceClock.date(p.until, { long: true })) + ' and may contact you about future positions. Your details will then be deleted.</p></section>';
-    return '<section class="qs-sec cr-iv" id="crPool"><h2 class="qs-sec-h">Talent pool</h2>' +
+    return '<section class="qs-sec cr-iv" id="crPool"><h2 class="qs-sec-h">Keep your application on file?</h2>' +
       '<p class="cr-next">There is no suitable opening for you at this time. ADspace would like to keep your application for ' + esc(p.months) +
       ' months and may contact you about future positions. If you do not agree, your details will be deleted.</p>' +
       '<p class="msg" id="crMsg"></p>' +
@@ -244,7 +244,7 @@
       return '<label class="qs-consent cr-agree"><input type="checkbox" id="' + id + '">' + MARK + '<span class="qs-text">' + esc(text) + '</span></label>';
     };
     if (d.kind === 'offer') {
-      return facts + dl + '<div class="cr-answer qs-form"><h3 class="cr-doc-h">Your reply</h3>' +
+      return facts + dl + '<div class="cr-answer qs-form"><h3 class="cr-doc-h">Reply to the offer</h3>' +
         '<div class="field"><label class="field-label" for="crName">Full name</label><input class="input" id="crName" autocomplete="name" maxlength="120" value="' + esc(d.name || '') + '"></div>' +
         tick('crAgree', 'I accept this Employment Offer.') +
         '<div class="field" id="crDeclineBox" hidden><label class="field-label" for="crDecline">Reason</label><textarea class="textarea" id="crDecline" rows="2" maxlength="500" placeholder="Optional"></textarea></div>' +

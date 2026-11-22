@@ -172,7 +172,7 @@
            six fields). */
         '<div class="row"><div><label class="field-label" for="ntcTo">Send to</label>' +
           '<select class="select" id="ntcTo" data-seg data-seg-value><option value="all">All colleagues</option><option value="some">Selected colleagues</option></select></div></div>' +
-        '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Colleagues</span>' +
+        '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Choose colleagues</span>' +
           '<div class="meta-accs ntc-people" id="ntcPeople" role="group" aria-labelledby="ntcPeopleL"></div></div></div>' +
         '<div class="row"><div><label class="field-label" for="ntcTitle">Title</label>' +
           '<textarea class="input" id="ntcTitle" data-oneline rows="1" maxlength="' + TITLE_MAX + '" aria-required="true" placeholder="Town hall at 3:00pm"></textarea></div></div>' +

@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261122zzzr">
-<link rel="stylesheet" href="/css/console.css?v=20261122zzzs">
+<link rel="stylesheet" href="/css/portal.css?v=20261122zzzu">
+<link rel="stylesheet" href="/css/console.css?v=20261122zzzu">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -156,7 +156,7 @@
 <script src="/js/delreq.js?v=20261118"></script>
 <script src="/js/maintenance.js?v=20261122zzw"></script>
 <script src="/js/announce.js?v=20261120t"></script>
-<script src="/js/notice.js?v=20261122sk"></script>
+<script src="/js/notice.js?v=20261122zzzu"></script>
 <script src="/js/whatsapp.js?v=20261122zm"></script>
 <script src="/js/mailtpl.js?v=20261121zzw"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
@@ -169,7 +169,7 @@
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20261117zzzf" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20261122zzzs" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1606,12 +1606,12 @@
             </div>
             <div class="sheet-body">
               <section class="fsec">
-                <div class="qb-planhead"><h4 class="fsec-h">Plan</h4>
+                <div class="qb-planhead"><h4 class="fsec-h">Choose a plan</h4>
                   <select class="select select-sm" id="qbAds" data-seg data-seg-value aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
                 <div class="qb-plans" id="qbPlans" role="radiogroup" aria-label="Plan"></div>
                 <div class="row fgrid qb-pick">
                   <div id="qbMixRow"><label class="field-label" for="qbMix" id="qbMixLabel">Content</label><select class="select" id="qbMix" data-nofind></select><div class="input readfield qb-one" id="qbMixOne" aria-labelledby="qbMixLabel" hidden></div></div>
-                  <div><span class="field-label" id="qbPlatsLabel">Platforms</span>
+                  <div><span class="field-label" id="qbPlatsLabel">Choose platforms</span>
                     <div class="tickrow" id="qbPlats" role="group" aria-labelledby="qbPlatsLabel">
                       <label class="tickline"><input type="checkbox" value="meta"> <span>Meta <small class="qb-rate"></small></span></label>
                       <label class="tickline"><input type="checkbox" value="tiktok"> <span>TikTok <small class="qb-rate"></small></span></label>
@@ -1625,7 +1625,7 @@
                   <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic (Static)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Graphic (Static) <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
                   <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel (up to 60s)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel (up to 60s) <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
                 </div>
-                <div id="qbLangCol"><span class="field-label" id="qbLangsLabel">Languages</span>
+                <div id="qbLangCol"><span class="field-label" id="qbLangsLabel">Choose languages</span>
                   <div class="tickstack" id="qbLangs" role="group" aria-labelledby="qbLangsLabel">
                     <label class="tickline"><input type="checkbox" value="en" checked> <span>English</span></label>
                     <label class="tickline"><input type="checkbox" value="zh"> <span>Chinese</span></label>
@@ -2558,7 +2558,7 @@
                 <label class="field-label" style="margin-top:16px">Profile links</label>
                 <div id="ncProfRows"></div>
                 <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
-                <label class="field-label" style="margin-top:16px">Platforms</label>
+                <label class="field-label" style="margin-top:16px">Choose platforms</label>
                 <div id="ncPlatforms"></div>
                 <div class="msg" id="ncDupe"></div>
                 <div class="msg" id="ncMsg"></div>
@@ -3864,7 +3864,7 @@
               </div>
             </section>
             <section class="fsec" id="teFmtSec">
-              <h4 class="fsec-h">Formats</h4>
+              <h4 class="fsec-h">Choose formats</h4>
               <div class="tefmts" id="teFmts"></div>
             </section>
             <section class="fsec">
@@ -5279,7 +5279,7 @@
           <p class="health-lead">There are no right or wrong answers. Answer as you truly feel today.</p>
           <section class="hc-step" data-step="1">
             <fieldset class="hc-q">
-              <legend class="field-label is-req" id="hcMoodLabel">Mood</legend>
+              <legend class="field-label is-req" id="hcMoodLabel">Rate your mood</legend>
               <div class="hc-mood" id="hcMood" role="radiogroup" aria-labelledby="hcMoodLabel" aria-required="true"><label class="hc-dot"><input type="radio" name="hcMood" value="1"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="2"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="3"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="4"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="5"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="6"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="7"><span></span></label></div>
               <p class="hc-moodword" id="hcMoodWord" aria-live="polite"></p>
               <div class="hc-ends" aria-hidden="true"><span>Very unpleasant</span><span>Very pleasant</span></div>
@@ -6711,21 +6711,21 @@ raya-2026        https://example.com/raya"></textarea>
   "documents": {"src": "/js/documents.js?v=20261121zb"},
   "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
-  "reports": {"src": "/js/reports.js?v=20261122sk", "uses": ["documents", "smreport"]},
+  "reports": {"src": "/js/reports.js?v=20261122zzzu", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261121zzzzb", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261122sk", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261121zzzz"},
+  "hiring": {"src": "/js/hiring.js?v=20261122zzzu", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261122zzzu"},
   "invoices": {"src": "/js/invoices.js?v=20261121zzzz", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261119j", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261117zzzf", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261121zzzzb", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261122zzzu", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261121zzs", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261121zzt", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261121zzs", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261122zm", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261122zzzu", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
   "team": {"src": "/js/team.js?v=20261122sk", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},

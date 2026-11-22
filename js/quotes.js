@@ -1599,7 +1599,7 @@
        the plan's content, extras and languages leave. */
     $('qbThree').classList.toggle('is-bare', !p);
     $('qbMixRow').parentNode.classList.toggle('is-bare', $('qbMixRow').hidden);
-    $('qbPlatsLabel').textContent = p ? 'Platforms (' + p.spec.platforms + ' in the plan)' : 'Platforms';
+    $('qbPlatsLabel').textContent = p ? 'Choose platforms (' + p.spec.platforms + ' in the plan)' : 'Choose platforms';
     var meta = feeOf('meta');
     var ticked = Array.prototype.filter.call(document.querySelectorAll('#qbPlats input'), function (i) { return i.checked; }).map(function (i) { return i.value; });
     Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {

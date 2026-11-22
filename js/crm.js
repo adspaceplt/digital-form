@@ -4698,7 +4698,7 @@
           }).join('');
         };
         body.innerHTML =
-          '<section class="fsec"><h4 class="fsec-h">Ad accounts</h4>' +
+          '<section class="fsec"><h4 class="fsec-h">Choose ad accounts</h4>' +
             (accs.length ? '<div class="meta-accs" role="group" aria-label="Ad accounts">' + accs.map(function (a) {
               return '<label class="tickline"><input type="checkbox" value="' + esc(a.id) + '"' + (held[a.id] ? ' checked' : '') + '> <span>' + esc(a.name) + '</span></label>';
             }).join('') + '</div>' : '<p class="wl-none">No ad accounts.</p>') + '</section>' +

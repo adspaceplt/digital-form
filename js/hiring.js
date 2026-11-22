@@ -382,7 +382,7 @@
       var v = o.scores.map(function (x) { return Number((x.scores || {})[k]); }).filter(function (n) { return n > 0; });
       return [k, v.length ? Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10 : null];
     });
-    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
+    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>' +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
         '<span class="readgroup-acts">' +
         (people.length && isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-h="ivpdf">Download</button>' : '') +

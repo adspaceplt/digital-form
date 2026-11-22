@@ -337,7 +337,7 @@
       '<div class="sheet-head"><h3 id="bkTitle">Send to Bukku</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<section class="fsec"><h4 class="fsec-h" id="bkPickH">Contact in Bukku</h4><div id="bkPick" role="radiogroup" aria-labelledby="bkPickH"></div></section>' +
+        '<section class="fsec"><h4 class="fsec-h" id="bkPickH">Choose a contact in Bukku</h4><div id="bkPick" role="radiogroup" aria-labelledby="bkPickH"></div></section>' +
         '<section class="fsec"><h4 class="fsec-h" id="bkRowsH">Changes</h4><div id="bkRows"></div></section>' +
         '<div class="msg" id="bkMsg" role="status"></div>' +
       '</div>' +

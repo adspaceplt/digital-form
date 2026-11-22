@@ -226,12 +226,14 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     (one request, one release; the user, 2026-10-11). Beyond the suites
     the diff reaches, a suite runs by hand only while a fault is being
     found. A migration still runs `sql` and its
-    area's Postgres suite before it is applied to the live database. Once
-    the day's requests are all merged, one full gate (`all`: every suite,
-    `ui`, uxaudit and matrix, included) runs on main; what it finds is the
-    next batch, each fix its own release. Never weaken an assertion or
+    area's Postgres suite before it is applied to the live database. The
+    full gate runs once a day, on main, after the day's merges (`all`:
+    every suite, `ui`, uxaudit and matrix included; the user, 2026-11-22);
+    what it finds is the next batch, each fix its own release. Never weaken an assertion or
     change an expectation merely to pass. A failure in code a request did
     not touch is logged under `STANDARD.md` Logged defects until it ships.
+  - After `main` is merged into a branch, only the suites that failed
+    before the merge run again (the user, 2026-11-22).
   - uxaudit and matrix run side by side only where their browser
     profiles, mutable fixtures, output files and server are shown to be
     their own; both exit codes are read and either failing fails the gate;
@@ -475,53 +477,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `me()` that errors is asked again once after `refreshSession()`, and an
   error still standing reads Unable to load with Try again, never a console
   drawn with no access read. Never draw the client pages' bar in its place.
-- `/` is the front door and the host's one listed page, a visitor card after
-  Apple's visitor centre page (`body.lp`):
-  - one centred column (`--lp-col` 980px, 560 at 900 and under; `--lp-gut`
-    24px) holds the content but the photograph: the name, the ticks, the
-    hours and address, so the content has one left and one right edge at
-    every width (`tests/seo.js` asserts the markup; the edges are measured
-    by hand at 390, 768, 1045, 1280, 1440); the bar and the foot run to the
-    screen's edges as on every page (the mark 24px from the left);
-  - the chrome header and footer, the kicker reading Creative Advertising
-    Agency on `/` alone (16px/400, 14 on a phone, kept on a phone); no menu,
-    no sign-in, no list of rooms;
-  - the name centred: `h1.lp-title` ADspace in Optima (`ADspace Optima`,
-    `css/OPTIMA.TTF` after `local('Optima')`, never preloaded: it swaps in), over the tagline
-    `advertising | marketing | branding` in Slate Regular (`.lp-tagline`);
-    never an opening status (a studio, not a shop). ADspace alone, never
-    "ADspace Studio";
-  - the website's ways in as ticks: Home, About us (`/about`), Our services
-    (`/services`), Our works (`/project`), Contact us (`/contact`) on
-    adspacestudios.com, five across the column with the first at its left
-    edge, the last at its right and equal gaps (`max-content` tracks,
-    `space-between`); the ticks in the brand's monochrome (`--fill` with an
-    `--on-fill` tick);
-  - one photograph, whole at 16:9 and full width up to 1920
-    (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback, each
-    URL stamped `?v=` so a replaced photo is fetched again), which is also the
-    og:image; it offers no drag, right-click menu or iPhone Save to Photos
-    (a screenshot cannot be stopped);
-  - above 900: the name, the ticks, the photograph; at 900 and under (the
-    ticks as a list): the name, the photograph, the list
-    (`.lp-band, .lp-duo { order: 1 }`), the markup keeping the desk's order;
-  - Service hours: a dated week from today in Malaysia time, Monday to
-    Friday 10:00 to 18:00, redrawn every minute and on return to the tab,
-    the page's own and never the team's Working hours setting (the user,
-    2026-11-20: "keep the website front page same");
-    a public holiday on the list reads Closed with its name under the date
-    (`public_holidays_between`, read once a visit, a fortnight ahead; a
-    failed read leaves the hours);
-  - Visit: the address and Get directions (the Google Maps listing);
-  - How can we help?: one sentence, then Chat on WhatsApp opening
-    `wa.me/adspace` (the blue one); a tonal `.btn-sm` Chat on WhatsApp
-    under the tagline puts it in the first screen (2026-10-15); the number
-    is never on the page or in its business details;
-  - the head: the title and descriptions name ADspace as adspacestudios.com
-    does (Digital Marketing Agency in Johor Bahru & Singapore), Open Graph
-    and a large-image card, and one JSON-LD graph (the Organization, the
-    ProfessionalService office with its hours and address, the WebSite);
-  - white to the edge (`--card`, `theme-color #ffffff`, `color-scheme: light`).
+- `/`, the front door: `docs/rules/front-door.md`.
 - The favicon on every portal page is the ADspace wordmark in Optima on white
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
@@ -596,158 +552,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     screen, so a new device is added through `tests/launch-build.js`
     (`tests/launch.js`). iOS takes it when the app is added to the Home
     Screen.
-- The phone tab bar (`#tabBar`, js/admin.js; the user, 2026-10-09): on a
-  touch screen narrower than a desk (a foldable open or shut, a tablet
-  upright) and on any window at 640 and under, the one media query
-  `ADSPACE_TABBAR` (the head script, which sets `:root.has-tabbar` before
-  first paint) puts the first four sections the person may open, in the
-  rail's order, at the foot with More (`#tabMore`) opening the rest above
-  it; five or fewer take the bar whole. More lists only what the bar does
-  not (`.is-tabbed`), then the rail's foot: one line of the build at the
-  left, then Settings' mark and the Activity record's at the right edge
-  (each named for a screen reader and on hover); at a desk the rail is
-  212px and its marks take a row of their own on the sections' left edge,
-  the build under them (the user, 2026-11-13: "the left panel could width
-  could be smaller") (the user, 2026-10-10: "activity log can go inline with version
-  code", "just activity record icons would do"; 2026-10-11: "the settings
-  button to fit beside activity record as just icons same as it", "the
-  rearrange tabs also next to settings"), Arrange sections' mark first. The menu toggle gives way to it; the drawer stays for a narrow desk window.
-  What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
-  it through `--tabbar-space`; every panel (a sheet, a question, search,
-  the task, the finder) is a card above it inside the gutters with the
-  large corner, the bar in sight under its scrim and out of reach
-  (`--sheet-floor`, `--sheet-top`; the user, 2026-10-11: "every panel
-  opens a card above the bar on mobile"); a field taking the
-  keyboard under a finger hides it (`is-typing`), never a select, date or
-  time, which opens the system's picker (a card that moved under it jumped
-  back under the finger; 2026-10-15). It floats (the user,
-  2026-10-11, after Instagram's): a glass pill 10px above the home bar
-  inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
-  slides to it and follows a finger dragged along the bar, letting go
-  on a tab opening it ("allow the selected … button to slide around left
-  right"); a section More holds chooses More. The Dashboard carries a red
-  dot while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
-  `paintWaiting`; read once on sign-in, the rail's Dashboard row counting
-  it too; 2026-11-13), never a profile
-  photo tab (`tests/tabbar.js`, `tests/waiting.js`). It sits low, 14px
-  less than the home bar's inset above the edge (`--tabbar-bottom`; the
-  user: "can go abit down"), and scrolling down draws it in to its glyphs
-  (`.tabbar-min`: 54px, 56px a tab), scrolling up, the page's top, More or
-  a press bringing the words back; the room the page keeps clear never
-  changes. Where a phone's page stands upright and narrower than its
-  screen (the iPhone Duo's front screen, Safari's controls in a column at
-  its right; `ADSPACE_TABSIDE` in the head script, `:root.tabbar-side`,
-  measured on the layout's width and never while pinched in),
-  the bar stands upright at the right edge, its tabs glyphs alone named for
-  a screen reader, the page keeping its column clear (`--tabbar-room`),
-  More and every panel opening beside it, never drawn in, a finger drawn
-  down it as along it (the user, 2026-10-27: "at the right as portrait
-  tabs", "just the glyphs icons"; `tests/tabbar.js`). My Work held half a
-  second opens My Work with Add task (`ADspaceOps.add`, My Work at Work;
-  the user, 2026-10-11); a shorter press is a tap.
-- Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
-  "mobile tab and web … both sync edits"): one order a colleague for the
-  web rail and the phone tab bar alike. `#railEdit`, a mark at the rail's
-  foot before Settings' (drawn with three sections or more; 2026-10-11, the
-  user: "the rearrange tabs also next to settings") opens
-  `#railSheet`: the rail's groups (Work, Internal) as lists, a section
-  dragged by its grip or moved with the arrow keys on it within its group,
-  the Dashboard fixed first; under the bar the rows it will hold read Tab
-  bar; Reset order puts the standard back in the sheet; Save keeps it
-  (`rail_order_set(p_sections)`, known keys once each, `bad-order`; empty
-  is the standard). `rail_orders` has RLS on, no policy, no grant;
-  `rail_order_mine()` is read once `me()` answers, a copy in this browser
-  (`adspace-rail:{id}`) for the first paint. The page reorders the rail's
-  own items (`applyRail`), so the bar, which takes the rail's first
-  sections, follows. A section not named comes after in the standard
-  order. The Activity record's Section select, the Team panel and search
-  keep the standard order. Not filed in the Activity record.
-- Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
-  2026-10-09: the account menu grew long and AI usage hid under Reports):
-  a mark at the rail's foot beside the Activity record's (`#settingsOpen`,
-  the gear, `is-on` while the page is open; 2026-10-11), offered to
-  a colleague holding any of `team.upgrade`, `team.announce`,
-  `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Ten groups
-  (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
-  review, after Apple's System Settings), each led by a rail glyph and its
-  rows in inset cards of five at most under short headings: Portal (Pages
-  and notices: Page availability, Announcements, Notices, Demo access;
-  Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
-  User groups (an admin's, opening Team's Groups; 2026-11-17);
-  Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health check-ins, Health data
-  kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
-  client's and a supplier's link alike, Analytics; Creators: Creator and
-  campaign IDs, Creator payments, Creator payments sheet), My Work (Due
-  dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
-  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Accounting (Tax
-  and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
-  Messages (Email: Automatic emails, Send by email, Email templates, Sent
-  again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp
-  templates at WhatsApp Full Access, Meeting
-  message, Website quotations: how many a day are told on WhatsApp),
-  Performance (Months, Quarters, Bonus and trip, Commission at
-  `team.performance` View, behind the master code; 2026-10-29), Hiring
-  (Candidates: Time limits at `team.settings`, Interview scorecards at
-  `team.hiring`, its row the Standard's criteria and how many positions hold
-  their own, Standard: 5 criteria · 1 position with its own; New colleagues:
-  Welcome Kit; 2026-11-17), Templates
-  (Document types, Task templates at `ops.workflows`, Rate card wording at
-  Services Full Access). Email templates (`js/mailtpl.js`,
-  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
-  supplier's every template, fixed or New email's, at either, a client's and
-  a creator's at `team.settings` alone: `email_template_may`, 2026-11-10) lists
-  every email by recipient (Clients: Quotation, Letter of Offer, Client
-  letter, Overdue reminder, Invoice email and New email's own; Suppliers:
-  Supplier approved, Document and New email's own; Creators: the six
-  creator emails; Candidates: the eleven candidate emails, each with its own
-  switch (`hiring_email_templates`, 2026-11-21); Sign-in and codes: Verification code, the one email every
-  code the portal sends goes out in (`code_email_template`, its fields
-  {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
-  `code_email_template_save` at `team.settings`, read by `quote-request` and `hiring-mail`
-  through `_shared/mail.ts` `codeEmail`; 2026-11-17, SEAL-SPEC decision 9),
-  and Supabase's Sign-in code and Invitation listed with no Edit), each saved through its own function, and one editor
-  (`#mtEdSheet`): the words at the left, the email as it reads at the right
-  (stacked under 720), the sender's fields from `template_fields_all()` as
-  chips inserting at the caret, a field it cannot fill marked as it is
-  typed; no test email (Send test to me removed, the user, 2026-11-10;
-  `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
-  press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
-  phone's page), finding a row by its name, group or value across every
-  group and opening its group on its control (Enter takes the first);
-  each setting has this one place: no Tax and terms
-  on the Services bar, no Templates, Task numbering or Due dates in My
-  Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
-  no Wording tab in Services; a group with
-  no row drawn is left out. One group at a time (the user, 2026-10-24:
-  "the business settings are getting longer … categorize or structure it
-  into a proper settings page"): at a desk the groups run down the left,
-  a press showing that group's card alone under its heading, the page at
-  its top; at 640 and under the groups are the view strip (`#stgStrip`,
-  `.actstrip.stg-strip`), sticky under the head, a press or a sideways
-  swipe on the group (`data-swipe`) showing the next; the group shown is
-  in the address (`tab=`, the first left out; replaced, never pushed), so
-  a refresh lands on it. Still one press from Settings to a row and one to
-  its sheet, never a drill-down (refused 2026-10-11: "It now takes five
-  layers"); with fewer than three groups every group shows. Each row drawn only for its
-  part, its value under its name, a switch, Edit or Open at the right edge
-  opening the one sheet that already edits it; a figure changed from a
-  later day reads `From 14 Nov 2026: SST 6%` under the value
-  (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
-  never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). An Open
-  row states what it holds (Team n live · Clients n live, Last sent, Next
-  #WT…, Used today n of N, n of N on, n types offered), each from its
-  section's own read once a visit, filled in place and read again when
-  its sheet hands focus back (asked a tick later, so a sheet swapping for
-  another is read once both shut; 2026-10-27, SET-2); a value line is a value, never a sentence
-  (SET-6, SET-7). The list of groups is drawn only with three groups or
-  more (SET-5). The
-  account menu reads, in compact rows at a desk (a control's height; 48px
-  docked on a phone): who you are; You (My records, My namecard);
-  This device
-  (Theme, Passkeys, Notifications); Sign out. The Reports bar
-  holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
+- The phone tab bar (`#tabBar`): `docs/rules/tab-bar.md`.
+- Arrange sections (`#railSheet`): `docs/rules/tab-bar.md`.
+- Settings (`?s=settings`, `js/settings.js`): `docs/rules/settings.md`.
 - `admin/sw.js` keeps `offline.html` and the wordmark for a page load that
   failed, and every same-origin file whose address carries `?v=`
   (`adspace-console-assets`), answered from the store first, one copy a
@@ -780,169 +587,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - it never touches localStorage, IndexedDB or the sign-in;
   - notifications survive it: the next load subscribes again without asking
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
-- The latest build (`2026-11-17-latest-build.sql`; the user, 2026-11-17:
-  "ok build it", everyone on the same merged build): each minute the
-  console's check runs (`often`'s `each`) it reads `/version.json` from
-  Pages (no metered line); a build newer than the page's draws `#buildBar`
-  (laid as `.upgradebar`: A new version is available., Refresh) and never
-  refreshes by itself (review 2026-11-17: an unsaved commentary was lost to
-  it). Settings, Portal:
-  Require latest version (`team.upgrade`) stores the live build
-  (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`
-  for a build time ahead of now,
-  filed `team.changed` under Portal from and to, Undo putting the one before
-  back); `page_pulse` answers it to the console as `build`, its commit
-  and time alone, never who set it, and a console below it, on screen,
-  refreshes within the minute once idle, once for each build required
-  (`adspace-build-for`; still below it after, it waits for Refresh now),
-  its bar reading Refresh now. Idle: nothing open over the page (a sheet, question, menu, popover,
-  finder, guide, bulk bar), no field holding the caret, no request out
-  (`ADspaceAPI.loading.busy`), and no page's own `beforeunload` guard
-  objecting (asked with a probe event). A refresh is Refresh app's, at most
-  once in three minutes a tab; raw, nothing happens; client pages are
-  untouched (`tests/buildsync.js`).
+- The latest build (`#buildBar`, Require latest version): `docs/rules/portal-notices.md`.
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
-- Page availability (`js/maintenance.js`, `2026-10-29-page-availability.sql`;
-  Upgrade mode a page at a time since 2026-10-29, the user: "Upgrade for
-  /client page, Temporarily Unavailable for /admin, or selectively") is a
-  cover, never a lock: the database keeps answering, but the quotation
-  website covered makes nothing (`quote_website_create` `unavailable`).
-  - A row of `app_flags` a page (`page:{key}`: admin, client, review,
-    script, details, creators, creator, quote, supplier, verify, careers, and the system pages home, notfound, card; RLS on, no
-    policy, no grant), its `kind` (`upgrade` Upgrade in progress, `paused`
-    Temporarily unavailable), window, note, Chinese note and whether its
-    cover offers Chat on WhatsApp. `page_states()` (anon) answers every page
-    set, the console's notes (English and 中文) to the team alone; `page_set(p_pages, p_kind,
-    p_note, p_note_zh, p_starts, p_ends, p_whatsapp)` (`team.upgrade`;
-    `bad-page`, `bad-kind`, `bad-window`) sets several at once, filed
-    `team.changed` under Portal ("Page availability: Client portal: Available
-    → Temporarily unavailable · until … · note", Malaysia time);
-    `page_states_all()` reads them for Settings. `maintenance_state` and
-    `maintenance_set`, for a page served before, read and set every page.
-  - Every portal page loads it (after `api.js`; `/` and the 404, which hold
-    no database library, ask `page_states` by `fetch`), the system pages
-    included (`home` the front door, `notfound` the 404 by its tag's
-    `data-page`, `card` namecards; EVERY PAGE AVAILABLE, 2026-11-21, the
-    user: "makes all pages up, including the main page"); a page reads its
-    own row by its address. Short links (the Worker) are not a page. A
-    client page covers itself under its own bar (`.maint-cover`, z-index 39;
-    the rest `inert`): Upgrade in progress / 系统升级中 (`W.maintTitle`;
-    `maintText` The portal will be available again shortly. / 系统将稍后恢复使用。;
-    `maintBack` The portal will be available again by, then on its own line
-    20 Nov 2026 (Friday), 12:30pm. / 系统将于以下时间前恢复使用：, then the date), or Temporarily unavailable / 暂时无法使用
-    (`W.pausedTitle`, `pausedText`, Chat on WhatsApp where set), its note in
-    the page's language, following the 中文 switch. A quotation link already
-    sent (`/quote/?q=`) keeps opening while the website is only paused. Every
-    open page, the console included, asks again every minute while on screen
-    and on every return (`ADspaceMaintenance.often`), and at a set start or
-    end: covered, it covers itself; uncovered, a covered page reloads (to its
-    latest version). A read that fails (`ask(true)` answers null) changes
-    nothing.
-  - An open page's minute is one request (`page_pulse(p_audience, p_bell)`,
-    `2026-10-09-one-check-a-minute.sql`, anon too): upgrade mode, the
-    announcements and the bell, each as its own function answers it; a part
-    joins with `often(key, take, alone, opts)`, and on a database without the
-    function every part asks alone (every request is a line Supabase logs and
-    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze); to the console it
-    also answers the build required (`build`).
-  - The console's row covers it for anybody but an admin (the whole screen,
-    with Sign out); an admin works on under `.upgradebar` (led by the amber
-    dot, Console: Upgrade in progress until …, Turn off ending the
-    console's alone). Settings, Portal: Page availability (`team.upgrade`,
-    All pages available or n pages unavailable) opens `#pgSheet`: the pages
-    by group (Team, Clients, Creators, Public with the Candidate page), then
-    System pages (Front page, Page not found, Namecards) under their own
-    heading, whose tick chooses the three while Select all never does; each one line at a desk (the
-    name and its address, the state and when, the pen; on a phone the name
-    over its address, the state over when, the pen beside), revamp D,
-    2026-11-04; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The
-    question asks Availability (a segment), Starts, Ends (each a date beside
-    its time, MYT; empty start is now, empty end waits, a time with no date
-    is today's), a note, a 中文 note and Show Chat on WhatsApp (not the
-    console's), saying under the choice what it does to that page, refusing
-    in the sheet a window that does not end after its start and now; Undo
-    puts each page back. It opens on Upgrading, never Available, unless the
-    pages chosen share a set state (that state, their window kept where it
-    is one; where their times or notes differ, the fields open empty over
-    a mute line saying so, and each page keeps its own of every field left
-    empty, only what is typed laid over all, `tests/upgrade.js`); Available lays the window and notes aside (the state chosen
-    again brings them back), and a window typed under Available is refused
-    (Choose Upgrading or Unavailable to set a start, an end or a note.; the user, 2026-11-20).
-    Every date and time field is one height (`--ctl-h`, the small one
-    `--ctl-h-sm`), never a floor, so a pair's labels share one line.
-- Announcements (`js/announce.js`, `2026-10-07-announcements.sql`,
-  `2026-10-07-announcements-several.sql`): one bar under the top bar, the
-  team's on the console (laid like `.upgradebar`) and the clients' on every
-  client page that loads `maintenance.js` (edge to edge under its bar)
-  (`announcements`, RLS on, no policy, no grant). Several may be live for
-  each audience (the user, 2026-10-07: "i want multiples for internal and
-  also clients"): `announcement_now(audience)` answers every live one as a
-  list (started or no start, its end ahead or none, not ended; Important
-  first, then the newest, ten at most), the clients' to anyone and the
-  team's to the team, never who wrote it; asked on load (the console once
-  `me()` answers), every minute while on screen and on return. They share
-  the one bar, never stacked: a slide each, with ‹ n/N › once there are two
-  (the arrows and a swipe, round from the last to the first), the bar as
-  tall as its longest line so moving along never moves the page. Info is
-  the tonal ground, Important the same led by the amber dot; the words
-  follow the page's language (中文 where given); an https link opens in a
-  new tab; the reader's × hides the one on show in this browser
-  (`adspace-ann-hide:{id}:{updated_at}`, so an edit returns it). Team:
-  Announcements (`team.announce`, granted) on the Settings page opens the
-  list (`#annSheet`: Team and Clients, each every line, live with Edit /
-  Stop, which asks, stopped or ended with Restore (never asks, while its end
-  is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
-  sheet: Tone, English, 中文 (a team's asks one Message: the console is
-  English alone; the user, 2026-10-11), Link, Starts and Ends as a date
-  beside its time, MYT; posting one adds it, never ending another),
-  `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
-  restore; refused `live` until stopped or ended; a row's own act is Edit,
-  else Restore, its ⋯ Stop, or Delete last once stopped or ended); each filed `team.changed`
-  under subject Announcements. A plain line, never a scrolling marquee. No
-  bar is made while upgrade mode's cover is up (a box made after the cover
-  would sit outside its `inert`).
-- Notices (`js/notice.js`, `2026-10-09-team-notices.sql`; the user,
-  2026-10-09: "send custom in-app notifications to all members, or to
-  specific team member(s)"): Team: Notices (`team.notice`) on the Settings
-  page opens the list (`#ntcSheet`: every notice sent, newest first, To,
-  when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
-  push already on a phone stays) and Restore (never asks), and once
-  withdrawn the row's ⋯ Delete (asked, no restore; `team_notice_delete`,
-  refused `live` until withdrawn, the notice and every copy;
-  `2026-10-10-notice-delete.sql`, run in the SQL Editor)) and New
-  (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
-  colleagues ticked code first, Title (one line, 120) and Message (1,000),
-  the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
-  one `ops_notifications` row (kind `notice`, `notice_id`, `from_name`) to
-  each active colleague but the sender (`bad-title`,
-  `bad-body`, `no-one`; ten a sender in any hour, `too-many` with when the
-  next can go, `2026-10-18-ten-notices-an-hour.sql`), so it reaches the bell
-  and a push;
-  `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
-  (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
-  grant. Each is filed `team.changed` under subject Notices.
+- Page availability (`js/maintenance.js`): `docs/rules/portal-notices.md`.
+- Announcements (`js/announce.js`): `docs/rules/portal-notices.md`.
+- Notices (`js/notice.js`): `docs/rules/portal-notices.md`.
 
-- Public holidays (`2026-10-14-public-holidays.sql`; the user, 2026-10-14:
-  "prefill and let manually change and apply to my work"): the days the
-  office is closed, `public_holidays` (day, name; RLS on, no policy, no
-  grant), seeded once into an empty table with Johor's 2026 and 2027.
-  Settings' Portal group, Public holidays (`team.settings`): the next one
-  under the name; Open lists a year at a time (`#holSheet`, Year as a
-  segment) as Industries' table (Date · Holiday · the pen; revamp A,
-  2026-11-04): the pen opens its row as the date and name fields (Enter
-  saves, Escape leaves), the last row adds one
-  (`public_holiday_save(p_day, p_name, p_was)`: `taken` naming the holiday,
-  `bad-name`, `bad-day`), Delete in the open row (`public_holiday_delete`,
-  asked, no restore); each filed `team.changed` under Public holidays, from and
-  to. `public_holidays_between(p_from, p_to)` (anon, 800 days at most) is
-  the one read: the front door, Settings (this year and the next) and My
-  Work (once a visit) ask it. My Work's calendar names a holiday on its
-  day (`.cal-hol`, the day shaded; on a phone a holiday shows in a month
-  with no tasks), and a My Work date set on one is told so under its field
-  (`.hol-note`, "8 Nov 2026 is a public holiday: Deepavali."); the noon
-  reminder and the task reminders skip a holiday (their cron commands ask
-  `public_holiday_on`). Due dates are not moved.
+- Public holidays (`public_holidays`): `docs/rules/settings.md`.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. Demo content is only for a copy
@@ -1125,56 +777,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   words already state. The figures fold under every chart as a table; a
   column, a point and a slice give their figure on hover or a tap. No chart
   library.
-- `js/media.js` (`ADspaceMedia.tag(url, attrs)`, `attach(video, url)`) is
-  every video player: it names the H.264 copy `name.web.mp4` first (typed
-  MP4) and the original after, so a browser plays the copy once it exists
-  and the original until then. Never `<video src>` for an uploaded file.
-  A thumbnail of a video is `ADspaceMedia.still(url)`, its first frame
-  (`#t=0.1`; iPhone Safari draws a bare video blank until it plays): a
-  console row, and the selection page's post rows (the user, 2026-10-10).
-  It also holds the media pass (`ADspaceMedia.pass(proof)`, 2026-10-03):
-  with `ADSPACE_CONFIG.s3.privateMedia` on, a page that has proved its link
-  (`{review}`, `{campaign}` with the passcode), a creator's code
-  (`{creator}`) or a sign-in (`{}`: a colleague, or a client contact with
-  live portal access, the client portal asking before it draws; 2026-10-08)
-  asks `media-pass` for CloudFront's three
-  signed cookies before it draws a file, set on
-  `mediaCookieDomain` (adspace.me) for twelve hours and asked again under two
-  left (load, return to the tab). A pass is held to the folders its caller
-  may see (audit F3, 2026-10-10): `passes`, one policy a folder, each set on
-  that folder's own cookie path so the browser sends it there alone: the
-  review link its client's `content/{clientId}/`, the selection link that and
-  each booking's `content/creator/{optionId}/`, a creator their bookings'
-  drafts alone, a client's contact each client they hold access at, a
-  colleague the whole of `content/` (path `/content/`), only while
-  `is_team()` answers for them as the caller (active is not enough: held
-  overseas, or access passed before the expiry run; audit 2026-10-29). A client page's pass
-  takes away a root pass left by an earlier page, and is fresh only for the
-  proof it was asked with (`adspace-media-for`). Every pass keeps the folders
-  it set (`adspace-media-paths`, this browser) and the next pass takes them
-  away: CloudFront refuses a file sent two passes, which a client's link
-  opened beside the console left (2026-10-12); a file refused on a folder
-  another page left a pass on loads again once it is taken away
-  (`ADspaceMedia.renew`). A colleague's pass is never taken away by a client
-  page: a client page opened while a colleague's pass is live (the team
-  previewing a link in the console's browser) sets no pass of its own and
-  draws on the colleague's, and the console takes away every folder a client
-  page left each time it asks, fresh or not (2026-10-15, the second outage:
-  the fix of 2026-10-12 covered the client page first, never the console
-  first; `tests/mediapass.js` holds both orders). Add assets' check that the CDN serves a stored
-  file reads it with the pass, asked again once; with the pass on, a file
-  S3 took is never refused by that check. An answer in the earlier
-  shape (one pass over `content/`, no `passes`) is set on the root as before,
-  so a page served before `media-pass` is deployed keeps its media. A file under `content/` that fails asks
-  again once and reloads (a video at its second), the page's own `onerror`
-  held until the answer; a `.web.mp4` copy not made yet never asks. Stored
-  addresses never change. A refused or slow pass (6s) never holds a page.
-  Signing out takes the pass with it (`ADspaceMedia.forget()`: the three
-  cookies on the root, content/ and every remembered folder, and the
-  pass's marks): the console's Sign out, which also removes the browser's
-  `adspace-*-notes:`, `adspace-*-inputs:` and `adspace_drafts_` keys, the
-  client portal's, and the creator's Forget this device (`{ client: true }`,
-  leaving a colleague's live pass alone).
+- `js/media.js` (every video player, the media pass): `docs/rules/media.md`.
 - `js/acts.js` (`ADspaceActs`) is the one table of act glyphs and the one
   pending state (the user, 2026-10-10): every console `.btn` whose words are
   an act carries its mark (Publish the plane, Unpublish the struck eye,
@@ -2069,8 +1672,10 @@ session loads (2026-11-17, the user: "ok all"; the cost of loading every rule
 in every session). Before changing an area, read its file whole. The first
 edit of a path in its triggers prints the file's name (`.claude/hooks/area-rules.sh`);
 a change reaching an area with no path of its own (a schema band, a function)
-is found with `grep -rln "<function, table or word>" docs/rules/`. A rule
-learned about an area is written in its file, never here.
+is found with `grep -rln "<function, table or word>" docs/rules/`. An
+area's rules live in its `docs/rules/` file alone: a block about one area
+(a section, a page, a tool) is never written in this file or `DESIGN.md`,
+only a one-line pointer to it (the user, 2026-11-22).
 
 | Area | Rules | Paths that name it |
 |---|---|---|
@@ -2100,6 +1705,13 @@ learned about an area is written in its file, never here.
 | Activity record | `docs/rules/activity.md` | `js/records.js` |
 | Messages: WhatsApp and Email | `docs/rules/messages.md` | `js/whatsapp.js`, `js/mailtpl.js`, `supabase/functions/wa-send`, `supabase/functions/wa-hook`, `supabase/functions/_shared/mail.ts` |
 | Push notifications | `docs/rules/push.md` | `js/push.js`, `js/push-sw.js`, `supabase/functions/push-send` |
+| Settings and Public holidays | `docs/rules/settings.md` | `js/settings.js` |
+| Page availability, the latest build, Announcements, Notices | `docs/rules/portal-notices.md` | `js/maintenance.js`, `js/announce.js`, `js/notice.js` |
+| The phone tab bar and Arrange sections | `docs/rules/tab-bar.md` | none (`js/admin.js` is shared; grep `tabBar`, `railSheet`) |
+| The front door | `docs/rules/front-door.md` | `index.html`, `img/front-door` |
+| Media and the media pass | `docs/rules/media.md` | `js/media.js`, `supabase/functions/media-pass` |
+| The demo | `docs/rules/demo.md` | `js/demo.js`, `demo/` |
+| Overseas access | `docs/rules/overseas.md` | none (grep `abroad`) |
 
 ### Sign-in, security, secrets
 - Send invitation always sends one (2026-11-11, the user: two went
@@ -2125,60 +1737,6 @@ learned about an area is written in its file, never here.
 - `/admin/` signs in with the emailed link or the code (`#authCode`, 6 to 10
   digits, `verifyOtp` type `email`), or with a passkey (supabase-js 2.117.2 on
   `/admin/` only).
-- The demo (`js/demo.js`, `2026-10-27-demo-access.sql`; the user,
-  2026-10-27: "fake populated data unable to add anything … so i can sell
-  ppl this portal", "Just enter in the email input"): four to eight digits
-  in the sign-in's email box are asked of `demo_pin_ok` (anon, true only
-  while Demo access is on and the PIN right, wrong ones counted as a
-  link's passcode, `link_passcode` kind `demo`); the box takes an email
-  address or that PIN alone: a wrong PIN and any value that is no address
-  read Enter a valid email address., the same words, so the box never says
-  a PIN exists (the client portal's sign-in refuses one alike). A right PIN keeps
-  `adspace-demo` in this browser for twelve hours, and the head then loads
-  `demo/seed.js` (a made-up agency, Sample Studio, its six colleagues and 48
-  clients over two years, built on every load relative to today) and
-  `demo/engine.js` (the stand-in, `tests/demo-build.js`) in place of the
-  database, which the page never reaches again. Signed in as the sample
-  director; every write refused (a table's insert, update or delete, a
-  function whose name changes something, an edge function but Bukku's
-  invoices read, which the engine answers with none held, an upload) with
-  Demo: changes are not saved.; the mark, letterhead, foot and title the
-  sample agency's; a bar over the console (`#demoBar`, the upgrade line's
-  look) with Client pages (a menu of the client portal, Content Review, the
-  creator selection, a creator's page, Video Scripts and a namecard, each
-  on its sample link in a tab of its own, so nobody needs an address; the
-  user, 2026-10-27) and Exit demo, which Sign out does too. The client pages
-  (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`,
-  `/verify/`)
-  load the same while it stands: the client portal signed in as a sample
-  client's main contact (`client@example.com`), the rest on their sample
-  links alone, each key holding a 0 that no real key's alphabet holds
-  (`demo0r…`, `demo0c…`, `DEMO0…`, `demo0s…`, `demo0…`), so a real link
-  opened while the demo stands is the real page; `/verify/` loads it for
-  any reference (Verify document in Client pages opens it on the sealed
-  sample's), answering the seed's January 1988 documents alone, a real
-  reference Not found, and File check matching only a copy of the sealed
-  sample the demo console drew (`adspace-demo-seals`, the hashes it handed
-  out; the user, 2026-11-20, option A); each under the bar edge
-  to edge (`.annbar.demobar`; the namecard has no bar); the creator's page
-  opened bare, with no code kept, opens a sample creator holding a booking,
-  and Exit demo lets go of a sample code it kept; signing out of
-  the client portal returns to the console. A demo whose sample data did
-  not arrive takes the real library away, never the real database: a client
-  page reads Unable to load under the bar, the console Unable to load with
-  Exit demo on its signed-out page; Sign out in the demo is Exit demo, never the
-  console's clearing of the colleague's notes and drafts; a sheet's draft
-  is let go as the demo starts and ends (audit, 2026-10-27). The sample data
-  holds no registration a company could hold (zeros) and no real handle
-  (`.sample`), and the demo opens no chat, call or profile (wa.me, `tel:`,
-  Instagram, Facebook, TikTok, rednote), saying so in its bar; the client
-  pages' guides it marks met are listed (`adspace-demo-guides`) and offered
-  again on Exit demo (2026-10-29). Settings, Portal: Demo
-  access (`team.settings`): On / Off and a PIN, a new one 6 to 8 digits
-  (one of 4 or 5 set before keeps opening; audit 2026-11-15), kept as a
-  bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`; a new PIN
-  clears the demo's wrong tries and locks), filed
-  `team.changed` under Demo access, never the PIN.
   - Passkeys are managed in the account menu.
   - The passkey offer shows once per browser (`adspace-passkey-offer`).
   - A passkey that proves the person already signed in goes through
@@ -2188,48 +1746,8 @@ learned about an area is written in its file, never here.
     auth events meanwhile (`ADspaceAdmin.hold`); another account's answer is
     revoked on this device (`signOut({ scope: 'local' })`) and the person's
     own session put back (`setSession`), else the console signs out.
-- Overseas access (`2026-10-24-overseas-access.sql`,
-  `2026-10-24-admin-notices-system-account.sql`, their SQL Editor parts
-  `2026-10-24-overseas-access-days.sql` and
-  `2026-10-24-overseas-reminder-setting.sql`; the user, 2026-10-24: "Allowed in
-  Malaysia Singapore", "14 days per cycle", "Admins only"): the console
-  answers a colleague outside Malaysia and Singapore only once an admin
-  approves it. The country is Cloudflare's `cf-ipcountry` header
-  (`request_country()`, which a caller cannot set; none, as for pg_cron, is
-  never held); `team_place_ok` (an admin, MY or SG, no country, or an
-  approved `team_abroad` row whose day (MYT) has not passed) is asked by
-  `is_team()`, `allowed(p_section, p_level)`, `ops_granted`, `ops_me()` and
-  `me()`, so every policy and function refuses the colleague; client pages
-  never ask them. `me()` answering nothing, the console asks `abroad_state()`
-  and a held colleague meets the cover (`paintAbroad`, js/admin.js: Access
-  from {country} needs approval, Reason (Vacation, Work from home or
-  Other, which opens the reason typed; the word chosen is stored, 2026-11-22)
-  and Until, Request access; then
-  Request sent with Change request and Check again; a decline, an end or a
-  day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
-  `bad-until` today to today plus `abroad_days`, a waiting request
-  replaced) tells every active admin (kind `abroad.request`, the bell
-  opening the colleague's record, the request its `dedupe_key` names
-  (`abroad:{id}:…`), never a namesake's), and while it waits, its colleague active and
-  its day not passed, `abroad_remind()` (pg_cron `abroad-remind`, every
-  fifteen minutes from 08:00 to 22:45 MYT; `team_abroad.reminded_at`, a
-  request asked again starting afresh) tells them again every
-  `abroad_remind_hours` (2, 0 to 24, 0 sends none; Overseas approval's
-  sheet) as Overseas access waiting. The colleague's record decides it
-  (the user, 2026-10-24: "Build its from me"): an admin's Team read asks
-  `abroad_list()` beside `team_rows()`, the list's state column reads
-  Overseas request while one waits, and Overview leads with Overseas
-  access while the colleague holds a request of the last 90 days (the one
-  waiting or approved as facts, Decline and Approve on the group, Approve
-  asking Until, or End access in its ⋯; the rest under Earlier); nobody
-  else reads it (`tests/abroadrec.js`); Settings holds no list of
-  requests. `abroad_decide` / `abroad_end` filed `team.changed`
-  under Overseas access and told to the colleague (`abroad.decided`);
-  Overseas approval (`abroad_days`, 14, 1 to 30, and the reminder hours,
-  Business settings). An
-  approval covers any country until its day. A VPN or roaming data reads as
-  where it exits; an edge function reads as where it runs (Singapore for a
-  colleague here). The stand-in reads `window.__country` (Malaysia unset).
+- The demo (`js/demo.js`, `demo/`): `docs/rules/demo.md`.
+- Overseas access (`team_abroad`, `team_place_ok`): `docs/rules/overseas.md`.
 - One person per console: a session that turns into somebody else's (another
   tab, any sign-in over this one) restarts the console from the top
   (`gate()`, after 1.5s unless the session has come back).
@@ -2407,8 +1925,8 @@ learned about an area is written in its file, never here.
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes
   go apart.
-- Sessions run at once (the user, 2026-10-11: "allow all sessions"; until
-  then one at a time): each holds one request on its own branch and PR,
+- At most four sessions run at once (the user, 2026-11-22; "allow all
+  sessions" since 2026-10-11): each holds one request on its own branch and PR,
   merges `main` in where another merged first, and merges as soon as it
   is built, never waiting to be asked. One gate a machine still holds.
   "Hand over" means: commit and push both repositories, then post
@@ -2417,6 +1935,12 @@ learned about an area is written in its file, never here.
   still open in order with their rollback, and what waits on the user. A
   session opening on an open PR reads its latest handover first and
   continues its branch.
+- The session that starts others checks every one it started every 30
+  minutes while any runs (`list_sessions` children, a `send_later`
+  check-in), never waiting for a report: one blocked or idle with its PR
+  unmerged is unblocked, or its PR merged by the starting session; a
+  session's own brief says it merges without asking (the user,
+  2026-11-22: "Its not the first time its happening").
 - A release with a migration or a function states its order (pages,
   each migration, each function), what an old open tab meets at every
   intermediate state, what a failed step leaves and which steps reverse.

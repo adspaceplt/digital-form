@@ -209,3 +209,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   its task.
 - `batches.published_at` is stamped by `batches_published_at` on the move to
   published and cleared on Unpublish.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| A team's month at a glance (the Dashboard's Team tab, 2026-11-13) | Two cards of rows (`.ovw-tr`, each a button opening its record, 48px, a hairline between): Work by person (`#ovwPeople`: the colleague's disc and name, then Open, Late in red, Delivered and On time on one right edge, tabular) beside On time by month; Clients this month (`#ovwClientsMonth`: the logo and name, the posts done of planned as a status, the report as a status and the meeting) beside Needs attention, eight rows then Show N more; on a narrow pane Delivered leaves and a client's report and meeting read as one mute line under its name. A figure tile whose change is drawn ends on a `--sunk` strip holding it. Phase 4 (2026-11-13): the lead figures are compact (12px 14px in, the figure 22px with its trend 72px wide on its line, a tile drawing a trend giving up its section mark; the user: "we really need space"); Work by stage over the pair (`.ovw-stages`: a 56px ring a stage, 44 narrow, three across narrow, the parts `--dot-off`, `--dot-wait`, `--dot-late` with a key under the strip, the count 17/500 in the middle, the name 12.5/500 soft, up to three colleague discs then +n); a person's open work and a client's posts as a 6px `.ovw-pbar` (`--ink-mute`, done `--dot-ok`, late `--dot-late`). A task's ring on Me (`.ovw-ring`, 30px, 16 in Next 5 days): a 3px time line in its status dot's colour over `--line-soft`, the checklist done as a thin `--ink-soft` arc inside on a `--line-soft` track, a tick once all of it is (2026-11-14: the full disc read as a blot) |
