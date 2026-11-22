@@ -412,6 +412,10 @@
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',
+    /* Bukku's refusals, said alike on every screen that asks it (2026-11-22). */
+    bukkuNotSetUp: 'Bukku is not set up yet. Please contact an admin.',
+    bukkuNoAnswer: 'Bukku did not respond. Please try again in a few minutes.',
+    bukkuRefused: 'Bukku refused the request. Please try again, or contact an admin.',
     noSettings: 'You do not have permission to change business settings. Please ask an admin.',
     addrGone: 'Address deleted',
     addrGoneWhen: 'Deleted after 12 months',

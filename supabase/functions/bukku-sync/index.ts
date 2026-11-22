@@ -77,6 +77,15 @@
  *                                             bills read for 25 seconds and
  *                                             kept (`bukku_docs_take`); the
  *                                             nightly run reads them too.
+ *   POST { action: 'supplierbills' }          Suppliers' Payments view's
+ *                                             Read from Bukku (2026-11-22):
+ *                                             asked as the caller
+ *                                             (`supplier_bills`, Suppliers
+ *                                             Work), the suppliers' bills
+ *                                             read for 25 seconds and kept.
+ *   POST { action: 'supplierbilllink', id }  a supplier bill's page in
+ *                                             Bukku, where the caller reads
+ *                                             that bill (Suppliers View).
  *   POST { action: 'bills', creator }        a creator's Bukku bills (2026-11-09,
  *                                             CREATOR PAYMENTS): read from the
  *                                             creator's linked contact, kept
@@ -1647,6 +1656,31 @@ Deno.serve(async (req) => {
       const bill = await payHistory('bill', at + 25000);
       if (bill.error) return json({ error: bill.error }, 200, origin);
       return json({ ok: true, kept: (inv.kept || 0) + (bill.kept || 0), more: !!(inv.more || bill.more) }, 200, origin);
+    }
+    /* Suppliers' Payments view's Read from Bukku (SUPPLIER BILLS,
+       2026-11-22): asked as the caller (`supplier_bills`, Suppliers Work),
+       then the suppliers' bills alone read for 25 seconds and kept as the
+       nightly run keeps them. */
+    if (action === 'supplierbills') {
+      const may = await db.rpc('supplier_bills', { p_supplier: null, p_paid_from: todayMY(), p_doc: null });
+      if (may.error) return json({ error: 'needs-update' }, 200, origin);
+      if (may.data && may.data.error) return json({ error: may.data.error }, 200, origin);
+      if (!may.data || may.data.work !== true) return json({ error: 'denied' }, 200, origin);
+      const bill = await payHistory('bill', Date.now() + 25000);
+      if (bill.error) return json({ error: bill.error }, 200, origin);
+      return json({ ok: true, kept: bill.kept || 0, more: !!bill.more }, 200, origin);
+    }
+    /* A supplier bill's page in Bukku: the bill named only where the caller
+       reads it (`supplier_bills` with `p_doc`, Suppliers View). */
+    if (action === 'supplierbilllink') {
+      const id = Number(body.id || 0);
+      if (!Number.isInteger(id) || id <= 0 || id > 1e15) return json({ error: 'bad-request' }, 400, origin);
+      const r = await db.rpc('supplier_bills', { p_supplier: null, p_paid_from: null, p_doc: id });
+      if (r.error) return json({ error: 'needs-update' }, 200, origin);
+      if (r.data && r.data.error) return json({ error: r.data.error }, 200, origin);
+      if (!((r.data && r.data.bills) || []).length) return json({ error: 'not-found' }, 200, origin);
+      const url = billWeb(secret('BUKKU_SUBDOMAIN'), id);
+      return url ? json({ ok: true, url }, 200, origin) : json({ error: 'not-found' }, 200, origin);
     }
     /* A completed month's invoice (2026-11-10): asked as the caller, read
        from Bukku, kept by the service role. */

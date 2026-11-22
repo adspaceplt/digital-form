@@ -28,10 +28,10 @@
   var SAID = {
     denied: 'You do not have permission to view Payments. Please ask an admin.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-not-set-up': window.ADspaceWords.line.bukkuNotSetUp,
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
-    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
-    'bukku-refused': 'Bukku refused the request. Please try again, or contact an admin.',
+    'bukku-unreachable': window.ADspaceWords.line.bukkuNoAnswer,
+    'bukku-refused': window.ADspaceWords.line.bukkuRefused,
     failed: 'The request failed. Please try again.'
   };
   function said(d) { return (d && SAID[d.error]) || SAID.failed; }

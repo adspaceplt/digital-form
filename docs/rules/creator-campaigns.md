@@ -685,3 +685,16 @@ Moved from DESIGN.md §4 on 2026-11-22.
 | A creator's payments (the creator page's Payment pane) | After the details, the Bukku band (`.bk-band`, Send to Bukku), then Payments (`#cpayJobs`, Read from Bukku a `.btn-sm` at its heading's right): a booking a `.cpay-job` row, its Job reference in the token face over its campaign and earlier job ID, its bill's state (`.chip-state`: Paid, Processing, Not billed with Pay by, Not due) over the bill's number and amount at the right, its fee (Fee RM …, else Fee not set, at Creator payments View) after the campaign, Create bill (`.btn-sm`) under the state where a bill can be made (its question asks the amount), the pen (the fee and the earlier job ID) last; Create n bills beside Read from Bukku once two are ready, a `.msg.warn` line where no Bukku account is chosen; Earlier payments the bills matching no booking, under their heading; Read from Bukku {day, time} a mute line at the foot |
 | A creator's payment details on the Creators List | After the name, never a column (the user, 2026-11-12): approved a green 8px dot alone (`.cr-paydot`, `--dot-ok`, 8px after the name, `role="img"` named Payment details approved, its title on hover), the one dot that stands without its word, since nearly every row holds it and none submitted shows nothing; To review and Declined their `.chip-state` with its word |
 | A creator's payment details (the creator's page) | `.panel.crpay` under the head: the record head's shape (`.rec-id-solo`), a 16/600 title over its standing (`.chip-state` and its parts, each held whole, `.crpay-part`), the act at the right (blue Submit details while none is held or one was declined, else tonal Change details), the details paid to as `.ovfacts` under a hairline (104px labels on a phone), numbers by their last four; its sheet a `.formsheet` of three `.fsec`s (Billing, Payment, Contact) and the confirmation tick, a choice that changes the fields under it redrawing them with what was typed kept |
+
+- The Creators List's tiles (2026-11-22, the Bukku structure, decision 5):
+  `#rosterTiles` over the bands, as Clients has them: Active creators,
+  Details to review (the oldest submitted), and at Creator payments Ready
+  to bill (the fees, those not set in the foot) and Awaiting payment (the
+  bills late in red), from `creator_payments_queue`'s one read; hidden
+  while a creator is open.
+- A creator's payment row (`.cpay-job`) is the phone row (`.prow`,
+  2026-11-22, decision 3): the reference over its campaign, the state, the
+  end (a date, a bill, an amount, each part whole) and the ⋯ in their
+  slots, the ⋯'s slot kept on every row; on a phone the end takes the room
+  the state and the ⋯ leave (`contain: inline-size`), so a long campaign
+  name never runs under it (`tests/supbills.js`).

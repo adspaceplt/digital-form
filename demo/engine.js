@@ -326,7 +326,7 @@
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
     code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
-    payment_analysis: 'p_currency', bukku_docs_take: 'p_kind p_rows p_back_to',
+    payment_analysis: 'p_currency', bukku_docs_take: 'p_kind p_rows p_back_to', supplier_bills: 'p_supplier p_paid_from p_doc',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
@@ -14797,6 +14797,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'bukku_docs_take') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function bukku_docs_take' } });
+
+    if (name === 'supplier_bills') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      if (!opsMe() || !opsAllowed('suppliers', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var sbA = args || {}, sbToday = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+      if (sbA.p_supplier && !(DB.suppliers || []).some(function (x) { return x.id === sbA.p_supplier; })) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      var sbOut = [];
+      (DB.bukku_docs || []).forEach(function (d) {
+        if (d.kind !== 'bill' || d.gone) return;
+        var l = (DB.bukku_links || []).filter(function (x) { return x.kind === 'supplier' && Number(x.contact_id) === Number(d.contact_id); })[0];
+        var s = l && (DB.suppliers || []).filter(function (x) { return x.id === l.record_id; })[0];
+        if (!s) return;
+        if (sbA.p_supplier && s.id !== sbA.p_supplier) return;
+        if (sbA.p_doc != null && Number(sbA.p_doc) !== Number(d.doc_id)) return;
+        if (sbA.p_paid_from && !(Number(d.balance) > 0) && String(d.paid_on || d.doc_date) < sbA.p_paid_from) return;
+        var c = s.client_id && (DB.clients || []).filter(function (x) { return x.id === s.client_id; })[0];
+        var seen = c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by);
+        sbOut.push({ id: Number(d.doc_id), supplier: s.id, code: s.code, name: s.name || s.code, number: d.number || '', date: d.doc_date,
+          due: d.due_date || d.doc_date, amount: Number(d.amount), balance: Number(d.balance), currency: d.currency || 'MYR', paid_on: d.paid_on || null,
+          client: seen ? c.name : null, client_code: seen ? c.client_code : null });
+      });
+      sbOut.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : a.id - b.id; });
+      var sbMark = (DB.bukku_doc_marks || []).filter(function (m) { return m.kind === 'bill'; })[0];
+      return Promise.resolve({ data: { ok: true, today: sbToday, work: opsAllowed('suppliers', 'work'), read_at: sbMark ? sbMark.read_at : null,
+        bills: JSON.parse(JSON.stringify(sbOut)) }, error: null });
+    }
     if (name === 'payment_analysis') {
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
       if (!opsMe() || !opsAllowed('clients.billing', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -18486,6 +18512,37 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
           if (window.__bukkuOff) return bkR({ error: 'bukku-not-set-up' });
 
+          if (bkb.action === 'supplierbills' || bkb.action === 'supplierbilllink') {
+            var sbArgs = bkb.action === 'supplierbills' ? { p_supplier: null, p_paid_from: null, p_doc: null } : { p_supplier: null, p_paid_from: null, p_doc: Number(bkb.id) || -1 };
+            return rpc('supplier_bills', sbArgs).then(function (sr) {
+              if (sr.error) return { data: { error: 'needs-update' }, error: null };
+              if (sr.data && sr.data.error) return { data: { error: sr.data.error }, error: null };
+              if (bkb.action === 'supplierbilllink') {
+                if (!(sr.data.bills || []).length) return { data: { error: 'not-found' }, error: null };
+                return { data: { ok: true, url: 'https://adspace.bukku.my/purchases/bills/' + Number(bkb.id) }, error: null };
+              }
+              if (!sr.data.work) return { data: { error: 'denied' }, error: null };
+              if (window.__bukkuDown) return { data: { error: 'bukku-unreachable' }, error: null };
+              var sl = {};
+              (DB.bukku_links || []).forEach(function (l) { if (l.kind === 'supplier') sl[Number(l.contact_id)] = true; });
+              DB.bukku_docs = DB.bukku_docs || [];
+              var kept = 0;
+              (window.__bukkuHistory || []).forEach(function (x) {
+                if ((x.kind || 'invoice') !== 'bill' || !sl[Number(x.contact_id)]) return;
+                var bal = x.balance == null ? Number(x.amount) : Number(x.balance);
+                var row = DB.bukku_docs.filter(function (y) { return y.kind === 'bill' && y.doc_id === Number(x.id); })[0];
+                if (!row) { row = { kind: 'bill', doc_id: Number(x.id) }; DB.bukku_docs.push(row); }
+                Object.assign(row, { contact_id: Number(x.contact_id), contact_name: x.contact_name || row.contact_name || null, number: x.number || '',
+                  doc_date: x.date, due_date: x.due || row.due_date || x.date, amount: Number(x.amount), balance: bal,
+                  currency: x.currency_code || 'MYR', paid_on: bal > 0 ? null : (x.paid_on || row.paid_on || null), gone: false, read_at: new Date().toISOString() });
+                kept++;
+              });
+              DB.bukku_doc_marks = (DB.bukku_doc_marks || []).filter(function (m) { return m.kind !== 'bill'; });
+              DB.bukku_doc_marks.push({ kind: 'bill', back_to: null, read_at: new Date().toISOString() });
+              persist();
+              return { data: { ok: true, kept: kept, more: false }, error: null };
+            });
+          }
           if (bkb.action === 'payments') {
             return rpc('payment_analysis', { p_currency: null }).then(function (pr) {
               if (pr.error) return { data: { error: 'needs-update' }, error: null };
