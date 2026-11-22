@@ -145,3 +145,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   dash. On a narrow pane a card's views take their own row under its title
   (`tests/instage.js`).
 
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| A trend and what to expect (Analytics) | The Dashboard's tiles and `.chartcard`s under one bar (`.anl-bar`: the view strip at the left, the period and its span at the right); the lead row `.anl-lead` (1.618 : 1, one column when narrow) holds the trend, its forecast a dashed line over a `--sunk` band (`.cl-band`, keyed Likely range) with one mute `.anl-note`, beside What changed (`.anl-ins-row`: an ink arrow, the finding over its figures, the change at the right edge); the busiest months a strip of twelve (`.anl-mon`, five steps from `--sunk` to `--fill`); a card still counting its months is `.anl-wait` (the line, then `n of N months` over a 4px track in `--fill`); a group seeing its own clients reads `.anl-own` (Your clients only., 13px mute) first under the bar; every comparison says Better, Worse, Steady or Above alert as `.anl-verdict` (the status's dot and its word in ink), a finding's arrow in `--ok` or `--err`, each trend's direction (`.anl-dir`) under its title; the AI analysis (`.anl-ai`) heads the page: Health as a verdict, the headline 15/600, the summary in the soft ink, the rest in one fold (`.anl-ai-more`), the version line 12px mute |

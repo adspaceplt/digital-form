@@ -835,3 +835,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     re-checking, filed `client.edited` from and to), naming a refusal
     against its client, with Undo where it happened putting back each
     client's own.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| What clients owe, past its date, and a reminder by email (Clients' Overdue invoices) | `#odView` (`js/invoices.js`) under Clients' view strip (`#crmViews`, a section's switch at its own width at a desk, on a phone the column's width, two views equal halves, three (with Payments, for Billing Full control) sharing what is spare, each word whole): the tallies (Overdue, then each age, a currency a line, a mute em dash for none; five across while they fit, else Overdue takes the row and the ages run four across, two when tight, `data-narrow` 760), then an `ADspaceGroup` card for each age with its totals at the right of its head; a `.inv-row` the tick (sending only), the client over the invoice and its instalment, the overdue amount (of its balance under it), the due date, the days in red, the last reminder as `.chip-state` with Open in Bukku; on a narrow pane three lines: the client and the amount; the invoice with Due {date} (its parts never broken) and the days with overdue in red; the last reminder and Open in Bukku at the right edge. Review and send (`#odSheet`, an 880px `.formsheet`): the clients at the left (`.inv-rv-row`, the chosen `--line-soft`), the email at the right on its own light page (`.inv-mail`, the email's own palette in both themes), To, Copy (a tick) and Subject as `.ovfacts` with Edit, then Sent before as a table of four (When, Channel, Sent by, Status); on a phone the list over the email, the Edit under the facts; amounts in the words hold their sign (a no-break space); a client's own (Billing, `#odClient`) is a `.readgroup` of `.od-crow`s (number and instalment, due and days or Not due, the amount, the last reminder's chip), each company billing the client under its name where there are several (`.od-co`, 12/600 mute), over Reminders sent as the same four-column table, Send reminder at the head's right |

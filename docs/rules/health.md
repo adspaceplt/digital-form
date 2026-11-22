@@ -106,3 +106,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   or whose access expired more than `health_leaver_months` (6) ago; both
   Business settings (Settings, Portal: Health data kept, `team.settings`;
   6 to 120 and 1 to 60 months).
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |

@@ -372,3 +372,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - A hand-added row's second line is its kind alone.
 - The old list is imported by a SQL file handed to the user, never committed
   (real names).
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| A document checked on /verify/ (2026-11-20) | `#vOut.is-answer` in the cover's 440 column: a shaded card (`.verify-card`, `--sunk`, the card corner, no edge) of `.verify-facts` (label 104px beside value, the status the dot and its word), one 13px mute line under it; the ways on as shaded blocks (`.verify-pick`: the title 14/600 over one 12.5 mute line and its `.btn-sm`: More details · Show details, File check · Check a file), two side by side at one height, one over the other on a phone; Show details asks in place on the same shaded ground (`.verify-ask`, fields white with the control's edge), the issue date in a fold, the refusal a `.msg.err` under the fields, Cancel and the blue Show details as equal halves on a phone; the details add History as dated rows (`.verify-history`, the day 104px mute and tabular, 124 in Chinese, the step's dot and word, a `--line-soft` hairline between) |
