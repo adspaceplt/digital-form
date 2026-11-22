@@ -385,6 +385,20 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator in the queue, one after another) at `campaigns.pay` Work; the fee
   and every amount at `campaigns.pay` View alone; `row=` (a booking or a
   set of details) opens its row, ringed (`tests/payqueue.js`).
+- A campaign's creator payments (`2026-11-22-campaign-creator-payments.sql`;
+  the user approved screen (f) of mockups/bukku-structure, 2026-11-22): the
+  Creators tab draws each booking's payment after its step in `.kcard-tags`
+  (`.kcard-pay`: under the step at a desk, beside it on a phone), the dot and
+  its word as the Payment pane says it (Paid {day}, Processing, Draft in
+  Bukku; posted with no bill Not billed, or Not linked; nothing before it is
+  posted), Open in Bukku in the booking's ⋯ where a bill exists (`billlink`),
+  and the rail's Creator payments block (`#campPayBlock`, after Details,
+  `rail-after`): Paid n of N creators, Processing, Draft in Bukku and Not
+  billed where any, Paid to creators a currency a line. One read for the
+  campaign (`campaign_creator_bills(p_campaign)`: Campaigns View and
+  `campaigns.pay` View, else `denied`; client scope, else `not-found`; no
+  Bukku call), at `campaigns.pay` View alone; never on /creators/ or the
+  creator's page, whose payloads name no bill (`tests/cpaycamp.js`, `sql`).
 - Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
   show amount just internal records creator records and bukku bill for
   payments"): the fee agreed with the creator a booking, in their payment

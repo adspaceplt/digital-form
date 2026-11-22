@@ -629,7 +629,7 @@
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows', creator_email_again: 'p_id',
-    creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', creator_earlier_job_set: 'p_option p_ref',
+    creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', campaign_creator_bills: 'p_campaign', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
     bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
@@ -11521,6 +11521,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(cfOut)), error: null });
+    }
+
+    if (name === 'campaign_creator_bills') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      var ccA = args || {}, ccOut;
+      var ccM = (DB.campaigns || []).filter(function (x) { return x.id === ccA.p_campaign; })[0];
+      var ccC = ccM && (DB.clients || []).filter(function (x) { return x.id === ccM.client_id; })[0];
+      if (!opsMe() || !opsAllowed('campaigns', 'view') || !opsGranted('campaigns.pay', 'view')) ccOut = { error: 'denied' };
+      else if (!ccC || !scopeRowOk(ccC.stage, ccC.owner, ccC.owner_id, 'view', ccC.sales_by)) ccOut = { error: 'not-found' };
+      else ccOut = { ok: true, bookings: (DB.campaign_options || []).filter(function (o) { return o.campaign_id === ccM.id && BOOKED_OUT.indexOf(o.state) < 0; })
+        .sort(function (a, b) { return (a.position || 0) - (b.position || 0); }).map(function (o) {
+          var b = (DB.creator_bills || []).filter(function (x) { return x.option_id === o.id && !x.gone; })
+            .sort(function (a, c) { return ((c.status === 'processing') - (a.status === 'processing')) || ((c.status === 'draft') - (a.status === 'draft')) ||
+              String(c.bill_date || '').localeCompare(String(a.bill_date || '')); })[0];
+          return { option: o.id, creator: o.creator_id, state: o.state, posted_on: o.posted_on || null,
+            linked: (DB.bukku_links || []).some(function (l) { return l.kind === 'creator' && l.record_id === o.creator_id && l.contact_id; }),
+            bill: b ? { number: b.number, status: b.status, date: b.bill_date || null,
+              paid_on: b.status === 'paid' ? (b.paid_on || (b.paid_seen_at ? String(b.paid_seen_at).slice(0, 10) : null)) : null,
+              amount: b.amount, currency: b.currency } : null };
+        }) };
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(ccOut)), error: null });
     }
     if (name === 'creator_payments_queue') {
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
