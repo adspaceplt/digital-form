@@ -192,6 +192,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   updating and merging a PR, applying its migration and deploying its edge
   function, in the order the release states, and starting or messaging a
   session and adding a repository it needs; any other write still asks.
+- `all` is every `tests/*.js` but `NOT_SUITES` in `gate.sh` (modules,
+  builders, screenshot diagnostics); a suite needs no list to run, one
+  starting its own Postgres takes that lane, and a helper is named there
+  or fails the gate (2026-11-22: hiring and 24 more never ran in a full gate).
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix side by side (each its own browser, output
   and server).

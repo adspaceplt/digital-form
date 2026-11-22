@@ -1643,10 +1643,9 @@
     if (!ed) return;
     var v = {};
     FIELDS.forEach(function (x) { v[x[0]] = $(x[1]).value.trim(); });
-    var need = [['name', 'Enter the candidate\'s name.'], ['email', 'Enter a valid email address.'], ['position', 'Enter the position.'], ['source', 'Choose a source.']]
-      .filter(function (x) { return !v[x[0]]; })[0];
-    if (need) { msg('hirSheetMsg', need[1], 'err'); $(FIELDS.filter(function (x) { return x[0] === need[0]; })[0][1]).focus(); return; }
-    if (!window.ADspaceWords.emailOk(v.email)) { msg('hirSheetMsg', 'Enter a valid email address.', 'err'); $('hirEmail').focus(); return; }
+    /* A name, an email, the position and the source, each required and the
+       email an address, are the one save check's (js/form.js §10), asked
+       before this runs; the sheet types no second check. */
     if (v.cv_url && !window.ADspaceWords.absUrl(v.cv_url)) { msg('hirSheetMsg', 'Enter a web address that starts with https://.', 'err'); $('hirCvUrl').focus(); return; }
     var file = $('hirCvFile').files && $('hirCvFile').files[0];
     if (file && !/\.(pdf|docx?)$/i.test(file.name)) { msg('hirSheetMsg', 'Choose a PDF or Word file.', 'err'); return; }
