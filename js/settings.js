@@ -211,6 +211,8 @@
     },
     /* Every email's wording (2026-11-10): how many each recipient holds. */
     mailtpl: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line(); },
+    /* The supplier's emails alone, counted as their sheet lists them. */
+    supmail: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line('suppliers'); },
     /* The payments sheet (2026-11-09): on or off, and rows added. */
     crsheet: function () {
       return db.rpc('creator_sheet_get').then(function (r) {
@@ -269,6 +271,8 @@
     function add(key, name, glyph, secs) {
       secs = secs.map(function (x) { return { name: x[0], rows: x[1].filter(Boolean) }; }).filter(function (x) { return x.rows.length; });
       if (!secs.length) return;
+      /* Each row knows its part, so search finds it by its part's name too. */
+      secs.forEach(function (x) { x.rows.forEach(function (r) { r.part = x.name; }); });
       out.push({ key: key, name: name, glyph: glyph, secs: secs,
         rows: secs.reduce(function (all, x) { return all.concat(x.rows); }, []) });
     }
@@ -343,28 +347,6 @@
       /* Usage and limits (2026-11-18, the user: "the usage, the limits,
          the charges"): what the portal uses against its plans. */
       ['Plan', [biz && { id: 'usage', name: 'Usage and limits', kind: 'open', meta: line('usage'), open: openUsage }]]]);
-    var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
-    add('clients', 'Clients', 'clients', [
-      ['Clients', [
-        biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
-        biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
-          meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
-            num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
-        /* Its days open a supplier's link too (2026-10-22, SET2-2). */
-        biz && { id: 'details', name: 'Details forms', kind: 'edit',
-          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
-        /* The month Analytics counts leads and clients from (2026-10-25). */
-        biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
-          meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
-            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
-      ['Creators', [
-        /* Creator and campaign IDs and the Job reference (2026-11-08). */
-        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
-        /* When a creator is paid after their post (2026-11-09). */
-        biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
-          meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
-            'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
-        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]]]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', 'ops', [['', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
@@ -425,7 +407,9 @@
         biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Emails sent by colleagues' : 'Off', open: flipMail },
         /* Every email's wording, by recipient, in one editor (2026-11-10). */
-        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
+        /* A colleague with Suppliers Full Access alone reaches their
+           emails from Partners, Suppliers (2026-11-22). */
+        biz && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
         /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
            company mailbox each section's emails reply to, never a
@@ -454,6 +438,35 @@
            WhatsApp, each a message ADspace pays for. */
         biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
+    var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
+    add('partners', 'Partners', 'clients', [
+      ['Clients', [
+        biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
+        biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
+          meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
+            num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
+        /* Its days open a supplier's link too (2026-10-22, SET2-2): one
+           figure for both, kept with the client's link, where it began. */
+        biz && { id: 'details', name: 'Details forms', kind: 'edit',
+          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
+        /* The month Analytics counts leads and clients from (2026-10-25). */
+        biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
+          meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
+            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
+      ['Creators', [
+        /* Creator and campaign IDs and the Job reference (2026-11-08). */
+        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
+        /* When a creator is paid after their post (2026-11-09). */
+        biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
+          meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
+            'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
+        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]],
+      /* Suppliers (the user, 2026-11-22: "Clients tab redesign to
+         Partners … Clients, Creators and Suppliers"): a supplier's emails,
+         Email templates opened on its Suppliers tab. */
+      ['Suppliers', [
+        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'supmail', name: 'Supplier emails', kind: 'open', meta: line('supmail'),
+          open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('supmail'), 'suppliers'); } }]]]);
     /* Performance (the user, 2026-10-29: "approve all"): one row a view,
        each opening the one sheet on its part behind the master code. */
     add('performance', 'Performance', 'mine', [['', perfMay() ? W.ADspacePerf.VIEWS.map(function (v) {
@@ -487,9 +500,12 @@
         open: function (btn) { if (W.ADspaceOps.openTemplates) W.ADspaceOps.openTemplates(btn); } },
       W.ADspaceCRM && W.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate Card wording', kind: 'open', meta: line('wording'),
         open: function (btn) { W.ADspaceCRM.openWording(btn); } }]]]);
-    return out;
+    /* The rail's order (2026-11-22, the rail regroup): the portal's own
+       groups, then Work, Partners, then Company. */
+    return out.sort(function (a, b) { return ORDER.indexOf(a.key) - ORDER.indexOf(b.key); });
   }
 
+  var ORDER = ['portal', 'ai', 'work', 'reports', 'messages', 'partners', 'templates', 'accounting', 'performance', 'hiring'];
   /* What each Performance part holds, as its sheet heads them. */
   var PERF_META = { months: 'Grades, issue points, queries, reminders', quarters: 'Prizes, flexible hours',
     company: 'Bonus pool, company trip, shares', commission: 'Score needed' };
@@ -542,7 +558,9 @@
   var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
   var chosen = '';
-  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; if (chosen === 'money') chosen = 'accounting'; }
+  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; if (chosen === 'money') chosen = 'accounting';
+    /* Clients became Partners (2026-11-22): an old link lands there. */
+    if (chosen === 'clients') chosen = 'partners'; }
 
   function current(list) {
     return list.some(function (x) { return x.key === chosen; }) ? chosen : (list[0] ? list[0].key : '');
@@ -569,7 +587,7 @@
     var q = norm(query).split(' ').filter(Boolean), out = [];
     list.forEach(function (g) {
       g.rows.forEach(function (r) {
-        var hay = norm([r.name, g.name, r.meta === ' ' ? '' : r.meta, lines[r.id] || ''].join(' '));
+        var hay = norm([r.name, g.name, r.part || '', r.meta === ' ' ? '' : r.meta, lines[r.id] || ''].join(' '));
         if (q.every(function (w) { return hay.indexOf(w) >= 0; })) out.push({ g: g, r: r });
       });
     });
@@ -581,7 +599,7 @@
     return '<div class="stg-card stg-found">' + h.map(function (x) {
       return '<button class="stg-hit" type="button" data-hit="' + x.r.id + '" data-hg="' + x.g.key + '">' +
         '<span class="stg-hit-g" aria-hidden="true">' + glyphOf(x.g) + '</span>' +
-        '<span class="stg-what"><span class="stg-name">' + esc(x.r.name) + '</span><span class="stg-meta">' + esc(x.g.name) + '</span></span>' +
+        '<span class="stg-what"><span class="stg-name">' + esc(x.r.name) + '</span><span class="stg-meta">' + esc(x.r.part && x.r.part !== x.g.name ? x.g.name + ' · ' + x.r.part : x.g.name) + '</span></span>' +
         CHEV + '</button>';
     }).join('') + '</div>';
   }

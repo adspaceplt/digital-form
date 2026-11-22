@@ -13,29 +13,38 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
-  rows in inset cards of five at most under short headings: Portal (Pages
+  rows in inset cards of five at most under short headings, in the
+  rail's order (`ORDER`, 2026-11-22: the portal's own, then Work, Partners,
+  then Company): Portal (Pages
   and notices: Page availability, Announcements, Notices, Demo access;
   Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
   User groups (an admin's, opening Team's Groups; 2026-11-17);
   Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health check-ins, Health data
-  kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
-  client's and a supplier's link alike, Analytics; Creators: Creator and
-  campaign IDs, Creator payments, Creator payments sheet), My Work (Due
+  kept), AI (AI usage and limits, AI prices), My Work (Due
   dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
-  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Accounting (Tax
-  and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
-  Messages (Email: Automatic emails, Send by email, Email templates, Sent
+  checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
+  Messages (Email: Automatic emails, Send by email, Email templates at
+  `team.settings`, Sent
   again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp
   templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
+  Partners (the user, 2026-11-22: "Clients tab redesign to Partners …
+  inside includes Clients, Creators and Suppliers"; `tab=partners`, an
+  old `tab=clients` landing on it; Clients: Industries, Follow-up limits,
+  Details forms: one figure for a client's and a supplier's link alike,
+  kept with the client's, Analytics; Creators: Creator and campaign IDs,
+  Creator payments, Creator payments sheet; Suppliers: Supplier emails,
+  Email templates opened on its Suppliers tab (`ADspaceMailTpl.open(btn,
+  say, 'suppliers')`), at `team.settings` or Suppliers Full Access, the
+  one row a colleague at Suppliers Full Access alone meets), Templates
+  (Document types, Task templates at `ops.workflows`, Rate card wording at
+  Services Full Access), Accounting (Tax and terms, Tax codes, Bukku),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Hiring
   (Candidates: Time limits at `team.settings`, Interview scorecards at
   `team.hiring`, its row the Standard's criteria and how many positions hold
   their own, Standard: 5 criteria · 1 position with its own; New colleagues:
-  Welcome Kit; 2026-11-17), Templates
-  (Document types, Task templates at `ops.workflows`, Rate card wording at
-  Services Full Access). Email templates (`js/mailtpl.js`,
+  Welcome Kit; 2026-11-17). Email templates (`js/mailtpl.js`,
   `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
   supplier's every template, fixed or New email's, at either, a client's and
   a creator's at `team.settings` alone: `email_template_may`, 2026-11-10) lists
@@ -55,8 +64,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   typed; no test email (Send test to me removed, the user, 2026-11-10;
   `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
   press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
-  phone's page), finding a row by its name, group or value across every
-  group and opening its group on its control (Enter takes the first);
+  phone's page), finding a row by its name, group, part or value across every
+  group (a hit's line its group, then its part: Partners · Suppliers) and opening its group on its control (Enter takes the first);
   each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
   Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
