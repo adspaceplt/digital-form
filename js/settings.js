@@ -99,7 +99,7 @@
       return db.rpc('usage_report').then(function (r) {
         var d = r.data || {};
         if (r.error || d.error || !d.db) throw r.error || new Error(d.error || 'usage');
-        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
+        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI cost US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
       });
     },
     /* The latest build required (2026-11-17): the build in force, else
@@ -251,7 +251,7 @@
     if (!document.querySelector('.stg-row[data-row="' + id + '"]')) return;
     var asked = READ[id] && READ[id]();
     if (!asked || !asked.then) { fillLine(id, ''); return; }
-    asked.then(function (t) { fillLine(id, t || ''); }).catch(function () { fillLine(id, 'Could not load.'); });
+    asked.then(function (t) { fillLine(id, t || ''); }).catch(function () { fillLine(id, 'Could not load. Refresh the page.'); });
   }
 
   /* The rows, group by group (regrouped 2026-10-11, the queue's task 46:
@@ -360,10 +360,10 @@
       biz && { id: 'nudge', name: 'Task reminders', kind: 'edit',
         meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
           : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
-            num('task_start_days') === 0 ? 'Not started: Off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
+            num('task_start_days') === 0 ? 'No reminder for tasks not started' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
         meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
-          'Average lateness under ' + plural(num('timely_late_days'), 'day', 'days')]) },
+          'Average lateness at most ' + plural(num('timely_late_days'), 'day', 'days')]) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -756,7 +756,7 @@
         send(live.commit, live.built).then(function (d) {
           tell('');
           var was = d.was || null;
-          bridge.undoHere('Required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
+          bridge.undoHere('Latest version required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
             document.querySelector('#setList .stg-row[data-row="build"]'));
         }).catch(function (e) { btn.disabled = false; tell(String((e && e.message) || e), 'err'); });
       });
@@ -895,7 +895,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('demo')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('demo')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* ---- Creator and campaign IDs (2026-11-08) ---------------------------
@@ -935,7 +935,7 @@
     db.rpc('creator_sheet_get').then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        rowSay('crsheet')(r.error && /function|schema cache/i.test(r.error.message) ? CS_SAID['needs-update'] : (CS_SAID[d.error] || 'Could not load.'), 'err');
+        rowSay('crsheet')(r.error && /function|schema cache/i.test(r.error.message) ? CS_SAID['needs-update'] : (CS_SAID[d.error] || 'Could not load. Refresh the page.'), 'err');
         return;
       }
       window.ADspaceConfirm.ask({
@@ -955,7 +955,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('crsheet')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('crsheet')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* A payment details reference as the database writes it (creator_pay_ref). */
@@ -971,7 +971,7 @@
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
       if (r.error || !Array.isArray(list) || !list.length) {
-        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load.', 'err');
+        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load. Refresh the page.', 'err');
         return;
       }
       var by = {};
@@ -1031,7 +1031,7 @@
                  (the overnight review, 2026-11-10). */
               var done = steps.slice(0, i).map(function (x) { return IDS_WORD[x]; });
               if (done.length) readLine('ids');
-              return (IDS_SAID[d.error] || IDS_WORD[k] + ' not saved.') + (done.length ? ' ' + done.join(' and ') + ' saved.' : '');
+              return (IDS_SAID[d.error] || IDS_WORD[k] + ' not saved. Please try again.') + (done.length ? ' ' + done.join(' and ') + ' saved.' : '');
             }
             return one(i + 1);
           });
@@ -1043,7 +1043,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('ids')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('ids')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* ---- Public holidays (2026-10-14) ------------------------------------
@@ -1067,9 +1067,9 @@
   function holMeta() {
     /* Its line's room is kept while the read is out, so nothing below moves
        when it arrives. */
-    if (!hol.rows) return hol.err ? 'Could not load.' : '\u00a0';
+    if (!hol.rows) return hol.err ? 'Could not load. Refresh the page.' : '\u00a0';
     var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
-    return next ? 'Next ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
+    return next ? 'Next ' + next.name + ', ' + holDay(next.day) : 'None ahead';
   }
   function holLine() { var meta = holMeta(); if (meta) fillLine('holidays', meta); }
   function readHol(done) {
@@ -1170,7 +1170,7 @@
           if (said) return said;
           hol.editing = null;
           return new Promise(function (ok) { readHol(function () { paintHol(); paint(); holMsg('Deleted.', 'ok'); ok(''); }); });
-        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
       });
   }
   /* ---- Departments (2026-10-23) ------------------------------------------
@@ -1288,7 +1288,7 @@
     db.rpc('department_set_active', { p_key: d.key, p_on: !d.active }).then(function (r) {
       var said = depSaid(r);
       if (said) { depMsg(said); return; }
-      depChanged(d.active ? 'Set inactive.' : 'Set active.');
+      depChanged(d.active ? 'Department set inactive.' : 'Department set active.');
     }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
   }
   function depDelete(d) {
@@ -1296,7 +1296,7 @@
       function () {
         return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
           return depSaid(r) || depChanged('Deleted.');
-        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
       });
   }
   function openDepts(opener) {
@@ -1587,7 +1587,7 @@
   }
   /* What setting the page does, said under the choice. */
   function pgNote(keys) {
-    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is Temporarily unavailable.';
+    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is unavailable.';
     if (keys.indexOf('admin') >= 0) return 'Admins continue to work under a notice bar; every other colleague sees the notice page.';
     return 'Visitors see the notice page in its place. Nothing on the page is changed.';
   }
@@ -1844,14 +1844,14 @@
     }, function () {
       return db.rpc('tax_codes_delete', { p_codes: codes }).then(function (r) {
         var d = r.data || {};
-        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not deleted.');
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not deleted. Please try again.');
         if (d.error) return taxRefusal(d);
         tax.rows = d.codes || [];
         tax.mode = 'list'; tax.picked = {};
         paintTax(); readLine('taxcodes');
         taxMsg('Deleted.', 'ok');
         return '';
-      }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+      }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
     });
   }
   function taxAsk(t) {
@@ -1944,7 +1944,7 @@
           (s3 ? '<section class="fsec"><h4 class="fsec-h">Files</h4><dl class="ovfacts">' +
             fact('Stored', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
             fact('Last counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
-        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI US$ ' + usd(t.ai_usd) + ' this month']));
+        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI cost US$ ' + usd(t.ai_usd) + ' this month']));
       }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be loaded.', paint); });
     };
     paint();
