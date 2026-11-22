@@ -456,6 +456,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   clients and the departments at once, never one after another
   (2026-10-26); a `me()` asked again after a session refresh asks the VIC
   clients and departments again under it.
+- The console fetches a section's scripts on first ask (ON DEMAND,
+  2026-11-22): a section script is never a tag of `admin/index.html` but a
+  line of its `#lazyScripts` (address with `?v=`, `first` what it reads as
+  it loads, `uses` what it calls; `tests/lazy.js`); `showSection` draws
+  `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
+  always-loaded script calling a listed global asks `ADspaceAdmin.need`,
+  `needThen` or `whenSection` first, and what it decides before any section
+  draws (who may open a section, a record's address) and what it does for
+  every section (a ⋯ shut on a press elsewhere) is its own, never a listed
+  script's (2026-11-22: Content Review read `laman-citra` as an id
+  and Analytics left the rail, crm.js and analytics.js not yet fetched).
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied; a
@@ -1165,9 +1176,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   pending state (the user, 2026-10-10): every console `.btn` whose words are
   an act carries its mark (Publish the plane, Unpublish the struck eye,
   Edit the pen, Download the file, Copy the copy mark, Preview and Preview
-  PDF the leaving mark after the words, Add and New the plus, Issue Letter of Offer the letter, Invite and an email sent the envelope, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one), given as the
+  PDF the leaving mark after the words, Add and New the plus, Issue Letter of Offer the letter, Invite, an email sent and Send code the envelope, Use passkey the key, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one), given as the
   button is drawn where a screen wrote words alone; a form's own commit
-  stays words. A press whose write disables its button shows, after 150ms,
+  stays words; a way out (Preview, Download, Copy) and another way in (a
+  passkey, a code sent) are never a commit, keeping the mark inside a form
+  or beside a field. A press whose write disables its button shows, after 150ms,
   a turning ring in the button's ink at the button's width until it is let
   go. A new act joins the table, never a screen (`tests/acts.js`).
 - `js/clock.js` (`ADspaceClock`: `day`, `today`, `parts`, `start`, `at`,
@@ -1383,6 +1396,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nosum`, stays off the line).
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
+  - The one save check (§10, the user, 2026-11-22: required fields saved
+    empty): a sheet foot's primary, a form's submit or a `data-check-save`
+    button is held while a field in its scope is required and empty (spaces
+    alone too) or not of its kind (`type=number`, `email`, `tel`, `url`,
+    `inputmode=url`, a date, `data-check` `amount` above 0, `whole`,
+    `number`, `phone`, `url`; `min`, `max`, `step="1"`): the first wrong
+    field focused, its fold opened, one `.check-note` under it (Enter the
+    {label}. / Choose the {label}., 中文 on a 中文 page; `W.check*`).
+    `ADspaceConfirm` asks it of every field; a page saving without a press
+    asks `ADspaceForm.check(scope)`. `data-check-partial` (Billing's details
+    before Active, a script's draft) holds only a wrong kind, as does
+    `data-check-own` (a form naming its empty fields more fully: My Work's
+    New names the post);
+    `data-check-group` (a list's row) asks its required fields once one
+    holds a value; `data-nocheck` is never held. A form never types its own
+    required check again; a client page's own checks state its database
+    function's lengths and shapes beyond it.
   - `ADspaceForm.title` sets formal names in title case.
   - `ADspaceForm.named` / `sequence`: every client or colleague offered in a
     console select reads code first (`AC190 · Brand`, `AD014 · Xue Yi`), A to

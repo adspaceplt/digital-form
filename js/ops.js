@@ -194,6 +194,9 @@
     'bad-period': 'Choose a valid content month.',
     'bad-week': 'Choose a week from 1 to 5.',
     'skip-reason-required': 'Enter a reason to skip this step.',
+    'client-posts': 'The client posts this content, so it has no Live stage. Mark it as posted by ADspace first.',
+    'already-live': 'Content that is already live cannot be marked as posted by the client. Move the task back from Live first.',
+    'no-live-stage': 'This workflow has no Live stage, so the content cannot be marked as posted by the client. Choose a workflow with a Live stage first.',
     'back-reason-required': 'Enter a reason to go back.',
     'retired-stage': 'That stage is no longer used. Choose another stage.',
     'planning-incomplete': 'This month\u2019s checklists are not done. Tick them, or mark them Not needed, first.',
@@ -1283,9 +1286,17 @@
   function settled(p) {
     return p.then(function (r) { return r && !r.error ? (r.data || []) : null; }, function () { return null; });
   }
+  /* Waiting for you names a report's period and a candidate's step in
+     their scripts' words: fetched first where this colleague is shown
+     either (ON DEMAND, 2026-11-22); a fetch that fails still draws. */
   function loadWaiting() {
     var me = bridge.me && bridge.me();
     if (!me || !me.id) { state.waiting = []; paintWaiting(); return Promise.resolve(); }
+    var want = [may('reports', 'view') && 'smreport', bridge.hiringOk && bridge.hiringOk() && 'hiring'].filter(Boolean);
+    if (!bridge.need || !want.length) return waitingNow(me);
+    return bridge.need(want).catch(function () {}).then(function () { return waitingNow(me); });
+  }
+  function waitingNow(me) {
     var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
     var jobs = [];
     /* A refused or failed read is said, never drawn as nothing waiting
@@ -1941,7 +1952,7 @@
       .filter(function (s) {
         return keep(s, mine.filter(function (t) { return t.stage_key === s.key; }).length);
       })
-      .map(function (s) { return { key: s.key, name: s.label, wip: s.wip_guidance, keys: [s.key] }; });
+      .map(function (s) { return { key: s.key, name: s.label, wip: s.wip_guidance, keys: [s.key], grp: s.stage_group }; });
     /* On hold gathers the lanes beside the line, and is drawn only while it
        holds something: it is where work steps *out* of the flow, so an empty
        one is a column for a thing that has not happened. It is deliberately
@@ -1954,7 +1965,7 @@
     }
     stages.filter(function (s) { return s.is_terminal; }).forEach(function (s) {
       if (mine.some(function (t) { return t.stage_key === s.key; })) {
-        cols.push({ key: s.key, name: s.label, wip: null, keys: [s.key] });
+        cols.push({ key: s.key, name: s.label, wip: null, keys: [s.key], grp: s.stage_group });
       }
     });
     box.innerHTML = '';
@@ -1964,13 +1975,23 @@
     }
     var board = document.createElement('div');
     board.className = 'board';
+    /* Columns under their phase (the simpler stages, 2026-11-22): the
+       phase named over its first column; an empty revision column folds to
+       a narrow labelled edge, opened while a card is dragged over the
+       board, so a drag still reaches every move. */
+    var lastPh = null;
     cols.forEach(function (c) {
       var cards = mine.filter(function (t) { return c.keys.indexOf(t.stage_key) > -1; });
       var col = document.createElement('div');
-      col.className = 'bcol' + (!cards.length ? ' is-empty' : '') +
+      var ph = c.grp ? PHASE_OF[c.grp] : null;
+      var phHead = ph && ph !== lastPh ? PHASE_WORD[ph] : '';
+      if (ph) lastPh = ph;
+      var fold = !cards.length && c.grp === 'revision';
+      col.className = 'bcol' + (!cards.length ? ' is-empty' : '') + (fold ? ' is-fold' : '') +
         (c.wip && cards.length > c.wip ? ' is-over' : '');
       col.setAttribute('data-col', c.key);
-      col.innerHTML = '<div class="bcol-head"><h3>' + esc(c.name) + '</h3>' +
+      col.innerHTML = (phHead ? '<p class="bcol-phase">' + esc(phHead) + '</p>' : '<p class="bcol-phase" aria-hidden="true"></p>') +
+        '<div class="bcol-head"><h3>' + esc(c.name) + '</h3>' +
         '<span class="bcol-n">' + cards.length + (c.wip ? ' / ' + c.wip : '') + '</span></div>' +
         '<div class="bcards"></div>';
       var list = col.querySelector('.bcards');
@@ -2015,7 +2036,7 @@
     if (!drag || !next) return false;
     if (drag.task.stage_key === next) return false;
     var s = stageOf(drag.task);
-    return Boolean(s && (s.next_stage_keys || []).indexOf(next) > -1);
+    return Boolean(s && nextsOf(drag.task, s).indexOf(next) > -1);
   }
 
   /* A column that will take a drop says so on itself, and the pointer drag
@@ -2807,17 +2828,17 @@
     return el;
   }
 
-  /* THE STAGE, IN ONE ORDER. Every task's stage is one select listing its
-     whole workflow in the order the work runs, the same on a row, a board
-     card and the task's head, with the stage it is at chosen. A stage it
-     cannot move to from here is drawn and greyed, so the list never changes
-     shape between tasks (the user, 2026-09-26: "your stage listing keeps
-     jumping around"). A retired stage and Blocked are listed only for a task
-     standing on them. Going back, skipping ahead, cancelling and reopening
+  /* THE STAGE. Every task's stage is one select, the same on a row, a board
+     card and the task's head, with the stage it is at chosen: its moves
+     grouped as `stageCell` draws them, then its whole workflow under All
+     stages in the order the work runs (the user, 2026-11-22, the simpler
+     stages, in place of one fixed list of 2026-09-26). A stage it cannot
+     move to from here is drawn and greyed. A retired stage and Blocked are
+     listed only for a task standing on them. Going back, skipping ahead, cancelling and reopening
      ask why, under the control, before the move is made. */
   function stageChoices(t) {
     var here = stageOf(t);
-    var nexts = (here && here.next_stage_keys) || [];
+    var nexts = nextsOf(t, here);
     return stagesOf(t.workflow_id).filter(function (s) {
       return s.key === t.stage_key || (!s.retired && s.key !== 'blocked');
     }).map(function (s) { return { s: s, how: howTo(here, s, nexts, t) }; });
@@ -2835,14 +2856,26 @@
     var back = t && heldBack(t, here);
     if (back && !HELD[s.key]) return back.indexOf(s.key) > -1 ? 'step' : '';
     if (nexts.indexOf(s.key) > -1) return 'step';
+    if (clientPosts(t) && (s.key === 'live' || s.key === 'performance_review')) return '';
     if (SIDE[here.stage_group] || SIDE[s.stage_group] || s.stage_group === 'revision' ||
         s.stage_group === 'taken_down' || s.retired) return '';
     return s.position > here.position ? 'skip' : s.position < here.position ? 'back' : '';
   }
   function howOf(t, key) {
     var here = stageOf(t), s = state.stages[t.workflow_id + '|' + key];
-    return s ? howTo(here, s, (here && here.next_stage_keys) || [], t) : '';
+    return s ? howTo(here, s, nextsOf(t, here), t) : '';
   }
+  /* A stage's moves for this task. Content the client posts has no Live or
+     performance review of ours, and Scheduled leads to Completed (CLIENT
+     POSTS, 2026-11-22), as `ops_transition_task` holds it. */
+  function nextsOf(t, s) {
+    var n = (s && s.next_stage_keys) || [];
+    if (!t || !t.client_posts) return n;
+    n = n.filter(function (k) { return k !== 'live' && k !== 'performance_review'; });
+    if (s && s.key === 'scheduled' && n.indexOf('completed') < 0) n = ['completed'].concat(n);
+    return n;
+  }
+  function clientPosts(t) { return Boolean(t && t.client_posts); }
   var HELD = { on_hold: 1, blocked: 1, cancelled: 1 };
   /* Where a held task may go back to, or null where the database keeps the
      workflow's own steps (a task held before its stage was recorded). */
@@ -2883,12 +2916,36 @@
     if (!mayMove(t) || !here) return chip;
     var opts = stageChoices(t);
     if (!opts.some(function (o) { return o.how && o.how !== 'here'; })) return chip;
+    /* Grouped (the simpler stages, 2026-11-22, superseding one fixed
+       list): the stage it stands on, Next (the forward move), Send back
+       (the revision of the review in hand), Other moves (On hold,
+       Cancelled, Taken down), then All stages in the line's order, a stage
+       it cannot reach drawn greyed. The same moves as before. */
+    var opt = function (o) {
+      return '<option value="' + esc(o.s.key) + '"' + (o.how === 'here' ? ' selected' : '') +
+        (o.how ? '' : ' disabled') + '>' + esc(stageWordOf(t, o.s)) + '</option>';
+    };
+    var taken = {};
+    var pick = function (test) {
+      return opts.filter(function (o) {
+        if (taken[o.s.key] || !test(o)) return false;
+        taken[o.s.key] = 1; return true;
+      });
+    };
+    var fwd = nextOf(t);
+    var mine = pick(function (o) { return o.how === 'here'; });
+    var next = pick(function (o) { return o.s.key === fwd && (o.how === 'step' || o.how === 'skip'); });
+    var back = pick(function (o) { return o.how === 'step' && o.s.stage_group === 'revision'; });
+    var other = pick(function (o) { return o.how === 'step' && (HELD[o.s.key] || o.s.stage_group === 'taken_down'); });
+    var rest = pick(function () { return true; });
+    var grp = function (label, list) {
+      return list.length ? '<optgroup label="' + esc(label) + '">' + list.map(opt).join('') + '</optgroup>' : '';
+    };
     return '<select class="select select-sm state-select ' + tone + '" aria-label="Stage of ' + esc(t.title) + '">' +
-      opts.map(function (o) {
-        return '<option value="' + esc(o.s.key) + '"' + (o.how === 'here' ? ' selected' : '') +
-          (o.how ? '' : ' disabled') + '>' + esc(stageWordOf(t, o.s)) + '</option>';
-      }).join('') + '</select>';
+      mine.map(opt).join('') + grp(STAGE_GROUP_WORD.next, next) + grp(STAGE_GROUP_WORD.back, back) +
+      grp(STAGE_GROUP_WORD.other, other) + grp(STAGE_GROUP_WORD.all, rest) + '</select>';
   }
+  var STAGE_GROUP_WORD = { next: 'Next', back: 'Send back', other: 'Other moves', all: 'All stages' };
   /* The select puts itself back at once: the move is the database's to make,
      and the repaint draws the stage it answered with. */
   function wireStage(sel, t, el, after) {
@@ -3590,6 +3647,14 @@
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
 
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at || !may('ops', 'manage');
+    /* Who posts it, until it goes live: one item naming its next state. */
+    var cpi = menu.querySelector('[data-a="clientposts"]');
+    if (cpi) {
+      var hasLive = Boolean(state.stages[t.workflow_id + '|live']);
+      cpi.hidden = !hasLive || !mayMove(t) || Boolean(t.live_at) || t.cancelled_at ||
+        ['live', 'performance_review', 'taken_down', 'completed'].indexOf(t.stage_key) > -1;
+      cpi.textContent = t.client_posts ? 'Mark as posted by ADspace' : 'Mark as posted by client';
+    }
     offerItems(menu, t);
     /* A ⋯ whose every item is withheld is not drawn (2026-10-20, OPS-1). */
     var anyItem = Array.prototype.some.call(menu.querySelectorAll('.kmenu-item'), function (b) {
@@ -4180,15 +4245,42 @@
     var target = nextOf(t);
     var done = isFinished(t) && !t.cancelled_at;
     var word = function (s) { return stepWord(s, state.eng); };
+    /* The line read in phases (the simpler stages, 2026-11-22): a segment a
+       phase, the stage named inside the one in hand, every stage kept. */
+    var phases = phasesOf(line);
+    /* A revision and a lane beside the line (On hold, Blocked) name
+       themselves inside the phase of the stage they left. */
+    var nowSt = here || line[at];
+    var curPh = PHASE_OF[nowSt.stage_group] || PHASE_OF[line[at].stage_group] || phases[0].key;
+    var curI = phases.map(function (p) { return p.key; }).indexOf(curPh);
     box.innerHTML =
-      '<ol class="tsteps-bar" aria-label="Workflow">' + line.map(function (s, i) {
-        var cls = (done || i < at) ? 'is-done' : i === at ? 'is-now' : '';
-        var said = word(s) + ((done || i < at) ? ', done' : i === at ? ', current' : '');
-        return '<li class="' + cls + '"' + (i === at ? ' aria-current="step"' : '') + '><span class="sr">' + esc(said) + '</span></li>';
+      '<ol class="tsteps-bar tsteps-phases" aria-label="Workflow">' + phases.map(function (p, i) {
+        var cls = (done || i < curI) ? 'is-done' : i === curI ? 'is-now' : '';
+        var under = !done && i === curI ? word(nowSt) : (p.key === 'post' && clientPosts(t) ? PHASE_WORD.byClient : '');
+        var said = p.word + (under ? ', ' + under : '') + ((done || i < curI) ? ', done' : i === curI ? ', current' : '');
+        return '<li class="' + cls + '"' + (i === curI && !done ? ' aria-current="step"' : '') + '>' +
+          '<span class="tph-bar" aria-hidden="true"></span>' +
+          '<span class="tph-name" aria-hidden="true">' + esc(p.word) + '</span>' +
+          (under ? '<span class="tph-at" aria-hidden="true">' + esc(under) + '</span>' : '') +
+          '<span class="sr">' + esc(said) + '</span></li>';
       }).join('') + '</ol>' +
-      '<p class="tsteps-word">Step ' + (at + 1) + ' of ' + line.length + ' · <b>' + esc(word(line[at])) + '</b>' +
-        (target && !done && target !== line[at].key
-          ? '<span class="tsteps-next"> · Next: ' + esc(labelForKey(target)) + '</span>' : '') + '</p>';
+      (target && !done && target !== line[at].key
+        ? '<p class="tsteps-word">Next: <b>' + esc(labelForKey(target)) + '</b></p>' : '');
+  }
+  /* The four phases a line is read in, from each stage's group; a phase
+     with no stage on the line is left out (an everyday task has no Posting). */
+  var PHASE_OF = {
+    intake: 'make', ready: 'make', active: 'make', in_progress: 'make',
+    internal_review: 'review', revision: 'review', client_review: 'review',
+    approved: 'post', scheduled: 'post', live: 'post', delivered: 'post', taken_down: 'post',
+    performance: 'close', done: 'close'
+  };
+  var PHASE_WORD = { make: 'Production', review: 'Review', post: 'Posting', close: 'Completion', byClient: 'Posted by client' };
+  var PHASES = ['make', 'review', 'post', 'close'];
+  function phasesOf(line) {
+    var have = {};
+    line.forEach(function (s) { have[PHASE_OF[s.stage_group] || 'make'] = 1; });
+    return PHASES.filter(function (k) { return have[k]; }).map(function (k) { return { key: k, word: PHASE_WORD[k] }; });
   }
   function paintNext(b, t, n) {
     if (!b.box) return;
@@ -4940,7 +5032,7 @@
      step a button offers first. */
   function nextOf(t) {
     var here = stageOf(t);
-    var nexts = (here && here.next_stage_keys) || [];
+    var nexts = nextsOf(t, here);
     if (!here || !nexts.length) return null;
     var g = here.stage_group;
     if (g === 'intake' && nexts.indexOf('ready') > -1) return 'ready';
@@ -5198,6 +5290,16 @@
       if (work) n.go = stepAct(t, 'scheduled');
       return n;
     }
+    if (g === 'scheduled' && clientPosts(t)) {
+      var cn = daysAway(t.publish_at);
+      n.title = 'Scheduled';
+      n.line = t.publish_at
+        ? (cn < 0 ? 'The client was due to post it on ' + niceDate(t.publish_at) + '. Complete the task once it is posted.'
+          : cn === 0 ? 'The client will post it today.' : 'The client will post it on ' + CK.date(t.publish_at, { named: true }) + '.')
+        : 'No post date set.';
+      if (work && hasNext(t, 'completed')) n.go = stepAct(t, 'completed');
+      return n;
+    }
     if (g === 'scheduled') {
       var dn = daysAway(t.publish_at);
       n.title = 'Scheduled';
@@ -5296,7 +5398,7 @@
   function isWork(g) { return g === 'active' || g === 'in_progress'; }
   function hasNext(t, key) {
     var s = stageOf(t);
-    return Boolean(s && (s.next_stage_keys || []).indexOf(key) > -1);
+    return Boolean(s && nextsOf(t, s).indexOf(key) > -1);
   }
   /* Where a task comes back to from Blocked or On hold: the stage it left, if
      the workflow still allows the move, else the first stage on the line it
@@ -5713,6 +5815,7 @@
       if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
       if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
       if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
+      if ('client_posts' in to) bits.push((to.client_posts ? 'Marked as posted by client' : 'Marked as posted by ADspace'));
       if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
@@ -6304,6 +6407,19 @@
   }
   // ---- The way back, drawn where the act happened --------------------------
   function undoBar(text, undo, host) { window.ADspaceAdmin.undoHere(text, undo, host); }
+  /* Who posts the content (CLIENT POSTS, 2026-11-22), from the task's ⋯,
+     its way back the Undo where it happened. */
+  function setClientPosts(t, on, undoing) {
+    call('ops_set_client_posts', { p_task: t.id, p_on: on, p_version: t.version }, 'dwMsg', function () {
+      state.drawerDirty = true;
+      readTask(t.id, function () {
+        if (undoing) { msg('dwMsg', 'Undone.', 'ok'); return; }
+        undoBar(on ? 'Marked as posted by client.' : 'Marked as posted by ADspace.', function () {
+          if (state.task && state.task.id === t.id) setClientPosts(state.task, !on, true);
+        }, $('dwMsg'));
+      });
+    });
+  }
 
   // ---- Calling the database ------------------------------------------------
   /* Every write goes through one place, so a refusal is named the same way
@@ -7899,7 +8015,9 @@
       var ic = el.querySelector('[data-a="invcheck"]');
       if (ic) ic.addEventListener('click', function () {
         ic.disabled = true;
-        checkInvoice(e).then(function (d) {
+        /* Bukku's refusal is said in its script's words (fetched with it). */
+        Promise.all([checkInvoice(e), bridge.need ? bridge.need(['bukku']).catch(function () {}) : null]).then(function (both) {
+          var d = both[0];
           ic.disabled = false;
           var m = el.querySelector('[data-a="msg"]');
           if (d && d.error) { if (m) { m.textContent = d.error === 'not-started'
@@ -8731,6 +8849,7 @@
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
         if (a === 'delete') openDelete();
+        if (a === 'clientposts') setClientPosts(t, !t.client_posts);
         /* A task archived before archiving was retired keeps its way back. */
         if (a === 'archive') {
           call('ops_archive_task', { p_task: t.id, p_on: false }, 'dwMsg', function () {
@@ -9173,6 +9292,13 @@
   function openNotif(id) {
     var x = state.notifs.filter(function (n) { return n.id === id; })[0];
     if (!x) return;
+    /* What a notice opens below may be drawn by a section's own script,
+       fetched first where this visit has not yet (ON DEMAND, 2026-11-22);
+       one that cannot be fetched opens the section, which says so. */
+    var when = function (sec, fn) {
+      if (!bridge.whenSection) { fn(); return; }
+      bridge.whenSection(sec, fn).catch(function () { if (bridge.show) bridge.show(sec); });
+    };
     /* A notice opens nowhere: a press reads it where it is, its message
        whole, and marks it read; a second press folds it. */
     if (x.kind === 'notice' && !x.task_id) {
@@ -9210,14 +9336,19 @@
     /* A performance review is not a task: a released or answered month opens
        the person's own record, a dispute opens the team's month. */
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
-      if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
+      if (x.kind === 'perf.disputed') {
+        when('team', function () { if (window.ADspacePerf) window.ADspacePerf.openTeam(); });
+        return;
+      }
       /* A reminder, a recognition or a request to talk opens the My
          records view it is about (2026-10-07; Recognition 2026-11-22). */
       var mv = x.kind === 'perf.recognition' ? 'recognition'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
-      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     /* An overseas request opens the colleague's record, where it is
@@ -9227,8 +9358,10 @@
     /* A usage notice opens Usage and limits in Settings (2026-11-18). */
     if (!x.task_id && /^usage\./.test(x.kind || '')) {
       history.replaceState(null, '', '/admin/?s=settings');
-      if (bridge.show) bridge.show('settings');
-      setTimeout(function () { if (window.ADspaceSettings && window.ADspaceSettings.openUsage) window.ADspaceSettings.openUsage(); }, 0);
+      when('settings', function () {
+        if (bridge.show) bridge.show('settings');
+        setTimeout(function () { if (window.ADspaceSettings && window.ADspaceSettings.openUsage) window.ADspaceSettings.openUsage(); }, 0);
+      });
       return;
     }
     /* A delete request opens the list it waits in (js/delreq.js). */
@@ -9238,7 +9371,8 @@
     }
     if (!x.task_id && x.kind === 'abroad.request') {
       var abName = String(x.title || '').split(' · ').slice(1).join(' · ').trim();
-      var abGo = function (id) {
+      var abGo = function (id) { when('team', function () { abGoNow(id); }); };
+      var abGoNow = function (id) {
         history.replaceState(null, '', '/admin/?s=team' + (id ? '&member=' + encodeURIComponent(id) : ''));
         if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
         if (bridge.show) bridge.show('team');
@@ -9264,12 +9398,18 @@
        The notice names nobody: its key carries the colleague's id alone. */
     if (!x.task_id && x.kind === 'personnel.request') {
       history.replaceState(null, '', '/admin/?s=mine&view=personnel');
-      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView('personnel');
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView('personnel');
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     if (!x.task_id && x.kind === 'personnel.probation') {
       var pm = (String(x.dedupe_key || '').match(/^personnel\.probation:([^:]+):/) || [])[1];
+      when('team', function () { probationNow(pm); });
+      return;
+    }
+    function probationNow(pm) {
       if (pm && window.ADspacePersonnel) window.ADspacePersonnel.probation(pm);
       history.replaceState(null, '', '/admin/?s=team' + (pm ? '&member=' + encodeURIComponent(pm) + '&mtab=personnel' : ''));
       if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
@@ -9281,8 +9421,10 @@
     /* A letter shared with the colleague opens their Letters. */
     if (!x.task_id && x.kind === 'hr.letter') {
       history.replaceState(null, '', '/admin/?s=mine&view=letters');
-      if (window.ADspacePerf && window.ADspacePerf.openLetters) window.ADspacePerf.openLetters();
-      else if (bridge.show) bridge.show('mine');
+      when('mine', function () {
+        if (window.ADspacePerf && window.ADspacePerf.openLetters) window.ADspacePerf.openLetters();
+        else if (bridge.show) bridge.show('mine');
+      });
       return;
     }
     /* A report's review, confirmation or send back opens the report. */

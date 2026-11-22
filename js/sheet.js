@@ -415,7 +415,8 @@
   }
   document.addEventListener('input', edited, true);
   document.addEventListener('change', edited, true);
-  document.addEventListener('click', function (e) {
+  /* Before form.js's check: a held press still ends the draft. */
+  window.addEventListener('click', function (e) {
     var b = e.target && e.target.closest && e.target.closest('.sheet-foot .btn-primary, .sheet-foot .btn-go');
     var sheet = b && b.closest('.sheet');
     if (sheet && live[sheet.id]) live[sheet.id].pressed = Date.now();

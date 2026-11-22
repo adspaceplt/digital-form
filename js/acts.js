@@ -21,21 +21,30 @@
     letter: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
     out: '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
-    go: '<path d="m9 6 6 6-6 6"/>'
+    go: '<path d="m9 6 6 6-6 6"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>'
   };
-  /* [the words, the mark, after the words] */
+  /* [the words, the mark, after the words, never a commit]. The fourth
+     marks an act that is never a form's own commit, so it keeps its mark
+     inside a form or beside a field: a way out (Preview, Download, Copy)
+     and another way in (a passkey; 2026-11-22, the user: My records' Use
+     passkey drawn as words alone beside the lock's code field). */
   var ACTS = [
     [/^Publish$/, 'send'], [/^Unpublish$/, 'hide'],
     [/^Edit$/, 'pen'], [/^(Rename|Edit description)$/, 'pen'],
-    [/^Download$/, 'file'],
-    [/^Copy( link| text| title)?$/, 'copy'],
-    [/^(Preview|Preview PDF)$/, 'out', true],
+    [/^Download( PDF)?$/, 'file', false, true],
+    [/^Copy( link| text| title)?$/, 'copy', false, true],
+    [/^(Preview|Preview PDF)$/, 'out', true, true],
+    [/^(Use passkey|Sign in with a passkey)$/, 'key', false, true],
     [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus'],
     [/^Issue Letter of Offer$/, 'letter'],
     /* What goes out by email from a screen: an invoice and a reminder
        (2026-11-04), a candidate's interview invitation and an email of
        one's own (2026-11-19, the user: Invite drawn as words alone). */
     [/^(Send (invoice|reminders?|email)|Invite|Email (the )?candidate)$/, 'mail'],
+    /* A code sent by email (My records' lock, 2026-11-22), beside the
+       field it fills, as Use passkey is. */
+    [/^(Send code|Email a code)$/, 'mail', false, true],
     /* A way out to another system opens a tab of its own (the leaving
        mark after); a way to another console page takes the chevron after
        (DESIGN.md §5; 2026-11-19). */
@@ -45,6 +54,7 @@
        Reports draws it (2026-11-19). */
     [/^View$/, 'go', true]
   ];
+  var HARD = '.sheet-foot, .askcard, .undobar, .cover';
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="' +
@@ -54,8 +64,10 @@
     for (var i = 0; i < ACTS.length; i++) if (ACTS[i][0].test(words)) return ACTS[i];
     return null;
   }
-  function commit(b) {
-    if (b.type === 'submit' || b.closest(COMMIT)) return true;
+  function commit(b, act) {
+    if (b.type === 'submit' || b.closest(HARD)) return true;
+    if (act && act[3]) return false;
+    if (b.closest(COMMIT)) return true;
     var p = b.parentElement;
     return Boolean(p && p.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea'));
   }
@@ -67,7 +79,8 @@
     if (own) return;
     var given = b.querySelector('svg[data-act]');
     var words = (b.textContent || '').replace(/\s+/g, ' ').trim();
-    var act = words && !commit(b) ? actOf(words) : null;
+    var act = words ? actOf(words) : null;
+    if (act && commit(b, act)) act = null;
     if (given && (!act || given.getAttribute('data-act') !== act[1])) { given.remove(); given = null; }
     if (!act || given) return;
     b.insertAdjacentHTML(act[2] ? 'beforeend' : 'afterbegin', svg(act[1]));
@@ -128,6 +141,6 @@
     });
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['disabled'], subtree: true });
 
-  window.ADspaceActs = { mark: mark, glyph: svg, busy: busy, of: function (w) { var a = actOf(w); return a ? a[1] : null; } };
+  window.ADspaceActs = { mark: mark, scan: sweep, glyph: svg, busy: busy, of: function (w) { var a = actOf(w); return a ? a[1] : null; } };
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 }());

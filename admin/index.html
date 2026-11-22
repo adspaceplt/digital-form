@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261122b">
-<link rel="stylesheet" href="/css/console.css?v=20261122c">
+<link rel="stylesheet" href="/css/portal.css?v=20261122d">
+<link rel="stylesheet" href="/css/console.css?v=20261122zn">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,24 +125,24 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261121x"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261122d"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261117zzzf"></script>
-<script src="/js/words.js?v=20261121zzzzb"></script>
+<script src="/js/words.js?v=20261122rd"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261119"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
-<script src="/js/acts.js?v=20261120zzzzv"></script>
+<script src="/js/acts.js?v=20261122zzp"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261121zzw"></script>
-<script src="/js/sheet.js?v=20261117zzzf"></script>
+<script src="/js/confirm.js?v=20261122rb"></script>
+<script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261117zzzf"></script>
+<script src="/js/form.js?v=20261122re"></script>
 <script src="/js/otp.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -157,7 +157,7 @@
 <script src="/js/maintenance.js?v=20261121zzzzb"></script>
 <script src="/js/announce.js?v=20261120t"></script>
 <script src="/js/notice.js?v=20261120zt"></script>
-<script src="/js/whatsapp.js?v=20261121zzzz"></script>
+<script src="/js/whatsapp.js?v=20261122zm"></script>
 <script src="/js/mailtpl.js?v=20261121zzw"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
@@ -1226,7 +1226,7 @@
               <div class="msg" id="crmBillMsg"></div>
             </div>
             <div class="sheet-foot">
-              <button class="btn btn-primary" id="crmBillSave" data-need="clients.billing:work" type="button">Save</button>
+              <button class="btn btn-primary" id="crmBillSave" data-check-partial data-need="clients.billing:work" type="button">Save</button>
               <button class="btn btn-quiet" id="crmBillCancel" type="button">Cancel</button>
             </div>
           </div>
@@ -1276,7 +1276,7 @@
                   <div><label class="field-label" for="crmWebsite">Website</label>
                     <textarea class="input" id="crmWebsite" placeholder="https://adspace.me" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
-                    <input class="input" id="crmPhone" type="tel" placeholder="07-123 4567"></div>
+                    <input class="input" id="crmPhone" type="tel" data-check="phone" placeholder="07-123 4567"></div>
                 </div>
               </section>
               <!-- The same logo Content Review draws on a mockup: one row,
@@ -1776,7 +1776,7 @@
                 <div class="row fgrid">
                   <div><label class="field-label" for="qsgPSal">Salutation</label><select class="select" id="qsgPSal"><option value="">None</option></select></div>
                   <div><label class="field-label" for="qsgPName">Name</label><input class="input" id="qsgPName" maxlength="80" aria-required="true" placeholder="John Doe"></div>
-                  <div><label class="field-label" for="qsgPPhone">Phone</label><input class="input" id="qsgPPhone" type="tel" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
+                  <div><label class="field-label" for="qsgPPhone">Phone number</label><input class="input" id="qsgPPhone" type="tel" data-check="phone" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
                   <div><label class="field-label" for="qsgPEmail">Email</label><input class="input" id="qsgPEmail" type="email" maxlength="160" aria-required="true" placeholder="email@adspace.me"></div>
                 </div>
               </section>
@@ -2335,7 +2335,7 @@
                   <option value="graphic">Graphic</option>
                 </select></div>
               <div><label class="field-label" for="campSlots">Creators</label>
-                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" value="10"></div>
+                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" step="1" value="10"></div>
               <div><label class="field-label" for="campDeadline">Due date</label>
                 <input class="input" id="campDeadline" type="date"></div>
             </div>
@@ -3270,7 +3270,7 @@
             </section>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="ntGo" type="button">Create task</button>
+            <button class="btn btn-primary" id="ntGo" data-check-own type="button">Create task</button>
             <button class="btn btn-quiet" id="ntCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="ntMsg"></div>
@@ -3539,6 +3539,7 @@
                     <button class="kmenu-item" data-a="take" type="button" role="menuitem" data-g="2" hidden>Take</button>
                     <button class="kmenu-item" data-a="offer" type="button" role="menuitem" data-g="2" hidden>Offer to team</button>
                     <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" data-g="2" hidden>Withdraw offer</button>
+                    <button class="kmenu-item" data-a="clientposts" type="button" role="menuitem" data-g="4" hidden>Mark as posted by client</button>
                     <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-g="5" data-need="ops:manage" hidden>Restore</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-g="6" data-need="ops:manage">Delete</button>
                   </div>
@@ -4389,7 +4390,7 @@
         </div>
         <div class="sheet-body">
           <div class="row fgrid">
-            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" data-check="amount" autocomplete="off" aria-required="true"></div>
             <div><label class="field-label" for="rwFPro">Profit (RM)</label><input class="input" id="rwFPro" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
           </div>
           <div class="row fgrid">
@@ -5053,7 +5054,7 @@
         <div class="vs-editfoot">
           <div class="msg" id="vsMsg"></div>
           <div class="row acts">
-            <button class="btn btn-primary" id="vsSave" type="button">Save</button>
+            <button class="btn btn-primary" id="vsSave" data-check-partial type="button">Save</button>
             <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
           </div>
         </div>
@@ -6354,7 +6355,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div><label class="field-label" for="hirEmail">Email</label>
             <input class="input" id="hirEmail" type="email" aria-required="true" maxlength="160" placeholder="email@adspace.me"></div>
           <div><label class="field-label" for="hirPhone">Phone</label>
-            <input class="input" id="hirPhone" type="tel" maxlength="30" placeholder="012-345 6789"></div>
+            <input class="input" id="hirPhone" type="tel" data-check="phone" maxlength="30" placeholder="012-345 6789"></div>
         </div>
       </section>
       <section class="fsec">
@@ -6432,7 +6433,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST Registration No.</label>
             <input class="input" id="supEdSst" autocapitalize="characters" placeholder="Optional"></div>
           <div class="span-all" id="supEdPhoneWrap"><label class="field-label" for="supEdPhone">Office / mobile</label>
-            <input class="input" id="supEdPhone" type="tel" aria-required="true"></div>
+            <input class="input" id="supEdPhone" type="tel" data-check="phone" aria-required="true"></div>
           <div class="span-all" id="supEdAddrWrap"><label class="field-label" for="supEdAddr">Billing address</label>
             <textarea class="textarea" id="supEdAddr" rows="3" aria-required="true" maxlength="400"></textarea></div>
         </div>
@@ -6447,7 +6448,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdEmailWrap"><label class="field-label" for="supEdEmail">Email</label>
             <input class="input" id="supEdEmail" type="email" aria-required="true" maxlength="160"></div>
           <div id="supEdMobileWrap"><label class="field-label" for="supEdMobile">Mobile / WhatsApp</label>
-            <input class="input" id="supEdMobile" type="tel" aria-required="true"></div>
+            <input class="input" id="supEdMobile" type="tel" data-check="phone" aria-required="true"></div>
         </div>
       </section>
       <section class="fsec">
@@ -6688,46 +6689,57 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- ON DEMAND (2026-11-22): each section's script, and the helpers it
+     calls, are fetched by js/admin.js (ADspaceAdmin.need) only when the
+     section, one of its records or something calling it first asks; the
+     shared mechanisms above and the scripts below load with the page.
+     "first": what a script reads as it loads (fetched before it); "uses":
+     what it calls later (fetched with it for its section). Its ?v= stamps
+     are bumped with every other. -->
+<script type="application/json" id="lazyScripts">
+{
+  "documents": {"src": "/js/documents.js?v=20261121zb"},
+  "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
+  "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
+  "reports": {"src": "/js/reports.js?v=20261121zzzzb", "uses": ["documents", "smreport"]},
+  "register": {"src": "/js/register.js?v=20261122r", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261121zzzzb", "uses": ["letters", "register", "bukku"]},
+  "hiring": {"src": "/js/hiring.js?v=20261121zzzzb", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261121zzzz"},
+  "invoices": {"src": "/js/invoices.js?v=20261121zzzz", "uses": ["payments", "crm"]},
+  "payments": {"src": "/js/payments.js?v=20261119j", "uses": ["invoices", "sales"]},
+  "engage": {"src": "/js/engage.js?v=20261117zzzf", "uses": ["smreport", "reports"]},
+  "quotes": {"src": "/js/quotes.js?v=20261121zzzzb", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261121zzs", "uses": ["documents", "seal"]},
+  "seal": {"src": "/js/seal.js?v=20261121zzt", "uses": ["documents"]},
+  "hrdocs": {"src": "/js/hrdocs.js?v=20261121zzs", "uses": ["documents", "seal"]},
+  "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
+  "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
+  "crm": {"src": "/js/crm.js?v=20261122zm", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "sales": {"src": "/js/sales.js?v=20261117zzzf"},
+  "team": {"src": "/js/team.js?v=20261122", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
+  "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
+  "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
+  "frames": {"src": "/js/frames.js?v=20261117zzzf"},
+  "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
+  "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
+  "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
+  "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
+  "perf": {"src": "/js/perf.js?v=20261122b", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "health": {"src": "/js/health.js?v=20261122zn", "uses": ["perf"]},
+  "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
+  "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
+  "analytics": {"src": "/js/analytics.js?v=20261122zm", "uses": ["documents", "crm", "sales"]},
+  "settings": {"src": "/js/settings.js?v=20261122zn", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+}
+</script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122c"></script>
-<script src="/js/documents.js?v=20261121zb"></script>
-<script src="/js/letters.js?v=20261120zzzzzd"></script>
-<script src="/js/smreport.js?v=20261120zzzp"></script>
-<script src="/js/reports.js?v=20261121zzzzb"></script>
-<script src="/js/register.js?v=20261121zzzz"></script>
-<script src="/js/suppliers.js?v=20261121zzzzb"></script>
-<script src="/js/hiring.js?v=20261121zzzzb"></script>
-<script src="/js/bukku.js?v=20261121zzzz"></script>
-<script src="/js/invoices.js?v=20261121zzzz"></script>
-<script src="/js/payments.js?v=20261119j"></script>
-<script src="/js/engage.js?v=20261117zzzf"></script>
-<script src="/js/quotes.js?v=20261121zzzzb"></script>
-<script src="/js/quotepdf.js?v=20261121zzs"></script>
-<script src="/js/seal.js?v=20261121zzt"></script>
-<script src="/js/hrdocs.js?v=20261121zzs"></script>
-<script src="/js/hrforms.js?v=20261120zzzp"></script>
-<script src="/js/checklists.js?v=20261121zzzz"></script>
-<script src="/js/crm.js?v=20261122"></script>
-<script src="/js/sales.js?v=20261117zzzf"></script>
-<script src="/js/team.js?v=20261122"></script>
-<script src="/js/namecard.js?v=20261117zzzf"></script>
-<script src="/js/onboard.js?v=20261120zzzzzg"></script>
-<script src="/js/handbook.js?v=20261121zt"></script>
-<script src="/js/frames.js?v=20261117zzzf"></script>
-<script src="/js/animatic.js?v=20261117zzzf"></script>
-<script src="/js/scripts.js?v=20261121zzzz"></script>
-<script src="/js/scriptpdf.js?v=20261120zzzp"></script>
-<script src="/js/ratecardpdf.js?v=20261120zzzp"></script>
-<script src="/js/campaigns.js?v=20261121zzzz"></script>
-<script src="/js/ops.js?v=20261122b"></script>
-<script src="/js/perf.js?v=20261122b"></script>
-<script src="/js/health.js?v=20261122a"></script>
-<script src="/js/xlsx.js?v=20261117zzzf"></script>
-<script src="/js/personnel.js?v=20261120zt"></script>
-<script src="/js/search.js?v=20261119i"></script>
-<script src="/js/agent.js?v=20261121zzzz"></script>
-<script src="/js/overview.js?v=20261121zzzz"></script>
-<script src="/js/analytics.js?v=20261121zzzz"></script>
-<script src="/js/settings.js?v=20261122"></script>
+<script src="/js/admin.js?v=20261122zn"></script>
+<script src="/js/ops.js?v=20261122zm"></script>
+<script src="/js/search.js?v=20261122zm"></script>
+<script src="/js/agent.js?v=20261122zm"></script>
+<script src="/js/overview.js?v=20261122e"></script>
 </body>
 </html>

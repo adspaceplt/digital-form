@@ -2672,6 +2672,32 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .anl-bar > .tabrow { min-width: 0; max-width: 100%; }
 .is-narrow .anl-bar > .tabrow { flex: 1 1 100%; }
 .anl-page { display: grid; gap: 12px; }
+/* Each tab by when it is acted on (2026-11-22): Act now and This week as
+   bands under the group heading, Monthly review and Reference as folds whose
+   head reads as that heading with its line and a chevron; every block 12
+   apart, open or shut. */
+.anl-band { display: grid; gap: 12px; min-width: 0; }
+.anl-fold { min-width: 0; }
+.anl-fold-head { list-style: none; display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h); border-radius: var(--radius-ctl-sm); cursor: pointer; }
+.anl-fold-head::-webkit-details-marker { display: none; }
+.anl-fold-head:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 0; }
+@media (hover: hover) { .anl-fold-head:hover :is(.anl-fold-t, .anl-fold-chev) { color: var(--ink); } }
+@media (pointer: coarse) { .anl-fold-head { min-height: var(--tap); } }
+.anl-fold-t { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--ink-mute); transition: color var(--t-fast) var(--ease); }
+.anl-fold-sum { flex: 0 1 auto; min-width: 0; max-width: 62%; font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anl-fold-sum:empty { display: none; }
+.anl-fold-rule { flex: 1 1 24px; min-width: 24px; height: 1px; background: var(--line); }
+.anl-fold-chev { flex: 0 0 auto; width: 15px; height: 15px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.anl-fold[open] > .anl-fold-head .anl-fold-chev { transform: rotate(90deg); }
+.anl-fold[open] > .anl-fold-head .anl-fold-sum { display: none; }
+.anl-fold-body { display: grid; gap: 12px; margin-top: 12px; min-width: 0; }
+.ovw-cardhead > select[data-seg] + .seg, .ovw-cardhead > .seg { margin-left: auto; }
+/* On a narrow pane a card's views take their own row under its title, the
+   title kept whole (2026-11-22: Where work waits read three lines beside
+   Median time · Time in stage at 390). */
+.is-narrow .ovw-cardhead:has(> .seg) { flex-wrap: wrap; row-gap: 8px; }
+.is-narrow .ovw-cardhead > .seg { order: 3; flex: 1 0 100%; margin-left: 0; }
+.anl-dir.is-fact > b { font-weight: 500; }
 .anl-lead { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); }
 .is-narrow .anl-lead { grid-template-columns: minmax(0, 1fr); }
 .anl-lead > .chartcard { display: flex; flex-direction: column; }
@@ -2706,13 +2732,6 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .anl-mon.l3 { background: var(--line-ctl); color: var(--ink); }
 .anl-mon.l4 { background: var(--fill); color: var(--on-fill); }
 .anl-mon.l4 b { color: var(--on-fill); }
-.anl-wait { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px 24px; align-items: center; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk); }
-.is-narrow .anl-wait { grid-template-columns: minmax(0, 1fr); }
-.anl-wait-words { display: grid; gap: 2px; }
-.anl-wait-words b { font-weight: 600; }
-.anl-wait-words span, .anl-wait-bar > span:first-child { font-size: 12.5px; color: var(--ink-mute); }
-.anl-wait-bar .ovw-kpi-bar { margin-top: 6px; background: var(--line-soft); }
-.anl-wait-bar .ovw-kpi-bar i { background: var(--fill); }
 /* Better, worse or steady (2026-10-25, the user: "i dont see whether this
    analytics trend is good or bad"): the status's dot and its word in ink,
    never a colour alone; the arrow of a finding in its ink. */
@@ -5584,6 +5603,20 @@ svg.sec {
 /* The board. */
 .bcol { background: var(--sunk); border-radius: 14px; padding: 10px; }
 .bcol-head { padding: 2px 4px; }
+/* The phase over its first column, and an empty revision column folded to
+   a narrow labelled edge that opens while a card is dragged (2026-11-22). */
+.bcol { grid-template-rows: auto auto 1fr; }
+.bcol-phase { margin: 0; padding: 0 4px; min-height: 18px; font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bcol.is-fold { flex-basis: 56px; transition: flex-basis var(--t-slow) var(--ease); }
+.bcol.is-fold .bcol-head { flex-direction: column; align-items: center; gap: 8px; border-bottom: 0; }
+.bcol.is-fold .bcol-head h3 { writing-mode: vertical-rl; white-space: nowrap; overflow: visible; }
+.bcol.is-fold .bcol-n { margin-left: 0; }
+.bcol.is-fold .bcards { display: none; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) { flex-basis: 248px; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-head { flex-direction: row; align-items: baseline; border-bottom: 1px solid var(--line); }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-head h3 { writing-mode: horizontal-tb; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcol-n { margin-left: auto; }
+.board.is-dragging .bcol.is-fold:not(.is-shut-out) .bcards { display: grid; }
 .bcard { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--card-edge, var(--line-soft)); gap: 8px; }
 .bcard-tags { display: flex; align-items: center; gap: 6px; min-height: 20px; }
 .bcard-tags:not(:has(> :not(.bcard-grip))) .bcard-grip { margin-left: auto; }
@@ -6243,3 +6276,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* The system pages' own tick heads their group, the rows' tick (EVERY PAGE AVAILABLE). */
 .pg-sysall { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
 .pg-sysall input { margin: 0 2px 0 0; }
+
+/* ON DEMAND (2026-11-22): a section whose scripts are still on their way
+   is drawn as the console's own skeleton, never an empty page
+   (`sectionHeld`, js/admin.js). */
+.console.is-fetching #consoleBoot { display: block; }
+.console.is-fetching .console-body:not(#consoleBoot) { display: none; }

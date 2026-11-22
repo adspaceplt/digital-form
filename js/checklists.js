@@ -482,13 +482,13 @@
         go: needBa ? 'Run' : 'Write',
         fields: [
           { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
-          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
+          { name: 'objective', label: 'Objective', required: false, value: was.objective || '',
             choices: [['', 'Not decided'], ['Leads', 'Leads'], ['Sales', 'Sales'], ['Traffic', 'Traffic'], ['Awareness', 'Awareness']] },
           { name: 'destination', label: 'Destination', required: false, value: was.destination || '',
             choices: [['', 'Not decided'], ['Instant Form', 'An instant form'], ['WhatsApp', 'WhatsApp'], ['Messenger', 'Messenger'], ['Website', 'The website']] },
           { name: 'account', label: 'Ad account', required: false, seg: true, value: was.account || '',
             choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
-          { name: 'notes', label: 'Notes for the checklist', rows: 3, required: false, placeholder: 'Optional', value: was.notes || '' }],
+          { name: 'notes', label: 'Notes', rows: 3, required: false, placeholder: 'Optional', value: was.notes || '' }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
           return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
