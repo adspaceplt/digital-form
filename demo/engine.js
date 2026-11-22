@@ -15036,7 +15036,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.quotation_invoices = DB.quotation_invoices || [];
       DB.client_ad_debtors = DB.client_ad_debtors || [];
       if (name === 'quotation_invoices_of') {
-        if (!bkMe || !opsAllowed('clients.billing', 'view')) return bkNo('denied');
+
+        if (!bkMe || !(opsAllowed('clients.billing', 'view') || opsAllowed('clients.quotes', 'view'))) return bkNo('denied');
+        var ibill = opsAllowed('clients.billing', 'view');
         var iq = qiQ(args.p_id);
         if (!iq || !scopeSeen(iq.client_id, 'view')) return bkNo('not-found');
         if (!iq.reviewed_at) return bkNo('not-reviewed');
@@ -15047,14 +15049,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!ls.length) return;
             var made = DB.quotation_invoices.filter(function (x) { return x.quotation_id === iq.id && x.cycle === ic && x.kind === k; })[0];
             var dd = ist ? qiAdd(ist, ic - 1) : null;
+            var doc = made && made.bukku_id ? (DB.bukku_docs || []).filter(function (x) { return x.kind === 'invoice' && Number(x.doc_id) === Number(made.bukku_id) && !x.gone; })[0] : null;
             irows.push({ cycle: ic, kind: k, date: dd, until: ist ? qiMinus(qiAdd(ist, ic)) : null,
-              amount: ls.reduce(function (t, l) { return t + Math.round(l.qty * l.unit * 100) / 100; }, 0),
-              number: made && made.number || undefined, bukku_id: made && made.bukku_id || undefined });
+              amount: ibill ? ls.reduce(function (t, l) { return t + Math.round(l.qty * l.unit * 100) / 100; }, 0) : undefined,
+              number: made && made.number || undefined, bukku_id: made && made.bukku_id || undefined,
+              paid: doc ? Number(doc.balance) <= 0 : undefined, paid_on: doc && Number(doc.balance) <= 0 ? doc.paid_on || undefined : undefined });
           });
         }
         var idb = DB.client_ad_debtors.filter(function (x) { return x.client_id === iq.client_id; })[0];
-        return bkOk({ ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows,
-          debtor: idb ? { contact_id: idb.contact_id, code: idb.code, name: idb.name } : null, budget_account: DB.bukku_settings.budget_account_code || null });
+        var iout = { ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows, billing: ibill };
+        if (ibill && idb) iout.debtor = { contact_id: idb.contact_id, code: idb.code, name: idb.name };
+        if (ibill && DB.bukku_settings.budget_account_code) iout.budget_account = DB.bukku_settings.budget_account_code;
+        return bkOk(JSON.parse(JSON.stringify(iout)));
       }
       if (name === 'quotation_invoice_prep') {
         if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');

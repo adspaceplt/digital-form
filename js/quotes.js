@@ -302,7 +302,7 @@
           if (maySet && !q.removed_at && mayReview(q)) acts.push('<button class="btn btn-sm" data-a="review" type="button">Review</button>');
           /* An approved quotation's invoices, made in Bukku as drafts a
              billing cycle (QUOTATION INVOICES, 2026-11-17). */
-          if (!q.removed_at && q.reviewed_at && ctx.may('clients.billing', 'view')) acts.push('<button class="btn btn-sm" data-a="invoices" type="button">Invoices</button>');
+          if (!q.removed_at && q.reviewed_at && (ctx.may('clients.billing', 'view') || ctx.may('clients.quotes', 'view'))) acts.push('<button class="btn btn-sm" data-a="invoices" type="button">Invoices</button>');
           /* No Letter of Offer is issued from a quotation (2026-10-31): the
              client signs the quotation itself, which is the contract. */
           if (maySet && !q.removed_at) {
@@ -1264,13 +1264,16 @@
   function qiDay(v) { return v ? window.ADspaceClock.date(String(v).slice(0, 10)) : ''; }
   function paintInvoices(d) {
     var me = QI, ctx = me.ctx, work = ctx.may('clients.billing', 'work');
+    /* The amounts answer at Clients: Billing View alone (2026-11-22): a
+       reader at Quotations View meets the cycles and how each stands. */
+    var amounts = d.billing !== false;
     var money = function (n) { return d.currency === 'SGD' ? 'S$ ' + rm(n) : 'RM ' + rm(n); };
     var rows = d.rows || [];
     var budget = rows.some(function (x) { return x.kind === 'budget'; });
     var h = '<dl class="ovfacts">' +
       '<dt>Starts</dt><dd>' + (d.start ? esc(qiDay(d.start)) : 'Not set') + '</dd>' +
       '<dt>Months billed</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>' +
-      (budget ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
+      (budget && amounts ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
         (work ? ' <button class="linkbtn" data-qi="debtor" type="button">Change</button>' : '') + '</dd>' : '') +
       '</dl>';
     /* The start may be set after approval too (quotation_lines_start asks
@@ -1278,16 +1281,23 @@
        back for a date (the user, 2026-11-21). */
     if (!d.start) h += '<p class="msg warn qi-note">The start date is not set.' +
       (ctx.may('clients.quotes', 'work') ? ' <button class="btn btn-sm" data-qi="start" type="button">Set start date</button>' : '') + '</p>';
-    if (budget && !d.budget_account) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-budget-account']) + '</p>';
+    if (budget && amounts && !d.budget_account) h += '<p class="msg warn qi-note">' + esc(QI_SAID['no-budget-account']) + '</p>';
     if (!rows.length) h += '<p class="emptyline">Nothing to invoice.</p>';
-    else h += '<div class="qi-list">' + rows.map(function (x) {
+    else h += '<div class="qi-list' + (amounts ? '' : ' is-noamt') + '">' + rows.map(function (x) {
       var made = !!x.number;
+      /* A cycle created in Bukku reads Paid or Unpaid once finance has
+         approved it there (the nightly copy, `bukku_docs`); until then it
+         is still a draft. */
+      var st = !made ? (x.creating ? '<span class="chip-state is-warn">Creating</span>' : '<span class="chip-state is-off">Not created</span>')
+        : x.paid === true ? '<span class="chip-state is-ok">Paid</span>'
+        : x.paid === false ? '<span class="chip-state is-warn">Unpaid</span>'
+        : '<span class="chip-state is-off">Draft</span>';
+      var when = x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set';
       return '<div class="qi-row" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '">' +
         '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : 'Month ' + x.cycle) + '</b>' +
-          '<small>' + (x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set') + '</small></span>' +
-        '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' +
-        '<span class="qi-state">' + (made ? '<span class="chip-state is-ok">Draft ' + esc(x.number) + '</span>'
-          : x.creating ? '<span class="chip-state is-warn">Creating</span>' : '<span class="chip-state is-off">Not created</span>') + '</span>' +
+          '<small>' + when + '</small>' + (made ? '<small class="qi-no">' + esc(x.number) + '</small>' : '') + '</span>' +
+        (amounts ? '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' : '') +
+        '<span class="qi-state">' + st + '</span>' +
         '<span class="qi-act">' + (!made && work && d.start ? '<button class="btn btn-sm" data-qi="make" type="button">Create in Bukku</button>' : '') + '</span>' +
         '</div>';
     }).join('') + '</div>';
