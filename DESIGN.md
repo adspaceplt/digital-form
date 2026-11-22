@@ -496,7 +496,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The foot stands on the page's own ground (no band of its own), a `--line`
   rule above it; its bottom pad is the larger of 16px and the home bar's
   inset less 14px (20px on an iPhone, the tab bar's offset), never the two
-  added; the © line stands above the home indicator.
+  added; the © line stands above the home indicator. In a phone's browser
+  (coarse pointer, `display-mode: browser`) the floor is 4px, about 19px
+  above Safari's controls, which report no inset; Terms of Service keeps a
+  44px press reaching upward.
 - The last "not centred" is usually two type sizes. Measure the ink, the
   borders and the type before calling it even.
 
@@ -1066,6 +1069,13 @@ screenshotted, and the push names any line it could not settle.
    about it (Why it is late, What needs changing, Note for them); a refusal
    names what to enter (Enter a reason.), never Say why. Approved section
    names stay (What worked, Areas to improve, Why it stood out).
+   Where the reader must act (rate, choose, tick, upload, decide, confirm),
+   the heading over it says the act, verb first (Rate your experience,
+   Choose your platforms, Upload your invoice), never a noun that could read
+   as something already done (the user, 2026-11-22: "Your experience" over
+   five grey stars read as a rating given; "When u need users to do an
+   action needs to at least say it like Rate your experience"). A field's
+   own label stays a noun (Name, Email): its box already asks.
 12. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section; a kind of wording
