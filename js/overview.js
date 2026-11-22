@@ -692,7 +692,7 @@
   function payRead() {
     if (!memo.pay) memo.pay = db.rpc('payment_analysis', { p_currency: null }).then(function (r) {
       if (r.error) throw new Error(r.error.message);
-      if (!r.data || r.data.error) throw new Error(r.data && r.data.error === 'denied' ? 'You do not have permission to read payments. Please ask an admin.' : 'The figures could not be read.');
+      if (!r.data || r.data.error) throw new Error(r.data && r.data.error === 'denied' ? 'You do not have permission to read payments. Please ask an admin.' : 'The payment figures could not be loaded. Refresh the page.');
       return r.data;
     });
     return memo.pay;
@@ -734,7 +734,7 @@
              only between parts; a part with nothing owed left out. */
           var part = function (n, word) { return n > 0 ? (curMoney(n, d.currency) + ' ' + word).replace(/ /g, ' ') : ''; };
           return { fig: curMoney(all, d.currency), money: true, data: d,
-                   sub: all > 0 ? [part(c, 'creators'), part(sp, 'suppliers')].filter(Boolean).join(' · ') : 'No bills open' };
+                   sub: all > 0 ? [part(c, 'creators'), part(sp, 'suppliers')].filter(Boolean).join(' · ') : 'No bills' };
         });
       } }
   ];
