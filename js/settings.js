@@ -279,20 +279,6 @@
     function opens(fn) { return function (btn) { if (fn) fn(btn); }; }
     var W = window;
     add('portal', 'Portal', 'settings', [
-      ['Pages and notices', [
-        /* Page availability (2026-10-29): Upgrade mode a page at a time. */
-        may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
-        /* Require latest build (2026-11-17): every open console below the
-           live build refreshes once nothing is open in it (js/admin.js). */
-        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
-          open: function (btn) { requireBuild(btn); } },
-        may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
-          open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
-        may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
-          open: opens(W.ADspaceNotice && W.ADspaceNotice.manage) },
-        /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
-           that opens the console on sample data (js/demo.js). */
-        biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
       ['Portal switches', [
         /* Portal switches (2026-11-17, the access restructure): AI, email
            and WhatsApp for every colleague at once, above each group's own
@@ -312,6 +298,20 @@
             history.pushState(null, '', '/admin/?s=team&tab=groups');
             W.ADspaceAdmin.show('team');
           } }]],
+      ['Pages and notices', [
+        /* Page availability (2026-10-29): Upgrade mode a page at a time. */
+        may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
+        /* Require latest build (2026-11-17): every open console below the
+           live build refreshes once nothing is open in it (js/admin.js). */
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
+          open: function (btn) { requireBuild(btn); } },
+        may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
+          open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
+        may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
+          open: opens(W.ADspaceNotice && W.ADspaceNotice.manage) },
+        /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
+           that opens the console on sample data (js/demo.js). */
+        biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
       ['Company', [
         biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta(), open: openHol },
         biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts'), open: openDepts },
@@ -396,11 +396,21 @@
     /* The portal's own switches over the Messages ones (SEND SWITCHES). */
     var mailOn = autoOn('email_on'), waOn = autoOn('whatsapp_on'), L = window.ADspaceWords.line;
     add('messages', 'Messages', 'whatsapp', [
-      ['Email', [
+      /* What governs the whole group heads it, above its parts (the user,
+         2026-11-22: "if a button is applied throughout all parts then be
+         at the top of the tab"); Portal's switches stay Portal's. */
+      ['', [
         /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
            nothing the portal emails by itself goes; a colleague's send does. */
         biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('auto_email_on') ? 'On · Creator and candidate emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
+        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'), off: !waOn,
+          meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
+        /* Sent again (2026-10-14): the same message sent within the window
+           asks again before it goes, WhatsApp and emails alike (SET2-1). */
+        biz && { id: 'resend', name: 'Sent again', kind: 'edit',
+          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
+      ['Email', [
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
            every email a colleague sends by hand. Off, each send act stays
            drawn, disabled with its reason. */
@@ -415,14 +425,8 @@
            company mailbox each section's emails reply to, never a
            colleague's own address. */
         biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, HR, Accounts payable, Finance, e-Invoice, Legal and compliance',
-          open: function () { openMailboxes(); } },
-        /* Sent again (2026-10-14): the same message sent within the window
-           asks again before it goes, WhatsApp and emails alike (SET2-1). */
-        biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
+          open: function () { openMailboxes(); } }]],
       ['WhatsApp', [
-        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'), off: !waOn,
-          meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
         /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
            colleague sends by hand. */
         biz && { id: 'clientwaon', name: 'Send on WhatsApp', kind: 'switch', on: autoOn('client_wa_on'), off: !waOn,
@@ -440,15 +444,18 @@
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('partners', 'Partners', 'clients', [
+      /* Details forms opens a client's and a supplier's link alike: the
+         group's own, above its parts (2026-11-22). */
+      ['', [
+        /* Its days open a supplier's link too (2026-10-22, SET2-2): one
+           figure for both, kept with the client's link, where it began. */
+        biz && { id: 'details', name: 'Details forms', kind: 'edit',
+          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') }]],
       ['Clients', [
         biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
         biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
           meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
             num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
-        /* Its days open a supplier's link too (2026-10-22, SET2-2): one
-           figure for both, kept with the client's link, where it began. */
-        biz && { id: 'details', name: 'Details forms', kind: 'edit',
-          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
         /* The month Analytics counts leads and clients from (2026-10-25). */
         biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
           meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]

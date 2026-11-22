@@ -15,24 +15,23 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings, in the
   rail's order (`ORDER`, 2026-11-22: the portal's own, then Work, Partners,
-  then Company): Portal (Pages
+  then Company): Portal (Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
+  User groups (an admin's, opening Team's Groups; 2026-11-17); Pages
   and notices: Page availability, Announcements, Notices, Demo access;
-  Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
-  User groups (an admin's, opening Team's Groups; 2026-11-17);
   Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health check-ins, Health data
   kept), AI (AI usage and limits, AI prices), My Work (Due
   dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
-  Messages (Email: Automatic emails, Send by email, Email templates at
-  `team.settings`, Sent
-  again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp
+  Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
+  and emails; Email: Send by email, Email templates at `team.settings`,
+  Reply-to mailboxes; WhatsApp: Send on WhatsApp, WhatsApp
   templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
   Partners (the user, 2026-11-22: "Clients tab redesign to Partners …
   inside includes Clients, Creators and Suppliers"; `tab=partners`, an
-  old `tab=clients` landing on it; Clients: Industries, Follow-up limits,
-  Details forms: one figure for a client's and a supplier's link alike,
-  kept with the client's, Analytics; Creators: Creator and campaign IDs,
+  old `tab=clients` landing on it; Details forms first: one figure for a
+  client's and a supplier's link alike; Clients: Industries, Follow-up
+  limits, Analytics; Creators: Creator and campaign IDs,
   Creator payments, Creator payments sheet; Suppliers: Supplier email templates,
   Email templates opened on its Suppliers tab (`ADspaceMailTpl.open(btn,
   say, 'suppliers')`), at `team.settings` or Suppliers Full Access, the
@@ -98,6 +97,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   This device
   (Theme, Passkeys, Notifications); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
+- A row that governs a whole group heads it, in a part with no heading
+  above the group's parts (the user, 2026-11-22: "if a button is applied
+  throughout all parts then be at the top of the tab, similar as Portal,
+  but Portal is even higher control master switch"): Portal opens on Portal
+  switches, Messages on Automatic emails, Automatic WhatsApp and Sent again,
+  Partners on Details forms; a row for one part stays in its part, and
+  Portal's switches are never repeated in a group (a group's row reads Off for
+  the whole portal while Portal's is off).
 - Public holidays (`2026-10-14-public-holidays.sql`; the user, 2026-10-14:
   "prefill and let manually change and apply to my work"): the days the
   office is closed, `public_holidays` (day, name; RLS on, no policy, no
