@@ -22,6 +22,10 @@
 --     interview is held at the new time; and that the candidate may say on
 --     WhatsApp from their page if it does not suit. Its fields `previous
 --     time` and `new time` join `template_fields('candidate')`.
+--   * Interview time changed and Interview confirmed (where its template
+--     still reads as seeded) close with the way to reschedule: WhatsApp
+--     and the careers mailbox (`{contact}`, answered by
+--     `hiring_mail_prepare` for both).
 --   * `hiring_mail_prepare` and `hiring_mail_done` take `rescheduled`: a
 --     confirmed interview not held, moved at least once (`not-moved`),
 --     online with its Google Meet (`no-meet`); sent, it also stands as the
@@ -63,8 +67,15 @@ alter table public.hiring_email_templates add constraint hiring_email_templates_
                   'doc', 'doc_again', 'confirmed', 'expired'));
 insert into public.hiring_email_templates (kind, subject, body) values
   ('rescheduled', 'Interview time changed: {position}',
-   E'Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf the new time is not suitable, please contact ADspace on WhatsApp through your application page.\n\n{button}\n\n{sign-off}')
+   E'Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://wa.me/adspace\nEmail: {contact}\n\n{button}\n\n{sign-off}')
 on conflict (kind) do nothing;
+/* The way to reschedule (the user, 2026-11-22: "if the candidate cannot
+   attend at the new time, they should contact ADspace to reschedule"), in
+   Interview confirmed too, where the template still reads as seeded. */
+update public.hiring_email_templates
+   set body = replace(body, E'\n\nThe details are also on your application page.\n\n',
+                      E'\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://wa.me/adspace\nEmail: {contact}\n\nThe details are also on your application page.\n\n')
+ where kind = 'confirm' and updated_by is null and body not like '%unable to attend%';
 
 do $$
 begin
@@ -216,6 +227,7 @@ begin
     'times', (select jsonb_agg(public.hiring_when(s) order by s) from unnest(i.slots) s),
     'when', case when i.picked is not null then public.hiring_when(i.slots[i.picked]) end,
     'was', case when p_kind = 'rescheduled' then public.hiring_when(i.moved_from) end,
+    'contact', case when p_kind in ('confirm', 'rescheduled') then public.mail_sender('careers')->>'reply_to' end,
     'moved_key', case when p_kind = 'rescheduled' then (extract(epoch from i.moved_at) * 1000)::bigint end,
     'reply_by', case when p_kind = 'invite' and i.state = 'invited' then public.hiring_when(i.reply_by) end,
     'decide_by', case when p_kind in ('held', 'moved') then public.hiring_when(c.decide_by) end,
