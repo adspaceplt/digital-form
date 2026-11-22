@@ -376,6 +376,8 @@ added to all three in the same push.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
   carries one, never inside `.claude/` (agents' worktrees live there).
+  `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
+  it where a notice wants a glyph on a page holding no icon set (2026-11-22).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new portal page joins Page availability in the same push that builds it

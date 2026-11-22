@@ -293,9 +293,21 @@
      its state's glyph (`data-glyph`), and this one watcher draws it first,
      in the locks' own disc (`.lockcard-mark`, js/icons.js), so no page
      draws its own. */
+  /* A page that holds no icon set fetches it the first time a notice wants
+     a glyph, never on load (the namecard and /quote/ hold their weight
+     budgets). Its stamp is the icon set's own, bumped with it. */
+  var ICONS = '/js/icons.js?v=20261122zzq', iconsAsked = false;
   function marks() {
     var I = window.ADspaceIcons;
-    if (!I) return;
+    if (!I) {
+      if (iconsAsked || !document.querySelector('[data-glyph], .cover .cover-panel')) return;
+      iconsAsked = true;
+      var tag = document.createElement('script');
+      tag.src = ICONS;
+      tag.onload = refSoon;
+      document.head.appendChild(tag);
+      return;
+    }
     var W = window.ADspaceWords;
     [].forEach.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {
       var g = x.getAttribute('data-glyph');
