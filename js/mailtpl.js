@@ -211,15 +211,17 @@
     var b = focusId && document.querySelector('#mtList .mt-row[data-id="' + focusId + '"] [data-a="edit"]');
     if (b) b.focus({ preventScroll: true });
   }
-  function open(btn, say) {
+  /* `rec` opens it on one recipient (Partners, Suppliers; 2026-11-22). */
+  function open(btn, say, rec) {
     wire();
     st.opener = btn || null; st.say = say || null;
+    if (rec) st.rec = rec;
     msg('');
     window.ADspaceSheet.show($('mtSheet'), { opener: st.opener });
     var box = $('mtList');
     if (window.ADspaceState && window.ADspaceState.skeleton) window.ADspaceState.skeleton(box, 3);
     load().then(paint).catch(function (e) {
-      if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'Email templates', (e && e.message) || '', function () { open(btn, say); });
+      if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'Email templates', (e && e.message) || '', function () { open(btn, say, rec); });
     });
   }
 
@@ -394,8 +396,19 @@
   }
 
   /* The Settings row: how many each recipient holds. */
-  function line() {
-    return load().then(function (items) {
+  /* Settings asks twice in one paint (Messages and Partners): one read
+     serves both, never the lists read again a row. */
+  var lineRead = null;
+  function line(rec) {
+    if (!lineRead) {
+      lineRead = load();
+      lineRead.then(function () { lineRead = null; }, function () { lineRead = null; });
+    }
+    return lineRead.then(function (items) {
+      if (rec) {
+        var n = items.filter(function (i) { return i.rec === rec; }).length;
+        return n + (n === 1 ? ' template' : ' templates');
+      }
       return recs().map(function (r) {
         var n = items.filter(function (i) { return i.rec === r[0]; }).length;
         return r[1] + ' ' + n;
