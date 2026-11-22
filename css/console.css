@@ -5531,6 +5531,7 @@ svg.sec {
 .ovw-paygroup { display: grid; gap: 12px; min-width: 0; }
 .ovw-kpis.ovw-pay { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ovw-kpi-sub.is-err { color: var(--err); }
+.ovw-pay > .ovw-kpi > .ovw-kpi-fig.is-money { font-size: 20px; grid-column: 1 / -1; }
 /* Needs attention beside the on-time trend (1.618 : 1). */
 .ovw-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-pair.is-one, .is-narrow .ovw-pair { grid-template-columns: minmax(0, 1fr); }

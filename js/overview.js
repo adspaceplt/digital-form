@@ -714,7 +714,7 @@
         return payRead().then(function (d) {
           var s = d.summary || {}, over = Number(s.overdue) || 0;
           return { fig: curMoney(s.open, d.currency), money: true,
-                   sub: over > 0 ? curMoney(over, d.currency) + ' overdue' : 'None overdue', subTone: over > 0 ? 'err' : '' };
+                   sub: over > 0 ? (curMoney(over, d.currency) + ' overdue').replace(/ /g, ' ') : 'None overdue', subTone: over > 0 ? 'err' : '' };
         });
       } },
     { key: 'weowe', title: 'We owe', sec: 'clients', can: canPay,
@@ -729,9 +729,12 @@
       },
       load: function () {
         return payRead().then(function (d) {
-          var c = payOut(d, 'creators'), sp = payOut(d, 'suppliers'), all = payOut(d);
+          var all = payOut(d), c = payOut(d, 'creators'), sp = Math.round(Math.max(0, all - c) * 100) / 100;
+          /* Each part held whole (its spaces unbroken), the line wrapping
+             only between parts; a part with nothing owed left out. */
+          var part = function (n, word) { return n > 0 ? (curMoney(n, d.currency) + ' ' + word).replace(/ /g, ' ') : ''; };
           return { fig: curMoney(all, d.currency), money: true, data: d,
-                   sub: all > 0 ? curMoney(c, d.currency) + ' creators · ' + curMoney(Math.max(0, all - c), d.currency) + ' suppliers' : 'No bills open' };
+                   sub: all > 0 ? [part(c, 'creators'), part(sp, 'suppliers')].filter(Boolean).join(' · ') : 'No bills open' };
         });
       } }
   ];
