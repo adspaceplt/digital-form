@@ -55,7 +55,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   a system account. The record is its head card over a strip (`#supTabs`,
   `tab=` pushed, Overview left out; SUP-4, 2026-10-22): Overview (a form
   waiting to be taken in first, then Client, Billing details, Person in
-  charge), Payment (Payment details, the Details update form, Bukku),
+  charge), Payment (Payment details, the Details update form, Bukku; once
+  linked the Bukku band leads it, `docs/rules/bukku.md`),
   Documents, Emails; a pane with nothing in it is not drawn.
 - Approve (`supplier_set_status`, a name, the details and the bank account
   whole, `incomplete`; under the record's head at its own width, `.sup-go`,

@@ -119,7 +119,24 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   run: creators' bills first to 35 seconds, months' invoices to 60, the
   payment history (Payments, below) to 80, then the links, the oldest read first, in what is left; the run writes its beat,
   `job_beat('bukku-nightly')`, which `jobs_watch` reads; audit 2026-11-15). An entity is the same inside its fold.
-  Suppliers keep Send to Bukku as before. A colleague is a Bukku employee
+  A supplier links as a client does (`2026-11-22-supplier-bukku-link.sql`;
+  the user, 2026-11-22: "Link clients, Link creators, But no link
+  suppliers?"): unlinked, its band offers Link to Bukku (Link as Bukku holds
+  it, nothing sent, or Create in Bukku), and once linked the band leads
+  Payment and reads Bukku as the record opens (`bukku-sync` `read`, Suppliers
+  View): Linked, Read {day, time}, Refresh and the ⋯'s Unlink; where they
+  differ, Differs from Bukku over the `.bk-diff` table with Send to Bukku and
+  Use Bukku's (`hold`, Suppliers Work, filed `supplier.edited` Took Bukku's
+  details). Unlike a client's billing, a supplier's details stay the
+  portal's: a read never writes them (`bukku_take` answers what differs) and
+  Edit saves in the portal (`save` is refused). It compares its own fields
+  (`bukku_portal` `fields`: name, BRN for a company, TIN, SST no., finance
+  email else email, address, person in charge), never an individual's NRIC,
+  which is neither answered from Bukku nor taken (`onlyFields`); the send
+  sheet shows an individual's Bukku registration no. only to a colleague
+  who may send it. Linked, its bills of the last 24 months are read at once
+  (`supplierBillsOf`), never only overnight; the nightly run reads clients'
+  and entities' links alone. A colleague is a Bukku employee
   contact (kind `member`, `2026-11-17-bukku-employee.sql`, its SQL Editor
   part turning it on; HR-SPEC decision 12): the band on their Onboarding
   at `team.personnel`, sent with the name as per NRIC, the company email,

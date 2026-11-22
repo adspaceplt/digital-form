@@ -863,9 +863,15 @@
     if (UI.fit) UI.fit();
     recBills(s.id);
     /* Bukku (2026-10-18): an approved supplier sent as a Bukku contact; one
-       linked to a client is that client's contact, typed Supplier too. */
-    if (window.ADspaceBukku && $('supBukku')) window.ADspaceBukku.group($('supBukku'), 'supplier', s.id,
-      { note: s.client_id ? 'Sent as the linked client\'s contact in Bukku.' : '' });
+       linked to a client is that client's contact, typed Supplier too.
+       Linked first, as a client is (2026-11-22): once linked the band leads
+       Payment and reads Bukku; Use Bukku's reads the supplier again; a link
+       made or let go reads its bills at once. */
+    if (window.ADspaceBukku && $('supBukku')) window.ADspaceBukku.group($('supBukku'), 'supplier', s.id, {
+      note: s.client_id ? 'Sent as the linked client\'s contact in Bukku.' : '', lead: true,
+      read: function (x) { if ((x.changed || []).length && state.open === s.id) openRec(s.id); },
+      after: function () { if (state.open === s.id) recBills(s.id); loadBills(); }
+    });
     wireRec();
   }
   /* One pane on show; the others stay drawn (their reads land in them),
