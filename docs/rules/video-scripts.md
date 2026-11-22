@@ -5,7 +5,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 
 - One script is one full video (the user, 2026-10-09), its own section on
   the ladder (`scripts`, every group starting at its Content Review level;
-  `2026-10-09-video-scripts.sql`), in the Work chunk after Content Review.
+  `2026-10-09-video-scripts.sql`), in the Work group after Content Review.
   Three kinds: Detailed scenes (Visual and Script a scene), Products and
   scenes (Products and context, then the scenes), Story and voice-over (Hook
   and story, the scenes, Script (read here)).

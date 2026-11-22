@@ -1364,13 +1364,13 @@
     }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
     if (name) {
-      if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creator Campaigns')
+      if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creators')
         .then(function (camps) {
           if (!camps || !camps.length) return;
           var title = {}, campById = {};
           camps.forEach(function (c0) { title[c0.id] = c0.title; campById[c0.id] = c0; });
           return got(db.from('campaign_options').select('id, campaign_id, state, submitted_at, revision_round, creators(name)')
-            .in('campaign_id', camps.map(function (c0) { return c0.id; })).in('state', ['submitted', 'reviewing']), 'Creator Campaigns').then(function (opts) {
+            .in('campaign_id', camps.map(function (c0) { return c0.id; })).in('state', ['submitted', 'reviewing']), 'Creators').then(function (opts) {
               var urlOf = function (o) { return '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators'; };
               (opts || []).forEach(function (o) {
                 if (o.state !== 'submitted') return;
@@ -1383,7 +1383,7 @@
                  quality check. */
               var asked = (opts || []).filter(function (o) { return o.state === 'reviewing'; });
               if (!asked.length) return;
-              return got(db.from('option_qc').select('option_id, checked_at').in('option_id', asked.map(function (o) { return o.id; })), 'Creator Campaigns')
+              return got(db.from('option_qc').select('option_id, checked_at').in('option_id', asked.map(function (o) { return o.id; })), 'Creators')
                 .then(function (checks) {
                   var since = {};
                   (checks || []).forEach(function (q) { if (!since[q.option_id] || q.checked_at > since[q.option_id]) since[q.option_id] = q.checked_at; });
@@ -4082,7 +4082,7 @@
     });
     var reads = [];
     if (may('campaigns', 'view')) {
-      reads.push(['campaign', 'Creator Campaigns', db.from('campaigns').select('id, title, created_at')
+      reads.push(['campaign', 'Creators', db.from('campaigns').select('id, title, created_at')
         .eq('client_id', t.client_id).order('created_at', { ascending: false })]);
     }
     if (may('review', 'view')) {

@@ -378,7 +378,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Theme as a small segment at the row's right edge, Passkeys, Notifications as a switch), Sign out; Refresh app is a press on the build line at the rail's foot; what changes the portal for everybody is the Settings page it opens. Compact: rows a control's height, 272px wide. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A creator's payments (the creator page's Payment pane) | `docs/rules/creator-campaigns.md`, Components |
-| Every creator's payment work (Creator Campaigns, Payments) | `docs/rules/creator-campaigns.md`, Components |
+| Every creator's payment work (Creators, Payments) | `docs/rules/creator-campaigns.md`, Components |
 | A creator's payment details on the Creators List | `docs/rules/creator-campaigns.md`, Components |
 | A creator's payment details (the creator's page) | `docs/rules/creator-campaigns.md`, Components |
 | A colleague's health check-in | `docs/rules/health.md`, Components |
@@ -1086,25 +1086,25 @@ screenshotted, and the push names any line it could not settle.
    section alone, to a reader who did not write them (CLAUDE.md §1).
 
 ## 7. Architecture
-- The Dashboard sits alone above the two chunks, with no label, drawn for
+- The Dashboard sits alone above the three groups, with no label, drawn for
   every colleague (its Me tab; `CLAUDE.md`).
-- Analytics follows it, above the chunks, drawn where any of its charts is readable (each at its section's access; 2026-11-13).
-- The rail runs in two chunks, ordered by frequency, with the same sequence
-  everywhere:
-  - **Work**: My Work, Clients, Content Review, Video Scripts, Creator
-    Campaigns, Reports, Messages (the user, 2026-10-09: reports are client
-    work; 2026-10-10: WhatsApp last; named Messages since 2026-11-04, its
-    WhatsApp and Email tabs). A colleague may arrange their own
-    order within each chunk (Arrange sections), which the tab bar follows;
-    everything else keeps this one.
-  - **Internal**: Documents, Suppliers, Short Links, Services, Team (Hiring
-    is Team's tab).
+- Analytics follows it, above the groups, drawn where any of its charts is readable (each at its section's access; 2026-11-13).
+- The rail runs in three groups, each under its label (12/600 mute, the desk
+  rail alone), the same sequence everywhere (the user, 2026-11-22: "The real
+  regroup"):
+  - **Work**: My Work, Content Review, Video Scripts, Reports, Messages
+    (Messages last; its WhatsApp and Email tabs).
+  - **Partners**: Clients, Creators, Suppliers.
+  - **Company**: Documents, Services, Short Links, Team (Hiring is Team's
+    tab).
+  - A colleague may arrange their own order within each group (Arrange
+    sections), which the tab bar follows; everything else keeps this one.
   - The Handbook is a mark at the rail's foot before Settings' (2026-11-11).
   - The Activity record is a mark at the rail's foot, last of the row
     Arrange sections', the Handbook's and Settings' marks make, the build
     under them at a desk's 212px rail (`.sidebar-foot`, each a `.railrow`,
     not a section).
-  - A chunk whose every route is withheld hides its label.
+  - A group whose every route is withheld hides its label.
 - Everything hangs off a client. Only active clients appear in Content Review,
   campaigns and reports.
 - The sale:
