@@ -142,3 +142,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   figures, their own included, without `ops.reports`). How many rows a
   read lists (25 to 40) and the Activity record's days (14, up to 90) are
   display bounds in `js/agent.js`, not settings (the user, 2026-11-19).
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| Asking the portal in words (the Assistant) | `#agentSheet` (`js/agent.js`): the task card's side sheet, 420px, at a desk; a card above the tab bar on a phone; a head (the AI mark in the action ink, Assistant at 600, Clear, the close mark), the conversation (`.ag-log`: the colleague's words right on the field's ground, the Assistant's left in ink, a list as a list, a word in weight, an Open button `.btn-sm` with the chevron), a change as `.ag-confirm` on `--raised` (its title 13/600, `.ag-facts` label beside value, from → to, Confirm the one blue at the right, Cancel quiet; then the green dot and its word with Open and Undo, the card on `--sunk`), a refusal led by the amber rule, the writing as three dots; the foot: three starting questions as tonal pills while empty, the box on the field's ground with the round blue send, the count left in 12px mute |

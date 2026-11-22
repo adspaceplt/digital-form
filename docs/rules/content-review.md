@@ -282,3 +282,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   suits, one CTA, no dashes, MY/SG context, Chinese written as Chinese, the
   platform's own voice, brand names exactly) and XHS Safe Mode's rules live
   in the function's `SYSTEM` and `SAFE`.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-22.
+
+| Need | Component |
+|---|---|
+| Content Review's clients (v3, 2026-11-12) | `.cr-cards`, a `button.cr-client-row.cr-card` a client (three across, two under 1100, one narrow; white, the large corner, an inset `--card-edge`): the logo and name over its Client ID, Access code as a grey tag where set, the chevron; its latest set's title and month, its posts as one bar (approved `--dot-ok`, changes `--dot-late`, waiting `--dot-wait`, the rest `--line`), where it stands (Changes requested, Waiting on client, Approved, Published, Draft) with n posts · n approved; then the sets line under a hairline. The latest set and its counts come from the list's one read of sets and one `review_set_counts` |
