@@ -365,6 +365,7 @@
       return hay.toLowerCase().indexOf(q) > -1;
     });
     var narrowed = q || plat !== 'all' || payF !== 'all';
+    paintRosterTiles();
     $('rosterCount').textContent = !state.creators.length ? '' :
       (narrowed ? shown.length + ' of ' + state.creators.length
                 : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
@@ -476,6 +477,55 @@
     return row;
   }
 
+  /* Four figures over the Creators List (2026-11-22, the Bukku structure,
+     decision 5; as Clients has them): the creators active, the payment
+     details waiting to be reviewed, and at Creator payments the bookings
+     ready to bill and the bills awaiting payment, from the Payments queue's
+     one read. */
+  function paintRosterTiles() {
+    var box = $('rosterTiles');
+    if (!box) return;
+    if (!state.creators.length || crRec.id) { box.hidden = true; return; }
+    var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
+    var tile = function (label, fig, sub, foot, isMoney) {
+      return '<article class="chartcard ovw-kpi crm-tile"><span class="ovw-kpi-label">' + esc(label) + '</span>' +
+        '<b class="ovw-kpi-fig' + (isMoney ? ' is-money' : '') + '">' + esc(String(fig)) + '</b>' +
+        '<span class="ovw-kpi-sub">' + esc(sub) + '</span>' +
+        (foot ? '<span class="crm-tile-foot' + (foot[1] ? ' is-late' : '') + '">' + esc(foot[0]) + '</span>' : '') + '</article>';
+    };
+    var live = state.creators.filter(function (c) { return c.active !== false; }).length, down = state.creators.length - live;
+    var tiles = [tile('Active creators', live, down ? down + ' inactive' : 'None inactive')];
+    var ps = state.payStates || {}, rv = Object.keys(ps).filter(function (k) { return ps[k] === 'pending'; }).length;
+    var d = cpq.data, today = ADspaceClock.today();
+    if (mayPart('campaigns.creators', 'view')) {
+      var oldest = d ? (d.review || []).reduce(function (m, r) { var x = r.created_at ? ADspaceClock.day(r.created_at) : ''; return x && (!m || x < m) ? x : m; }, '') : '';
+      var ago = oldest ? ADspaceClock.between(oldest, today) : null;
+      tiles.push(tile('Details to review', rv, !rv ? 'None waiting' : ago == null ? plural(rv, 'creator', 'creators')
+        : 'Submitted ' + (ago <= 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago')));
+    }
+    if (d && d.pay) {
+      var g = cpqGroups(d);
+      var sum = function (list, fig) {
+        var t = {};
+        list.forEach(function (j) { var v = fig(j); if (v) t[v.cur] = (t[v.cur] || 0) + Number(v.amt || 0); });
+        var k = Object.keys(t).sort(function (a, b) { return (a !== 'MYR') - (b !== 'MYR') || a.localeCompare(b); })[0] || 'MYR';
+        return { cur: k, amt: t[k] || 0 };
+      };
+      var fees = sum(g.ready, function (j) { return j.fee && { cur: j.fee.currency || 'MYR', amt: j.fee.amount }; });
+      var unset = g.ready.filter(function (j) { return !(j.fee && Number(j.fee.amount) > 0); }).length;
+      tiles.push(tile('Ready to bill', g.ready.length, g.ready.length ? billMoney(fees.amt, fees.cur) + ' in fees' : 'None ready',
+        unset ? [plural(unset, 'fee not set', 'fees not set'), false] : null));
+      var owed = sum(g.waiting, function (j) { return j.bill && { cur: j.bill.currency || 'MYR', amt: j.bill.amount }; });
+      var late = g.waiting.filter(function (j) { return j._late; }).length;
+      tiles.push(tile('Awaiting payment', billMoney(owed.amt, owed.cur), g.waiting.length ? plural(g.waiting.length, 'bill', 'bills') : 'No bills',
+        late ? [plural(late, 'bill late', 'bills late'), true] : null, true));
+    }
+    box.className = 'ovw-kpis crm-tiles';
+    box.style.setProperty('--n', tiles.length);
+    box.innerHTML = tiles.join('');
+    box.hidden = false;
+  }
+
   /* ---- A creator's page ----------------------------------------------------
      Back, the record head (the name over Creator ID and platforms, the
      state, one ⋯ of Reset link, Set inactive or Set active, and Delete), then
@@ -500,6 +550,7 @@
     if ($('crRec')) $('crRec').hidden = !open;
     if ($('rosterBar')) $('rosterBar').hidden = open;
     if ($('rosterList')) $('rosterList').hidden = open;
+    paintRosterTiles();
     campStrip();
   }
   function openCrRec(id, pane, opener) {
@@ -1131,17 +1182,28 @@
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
       if (d.pay) sub.push('<span class="cpay-part">' + (j.fee ? 'Fee ' + esc(billMoney(j.fee.amount, j.fee.currency)) : 'Fee not set') + '</span>');
       var mk = ready.indexOf(j) > -1 ? '<button class="btn btn-sm cpay-mk" type="button" data-a="mkbill" data-gate="bukku">Create bill</button>' : '';
-      var when = b ? [b.paid_on ? esc(day(b.paid_on)) : '', b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
-        : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
-      return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
-        '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
-          '<span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
-        '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + mk + '</div>' +
-        (b && b.number ? payMenu(j.job, [bkItem(b.number), work ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-a="earlier">Edit</button>' : ''])
+      var when = b ? billParts(b, true) : POSTED.indexOf(j.state) > -1 && j.pay_by ? '<span class="nb">Pay by ' + esc(day(j.pay_by)) + '</span>' : '';
+      return jobRow(' data-opt="' + esc(j.option) + '"', j.job, sub.join(' · '), st, when, mk,
+        b && b.number ? payMenu(j.job, [bkItem(b.number), work ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-a="earlier">Edit</button>' : ''])
           : work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
-        '</div>';
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '');
     };
+    /* A bill's day, number and amount, each part kept whole. */
+    function billParts(b, withNumber) {
+      return [b.paid_on ? esc(day(b.paid_on)) : '', withNumber && b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : '']
+        .filter(Boolean).map(function (x) { return '<span class="nb">' + x + '</span>'; }).join(' · ');
+    }
+    /* Every row of the pane is the phone row (`.prow`, 2026-11-22): the
+       reference over its line, the state, the end and the ⋯ in their slots;
+       the ⋯'s slot is kept where a row has none, so the states end at one
+       edge. */
+    function jobRow(attrs, ref, sub, st, when, more, act) {
+      return '<div class="cpay-job prow"' + attrs + '>' +
+        '<div class="cpay-job-l pr-main"><span class="cpay-job-ref">' + esc(ref || '') + '</span>' + (sub ? '<span class="cpay-job-sub">' + sub + '</span>' : '') + '</div>' +
+        '<span class="cpay-job-st pr-state">' + st + '</span>' +
+        (when || more ? '<span class="cpay-job-end pr-end">' + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + (more || '') + '</span>' : '') +
+        '<span class="pr-act">' + (act || '') + '</span></div>';
+    }
     /* A bill's page in Bukku, from the row's ⋯ (2026-11-13, the user: "give a
        button link to open up the respective bukku bill page in menu"). */
     function bkItem(num) { return '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="bukku" data-num="' + esc(num) + '">Open in Bukku</button>'; }
@@ -1166,21 +1228,14 @@
         var b = e.bill;
         var st = b ? '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>'
           : d.linked ? '<span class="chip-state is-warn">Not billed</span>' : '<span class="chip-state is-off">Not linked</span>';
-        var when = b ? [b.paid_on ? esc(day(b.paid_on)) : '', b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
-        return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
-          '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
-          '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
-          payMenu(e.ref, [b && b.number ? bkItem(b.number) : '', work ? '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button>' : '']) +
-          '</div>';
+        return jobRow(' data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '"', e.ref, '', st, b ? billParts(b, true) : '', '',
+          payMenu(e.ref, [b && b.number ? bkItem(b.number) : '', work ? '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button>' : '']));
       }).join('') : '<p class="emptyline">No earlier jobs.</p>';
     }
     if ((d.earlier || []).length) {
       html += '<h4 class="fsec-h cpay-earlier-h">Earlier payments</h4>' + d.earlier.map(function (b) {
-        return '<div class="cpay-job"><div class="cpay-job-l"><span class="cpay-job-ref">' + esc(b.number || '') + '</span>' +
-          '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
-          '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
-          (b.paid_on || b.amount != null ? '<span class="cpay-job-sub">' + [b.paid_on ? esc(day(b.paid_on)) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') + '</span>' : '') + '</div>' +
-          (b.number ? payMenu(b.number, [bkItem(b.number)]) : work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
+        return jobRow('', b.number, esc(b.ref || ''), '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>',
+          billParts(b, false), '', b.number ? payMenu(b.number, [bkItem(b.number)]) : '');
       }).join('');
     }
     if (d.read_at) html += '<p class="muted cpay-read">Read from Bukku ' + esc(day(d.read_at) + ', ' + ADspaceClock.clock(d.read_at)) + '</p>';
@@ -1444,6 +1499,7 @@
       }
       cpq.data = d; cpq.from = r;
       cpqCount();
+      paintRosterTiles();
       if (!countOnly || state.tab === 'payments') paintQueue();
     }).catch(function (e) { if (!countOnly) UI.failLine($('cpqList'), 'The payments', e.message, function () { loadQueue(); }); });
   }

@@ -190,3 +190,24 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   under the description (the user, 2026-10-23: it read as the item's). The quotation website keeps the client's
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
+- Supplier bills (`2026-11-22-supplier-bills.sql`, `supplier_bills`; the
+  user, 2026-11-22, the Bukku structure mockup v3, screens a, b and c-alt):
+  every supplier's purchase bills, read only, from the nightly copy
+  (`bukku_docs` kind `bill`, a contact linked to a supplier; never a
+  creator's), at Suppliers View (Sensitive details shuts the bank details
+  alone). Suppliers' view strip reads Suppliers · Payments (`#supViews`,
+  `view=payments`, its overdue bills counted in red; stepping away while a
+  record is open), four tiles over the list (`#supTiles`: Active
+  suppliers, Pending approval, Awaiting payment and Overdue bills, a figure
+  a currency, the oldest overdue in red). Payments (`#spyView`): the
+  tallies (Awaiting payment, Overdue, Due in 7 days, Paid this month), then
+  Overdue, Awaiting payment and Paid within its period (`#spyPeriod`), a
+  `.cpq-row` a bill (the supplier and its bill number, the Supplier ID and
+  the client seen), Open in Bukku on each; Read from Bukku at Suppliers
+  Work. No bill is made in the portal. The record is the creator's grid
+  (`.rec.crr-body`): the strip and the pane, and a rail of Totals (Billed,
+  Paid, Outstanding, Overdue, a line a currency) and Record (Bills, Last
+  bill, Last paid), following the pane on a phone; Payment holds Bills
+  under the Bukku band (`#supBills`, overdue first, each a `.cpay-job` on
+  the phone row with a ⋯ of Open in Bukku; No bills. when none), and its
+  tab counts an overdue bill in red (`tests/supbills.js`, `supbillsql.js`).

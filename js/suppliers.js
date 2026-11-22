@@ -71,13 +71,16 @@
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
 
-  var state = { pane: 'overview', rows: null, find: '', open: null, rec: null, form: null, wired: false };
+  var state = { pane: 'overview', rows: null, find: '', open: null, rec: null, form: null, wired: false, view: 'list' };
 
   /* The record's pane rides in the address (`tab=`, Overview left out) and
      pushes history, as a colleague's record does (SUP-4, 2026-10-22). */
   var PANES = [['overview', 'Overview'], ['payment', 'Payment'], ['documents', 'Documents'], ['emails', 'Emails']];
   function paneOk(k) { return PANES.some(function (x) { return x[0] === k; }); }
-  function urlState() { return { supplier: state.open || '', tab: state.open && state.pane !== 'overview' ? state.pane : '' }; }
+  function urlState() {
+    return { supplier: state.open || '', tab: state.open && state.pane !== 'overview' ? state.pane : '',
+      view: !state.open && state.view === 'payments' ? 'payments' : '' };
+  }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }
   /* What a supplier is called: its name, else its Supplier ID until its own
      form names it. */
@@ -96,6 +99,7 @@
     $('supEditClose').addEventListener('click', shutEdit);
     $('supEditGo').addEventListener('click', save);
     $('supEdKind').addEventListener('change', kindRows);
+    wireBills();
     window.addEventListener('popstate', function () {
       if ($('sectionSuppliers') && !$('sectionSuppliers').hidden) enter();
     });
@@ -106,8 +110,10 @@
     var q = new URLSearchParams(location.search);
     state.open = q.get('supplier') || null;
     state.pane = state.open && paneOk(q.get('tab')) ? q.get('tab') : 'overview';
+    state.view = q.get('view') === 'payments' ? 'payments' : 'list';
     $('supNew').hidden = !may('suppliers', 'work');
     load();
+    loadBills();
   }
 
   // ---- The list -------------------------------------------------------------
@@ -131,8 +137,13 @@
   }
   function paint() {
     var box = $('supList'), rec = $('supRec');
-    rec.hidden = true; box.hidden = false; $('supBar').hidden = false;
+    rec.hidden = true;
+    strip();
+    if (state.view === 'payments') { box.hidden = true; $('supBar').hidden = true; $('supTiles').hidden = true; $('spyView').hidden = false; paintBills(); return; }
+    $('spyView').hidden = true;
+    box.hidden = false; $('supBar').hidden = false;
     if (!state.rows) return;
+    paintTiles();
     var all = state.rows, rows = all.filter(matches);
     $('supCount').textContent = !all.length ? '' : rows.length === all.length
       ? all.length + (all.length === 1 ? ' supplier' : ' suppliers') : rows.length + ' of ' + all.length;
@@ -178,6 +189,385 @@
     return b;
   }
 
+  // ---- Bills (SUPPLIER BILLS, 2026-11-22) ------------------------------------
+  /* Every supplier's purchase bills, read only, from the copy of Bukku the
+     nightly run keeps (`supplier_bills`, Suppliers View; the user,
+     2026-11-22, approving the Bukku structure mockup). Read from Bukku
+     (Suppliers Work) reads the bills again; Open in Bukku opens one there.
+     No bill is made here: a supplier's own invoice is keyed into Bukku. */
+  var BILL_SAID = {
+    denied: 'You do not have permission to read supplier bills. Please ask an admin.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'not-found': 'This bill is no longer in Bukku. Press Read from Bukku, then try again.',
+    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
+    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
+    'bukku-refused': 'Bukku refused the request. Please try again, or contact an admin.',
+    failed: 'The request failed. Please try again.'
+  };
+  function billSaid(d) {
+    var m = d && d.error && typeof d.error === 'object' ? d.error.message || '' : '';
+    if (m && /could not find|does not exist|schema cache/i.test(m)) return BILL_SAID['needs-update'];
+    return (d && typeof d.error === 'string' && BILL_SAID[d.error]) || BILL_SAID.failed;
+  }
+  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="out"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  /* Money through js/money.js alone: RM and S$, any other currency by its code. */
+  function money(n, cur) {
+    var t = window.ADspaceMoney.money2(Number(n) || 0, cur === 'SGD' ? 'SG' : 'MY');
+    return cur && cur !== 'MYR' && cur !== 'SGD' ? t.replace(/^RM/, cur) : t;
+  }
+  function billDay(d) { return d ? window.ADspaceClock.date(d + 'T00:00:00+08:00') : ''; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  /* Paid once nothing stands; overdue once its due date has passed. */
+  function billState(b, today) { return !(Number(b.balance) > 0) ? 'paid' : b.due < today ? 'overdue' : 'waiting'; }
+  var BILL_STATE = { overdue: ['Overdue', 'is-danger'], waiting: ['Awaiting payment', 'is-warn'], paid: ['Paid', 'is-ok'] };
+  function lateBy(b, today) { var n = window.ADspaceClock.between(b.due, today); return n + (n === 1 ? ' day late' : ' days late'); }
+  /* Totals a currency, never added across, MYR first. */
+  function byCur(list, fig) {
+    var t = {};
+    list.forEach(function (b) { var c = b.currency || 'MYR'; t[c] = (t[c] || 0) + Number(fig(b) || 0); });
+    return Object.keys(t).sort(function (a, b) { return (a !== 'MYR') - (b !== 'MYR') || a.localeCompare(b); })
+      .map(function (c) { return { cur: c, amt: Math.round(t[c] * 100) / 100 }; });
+  }
+  var PERIODS = [['3d', 'Last 3 days'], ['7d', 'Last 7 days'], ['mm', 'This month and last month'],
+    ['lm', 'Last month'], ['3m', 'Last 3 months'], ['yr', 'This year']];
+  var bills = { data: null, err: null, period: 'mm', reading: false };
+  try { var keptPer = localStorage.getItem('adspace-spy-period'); if (PERIODS.some(function (x) { return x[0] === keptPer; })) bills.period = keptPer; } catch (e) {}
+  function range(k) {
+    var C = window.ADspaceClock, today = C.today(), p = today.split('-'), y = Number(p[0]), m = Number(p[1]);
+    var first = function (yy, mm) { while (mm < 1) { mm += 12; yy -= 1; } return yy + '-' + String(mm).padStart(2, '0') + '-01'; };
+    if (k === '3d') return { from: C.addDays(today, -2) };
+    if (k === '7d') return { from: C.addDays(today, -6) };
+    if (k === 'lm') return { from: first(y, m - 1), to: C.addDays(first(y, m), -1) };
+    if (k === '3m') return { from: first(y, m - 2) };
+    if (k === 'yr') return { from: y + '-01-01' };
+    return { from: first(y, m - 1) };
+  }
+  /* The view strip: Suppliers, then Payments with its overdue bills counted
+     in red; it steps away while a record is open. */
+  function strip() {
+    var box = $('supViewsBox');
+    if (!box) return;
+    box.hidden = Boolean(state.open);
+    Array.prototype.forEach.call(document.querySelectorAll('#supViews .acttab'), function (b) {
+      var on = b.getAttribute('data-sv') === state.view;
+      b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on));
+    });
+    var n = $('supPayN'), d = bills.data, k = 0;
+    if (d) k = (d.bills || []).filter(function (b) { return billState(b, d.today) === 'overdue'; }).length;
+    if (n) { n.textContent = k; n.hidden = !k; }
+    if (!box.hidden && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('supViews'));
+  }
+  function wireBills() {
+    $('supViews').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.acttab');
+      if (!b) return;
+      var v = b.getAttribute('data-sv') === 'payments' ? 'payments' : 'list';
+      if (v === state.view) return;
+      state.view = v; setUrl(); paint();
+      if (v === 'payments' && !bills.data) loadBills();
+    });
+    ['spyFind', 'spySup', 'spyClient', 'spyCur'].forEach(function (id) {
+      var el = $(id), was = el.value;
+      var go = function () { if (el.value === was) return; was = el.value; paintBills(); };
+      el.addEventListener('input', go); el.addEventListener('change', go);
+    });
+    $('spyRead').addEventListener('click', function () { readBukku(this, 'spyMsg', loadBills); });
+  }
+  /* One read for the tiles, the strip's count and the Payments view: every
+     bill owing, and those settled since the earlier of the period's start
+     and this month's 1st (Paid this month). */
+  function loadBills() {
+    var r = range(bills.period), first = window.ADspaceClock.today().slice(0, 8) + '01';
+    if (state.view === 'payments' && !bills.data) UI.skeleton($('spyList'), 4);
+    return rpc('supplier_bills', { p_supplier: null, p_paid_from: r.from < first ? r.from : first, p_doc: null }).then(function (x) {
+      var d = x.data || {};
+      if (x.error || d.error) { bills.err = x.error ? { error: x.error } : d; bills.data = null; }
+      else { bills.err = null; bills.data = d; }
+      strip();
+      if (state.open) return;
+      if (state.view === 'payments') paintBills(); else if (state.rows) paintTiles();
+    });
+  }
+  /* Four figures over the list, as Clients has (v3): the suppliers active
+     and pending from the list read, what is owed and what is overdue from
+     the bills read. */
+  function paintTiles() {
+    var box = $('supTiles'), rows = state.rows || [];
+    if (!box || !rows.length) { if (box) box.hidden = true; return; }
+    var tile = function (label, fig, sub, foot, money) {
+      return '<article class="chartcard ovw-kpi crm-tile"><span class="ovw-kpi-label">' + esc(label) + '</span>' +
+        '<b class="ovw-kpi-fig' + (money ? ' is-money' : '') + '">' + esc(String(fig)) + '</b>' +
+        '<span class="ovw-kpi-sub">' + esc(sub) + '</span>' +
+        (foot ? '<span class="crm-tile-foot' + (foot[1] ? ' is-late' : '') + '">' + esc(foot[0]) + '</span>' : '') + '</article>';
+    };
+    var act = rows.filter(function (x) { return x.status === 'active'; }), pend = rows.filter(function (x) { return x.status === 'pending'; });
+    var change = act.filter(function (x) { return x.waiting; }).length, got = pend.filter(function (x) { return x.waiting; }).length;
+    var tiles = [tile('Active suppliers', act.length, change ? plural(change, 'change waiting to be applied', 'changes waiting to be applied') : 'No changes waiting'),
+      tile('Pending approval', pend.length, got ? plural(got, 'with details received', 'with details received') : 'No details received')];
+    var d = bills.data;
+    if (d) {
+      var owe = (d.bills || []).filter(function (b) { return billState(b, d.today) !== 'paid'; });
+      var late = owe.filter(function (b) { return billState(b, d.today) === 'overdue'; });
+      var head = function (list, label, foot) {
+        var t = byCur(list, function (b) { return b.balance; }), main = t[0] || { cur: 'MYR', amt: 0 }, rest = t.slice(1);
+        var n = list.filter(function (b) { return (b.currency || 'MYR') === main.cur; }).length;
+        var more = rest.map(function (x) { return money(x.amt, x.cur) + ' · ' + plural(list.filter(function (b) { return (b.currency || 'MYR') === x.cur; }).length, 'bill', 'bills'); }).join(' · ');
+        return tile(label, money(main.amt, main.cur), list.length ? plural(n, 'bill', 'bills') : 'No bills', foot || (more ? [more, false] : null), true);
+      };
+      tiles.push(head(owe, 'Awaiting payment'));
+      var oldest = late.reduce(function (m, b) { return !m || b.due < m ? b.due : m; }, '');
+      tiles.push(head(late, 'Overdue bills', oldest ? ['Oldest ' + lateBy({ due: oldest }, d.today), true] : null));
+    }
+    box.className = 'ovw-kpis crm-tiles';
+    box.style.setProperty('--n', tiles.length);
+    box.innerHTML = tiles.join('');
+    box.hidden = false;
+  }
+  function fillSelect(id, all, pairs) {
+    var sel = $(id), was = sel.value;
+    sel.innerHTML = '<option value="all">' + esc(all) + '</option>' + pairs.map(function (p) { return '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>'; }).join('');
+    sel.value = pairs.some(function (p) { return p[0] === was; }) ? was : 'all';
+  }
+  /* Suppliers' Payments view (screen b): the tallies, then Overdue, Awaiting
+     payment and Paid within its period; a row opens its bill in Bukku. */
+  function paintBills() {
+    var host = $('spyList');
+    if (!host) return;
+    $('spyRead').hidden = !(bills.data && bills.data.work);
+    if (bills.err) {
+      $('spyTallies').hidden = true; $('spyCount').textContent = '';
+      UI.failLine(host, 'The bills', billSaid(bills.err), loadBills);
+      return;
+    }
+    var d = bills.data;
+    if (!d) { UI.skeleton(host, 4); return; }
+    var all = d.bills || [], today = d.today, per = range(bills.period);
+    var sups = {}, cls = {}, curs = {};
+    all.forEach(function (b) {
+      sups[b.supplier] = b.name;
+      if (b.client) cls[b.client_code || b.client] = window.ADspaceForm.named(b.client_code, b.client);
+      curs[b.currency || 'MYR'] = true;
+    });
+    fillSelect('spySup', 'All suppliers', Object.keys(sups).sort(function (a, b) { return sups[a].localeCompare(sups[b]); }).map(function (k) { return [k, sups[k]]; }));
+    fillSelect('spyClient', 'All clients', Object.keys(cls).sort(function (a, b) { return cls[a].localeCompare(cls[b], 'en', { numeric: true }); }).map(function (k) { return [k, cls[k]]; }));
+    fillSelect('spyCur', 'All currencies', Object.keys(curs).sort().map(function (k) { return [k, k]; }));
+    /* A filter with nothing to choose between is not drawn. */
+    $('spySup').hidden = Object.keys(sups).length < 2 && $('spySup').value === 'all';
+    $('spyClient').hidden = !Object.keys(cls).length;
+    $('spyCur').hidden = Object.keys(curs).length < 2 && $('spyCur').value === 'all';
+    if (window.ADspaceCmdbar && window.ADspaceCmdbar.refresh) window.ADspaceCmdbar.refresh();
+    var q = ($('spyFind').value || '').trim().toLowerCase(), fs = $('spySup').value, fc = $('spyClient').value, fu = $('spyCur').value;
+    var match = function (b) {
+      if (fs !== 'all' && b.supplier !== fs) return false;
+      if (fc !== 'all' && (b.client_code || b.client) !== fc) return false;
+      if (fu !== 'all' && (b.currency || 'MYR') !== fu) return false;
+      if (!q) return true;
+      var hay = [b.name, b.code, b.number, b.client, b.client_code].join(' ').toLowerCase();
+      return q.split(/\s+/).every(function (w) { return hay.indexOf(w) > -1; });
+    };
+    var inPer = function (b) { var p = b.paid_on || b.date; return p >= per.from && (!per.to || p <= per.to); };
+    var g = { overdue: [], waiting: [], paid: [] };
+    all.forEach(function (b) { var k = billState(b, today); if (k !== 'paid' || inPer(b)) g[k].push(b); });
+    g.paid.sort(function (a, b) { return String(b.paid_on || b.date).localeCompare(String(a.paid_on || a.date)); });
+    var pick = function (list) { return list.filter(match); };
+    var od = pick(g.overdue), wt = pick(g.waiting), pd = pick(g.paid);
+    var shown = od.length + wt.length + pd.length, every = g.overdue.length + g.waiting.length + g.paid.length;
+    $('spyCount').textContent = !every ? '' : shown === every ? plural(every, 'bill', 'bills') : shown + ' of ' + every;
+    /* The tallies follow the filters: owed (overdue too), overdue, due in
+       the next seven days and paid this month, a figure a currency. */
+    var owing = od.concat(wt), month = today.slice(0, 8) + '01';
+    var soon = wt.filter(function (b) { return b.due <= window.ADspaceClock.addDays(today, 7); });
+    var paidNow = all.filter(function (b) { return billState(b, today) === 'paid' && (b.paid_on || b.date) >= month && match(b); });
+    var cell = function (label, list, fig, total) {
+      var t = byCur(list, fig);
+      return '<div class="tally-cell' + (total ? ' is-total' : '') + '"><span>' + esc(label) + '</span>' +
+        (t.length ? t.map(function (x) { return '<b>' + esc(money(x.amt, x.cur)) + '</b>'; }).join('') : '<b>' + esc(money(0, fu !== 'all' ? fu : 'MYR')) + '</b>') + '</div>';
+    };
+    var tal = $('spyTallies');
+    tal.innerHTML = '<div class="tally inv-tally">' + cell('Awaiting payment', owing, function (b) { return b.balance; }, true) +
+      cell('Overdue', od, function (b) { return b.balance; }) + cell('Due in 7 days', soon, function (b) { return b.balance; }) +
+      cell('Paid this month', paidNow, function (b) { return b.amount; }) + '</div>';
+    tal.hidden = !every;
+    host.innerHTML = '';
+    if (!every) {
+      UI.emptyLine(host, 'No bills.');
+      readLine(host, d);
+      return;
+    }
+    var GRP = window.ADspaceGroup;
+    var row = function (b, fig, when, late) {
+      /* The Supplier ID leads the line, as the list's phone line reads it,
+         then the client it works for. */
+      var sub = ['<span class="nb sup-line-code">' + esc(b.code) + '</span>'].concat(b.client
+        ? ['<span class="nb">' + esc(window.ADspaceForm.named(b.client_code, b.client)) + '</span>'] : []).join(' · ');
+      return '<div class="cpq-row" data-bill="' + esc(b.id) + '">' +
+        '<div class="cpq-l"><span class="cpq-name">' + esc(b.name) + ' <span class="cpq-mono cpq-job">' + esc(b.number || '') + '</span></span>' +
+          (sub ? '<span class="cpq-sub">' + sub + '</span>' : '') + '</div>' +
+        '<div class="cpq-r"><span class="cpq-fig">' + esc(money(fig, b.currency)) + '</span><span class="cpq-sub' + (late ? ' is-late' : '') + '">' + esc(when) + '</span></div>' +
+        '<div class="cpq-act"><button class="btn btn-sm" type="button" data-a="bukku">Open in Bukku' + OUT + '</button></div></div>';
+    };
+    var sum = function (list) { return '<span class="inv-sum">' + esc(byCur(list, function (b) { return b.balance; }).map(function (x) { return money(x.amt, x.cur); }).join(' · ')) + '</span>'; };
+    var section = function (key, name, list, rows, marks) {
+      if (!list.length) return;
+      host.appendChild(GRP.section({ route: 'supplier-payments', key: key, name: name, count: list.length, marks: marks || '',
+        shut: key === 'paid' && GRP.shut('supplier-payments', 'paid', false, false),
+        table: function () { var t = document.createElement('div'); t.className = 'cpq-list crm-table softpanel'; t.innerHTML = rows; return t; } }));
+    };
+    if (!shown) { var e = document.createElement('p'); e.className = 'emptyline'; e.textContent = 'No matches.'; host.appendChild(e); }
+    section('overdue', 'Overdue', od, od.map(function (b) { return row(b, b.balance, lateBy(b, today), true); }).join(''), sum(od));
+    section('waiting', 'Awaiting payment', wt, wt.map(function (b) { return row(b, b.balance, 'Due ' + billDay(b.due)); }).join(''), sum(wt));
+    var perSel = '<select class="select select-sm cpq-period" id="spyPeriod" aria-label="Paid period">' +
+      PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === bills.period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>';
+    if (pd.length) section('paid', 'Paid', pd, pd.map(function (b) { return row(b, b.amount, 'Paid ' + billDay(b.paid_on || b.date)); }).join(''), perSel);
+    else {
+      var none = document.createElement('section'); none.className = 'crm-group cpq-paid-none';
+      none.innerHTML = '<div class="crm-group-head"><h3 class="cpq-h">Paid<span class="tab-n">0</span></h3>' + perSel + '</div>';
+      host.appendChild(none);
+    }
+    readLine(host, d);
+    var ps = $('spyPeriod');
+    ps.addEventListener('click', function (ev) { ev.stopPropagation(); });
+    ps.addEventListener('change', function () {
+      bills.period = ps.value;
+      try { localStorage.setItem('adspace-spy-period', bills.period); } catch (ev) {}
+      loadBills();
+    });
+    host.querySelectorAll('[data-a="bukku"]').forEach(function (b) {
+      b.addEventListener('click', function () { openBill(b.closest('[data-bill]').getAttribute('data-bill'), 'spyMsg'); });
+    });
+  }
+  function readLine(host, d) {
+    if (!d || !d.read_at) return;
+    var p = document.createElement('p'); p.className = 'muted cpay-read';
+    p.textContent = 'Read from Bukku ' + window.ADspaceClock.date(d.read_at) + ', ' + window.ADspaceClock.clock(d.read_at);
+    host.appendChild(p);
+  }
+  /* Read from Bukku: the suppliers' bills read again, asked as the caller. */
+  function readBukku(btn, msgId, done) {
+    if (bills.reading) return;
+    bills.reading = true; btn.disabled = true; msg(msgId, '');
+    db.functions.invoke('bukku-sync', { body: { action: 'supplierbills' } }).then(function (r) {
+      if (r && r.data && r.data.error) return r.data;
+      return API.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }, function () { return { error: 'failed' }; }).then(function (d) {
+      bills.reading = false; btn.disabled = false;
+      if (d.error) { msg(msgId, billSaid(d), 'err'); return; }
+      msg(msgId, d.more ? 'Read from Bukku. Some bills are still to be read. Press Read from Bukku again.' : 'Read from Bukku.', 'ok');
+      done();
+    });
+  }
+  /* The tab opens at the press (a later window is blocked), then goes to the
+     bill's page once bukku-sync names it. */
+  function openBill(id, msgId) {
+    var tab = window.open('', '_blank');
+    db.functions.invoke('bukku-sync', { body: { action: 'supplierbilllink', id: Number(id) } }).then(function (r) {
+      if (r && r.data && r.data.error) return r.data;
+      return API.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }, function () { return { error: 'failed' }; }).then(function (x) {
+      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
+      if (tab) tab.close();
+      msg(msgId, billSaid(x), 'err');
+    });
+  }
+  /* A supplier's own bills (screen c-alt): under the Bukku band in Payment,
+     the creator's Payment pane's rows; the Payment tab counts an overdue bill
+     in red; the rail holds the totals and the record. */
+  function recBills(id) {
+    state.recBills = null;
+    paintRail();
+    rpc('supplier_bills', { p_supplier: id, p_paid_from: null, p_doc: null }).then(function (x) {
+      if (state.open !== id) return;
+      var d = x.data || {};
+      state.recBills = x.error || d.error ? { err: x.error ? { error: x.error } : d } : d;
+      paintRecBills();
+      paintRail();
+    });
+  }
+  var DOTS_SM = DOTS;
+  function paintRecBills() {
+    var host = $('supBillList'), d = state.recBills;
+    var n = $('supPayTabN');
+    if (!d || d.err) {
+      if (n) n.hidden = true;
+      if (host && d && d.err) UI.failLine(host, 'The bills', billSaid(d.err), function () { recBills(state.open); });
+      return;
+    }
+    var today = d.today, list = (d.bills || []).slice();
+    var order = { overdue: 0, waiting: 1, paid: 2 };
+    list.sort(function (a, b) {
+      var x = billState(a, today), y = billState(b, today);
+      if (x !== y) return order[x] - order[y];
+      return x === 'paid' ? String(b.paid_on || b.date).localeCompare(String(a.paid_on || a.date)) : String(a.due).localeCompare(String(b.due));
+    });
+    var late = list.filter(function (b) { return billState(b, today) === 'overdue'; }).length;
+    if (n) { n.textContent = late; n.hidden = !late; }
+    if (window.ADspaceForm && window.ADspaceForm.thumb && $('supTabs')) window.ADspaceForm.thumb($('supTabs'));
+    if (!host) return;
+    var read = $('supBillRead');
+    if (read) read.hidden = !d.work;
+    host.innerHTML = (list.length ? list.map(function (b) {
+      var k = billState(b, today), st = BILL_STATE[k];
+      var sub = ['<span class="nb">' + esc(money(b.amount, b.currency)) + '</span>'];
+      if (k !== 'paid' && Number(b.balance) < Number(b.amount)) sub.push('<span class="nb">' + esc(money(b.balance, b.currency)) + ' owing</span>');
+      var when = k === 'overdue' ? lateBy(b, today) : k === 'waiting' ? 'Due ' + billDay(b.due) : billDay(b.paid_on || b.date);
+      return '<div class="cpay-job prow" data-bill="' + esc(b.id) + '">' +
+        '<div class="cpay-job-l pr-main"><span class="cpay-job-ref">' + esc(b.number || '') + '</span><span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
+        '<span class="cpay-job-st pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
+        '<span class="cpay-job-end pr-end"><span class="cpay-job-sub">' + esc(when) + '</span></span>' +
+        '<span class="pr-act"><span class="team-act"><button class="kmenu-btn" type="button" data-a="billmenu" aria-label="More actions for ' + esc(b.number || '') + '" aria-expanded="false">' + DOTS_SM + '</button>' +
+          '<div class="kmenu" role="menu" hidden><button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="bukku">Open in Bukku</button></div></span></span>' +
+        '</div>';
+    }).join('') : '<p class="emptyline">No bills.</p>') +
+      (d.read_at ? '<p class="muted cpay-read">Read from Bukku ' + esc(window.ADspaceClock.date(d.read_at) + ', ' + window.ADspaceClock.clock(d.read_at)) + '</p>' : '');
+    host.querySelectorAll('[data-a="billmenu"]').forEach(function (b) {
+      var m = b.parentNode.querySelector('.kmenu');
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = m.hidden;
+        shutMenus(); m.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(b, m);
+      });
+      m.querySelector('[data-a="bukku"]').addEventListener('click', function (e) {
+        e.stopPropagation(); shutMenus();
+        openBill(b.closest('[data-bill]').getAttribute('data-bill'), 'supBillMsg');
+      });
+    });
+    if (read && !read.getAttribute('data-wired')) {
+      read.setAttribute('data-wired', '1');
+      read.addEventListener('click', function () { readBukku(read, 'supBillMsg', function () { recBills(state.open); loadBills(); }); });
+    }
+  }
+  /* The rail (screen c-alt): Totals, a figure a currency, then what the
+     record holds of its bills; a block with nothing leaves. */
+  function paintRail() {
+    var rail = $('supRail'), d = state.recBills;
+    if (!rail) return;
+    var list = d && !d.err ? d.bills || [] : [], html = '';
+    if (list.length) {
+      var today = d.today;
+      var lines = function (label, fig, only) {
+        var t = byCur(only ? list.filter(only) : list, fig);
+        return '<div><dt>' + esc(label) + '</dt><dd class="crtot">' + (t.length ? t.map(function (x) {
+          return '<span class="crtot-amt">' + esc(money(x.amt, x.cur)) + '</span>';
+        }).join('') : '<span class="muted">' + esc(money(0, list[0].currency)) + '</span>') + '</dd></div>';
+      };
+      html += '<section class="railblock rail-after" id="supTotals"><h3 class="railtitle">Totals</h3><dl class="raildates">' +
+        lines('Billed', function (b) { return b.amount; }) +
+        lines('Paid', function (b) { return Number(b.amount) - Number(b.balance); }) +
+        lines('Outstanding', function (b) { return b.balance; }, function (b) { return Number(b.balance) > 0; }) +
+        lines('Overdue', function (b) { return b.balance; }, function (b) { return billState(b, today) === 'overdue'; }) + '</dl></section>';
+      var last = list.reduce(function (m, b) { return !m || b.date > m ? b.date : m; }, '');
+      var paid = list.reduce(function (m, b) { return b.paid_on && (!m || b.paid_on > m) ? b.paid_on : m; }, '');
+      html += '<section class="railblock rail-after"><h3 class="railtitle">Record</h3><dl class="raildates">' +
+        '<div><dt>Bills</dt><dd>' + list.length + '</dd></div>' +
+        (last ? '<div><dt>Last bill</dt><dd>' + esc(billDay(last)) + '</dd></div>' : '') +
+        (paid ? '<div><dt>Last paid</dt><dd>' + esc(billDay(paid)) + '</dd></div>' : '') + '</dl></section>';
+    }
+    rail.innerHTML = html;
+    rail.hidden = !html;
+  }
+
   // ---- New supplier ---------------------------------------------------------
   /* The next free AS number, written as wide as the IDs already are
      (AS0126, then AS0127), offered and the team's to change. */
@@ -210,6 +600,7 @@
   function openRec(id) {
     var rec = $('supRec');
     $('supList').hidden = true; $('supBar').hidden = true; rec.hidden = false;
+    $('supTiles').hidden = true; $('spyView').hidden = true; $('supViewsBox').hidden = true;
     if (!state.rec || state.rec.id !== id) UI.skeleton(rec, 4);
     return rpc('supplier_get', { p_id: id }).then(function (r) {
       /* An answer for a record already left never paints over the one open
@@ -408,7 +799,12 @@
           : group(GROUPS[0]) + group(GROUPS[1])),
       payment: (noDetails ? '' : group(GROUPS[2])) +
         (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
-        (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : ''),
+        (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
+        /* The supplier's bills from Bukku (SUPPLIER BILLS, 2026-11-22): after
+           the Bukku band, as a creator's Payment pane holds its payments. */
+        (s.status !== 'pending' ? '<section class="readgroup" id="supBills"><div class="readgroup-head"><h4 class="fsec-h">Bills</h4>' +
+          '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="supBillRead" data-gate="bukku" hidden>Read from Bukku</button></span></div>' +
+          '<div class="msg" id="supBillMsg" role="status"></div><div id="supBillList"><p class="muted">Loading.</p></div></section>' : ''),
       documents: '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           /* Each act stands in the section it fills (2026-10-20): Issue
              document beside Add existing document; Send email in Emails.
@@ -444,18 +840,27 @@
              keeps its line beside the state and the ⋯ (2026-10-27, SUP-10). */
           (s.status === 'pending' && work && complete ? '<div class="sup-go"><button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button></div>' : '') +
         '</div>' +
-      (shown.length > 1 ? '<nav class="rectabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
+      /* The record's grid, as a creator's (SUPPLIER BILLS, 2026-11-22): the
+         strip and the pane, and a rail of its totals that follows the pane
+         on a phone. */
+      '<div class="rec crr-body sup-recbody">' +
+      (shown.length > 1 ? '<nav class="rectabs crr-tabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
         var on = x[0] === state.pane;
-        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
+        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) +
+          (x[0] === 'payment' ? '<span class="tab-n is-err" id="supPayTabN" hidden></span>' : '') + '</button>';
       }).join('') + '</nav>' : '') +
-      '<div class="msg" id="supRecMsg"></div>' +
-      '<div class="panel sup-rec sup-body" data-swipe="supTabs">' + shown.map(function (x) {
+      '<div class="rec-panes"><div class="msg" id="supRecMsg"></div>' +
+      '<div class="rec-pane crr-pane" id="supPane" data-narrow="640"><div class="panel crr-card sup-body" data-swipe="supTabs">' + shown.map(function (x) {
         return '<div class="readgroups sup-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
-      }).join('') + '</div>';
+      }).join('') + '</div></div></div>' +
+      '<aside class="rec-rail" id="supRail" aria-label="Supplier facts" hidden></aside></div>';
     Array.prototype.forEach.call(rec.querySelectorAll('#supTabs .tab'), function (t) {
       t.addEventListener('click', function () { showPane(t.getAttribute('data-pane'), true); });
     });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
+    if (window.ADspaceForm && window.ADspaceForm.thumb && $('supTabs')) window.ADspaceForm.thumb($('supTabs'));
+    if (UI.fit) UI.fit();
+    recBills(s.id);
     /* Bukku (2026-10-18): an approved supplier sent as a Bukku contact; one
        linked to a client is that client's contact, typed Supplier too. */
     if (window.ADspaceBukku && $('supBukku')) window.ADspaceBukku.group($('supBukku'), 'supplier', s.id,
@@ -472,6 +877,7 @@
       t.classList.toggle('is-on', on); t.setAttribute('aria-selected', String(on));
     });
     Array.prototype.forEach.call(document.querySelectorAll('#supRec .sup-pane'), function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
+    if (window.ADspaceForm && window.ADspaceForm.thumb && $('supTabs')) window.ADspaceForm.thumb($('supTabs'));
     if (push && bridge.pushUrl) bridge.pushUrl(); else setUrl();
   }
   function wireRec() {

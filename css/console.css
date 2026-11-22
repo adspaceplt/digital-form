@@ -853,20 +853,30 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 #crRecPane.is-tight .readgroup-head:has(.crr-acts) { flex-wrap: wrap; }
 #crRecPane.is-tight .crr-acts { flex: 1 0 100%; }
 #crRecPane.is-tight .crr-acts .btn { flex: 1 1 0; min-width: 0; }
-/* A creator's payments (2026-11-09): a booking a row, its Job reference
-   over its campaign, the bill's state over its number and amount, the pen
-   for an earlier job ID at the right edge. */
-.cpay-job { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+/* A creator's payments (2026-11-09), and a supplier's bills (2026-11-22):
+   the row is the phone row (`.prow`, 2026-11-22, the Bukku structure,
+   decision 3): the main slot (Job reference over its campaign), the state
+   and the ⋯ on the title's line, the end (a date, a bill, an amount) under
+   them; at a desk the ⋯ stands beside both lines. Every row keeps the ⋯'s
+   column, so the states end at one edge. */
+.cpay-job { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "main state act" "main end act";
+  column-gap: 12px; row-gap: 2px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.cpay-job > .pr-main { grid-area: main; display: grid; gap: 2px; min-width: 0; }
+.cpay-job > .pr-state { grid-area: state; justify-self: end; }
+.cpay-job > .pr-end { grid-area: end; justify-self: end; display: grid; justify-items: end; gap: 6px; text-align: right; min-width: 0; }
+.cpay-job > .pr-act { grid-area: act; justify-self: end; }
+/* On a phone the end never widens the state's column at the main slot's
+   cost (a long campaign name ran under the date and amount): it takes the
+   room the state and the ⋯ leave, at least a date's width, its parts
+   wrapping between them. */
+.is-narrow .cpay-job.prow > .pr-end { contain: inline-size; min-width: 7.5rem; justify-self: stretch; }
 .cpay-job:first-child, .cpay-earlier-h + .cpay-job, .cpay-past-h + .cpay-job { border-top: 0; }
 .cpay-past-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .cpay-past-h .fsec-h { margin: 0; }
-.cpay-job-l, .cpay-job-r { display: grid; gap: 2px; min-width: 0; }
-.cpay-job-r { justify-items: end; text-align: right; }
 .cpay-job-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .cpay-job-sub { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .cpay-job-pen { margin-block: calc((var(--ctl-h) - 20px) / -2); }
 .cpay-part { white-space: nowrap; }
-.cpay-spacer { visibility: hidden; }
 .cpay-earlier-h { margin: 16px 0 4px; }
 .cpay-read { font-size: 12.5px; margin: 8px 0 0; }
 /* Creator fees (2026-11-13): the head's acts, a row's Create bill. */
@@ -874,7 +884,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 #cpayJobMsg:empty { display: none; }
 .cpay-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .cpay-acct { margin: 4px 0 8px; }
-.cpay-job-r .cpay-mk { margin-top: 6px; }
+.cpay-job-end .nb { white-space: nowrap; }
 
 /* What this creator has run, on their own card. A row a campaign, the name
    and the month it was shot, and the whole row opens it — the shape every
@@ -4397,6 +4407,15 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-headcard, .sup-tabs { margin-bottom: 12px; }
 .sup-body .readgroups.sup-pane { margin-top: 0; }
 #supClient > p.muted { margin: 0; }
+#supRecMsg { margin: 0 0 12px; }
+#supRecMsg:empty, #supBillMsg:empty { display: none; }
+#supBillMsg { margin: 0 0 8px; }
+#supTiles.crm-tiles { margin-bottom: 12px; }
+#spyView > .tallies > .tally { margin-top: 0; }
+#spyView > .tallies { margin-bottom: 12px; }
+/* Four figures read two over two on a phone: the total takes no row of its
+   own, so no figure stands alone. */
+#spyTallies .inv-tally > .tally-cell.is-total { grid-column: auto; }
 #supClient > p.muted + .ovfacts { margin-top: 8px; }
 .sup-go { margin-top: 12px; display: flex; }
 
@@ -6069,7 +6088,7 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cpq-list:not(:has(.cpq-act:not(:empty))) .cpq-act { display: none; }
 .cpq-name { font-weight: 500; overflow-wrap: anywhere; }
 .cpq-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-.cpq-job { color: var(--ink-mute); font-weight: 400; }
+.cpq-job { color: var(--ink-mute); font-weight: 400; white-space: nowrap; }
 .cpq-sub { font-size: 12.5px; color: var(--ink-mute); }
 .cpq-sub.is-late { color: var(--err); font-weight: 500; }
 .cpq-fig { font-variant-numeric: tabular-nums; font-weight: 500; font-size: 13.5px; }
@@ -6080,7 +6099,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .cpq-row { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
 .is-narrow .cpq-act:empty { display: none; }
 .is-narrow .cpq-act { grid-column: 1 / -1; }
-.is-narrow .cpq-act .btn { flex: 1 1 100%; }
 .cpq-sheet-t { flex: 1 1 auto; min-width: 0; }
 .cpq-sheet-sub { margin: 2px 0 0; font-size: 12.5px; }
 /* WebKit colours the area behind an iPhone's status bar from the root's own

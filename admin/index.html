@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122zzzu">
-<link rel="stylesheet" href="/css/console.css?v=20261122zzzu">
+<link rel="stylesheet" href="/css/console.css?v=20261122zzzzk">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2831,6 +2831,7 @@
           </span>
         </div>
         <div class="msg" id="rosterMsgLine" role="status"></div>
+        <div id="rosterTiles" hidden></div>
         <div id="rosterList"></div>
         <!-- A creator's own page (2026-11-10, the user: "Everything inside
              their individual page"): Back, the record head, Overview,
@@ -3964,6 +3965,12 @@
     <!-- Suppliers (2026-10-18, js/suppliers.js): a section of its own, after
          Documents, which issues their letters. -->
     <div class="console-body" id="sectionSuppliers" hidden>
+        <!-- Suppliers' two views (SUPPLIER BILLS, 2026-11-22): the list, and
+             every supplier's purchase bills read from Bukku (read only). -->
+        <div class="actstrip perf-views" id="supViewsBox" hidden><span class="cmdbar-views actviews" id="supViews" role="group" aria-label="View">
+          <button class="acttab btn-sm is-on" data-sv="list" type="button" aria-pressed="true">Suppliers</button>
+          <button class="acttab btn-sm" data-sv="payments" type="button" aria-pressed="false">Payments<span class="tab-n is-err" id="supPayN" hidden></span></button>
+        </span></div>
         <div class="cmdbar" id="supBar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3977,8 +3984,29 @@
           </span>
         </div>
         <div class="msg" id="supMsg"></div>
+        <div id="supTiles" hidden></div>
         <div id="supList"></div>
         <div id="supRec" hidden></div>
+        <section id="spyView" hidden>
+          <div class="cmdbar" id="spyBar">
+            <span class="cmdbar-find">
+              <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <input class="input input-sm" id="spyFind" type="search" placeholder="Search supplier or bill" aria-label="Search bills" autocomplete="off">
+            </span>
+            <select class="select select-sm" id="spySup" aria-label="Filter by supplier" data-default="all"><option value="all">All suppliers</option></select>
+            <select class="select select-sm" id="spyClient" aria-label="Filter by client" data-default="all"><option value="all">All clients</option></select>
+            <select class="select select-sm" id="spyCur" aria-label="Filter by currency" data-default="all"><option value="all">All currencies</option></select>
+            <span class="cmdbar-end">
+              <span class="cmdbar-quiet"><span class="cmdbar-count" id="spyCount"></span></span>
+              <span class="cmdbar-acts">
+                <button class="btn btn-sm" id="spyRead" data-gate="bukku" data-need="suppliers:work" type="button" hidden>Read from Bukku</button>
+              </span>
+            </span>
+          </div>
+          <div class="msg" id="spyMsg" role="status"></div>
+          <div class="tallies" id="spyTallies" data-narrow="760" hidden></div>
+          <div id="spyList"></div>
+        </section>
     </div>
 
     <div class="console-body" id="sectionTeam" data-swipe="teamTabs" hidden>
@@ -6713,7 +6741,7 @@ raya-2026        https://example.com/raya"></textarea>
   "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261122zzzu", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261121zzzzb", "uses": ["letters", "register", "bukku"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzk", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261122zzzu", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261122zzzu"},
   "invoices": {"src": "/js/invoices.js?v=20261121zzzz", "uses": ["payments", "crm"]},
@@ -6736,7 +6764,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261122zzzzk", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261122zzzc", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261122zzw", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
