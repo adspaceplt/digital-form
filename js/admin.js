@@ -1652,13 +1652,38 @@
      may open. One function (`tabPick`) decides the bar and the sheet's
      switches alike, so the two never disagree (2026-11-22: the sheet marked
      My Work, Content Review and Video Scripts while the bar held Reports). */
+  /* The bar keeps its own order (the user, 2026-11-22: "If I want clients
+     to be at the middle, it's not possible now"): `railTabs` is the bar's
+     tabs as the person arranged them, the Dashboard (`overview`) among
+     them in any place, up to TAB_PICKS sections beside it; More is always
+     last. A choice kept before the order (the sections alone) reads as the
+     Dashboard first, then its sections in the rail's order. */
   var railTabs = [];
   var TAB_PICKS = 3;
   var railStd = null;
   var tabRoom = 4;
-  function tabPick(keys, room, chosen) {
-    var on = (chosen || []).length ? keys.filter(function (k) { return chosen.indexOf(k) > -1; }).slice(0, TAB_PICKS) : [];
-    return on.length ? on : keys.slice(0, Math.max(0, room));
+  /* `keys`: the sections the person may open, in the rail's order; `ov`:
+     the Dashboard is drawn. Answers the bar's keys in the bar's order. */
+  function tabPick(keys, room, chosen, ov) {
+    var on = [], n = 0;
+    (chosen || []).forEach(function (k) {
+      if (k === 'overview') { if (ov) on.push(k); }
+      else if (keys.indexOf(k) > -1 && n < TAB_PICKS) { on.push(k); n++; }
+    });
+    if (n) return on;
+    return (ov ? ['overview'] : []).concat(keys.slice(0, Math.max(0, room)));
+  }
+  function tabsOf(list, order) {
+    var l = strs(list).filter(function (k, i, a) { return a.indexOf(k) === i; });
+    if (!l.length || l.indexOf('overview') > -1) return l.slice(0, TAB_PICKS + 1);
+    var o = order || [];
+    l.sort(function (x, y) { var ix = o.indexOf(x), iy = o.indexOf(y); return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy); });
+    return ['overview'].concat(l.slice(0, TAB_PICKS));
+  }
+  function railFlat() {
+    return [].concat.apply([], railGroups().map(function (g) {
+      return Array.prototype.map.call(g.querySelectorAll('.navitem[data-section]'), function (b) { return b.getAttribute('data-section'); });
+    }));
   }
   function railKey() { return me && me.id ? 'adspace-rail:' + me.id : ''; }
   function railGroups() {
@@ -1686,8 +1711,8 @@
      copy kept before the tab bar was chosen is the order alone. */
   function keepRail(list, tabs) {
     railPick = strs(list);
-    railTabs = strs(tabs).slice(0, TAB_PICKS);
     applyRail(railPick);
+    railTabs = tabsOf(tabs, railFlat());
     var k = railKey();
     if (!k) return;
     try {
@@ -1708,10 +1733,9 @@
     keepRail(kept, keptTabs);
     db.rpc('rail_order_mine').then(function (r) {
       if (r.error || !r.data || r.data.error || !Array.isArray(r.data.sections)) return;
-      var tabs = Array.isArray(r.data.tabs) ? r.data.tabs : railTabs;
-      if (r.data.sections.join(',') === railPick.join(',') && tabs.join(',') === railTabs.join(',')) return;
-      keepRail(r.data.sections, tabs);
-      if (meLoaded) paintTabbar();
+      var was = railPick.join(',') + '|' + railTabs.join(',');
+      keepRail(r.data.sections, Array.isArray(r.data.tabs) ? r.data.tabs : railTabs);
+      if (meLoaded && was !== railPick.join(',') + '|' + railTabs.join(',')) paintTabbar();
     }).catch(function () {});
   }
   function tabbarOn() { return Boolean(tabMedia && tabMedia.matches); }
@@ -1741,14 +1765,15 @@
        of them is (2026-11-11). */
     var foot = ['handbookOpen', 'settingsOpen', 'delReqOpen', 'activityOpen'].some(function (id) { var m = $(id); return m && !m.hidden; });
     var room = main.length < open.length || foot ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
-    /* The Dashboard holds the first tab; the rest are the person's own
-       (`tabPick`), a section they can no longer open left out. */
+    /* The bar is the person's own, in their order (`tabPick`): the
+       Dashboard in its place, a section they can no longer open left out;
+       none chosen, the Dashboard first, then the rail's first sections. */
     var isOv = function (b) { return b.getAttribute('data-section') === 'overview'; };
     var ov = main.filter(isOv);
     var rest = main.filter(function (b) { return !isOv(b); });
     tabRoom = room - ov.length;
-    var keys = tabPick(rest.map(function (b) { return b.getAttribute('data-section'); }), tabRoom, railTabs);
-    var tabs = ov.concat(rest.filter(function (b) { return keys.indexOf(b.getAttribute('data-section')) > -1; }));
+    var keys = tabPick(rest.map(function (b) { return b.getAttribute('data-section'); }), tabRoom, railTabs, ov.length > 0);
+    var tabs = keys.map(function (k) { return main.filter(function (b) { return b.getAttribute('data-section') === k; })[0]; });
     var more = open.length > tabs.length || foot || !tabs.length;
     var edit = $('railEdit');
     if (edit) edit.hidden = !(open.length > 2);
@@ -2010,9 +2035,12 @@
        with the arrow keys on it) within its group, and a switch a row for
        the tab bar: on for the sections the bar holds (the first ones while
        none is chosen, following a drag), up to TAB_PICKS, a fourth refused
-       on its row. Save keeps the order and the choice for the rail and the
-       bar alike; Reset puts the standard back in the sheet. */
-    var roTabs = null, roBase = [];
+       on its row. Over them, the Tab bar order group: the bar's tabs in the bar's
+       order, the Dashboard among them, moved the same way (2026-11-22); a
+       section turned on joins its end, turned off leaves it. Save keeps the
+       order and the bar for the rail and the bar alike; Reset puts the
+       standard back in the sheet. */
+    var roTabs = null;
     var RO_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
     var RO_GRIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg>';
     var roBox = null;
@@ -2032,7 +2060,7 @@
       document.body.appendChild(roBox);
       roBox.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
       $('railCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-      $('railReset').addEventListener('click', function () { roTabs = null; roBase = []; roFill(railStd ? [].concat.apply([], railStd) : []); });
+      $('railReset').addEventListener('click', function () { roTabs = null; roFill(railStd ? [].concat.apply([], railStd) : []); });
       $('railSave').addEventListener('click', roSave);
       var lists = $('railLists');
       /* A switch turns a section on or off for the tab bar; turned on past
@@ -2045,7 +2073,7 @@
         var at = roTabs.indexOf(k);
         Array.prototype.forEach.call(lists.querySelectorAll('.ro-why'), function (w) { w.textContent = ''; });
         if (at > -1) roTabs.splice(at, 1);
-        else if (roTabs.length >= TAB_PICKS) { row.querySelector('.ro-why').textContent = 'The tab bar holds up to three sections. Turn one off first.'; return; }
+        else if (roTabs.filter(function (x) { return x !== 'overview'; }).length >= TAB_PICKS) { row.querySelector('.ro-why').textContent = 'The tab bar holds up to three sections. Turn one off first.'; return; }
         else roTabs.push(k);
         roMarks();
       });
@@ -2071,14 +2099,15 @@
         }
         if (before !== drag.row.nextElementSibling || (!before && drag.list.lastElementChild !== drag.row)) {
           drag.list.insertBefore(drag.row, before);
-          roMarks();
+          roMarks(drag.list);
         }
       });
       function drop() {
         if (!drag) return;
         drag.row.classList.remove('is-drag');
+        var moved = drag.list;
         drag = null;
-        roMarks();
+        roMarks(moved);
       }
       lists.addEventListener('pointerup', drop);
       lists.addEventListener('pointercancel', drop);
@@ -2091,13 +2120,14 @@
         else if (e.key === 'ArrowDown' && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
         else return;
         g.focus();
-        roMarks();
+        roMarks(row.parentNode);
       });
       return roBox;
     }
     function roFill(order) {
       var lists = $('railLists');
-      lists.innerHTML = railGroups().map(function (g, n) {
+      lists.innerHTML = '<section class="fsec ro-sec ro-bar"><h4 class="fsec-h"><span id="roHtab">Tab bar order</span></h4>' +
+        '<div class="ro-list ro-tablist" id="roTabList" role="list" aria-labelledby="roHtab"></div></section>' + railGroups().map(function (g, n) {
         var label = g.querySelector('.sidebar-label');
         var items = Array.prototype.filter.call(g.querySelectorAll('.navitem[data-section]'), function (b) { return !b.hidden; });
         if (order) items.sort(function (x, y) {
@@ -2119,21 +2149,44 @@
       }).join('');
       roMarks();
     }
-    /* The rows the bar will hold, decided as the bar decides them
-       (`tabPick`): the person's choice, else the first rows as the sheet
-       reads them, the Dashboard's tab already taken. */
+    /* The bar's tabs in the bar's order, decided as the bar decides them
+       (`tabPick`): the person's arrangement, else the Dashboard, then the
+       first rows as the sheet reads them. */
+    function roOv() { return navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === 'overview'; }); }
     function roShown() {
-      if (roTabs) return roOrder().filter(function (k) { return roTabs.indexOf(k) > -1; });
-      return tabPick(roOrder(), tabRoom, roBase);
+      return tabPick(roOrder(), tabRoom, roTabs || [], roOv());
     }
-    function roMarks() {
-      var on = roShown();
-      Array.prototype.forEach.call($('railLists').querySelectorAll('.ro-row'), function (r) {
+    /* A row of the Tab bar order group: the section's glyph and name, its grip. */
+    function roTabRow(k) {
+      var b = document.querySelector('.navitem[data-section="' + k + '"]');
+      var w = b && b.querySelector('span'), glyph = b && b.querySelector('svg');
+      var name = (w && w.textContent.trim()) || k;
+      return '<div class="ro-row ro-tabrow" role="listitem" data-t="' + esc(k) + '">' +
+        '<span class="ro-glyph">' + (glyph ? glyph.outerHTML : '') + '</span>' +
+        '<span class="ro-name">' + esc(name) + '</span>' +
+        '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + ' in the tab bar" aria-keyshortcuts="ArrowUp ArrowDown">' + RO_GRIP + '</button></div>';
+    }
+    /* After a change: a move inside the Tab bar order group is the bar's new
+       order; anything else redraws the group from the bar as it now reads.
+       The switches follow either way. */
+    function roMarks(moved) {
+      var tl = $('roTabList');
+      var on;
+      if (moved && moved === tl) {
+        roTabs = Array.prototype.map.call(tl.querySelectorAll('.ro-tabrow'), function (r) { return r.getAttribute('data-t'); });
+        on = roTabs;
+      } else {
+        on = roShown();
+        if (tl && on.join(',') !== Array.prototype.map.call(tl.querySelectorAll('.ro-tabrow'), function (r) { return r.getAttribute('data-t'); }).join(',')) {
+          tl.innerHTML = on.map(roTabRow).join('');
+        }
+      }
+      Array.prototype.forEach.call($('railLists').querySelectorAll('.ro-row[data-k]'), function (r) {
         r.querySelector('.ro-switch').setAttribute('aria-checked', String(on.indexOf(r.getAttribute('data-k')) > -1));
       });
     }
     function roOrder() {
-      return Array.prototype.map.call($('railLists').querySelectorAll('.ro-row'), function (r) { return r.getAttribute('data-k'); });
+      return Array.prototype.map.call($('railLists').querySelectorAll('.ro-row[data-k]'), function (r) { return r.getAttribute('data-k'); });
     }
     function roSave() {
       var btn = $('railSave'), m = $('railMsg');
@@ -2142,9 +2195,9 @@
       var send = list.join(',') === std.join(',') ? [] : list;
       /* A choice the standard would make anyway is kept as none, so the
          bar goes on following the order. */
-      var tabs = roTabs ? list.filter(function (k) { return roTabs.indexOf(k) > -1; }) : roBase.slice();
-      if (roTabs && tabs.join(',') === tabPick(list, tabRoom, []).join(',')) tabs = [];
-      var tabsMoved = tabs.slice().sort().join(',') !== railTabs.slice().sort().join(',');
+      var tabs = roTabs ? roShown() : [];
+      if (tabs.join(',') === tabPick(list, tabRoom, [], roOv()).join(',')) tabs = [];
+      var tabsMoved = tabs.join(',') !== railTabs.join(',');
       m.textContent = ''; m.className = 'msg ro-msg';
       btn.disabled = true;
       var said = function (r) {
@@ -2171,8 +2224,9 @@
       if (rail.isOpen()) rail.shut();
       roSheet();
       $('railMsg').textContent = '';
-      roTabs = null; roBase = railTabs.slice();
+      roTabs = railTabs.length ? railTabs.slice() : null;
       roFill(null);
+      if (roTabs) roTabs = roShown();
       window.ADspaceSheet.show(roBox, { opener: tabbarOn() ? $('tabMore') : edit });
     });
     function follow() {
@@ -2359,7 +2413,7 @@
       { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
-      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the bar at the bottom of your phone. The Dashboard is always first.' },
+      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the tab bar at the bottom of your phone. Under Tab bar order, drag them and the Dashboard into any order.' },
       { at: '#railSave', text: 'Save applies the order on the web and on your phone, and the tab bar on your phone. Reset restores the standard order and tab bar.' }] },
     'mine.health': { name: 'Health', steps: [
       { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },

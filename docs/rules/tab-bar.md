@@ -7,7 +7,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   upright) and on any window at 640 and under, the one media query
   `ADSPACE_TABBAR` (the head script, which sets `:root.has-tabbar` before
   first paint) puts the Dashboard and the sections the person chose
-  (Arrange sections, below), in the rail's order, at the foot with More
+  (Arrange sections, below), in the order the person gave the bar, at the
+  foot with More
   (`#tabMore`) opening the rest above it; with none chosen, the first four
   sections the person may open, five or fewer taking the bar whole. More lists only what the bar does
   not (`.is-tabbed`), then the rail's foot: one line of the build at the
@@ -63,9 +64,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   2026-11-22: "I want clients to be accessible straight from mobile bottom
   tab"), at a desk too, since the choice follows the person: up to three on
   (`TAB_PICKS`), any group's, a fourth refused on its row (The tab bar holds
-  up to three sections. Turn one off first.); the bar holds the Dashboard
-  first, then the sections on in the rail's order, then More. With none
-  chosen the switches follow the first rows as they are dragged. One
+  up to three sections. Turn one off first.). Over the rail's groups, the
+  Tab bar order group lists the bar's tabs in the bar's order, the Dashboard and
+  the sections on, each moved by its grip or the arrow keys as the rail's
+  rows are (the user, 2026-11-22: "If I want clients to be at the middle,
+  it's not possible now"): the Dashboard always in the bar, in any of its
+  places; a section turned on joins the group's end, turned off leaves it;
+  the rail's groups keep their own order. The bar draws exactly that order,
+  More always last; the iPhone Duo's upright bar top to bottom. With none
+  chosen the bar and the group read the Dashboard, then the first rows as
+  they are dragged. One
   function (`tabPick`) decides the bar and the switches, so the two never
   disagree (2026-11-22: the sheet's marks, worked out apart from the sheet's
   own rows, read My Work, Content Review and Video Scripts beside a bar of
@@ -73,9 +81,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   the others keeping their place. Reset puts the standard order and bar back
   in the sheet; Save keeps the order (`rail_order_set(p_sections)`, known
   keys once each, `bad-order`; empty is the standard), then, where it
-  moved, the choice (`rail_tabs_set(p_tabs)`,
-  `2026-11-22-tab-bar-choice.sql`: known keys once each, three at most,
-  `bad-tabs`; empty is the standard, as is a choice equal to it).
+  moved, the bar (`rail_tabs_set(p_tabs)`,
+  `2026-11-22-tab-bar-order.sql`: the bar's keys in its order, the
+  Dashboard's `overview` among them, known keys once each, four at most,
+  `bad-tabs`; empty is the standard, as is a bar equal to it). A bar kept
+  before the order (the sections alone) reads as the Dashboard first, then
+  its sections in the rail's order, the migration and the page alike.
   `rail_orders` (`sections`, `tabs`) has RLS on, no policy, no grant;
   `rail_order_mine()` answers both, read once `me()` answers, a copy in
   this browser (`adspace-rail:{id}`, `{sections, tabs}`; an older copy the
