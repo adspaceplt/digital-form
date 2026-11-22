@@ -68,7 +68,8 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   /* What each block is called where its read is refused. */
   var BLOCK = { content: 'Content', reports: 'Reports', sets: 'Content Review sets',
-                camps: 'Campaigns', scripts: 'Video Scripts' };
+                camps: 'Campaigns', scripts: 'Video Scripts', invoice: 'Invoices' };
+  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="out"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   // ---- Reading -----------------------------------------------------------------
   /* One answer a client, kept until the record reads again: a repaint (a save
@@ -128,6 +129,17 @@
       return db.from('video_scripts').select('id, period, seq, status').eq('client_id', c.id)
         .order('period', { ascending: false })
         .then(function (r) { if (failed(r)) throw new Error(why(r)); out.scripts = r.data || []; });
+    },
+    /* Clients: Billing View: each month's invoice as the nightly check
+       found it in Bukku (`ops_month_invoices_of`, the copy My Work's month
+       reads; 2026-11-22). Nothing is asked of Bukku here. */
+    invoice: function (c, out) {
+      return db.rpc('ops_month_invoices_of', { p_client: c.id }).then(function (r) {
+        if (failed(r)) throw new Error(why(r));
+        var by = {};
+        (r.data.rows || []).forEach(function (x) { by[x.engagement] = x; });
+        out.inv = { linked: Boolean(r.data.linked), by: by };
+      });
     }
   };
   /* Which blocks this reader is given, each behind its own permission. */
@@ -138,6 +150,8 @@
     if (may('review.sets')) out.push('sets');
     if (may('campaigns.campaigns')) out.push('camps');
     if (may('scripts')) out.push('scripts');
+    /* The month's invoice rides with My Work's months, at Billing View. */
+    if (may('ops') && may('clients.billing')) out.push('invoice');
     return out;
   }
   function readBlock(key, c, out) {
@@ -305,7 +319,32 @@
           live ? 'Version ' + r.live_version + ', ' + esc(dayLong(dayMy(r.published_at))) : 'Version ' + r.version_no + ', not published']),
         state: live ? state('Published', 'is-ok') : state('Confirmed', 'is-warn') });
     });
+    invoiceRows(d, m).forEach(function (r) { rows.push(r); });
     return rows;
+  }
+  function invMoney(n, cur) {
+    var M = window.ADspaceMoney;
+    return cur === 'MYR' || cur === 'SGD' ? M.money2(n, cur === 'SGD' ? 'SG' : 'MY')
+      : (cur || '') + ' ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  /* The month's invoice (2026-11-22): a row an invoice dated in the
+     content month, its number and amount, Paid or Unpaid; else Not
+     invoiced once the night found none. A month cancelled, not yet begun,
+     not yet checked, or a client with no Bukku contact draws none. */
+  function invoiceRows(d, m) {
+    var I = d.inv, e = m.content;
+    if (!I || !I.linked || !e || e.status === 'cancelled' || String(e.period) > dayMy().slice(0, 7)) return [];
+    var x = I.by[e.id];
+    if (!x) return [];
+    if (x.state === 'none') {
+      return [{ kind: 'invoice', glyph: 'clients', name: 'Invoice', meta: parts(['Checked ' + esc(dayLong(dayMy(x.checked_at)))]),
+        state: state('Not invoiced', 'is-warn') }];
+    }
+    return (x.invoices || []).map(function (v) {
+      return { kind: 'invoice', glyph: 'clients', name: 'Invoice', link: W.absUrl ? W.absUrl(v.link) : '',
+        meta: parts([esc(v.number || ''), esc(invMoney(v.amount, v.currency)), v.date ? esc(dayLong(v.date)) : '']),
+        state: v.paid ? state('Paid', 'is-ok') : state('Unpaid', 'is-warn') };
+    });
   }
 
   /* A row opens its record where it is worked, the way search and the
@@ -316,6 +355,7 @@
     else if (bridge.show) bridge.show(section);
   }
   function rowEl(row, c, msgEl) {
+    if (row.kind === 'invoice') return invoiceEl(row);
     var file = row.kind === 'file';
     var el = document.createElement(file ? 'div' : 'button');
     if (!file) el.type = 'button';
@@ -344,6 +384,25 @@
         b.disabled = false;
         say(msgEl, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
       }).catch(function (e) { b.disabled = false; say(msgEl, (e && e.message) || String(e), 'err'); });
+    });
+    return el;
+  }
+  /* An invoice row opens nothing in the console: its invoice opens in
+     Bukku from its own button, at its own width. */
+  function invoiceEl(row) {
+    var el = document.createElement('div');
+    el.className = 'crm-row cmonth-row is-file is-inv';
+    el.setAttribute('data-kind', 'invoice');
+    el.innerHTML =
+      '<span class="cmonth-tile" aria-hidden="true">' + glyph(row.glyph) + '</span>' +
+      '<span class="cmonth-what"><b><span class="cmonth-name">' + esc(row.name) + '</span></b><small>' + row.meta + '</small></span>' +
+      '<span class="cmonth-state">' + row.state + '</span>' +
+      '<span class="cmonth-end">' + (row.link
+        ? '<button class="btn btn-sm" type="button" data-a="bukku">Open in Bukku' + OUT + '</button>' : '') + '</span>';
+    var b = el.querySelector('[data-a="bukku"]');
+    if (b) b.addEventListener('click', function () {
+      var w = window.open(row.link, '_blank', 'noopener');
+      if (w) w.opener = null;
     });
     return el;
   }
@@ -389,12 +448,13 @@
       var marks = (late ? '<span class="tone is-danger crm-band-late">' + late + ' overdue</span>' : '') +
         (m.span.day !== 1 ? '<span class="crm-band-worth">' + esc(dayShort(m.span.a) + ' to ' + dayShort(m.span.z)) + '</span>' : '');
       var hasFile = m.rows.some(function (r) { return r.kind === 'file'; });
+      var hasInv = m.rows.some(function (r) { return r.kind === 'invoice' && r.link; });
       host.appendChild(GRP.section({
         route: 'client-months', key: m.period, name: monthName(m.period), count: m.rows.length, marks: marks,
         shut: GRP.shut('client-months', m.period, m.span.z < today, months.length === 1),
         table: function () {
           var t = document.createElement('div');
-          t.className = 'crm-table softpanel cmonth-table' + (hasFile ? ' has-file' : '');
+          t.className = 'crm-table softpanel cmonth-table' + (hasFile ? ' has-file' : '') + (hasInv ? ' has-inv' : '');
           GRP.more(t, m.rows, 30, '', function (row) { return rowEl(row, c, msgEl); });
           return t;
         }

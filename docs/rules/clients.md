@@ -796,6 +796,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     record, on entering it again and on a visit to the pane; a repaint reads
     nothing. A refused read is `failLine` for that block alone, above the
     months, with Try again. Nothing at all reads No engagements.
+  - The month's invoice (2026-11-22): at My Work View and Clients: Billing
+    View, each content month already begun and not cancelled ends with a
+    row an invoice the night found in Bukku for it (`ops_month_invoices_of`,
+    the copy My Work's month reads; never a Bukku read here): Invoice over
+    its number, amount and date, Paid or Unpaid as the dot and its word,
+    Open in Bukku a `.btn-sm` at its own width; Not invoiced with the day it
+    was checked where none was found. A month not yet checked, or a client
+    with no Bukku contact, draws none. Below Billing View nothing is asked
+    and the function refuses `denied`.
 - Delete client:
   - in the record's ⋯, as a sheet counting from the loaded record;
   - the name typed back, plus the delete code where `delete_code_set()`;
