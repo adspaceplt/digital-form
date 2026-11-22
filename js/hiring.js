@@ -60,7 +60,8 @@
     'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
     'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'not-cancelled': 'Not sent. This interview was not confirmed before it was cancelled. Send new times to arrange another interview.',
-    'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.'
+    'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.',
+    'not-moved': 'Not sent. The time of this interview has not been changed.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -662,8 +663,12 @@
       acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
       if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
     }
+    /* A time changed whose email did not go (2026-11-22): Email candidate
+       sends the time change by hand; else the confirmation, as before. */
     if (live && i.state === 'confirmed' && !i.held_at && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
-      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
+      acts += i.moved_from && i.reschedule_mail
+        ? '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="rescheduled" data-id="' + esc(i.id) + '">Email candidate</button>'
+        : '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
     /* A confirmed interview cancelled (2026-11-20): Email candidate where
        its cancellation did not go, while no newer interview was sent. */
     if (can && i.state === 'cancelled' && i.approved_at && (i.cancel_mail === 'failed' || i.cancel_mail === 'unknown') && state.interviews[0] === i)
@@ -678,6 +683,7 @@
         '<span class="hir-iv-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' + menu + '</span></div>' +
       '<dl class="ovfacts">' +
         fact(i.picked ? 'Times offered' : 'Times', '<ul class="hir-times">' + times + '</ul>') +
+        (i.moved_from && i.state === 'confirmed' && !i.held_at ? fact('Previous time', esc(due(i.moved_from))) : '') +
         fact('Length', esc(i.minutes) + ' minutes') +
         ((i.state === 'invited' || i.state === 'expired') && i.reply_by ? fact('Reply by', esc(due(i.reply_by))) : '') +
         fact('Where', i.mode === 'online' ? (i.meeting_link ? '<a class="plink" href="' + esc(i.meeting_link) + '" target="_blank" rel="noopener"><span>Google Meet</span></a>' : 'Google Meet') : 'At the office') +
@@ -688,7 +694,7 @@
         (i.held_at ? fact('Marked held by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(due(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
-        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('cancel', 'Cancellation') + mail('held', 'Decision date') +
+        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('reschedule', 'Time change') + mail('cancel', 'Cancellation') + mail('held', 'Decision date') +
       '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
   }
 
@@ -1181,11 +1187,11 @@
      its email will not go (`hiring_mail_gate`: the portal's Email,
      Automatic emails and the email's own template). Read with the record;
      a failed read warns of nothing. */
-  var GATE_KINDS = ['invite', 'confirm', 'held', 'moved', 'cancelled', 'pool', 'not', 'doc', 'doc_again', 'confirmed'];
-  var MAIL_NOUN = { invite: 'the interview invitation', confirm: 'the interview confirmation', cancelled: 'the cancellation',
+  var GATE_KINDS = ['invite', 'confirm', 'rescheduled', 'held', 'moved', 'cancelled', 'pool', 'not', 'doc', 'doc_again', 'confirmed'];
+  var MAIL_NOUN = { invite: 'the interview invitation', confirm: 'the interview confirmation', rescheduled: 'the new interview time', cancelled: 'the cancellation',
     held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision',
     confirmed: 'the confirmation' };
-  var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+  var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
     held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed' };
   function readGate() {
@@ -1338,15 +1344,21 @@
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec, C = window.ADspaceClock;
     if (!i || !i.picked) return;
     var was = i.slots[i.picked - 1], own = i.meeting_link ? was : null, mins = Number(i.minutes) || 30;
+    /* The time changed (2026-11-22, the user: a candidate "would have
+       thought the date is the same"): emailed by itself as the move
+       succeeds while its template is on; switched off, Email {name} sends
+       the confirmation, as before. */
+    var rt = state.gate && state.gate.tpl && state.gate.tpl.rescheduled, auto = !rt || rt.on;
     readBusy().then(function (busy) {
       var f = [
         { name: 'day', label: 'Date', type: 'date', min: C.today(), value: C.day(was), half: true },
         { name: 'time', label: 'Time', type: 'time', value: C.time(was), half: true },
-        { line: busyWords(busy, own) }].concat(mailFields('confirm', true));
+        { line: busyWords(busy, own) }].concat(auto ? mailFields('rescheduled', false) : mailFields('confirm', true));
       window.ADspaceConfirm.ask({ title: 'Change interview time', go: 'Save', wait: true, fields: f,
         body: 'Interview ' + i.round + ' is set for ' + when(was) + '. ' + (i.state === 'picked'
           ? 'It will be confirmed at the new time' + (i.mode === 'online' ? ', with a Google Meet on the shared calendar.' : '.')
-          : i.mode === 'online' && i.meeting_link ? 'Its Google Meet will move to the new time on the shared calendar.' : 'It will stay confirmed at the new time.'),
+          : i.mode === 'online' && i.meeting_link ? 'Its Google Meet will move to the new time on the shared calendar.' : 'It will stay confirmed at the new time.') +
+          (auto && !mailOff('rescheduled') ? ' ' + c.name + ' will be emailed the previous time and the new time.' : ''),
         check: function (v) {
           var t = C.at(v.day, v.time);
           if (!t) return 'Enter the date and time.';
@@ -1382,7 +1394,7 @@
               });
               return;
             }
-            (mailWanted('confirm', v) ? sendMail(id, 'confirm') : Promise.resolve(false)).then(function (sent) {
+            (auto ? sendMail(id, 'rescheduled') : mailWanted('confirm', v) ? sendMail(id, 'confirm') : Promise.resolve(false)).then(function (sent) {
               openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
             });
           });

@@ -1,5 +1,5 @@
 <!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
-# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `2026-11-22-interview-time-pending.sql`, `hiring-mail`)
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `2026-11-22-interview-time-pending.sql`, `2026-11-22-interview-time-changed-email.sql`, `hiring-mail`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -110,9 +110,26 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `not-picked`), filed in the candidate's history (never the Activity
   record); online, `meet-create` `update` moves the interview's own event
   (`adhire{id}`, never a second; `create` where only a time was chosen),
-  and a move the calendar refuses puts the earlier time back; Email {name}
-  sends the confirmation again at the new time (its Resend key carries the
-  time). An office interview holds no calendar booking.
+  and a move the calendar refuses puts the earlier time back (moved back
+  before any email told the candidate, the earlier record returns whole:
+  `moved_from_before`). Interview time changed
+  (`2026-11-22-interview-time-changed-email.sql`; the user, 2026-11-22: a
+  candidate "would have thought the date is the same and maybe missed
+  it"): once the move (and the calendar's) succeeds, `hiring-mail`
+  `rescheduled` is sent by itself, no tick: Interview time changed:
+  {position}, Previous time (no longer applies) and New time, each with
+  its weekday (`hiring_when`), where it is held at the new time
+  (`{place}`), and to say on WhatsApp from their page if it does not
+  suit; its Resend key carries the new time and the move's own moment
+  (`moved_at`), so a retry never doubles and a second move emails again;
+  sent, it stands as the confirmation (`confirm_mail`) and is filed in
+  the candidate's history and the Email log (`hiring_rescheduled`);
+  not sent, the card offers Email candidate (the time change, by hand).
+  Its template off, the question offers Email {name} for the
+  confirmation, as before. The page reads the new time with Rescheduled
+  from {previous time} under it (`careers_read` `was`: the time before
+  the last move, while confirmed and not held). An office interview holds
+  no calendar booking.
   No email before the confirmation names the place: hiring-mail fills
   `{place}` in the confirmation alone, whatever a template holds. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
@@ -264,7 +281,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - The candidate emails are automatic emails (`2026-11-21-candidate-emails.sql`;
   the user, 2026-11-21: "the interviews emails ... should all be automatic
   emails", "the process should be continued, just to show an alert"): the
-  invitation, confirmation, cancellation, thank-you and new decision date,
+  invitation, confirmation, time changed, cancellation, thank-you and new decision date,
   both outcomes, an offer or contract sent and sent again, its confirmation
   and its expiry. Their words are `hiring_email_templates` (Settings,
   Messages: Email templates, Candidates; `team.settings`; each with its own

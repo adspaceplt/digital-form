@@ -39,7 +39,7 @@
   /* The candidate emails (CANDIDATE EMAILS, 2026-11-21): each an automatic
      email with its own switch, hiring-mail's words before they were
      editable. */
-  var HM_WORD = { invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+  var HM_WORD = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
     held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired' };
   /* The two Supabase sends: their words are set in Supabase's dashboard

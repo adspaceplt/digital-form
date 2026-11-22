@@ -25,7 +25,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sender with no log of its own files each send once Resend answers
   (`system_emails`, RLS on, no policy, no grant; `system_email_file` and
   `_shared/mail.ts` `fileSent`, the service role's): hiring-mail's
-  invitation, confirmation, outcome and document at the candidate's own
+  invitation, confirmation, time change, outcome and document at the candidate's own
   access (`hiring_role`), its document code (Code, Requested by Candidate,
   its words never kept), and invite-member's invitations, a colleague's at
   Team View and a client contact's at Clients: Contacts View on a client in

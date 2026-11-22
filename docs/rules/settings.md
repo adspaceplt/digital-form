@@ -42,7 +42,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
-  creator emails; Candidates: the eleven candidate emails, each with its own
+  creator emails; Candidates: the twelve candidate emails, each with its own
   switch (`hiring_email_templates`, 2026-11-21); Sign-in and codes: Verification code, the one email every
   code the portal sends goes out in (`code_email_template`, its fields
   {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
