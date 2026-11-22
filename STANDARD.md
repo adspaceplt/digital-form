@@ -630,6 +630,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
 - 2026-11-22, found by the view strip release (`claude/view-strips`), failing identically on main 4519c46, so from the required-fields releases (#1322, #1328), not this one: `adsreport` (an ad needs a name), `reports` (refuses without a client, without one), `handbook` (a title is required, and a file), `notice` (a notice needs a title, said in place, 1280 and 390), `card` (a number too short is refused, the field focused), `hiring` (a candidate with no name, a bad email, refused in place, 1280 and 390): each reads a refusal in place where the one save check now says it. `demo` failed its sealed quotation PDF under three suites at once and passed alone, the same suite as the entry above.
+- 2026-11-22, found by the cover family release, failing on main for the same cause: the tests repository's main holds the suites of Health check-ins by workload (tests #185) whose portal release is not merged: `guides` (Team: Health has its own), `myhr` (the check-in's workload), `settings` (the Health check-in row) and `perf` (its migration file not in the portal). They pass once that release merges.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
