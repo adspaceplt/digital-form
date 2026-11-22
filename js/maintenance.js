@@ -129,14 +129,18 @@
     /* The console's cover is the whole screen, its bar under it: the
        wordmark leads it, as every page's bar would (2026-11-20). */
     var logo = shown.out && window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.brandLogo;
-    box.querySelector('.cover-panel').innerHTML =
+    var panel = box.querySelector('.cover-panel');
+    panel.setAttribute('data-glyph', paused ? 'pause' : 'tool');
+    panel.innerHTML =
       (shown.out ? (logo ? '<img class="cover-mark" src="' + esc(logo) + '" alt="ADspace">' : '<b class="cover-mark">ADspace</b>') : '') +
       '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
       (back ? '<p class="maint-back">' + back + '</p>'
         : '<p>' + esc(paused ? set.pausedText || 'Please check again later.' : set.maintText || 'The portal will be available again shortly.') + '</p>') +
       (note ? '<p class="maint-note">' + esc(note) + '</p>' : '') +
-      (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
-      (shown.out ? '<button class="btn btn-sm maint-out" type="button" id="maintOut">Sign out</button>' : '');
+      (chat || shown.out ? '<div class="cover-acts">' +
+        (shown.out ? '<button class="btn maint-out" type="button" id="maintOut">Sign out</button>' : '') +
+        (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
+        '</div>' : '');
     var out = document.getElementById('maintOut');
     if (out) out.addEventListener('click', shown.out);
   }
@@ -285,8 +289,30 @@
      an admin can match a report to its device. Signed out, no line at all.
      One watcher for every cover the page draws, the console's and the
      client portal's alike (`ADspaceAPI.sessionCode`, no network). */
+  /* A notice's mark (the cover family, 2026-11-22): a cover or a lock names
+     its state's glyph (`data-glyph`), and this one watcher draws it first,
+     in the locks' own disc (`.lockcard-mark`, js/icons.js), so no page
+     draws its own. */
+  function marks() {
+    var I = window.ADspaceIcons;
+    if (!I) return;
+    var W = window.ADspaceWords;
+    [].forEach.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {
+      var g = x.getAttribute('data-glyph');
+      if (g === null) { var h = x.querySelector(':scope > h1, :scope > h2'); g = h && W && W.glyphOf ? W.glyphOf(h.textContent) : ''; }
+      var has = x.querySelector(':scope > .lockcard-mark');
+      if (has && has.getAttribute('data-mark') === g) return;
+      if (has) has.remove();
+      if (!g || !I.svg(g)) return;
+      /* After the wordmark where a notice leads with it (no bar above). */
+      var lead = x.querySelector(':scope > .cover-mark');
+      (lead || x).insertAdjacentHTML(lead ? 'afterend' : 'afterbegin',
+        '<span class="lockcard-mark" data-mark="' + g + '" aria-hidden="true">' + I.svg(g) + '</span>');
+    });
+  }
   var refBusy = false;
   function refs() {
+    marks();
     if (refBusy) return;
     var panels = [].filter.call(document.querySelectorAll('.cover .cover-panel'), function (x) { return x.getClientRects().length; });
     var stale = [].filter.call(document.querySelectorAll('.cover-ref'), function (x) { return panels.indexOf(x.parentNode) < 0 || x !== x.parentNode.lastElementChild; });
@@ -312,7 +338,7 @@
   function refSoon() { if (!refTick) refTick = requestAnimationFrame(function () { refTick = 0; refs(); }); }
   function refWatch() {
     if (!window.MutationObserver || !document.body) return;
-    new MutationObserver(refSoon).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    new MutationObserver(refSoon).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'data-glyph'] });
     new MutationObserver(function () { [].forEach.call(document.querySelectorAll('.cover-ref'), function (x) { x.remove(); }); refSoon(); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     refSoon();

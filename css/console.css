@@ -1826,7 +1826,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    narrow one. */
 .trow-meta { display: contents; }
 .due-short { display: none; }
-.lockcard-form > .lockcard-line { margin: -14px 0 6px; text-align: center; }
 .lockcard-form .field-label { margin: 0; }
 .lockcard .msg { margin-top: 14px; }
 .lockcard .msg:not(.err):not(.ok):not(.warn) { color: var(--ink-mute); }
@@ -1853,9 +1852,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .mine-row > .perf-score, .is-narrow .mine-row > .perf-grade, .is-narrow .mine-row > .perf-reward { display: none; }
 .is-narrow .crm-head.perf-row, .is-narrow .crm-head.mine-row { display: none; }
 .is-narrow .perf-row > .perf-sum:empty, .is-narrow .mine-row > .perf-sum:empty { display: none; }
-@media (max-width: 640px) {
-  .lockcard { margin-top: 16px; padding: 24px 18px 20px; }
-}
 
 /* ---- The review, in the side sheet ---- */
 .perf-result { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
@@ -2859,8 +2855,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 /* Overseas access (2026-10-24): the cover's request form, left aligned in
    the cover's column. */
 .abroad-past { margin-top: 8px; }
-.abroad-ask { margin-top: 18px; display: grid; gap: 12px; text-align: left; }
-.abroad-ask .field, .abroad-ask .input { width: 100%; }
+.abroad-ask[hidden] { display: none; }
 #abroadMsg { margin-top: 8px; }
 #abroadMsg:empty { display: none; }
 .tax-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
@@ -3209,10 +3204,9 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* Team: Health's lock (2026-10-18) stands where Performance's does; on a
    colleague's record it is the record card's own contents, never a card
    in a card. */
-#teamHealthBox > .lockcard { justify-self: center; width: 100%; margin-top: 36px; }
+#teamHealthBox > .lockcard { justify-self: center; width: 100%; }
 .mrec-card .lockcard { margin: 0 auto; padding: 12px 0 4px; background: none; box-shadow: none; }
 @media (max-width: 640px) {
-  #teamHealthBox > .lockcard { margin-top: 4px; }
   .mrec-card .lockcard { padding: 8px 0 0; }
 }
 /* The card's title with a mute line under it (when it was checked in). */

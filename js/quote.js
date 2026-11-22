@@ -690,12 +690,12 @@
      with the colleague who took the lead where one has (QTE-2). */
   function paintReview() {
     var q = Q, w = t(), first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
-    return '<section class="cover qs-wait" data-shown><div class="cover-inner"><div class="cover-panel">' +
+    return '<section class="cover qs-wait" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="done">' +
       '<h2>' + esc(w.reviewT) + '</h2>' +
       (q.reply_due ? '<p>' + esc(f(w.reviewP, { d: day(q.reply_due, false, 'ahead') })) + '</p>' : '') +
       '<p>' + esc(w.reviewNote) + '</p>' +
       '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p>' +
-      '<div class="cover-alt"><a class="btn" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK +
+      '<div class="cover-acts"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK +
         esc(q.rep ? f(w.repChat, { n: first }) : w.chat) + '</a></div>' +
       '</div></div></section>';
   }
@@ -1126,17 +1126,17 @@
     var dd = C.day(iso);
     return lang === 'zh' ? day(dd) + ' ' + C.clock(iso, { zh: true }) : day(dd, true) + ', ' + C.clock(iso);
   }
-  function cover(title, text, start) {
-    root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
-      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
+  function cover(title, text, start, glyph) {
+    root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="' + (glyph || 'alert') + '"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
+      '<div class="cover-acts"><a class="btn' + (start ? '' : ' btn-primary') + '" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       (start ? '<a class="btn btn-primary" href="/quote/">' + esc(t().newQuote) + '</a>' : '') + '</div></div></div></section>';
   }
 
   function paint() {
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
-    if (paint.lost) { cover(t().lostT, t().lostP, true); return; }
-    if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
+    if (paint.lost) { cover(t().lostT, t().lostP, true, 'linkoff'); return; }
+    if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }

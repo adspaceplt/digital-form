@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261122d">
+<link rel="stylesheet" href="/css/portal.css?v=20261122zzq">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -52,37 +52,9 @@
      it, and a squashed wordmark is not the wordmark. */
   .doorbar img { height: 26px; width: auto; display: block;
     object-fit: contain; object-position: left center; }
-  .door {
-    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-    /* The bar has taken its height off the top, so half of it comes off the
-       bottom and the panel sits on the optical centre of what is left. */
-    padding: 24px 24px calc(24px + var(--head-h) / 2);
-  }
-  /* Small and quiet, as the front door is: the title at the panel title
-     size, the line at the console's body size, the actions small; 8 from the
-     title to its line, 24 to the actions (404-2). The line names nobody: a
-     prospect or a creator has no account manager (404-1). Visit website
-     opens in a new tab with its leaving mark, as on the front door (404-3). */
-  /* The panel is the portal's one cover (`.cover-panel`, css/portal.css:
-     the uppercase title mark, the statement under it; 2026-11-20), here
-     inside the 404's own frame, its line 24 over the actions (404-2). */
-  .door-panel { max-width: 440px; width: 100%; text-align: center; padding: 0; }
-  /* The way out, and the way to ask. Equal halves on a phone, as every other
-     pair of actions in this portal is. */
-  .door-acts { margin-top: 24px; display: flex; gap: 8px; justify-content: center; }
-  /* `.btn` carries `flex: 1` for the rows it usually sits in, which here made
-     Contact support a 316px slab beside a 116px one. At a desk each takes its
-     own width off the 116px floor; on a phone they are equal halves. */
-  .door-acts > .btn { flex: 0 0 auto; }
-  @media (max-width: 640px) {
-    .doorbar { padding: 0 16px; }
-    .door { padding: 20px 16px calc(20px + var(--head-h) / 2); }
-    /* Client sign-in, the way back into the portal (UX audit NOTFOUND-2,
-       2026-10-15), takes the row; the other two share the next as halves. */
-    .door-acts { flex-wrap: wrap; }
-    .door-acts > .btn { flex: 1 1 0; min-width: 0; }
-    .door-acts > .btn-primary { flex: 1 1 100%; }
-  }
+  /* The notice is every page's cover (the cover family, 2026-11-22):
+     css/portal.css lays it, under this page's own bar and over its foot. */
+  @media (max-width: 640px) { .doorbar { padding: 0 16px; } }
 </style>
 </head>
 <body lang="en">
@@ -92,16 +64,19 @@
        onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
 </header>
 
-<main class="door">
-  <div class="door-panel cover-panel">
-    <h1>Page not found</h1>
-    <p>Please check the address, or contact ADspace.</p>
-    <div class="door-acts">
-      <a class="btn btn-sm btn-primary" href="/client/">Client sign-in</a>
-      <a class="btn btn-sm" href="https://adspacestudios.com" target="_blank" rel="nofollow noopener">Visit website<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
-      <a class="btn btn-sm" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance">Contact support</a>
+<main class="shell">
+  <section class="cover">
+    <div class="cover-inner">
+      <div class="cover-panel" data-glyph="docq">
+        <h1>Page not found</h1>
+        <p>Please check the address, or contact ADspace.</p>
+        <div class="cover-acts">
+          <a class="btn" href="https://adspacestudios.com" target="_blank" rel="nofollow noopener">Visit website<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          <a class="btn" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>Contact support</a>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 </main>
 
 <!-- The portal's foot, as js/chrome.js draws it on every other page; written
@@ -115,9 +90,10 @@
 <!-- Page availability covers this page too, as a system page (EVERY PAGE
      AVAILABLE, 2026-11-21); it answers any address, so it names itself. -->
 <script src="/js/config.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261122rd"></script>
+<script src="/js/words.js?v=20261122zzq"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
-<script src="/js/maintenance.js?v=20261121zzzzb" data-page="notfound"></script>
+<script src="/js/icons.js?v=20261122zzq"></script>
+<script src="/js/maintenance.js?v=20261122zzq" data-page="notfound"></script>
 
 </body>
 </html>

@@ -21,7 +21,7 @@
      tagline at another width under the wordmark. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261122d">
+<link rel="stylesheet" href="/css/portal.css?v=20261122zzq">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
@@ -29,10 +29,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261122rd"></script>
+<script src="/js/words.js?v=20261122zzq"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/api.js?v=20261121zs"></script>
-<script src="/js/maintenance.js?v=20261121zzzzb"></script>
+<script src="/js/icons.js?v=20261122zzq"></script>
+<script src="/js/maintenance.js?v=20261122zzq"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
 </head>
 <body class="ncpage">
@@ -44,22 +45,24 @@
   <div id="ncHost" aria-live="polite"></div>
   <section class="cover" id="ncCover" data-shown hidden>
     <div class="cover-inner">
-      <div class="cover-panel">
-        <img class="cover-mark" src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
-             onerror="this.replaceWith(Object.assign(document.createElement('b'),{className:'cover-mark',textContent:'ADspace'}))">
+      <div class="cover-panel" data-glyph="userx">
         <h2 id="ncCoverTitle"></h2>
         <p id="ncCoverText"></p>
         <!-- A visitor holding a namecard has no account manager: the office's
              own ways in (ux-audit CARD-2). -->
-        <div class="nc-cover-acts" id="ncCoverActs" hidden>
-          <a class="btn btn-primary" id="ncCoverWa" href="https://wa.me/adspace" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>Chat on WhatsApp</a>
+        <div class="cover-acts" id="ncCoverActs" hidden>
           <a class="btn" id="ncCoverSite" href="https://adspacestudios.com" target="_blank" rel="noopener">Visit website<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          <a class="btn btn-primary" id="ncCoverWa" href="https://wa.me/adspace" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>Chat on WhatsApp</a>
         </div>
       </div>
     </div>
   </section>
 </main>
 
-<script src="/js/card.js?v=20261117zzzf"></script>
+<!-- A namecard not found takes every page's bar and foot (the cover
+     family, 2026-11-22); the card itself stands alone, so the chrome is
+     drawn only with the notice (js/card.js clones this in). -->
+<template id="ncChrome"><script src="/js/chrome.js?v=20261117zzzf" data-kicker="eNamecard"></script></template>
+<script src="/js/card.js?v=20261122zzq"></script>
 </body>
 </html>

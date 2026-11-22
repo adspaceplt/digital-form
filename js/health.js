@@ -434,11 +434,10 @@
   function lockCard(host, why, again) {
     st.team = null;
     var said2 = P().said || said, blocked = why && why.error === 'no-code';
-    host.innerHTML = '<div class="lockcard">' +
-      '<span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+    host.innerHTML = '<div class="lockcard" data-glyph="lock">' +
       '<h3 class="lockcard-title">Health check-ins are locked</h3>' +
-      (blocked ? '' : '<form class="lockcard-form" autocomplete="off">' +
-        '<p class="lockcard-line">Unlocks for 15 minutes.</p>' +
+      (blocked ? '' : '<p class="lockcard-line">Unlocks for 15 minutes.</p>' +
+        '<form class="lockcard-form" autocomplete="off">' +
         '<label class="field-label" for="healthCode">Master code</label>' +
         '<input class="input" id="healthCode" type="password" autocomplete="off" spellcheck="false" autocapitalize="off">' +
         '<button class="btn btn-primary" id="healthUnlock" type="submit">Unlock</button></form>') +

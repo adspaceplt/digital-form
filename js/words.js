@@ -443,5 +443,17 @@
       return (lead || 'To') + ' ' + to + (cc ? ', with a copy to ' + cc : '') + (file ? ', with ' + file + ' attached' : '');
     }
   };
+  /* A notice's glyph by its title, English or 中文 (the cover family,
+     2026-11-22): js/maintenance.js draws it in the locks' disc wherever a
+     cover's title is one of these and the page named none (`data-glyph`). */
+  var GLYPH = { notFound: 'linkoff', passTitle: 'lock', lockedTitle: 'lock', noAccess: 'block', failTitle: 'alert',
+    closed: 'archive', nothing: 'inbox', noScripts: 'film', linkExpired: 'clock', formReceived: 'done',
+    maintTitle: 'tool', pausedTitle: 'pause' };
+  W.glyphOf = function (title) {
+    var t = String(title || '').trim();
+    if (!t) return '';
+    for (var k in GLYPH) if ((W.en[k] && W.en[k] === t) || (W.zh[k] && W.zh[k] === t)) return GLYPH[k];
+    return '';
+  };
   window.ADspaceWords = W;
 })();

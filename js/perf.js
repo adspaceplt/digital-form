@@ -1528,7 +1528,7 @@
     $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or a code sent to ' + guard.email + '.'
                                               : 'A code will be sent to ' + guard.email + '.');
     $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
-    $('mineSend').className = pk ? 'btn' : 'btn btn-primary';
+    $('mineSend').className = 'btn btn-primary';
   }
   function sendCode() {
     var b = $('mineSend');
