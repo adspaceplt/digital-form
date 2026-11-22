@@ -1099,9 +1099,10 @@ screenshotted, and the push names any line it could not settle.
     tab).
   - A colleague may arrange their own order within each group (Arrange
     sections), which the tab bar follows; everything else keeps this one.
-  - The desk rail never scrolls for a full admin from 768px high (the user,
-    2026-11-22): rows 40px and touching, groups 8px apart, a label one 16px
-    line 4px over its rows; at 720 it scrolls at most 48px (`tests/rail.js`).
+  - The desk rail never scrolls for a full admin from 720px high (the user,
+    2026-11-22): rows 40px and touching (36px under 760px tall, a mouse's
+    rail; a finger's keeps 40), groups 8px apart, a label one 16px line 4px
+    over its rows (`tests/rail.js`).
   - The Handbook is a mark at the rail's foot before Settings' (2026-11-11).
   - The Activity record is a mark at the rail's foot, last of the row
     Arrange sections', the Handbook's and Settings' marks make, the build

@@ -5342,6 +5342,12 @@ svg.sec {
 .sidebar-brand { padding-bottom: 8px; }
 .sidebar { padding-top: 12px; }
 .sidebar .sidebar-foot { margin-top: 4px; padding-top: 8px; }
+/* A window under 760px tall (the user, 2026-11-22: "Ok all") takes 36px
+   rows, the tile 6px from each edge, so a full admin's rail stands whole at
+   720; a finger's rail keeps its 40px rows. */
+@media (max-height: 759px) and (pointer: fine) {
+  .sidebar .navitem { padding-block: 6px; }
+}
 /* A 32px tile where a row leads with its section (Waiting for you,
    Engagements, the bell): the tile is the glyph's own ground. */
 :is(.wfy-tile, .cmonth-tile, .notif-tile):has(> svg.sec) { background: none; }
