@@ -5526,6 +5526,11 @@ svg.sec {
 .ovw-kpis.ovw-lead { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ovw-kpis.ovw-lead > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
 .is-narrow .ovw-kpis.ovw-lead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* Sales: Owed to us and We owe (2026-11-22), the lead row's tiles, two
+   across under their label; the overdue part of what is owed in red. */
+.ovw-paygroup { display: grid; gap: 12px; min-width: 0; }
+.ovw-kpis.ovw-pay { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ovw-kpi-sub.is-err { color: var(--err); }
 /* Needs attention beside the on-time trend (1.618 : 1). */
 .ovw-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-pair.is-one, .is-narrow .ovw-pair { grid-template-columns: minmax(0, 1fr); }

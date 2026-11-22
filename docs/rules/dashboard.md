@@ -139,6 +139,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     by month. The trends: On time by month (delivered and posted,
     two lines) and Active
     clients by month (each figure over its column, this month lighter).
+  - Sales under the lead row on Team (`#ovwPay`, 2026-11-22; the Bukku
+    structure mockup, item 6): Owed to us (the receivables open, the
+    overdue part in red under it) and We owe (creators' and suppliers'
+    bills open, each part named), the lead row's tiles two across, from
+    Clients' Payments' own figures (`payment_analysis`, one read a visit,
+    in the currency Payments opens on), at Clients: Billing Full control
+    alone; Owed to us opens Clients › Payments, We owe the Payments view
+    holding more of it that the reader may open (Creators' or Suppliers').
   - Detail, under its labels: Sales (Leads to clients, one-line bars, each
     step's share of the one before; Pipeline now, a ring with the whole in
     its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
