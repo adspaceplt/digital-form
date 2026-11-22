@@ -897,6 +897,10 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-lead { grid-area: lead; min-width: max-content; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; min-width: max-content; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags:empty { display: none; }
+/* A booking's payment stands under its step in the state's column at a
+   desk, and beside it on the phone's second line (2026-11-22, screen (f)). */
+.bookreg .kcard-tags > .kcard-pay { flex-basis: 100%; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags > .kcard-pay { flex-basis: auto; }
 /* A stated track outlives the cell in it, so the row that draws no ⋯ gives
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
