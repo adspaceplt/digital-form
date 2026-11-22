@@ -4970,7 +4970,7 @@
   /* The dot and its word, as the creator's Payment pane says it: Paid {day},
      Processing, Draft in Bukku; a booking posted with no bill Not billed, or
      Not linked while its creator is not linked to Bukku; nothing before. */
-  function payChip(o) {
+  function bookingPayChip(o) {
     var p = payOf(o), b = p && p.bill;
     if (!p) return '';
     if (b) {
@@ -4992,7 +4992,7 @@
     }).then(function (x) {
       if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
       if (tab) tab.close();
-      cardSay(o, 'Bill ' + num + ' could not be opened in Bukku. Read the creator\'s bills from Bukku on their Payment tab, then try again.', 'err');
+      cardSay(o, 'Bill ' + num + ' could not be opened in Bukku. Open the creator\'s Payment tab, press Read from Bukku, then try again.', 'err');
     }).catch(function () { if (tab) tab.close(); });
   }
   /* Creator payments in the rail: the creators paid of those booked, what
@@ -5176,7 +5176,7 @@
           '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
           (o.is_replacement ? '<span class="tone">Replacement</span>' : '') +
           (o.goodwill ? '<span class="tone">Goodwill</span>' : '') +
-          payChip(o) +
+          bookingPayChip(o) +
         '</span>' +
         '<span class="kcard-act">' +
           /* Sending a creator their link is the everyday action on this row, so
