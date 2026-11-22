@@ -1,6 +1,9 @@
 /*
- * Health — a colleague's own check-in every half month, and every
- * colleague's for the holders of Team: Health (2026-10-07).
+ * Health — a colleague's own check-in, and every colleague's for the
+ * holders of Team: Health (2026-10-07). Since 2026-11-22 a mood check-in
+ * after Apple Health's State of Mind, asked each week while the colleague's
+ * planned work this week is near their weekly capacity, else each month;
+ * the half-month check-ins before it stay readable as Earlier check-ins.
  *
  * Health is sensitive personal data (PDPA 2010, s.40), so nothing is asked
  * before the colleague agrees, in My records, Health, and withdrawing takes their
@@ -37,6 +40,13 @@
     ['energy', 'Energy', ['Drained', 'Low', 'Okay', 'Good', 'Full of energy']],
     ['workload', 'Workload', ['Overwhelming', 'Heavy', 'Busy but fine', 'Manageable', 'Comfortable']]
   ];
+  /* The check-in since 2026-11-22: a mood of seven steps, a workload of
+     five, and the feelings and influences chosen from the database's own
+     lists (`health_mood_save`). */
+  var MOOD = ['Very unpleasant', 'Unpleasant', 'Slightly unpleasant', 'Neutral', 'Slightly pleasant', 'Pleasant', 'Very pleasant'];
+  var WORK = ['Overwhelming', 'Heavy', 'Busy', 'Manageable', 'Comfortable'];
+  var FEEL = ['Calm', 'Content', 'Motivated', 'Confident', 'Grateful', 'Hopeful', 'Tired', 'Stressed', 'Anxious', 'Frustrated', 'Overwhelmed', 'Sad'];
+  var INFL = ['Workload', 'Clients', 'Colleagues', 'Family', 'Friends', 'Health', 'Sleep', 'Finances'];
   var HEART = '<svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/>' +
     '<path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>';
@@ -51,7 +61,11 @@
     'incomplete': 'Answer all five.',
     'stale-half': 'That half month has ended, so nothing was saved. Your answers are kept: save them for the half month now open.',
     'bad-score': 'Choose an answer from 1 to 5 for each.',
-    'too-long': 'Keep the note to 1,000 characters.',
+    'too-long': 'Enter a note of up to 1,000 characters.',
+    'no-mood': 'Choose your mood.',
+    'no-workload': 'Choose your workload.',
+    'bad-tag': 'Choose each answer from its list.',
+    'stale-period': 'Not saved. This check-in period has ended. Your answers are kept; save them for the current period.',
     'bad-colleague': 'Choose a colleague.',
     'already-asked': 'You have already asked them. Withdraw that request first.',
     'bad-status': 'This talk has changed. Refresh the page.',
@@ -156,33 +170,31 @@
       wireMine();
       return;
     }
-    var cur = (d.history || []).filter(function (c) { return c.half === d.half; })[0];
-    /* The five answers across the card, the note under them. A low answer,
-       with no talk already asked for, opens Talks with a word of care. */
-    var low = cur && SCALES.some(function (s) { return Number(cur.scales[s[0]]) <= 2; });
+    var per = d.period;
+    if (!per) { UI.failLine(box, 'Your health check-ins', said({ error: 'db', message: 'PGRST202' }), enterMine); return; }
+    var cur = per.current;
+    /* The answers across the card, the note under them. A low mood or a
+       heavy workload, with no talk already asked for, opens Talks with a
+       word of care. */
+    var low = cur && (Number(cur.mood) <= 2 || Number(cur.workload) <= 2);
     var asking = (d.asked || []).some(function (t) { return t.status === 'open'; });
-    var html = card(HEART + 'Check-in, ' + esc(halfWord(d.half, d.half_end)),
+    var metaLine = cur ? 'Checked in on ' + dateWord(cur.at)
+      : 'Open until ' + window.ADspaceClock.date(per.end, { named: true });
+    var html = card(HEART + esc(periodTitle(per)),
       cur ? '<button class="btn btn-sm" data-a="checkin" type="button">' + PEN + 'Edit</button>' : '',
-      cur ? '<dl class="facts health-facts">' + SCALES.map(function (s) {
-              var v = cur.scales[s[0]];
-              return '<div><dt>' + esc(s[1]) + '</dt><dd>' + figure(s[0], v) + '<span class="health-word">' + esc(word(s[0], v)) + '</span></dd></div>';
-            }).join('') + (cur.note ? '<div class="health-notecell"><dt>Note</dt><dd class="health-note">' + esc(cur.note) + '</dd></div>' : '') + '</dl>'
+      (per.kind === 'week' ? '<p class="health-why">This check-in is weekly while your planned work is near your weekly capacity.</p>' : '') +
+      (cur ? moodFacts(cur, 'facts')
           : '<p class="health-lead">How are you feeling today?</p>' +
-            '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="checkin" type="button">Check in</button></div>',
-      '', cur ? 'Checked in on ' + dateWord(cur.at) : 'Open until ' + dateWord(d.half_end));
-    var past = (d.history || []).filter(function (c) { return c.half !== d.half; });
-    if (past.length) {
-      html += card('Your check-ins', '',
-        '<div class="health-table" role="table" aria-label="Your check-ins">' +
-          '<div class="health-hrow" role="row"><span role="columnheader">Half month</span>' +
-            SCALES.map(function (s) { return '<span role="columnheader">' + esc(s[1]) + '</span>'; }).join('') + '</div>' +
-          past.map(function (c) {
-            return '<div class="health-trow" role="row"><span class="health-when" role="cell">' + esc(halfWord(c.half, c.half_end)) + '</span>' +
-              SCALES.map(function (s) {
-                return '<span class="health-cell" role="cell"><span class="health-cell-k">' + esc(s[1]) + '</span>' + figure(s[0], c.scales[s[0]]) + '</span>';
-              }).join('') + '</div>';
-          }).join('') +
-        '</div>');
+            '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="checkin" type="button">Check in</button></div>'),
+      'health-now', metaLine);
+    var past = (d.moods || []).filter(function (c) { return !cur || c.id !== cur.id; });
+    if (past.length) html += card('Your check-ins', '', moodTable(past));
+    var old = d.history || [];
+    if (old.length) {
+      html += card('Earlier check-ins',
+        '<button class="btn btn-sm btn-quiet" data-a="earlier" type="button" aria-expanded="false" aria-controls="healthEarlier">Show</button>',
+        '<div id="healthEarlier" hidden>' + halfTable(old) + '</div>', 'health-earlier',
+        old.length + (old.length === 1 ? ' half month' : ' half months') + ' · Body, Mind, Sleep, Energy and Workload');
     }
     html += card('Talks', '<button class="btn btn-sm" data-a="talk" type="button">' + PLUS + 'Ask for a talk</button>',
       (low && !asking ? '<p class="health-care">Thank you for being honest with us. If something is weighing on you, a talk can help.</p>' : '') +
@@ -192,6 +204,45 @@
       '<button class="btn btn-sm btn-quiet" data-a="withdraw" type="button">Withdraw</button></div>';
     box.innerHTML = html;
     wireMine();
+  }
+  function periodTitle(per) { return per && per.kind === 'week' ? 'This week’s check-in' : 'This month’s check-in'; }
+  function moodWord(v) { return v ? MOOD[v - 1] || '' : ''; }
+  function workWord(v) { return v ? WORK[v - 1] || '' : ''; }
+  function listWord(a) { return (a || []).length ? a.join(', ') : '—'; }
+  /* A check-in's answers as facts: a low answer is a caution in words, never a colour alone. */
+  function moodFacts(c, cls) {
+    var lowM = Number(c.mood) <= 2, lowW = Number(c.workload) <= 2;
+    return '<dl class="' + cls + ' health-facts hm-facts">' +
+      '<div><dt>Mood</dt><dd><span class="health-word' + (lowM ? ' is-low' : '') + '">' + esc(moodWord(c.mood)) + '</span></dd></div>' +
+      '<div><dt>Workload</dt><dd><span class="health-word' + (lowW ? ' is-low' : '') + '">' + esc(workWord(c.workload)) + '</span></dd></div>' +
+      '<div><dt>Feelings</dt><dd class="hm-list">' + esc(listWord(c.feelings)) + '</dd></div>' +
+      '<div><dt>Influences</dt><dd class="hm-list">' + esc(listWord(c.influences)) + '</dd></div>' +
+      (c.note ? '<div class="health-notecell"><dt>Note</dt><dd class="health-note">' + esc(c.note) + '</dd></div>' : '') + '</dl>';
+  }
+  function moodTable(rows) {
+    return '<div class="health-table hm-table" role="table" aria-label="Your check-ins">' +
+      '<div class="health-hrow" role="row"><span role="columnheader">Checked in</span><span role="columnheader">Mood</span>' +
+        '<span role="columnheader">Workload</span><span role="columnheader">Period</span></div>' +
+      rows.map(function (c) {
+        var tags = (c.feelings || []).concat(c.influences || []);
+        return '<div class="health-trow" role="row"><span class="health-when" role="cell"><b>' + esc(dateWord(c.at)) + '</b>' +
+            (tags.length ? '<small>' + esc(tags.join(' · ')) + '</small>' : '') + '</span>' +
+          '<span class="health-cell" role="cell">' + esc(moodWord(c.mood)) + '</span>' +
+          '<span class="health-cell hm-work" role="cell">' + esc(workWord(c.workload)) + '</span>' +
+          '<span class="health-cell hm-per" role="cell">' + (c.period === 'week' ? 'Weekly' : 'Monthly') + '</span></div>';
+      }).join('') + '</div>';
+  }
+  /* The half-month check-ins before 2026-11-22, as they were asked. */
+  function halfTable(rows) {
+    return '<div class="health-table" role="table" aria-label="Earlier check-ins">' +
+      '<div class="health-hrow" role="row"><span role="columnheader">Half month</span>' +
+        SCALES.map(function (s) { return '<span role="columnheader">' + esc(s[1]) + '</span>'; }).join('') + '</div>' +
+      rows.map(function (c) {
+        return '<div class="health-trow" role="row"><span class="health-when" role="cell">' + esc(halfWord(c.half, c.half_end)) + '</span>' +
+          SCALES.map(function (s) {
+            return '<span class="health-cell" role="cell"><span class="health-cell-k">' + esc(s[1]) + '</span>' + figure(s[0], c.scales[s[0]]) + '</span>';
+          }).join('') + '</div>';
+      }).join('') + '</div>';
   }
   function talksHtml(d) {
     var rows = [];
@@ -231,6 +282,12 @@
     on('checkin', function (b) { openCheckin(b); });
     on('talk', function (b) { openTalk(b); });
     on('withdraw', withdraw);
+    on('earlier', function (b) {
+      var open = b.getAttribute('aria-expanded') !== 'true';
+      b.setAttribute('aria-expanded', String(open));
+      b.textContent = open ? 'Hide' : 'Show';
+      $('healthEarlier').hidden = !open;
+    });
     Array.prototype.forEach.call(box.querySelectorAll('[data-talk]'), function (b) {
       b.addEventListener('click', function () { setTalk(b); });
     });
@@ -314,65 +371,110 @@
     });
   }
 
-  // The check-in sheet: five scales as segments, the word for the one chosen.
-  function openCheckin(opener) {
-    var d = st.mine || {};
-    var cur = (d.history || []).filter(function (c) { return c.half === d.half; })[0];
-    /* The half month the sheet shows is the one it saves into (2026-10-18). */
-    st.sheetHalf = d.half;
-    $('healthSheetTitle').textContent = 'Check-in, ' + halfWord(d.half, d.half_end);
-    SCALES.forEach(function (s) {
-      var sel = $('hcS_' + s[0]);
-      sel.value = cur ? String(cur.scales[s[0]]) : '';
-      if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
-      sayScale(s[0]);
+  // The check-in sheet: the mood, the feelings and influences, the workload and a note.
+  /* At a desk the whole check-in is one sheet; on a phone it is three short
+     steps, each fitting above the tab bar, a choice never lost by moving
+     back, and Save open on every step once a mood and a workload are
+     chosen (the user, 2026-11-22). */
+  var hc = { step: 1, phone: false };
+  function tagsInto(host, list) {
+    if (!host || host.children.length) return;
+    host.innerHTML = list.map(function (w) {
+      return '<button class="btn btn-sm hc-tag" type="button" aria-pressed="false" data-tag="' + esc(w) + '">' + esc(w) + '</button>';
+    }).join('');
+    host.addEventListener('click', function (e) {
+      var b = e.target.closest('.hc-tag');
+      if (!b) return;
+      b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
     });
+  }
+  function tagsSet(host, on) {
+    Array.prototype.forEach.call(host.querySelectorAll('.hc-tag'), function (b) {
+      b.setAttribute('aria-pressed', String((on || []).indexOf(b.getAttribute('data-tag')) >= 0));
+    });
+  }
+  function tagsOf(host) {
+    return Array.prototype.filter.call(host.querySelectorAll('.hc-tag'), function (b) {
+      return b.getAttribute('aria-pressed') === 'true';
+    }).map(function (b) { return b.getAttribute('data-tag'); });
+  }
+  function moodOf() {
+    var r = document.querySelector('#hcMood input:checked');
+    return r ? Number(r.value) : null;
+  }
+  function sayMood() { $('hcMoodWord').textContent = moodWord(moodOf()); }
+  function showStep(n) {
+    hc.step = n;
+    var steps = document.querySelectorAll('#healthSheet .hc-step');
+    Array.prototype.forEach.call(steps, function (x) { x.hidden = hc.phone && Number(x.getAttribute('data-step')) !== n; });
+    $('hcSteps').hidden = $('hcTrack').hidden = !hc.phone;
+    $('hcSteps').textContent = 'Step ' + n + ' of 3';
+    $('hcTrack').firstElementChild.style.width = Math.round(n / 3 * 100) + '%';
+    var last = !hc.phone || n === 3;
+    $('hcNext').hidden = last;
+    $('hcSave').className = 'btn ' + (last ? 'btn-primary' : 'btn-quiet');
+    $('hcCancel').textContent = hc.phone && n > 1 ? 'Back' : 'Cancel';
+  }
+  function openCheckin(opener) {
+    var d = st.mine || {}, per = d.period || {}, cur = per.current;
+    /* The period the sheet shows is the one it saves into (2026-10-18). */
+    st.sheetStart = per.start;
+    $('healthSheetTitle').textContent = periodTitle(per);
+    tagsInto($('hcFeel'), FEEL);
+    tagsInto($('hcInfl'), INFL);
+    Array.prototype.forEach.call(document.querySelectorAll('#hcMood input'), function (r) {
+      r.checked = Boolean(cur) && Number(r.value) === Number(cur.mood);
+    });
+    sayMood();
+    tagsSet($('hcFeel'), cur && cur.feelings);
+    tagsSet($('hcInfl'), cur && cur.influences);
+    var sel = $('hcWork');
+    sel.value = cur ? String(cur.workload) : '';
+    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
     $('hcNote').value = (cur && cur.note) || '';
     msg('hcMsg', '');
+    hc.phone = window.matchMedia('(max-width: 640px)').matches;
+    showStep(1);
     window.ADspaceSheet.show($('healthSheet'), { opener: opener });
   }
-  function sayScale(k) {
-    var sel = $('hcS_' + k), out = $('hcW_' + k);
-    if (out) out.textContent = sel.value ? word(k, Number(sel.value)) : '';
+  /* What is missing names itself and opens its step. */
+  function missing() {
+    if (!moodOf()) return [1, 'no-mood', document.querySelector('#hcMood input')];
+    if (!$('hcWork').value) return [3, 'no-workload', $('hcWork')];
+    return null;
   }
-  SCALES.forEach(function (s) {
-    var sel = $('hcS_' + s[0]);
-    if (!sel) return;
-    sel.addEventListener('change', function () { sayScale(s[0]); });
-    /* Each scale says what its ends mean before a choice: Workload runs
-       Overwhelming to Comfortable, the others ill to well (2026-10-27,
-       MINE-7). Named for a screen reader, never in the live line. */
-    var ends = document.createElement('span');
-    ends.className = 'health-scale-ends';
-    ends.id = 'hcE_' + s[0];
-    ends.textContent = '1 ' + s[2][0] + ' · 5 ' + s[2][4];
-    var out = $('hcW_' + s[0]);
-    sel.parentNode.insertBefore(ends, out || null);
-    sel.setAttribute('aria-describedby', ends.id);
-  });
   if ($('healthSheet')) {
+    Array.prototype.forEach.call(document.querySelectorAll('#hcMood input'), function (r, i) {
+      r.setAttribute('aria-label', MOOD[i]);
+      r.addEventListener('change', sayMood);
+    });
     $('hcClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    $('hcCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('hcCancel').addEventListener('click', function () {
+      if (hc.phone && hc.step > 1) { showStep(hc.step - 1); msg('hcMsg', ''); return; }
+      window.ADspaceSheet.close();
+    });
+    $('hcNext').addEventListener('click', function () {
+      if (hc.step === 1 && !moodOf()) { msg('hcMsg', said({ error: 'no-mood' }), 'err'); return; }
+      msg('hcMsg', '');
+      showStep(Math.min(3, hc.step + 1));
+    });
     $('hcSave').addEventListener('click', function () {
-      var b = this, scores = {}, miss = null;
-      SCALES.forEach(function (s) {
-        var v = Number($('hcS_' + s[0]).value);
-        if (!v && !miss) miss = s;
-        scores[s[0]] = v;
-      });
+      var b = this, miss = missing();
       if (miss) {
-        msg('hcMsg', 'Answer ' + miss[1] + '.', 'err');
-        if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal($('hcS_' + miss[0]));
+        if (hc.phone) showStep(miss[0]);
+        msg('hcMsg', said({ error: miss[1] }), 'err');
+        if (miss[2] && miss[2].focus) miss[2].focus();
         return;
       }
       b.disabled = true;
-      mineCall('health_checkin_save', { p_scores: scores, p_note: $('hcNote').value, p_half: st.sheetHalf }, function (d) {
+      mineCall('health_mood_save', { p_start: st.sheetStart, p_mood: moodOf(), p_workload: Number($('hcWork').value),
+        p_feelings: tagsOf($('hcFeel')), p_influences: tagsOf($('hcInfl')), p_note: $('hcNote').value }, function (d) {
         b.disabled = false;
-        if (d.error === 'stale-half') {
-          /* The half month ended while the sheet was open: nothing was kept,
-             the answers stay, and the sheet now names the half open. */
-          st.sheetHalf = d.half;
-          $('healthSheetTitle').textContent = 'Check-in, ' + halfWord(d.half, d.half_end);
+        if (d.error === 'stale-period') {
+          /* The period ended while the sheet was open: nothing was kept,
+             the answers stay, and the sheet now names the period open. */
+          st.sheetStart = d.period && d.period.start;
+          $('healthSheetTitle').textContent = periodTitle(d.period);
           msg('hcMsg', said(d), 'err');
           if ($('hcMsg').scrollIntoView) $('hcMsg').scrollIntoView({ block: 'nearest' });
           mineCall('health_mine', {}, function (m) { if (!m.error) { st.mine = m; paintMine(); } });
@@ -469,7 +571,6 @@
       paintTeam();
     }, enterTeam);
   }
-  function thisHalf(p) { var h = st.team && st.team.half; return (p.checkins || []).filter(function (c) { return c.half === h; })[0]; }
   function paintTeam() {
     var d = st.team, box = $('teamHealthBox');
     if (!d || !box) return;
@@ -477,36 +578,63 @@
     var S = window.ADspaceAdmin;
     var people = (d.people || []).filter(function (p) { return !(S && S.isSystem && S.isSystem(p.team_member_id || p.id)); });
     var standing = people.filter(function (p) { return p.consent && !p.consent.withdrawn_at && p.consent.current !== false; });
-    var done = standing.filter(thisHalf);
+    var done = standing.filter(function (p) { return p.period && p.period.current; });
+    var weekly = people.filter(function (p) { return p.period && p.period.kind === 'week'; });
+    var open = (d.talks || []).filter(function (t) { return t.status === 'open'; });
     box.innerHTML = '';
-    /* The half month at a glance: who has checked in, and the average of each
-       scale among them, a low average in warn with its figure. */
-    var head = document.createElement('div');
-    head.className = 'ovcard health-card health-sum';
-    head.innerHTML = '<div class="ovsec"><div class="ovsec-head refl-head"><h3 class="health-h">' + HEART +
-      esc(halfWord(d.half, d.half_end)) + '</h3>' +
-      /* With nobody agreed, "0 of 0" says nothing: the line under it says so (TEAM-6). */
-      (standing.length ? '<span class="refl-ctl health-count">' + esc(done.length + ' of ' + standing.length + ' checked in') + '</span>' : '') +
-      '</div><div id="healthAvg"></div></div>';
-    box.appendChild(head);
-    if (done.length && window.ADspaceChart) {
-      window.ADspaceChart.draw($('healthAvg'), {
-        kind: 'bars', name: 'Average this half month', max: 5,
-        fmt: function (v) { return (Math.round(v * 10) / 10).toFixed(1); },
-        rows: SCALES.map(function (s) {
-          var sum = done.reduce(function (a, p) { return a + Number(thisHalf(p).scales[s[0]] || 0); }, 0);
-          var avg = sum / done.length;
-          return { label: s[1], value: avg, tone: avg < 3 ? 'warn' : '' };
-        })
-      });
-    } else {
-      $('healthAvg').innerHTML = '<p class="perf-quiet">' + (standing.length ? 'No check-ins this half month.' : 'No colleague has agreed to check-ins.') + '</p>';
-    }
+    if (!d.trend) { UI.failLine(box, 'Health check-ins', said({ error: 'db', message: 'PGRST202' }), enterTeam); return; }
+    /* The period at a glance (the redesign, 2026-11-22): the average mood of
+       the last four weeks, who has checked in, who is asked weekly, the
+       talks open. An average is drawn only from 3 check-ins a week. */
+    var last4 = (d.trend || []).slice(-4).filter(function (w) { return w.avg != null; });
+    var n4 = last4.reduce(function (a, w) { return a + w.n; }, 0);
+    var avg4 = n4 ? last4.reduce(function (a, w) { return a + Number(w.avg) * w.n; }, 0) / n4 : null;
+    var kp = document.createElement('div');
+    kp.className = 'ovw-kpis health-kpis';
+    kp.id = 'healthKpis';
+    kp.innerHTML = [
+      ['Average mood over 4 weeks', avg4 == null ? '—' : avg4.toFixed(1), avg4 == null ? 'Fewer than 3 check-ins per week' : moodWord(Math.round(avg4))],
+      ['Check-ins this period', standing.length ? done.length + ' of ' + standing.length : '—',
+        standing.length ? (standing.length - done.length ? (standing.length - done.length) + ' due' : 'All checked in') : 'No colleague has agreed'],
+      ['Weekly check-ins', String(weekly.length), 'Colleagues near their weekly capacity'],
+      ['Open talks', String(open.length), open.length ? 'Asked ' + dateWord(open[open.length - 1].at) : 'None']
+    ].map(function (k) {
+      return '<article class="chartcard ovw-kpi"><span class="ovw-kpi-label">' + esc(k[0]) + '</span><b class="ovw-kpi-fig">' + esc(k[1]) +
+        '</b><span class="ovw-kpi-line"><span class="ovw-kpi-sub">' + esc(k[2]) + '</span></span></article>';
+    }).join('');
+    box.appendChild(kp);
+    var pair = document.createElement('div');
+    pair.className = 'health-pair';
+    pair.innerHTML = '<div class="ovcard health-card"><div class="ovsec"><div class="ovsec-head refl-head"><span class="health-hd">' +
+        '<h3 class="health-h">' + HEART + 'Mood over time</h3><small class="health-meta">Weekly average over 12 weeks, from 1 Very unpleasant to 7 Very pleasant</small></span></div>' +
+        '<div id="healthTrend"></div><p class="health-why">A week with fewer than 3 check-ins is not shown.</p></div></div>' +
+      '<div class="ovcard health-card"><div class="ovsec"><div class="ovsec-head refl-head"><span class="health-hd">' +
+        '<h3 class="health-h">Workload against mood</h3><small class="health-meta">Average mood by planned work against weekly capacity, over 12 weeks</small></span></div>' +
+        '<div id="healthBands"></div></div></div>';
+    box.appendChild(pair);
+    var CH = window.ADspaceChart, shown = (d.trend || []).filter(function (w) { return w.avg != null; });
+    var fmt1 = function (v) { return (Math.round(Number(v) * 10) / 10).toFixed(1); };
+    if (CH && shown.length) {
+      CH.draw($('healthTrend'), { kind: 'line', name: 'Average mood by week', max: 7, none: 'Not shown',
+        cats: (d.trend || []).map(function (w) { return { label: shortDay(w.week), long: 'Week of ' + dateWord(w.week), values: [w.avg == null ? null : Number(w.avg)] }; }),
+        series: [{ label: 'Average mood' }], fmt: fmt1,
+        table: { heads: ['Week', 'Average mood', 'Check-ins'], rows: (d.trend || []).map(function (w) {
+          return ['Week of ' + dateWord(w.week), w.avg == null ? '—' : fmt1(w.avg), String(w.n)];
+        }) } });
+    } else $('healthTrend').innerHTML = '<p class="perf-quiet">No check-ins in 12 weeks.</p>';
+    var BANDS = ['Under 50%', '50% to ' + (nearPct(d) - 1) + '%', nearPct(d) + '% or more'];
+    if (CH && (d.bands || []).some(function (b) { return b.avg != null; })) {
+      CH.draw($('healthBands'), { kind: 'bars', name: 'Average mood by planned work', max: 7, fmt: fmt1,
+        rows: (d.bands || []).filter(function (b) { return b.avg != null; }).map(function (b) {
+          return { label: BANDS[b.band - 1] + ' · ' + b.n + ' check-ins', value: Number(b.avg),
+            tone: b.band === 3 ? 'warn' : '' };
+        }) });
+    } else $('healthBands').innerHTML = '<p class="perf-quiet">No check-ins in 12 weeks.</p>';
     var G = window.ADspaceGroup;
     box.appendChild(G.section({
       route: 'team-health', key: 'people', name: 'Colleagues', count: people.length, shut: false,
       table: function () {
-        var t = G.table('health-prow', ['Colleague'].concat(SCALES.map(function (s) { return s[1]; })).concat(['Checked in', '']));
+        var t = G.table('health-prow', ['Colleague', 'Mood', 'This week', 'Checked in', '']);
         G.more(t, people, 30, '', personRow);
         return t;
       }
@@ -524,25 +652,46 @@
       box.appendChild(tc);
     }
   }
+  function nearPct(d) {
+    var p = (d.people || []).filter(function (x) { return x.period && x.period.load; })[0];
+    return p ? Number(p.period.load.near) || 90 : 90;
+  }
+  function shortDay(v) { return window.ADspaceClock.date(v, { year: false }) || ''; }
   function stateOf(p) {
     if (!p.consent) return 'Not agreed';
     if (p.consent.withdrawn_at) return 'Withdrawn';
     if (p.consent.current === false) return 'Terms changed';
     return '';
   }
+  function hoursWord(min) { var h = Math.round(Number(min) / 6) / 10; return (h % 1 ? h.toFixed(1) : String(h)); }
+  /* This week's planned work in words: the share of capacity, or why it is not measured. */
+  function loadWord(p) {
+    var l = p.period && p.period.load;
+    if (!l) return '—';
+    return l.measured ? l.pct + '%' : 'Not measured';
+  }
+  function loadLine(l) {
+    if (!l) return '';
+    if (!l.measured) return 'This week: not measured';
+    return 'This week: ' + hoursWord(l.load) + ' of ' + hoursWord(l.cap) + ' hours (' + l.pct + '%)' +
+      (l.late_tasks ? ' · ' + l.late_tasks + (l.late_tasks === 1 ? ' task late' : ' tasks late') : '');
+  }
   function personRow(p) {
-    var c = thisHalf(p), s = stateOf(p), last = (p.checkins || [])[0];
+    var s = stateOf(p), per = p.period || {}, c = per.current, last = (p.moods || [])[0];
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'crm-row health-prow' + (s ? ' is-faded' : '');
     b.setAttribute('data-person', p.id);
-    b.innerHTML = '<span class="health-who' + (c ? ' has-line' : '') + '"><b>' + esc(p.name) + '</b>' +
-        '<small class="health-code">' + esc([p.staff_code, p.designation].filter(Boolean).join(' · ')) + '</small>' +
-        (c ? '<small class="health-line">' + esc(SCALES.map(function (x) { return x[1] + ' ' + c.scales[x[0]]; }).join(' · ')) + '</small>' : '') +
+    var wk = loadWord(p) + (c ? ' · ' + workWord(c.workload) : '');
+    b.innerHTML = '<span class="health-who"><b>' + esc(p.name) + '</b>' +
+        '<small class="health-code">' + esc([p.staff_code, per.kind === 'week' ? 'Weekly' : 'Monthly'].filter(Boolean).join(' · ')) + '</small>' +
+        '<small class="health-line">' + esc([s || (c ? moodWord(c.mood) : 'Due'), wk].join(' · ')) + '</small>' +
       '</span>' +
-      SCALES.map(function (x) { return '<span class="health-col">' + figure(x[0], c && c.scales[x[0]]) + '</span>'; }).join('') +
-      '<span class="health-at">' + (s ? '<span class="chip">' + esc(s) + '</span>'
-        : esc(c ? dateWord(c.at) : last ? 'Last ' + dateWord(last.at) : 'Not this half month')) + '</span>' +
+      '<span class="health-col hp-mood">' + (s ? '<span class="chip">' + esc(s) + '</span>'
+        : c ? '<span class="health-word' + (Number(c.mood) <= 2 ? ' is-low' : '') + '">' + esc(moodWord(c.mood)) + '</span>'
+        : '<span class="chip-state is-warn">Due</span>') + '</span>' +
+      '<span class="health-col hp-week">' + esc(wk) + '</span>' +
+      '<span class="health-at">' + esc(s ? '—' : c ? shortDay(c.at) : last ? shortDay(last.at) : '—') + '</span>' +
       '<span class="perf-chev" aria-hidden="true">' + CHEV + '</span>';
     b.addEventListener('click', function () { openPerson(p, b); });
     return b;
@@ -554,19 +703,26 @@
     window.ADspaceSheet.show($('healthPersonSheet'), { opener: opener });
   }
   function personBody(p) {
-    var s = stateOf(p), ck = p.checkins || [];
+    var s = stateOf(p), mk = p.moods || [], ck = p.checkins || [];
     var talks = ((st.team && st.team.talks) || []).filter(function (t) { return t.from_id === p.id || t.with_id === p.id; });
+    var l = p.period && p.period.load;
     return '<p class="perf-quiet">' + esc(s === 'Not agreed' ? 'Has not agreed to the check-ins.'
         : s === 'Withdrawn' ? 'Withdrew on ' + dateWord(p.consent.withdrawn_at) + '.'
         : s === 'Terms changed' ? 'Has not agreed to the current terms.'
         : 'Agreed on ' + dateWord(p.consent.agreed_at) + '.') + '</p>' +
+      (l ? '<p class="perf-quiet">' + esc(loadLine(l)) + '</p>' : '') +
+      (mk.length ? mk.map(function (c) {
+        return '<section class="fsec"><h4 class="fsec-h">' + esc(dateWord(c.at)) + ' · ' + (c.period === 'week' ? 'Weekly' : 'Monthly') + '</h4>' +
+          moodFacts(c, 'ovfacts') + '</section>';
+      }).join('') : '') +
       (ck.length ? ck.map(function (c) {
         return '<section class="fsec"><h4 class="fsec-h">' + esc(halfWord(c.half, c.half_end)) + '</h4>' +
           '<dl class="ovfacts health-facts">' + SCALES.map(function (x) {
             var v = c.scales[x[0]];
             return '<div><dt>' + esc(x[1]) + '</dt><dd>' + figure(x[0], v) + ' <span class="health-word">' + esc(word(x[0], v)) + '</span></dd></div>';
           }).join('') + (c.note ? '<div><dt>Note</dt><dd class="health-note">' + esc(c.note) + '</dd></div>' : '') + '</dl></section>';
-      }).join('') : (s ? '' : '<p class="perf-quiet">No check-ins.</p>')) +
+      }).join('') : '') +
+      (!mk.length && !ck.length && !s ? '<p class="perf-quiet">No check-ins.</p>' : '') +
       (talks.length ? '<section class="fsec"><h4 class="fsec-h">Talks</h4><div class="health-talks">' + talks.map(function (t) {
         return '<div class="health-talk' + (t.status === 'open' ? '' : ' is-closed') + '"><span class="health-talk-who"><b>' +
           esc(t.from_id === p.id ? 'Asked ' + t.with : t.from + ' asked them') + '</b><small>' +

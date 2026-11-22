@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122d">
-<link rel="stylesheet" href="/css/console.css?v=20261122zn">
+<link rel="stylesheet" href="/css/console.css?v=20261122zp">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -161,7 +161,7 @@
 <script src="/js/mailtpl.js?v=20261121zzw"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
-<script src="/js/money.js?v=20261121zzu"></script>
+<script src="/js/money.js?v=20261122"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
 <script src="/js/mockups.js?v=20261117zzzf"></script>
 </head>
@@ -5248,8 +5248,9 @@
       </div>
     </div>
 
-    <!-- A health check-in (js/health.js, 2026-10-07): five scales, 5 is
-         well on each, and a note. -->
+    <!-- A health check-in (js/health.js; the redesign, 2026-11-22): the
+         mood on seven steps, the feelings and influences, the workload and
+         a note. One sheet at a desk, three steps on a phone. -->
     <div class="sheet" id="healthSheet" hidden>
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="healthSheetTitle" tabindex="-1">
         <div class="sheet-head">
@@ -5257,40 +5258,42 @@
           <button class="iconbtn" id="hcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sheet-body">
+          <p class="hc-steps" id="hcSteps" aria-live="polite" hidden></p>
+          <div class="hc-track" id="hcTrack" aria-hidden="true" hidden><i></i></div>
           <p class="health-lead">There are no right or wrong answers. Answer as you truly feel today.</p>
-          <div class="row health-scale"><div class="field">
-            <label class="field-label" for="hcS_body">Body</label>
-            <select class="select" id="hcS_body" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-            <span class="health-scale-word" id="hcW_body" aria-live="polite"></span>
-          </div></div>
-          <div class="row health-scale"><div class="field">
-            <label class="field-label" for="hcS_mind">Mind</label>
-            <select class="select" id="hcS_mind" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-            <span class="health-scale-word" id="hcW_mind" aria-live="polite"></span>
-          </div></div>
-          <div class="row health-scale"><div class="field">
-            <label class="field-label" for="hcS_sleep">Sleep</label>
-            <select class="select" id="hcS_sleep" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-            <span class="health-scale-word" id="hcW_sleep" aria-live="polite"></span>
-          </div></div>
-          <div class="row health-scale"><div class="field">
-            <label class="field-label" for="hcS_energy">Energy</label>
-            <select class="select" id="hcS_energy" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-            <span class="health-scale-word" id="hcW_energy" aria-live="polite"></span>
-          </div></div>
-          <div class="row health-scale"><div class="field">
-            <label class="field-label" for="hcS_workload">Workload</label>
-            <select class="select" id="hcS_workload" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
-            <span class="health-scale-word" id="hcW_workload" aria-live="polite"></span>
-          </div></div>
-          <div class="row"><div class="field">
-            <label class="field-label" for="hcNote">Note</label>
-            <textarea class="input" id="hcNote" rows="3" maxlength="1000" placeholder="Optional"></textarea>
-          </div></div>
+          <section class="hc-step" data-step="1">
+            <fieldset class="hc-q">
+              <legend class="field-label is-req" id="hcMoodLabel">Mood</legend>
+              <div class="hc-mood" id="hcMood" role="radiogroup" aria-labelledby="hcMoodLabel" aria-required="true"><label class="hc-dot"><input type="radio" name="hcMood" value="1"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="2"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="3"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="4"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="5"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="6"><span></span></label><label class="hc-dot"><input type="radio" name="hcMood" value="7"><span></span></label></div>
+              <p class="hc-moodword" id="hcMoodWord" aria-live="polite"></p>
+              <div class="hc-ends" aria-hidden="true"><span>Very unpleasant</span><span>Very pleasant</span></div>
+            </fieldset>
+          </section>
+          <section class="hc-step" data-step="2">
+            <fieldset class="hc-q">
+              <legend class="field-label">Feelings <small class="hc-opt">Optional</small></legend>
+              <div class="hc-tags" id="hcFeel"></div>
+            </fieldset>
+            <fieldset class="hc-q">
+              <legend class="field-label">Influences <small class="hc-opt">Optional</small></legend>
+              <div class="hc-tags" id="hcInfl"></div>
+            </fieldset>
+          </section>
+          <section class="hc-step" data-step="3">
+            <div class="row"><div class="field">
+              <label class="field-label" for="hcWork">Workload</label>
+              <select class="select" id="hcWork" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">Overwhelming</option><option value="2">Heavy</option><option value="3">Busy</option><option value="4">Manageable</option><option value="5">Comfortable</option></select>
+            </div></div>
+            <div class="row"><div class="field">
+              <label class="field-label" for="hcNote">Note</label>
+              <textarea class="input" id="hcNote" rows="3" maxlength="1000" placeholder="Optional"></textarea>
+            </div></div>
+          </section>
           <div class="msg" id="hcMsg"></div>
         </div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="hcSave" type="button">Save</button>
+          <button class="btn btn-primary" id="hcNext" type="button" data-nocheck hidden>Next</button>
+          <button class="btn btn-primary" id="hcSave" type="button" data-check-own>Save</button>
           <button class="btn btn-quiet" id="hcCancel" type="button">Cancel</button>
         </div>
       </div>
@@ -6719,15 +6722,15 @@ raya-2026        https://example.com/raya"></textarea>
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261122b", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
-  "health": {"src": "/js/health.js?v=20261120zt", "uses": ["perf"]},
+  "health": {"src": "/js/health.js?v=20261122zn", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261122zm", "uses": ["documents", "crm", "sales"]},
-  "settings": {"src": "/js/settings.js?v=20261122zm", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "settings": {"src": "/js/settings.js?v=20261122zn", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122zm"></script>
+<script src="/js/admin.js?v=20261122zn"></script>
 <script src="/js/ops.js?v=20261122zm"></script>
 <script src="/js/search.js?v=20261122zm"></script>
 <script src="/js/agent.js?v=20261122zm"></script>

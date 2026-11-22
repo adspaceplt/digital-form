@@ -2273,16 +2273,16 @@
       { at: '#railLists .ro-tab', text: 'Tab bar marks the sections shown in the bar at the bottom of your phone.' },
       { at: '#railSave', text: 'Save applies the order on the web and on your phone. Reset order restores the standard order.' }] },
     'mine.health': { name: 'Health', steps: [
-      { at: '#mineHealthBox .health-termbox', text: 'Five questions every two weeks. Management reads your answers by name to support you. They are never used in a performance review.' },
+      { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },
       { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
     'mine.checkin': { name: 'Health', steps: [
-      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in once every half month with five answers and an optional note. You can change them until the half month ends.' },
+      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in with your mood and workload. You can change your answers until the period ends.' },
       { at: '#mineHealthBox [data-a="talk"]', text: 'Ask a colleague for a talk. They are told who asked, but never see your note.' },
       { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and removes your answers from Team: Health.' }] },
     'team.health': { name: 'Health', steps: [
-      { at: '#healthAvg', text: 'This half month\'s averages, and how many colleagues have checked in. An average below 3 is highlighted.' },
-      { at: '#teamHealthBox .health-prow', text: 'Press a colleague to see their history. Answers are shown only while their agreement is in place.' },
-      { at: '#teamHealthBox .health-talks', text: 'Talks asked for in the last 90 days.' }] },
+      { at: '#healthKpis', text: 'This period\'s average mood, check-ins, weekly check-ins and open talks.' },
+      { at: '#healthTrend', text: 'Average mood by week, over 12 weeks.' },
+      { at: '#teamHealthBox .health-prow', text: 'Press a colleague to see their check-ins and this week\'s planned work. Answers are shown only while their agreement is in place.' }] },
     'reports.entry': { name: 'Report', steps: [
       { at: '#rhEdit .rp-steps', text: 'Four steps, each with a summary of what it contains. Press a step to open it.' },
       { at: '#rhEdit .rp-head [data-a="pdf"]', text: 'Preview PDF shows the report as the client will read it, marked as a draft until it is confirmed.' },
@@ -6548,7 +6548,8 @@
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
     month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true],
-    clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true] };
+    clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true],
+    caph: [1, 80, true], near: [50, 100, true], taskh: [0.5, 40, false, 1], hcrem: [0, 14, true], onoff: [0, 1, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
      demand"): a weekday's start and end as HHMM (1000, 1900), the lunch in
@@ -6576,12 +6577,13 @@
   }
   /* A choice that takes its row whole: the weekend's segment and the
      lunch under it, the week's two times side by side above them. */
-  var SET_WHOLE = { weekend: true, lunch: true };
+  var SET_WHOLE = { weekend: true, lunch: true, onoff: true };
   var SET_CHOICES = {
     month: monthChoices,
     clock: clockChoices,
     lunch: function () { return [0, 30, 45, 60, 90, 120].map(function (n) { return [String(n), lunchOfSetting(n)]; }); },
-    weekend: function () { return WEEKEND_WORD.map(function (w, i) { return [String(i), w]; }); }
+    weekend: function () { return WEEKEND_WORD.map(function (w, i) { return [String(i), w]; }); },
+    onoff: function () { return [['1', 'On'], ['0', 'Off']]; }
   };
   /* The hours in force on a day (`at`, today where none): the week's, the
      weekend's and the lunch in words, the Settings row's value line, and
@@ -6697,6 +6699,14 @@
       ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],
       ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool kept', per('month')],
       ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed candidates kept', per('month')]] },
+    /* When a colleague is asked to check in (the Health redesign,
+       2026-11-22): weekly while their planned work this week is near
+       their weekly capacity, else monthly. */
+    healthcheck: { title: 'Health check-ins', keys: [['health_cap_default', 'Default weekly capacity (hours)', 'caph', '', 'Default capacity', per('hour')],
+      ['health_near_pct', 'Near capacity (% of weekly capacity)', 'near', '', 'Near capacity', pctOf],
+      ['health_task_hours', 'Default hours per task', 'taskh', '', 'Per task', per('hour')],
+      ['health_remind_days', 'Reminder (days after a check-in opens, 0 turns this off)', 'hcrem', '', 'Reminder', per('day')],
+      ['health_alert', 'Heavy workload notice', 'onoff', '', 'Heavy workload notice', function (v) { return Number(v) ? 'on' : 'off'; }]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for (months)', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for (months after they leave)', 'leave', '', 'Leavers', per('month')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
@@ -6759,7 +6769,7 @@
       var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
       shown[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
-        choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || undefined,
+        choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || k[2] === 'onoff' || undefined,
         half: !third && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]], third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
