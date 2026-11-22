@@ -3872,7 +3872,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .ro-list { display: grid; }
 .ro-row {
   display: grid; grid-template-columns: 15px minmax(0, 1fr) auto var(--ctl-h);
-  grid-template-areas: "glyph name tab grip"; align-items: center; gap: 0 12px;
+  grid-template-areas: "glyph name tab grip" ". why why why"; align-items: center; gap: 0 12px;
   min-height: var(--ctl-h); padding: 3px 0 3px 4px; border-top: 1px solid var(--line-soft);
   background: var(--card); border-radius: 0;
   transition: background var(--t-fast) var(--ease);
@@ -3880,7 +3880,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .ro-glyph { grid-area: glyph; display: flex; color: var(--ink-soft); }
 .ro-glyph svg { width: 15px; height: 15px; stroke-width: 1.8; }
 .ro-name { grid-area: name; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
-.ro-tab { grid-area: tab; align-self: center; margin: 0; }
+.ro-switch { grid-area: tab; }
+.ro-why { grid-area: why; margin: 0 0 6px; }
+.ro-why:empty { display: none; }
+.ro-sec .fsec-h small { padding-right: calc(var(--ctl-h) + 12px); }
 .ro-grip { grid-area: grip; cursor: grab; touch-action: none; }
 .ro-row.is-drag .ro-grip { cursor: grabbing; }
 .ro-msg:empty { display: none; }
