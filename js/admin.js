@@ -1619,7 +1619,8 @@
   /* ===== The phone tab bar (the user, 2026-10-09: "a tab bar below on
      mobile / pwa"). On a touch screen narrower than a desk, the foldable
      open as much as shut, and on any window at 640 and under, the rail
-     gives way to a bar at the foot: the first four sections this person may
+     gives way to a bar at the foot: the Dashboard and the sections chosen in
+     Arrange sections, else the first four sections this person may
      open, in the rail's order, each one press from the thumb, and More,
      which opens the rest above the bar. Five or fewer with no Activity
      record take the bar whole, with no More. Each section is offered once:
@@ -1644,8 +1645,21 @@
      in the standard order, and the tab bar takes the rail as it then reads,
      so the web and the phone follow the one arrangement. */
   var railPick = [];
+  /* The tab bar's own sections (the user, 2026-11-22: "I want clients to be
+     accessible straight from mobile bottom tab"): up to TAB_PICKS the
+     colleague turned on in Arrange sections, read in the rail's order after
+     the Dashboard; none chosen, the bar takes the first sections the person
+     may open. One function (`tabPick`) decides the bar and the sheet's
+     switches alike, so the two never disagree (2026-11-22: the sheet marked
+     My Work, Content Review and Video Scripts while the bar held Reports). */
+  var railTabs = [];
+  var TAB_PICKS = 3;
   var railStd = null;
   var tabRoom = 4;
+  function tabPick(keys, room, chosen) {
+    var on = (chosen || []).length ? keys.filter(function (k) { return chosen.indexOf(k) > -1; }).slice(0, TAB_PICKS) : [];
+    return on.length ? on : keys.slice(0, Math.max(0, room));
+  }
   function railKey() { return me && me.id ? 'adspace-rail:' + me.id : ''; }
   function railGroups() {
     return Array.prototype.filter.call(document.querySelectorAll('#sidebar .navgroup'), function (g) {
@@ -1667,25 +1681,36 @@
       });
     });
   }
-  function keepRail(list) {
-    railPick = (list || []).filter(function (k) { return typeof k === 'string'; });
+  function strs(list) { return (Array.isArray(list) ? list : []).filter(function (k) { return typeof k === 'string'; }); }
+  /* The browser's copy (`adspace-rail:{id}`) is `{sections, tabs}`; a
+     copy kept before the tab bar was chosen is the order alone. */
+  function keepRail(list, tabs) {
+    railPick = strs(list);
+    railTabs = strs(tabs).slice(0, TAB_PICKS);
     applyRail(railPick);
     var k = railKey();
     if (!k) return;
     try {
-      if (railPick.length) localStorage.setItem(k, JSON.stringify(railPick));
+      if (railPick.length || railTabs.length) localStorage.setItem(k, JSON.stringify({ sections: railPick, tabs: railTabs }));
       else localStorage.removeItem(k);
     } catch (e) {}
   }
   function loadRail() {
     var k = railKey();
-    var kept = [];
-    if (k) { try { var v = JSON.parse(localStorage.getItem(k) || '[]'); if (Array.isArray(v)) kept = v; } catch (e) {} }
-    keepRail(kept);
+    var kept = [], keptTabs = [];
+    if (k) {
+      try {
+        var v = JSON.parse(localStorage.getItem(k) || '[]');
+        if (Array.isArray(v)) kept = v;
+        else if (v && typeof v === 'object') { kept = v.sections; keptTabs = v.tabs; }
+      } catch (e) {}
+    }
+    keepRail(kept, keptTabs);
     db.rpc('rail_order_mine').then(function (r) {
       if (r.error || !r.data || r.data.error || !Array.isArray(r.data.sections)) return;
-      if (r.data.sections.join(',') === railPick.join(',')) return;
-      keepRail(r.data.sections);
+      var tabs = Array.isArray(r.data.tabs) ? r.data.tabs : railTabs;
+      if (r.data.sections.join(',') === railPick.join(',') && tabs.join(',') === railTabs.join(',')) return;
+      keepRail(r.data.sections, tabs);
       if (meLoaded) paintTabbar();
     }).catch(function () {});
   }
@@ -1716,8 +1741,14 @@
        of them is (2026-11-11). */
     var foot = ['handbookOpen', 'settingsOpen', 'delReqOpen', 'activityOpen'].some(function (id) { var m = $(id); return m && !m.hidden; });
     var room = main.length < open.length || foot ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
-    tabRoom = room;
-    var tabs = main.slice(0, room);
+    /* The Dashboard holds the first tab; the rest are the person's own
+       (`tabPick`), a section they can no longer open left out. */
+    var isOv = function (b) { return b.getAttribute('data-section') === 'overview'; };
+    var ov = main.filter(isOv);
+    var rest = main.filter(function (b) { return !isOv(b); });
+    tabRoom = room - ov.length;
+    var keys = tabPick(rest.map(function (b) { return b.getAttribute('data-section'); }), tabRoom, railTabs);
+    var tabs = ov.concat(rest.filter(function (b) { return keys.indexOf(b.getAttribute('data-section')) > -1; }));
     var more = open.length > tabs.length || foot || !tabs.length;
     var edit = $('railEdit');
     if (edit) edit.hidden = !(open.length > 2);
@@ -1975,11 +2006,13 @@
       if (t) choose(t);
     });
     /* Arrange sections (the rail's foot; under the tab bar, More's): the
-       rail's two groups as lists, each section dragged by its grip (or
-       moved with the arrow keys on it) within its group. Under the tab bar
-       the sections it will hold read Tab bar as they move. Save keeps the
-       order for the rail and the bar alike; Reset order puts the standard
-       back in the sheet. */
+       rail's groups as lists, each section dragged by its grip (or moved
+       with the arrow keys on it) within its group, and a switch a row for
+       the tab bar: on for the sections the bar holds (the first ones while
+       none is chosen, following a drag), up to TAB_PICKS, a fourth refused
+       on its row. Save keeps the order and the choice for the rail and the
+       bar alike; Reset puts the standard back in the sheet. */
+    var roTabs = null, roBase = [];
     var RO_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
     var RO_GRIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg>';
     var roBox = null;
@@ -1993,15 +2026,29 @@
         '<div class="sheet-body"><div id="railLists"></div><div class="msg ro-msg" id="railMsg" role="status"></div></div>' +
         '<div class="sheet-foot">' +
           '<button class="btn btn-primary" type="button" id="railSave">Save</button>' +
-          '<button class="btn" type="button" id="railReset">Reset order</button>' +
+          '<button class="btn" type="button" id="railReset">Reset</button>' +
           '<button class="btn btn-quiet" type="button" id="railCancel">Cancel</button>' +
         '</div></div>';
       document.body.appendChild(roBox);
       roBox.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
       $('railCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-      $('railReset').addEventListener('click', function () { roFill(railStd ? [].concat.apply([], railStd) : []); });
+      $('railReset').addEventListener('click', function () { roTabs = null; roBase = []; roFill(railStd ? [].concat.apply([], railStd) : []); });
       $('railSave').addEventListener('click', roSave);
       var lists = $('railLists');
+      /* A switch turns a section on or off for the tab bar; turned on past
+         TAB_PICKS it stays off and its row says why. */
+      lists.addEventListener('click', function (e) {
+        var sw = e.target.closest('.ro-switch');
+        if (!sw) return;
+        var row = sw.closest('.ro-row'), k = row.getAttribute('data-k');
+        if (!roTabs) roTabs = roShown();
+        var at = roTabs.indexOf(k);
+        Array.prototype.forEach.call(lists.querySelectorAll('.ro-why'), function (w) { w.textContent = ''; });
+        if (at > -1) roTabs.splice(at, 1);
+        else if (roTabs.length >= TAB_PICKS) { row.querySelector('.ro-why').textContent = 'The tab bar holds three sections. Turn one off first.'; return; }
+        else roTabs.push(k);
+        roMarks();
+      });
       /* The drag: a press on a grip carries its row; the row moves before
          the first row whose middle is below the hand, within its own list. */
       var drag = null;
@@ -2058,26 +2105,32 @@
           return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy);
         });
         if (!items.length) return '';
-        return '<section class="fsec ro-sec"><h4 class="fsec-h" id="roH' + n + '">' + esc(label ? label.textContent.trim() : '') + '</h4>' +
+        return '<section class="fsec ro-sec"><h4 class="fsec-h"><span id="roH' + n + '">' + esc(label ? label.textContent.trim() : '') + '</span><small aria-hidden="true">Tab bar</small></h4>' +
           '<div class="ro-list" role="list" aria-labelledby="roH' + n + '">' + items.map(function (b) {
             var k = b.getAttribute('data-section'), w = b.querySelector('span'), glyph = b.querySelector('svg');
             var name = (w && w.textContent.trim()) || k;
             return '<div class="ro-row" role="listitem" data-k="' + esc(k) + '">' +
               '<span class="ro-glyph">' + (glyph ? glyph.outerHTML : '') + '</span>' +
               '<span class="ro-name">' + esc(name) + '</span>' +
-              '<span class="chip ro-tab" hidden>Tab bar</span>' +
-              '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown">' + RO_GRIP + '</button></div>';
+              '<button class="switch ro-switch" type="button" role="switch" aria-checked="false" aria-label="' + esc(name) + ' in the tab bar"></button>' +
+              '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown">' + RO_GRIP + '</button>' +
+              '<span class="msg err ro-why" role="status"></span></div>';
           }).join('') + '</div></section>';
       }).join('');
       roMarks();
     }
-    /* Under the tab bar, the rows it will hold: the Overview first where
-       it is open, then the rail as the sheet reads it. */
+    /* The rows the bar will hold, decided as the bar decides them
+       (`tabPick`): the person's choice, else the first rows as the sheet
+       reads them, the Dashboard's tab already taken. */
+    function roShown() {
+      if (roTabs) return roOrder().filter(function (k) { return roTabs.indexOf(k) > -1; });
+      return tabPick(roOrder(), tabRoom, roBase);
+    }
     function roMarks() {
-      var rows = Array.prototype.slice.call($('railLists').querySelectorAll('.ro-row'));
-      var ov = navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === 'overview'; });
-      var room = tabRoom - (ov ? 1 : 0);
-      rows.forEach(function (r, i) { r.querySelector('.ro-tab').hidden = !(tabbarOn() && i < room); });
+      var on = roShown();
+      Array.prototype.forEach.call($('railLists').querySelectorAll('.ro-row'), function (r) {
+        r.querySelector('.ro-switch').setAttribute('aria-checked', String(on.indexOf(r.getAttribute('data-k')) > -1));
+      });
     }
     function roOrder() {
       return Array.prototype.map.call($('railLists').querySelectorAll('.ro-row'), function (r) { return r.getAttribute('data-k'); });
@@ -2087,15 +2140,27 @@
       var list = roOrder();
       var std = [].concat.apply([], railStd || []).filter(function (k) { return list.indexOf(k) > -1; });
       var send = list.join(',') === std.join(',') ? [] : list;
+      /* A choice the standard would make anyway is kept as none, so the
+         bar goes on following the order. */
+      var tabs = roTabs ? list.filter(function (k) { return roTabs.indexOf(k) > -1; }) : roBase.slice();
+      if (roTabs && tabs.join(',') === tabPick(list, tabRoom, []).join(',')) tabs = [];
+      var tabsMoved = tabs.slice().sort().join(',') !== railTabs.slice().sort().join(',');
       m.textContent = ''; m.className = 'msg ro-msg';
       btn.disabled = true;
-      db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
-        btn.disabled = false;
-        var why = r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
+      var said = function (r) {
+        return r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
           ? window.ADspaceWords.line.notYet : 'Not saved. Please try again.')
           : (r.data && r.data.error) ? 'Not saved. Please try again.' : '';
-        if (why) { m.textContent = why; m.className = 'msg ro-msg err'; return; }
-        keepRail(send);
+      };
+      db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
+        var why = said(r);
+        if (why || !tabsMoved) return { why: why };
+        keepRail(send, railTabs);
+        return db.rpc('rail_tabs_set', { p_tabs: tabs }).then(function (t) { return { why: said(t) }; });
+      }).then(function (o) {
+        btn.disabled = false;
+        if (o.why) { m.textContent = o.why; m.className = 'msg ro-msg err'; paintTabbar(); return; }
+        keepRail(send, tabs);
         paintTabbar();
         window.ADspaceSheet.clean();
         window.ADspaceSheet.close();
@@ -2106,6 +2171,7 @@
       if (rail.isOpen()) rail.shut();
       roSheet();
       $('railMsg').textContent = '';
+      roTabs = null; roBase = railTabs.slice();
       roFill(null);
       window.ADspaceSheet.show(roBox, { opener: tabbarOn() ? $('tabMore') : edit });
     });
@@ -2288,13 +2354,13 @@
       { at: '#waTpl', text: 'Choose a Meta-approved template. Its variables are filled in from the record and can be changed.' },
       { at: '#waSend', text: 'The preview shows the message as it will be sent. Send asks you to confirm the number and the category.' }] },
     phone: { name: 'Your sections', steps: [
-      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'Your first four sections. Press one to open it.' },
-      { at: '#tabMore', text: 'More opens the other sections, Settings, the Activity record and Arrange sections, where you choose the four sections on this bar.' },
+      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'The Dashboard and your chosen sections. Press one to open it.' },
+      { at: '#tabMore', text: 'More opens the other sections, Settings, the Activity record and Arrange sections, where you choose the sections on this bar.' },
       { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
-      { at: '#railLists .ro-tab', text: 'Tab bar marks the sections shown in the bar at the bottom of your phone.' },
-      { at: '#railSave', text: 'Save applies the order on the web and on your phone. Reset order restores the standard order.' }] },
+      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the bar at the bottom of your phone. The Dashboard is always first.' },
+      { at: '#railSave', text: 'Save applies the order and the tab bar on the web and on your phone. Reset restores the standard.' }] },
     'mine.health': { name: 'Health', steps: [
       { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },
       { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
