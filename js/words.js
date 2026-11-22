@@ -76,6 +76,8 @@
     pausedTitle: 'Temporarily unavailable',
     pausedText: 'Please check again later.',
     pausedChat: 'Chat on WhatsApp',
+    // Chat on WhatsApp where a page offers ADspace's chat (2026-11-22, /careers/).
+    chatWhatsApp: 'Chat on WhatsApp',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
     nothing: 'No content pending review',
@@ -197,6 +199,7 @@
     maintBack: '系统将于以下时间前恢复使用：\n{when}',
     pausedTitle: '暂时无法使用',
     pausedText: '请稍后再查看。',
+    chatWhatsApp: 'WhatsApp 咨询',
     pausedChat: 'WhatsApp 咨询',
     closed: '选择已结束',
     closedText: '如需调整，请联系您的 ADspace 客户经理。',

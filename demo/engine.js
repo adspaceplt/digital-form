@@ -290,7 +290,7 @@
     hiring_person_set: 'p_id p_member p_role', hiring_person_remove: 'p_id p_member', hiring_remove: 'p_id p_restore',
     hiring_delete: 'p_id p_name', hiring_link: 'p_id p_reset', careers_read: 'p_key',
     hiring_invite: 'p_id p_slots p_minutes p_mode p_note p_idem', hiring_interviews_of: 'p_id', hiring_interview_cancel: 'p_interview',
-    hiring_interview_approve: 'p_interview', hiring_interview_meet_prepare: 'p_interview', hiring_interview_set_meet: 'p_interview p_link p_event',
+    hiring_interview_approve: 'p_interview', hiring_interview_move: 'p_interview p_at', hiring_interview_meet_prepare: 'p_interview', hiring_interview_set_meet: 'p_interview p_link p_event',
     hiring_busy_may: '', hiring_mail_prepare: 'p_interview p_kind', hiring_mail_gate: 'p_kinds', hiring_email_templates_get: '', hiring_email_templates_save: 'p_rows', hiring_mail_done: 'p_interview p_kind p_status p_error',
     hiring_interview_held: 'p_interview p_decide_by', hiring_decide_by_change: 'p_interview p_decide_by p_note', hiring_decide_by_suggest: '',
     careers_pick: 'p_key p_slot', careers_none: 'p_key p_note', careers_pool: 'p_key p_yes',
@@ -16043,7 +16043,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ci = hIvOf(cc.id)[0], civ = null;
 
         if (ci && ci.state === 'cancelled' && ['invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) civ = { state: 'cancelled' };
-        if (ci && ci.state !== 'cancelled') {
+
+        if (ci && ci.state !== 'cancelled' && hIvState(ci) === 'picked') civ = { state: 'picked', minutes: ci.minutes, mode: ci.mode, at: ci.slots[ci.picked - 1] };
+        else if (ci && ci.state !== 'cancelled') {
           civ = { state: hIvState(ci), minutes: ci.minutes, mode: ci.mode };
           if (ci.note) civ.note = ci.note;
           if (civ.state === 'invited') { civ.slots = ci.slots.slice(); if (ci.reply_by) civ.reply_by = ci.reply_by; }
@@ -16222,6 +16224,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (iv.held_at) return hNo('held');
           iv.state = 'cancelled'; hLog(iv.candidate_id, 'candidate.interview', 'Interview cancelled');
           return hOk({ event: iv.meeting_event_id || null, had_meet: !!iv.meeting_event_id });
+        }
+
+        if (name === 'hiring_interview_move') {
+          if (icand.removed_at) return hNo('not-found');
+          if (iv.held_at) return hNo('held');
+          if (icand.outcome || ['invited', 'interview'].indexOf(icand.stage) < 0) return hNo('closed');
+          if (['picked', 'confirmed'].indexOf(iv.state) < 0 || !iv.picked) return hNo('not-picked');
+          var mvAt = args.p_at ? Date.parse(args.p_at) : NaN;
+          if (!(mvAt >= Date.now() + 3600000)) return hNo('slot-past');
+          if (mvAt > Date.now() + 60 * 864e5) return hNo('slot-far');
+          var mvWas = iv.slots[iv.picked - 1];
+          if (Date.parse(mvWas) === mvAt && iv.state === 'confirmed') return hOk({ same: true, mode: iv.mode });
+          if (iv.state !== 'confirmed') { iv.approved_by = hMe.id; iv.approved_at = hNowIso; }
+          iv.slots = [new Date(mvAt).toISOString()]; iv.picked = 1; iv.state = 'confirmed';
+          iv.confirm_mail = null; iv.confirm_mail_at = null; iv.updated_at = hNowIso;
+          icand.stage = 'interview'; icand.last_step_at = hNowIso;
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview time changed from ' + hWhen(mvWas) + ' to ' + hWhen(iv.slots[0]));
+          return hOk({ mode: iv.mode, was: mvWas, at: iv.slots[0], meet: !!iv.meeting_event_id });
         }
         if (name === 'hiring_interview_approve') {
           if (iv.state === 'confirmed') return hOk({ same: true });

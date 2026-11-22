@@ -122,8 +122,10 @@ export function fields(m: Record<string, any>): Record<string, string> {
     note: String((m.kind === 'moved' ? m.decide_note : m.kind === 'invite' || m.kind === 'confirm' ? m.note : '') || ''),
     time: String(m.when || ''),
     /* The office as the candidate's page names it, with its directions on our
-       own short link, the sending domain's (2026-11-19). */
-    place: m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
+       own short link, the sending domain's (2026-11-19); in the confirmation
+       alone, never before the team confirms the time, whatever a template
+       holds (2026-11-22). */
+    place: m.kind !== 'confirm' ? '' : m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
       : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
     'google meet notice': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
     'decision date': String(m.decide_by || ''),
@@ -322,9 +324,11 @@ Deno.serve(async (req) => {
      its own, so Resend never answers it with the first send, and filed as
      sending that email again. */
   /* A decision date's key carries the date, so a date moved is emailed
-     again. */
+     again; a confirmation's carries the interview's time, so a time changed
+     is confirmed again (Change interview time, 2026-11-22). */
   const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
     (kind === 'held' || kind === 'moved' ? '-' + String(m.decide_by || '').replace(/[^0-9a-z]/gi, '') : '') +
+    (kind === 'confirm' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') : '') +
     (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
     body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,
