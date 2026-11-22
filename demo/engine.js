@@ -17763,9 +17763,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var rme3 = opsMe();
       if (!rme3) return Promise.resolve({ data: { error: 'denied' }, error: null });
       if (window.__tabsRefuse) return Promise.resolve({ data: null, error: { message: 'refused' } });
-      var TKNOWN = ['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
+      var TKNOWN = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
       var tl = (args && args.p_tabs) || [];
-      if (!Array.isArray(tl) || tl.length > 3 || tl.some(function (k) { return TKNOWN.indexOf(k) < 0; }) ||
+      if (!Array.isArray(tl) || tl.length > 4 || (tl.length && tl.indexOf('overview') < 0) || tl.some(function (k) { return TKNOWN.indexOf(k) < 0; }) ||
           tl.some(function (k, i) { return tl.indexOf(k) !== i; })) return Promise.resolve({ data: { error: 'bad-tabs' }, error: null });
       var trow = (DB.rail_orders || []).filter(function (r) { return r.member_id === rme3.id; })[0];
       if (trow) { trow.tabs = tl.slice(); trow.updated_at = new Date().toISOString(); }
