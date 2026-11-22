@@ -98,7 +98,7 @@
   var WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
     tin: 'TIN', sst_no: 'SST Registration No.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
   /* A supplier's fields under the supplier's own labels. */
-  var SUP_WORD = Object.assign({}, WORD, { legal_name: 'Name', person: 'Person in charge' });
+  var SUP_WORD = Object.assign({}, WORD, { legal_name: 'Name', company_no: 'BRN', person: 'Person in charge' });
   function wordOf(kind, f) { return (kind === 'supplier' ? SUP_WORD : WORD)[f] || f; }
   function held(kind, id) { var r = READ[kind + ':' + id]; return r && r.held && !r.error && r.hash ? r : null; }
   function state(kind, id) {
@@ -312,13 +312,14 @@
   function unlink(host, kind, id, d, opts, opener) {
     var A = window.ADspaceAdmin;
     var code = d.code || String(d.contact_id);
+    var noun = kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : kind === 'member' ? 'colleague' : 'supplier';
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
-      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : kind === 'member' ? 'colleague' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+      body: 'This ' + noun + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
         (reads(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
-        if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);
+        if (r.error) return r.error === 'not-linked' ? 'This ' + noun + ' is no longer linked to Bukku. Refresh the page.' : said(r);
         delete READ[kind + ':' + id];
         group(host, kind, id, opts);
         if (opts.after) opts.after();

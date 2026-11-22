@@ -3539,7 +3539,7 @@ function cardSlugFree(name, self, email) {
         if (ch.indexOf('billing_address') > -1) su.address = String(vals.billing_address == null ? '' : vals.billing_address).trim() || null;
         if (ch.indexOf('person') > -1) su.contact_name = cap(vals.person, false);
         su.updated_at = sNow;
-        var SW = { legal_name: 'Name', company_no: 'Business Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', person: 'Person in charge', finance_email: 'Finance email', billing_address: 'Billing address' };
+        var SW = { legal_name: 'Name', company_no: 'BRN', tin: 'TIN', sst_no: 'SST Registration No.', person: 'Person in charge', finance_email: 'Finance email', billing_address: 'Billing address' };
         DB.activity_log.unshift({ id: nid('al'), actor: actorName || 'Bukku', action: 'supplier.edited', subject: su.name || su.code,
           detail: (su.code ? su.code + ' · ' : '') + 'Took Bukku\'s details: ' + ['legal_name', 'company_no', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address']
             .filter(function (f) { return ch.indexOf(f) > -1; }).map(function (f) { return SW[f]; }).join(', ') + ' · ' + (l.code || l.contact_id), created_at: sNow });

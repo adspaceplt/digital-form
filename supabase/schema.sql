@@ -140392,7 +140392,7 @@ declare
   v_t text;
   v_new boolean := false;
   s public.suppliers; v_company boolean; v_fields text[];
-  v_sw constant jsonb := '{"legal_name": "Name", "company_no": "Business Registration No.", "tin": "TIN",
+  v_sw constant jsonb := '{"legal_name": "Name", "company_no": "BRN", "tin": "TIN",
     "sst_no": "SST Registration No.", "person": "Person in charge", "finance_email": "Finance email",
     "billing_address": "Billing address"}';
 begin
