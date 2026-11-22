@@ -24,23 +24,53 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   until the colleague agrees again. Withdraw asks (warn),
   stops the check-ins and takes the answers out of Team: Health; Agree again
   is the way back.
-- The check-in: Body, Mind, Sleep, Energy, Workload, 1 to 5 each (5 is well,
-  a word for every step; each scale's two ends named under it, `hcE_*`,
-  2026-10-27, MINE-7) as segments, and an optional note of 1,000
-  characters, once a half month (the 1st to the 15th, the 16th to the month's
-  end, MYT), edited until it ends (`health_checkin_save`: `no-consent`,
-  `incomplete`, `bad-score`, `too-long`; the page names the half its sheet
-  showed, one ended refused `stale-half`, the answers kept and the sheet
-  naming the half open, `2026-10-18-checkin-keeps-its-half.sql`); the sheet opens on There are no
-  right or wrong answers. Answer as you truly feel today.
-- The view: the half month's card (Checked in on {day} under its title; the
-  five answers across it, two across in a narrow pane with the fifth taking
-  the row; the note under them), Your check-ins (a half month a row), Talks,
-  then Agreed on {day} with Withdraw as one quiet line, never a card; one
-  12px step between them. A low answer (2 or under), with no talk asked
-  for, opens Talks with a word of care. A low answer is a warn figure with
-  its word, never a colour alone; Health's pink marks its glyph and the
-  chosen answer, nothing else.
+- The check-in (`2026-11-22-health-check-ins-by-workload.sql`; the user,
+  2026-11-22, approving the redesign): `health_moods` (RLS on, no policy, no
+  grant), a mood of seven steps (Very unpleasant to Very pleasant, discs
+  larger towards either end, the chosen one Health's pink with its word
+  under the row), Feelings and Influences from fixed lists (optional, tonal
+  toggles in Health's tint), Workload (Overwhelming, Heavy, Busy,
+  Manageable, Comfortable) and a note of 1,000; one sheet at a desk, three
+  steps on a phone (Step n of 3 over a 4px track; Next the blue, Save
+  tonal, Cancel turning Back, a choice kept moving back). Saved by
+  `health_mood_save(p_start, …)` into the period the sheet showed
+  (`stale-period` with the period open, the answers kept), edited until it
+  ends; `no-mood`, `no-workload`, `bad-tag`, `too-long`. The half-month
+  `health_checkins` are no longer asked and stay readable under Earlier
+  check-ins (shut, Show), and in a colleague's sheet on Team: Health.
+- How often (`health_period`, `health_load`): the week (Monday to Sunday,
+  MYT) while the colleague's planned work this week is at or over
+  `health_near_pct` (90) of their weekly capacity (Team's
+  `capacity_minutes_week`, else `health_cap_default` 45 hours), else the
+  month. The load is every open task they own whose day falls in the week
+  or has passed (late work counts, shown apart), the day its draft due
+  while the draft is not in, else its final due; a task with no estimate
+  counts `health_task_hours` (2). An admin, a system account and a
+  capacity of 0 are not measured (monthly). A check-in saved inside the
+  period, of either kind, answers it. Each check-in keeps the load, late
+  work and capacity as they stood when saved.
+- Each morning (`health_daily`, pg_cron `health-daily`, 08:10 MYT): a
+  colleague agreed with a check-in due is reminded `health_remind_days` (2;
+  0 none) after the period opens, never on a public holiday
+  (`health.remind`, Check in on your health by {day} ({weekday}).); while a
+  colleague's week is heavy, every active admin but them is told once that
+  week (`health.load`, Check in with {name}. / Their work this week is
+  near their weekly capacity., opening Team: Health), agreed or not, never
+  an answer; `health_alert` (1) turns it off. `my_hr_remind` no longer
+  reminds of health. The five figures are Settings, Portal: Health
+  check-ins (`team.settings`).
+- Terms version 2 (the same migration) says what is asked and how often;
+  everyone agrees again.
+- The view: the period's card (This week's or This month's check-in;
+  Checked in on {day}, else Open until {day} ({weekday}); a weekly period
+  says why in one mute line; Mood, Workload, Feelings, Influences across
+  it, two across when narrow, the note under them), Your check-ins (newest
+  first: the day over its feelings and influences, Mood, Workload,
+  Period), Earlier check-ins, Talks, then Agreed on {day} with Withdraw as
+  one quiet line, never a card; one 12px step between them. A low mood or
+  workload (2 or under), with no talk asked for, opens Talks with a word
+  of care. A low answer is a warn word, never a colour alone; Health's
+  pink marks its glyph and the chosen answer, nothing else.
 - Ask for a talk (`health_talk_ask`: a colleague, an optional note;
   `already-asked`, `bad-colleague`) tells the colleague asked (`health.talk`,
   the asker's name, never the note); the asker withdraws it and asks again,
@@ -53,11 +83,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   master code with its 15-minute unlock (`health_check(p_token)`,
   `health_team(p_token)`, `2026-10-18-team-health-is-an-admins.sql`; the
   same unlock either page takes; never a granted part, never offered to a
-  group): the half month's averages as
-  bars (warn under 3) with `n of m checked in` (with nobody agreed, the one
-  line No colleague has agreed to check-ins.), Colleagues (every active
-  colleague: this half's five answers, Checked in, or Not agreed /
-  Withdrawn as a chip), each opening their history, and the last 90 days'
+  group): four figures (Average mood, 4 weeks; Check-ins this period, n of
+  m; Weekly check-ins; Open talks), Mood over time (the 12 weeks' average,
+  a line) beside Workload against mood (the average mood under 50%, to the
+  near figure, and at it or over, bars), a week or band of fewer than 3
+  check-ins sent without its average and not drawn (no colleague read
+  from an average), Colleagues (every active colleague: this period's
+  mood, this week's planned work as a share of capacity or Not measured,
+  Checked in, or Not agreed / Withdrawn as a chip; Due amber), each opening
+  their check-ins and the week's load, and the last 90 days'
   talks. `health_team(p_token)` sends a colleague's answers only while their
   agreement stands and only those saved since it was made
   (`2026-10-18-health-answers-follow-the-agreement.sql`), and a talk's names, state and dates, only while its asker's agreement
