@@ -34,8 +34,13 @@
   function day(iso) { return iso && window.ADspaceClock ? window.ADspaceClock.date(iso) : ''; }
   function may(k, l) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(k, l)); }
   function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : kind === 'creator' ? may('campaigns.pay', 'work') : kind === 'member' ? may('team.personnel', 'manage') : may('clients.billing', 'work'); }
-  /* A client's or billing entity's billing is Bukku's once linked; a supplier and a creator are sent. */
+  /* A client's or billing entity's billing is Bukku's once linked; a creator is sent. */
   function holds(kind) { return kind === 'client' || kind === 'entity'; }
+  /* Linked first, then read from Bukku as the record opens: a client, an
+     entity and a supplier (2026-11-22, the user: "Link clients, Link
+     creators, But no link suppliers?"). A supplier's details stay the
+     portal's: what differs waits on Send to Bukku or Use Bukku's. */
+  function reads(kind) { return holds(kind) || kind === 'supplier'; }
 
   var SAID = {
     denied: 'You do not have permission to send this record to Bukku. Please ask an admin.',
@@ -92,6 +97,9 @@
   var READ = {};
   var WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
     tin: 'TIN', sst_no: 'SST Registration No.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
+  /* A supplier's fields under the supplier's own labels. */
+  var SUP_WORD = Object.assign({}, WORD, { legal_name: 'Name', person: 'Person in charge' });
+  function wordOf(kind, f) { return (kind === 'supplier' ? SUP_WORD : WORD)[f] || f; }
   function held(kind, id) { var r = READ[kind + ':' + id]; return r && r.held && !r.error && r.hash ? r : null; }
   function state(kind, id) {
     var r = READ[kind + ':' + id];
@@ -150,7 +158,7 @@
       if (d.error) { host.innerHTML = '<div class="bk-l">' + MARK + '</div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
       /* Billing from Bukku (2026-10-30): a linked client's or entity's
          billing is Bukku's, read in once a visit (Refresh reads again). */
-      if (d.contact_id && holds(kind)) { readBand(d, work); return; }
+      if (d.contact_id && reads(kind)) { readBand(d, work); return; }
       /* A creator with no approved payment details is linked, nothing
          sent (2026-11-12): their bills are then read from Bukku. */
       var linkOnly = kind === 'creator' && pre.error === 'no-details';
@@ -168,7 +176,7 @@
       /* A client or billing entity not yet linked is linked to the contact
          Bukku holds (2026-10-30, the user: "use link bukku instead of send
          to bukku"); Bukku then holds its billing. A supplier still sends. */
-      var linkFirst = !linked && (holds(kind) || linkOnly);
+      var linkFirst = !linked && (reads(kind) || linkOnly);
       var acts = (work && !gap && !(linked && linkOnly) ? '<button class="btn btn-sm" type="button" data-bk="send" data-gate="bukku">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
@@ -223,9 +231,10 @@
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Try again</button>' + menu + '</div>';
       } else if (r.held) {
         /* What moved in Bukku is said for a minute and a half after the read, through the repaint it brings. */
-        var moved = (r.changed || []).length && Date.now() - r.at < 90000 ? (r.changed || []).map(function (f) { return WORD[f] || f; }) : [];
+        var moved = (r.changed || []).length && Date.now() - r.at < 90000 ? (r.changed || []).map(function (f) { return wordOf(kind, f); }) : [];
+        var readAt = 'Read ' + esc(when(new Date(r.at).toISOString()));
         host.innerHTML = head + '<span class="chip-state is-ok">Linked</span></div>' +
-          (via || '<p class="bk-sub">Billing details from Bukku · Read ' + esc(when(new Date(r.at).toISOString())) + '</p>') +
+          (via || '<p class="bk-sub">' + (holds(kind) ? 'Billing details from Bukku · ' + readAt : readAt) + '</p>') +
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Refresh</button>' + menu + '</div>' +
           (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the last read: ' + esc(moved.join(', ')) + '.</p>' : '') +
           (r.values && r.values.person && r.person_in === false
@@ -240,7 +249,7 @@
           '<div class="bk-table bk-diff" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
             '<span role="columnheader">Portal</span><span role="columnheader">Bukku</span></div>' +
           rows.map(function (x) {
-            return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + esc(WORD[x.field] || x.field) + '</span>' +
+            return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + esc(wordOf(kind, x.field)) + '</span>' +
               '<span role="cell" class="bk-now">' + (x.portal ? esc(x.portal) : '<span class="muted">—</span>') + '</span>' +
               '<span role="cell" class="bk-now">' + (x.bukku ? esc(x.bukku) : '<span class="muted">—</span>') + '</span></div>';
           }).join('') + '</div>';
@@ -256,10 +265,11 @@
       var hb = host.querySelector('[data-bk="hold"]');
       if (hb) hb.addEventListener('click', function () {
         var r = READ[kind + ':' + id] || {};
-        var names = (r.differs || []).map(function (x) { return WORD[x.field] || x.field; });
+        var names = (r.differs || []).map(function (x) { return wordOf(kind, x.field); });
         window.ADspaceConfirm.ask({
           title: 'Use Bukku\'s details?', go: 'Use Bukku\'s', tone: 'warn', wait: true, opener: hb,
-          body: 'The portal\'s ' + names.join(', ') + ' will be replaced with Bukku\'s details. From then on, these details are kept in Bukku.'
+          body: holds(kind) ? 'The portal\'s ' + names.join(', ') + ' will be replaced with Bukku\'s details. From then on, these details are kept in Bukku.'
+            : 'The supplier\'s ' + names.join(', ') + ' will be replaced with Bukku\'s details.'
         }, function () {
           return call({ action: 'hold', kind: kind, id: id }).then(function (x) {
             if (x.error) return said(x);
@@ -305,7 +315,7 @@
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
       body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : kind === 'member' ? 'colleague' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
-        (holds(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
+        (reads(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
         if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);
@@ -363,7 +373,7 @@
 
   function send(kind, id, btn, only, done) {
     build();
-    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, only: !!only, mode: holds(kind) || only ? 'link' : 'send' };
+    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, only: !!only, mode: reads(kind) || only ? 'link' : 'send' };
     $('bkTitle').textContent = cur.mode === 'link' ? 'Link to Bukku' : 'Send to Bukku';
     $('bkPick').innerHTML = '<p class="muted">Reading Bukku.</p>';
     $('bkRows').innerHTML = '';
