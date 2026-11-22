@@ -2098,7 +2098,9 @@ only a one-line pointer to it (the user, 2026-11-22).
   - every link an email carries is on adspace.me (the sending domain,
     `sc.adspace.me`), the foot's website `adspace.me` in its words too,
     and the wordmark at the head opens it (2026-11-19, Resend's check: a
-    link off the sending domain reads as spam);
+    link off the sending domain reads as spam), but the WhatsApp link
+    (wa.me/adspace) a candidate is given to reschedule an interview (the
+    user, 2026-11-22);
   - admin login: adspacestudios@gmail.com.
 - Google Drive import uses the browser key (restricted to
   `digital.adspace.me/*`, Drive API only).

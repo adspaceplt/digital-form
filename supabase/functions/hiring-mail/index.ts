@@ -6,6 +6,12 @@
  *                                     the candidate's own page to choose one;
  *   { interviewId, kind: 'confirm' }  the time approved, with its Google Meet
  *                                     or the office's address;
+ *   { interviewId, kind: 'rescheduled' } the time changed (Change interview
+ *                                     time, 2026-11-22): the previous time
+ *                                     and the new one, which stands, with
+ *                                     the new time's Google Meet or the
+ *                                     office's address; sent by the page as
+ *                                     the move succeeds;
  *   { interviewId, kind: 'held' }     the interview held (2026-11-20): the
  *                                     candidate thanked and told by when
  *                                     ADspace will inform them of the
@@ -99,7 +105,7 @@ function signOff(m: Record<string, any>): string {
 
 /* Each email's name, as Settings, Messages: Email templates lists it. */
 export const NAMES: Record<string, string> = {
-  invite: 'Interview invitation', confirm: 'Interview confirmed', cancelled: 'Interview cancelled',
+  invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
   held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
   doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
 };
@@ -121,11 +127,14 @@ export function fields(m: Record<string, any>): Record<string, string> {
     'reply by': String(m.reply_by || ''),
     note: String((m.kind === 'moved' ? m.decide_note : m.kind === 'invite' || m.kind === 'confirm' ? m.note : '') || ''),
     time: String(m.when || ''),
+    /* The time changed (2026-11-22): the time it held before, and the new. */
+    'previous time': m.kind === 'rescheduled' ? String(m.was || '') : '',
+    'new time': m.kind === 'rescheduled' ? String(m.when || '') : '',
     /* The office as the candidate's page names it, with its directions on our
        own short link, the sending domain's (2026-11-19); in the confirmation
        alone, never before the team confirms the time, whatever a template
-       holds (2026-11-22). */
-    place: m.kind !== 'confirm' ? '' : m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
+       holds (2026-11-22); the time changed confirms the new one. */
+    place: m.kind !== 'confirm' && m.kind !== 'rescheduled' ? '' : m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
       : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
     'google meet notice': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
     'decision date': String(m.decide_by || ''),
@@ -167,7 +176,7 @@ export function words(m: Record<string, any>, tpl: { subject: string; body: stri
   const heading = ({
     doc: 'Your ' + title, expired: title + ' expired', confirmed: title + ' confirmed', cancelled: 'Interview cancelled',
     held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Your application', not: 'Your application',
-    invite: 'Interview invitation', confirm: 'Interview confirmed'
+    invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed'
   } as Record<string, string>)[String(m.kind)] || 'Your application';
   const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
     : m.kind === 'invite' ? button('Choose a time', PAGE + m.key)
@@ -271,7 +280,7 @@ Deno.serve(async (req) => {
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
   const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc', isConfirmed = kind === 'confirmed';
   const id = String((outcome ? b.candidateId : isDoc || isConfirmed ? b.docId : b.interviewId) || '');
-  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'held', 'moved', 'cancelled', 'outcome', 'doc', 'confirmed'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'rescheduled', 'held', 'moved', 'cancelled', 'outcome', 'doc', 'confirmed'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -325,10 +334,13 @@ Deno.serve(async (req) => {
      sending that email again. */
   /* A decision date's key carries the date, so a date moved is emailed
      again; a confirmation's carries the interview's time, so a time changed
-     is confirmed again (Change interview time, 2026-11-22). */
+     is confirmed again (Change interview time, 2026-11-22); the time
+     changed carries the move's own moment, so each move is emailed once and
+     a second move emails again. */
   const { status, provider, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : '') +
     (kind === 'held' || kind === 'moved' ? '-' + String(m.decide_by || '').replace(/[^0-9a-z]/gi, '') : '') +
     (kind === 'confirm' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') : '') +
+    (kind === 'rescheduled' ? '-' + String(m.when || '').replace(/[^0-9a-z]/gi, '') + '-' + String(m.moved_key || '') : '') +
     (again ? '-again-' + crypto.randomUUID() : ''), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_' + (outcome ? m.kind : kind), ref: id, to: m.to, to_name: m.name, subject: w.subject,
     body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, by: callerEmail(auth), status, provider, error,

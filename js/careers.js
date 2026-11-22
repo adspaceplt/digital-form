@@ -137,7 +137,11 @@
     if (i.state === 'confirmed') {
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
         ? '<a class="btn btn-primary" href="' + esc(window.ADspaceWords.absUrl(i.link)) + '" target="_blank" rel="noopener">Join Google Meet</a>' : '';
-      return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
+      /* Moved by the team (2026-11-22, the user: a candidate "would have
+         thought the date is the same"): the new time leads, the time it
+         replaced named under it. */
+      return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) +
+        (i.was ? '<span class="cr-moved" id="crMoved">Rescheduled from ' + esc(when(i.was, true)) + '</span>' : '') + '</dd></div>' +
         place(i, true) + '</dl>' + (join ? '<div class="qs-foot">' + join + '</div>' : '') + change() + '</section>';
     }
     return '';
