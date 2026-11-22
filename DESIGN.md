@@ -328,8 +328,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Add or edit a record | A sheet: `.sheet` > `.sheet-card.formsheet` (620px; 780 for a picker) with a head and close mark, a scrolling `.sheet-body`, and `.sheet-foot` |
 | A form of more than five fields | `section.fsec` > `h4.fsec-h` (13/600 ink), 2 to 5 fields each, divided by a `--line-soft` hairline and a 24px step |
 | Fields side by side | `.row.fgrid` (two equal) / `.fgrid-3`, `span-all` / `span-2`; one column under `.is-tight` and below 560. Never a pixel width in a style attribute |
-| A choice of two to four | Segment `select[data-seg]`, a pill (five or more stays a select); named by a label beside it where an action shares its row |
-| A switch of what is shown (a list's recipient, a year, a sheet's part, a card's view) | The view strip, never a segment: `select[data-seg][data-strip]` (`js/form.js`), the select the source of truth, drawn as `.actstrip.seg-strip` > `.cmdbar-views.actviews#{id}Strip`, one line that scrolls with its far edge faded, the list under it `data-swipe="{id}Strip"`, no label where the tabs name themselves (2026-11-22). A segment stores a value |
+| A choice of two to four | Segment `select[data-seg][data-seg-value]`, a pill (five or more stays a select); named by a label beside it where an action shares its row |
+| A switch of what is shown (a list's recipient, a year, a sheet's part, a card's view) | The view strip, never a segment: `select[data-seg][data-strip]` (`js/form.js`), the select the source of truth, drawn as `.actstrip.seg-strip` > `.cmdbar-views.actviews#{id}Strip`, one line that scrolls with its far edge faded, the list under it `data-swipe="{id}Strip"`, no label where the tabs name themselves (2026-11-22) |
 | A choice of ten or more | A select; it opens the finder (`.picker`, `js/form.js` §8): a search field over the options, under the field at a desk, the screen's height on a phone |
 | Usual defaults | `details.fmore` More details, its line naming what it holds |
 | A record pane of facts | Read first (`readGroup`, missing required values in warn) on a white card (`.readgroups`, the groups a hairline apart inside it; a client's Billing a card for the request link, one for the primary entity with its Bukku band, one for the other entities, one for unpaid invoices), the rail beside it on the ground; Edit opens the same groups in a sheet |
@@ -595,6 +595,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   wrapping rather than squeezing a label; a lone or quiet button keeps its
   own. A field standing alone fills its container.
 - Controls made one height are brought down to the size token (`--ctl-h`, `--ctl-h-sm`), never raised to the tallest control a page holds; a page never sets `--ctl-h`, `--ctl-text` or `--field-text` to a figure of its own (2026-10-27: /quote/ was raised to 48, then read 16px words; `uxaudit` `ctlh`).
+- A segment stores a value; a segment that only switches the view is a view strip: every `data-seg` select says which, `data-seg-value` or `data-strip` (`tests/segkind.js`, uxaudit `segkind`; 2026-11-22).
 - A required field carries a red asterisk from `aria-required`.
 - A typed box (`textarea`) runs its row's width and stretches downwards only
   (`resize: vertical`): a sideways drag never widens the page, and it grows

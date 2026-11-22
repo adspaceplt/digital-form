@@ -1453,7 +1453,7 @@
     var sec = secOf(key), items = advItems(key), fold = items.length;
     return '<div class="permsec" data-sec="' + key + '">' +
       '<span class="permsec-name">' + esc(sec[1]) + '</span>' +
-      '<select class="select select-sm" data-seg data-sec="' + key + '" aria-label="' + esc(sec[1]) + ' access">' +
+      '<select class="select select-sm" data-seg data-seg-value data-sec="' + key + '" aria-label="' + esc(sec[1]) + ' access">' +
         LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
           return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
         }).join('') + '</select>' +
@@ -1472,7 +1472,7 @@
     '<div class="permchunk permmain">' +
       '<div class="permpart" data-sec="' + DASH + '"><span class="permpart-name" id="grDashName">Dashboard' +
         '<small id="grDesc-' + DASH + '"></small></span>' +
-        '<select class="select select-sm" data-seg id="grDash" aria-labelledby="grDashName">' +
+        '<select class="select select-sm" data-seg data-seg-value id="grDash" aria-labelledby="grDashName">' +
         '<option value="none">Off</option><option value="on">On</option></select></div>' +
       GSW.map(function (g) {
         return '<div class="permpart"><span class="permpart-name" id="grSw-' + g[0] + '">' + esc(g[1]) + '<small>' + esc(g[2]) + '</small></span>' +

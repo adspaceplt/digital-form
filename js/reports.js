@@ -359,7 +359,7 @@
     var box = sheetShell('rpNewSheet', 'New report',
       '<section class="fsec">' +
         '<div class="row"><div><label class="field-label" for="rpNewKind">Report type</label>' +
-          '<select class="select" id="rpNewKind" data-seg>' + TYPES.map(function (t) {
+          '<select class="select" id="rpNewKind" data-seg data-seg-value>' + TYPES.map(function (t) {
             return '<option value="' + t.key + '">' + esc(t.seg) + '</option>';
           }).join('') + '</select></div></div>' +
         /* A white-label client's report is for the client itself or one of
@@ -368,7 +368,7 @@
            2026-10-15: one pick, never a second field). */
         '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMode">Period</label>' +
-          '<select class="select" id="rpNewMode" data-seg><option value="month">Monthly</option><option value="adhoc">Ad hoc</option></select></div></div>' +
+          '<select class="select" id="rpNewMode" data-seg data-seg-value><option value="month">Monthly</option><option value="adhoc">Ad hoc</option></select></div></div>' +
         '<div class="row" id="rpNewMonthRow"><div><label class="field-label" for="rpNewMonth">Content month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
         '<div class="row fgrid" id="rpNewDates" hidden><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div>' +
@@ -4097,7 +4097,7 @@
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft">' +
         '<div class="rp-airow"><div class="rp-ailang"><span class="rp-ailang-label" aria-hidden="true">Draft language</span>' +
-          '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
+          '<select class="select-sm" id="rpAiLang" data-seg data-seg-value aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
         '<button class="btn btn-sm btn-icon" type="button" data-a="aidraft" data-gate="ai:draft">' + AI_GLYPH + 'Write with AI</button></div></div>' +
         /* Required (the user, 2026-11-03: "everyone needs to input
@@ -5524,7 +5524,7 @@
   function adSheet(a, opener, copy) {
     var box = sheetShell('rpAdSheet', 'Ad',
       '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
-        '<div class="row"><div><label class="field-label" for="rpAdPlat">Platform</label><select class="select" id="rpAdPlat" data-seg>' +
+        '<div class="row"><div><label class="field-label" for="rpAdPlat">Platform</label><select class="select" id="rpAdPlat" data-seg data-seg-value>' +
           AD_PLATS.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><textarea class="input" id="rpAdName" aria-required="true" rows="1" data-oneline placeholder="As in Ads Manager"></textarea></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
@@ -5544,7 +5544,7 @@
         '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdReach">Reach</label><input class="input" id="rpAdReach" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" data-num="money" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost basis</label><select class="select" id="rpAdBasis" data-seg>' +
+        '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost basis</label><select class="select" id="rpAdBasis" data-seg data-seg-value>' +
           '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reach</option></select></div></div>' +
         /* A Sales ad's purchase value, as Meta reports it (2026-10-25): its
            ROAS is worked out from it, never typed. */
@@ -6325,7 +6325,7 @@
 
   function pasteAdsSheet(opener, pre) {
     var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
-      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg>' +
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg data-seg-value>' +
         AD_PLATS.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPAObj">Default objective</label><select class="select" id="rpPAObj">' +
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +

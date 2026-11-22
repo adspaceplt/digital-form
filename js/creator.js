@@ -1234,7 +1234,7 @@
     var banks = BANKS.filter(function (b) { return (v.currency === 'SGD') === (b.indexOf('[SG]') === 0); });
     $('payFields').innerHTML =
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.billing) + '</h4>' +
-        field('bill_kind', T0.payBilling, '<select class="select" id="pf_bill_kind" data-k="bill_kind" data-seg aria-required="true">' +
+        field('bill_kind', T0.payBilling, '<select class="select" id="pf_bill_kind" data-k="bill_kind" data-seg data-seg-value aria-required="true">' +
           options(['nric', 'passport', 'brn'], T0.payKinds, v.bill_kind) + '</select>') +
         field('id_no', T0.payIdLabel[v.bill_kind], input('id_no', !keepId, 'autocomplete="off" autocapitalize="characters" spellcheck="false" ' +
           ID_SHAPE[v.bill_kind]),
@@ -1245,7 +1245,7 @@
           ' rows="3" maxlength="300">' + esc(v.address || '') + '</textarea>', keepAs('address')) +
       '</section>' +
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.payment) + '</h4>' +
-        field('currency', T0.payCurrency, '<select class="select" id="pf_currency" data-k="currency" data-seg aria-required="true">' + options(['MYR', 'SGD'], null, v.currency) + '</select>') +
+        field('currency', T0.payCurrency, '<select class="select" id="pf_currency" data-k="currency" data-seg data-seg-value aria-required="true">' + options(['MYR', 'SGD'], null, v.currency) + '</select>') +
         field('method', T0.payMethod, '<select class="select" id="pf_method" data-k="method" aria-required="true">' + options(methods, T0.payMethods, v.method) + '</select>') +
         (v.method === 'bank' ? field('bank', T0.payBank, '<select class="select" id="pf_bank" data-k="bank" aria-required="true"><option value="">' +
           esc(T0.payChooseBank) + '</option>' + options(banks, null, v.bank) + '</select>') : '') +

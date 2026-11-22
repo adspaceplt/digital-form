@@ -1473,7 +1473,7 @@
       var kind = dt.kinds[k] || kindOf(dt.editing, k);
       return '<div class="dtfield"><span class="dtfield-name" id="dtFieldName' + i + '">' + esc(fieldWord(k)) +
         '<code class="dtfield-key">{' + esc(k) + '}</code></span>' +
-        '<select class="select select-sm" data-seg data-key="' + esc(k) + '" aria-labelledby="dtFieldName' + i + '">' +
+        '<select class="select select-sm" data-seg data-seg-value data-key="' + esc(k) + '" aria-labelledby="dtFieldName' + i + '">' +
         KINDS.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === kind ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
         '</select></div>';
     }).join('');
