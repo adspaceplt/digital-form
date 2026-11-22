@@ -527,10 +527,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Creator portal (`creator/`, `js/creator.js`):
   - Signs in with an eight-character code (`creators.access_code`, 31-character
     alphabet), carried in the link and kept in `localStorage`. Reset in the
-    record. Typed, it reads as printed, `7K2M-9PQR`: the dash comes by
-    itself after the fourth character and goes with a deletion (`codeShape`;
-    the user, 2026-10-27), and is never sent. Its eighth character, typed or
-    pasted, checks it with no press (`autoCheck`; the same code is not sent
+    record. Typed, it is a box a character (`js/otp.js`, `data-otp-chars`
+    alnum; the user, 2026-11-22), in capitals, a deletion emptying the last;
+    pasted as printed, `7K2M-9PQR`, the dash is dropped and never sent. Its eighth character, typed or
+    pasted, checks it with no press (`js/otp.js`'s Enter on a whole code, the page's one check; Forget this device empties the field; the same code is not sent
     again until it changes, nothing while an input method composes; Open
     stays). A wrong code is counted against the caller's address
     (`creator_code_try`, `link_tries` kind `creator`,

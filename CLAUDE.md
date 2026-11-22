@@ -812,7 +812,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `input[data-otp-boxes]` kept as the value and laid unseen over
   `ADSPACE_CONFIG.signCodeDigits` boxes (8, Supabase's Email OTP length), so
   a paste, the iPhone's code from Mail and a screen reader meet a plain
-  field; a whole code arriving presses the field's Enter, which signs in.
+  field; a whole code arriving presses the field's Enter once until it changes, never while an input method composes, the page's one check (2026-11-22: /creator/'s own second check sent each code twice).
 - `ADspaceAPI.phoneWord` (`js/api.js`) is how every phone number reads,
   on every page (+60 12-345 6789, +60 7-123 4567, +65 8123 4567), whatever
   was typed (2026-11-18, the user: one portal showed 60167690532,
