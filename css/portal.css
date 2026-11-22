@@ -442,7 +442,7 @@ a { color: inherit; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
   font: inherit; font-size: var(--field-text); color: var(--ink); background: var(--field);
-  border: 1px solid var(--field-edge, transparent); border-radius: var(--radius-sm); padding: 8px 12px;
+  border: 1px solid var(--field-edge, transparent); border-radius: var(--ctl-corner, var(--radius-sm)); padding: 8px 12px;
 }
 .select, .input { min-height: var(--ctl-h); padding-block: 0; }
 /* The native control drew its own chrome, so a select sat a few pixels taller
@@ -602,7 +602,7 @@ textarea[data-oneline] {
 }
 textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1.45em) / 2); }
 .input:focus, .textarea:focus {
-  outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus); background-color: var(--card);
+  outline: none; border-color: var(--action); box-shadow: var(--field-ring, 0 0 0 3px var(--focus)); background-color: var(--card);
 }
 /* A placeholder (a format, an example) in the mute ink at full strength:
    the browser's own grey stood at 4.04:1 on the filled field (2026-10-31,
@@ -767,11 +767,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
 .approve-row { display: flex; gap: 10px; }
 .btn {
-  flex: 1; border-radius: var(--radius-sm); padding: 0 16px;
+  flex: 1; border-radius: var(--ctl-corner, var(--radius-sm)); padding: 0 16px;
   min-height: var(--ctl-h); font-size: var(--ctl-text); font-weight: 500;
   /* Tonal: a fill and no outline. The 1px border stays, transparent, so a
      tonal button and a field of the same height are the same height. */
-  border: 1px solid transparent; background: var(--tonal); color: var(--ink);
+  border: 1px solid transparent; background: var(--btn-ground, var(--tonal)); color: var(--ink);
   transition: background var(--t) var(--ease-out), color var(--t) var(--ease-out), border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
   /* Width came entirely from the label, so a row of buttons stepped up and
      down with the length of the words. A floor evens them out and centres
@@ -1678,7 +1678,8 @@ dd > .linkbtn::before { inset: 3px 0; }
   background: var(--line-soft); font-size: 13px; color: var(--ink-soft);
 }
 .combinebar span { flex: 1 1 240px; }
-.combinebar .btn { flex: 0 0 auto; background: var(--card); }
+.combinebar { --btn-ground: var(--card); }
+.combinebar .btn { flex: 0 0 auto; }
 
 /* Draft post being written */
 /* A box inside a card is shaded, never outlined (2026-10-14): the draft is
@@ -2026,7 +2027,6 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* Equal halves, each label whole: one that cannot hold a half takes a row. */
 .cover-acts > .btn { flex: 1 1 calc(50% - 4px); min-width: fit-content; white-space: nowrap; }
 /* A quiet line or way back under the acts, centred with the cover's text. */
-.cover-panel .cover-note { margin-top: 16px; font-size: 13px; color: var(--ink-mute); }
 .cover-panel .cover-alt { margin-top: 16px; min-width: 0; }
 @media (max-width: 640px) {
   .cover { padding: 24px 0 calc(24px + 6vh); }
@@ -2957,8 +2957,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--field);
   font-size: var(--field-text); color: var(--ink-mute); white-space: nowrap;
 }
-.slugfield .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; min-width: 0; flex: 1 1 auto; }
-.input.is-pre { padding-left: 6px; }
+.slugfield .input { min-width: 0; flex: 1 1 auto; }
+.input.is-pre { padding-left: 6px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .input.is-pre:focus { border-left-color: transparent; box-shadow: none; }
 /* The prefix is part of the one filled box: while typed in, the box turns
    white and takes the blue edge and ring whole (2026-10-31). */
@@ -5461,11 +5461,11 @@ body > .shell { width: 100%; }
 /* Bounded at both ends. With nothing beside it the box grew to the width of
    the console, which is a nine hundred pixel field for a client's name. */
 .cmdbar-find { position: relative; flex: 1 1 240px; min-width: 190px; max-width: 420px; }
-.cmdbar-find .input { width: 100%; padding-left: 34px; border-radius: var(--radius-ctl); }
+.cmdbar-find .input { width: 100%; padding-left: 34px; }
 /* The field sits in a box that clips it while it grows, so an outer focus
    ring came out as a square blue patch behind a round field. The ring is
    drawn inside the field instead: the blue edge, one pixel heavier. */
-.cmdbar-find .input:focus { box-shadow: inset 0 0 0 1px var(--action); }
+.cmdbar-find { --field-ring: inset 0 0 0 1px var(--action); }
 .cmdbar-find svg {
   position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
   width: 15px; height: 15px; stroke: var(--ink-mute); stroke-width: 1.8; fill: none;
@@ -5477,11 +5477,8 @@ body > .shell { width: 100%; }
    third select four pixels past the row at 1280, wrapping the one action
    onto a line of its own at the left margin. A bar's width is shared, so the
    fix is the shared value and not an exception for the crowded route. */
-.cmdbar .select {
-  flex: 0 0 auto; width: auto; min-width: 164px; max-width: 220px;
-  border-radius: var(--radius-ctl);
-}
-.cmdbar .btn { flex: 0 0 auto; width: auto; border-radius: var(--radius-ctl); }
+.cmdbar .select { flex: 0 0 auto; width: auto; min-width: 164px; max-width: 220px; }
+.cmdbar .btn { flex: 0 0 auto; width: auto; }
 /* What the list holds and what to do about it: the count, the `?` and the
    route's one or two actions, as ONE element rather than three to five loose
    ones. The bar is a wrapping flex row of unlike things, and loose items wrap
@@ -8340,7 +8337,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 /* Inside a menu: 14 less its 5px padding and 1px border. */
 .kmenu > .kmenu-item, .kmenu .kmenu-item { border-radius: calc(var(--radius) - 6px); }
 /* The command bar's controls are 32px, so they take the small corner. */
-.cmdbar .btn, .cmdbar .select, .cmdbar-find .input, .cmdbar-views, .cmdbar-views .acttab { border-radius: var(--radius-ctl-sm); }
+.cmdbar { --ctl-corner: var(--radius-ctl-sm); }
+.cmdbar-views, .cmdbar-views .acttab { border-radius: var(--radius-ctl-sm); }
 .cmdbar-views.has-thumb::before { border-radius: calc(var(--radius-ctl-sm) - 2px); }
 /* A standing fact's link (the verify page, the redirect hosts) is the
    outlined chip, inline in its sentence. */
@@ -8923,8 +8921,6 @@ body.is-maint { overflow: hidden; }
 .health-talk + .health-talk { border-top: 1px solid var(--line-soft); }
 .health-talk-who b { font-size: 14px; font-weight: 600; }
 .health-talk-who small { font-size: 12px; color: var(--ink-mute); }
-/* The check-in sheet: the chosen answer in Health's pink, its word under it. */
-.health-scale .seg-opt.is-on { color: var(--health); }
 .health-who b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .health-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .health-prow { grid-template-columns: minmax(0, 1fr) 120px 16px; grid-template-areas: "who at chev"; gap: 4px 10px; }
@@ -9720,9 +9716,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-otp .input { width: 100%; min-width: 0; padding: 0; text-align: center; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .qs-resend { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-mute); }
 .qs-resend .btn { margin-right: -8px; }
-.qs-sfacts { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; font-size: 14px; }
-.qs-sfacts dt { color: var(--ink-mute); }
-.qs-sfacts dd { margin: 0; overflow-wrap: anywhere; }
 /* A signed quotation's state (SIGNED DOCUMENT SEAL, 2026-11-17): the
    status, then who signed or confirmed it and the Document ID. */
 .qs-sstate { margin: 0; }
