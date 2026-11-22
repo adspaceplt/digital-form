@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122d">
-<link rel="stylesheet" href="/css/console.css?v=20261122zn">
+<link rel="stylesheet" href="/css/console.css?v=20261122zp">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -139,10 +139,10 @@
 <script src="/js/acts.js?v=20261122zzp"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261122rb"></script>
+<script src="/js/confirm.js?v=20261122sk"></script>
 <script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122re"></script>
+<script src="/js/form.js?v=20261122rg"></script>
 <script src="/js/otp.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -156,7 +156,7 @@
 <script src="/js/delreq.js?v=20261118"></script>
 <script src="/js/maintenance.js?v=20261121zzzzb"></script>
 <script src="/js/announce.js?v=20261120t"></script>
-<script src="/js/notice.js?v=20261120zt"></script>
+<script src="/js/notice.js?v=20261122sk"></script>
 <script src="/js/whatsapp.js?v=20261122zm"></script>
 <script src="/js/mailtpl.js?v=20261121zzw"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
@@ -514,7 +514,7 @@
           <div class="kmenu-item acct-theme">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"/></svg>
             <label class="acct-theme-word" id="themePickLabel" for="themePick">Theme</label>
-            <select class="select select-sm" id="themePick" data-seg data-nofind>
+            <select class="select select-sm" id="themePick" data-seg data-seg-value data-nofind>
               <option value="auto">Auto</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
@@ -575,7 +575,7 @@
               <!-- Hidden, the number never leaves the database: the card, its
                    WhatsApp and Save contact go without it (namecard_get). -->
               <div><label class="field-label" for="mycShow">Mobile on card</label>
-                <select class="select" id="mycShow" data-seg>
+                <select class="select" id="mycShow" data-seg data-seg-value>
                   <option value="show">Show</option>
                   <option value="hide">Hide</option>
                 </select></div>
@@ -835,7 +835,7 @@
                 <input class="input" id="crmClientCode" maxlength="12" autocapitalize="characters"
                        spellcheck="false" placeholder="AC001" data-none="No Client ID" data-some="Client ID set"></div>
               <div class="span-all"><label class="field-label" for="crmMarket">Market</label>
-                <select class="select" id="crmMarket" data-seg>
+                <select class="select" id="crmMarket" data-seg data-seg-value>
                   <option value="MY">Malaysia · RM</option>
                   <option value="SG">Singapore · S$</option>
                 </select></div>
@@ -1116,7 +1116,7 @@
             </div>
             <div class="row">
               <div><label class="field-label" for="ctLang">Preferred language</label>
-                <select class="select" id="ctLang" data-seg>
+                <select class="select" id="ctLang" data-seg data-seg-value>
                   <option value="en">English</option>
                   <option value="zh">中文</option>
                 </select></div>
@@ -1202,7 +1202,7 @@
                 </label>
                 <div id="crmBillInRow" hidden>
                   <label class="field-label" for="crmBillIn">Bill in</label>
-                  <select class="select" id="crmBillIn" data-seg>
+                  <select class="select" id="crmBillIn" data-seg data-seg-value>
                     <option value="MY">RM</option>
                     <option value="SG">S$</option>
                   </select>
@@ -1390,7 +1390,7 @@
                  already confirmed reads its state. -->
             <div class="row" id="svStateRow">
               <div><label class="field-label" for="svState">State</label>
-                <select class="select" id="svState" data-seg>
+                <select class="select" id="svState" data-seg data-seg-value>
                   <option value="enquired">Enquired</option>
                   <option value="quoted">To quote</option>
                 </select></div>
@@ -1481,7 +1481,7 @@
           <div class="sheet-body">
           <div class="row">
             <div class="span-all"><label class="field-label" for="raKind">Request</label>
-              <select class="select" id="raKind" data-seg>
+              <select class="select" id="raKind" data-seg data-seg-value>
                 <option value="upgrade">Upgrade</option>
                 <option value="downgrade">Downgrade</option>
                 <option value="cancel">Cancel</option>
@@ -1590,7 +1590,7 @@
             <div class="sheet-body">
               <section class="fsec">
                 <div class="qb-planhead"><h4 class="fsec-h">Plan</h4>
-                  <select class="select select-sm" id="qbAds" data-seg aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
+                  <select class="select select-sm" id="qbAds" data-seg data-seg-value aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
                 <div class="qb-plans" id="qbPlans" role="radiogroup" aria-label="Plan"></div>
                 <div class="row fgrid qb-pick">
                   <div id="qbMixRow"><label class="field-label" for="qbMix" id="qbMixLabel">Content</label><select class="select" id="qbMix" data-nofind></select><div class="input readfield qb-one" id="qbMixOne" aria-labelledby="qbMixLabel" hidden></div></div>
@@ -2330,7 +2330,7 @@
                   <option value="always_on">Always-on review</option>
                 </select></div>
               <div><label class="field-label" for="campDeliverable">Deliverable</label>
-                <select class="select" id="campDeliverable" data-seg>
+                <select class="select" id="campDeliverable" data-seg data-seg-value>
                   <option value="video">Video</option>
                   <option value="graphic">Graphic</option>
                 </select></div>
@@ -3055,7 +3055,7 @@
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="recFreq">Repeats</label>
-                  <select class="select" id="recFreq" data-seg>
+                  <select class="select" id="recFreq" data-seg data-seg-value>
                     <option value="weekly">Weekly</option>
                     <option value="monthly" selected>Monthly</option>
                     <option value="custom">Every N days</option>
@@ -3141,7 +3141,7 @@
               <div class="ntfor">
                 <div class="ntfor-pick">
                   <label class="field-label" for="ntScope">For</label>
-                  <select class="select select-sm" id="ntScope" data-seg>
+                  <select class="select select-sm" id="ntScope" data-seg data-seg-value>
                     <option value="client">Client</option>
                     <option value="lead">Lead</option>
                     <option value="internal">Internal</option>
@@ -3316,7 +3316,7 @@
             <div class="row">
               <div class="field">
                 <label class="field-label" for="engReports">Reports</label>
-                <select class="select" id="engReports" data-seg aria-describedby="engRepNote">
+                <select class="select" id="engReports" data-seg data-seg-value aria-describedby="engRepNote">
                   <option value="social">Accounts</option>
                   <option value="ads">Advertising</option>
                   <option value="both">Both</option>
@@ -3364,7 +3364,7 @@
                 <div class="row">
                   <div class="field">
                     <label class="field-label" for="meetChannel">Channel</label>
-                    <select class="select" id="meetChannel" data-seg>
+                    <select class="select" id="meetChannel" data-seg data-seg-value>
                       <option value="onsite">On site</option>
                       <option value="google_meet">Google Meet</option>
                       <option value="zoom">Zoom</option>
@@ -3375,7 +3375,7 @@
                 <div class="row" id="meetModeRow">
                   <div class="field">
                     <label class="field-label" for="meetMode">Google Meet link</label>
-                    <select class="select" id="meetMode" data-seg>
+                    <select class="select" id="meetMode" data-seg data-seg-value>
                       <option value="create">Create link</option>
                       <option value="paste">Paste link</option>
                     </select>
@@ -3480,7 +3480,7 @@
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="qkPri">Priority</label>
-                  <select class="select" id="qkPri" data-seg>
+                  <select class="select" id="qkPri" data-seg data-seg-value>
                     <option value="1">Urgent</option>
                     <option value="2">High</option>
                     <option value="4">Medium</option>
@@ -3768,7 +3768,7 @@
             <div class="row" id="stepViaRow" hidden>
               <div class="field">
                 <label class="field-label" for="stepVia">Channel</label>
-                <select class="select" id="stepVia" data-seg><option value="whatsapp">WhatsApp</option><option value="other">Other</option></select>
+                <select class="select" id="stepVia" data-seg data-seg-value><option value="whatsapp">WhatsApp</option><option value="other">Other</option></select>
               </div>
             </div>
             <div class="row" id="stepNoteRow">
@@ -4059,7 +4059,7 @@
               <div class="row fgrid">
                 <div class="span-all"><label class="field-label" for="tmDept">Department</label>
                   <!-- The options are the departments kept in Settings, filled by js/team.js. -->
-                  <select class="select" id="tmDept" data-seg>
+                  <select class="select" id="tmDept" data-seg data-seg-value>
                     <option value="">Not set</option>
                   </select></div>
               </div>
@@ -4150,7 +4150,7 @@
             <div class="row">
               <div><div class="permpreset-head"><label class="field-label" for="grPreset">Start from</label>
                 <span class="permpreset-note" id="grPresetNote" hidden></span></div>
-                <select class="select" id="grPreset" data-seg>
+                <select class="select" id="grPreset" data-seg data-seg-value>
                   <option value="admin">Admin</option>
                   <option value="manager">Manager</option>
                   <option value="staff">Staff</option>
@@ -4358,16 +4358,13 @@
           </button>
         </div>
         <div class="sheet-body">
-          <div class="row">
-            <div>
-              <label class="field-label" for="rwDDept">Department</label>
-              <select class="select" id="rwDDept" data-seg>
+          <div class="rw-view">
+              <select class="select" id="rwDDept" data-seg data-strip aria-label="Department">
                 <option value="creative">Creative</option>
                 <option value="marketing">Marketing</option>
               </select>
-            </div>
           </div>
-          <div id="rwDFields"></div>
+          <div id="rwDFields" data-swipe="rwDDeptStrip"></div>
           <label class="tickline"><input type="checkbox" id="rwDCrit"> <span>Unresolved critical issue</span></label>
           <p class="rw-total" id="rwDTotal"></p>
           <div class="msg" id="rwDMsg"></div>
@@ -4416,19 +4413,18 @@
           </button>
         </div>
         <div class="sheet-body">
-          <div class="row">
-            <div><label class="field-label" for="rwSView">Section</label>
-              <select class="select" id="rwSView" data-seg>
+          <div class="rw-view">
+              <select class="select" id="rwSView" data-seg data-strip aria-label="Section">
                 <option value="months">Months</option>
                 <option value="quarters">Quarters</option>
                 <option value="company">Bonus and trip</option>
                 <option value="commission">Commission</option>
-              </select></div>
+              </select>
           </div>
           <div class="row">
             <div><label class="field-label" for="rwSFrom">From</label><select class="select" id="rwSFrom"></select></div>
           </div>
-          <div id="rwSFields"></div>
+          <div id="rwSFields" data-swipe="rwSViewStrip"></div>
           <details class="fmore" id="rwSLog" hidden><summary>Changes</summary><div id="rwSLogList"></div></details>
           <div class="msg" id="rwSMsg"></div>
         </div>
@@ -4542,7 +4538,7 @@
           <section class="fsec" id="hbSourceSec">
             <h4 class="fsec-h">Source</h4>
             <div class="row" id="hbKindRow"><div><label class="field-label" for="hbKind">Type</label>
-              <select class="select" id="hbKind" data-seg><option value="file">File</option><option value="link">Link</option></select></div></div>
+              <select class="select" id="hbKind" data-seg data-seg-value><option value="file">File</option><option value="link">Link</option></select></div></div>
             <div class="row" id="hbFileRow"><div><label class="field-label" for="hbFile">File</label>
               <input class="input" id="hbFile" type="file" aria-required="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv"></div></div>
             <div class="row" id="hbLinkRow" hidden><div><label class="field-label" for="hbLink">Link</label>
@@ -4654,7 +4650,7 @@
           <section class="fsec">
             <h4 class="fsec-h">Recipient</h4>
             <div class="row"><div><label class="field-label" for="nemFor">For</label>
-              <select class="select" id="nemFor" data-seg data-nodraft><option value="client">Client</option><option value="supplier">Supplier</option><option value="other">Other</option></select></div></div>
+              <select class="select" id="nemFor" data-seg data-seg-value data-nodraft><option value="client">Client</option><option value="supplier">Supplier</option><option value="other">Other</option></select></div></div>
             <div class="row" id="nemPartyRow"><div><label class="field-label" for="nemParty" id="nemPartyLabel">Client</label>
               <select class="select" id="nemParty" aria-required="true" data-nodraft data-find-hint="Name or code"></select></div></div>
             <div class="row" id="nemToRow"><div><label class="field-label" for="nemTo">To</label>
@@ -4707,11 +4703,10 @@
         </div>
         <div class="sheet-body">
           <div class="mt-rec" id="mtRecRow" hidden>
-            <label class="field-label" id="mtRecL" for="mtRec">Recipient</label>
-            <select class="select select-sm" id="mtRec" data-seg aria-labelledby="mtRecL"></select>
+            <select class="select select-sm" id="mtRec" data-seg data-strip aria-label="Recipient"></select>
           </div>
           <div class="msg" id="mtMsg" role="status"></div>
-          <div id="mtList"></div>
+          <div id="mtList" data-swipe="mtRecStrip"></div>
         </div>
         <div class="sheet-foot">
           <button class="btn btn-quiet" id="mtDone" type="button">Close</button>
@@ -4941,7 +4936,7 @@
           <section class="fsec">
             <h4 class="fsec-h">Video</h4>
             <div class="row"><div><label class="field-label" for="vsKind">Script type</label>
-              <select class="select" id="vsKind" data-seg>
+              <select class="select" id="vsKind" data-seg data-seg-value>
                 <option value="scenes">Detailed scenes</option>
                 <option value="products">Products and scenes</option>
                 <option value="story">Story and voice-over</option>
@@ -4958,9 +4953,9 @@
             </div>
             <div class="row fgrid">
               <div><label class="field-label" for="vsAspect">Aspect ratio</label>
-                <select class="select" id="vsAspect" data-seg><option value="">Not set</option><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></div>
+                <select class="select" id="vsAspect" data-seg data-seg-value><option value="">Not set</option><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></div>
               <div><label class="field-label" for="vsLength">Video length</label>
-                <select class="select" id="vsLength" data-seg><option value="">Not set</option><option value="15">15s</option><option value="30">30s</option><option value="60">60s</option><option value="120">120s</option></select></div>
+                <select class="select" id="vsLength" data-seg data-seg-value><option value="">Not set</option><option value="15">15s</option><option value="30">30s</option><option value="60">60s</option><option value="120">120s</option></select></div>
             </div>
           </section>
           <!-- The brief the script is written to (2026-11-05): Write with AI
@@ -5073,7 +5068,7 @@
           <div class="row"><div><label class="field-label" for="vsNewMonth">Content month</label>
             <select class="select" id="vsNewMonth" aria-required="true"></select></div></div>
           <div class="row"><div><label class="field-label" for="vsNewKind">Script type</label>
-            <select class="select" id="vsNewKind" data-seg>
+            <select class="select" id="vsNewKind" data-seg data-seg-value>
               <option value="scenes">Detailed scenes</option>
               <option value="products">Products and scenes</option>
               <option value="story">Story and voice-over</option>
@@ -5118,7 +5113,7 @@
         <div class="sheet-body">
           <div class="vs-prompt-bar">
             <label class="field-label" for="vsPromptLang">Language</label>
-            <select class="select select-sm" id="vsPromptLang" data-seg><option value="en">English</option><option value="zh">中文</option></select>
+            <select class="select select-sm" id="vsPromptLang" data-seg data-seg-value><option value="en">English</option><option value="zh">中文</option></select>
           </div>
           <div class="vs-prompts" id="vsPromptList"></div>
         </div>
@@ -5234,7 +5229,7 @@
           </div></div>
           <div class="row"><div class="field">
             <label class="field-label" for="rgnCat">Category</label>
-            <select class="select" id="rgnCat" data-seg aria-required="true">
+            <select class="select" id="rgnCat" data-seg data-seg-value aria-required="true">
               <option value="helped">Helped a colleague</option>
               <option value="effort">Extra effort</option>
               <option value="praise">Client praise</option>
@@ -5287,7 +5282,7 @@
           <section class="hc-step" data-step="3">
             <div class="row"><div class="field">
               <label class="field-label" for="hcWork">Workload</label>
-              <select class="select" id="hcWork" data-seg aria-required="true"><option value="" hidden></option><option value="1">Overwhelming</option><option value="2">Heavy</option><option value="3">Busy</option><option value="4">Manageable</option><option value="5">Comfortable</option></select>
+              <select class="select" id="hcWork" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">Overwhelming</option><option value="2">Heavy</option><option value="3">Busy</option><option value="4">Manageable</option><option value="5">Comfortable</option></select>
             </div></div>
             <div class="row"><div class="field">
               <label class="field-label" for="hcNote">Note</label>
@@ -5526,7 +5521,7 @@
           </div>
           <div class="row fgrid-3" data-role="plan">
             <div><label class="field-label" for="svcAds">Advertising</label>
-              <select class="select" id="svcAds" data-seg><option value="no">Without ads</option><option value="yes">With ads</option></select></div>
+              <select class="select" id="svcAds" data-seg data-seg-value><option value="no">Without ads</option><option value="yes">With ads</option></select></div>
             <div class="span-2" id="svcPlanBudgetWrap"><label class="field-label" for="svcPlanBudget">Ad budget covered (RM)</label>
               <input inputmode="numeric" class="input" id="svcPlanBudget" type="number" min="1" step="100" placeholder="2000"></div>
           </div>
@@ -6064,11 +6059,10 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="sheet-body">
       <div class="hol-year" id="holYearRow" hidden>
-        <label class="field-label" id="holYearL" for="holYear">Year</label>
-        <select class="select select-sm" id="holYear" data-seg aria-labelledby="holYearL"></select>
+        <select class="select select-sm" id="holYear" data-seg data-strip aria-label="Year"></select>
       </div>
       <p class="msg" id="holMsg" role="status"></p>
-      <div id="holList"></div>
+      <div id="holList" data-swipe="holYearStrip"></div>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-quiet" id="holCancel" type="button">Close</button>
@@ -6275,7 +6269,7 @@ raya-2026        https://example.com/raya"></textarea>
         <h4 class="fsec-h">Type</h4>
         <div class="row">
           <div><label class="field-label" for="dtFamily">Group</label>
-            <select class="select" id="dtFamily" data-seg>
+            <select class="select" id="dtFamily" data-seg data-seg-value>
               <option value="client">Client letter</option>
               <option value="hr">HR letter</option>
               <option value="quote_cover">Quotation</option>
@@ -6416,7 +6410,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdCodeWrap"><label class="field-label" for="supEdCode">Supplier ID</label>
             <input class="input" id="supEdCode" aria-required="true" autocapitalize="characters" spellcheck="false"></div>
           <div id="supEdKindWrap"><label class="field-label" for="supEdKind">Supplier type</label>
-            <select class="select" id="supEdKind" data-seg><option value="company">Company</option><option value="individual">Individual</option></select></div>
+            <select class="select" id="supEdKind" data-seg data-seg-value><option value="company">Company</option><option value="individual">Individual</option></select></div>
           <div class="span-all" id="supEdNameWrap"><label class="field-label" for="supEdName">Name</label>
             <textarea class="input" id="supEdName" rows="1" data-oneline aria-required="true" maxlength="160"></textarea></div>
           <div id="supEdBrnWrap"><label class="field-label" for="supEdBrn">Business Registration No.</label>
@@ -6457,7 +6451,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdTermWrap"><label class="field-label" for="supEdTerm">Payment term</label>
             <select class="select" id="supEdTerm" aria-required="true"></select></div>
           <div id="supEdCurWrap"><label class="field-label" for="supEdCur">Currency</label>
-            <select class="select" id="supEdCur" data-seg><option value="MYR">MYR / RM</option><option value="SGD">SGD / S$</option></select></div>
+            <select class="select" id="supEdCur" data-seg data-seg-value><option value="MYR">MYR / RM</option><option value="SGD">SGD / S$</option></select></div>
           <div class="span-all" id="supEdFinWrap"><label class="field-label" for="supEdFin">Finance email</label>
             <input class="input" id="supEdFin" type="email" aria-required="true" maxlength="160"></div>
         </div>
@@ -6701,10 +6695,10 @@ raya-2026        https://example.com/raya"></textarea>
   "documents": {"src": "/js/documents.js?v=20261121zb"},
   "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
-  "reports": {"src": "/js/reports.js?v=20261121zzzzb", "uses": ["documents", "smreport"]},
-  "register": {"src": "/js/register.js?v=20261122r", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "reports": {"src": "/js/reports.js?v=20261122sk", "uses": ["documents", "smreport"]},
+  "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261121zzzzb", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261121zzzzb", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "hiring": {"src": "/js/hiring.js?v=20261122sk", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261121zzzz"},
   "invoices": {"src": "/js/invoices.js?v=20261121zzzz", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261119j", "uses": ["invoices", "sales"]},
@@ -6717,7 +6711,7 @@ raya-2026        https://example.com/raya"></textarea>
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261122zm", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
-  "team": {"src": "/js/team.js?v=20261122", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261122sk", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
@@ -6740,6 +6734,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20261122zm"></script>
 <script src="/js/search.js?v=20261122zm"></script>
 <script src="/js/agent.js?v=20261122zm"></script>
-<script src="/js/overview.js?v=20261122e"></script>
+<script src="/js/overview.js?v=20261122f"></script>
 </body>
 </html>

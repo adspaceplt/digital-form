@@ -430,7 +430,7 @@
   }
   function seg(id, label, options, value, quiet) {
     return '<div class="field">' + (quiet ? '' : '<span class="field-label" id="' + id + 'L">' + esc(label) + '</span>') +
-      '<select class="select" id="' + id + '" data-seg ' + (quiet ? 'aria-label="' + esc(label) + '"' : 'aria-labelledby="' + id + 'L"') + '>' +
+      '<select class="select" id="' + id + '" data-seg data-seg-value ' + (quiet ? 'aria-label="' + esc(label) + '"' : 'aria-labelledby="' + id + 'L"') + '>' +
       options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(value) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
       '</select></div>';
   }
