@@ -300,5 +300,4 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   asks it first and reads the suppliers' bills alone for 25 seconds at
   Suppliers Work (`work`), `supplierbilllink` names a bill's page only
   where the caller reads that bill. Open in Bukku is a `.btn-sm` at its own
-  width or a ⋯ item, never a row's width (the user, 2026-11-22; the
-  Payments queue's stretch rule taken off).
+  width or a ⋯ item, never a row's width (the user, 2026-11-22).
