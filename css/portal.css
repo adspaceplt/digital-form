@@ -7711,6 +7711,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    off the edge and above the home indicator; 16px where there is no inset
    (2026-11-22, the user: "move the footer down back to 20px"). */
 .portalfoot-in { padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) - 14px)); }
+/* In a phone's browser the bar sits below the page: Safari reports no inset
+   for its compact bar and keeps about 10pt clear under the page itself, so
+   16px left the line about 30pt above it. 4px puts it about 19px above
+   Safari's controls, the nearest that holds (measured on an iPhone,
+   2026-11-22, the user: option A). The Home Screen app keeps the rule above,
+   clear of the home indicator. Terms of Service keeps a finger's press,
+   reaching upward, never down under the bar. */
+@media (pointer: coarse) and (display-mode: browser) {
+  .portalfoot-in { padding-bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 14px)); }
+}
+@media (pointer: coarse) {
+  .portalfoot-link { position: relative; }
+  .portalfoot-link::after { content: ''; position: absolute; left: -8px; right: -8px; bottom: 0; height: var(--tap); }
+}
 .confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
