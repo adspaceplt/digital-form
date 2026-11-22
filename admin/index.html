@@ -142,7 +142,7 @@
 <script src="/js/confirm.js?v=20261122sk"></script>
 <script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122rg"></script>
+<script src="/js/form.js?v=20261122rh"></script>
 <script src="/js/otp.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -571,7 +571,7 @@
             <h4 class="fsec-h">Namecard</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="mycMobile">Mobile</label>
-                <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+                <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789" data-nocheck></div>
               <!-- Hidden, the number never leaves the database: the card, its
                    WhatsApp and Save contact go without it (namecard_get). -->
               <div><label class="field-label" for="mycShow">Mobile on card</label>
@@ -5209,7 +5209,7 @@
         </div>
         <div class="sheet-body" data-narrow="560"><div id="prsBody"></div><div class="msg" id="prsSheetMsg"></div></div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="prsSave" type="button">Save</button>
+          <button class="btn btn-primary" id="prsSave" type="button" data-check-own>Save</button>
           <button class="btn btn-quiet" id="prsCancel" type="button">Cancel</button>
         </div>
       </div>

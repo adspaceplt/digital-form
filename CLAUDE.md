@@ -1408,9 +1408,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     asks `ADspaceForm.check(scope)`. `data-check-partial` (Billing's details
     before Active, a script's draft) holds only a wrong kind, as does
     `data-check-own` (a form naming its empty fields more fully: My Work's
-    New names the post);
+    New names the post; Personnel's form its consent, then every
+    field missing);
     `data-check-group` (a list's row) asks its required fields once one
-    holds a value; `data-nocheck` is never held. A form never types its own
+    holds a value; `data-nocheck` is never held, and on a field never
+    asked (its own rule in its own words: My namecard's Mobile). A form never types its own
     required check again; a client page's own checks state its database
     function's lengths and shapes beyond it.
   - `ADspaceForm.title` sets formal names in title case.

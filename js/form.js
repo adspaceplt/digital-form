@@ -1168,7 +1168,9 @@
      focused (its fold opened first, §reveal) and one line under it naming
      what to enter. A page that saves without a press (an Enter it answers
      itself) asks `ADspaceForm.check(scope)` first. A button marked
-     `data-nocheck` is never held; one marked `data-check-partial` (a save
+     `data-nocheck` is never held, and a field marked so is never asked
+     (its page and function hold a rule of their own words: My namecard's
+     Mobile, 8 to 15 digits); one marked `data-check-partial` (a save
      that keeps what is there on purpose: Billing's details before Active, a
      script's draft) is held only for a value of the wrong kind, never for
      one left empty. One marked `data-check-own` names its own empty fields
