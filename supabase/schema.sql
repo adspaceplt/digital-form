@@ -140867,7 +140867,7 @@ alter table public.hiring_email_templates add constraint hiring_email_templates_
                   'doc', 'doc_again', 'confirmed', 'expired'));
 insert into public.hiring_email_templates (kind, subject, body) values
   ('rescheduled', 'Interview time changed: {position}',
-   E'Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf the new time is not suitable, please inform ADspace on WhatsApp from your application page.\n\n{button}\n\n{sign-off}')
+   E'Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf the new time is not suitable, please contact ADspace on WhatsApp through your application page.\n\n{button}\n\n{sign-off}')
 on conflict (kind) do nothing;
 
 do $$
