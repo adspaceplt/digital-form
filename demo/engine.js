@@ -254,6 +254,7 @@
     guide_seen_mark: 'p_guide',
     rail_order_mine: '',
     rail_order_set: 'p_sections',
+    rail_tabs_set: 'p_tabs',
     my_access_expired: '',
     namecard_get: 'p_key',
     namecard_mine: '',
@@ -17782,7 +17783,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var rme = opsMe();
       if (!rme) return Promise.resolve({ data: { error: 'denied' }, error: null });
       var rrow = (DB.rail_orders || []).filter(function (r) { return r.member_id === rme.id; })[0];
-      return Promise.resolve({ data: { sections: rrow ? rrow.sections.slice() : [] }, error: null });
+      return Promise.resolve({ data: { sections: rrow ? (rrow.sections || []).slice() : [], tabs: rrow ? (rrow.tabs || []).slice() : [] }, error: null });
     }
     if (name === 'rail_order_set') {
       var rme2 = opsMe();
@@ -17792,10 +17793,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var rl = (args && args.p_sections) || [];
       if (!Array.isArray(rl) || rl.some(function (k) { return RKNOWN.indexOf(k) < 0; }) ||
           rl.some(function (k, i) { return rl.indexOf(k) !== i; })) return Promise.resolve({ data: { error: 'bad-order' }, error: null });
+      var rold = (DB.rail_orders || []).filter(function (r) { return r.member_id === rme2.id; })[0];
       DB.rail_orders = (DB.rail_orders || []).filter(function (r) { return r.member_id !== rme2.id; });
-      DB.rail_orders.push({ member_id: rme2.id, sections: rl.slice(), updated_at: new Date().toISOString() });
+      DB.rail_orders.push({ member_id: rme2.id, sections: rl.slice(), tabs: rold && rold.tabs ? rold.tabs.slice() : [], updated_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: { sections: rl.slice() }, error: null });
+    }
+
+    if (name === 'rail_tabs_set') {
+      var rme3 = opsMe();
+      if (!rme3) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (window.__tabsRefuse) return Promise.resolve({ data: null, error: { message: 'refused' } });
+      var TKNOWN = ['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
+      var tl = (args && args.p_tabs) || [];
+      if (!Array.isArray(tl) || tl.length > 3 || tl.some(function (k) { return TKNOWN.indexOf(k) < 0; }) ||
+          tl.some(function (k, i) { return tl.indexOf(k) !== i; })) return Promise.resolve({ data: { error: 'bad-tabs' }, error: null });
+      var trow = (DB.rail_orders || []).filter(function (r) { return r.member_id === rme3.id; })[0];
+      if (trow) { trow.tabs = tl.slice(); trow.updated_at = new Date().toISOString(); }
+      else (DB.rail_orders = DB.rail_orders || []).push({ member_id: rme3.id, sections: [], tabs: tl.slice(), updated_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { tabs: tl.slice() }, error: null });
     }
 
     if (name === 'namecard_get') {
