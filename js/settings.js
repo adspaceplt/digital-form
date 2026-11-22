@@ -465,7 +465,7 @@
          Partners … Clients, Creators and Suppliers"): a supplier's emails,
          Email templates opened on its Suppliers tab. */
       ['Suppliers', [
-        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'supmail', name: 'Supplier emails', kind: 'open', meta: line('supmail'),
+        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'supmail', name: 'Supplier email templates', kind: 'open', meta: line('supmail'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('supmail'), 'suppliers'); } }]]]);
     /* Performance (the user, 2026-10-29: "approve all"): one row a view,
        each opening the one sheet on its part behind the master code. */

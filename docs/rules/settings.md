@@ -33,7 +33,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   old `tab=clients` landing on it; Clients: Industries, Follow-up limits,
   Details forms: one figure for a client's and a supplier's link alike,
   kept with the client's, Analytics; Creators: Creator and campaign IDs,
-  Creator payments, Creator payments sheet; Suppliers: Supplier emails,
+  Creator payments, Creator payments sheet; Suppliers: Supplier email templates,
   Email templates opened on its Suppliers tab (`ADspaceMailTpl.open(btn,
   say, 'suppliers')`), at `team.settings` or Suppliers Full Access, the
   one row a colleague at Suppliers Full Access alone meets), Templates
