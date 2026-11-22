@@ -1346,7 +1346,7 @@
       window.ADspaceConfirm.ask({ title: 'Change interview time', go: 'Save', wait: true, fields: f,
         body: 'Interview ' + i.round + ' is set for ' + when(was) + '. ' + (i.state === 'picked'
           ? 'It will be confirmed at the new time' + (i.mode === 'online' ? ', with a Google Meet on the shared calendar.' : '.')
-          : i.mode === 'online' && i.meeting_link ? 'Its Google Meet will move to the new time on the shared calendar.' : 'It stays confirmed at the new time.'),
+          : i.mode === 'online' && i.meeting_link ? 'Its Google Meet will move to the new time on the shared calendar.' : 'It will stay confirmed at the new time.'),
         check: function (v) {
           var t = C.at(v.day, v.time);
           if (!t) return 'Enter the date and time.';
@@ -1377,7 +1377,7 @@
                 var back = !b.error && !(b.data || {}).error;
                 openRec(c.id).then(function () {
                   msg('hirRecMsg', (m.error === 'slot-taken' && m.start ? 'Another online meeting is booked from ' + C.clock(m.start) + (m.end ? ' to ' + C.clock(m.end) : '') + '.'
-                    : SAID[m.error] || SAID['google-refused']) + (back ? ' The interview keeps its earlier time.' : ' The shared calendar still holds the earlier time. Change the time again.'), 'err');
+                    : SAID[m.error] || SAID['google-refused']) + (back ? ' The interview keeps its earlier time. Choose another time.' : ' The shared calendar still shows the earlier time. Change the interview time again.'), 'err');
                 });
               });
               return;
