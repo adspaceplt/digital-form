@@ -1295,7 +1295,7 @@
       var when = x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set';
       return '<div class="qi-row" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '">' +
         '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : 'Month ' + x.cycle) + '</b>' +
-          '<small>' + (made ? '<span class="part">' + esc(x.number) + '</span> <span class="part"><span aria-hidden="true">· </span>' + when + '</span>' : when) + '</small></span>' +
+          '<small>' + when + '</small>' + (made ? '<small class="qi-no">' + esc(x.number) + '</small>' : '') + '</span>' +
         (amounts ? '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' : '') +
         '<span class="qi-state">' + st + '</span>' +
         '<span class="qi-act">' + (!made && work && d.start ? '<button class="btn btn-sm" data-qi="make" type="button">Create in Bukku</button>' : '') + '</span>' +
