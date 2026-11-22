@@ -1066,6 +1066,10 @@ screenshotted, and the push names any line it could not settle.
    about it (Why it is late, What needs changing, Note for them); a refusal
    names what to enter (Enter a reason.), never Say why. Approved section
    names stay (What worked, Areas to improve, Why it stood out).
+   A heading over a control that asks the reader to act and is not a field
+   (stars, a set of choices) states the act, verb first (Rate your
+   experience), never a noun that could read as their score (the user,
+   2026-11-22: "Your experience" over five grey stars read as a rating given).
 12. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section; a kind of wording
