@@ -3472,6 +3472,18 @@ function cardSlugFree(name, self, email) {
   }
   function bkNamed(k) { return k ? [k.salutation, k.name].filter(function (x) { return String(x || '').trim(); }).join(' ') || null : null; }
   function bkPortal(k, id) {
+
+    if (k === 'supplier') {
+      var su = (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
+      if (!su) return null;
+      var co = (su.kind || 'company') === 'company';
+      var sn = function (v) { var x = String(v == null ? '' : v).trim(); return x || null; };
+      return { legal_name: su.name || null, company_no: co ? su.brn || null : null, tin: su.tin || null, sst_no: su.sst_no || null,
+        finance_email: sn(su.finance_email) || su.email || null, billing_address: su.address || null,
+        person: sn(su.contact_name) || (co ? null : sn(su.name)), country: su.currency === 'SGD' ? 'SG' : 'MY',
+        fields: co ? ['legal_name', 'company_no', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address']
+          : ['legal_name', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'] };
+    }
     if (k === 'client') {
       var c = DB.clients.filter(function (x) { return x.id === id; })[0];
       if (!c) return null;
@@ -3508,6 +3520,35 @@ function cardSlugFree(name, self, email) {
     var p = bkPortal(k, id);
     if (!p) return { error: 'not-found' };
     var ch = (changed || []).filter(function (f) { return f in BK_WORD; });
+
+    if (k === 'supplier') {
+      var sNow = new Date().toISOString();
+      l.read_at = sNow; l.read_hash = hash; l.person = vals.person || null;
+      ch = ch.filter(function (f) { return (p.fields || []).indexOf(f) > -1; });
+      if (mode === 'save') return { error: 'bad-request' };
+      if (mode === 'read' && ch.length) { persist(); return { ok: true, held: false, differs: ch }; }
+      if (ch.length) {
+        var su = DB.suppliers.filter(function (x) { return x.id === id; })[0];
+        var co = (su.kind || 'company') === 'company';
+        var tx = function (v) { var x = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return x || null; };
+        var cap = function (v, company) { v = tx(v); return !v ? null : company ? v.toUpperCase() : v.toLowerCase().replace(/\b[a-z]/g, function (m) { return m.toUpperCase(); }); };
+        if (ch.indexOf('legal_name') > -1) su.name = cap(vals.legal_name, co) || su.name;
+        if (co && ch.indexOf('company_no') > -1) su.brn = String(vals.company_no || '').replace(/[^0-9A-Za-z]/g, '') || null;
+        if (ch.indexOf('tin') > -1) su.tin = tx(vals.tin);
+        if (ch.indexOf('sst_no') > -1) su.sst_no = tx(vals.sst_no);
+        if (ch.indexOf('finance_email') > -1) su.finance_email = tx(vals.finance_email) ? tx(vals.finance_email).toLowerCase() : null;
+        if (ch.indexOf('billing_address') > -1) su.address = String(vals.billing_address == null ? '' : vals.billing_address).trim() || null;
+        if (ch.indexOf('person') > -1) su.contact_name = cap(vals.person, false);
+        su.updated_at = sNow;
+        var SW = { legal_name: 'Name', company_no: 'BRN', tin: 'TIN', sst_no: 'SST Registration No.', person: 'Person in charge', finance_email: 'Finance email', billing_address: 'Billing address' };
+        DB.activity_log.unshift({ id: nid('al'), actor: actorName || 'Bukku', action: 'supplier.edited', subject: su.name || su.code,
+          detail: (su.code ? su.code + ' · ' : '') + 'Took Bukku\'s details: ' + ['legal_name', 'company_no', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address']
+            .filter(function (f) { return ch.indexOf(f) > -1; }).map(function (f) { return SW[f]; }).join(', ') + ' · ' + (l.code || l.contact_id), created_at: sNow });
+      }
+      l.held_at = l.held_at || sNow;
+      persist();
+      return { ok: true, held: true, changed: ch, person_in: true };
+    }
     var open = ch.filter(function (f) { return String(p[f] == null ? '' : p[f]).trim() !== ''; });
     var now = new Date().toISOString();
     l.read_at = now; l.read_hash = hash; l.person = vals.person || null;
@@ -15186,7 +15227,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       if (name === 'bukku_read_may') {
         var rlv = args.p_level || 'view';
-        if (['client', 'entity'].indexOf(args.p_kind) < 0 || ['view', 'work'].indexOf(rlv) < 0 || !bkMay(args.p_kind, rlv, args.p_id)) return bkNo('denied');
+        if (['client', 'entity', 'supplier'].indexOf(args.p_kind) < 0 || ['view', 'work'].indexOf(rlv) < 0 || !bkMay(args.p_kind, rlv, args.p_id)) return bkNo('denied');
         if (!bkPortal(args.p_kind, args.p_id)) return bkNo('not-found');
         var rl = bkLinkRow(args.p_kind, args.p_id);
         if (!rl) return bkOk({ linked: false });
@@ -18697,7 +18738,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
             return al(a) === al(b);
           };
-          var bkDiff = function (p, v) { return BK_ORDER.filter(function (f) { return !bkSame(f, p[f], v[f]); }); };
+
+          var bkFields = function (p) { return p && p.fields ? BK_ORDER.filter(function (f) { return p.fields.indexOf(f) > -1; }) : BK_ORDER; };
+          var bkOnly = function (v, p) { var o = {}; bkFields(p).forEach(function (f) { o[f] = v[f] == null ? null : v[f]; }); return o; };
+          var bkDiff = function (p, v) { return bkFields(p).filter(function (f) { return !bkSame(f, p[f], v[f]); }); };
           var bkHash = function (v) { return 'h' + JSON.stringify(BK_ORDER.map(function (f) { return v[f] == null ? null : v[f]; })).length + ':' + JSON.stringify(BK_ORDER.map(function (f) { return v[f]; })); };
 
           if (bkb.action === 'contacts' || bkb.action === 'adopt') {
@@ -18852,7 +18896,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             });
           }
           if (bkb.action === 'read' || bkb.action === 'hold' || bkb.action === 'save') {
-            if (['client', 'entity'].indexOf(bkb.kind) < 0) return bkR({ error: 'bad-request' });
+            if ((bkb.action === 'save' ? ['client', 'entity'] : ['client', 'entity', 'supplier']).indexOf(bkb.kind) < 0) return bkR({ error: 'bad-request' });
             return rpc('bukku_read_may', { p_kind: bkb.kind, p_id: bkb.id, p_level: bkb.action === 'read' ? 'view' : 'work' }).then(function (mr) {
               var d = mr.data || {};
               if (d.error) return { data: { error: d.error }, error: null };
@@ -18861,7 +18905,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var ct = held.filter(function (c) { return c.id === Number(d.contact_id); })[0];
               if (!ct) return { data: { error: 'bukku-gone', code: d.code }, error: null };
               var me = (DB.team_members || []).filter(function (t) { return t.id === d.me; })[0] || {};
-              var before = bkVals(ct), portal = d.portal || {};
+              var portal = d.portal || {}, before = bkOnly(bkVals(ct), portal);
               if (bkb.action !== 'save') {
                 var ch = bkDiff(portal, before), tk = bkTake(me.name, bkb.kind, bkb.id, before, bkHash(before), ch, bkb.action === 'hold' ? 'hold' : 'read');
                 if (tk.error) return { data: tk, error: null };
@@ -18951,6 +18995,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   return Number(x.contact_id) === Number(ct.id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
                   .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
                     amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; }));
+
+                if (p.kind === 'supplier') {
+                  DB.bukku_docs = DB.bukku_docs || [];
+                  (window.__bukkuHistory || []).forEach(function (x) {
+                    if ((x.kind || 'invoice') !== 'bill' || Number(x.contact_id) !== Number(ct.id)) return;
+                    var bal = x.balance == null ? Number(x.amount) : Number(x.balance);
+                    var row = DB.bukku_docs.filter(function (y) { return y.kind === 'bill' && y.doc_id === Number(x.id); })[0];
+                    if (!row) { row = { kind: 'bill', doc_id: Number(x.id) }; DB.bukku_docs.push(row); }
+                    Object.assign(row, { contact_id: Number(x.contact_id), contact_name: x.contact_name || row.contact_name || null, number: x.number || '',
+                      doc_date: x.date, due_date: x.due || row.due_date || null, amount: Number(x.amount), balance: bal,
+                      currency: x.currency_code || 'MYR', paid_on: bal > 0 ? null : (row.paid_on || null), gone: false, read_at: new Date().toISOString() });
+                  });
+                  persist();
+                }
                 return { data: { ok: true, contact: ct.id, code: ct.contact_code, linked: true }, error: null };
               });
             }

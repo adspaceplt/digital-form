@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261122f"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261122zzzzzzsc"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -6749,9 +6749,9 @@ raya-2026        https://example.com/raya"></textarea>
   "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261122zzzu", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzzb", "uses": ["letters", "register", "bukku"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzzzsb", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261122zzzv", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261122zzzzzb"},
+  "bukku": {"src": "/js/bukku.js?v=20261122zzzzzzsb"},
   "invoices": {"src": "/js/invoices.js?v=20261122zzzzzb", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261122zzzzzc", "uses": ["smreport", "reports"]},

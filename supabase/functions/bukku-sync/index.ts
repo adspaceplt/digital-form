@@ -27,8 +27,11 @@
  *                                             (2026-10-30, BILLING FROM
  *                                             BUKKU): taken where the link
  *                                             is held, else what differs.
+ *                                             A supplier's (2026-11-22) is
+ *                                             compared alone, never taken.
  *   POST { action: 'hold', kind, id }         Use Bukku's: the same, taken
- *                                             and held (Work).
+ *                                             and held (Work); a supplier
+ *                                             takes what differs.
  *   POST { action: 'save', kind, id, values, expected }
  *                                             the Billing sheet's changes
  *                                             saved straight to Bukku, then
@@ -382,9 +385,12 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   const termName = (id: unknown) => { const t = terms.find((x: any) => Number(x.id) === Number(id)); return t ? String(t.name) : ''; };
   const idOf = (x: any) => { const f = (x.fields || []).find((y: any) => Number(y.field_id) === Number(p.field_id)); return f ? String(f.value ?? '') : ''; };
   const T: Record<string, string> = { customer: 'Customer', supplier: 'Supplier', employee: 'Employee' };
+  const nricHid = /INDIVIDUAL$/.test(String(p.entity_type || '')) && !p.reg_no;
   const list: [string, string, string, string][] = [
     ['legal_name', p.kind === 'creator' ? 'Legal name' : 'Registered Company Name', c.legal_name || '', next.legal_name || ''],
-    ['reg_no', 'Business Registration No.', c.reg_no || '', next.reg_no || ''],
+    /* An individual's registration no. is an NRIC: one the colleague may
+       not send (no reg_no prepared) is not read from Bukku either. */
+    ['reg_no', 'Business Registration No.', nricHid ? '' : c.reg_no || '', nricHid ? '' : next.reg_no || ''],
     ['old_reg_no', 'Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
     ['tax_id_no', 'TIN', c.tax_id_no || '', next.tax_id_no || ''],
     ['sst_reg_no', 'SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
@@ -446,6 +452,19 @@ export function valuesOf(c: any) {
     billing_address: s(addressLine(ba)), person: s(bp ? [bp.first_name, bp.last_name].filter(Boolean).join(' ') : '') };
 }
 const BILL = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
+/* The fields a record compares (2026-11-22): a supplier names its own
+   (`bukku_portal` `fields`: never an individual's NRIC, no old
+   registration no.), a client and an entity every one. */
+export function fieldsOf(portal: any): string[] {
+  return portal && Array.isArray(portal.fields) ? BILL.filter((f) => portal.fields.includes(f)) : BILL;
+}
+/* Bukku's values held to those fields: what a record does not compare is
+   never answered to the page nor taken. */
+export function onlyFields(vals: Record<string, any>, portal: any): Record<string, any> {
+  const keep = fieldsOf(portal), out: Record<string, any> = {};
+  for (const f of keep) out[f] = vals[f] ?? null;
+  return out;
+}
 /* The fields in which the portal and Bukku differ, each read as Bukku sets
    it out: an address in its parts, a registration no. by its letters and
    digits, a person with or without the salutation Bukku keeps, and a
@@ -454,7 +473,7 @@ const BILL = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'pe
 export function differs(portal: any, bk: any, country: string): string[] {
   const out: string[] = [];
   const bare = (v: unknown) => { const w = nameWords(v); return w.slice(salLead(w)).join(' '); };
-  for (const f of BILL) {
+  for (const f of fieldsOf(portal)) {
     const a = String(portal[f] ?? '').trim(), b = String(bk[f] ?? '').trim();
     let same: boolean;
     if (!a || !b) same = !a && !b;
@@ -541,7 +560,7 @@ async function billingAction(action: string, kind: string, id: string, body: Rec
   // read, hold
   const cur = await contactOf(Number(d.contact_id));
   if (!cur) return json({ error: 'bukku-gone', code: d.code }, 200, origin);
-  const vals = valuesOf(cur), hash = await hashOf(vals);
+  const vals = onlyFields(valuesOf(cur), portal), hash = await hashOf(vals);
   const ch = differs(portal, vals, country);
   const t = await take(d.me, kind, id, vals, hash, ch, action === 'hold' ? 'hold' : 'read');
   if (t.error) return json({ error: t.error }, 200, origin);
@@ -1186,6 +1205,20 @@ async function listDocs(kind: string, query: string, keep: (c: number) => boolea
   }
   return { rows: out, done: true };
 }
+/* One supplier's bills of the last 24 months, read as it is linked
+   (2026-11-22): the nightly run reads further back only once, so a contact
+   linked later had its older bills read by no run. Each is kept as the
+   nightly run keeps it; a paid day is read whole by the next run. */
+export async function supplierBillsOf(contact: number, until: number): Promise<any> {
+  const today = todayMY(), from = monthStart(today, 24);
+  const got = await listDocs('bill', `contact_id=${contact}&date_from=${from}&date_to=${today}`, (c) => c === contact, until);
+  const rows = got.rows.map((x) => docOf(x)).filter(Boolean);
+  if (rows.length) {
+    const t = await svcDb().rpc('bukku_docs_take', { p_kind: 'bill', p_rows: rows, p_back_to: null });
+    if (t.error) throw new Error('not kept: ' + t.error.message);
+  }
+  return { ok: true, kept: rows.length, more: !got.done };
+}
 export async function payHistory(kind: 'invoice' | 'bill', until: number): Promise<any> {
   const svc = svcDb();
   const today = todayMY(), from = monthStart(today, 24);
@@ -1698,7 +1731,10 @@ Deno.serve(async (req) => {
     }
     if (action === 'read' || action === 'hold' || action === 'save') {
       const k = String(body.kind || ''), rid = String(body.id || '');
-      if (!['client', 'entity'].includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);
+      /* A supplier is read and its Bukku details used (2026-11-22); its
+         details are saved in the portal, never straight to Bukku. */
+      const kinds = action === 'save' ? ['client', 'entity'] : ['client', 'entity', 'supplier'];
+      if (!kinds.includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);
       return await billingAction(action, k, rid, body, db, origin);
     }
     if (action === 'contacts' || action === 'adopt') return await contactsAction(action, body, db, origin);
@@ -1798,10 +1834,15 @@ Deno.serve(async (req) => {
       const l = await db.rpc('bukku_link_only', { p_kind: kind, p_id: id, p_contact: cur.id, p_code: cur.contact_code || String(cur.id) });
       if (l.error) return json({ error: 'needs-update' }, 200, origin);
       if (l.data && l.data.error) return json({ error: l.data.error }, 200, origin);
-      /* A creator's bills are read at once, so their payments show. */
+      /* A creator's bills are read at once, so their payments show; a
+         supplier's too (2026-11-22), so its Bills never wait on the night. */
       if (kind === 'creator') {
         try { await creatorBills(id, Number(cur.id)); }
         catch (e) { console.error('bukku-sync: bills after link', String((e as Error).message || e)); }
+      }
+      if (kind === 'supplier') {
+        try { await supplierBillsOf(Number(cur.id), Date.now() + 20000); }
+        catch (e) { console.error('bukku-sync: supplier bills after link', String((e as Error).message || e)); }
       }
       return json({ ok: true, contact: cur.id, code: cur.contact_code || String(cur.id), linked: true }, 200, origin);
     }
