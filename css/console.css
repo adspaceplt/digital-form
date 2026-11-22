@@ -6088,7 +6088,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .cpq-row { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
 .is-narrow .cpq-act:empty { display: none; }
 .is-narrow .cpq-act { grid-column: 1 / -1; }
-.is-narrow .cpq-act .btn { flex: 1 1 100%; }
 .cpq-sheet-t { flex: 1 1 auto; min-width: 0; }
 .cpq-sheet-sub { margin: 2px 0 0; font-size: 12.5px; }
 /* WebKit colours the area behind an iPhone's status bar from the root's own
