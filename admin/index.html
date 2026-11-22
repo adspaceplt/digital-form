@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122zzzu">
-<link rel="stylesheet" href="/css/console.css?v=20261122zzzzk">
+<link rel="stylesheet" href="/css/console.css?v=20261122zzzzzb">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -132,7 +132,7 @@
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261122zzzzk"></script>
+<script src="/js/words.js?v=20261122zzzzzb"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261122zzq"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
@@ -299,7 +299,7 @@
     -->
     <nav class="sidebar-nav" aria-label="Sections">
       <!-- The start page of a group that manages a section: what each section
-           has waiting. On its own above the two chunks, because it is a
+           has waiting. On its own above the three groups, because it is a
            summary of them rather than one of them. -->
       <div class="navgroup">
         <button class="navitem" data-section="overview" type="button" hidden>
@@ -316,17 +316,11 @@
         <button class="navitem" data-section="work" type="button" hidden>
           <svg class="sec sec-work" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/><path d="m9.5 13 1.8 1.8 3.4-3.6"/></svg><span>My Work</span>
         </button>
-        <button class="navitem" data-section="clients" type="button">
-          <svg class="sec sec-clients" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
-        </button>
         <button class="navitem" data-section="review" type="button">
           <svg class="sec sec-review" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
         </button>
         <button class="navitem" data-section="scripts" type="button" hidden>
           <svg class="sec sec-scripts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.8"/><path d="M3 9 19.5 4.6a1 1 0 0 1 1.2.7l.5 1.9"/><path d="m8 7.7 2.4 1.3M13.4 6.3l2.4 1.3"/><path d="M7 14h10M7 17.5h6"/></svg><span>Video Scripts</span>
-        </button>
-        <button class="navitem" data-section="campaigns" type="button">
-          <svg class="sec sec-campaigns" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
         </button>
         <!-- Every client's reports in one place, and where a new one is
              started: the report type, the client, the month. -->
@@ -342,18 +336,27 @@
         </button>
       </div>
       <div class="navgroup">
-        <span class="sidebar-label">Internal</span>
-        <button class="navitem" data-section="register" type="button" hidden>
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
+        <span class="sidebar-label">Partners</span>
+        <button class="navitem" data-section="clients" type="button">
+          <svg class="sec sec-clients" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+        </button>
+        <button class="navitem" data-section="campaigns" type="button">
+          <svg class="sec sec-campaigns" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creators</span>
         </button>
         <button class="navitem" data-section="suppliers" type="button" hidden>
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 4l9 5.5"/><path d="M5 9v10h14V9"/><path d="M9.5 19v-5h5v5"/></svg><span>Suppliers</span>
         </button>
-        <button class="navitem" data-section="links" type="button">
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
+      </div>
+      <div class="navgroup">
+        <span class="sidebar-label">Company</span>
+        <button class="navitem" data-section="register" type="button" hidden>
+          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
         </button>
         <button class="navitem" data-section="services" type="button">
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
+        </button>
+        <button class="navitem" data-section="links" type="button">
+          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
         </button>
         <button class="navitem" data-section="team" type="button" hidden>
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
@@ -2678,6 +2681,11 @@
               <h3 class="railtitle">Details</h3>
               <dl class="facts" id="campFacts"></dl>
             </div>
+            <!-- Who has been paid, at Creator payments View (2026-11-22). -->
+            <section class="railblock rail-after" id="campPayBlock" hidden>
+              <h3 class="railtitle">Creator payments</h3>
+              <dl class="raildates" id="campPayRail"></dl>
+            </section>
             <div class="railblock" id="campPickBlock" hidden>
               <h3 class="railtitle">Selection</h3>
               <div id="campPickRail"></div>
@@ -6741,12 +6749,12 @@ raya-2026        https://example.com/raya"></textarea>
   "smreport": {"src": "/js/smreport.js?v=20261120zzzp", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261122zzzu", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzk", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261122zzzu", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261122zzzzk"},
-  "invoices": {"src": "/js/invoices.js?v=20261122zzzzk", "uses": ["payments", "crm"]},
-  "payments": {"src": "/js/payments.js?v=20261122zzzzk", "uses": ["invoices", "sales"]},
-  "engage": {"src": "/js/engage.js?v=20261117zzzf", "uses": ["smreport", "reports"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzzb", "uses": ["letters", "register", "bukku"]},
+  "hiring": {"src": "/js/hiring.js?v=20261122zzzv", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261122zzzzzb"},
+  "invoices": {"src": "/js/invoices.js?v=20261122zzzzzb", "uses": ["payments", "crm"]},
+  "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
+  "engage": {"src": "/js/engage.js?v=20261122zzzw", "uses": ["smreport", "reports"]},
   "quotes": {"src": "/js/quotes.js?v=20261122zzzu", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261121zzs", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261121zzt", "uses": ["documents"]},
@@ -6755,7 +6763,7 @@ raya-2026        https://example.com/raya"></textarea>
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261122zzzu", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
-  "team": {"src": "/js/team.js?v=20261122sk", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261122zzzw", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
@@ -6764,7 +6772,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261122zzzzk", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261122zzzzzb", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261122zzzc", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261122zzw", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
@@ -6774,10 +6782,10 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122zzw"></script>
-<script src="/js/ops.js?v=20261122zzzzk"></script>
-<script src="/js/search.js?v=20261122zm"></script>
-<script src="/js/agent.js?v=20261122zm"></script>
-<script src="/js/overview.js?v=20261122g"></script>
+<script src="/js/admin.js?v=20261122zzzw"></script>
+<script src="/js/ops.js?v=20261122zzzzzb"></script>
+<script src="/js/search.js?v=20261122zzzw"></script>
+<script src="/js/agent.js?v=20261122zzzw"></script>
+<script src="/js/overview.js?v=20261122zzzw"></script>
 </body>
 </html>

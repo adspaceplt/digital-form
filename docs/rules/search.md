@@ -18,10 +18,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sequence number throws away a late answer to an older query.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
-- Groups run in the rail's order (Creators List after Creator Campaigns; Suppliers by name or Supplier ID from `suppliers_list`, opening `supplier=`; the Handbook's live files by title, opening it filtered; a colleague opens their record, `member=`; `_` is escaped, never a wildcard; 2026-10-22; Settings last, a row by its name or its group's from the page's own list (`ADspaceSettings.rows`), opening its group with its control focused, no read; 2026-10-27, SET-9);
+- Groups run in the rail's order (Creators List after Creators, Calls and visits after Clients; Suppliers by name or Supplier ID from `suppliers_list`, opening `supplier=`; the Handbook's live files by title, opening it filtered; a colleague opens their record, `member=`; `_` is escaped, never a wildcard; 2026-10-22; Settings last, a row by its name or its group's from the page's own list (`ADspaceSettings.rows`), opening its group with its control focused, no read; 2026-10-27, SET-9);
   Video Scripts by code or title, opening its record (`script=`); Reports
   by title or white-label brand, opening the report (`report=`). Content
-  Review, Video Scripts, Creator Campaigns and Reports also find a record
+  Review, Video Scripts, Creators and Reports also find a record
   by its client's name or code (the user, 2026-10-14: "AC182 … only shows
   me client directory"): the clients matching the query are read once a
   query (`clientRows`, which the Clients group draws from too) and join

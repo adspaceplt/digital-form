@@ -1,5 +1,5 @@
 <!-- triggers: js/campaigns.js js/creators.js js/creator.js js/decide.js creators/ creator/ supabase/functions/creator-mail -->
-# Creator Campaigns (`js/campaigns.js`), creators, the creator portal
+# Creators (`js/campaigns.js`, the section once named Creator Campaigns), the creator portal
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -183,7 +183,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the confirmation with what was confirmed (`snapshot`) in one transaction;
   a refusal for rates or creators reads the campaign again under the open
   sheet, said in the client's words. The console's Confirm creators is
-  `campaign_confirm_creators` (Creator Campaigns at Work, client scope;
+  `campaign_confirm_creators` (Creators at Work, client scope;
   `stale` with the count): the confirmation, the bookings and the campaign
   move together, filed `campaign.locked`. The same key again answers `again`
   and files nothing. The older `confirm_selection` is dropped (2026-10-26).
@@ -289,7 +289,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   bell and on their phone (trigger `creator_pay_requests_notice`, kind
   `creator.details`, opening its row in Payments in place; the user,
   2026-11-13: "these should land to Marketing Department personnel"), and
-  the sets waiting are counted in red on the Creator Campaigns rail row,
+  the sets waiting are counted in red on the Creators rail row,
   the Creators tab and the phone's tab (`creator_pay_states`, read on
   sign-in and with the Creators List; `ADspaceAdmin.payStates`). A notice
   linking a console page opens it in place, never a second console.
@@ -366,7 +366,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   of a creator not linked reads Not linked, never Not billed.
 - Payments (`tab=payments`, `2026-11-13-creator-payments-queue.sql`; the
   user, 2026-11-13, approving mockups/creator-payments: one creator at a
-  time "won't scale"): Creator Campaigns' third tab, at Creators List View,
+  time "won't scale"): Creators' third tab, at Creators List View,
   every creator's payment work in one read (`creator_payments_queue(p_paid_from)`):
   Details to review first (Review opens `#cpqSheet`: the set, what changed
   against the approved one, the bookings waiting; Approve and Decline at
@@ -385,6 +385,20 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator in the queue, one after another) at `campaigns.pay` Work; the fee
   and every amount at `campaigns.pay` View alone; `row=` (a booking or a
   set of details) opens its row, ringed (`tests/payqueue.js`).
+- A campaign's creator payments (`2026-11-22-campaign-creator-payments.sql`;
+  the user approved screen (f) of mockups/bukku-structure, 2026-11-22): the
+  Creators tab draws each booking's payment after its step in `.kcard-tags`
+  (`.kcard-pay`: under the step at a desk, beside it on a phone), the dot and
+  its word as the Payment pane says it (Paid {day}, Processing, Draft in
+  Bukku; posted with no bill Not billed, or Not linked; nothing before it is
+  posted), Open in Bukku in the booking's ⋯ where a bill exists (`billlink`),
+  and the rail's Creator payments block (`#campPayBlock`, after Details,
+  `rail-after`): Paid n of N creators, Processing, Draft in Bukku and Not
+  billed where any, Paid to creators a currency a line. One read for the
+  campaign (`campaign_creator_bills(p_campaign)`: Campaigns View and
+  `campaigns.pay` View, else `denied`; client scope, else `not-found`; no
+  Bukku call), at `campaigns.pay` View alone; never on /creators/ or the
+  creator's page, whose payloads name no bill (`tests/cpaycamp.js`, `sql`).
 - Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
   show amount just internal records creator records and bukku bill for
   payments"): the fee agreed with the creator a booking, in their payment
@@ -667,7 +681,7 @@ Moved from DESIGN.md §4 on 2026-11-22.
 
 | Need | Component |
 |---|---|
-| Every creator's payment work (Creator Campaigns, Payments) | `#payView` (`js/campaigns.js`): the section's strip, its own bar (`#cpqBar`: search, Client, Campaign and Currency pills, the count, Read from Bukku and the one blue Create n bills), then an `ADspaceGroup` card a group in order (Details to review, Ready to bill, Draft in Bukku, Awaiting payment with its late count as a red `.tab-n`, Paid with its period as a small select at its head's right); a `.cpq-row` the creator at 500 with the Job reference in the token face over the bill number, campaign and client in 12.5 mute, the amount (tabular, 500) over Pay by, its days late in red or Paid {day} at the right, the act (`.btn-sm`: Review, Create bill, Link to Bukku, Open in Bukku) in a 128px track last; on a narrow pane the act takes the row under them at its width. Review is a `.formsheet` of Billing, Payment and Contact read as `.ovfacts`, a changed fact its grey Changed chip with Before under it, Cancel, red Decline and blue Approve in the foot |
+| Every creator's payment work (Creators, Payments) | `#payView` (`js/campaigns.js`): the section's strip, its own bar (`#cpqBar`: search, Client, Campaign and Currency pills, the count, Read from Bukku and the one blue Create n bills), then an `ADspaceGroup` card a group in order (Details to review, Ready to bill, Draft in Bukku, Awaiting payment with its late count as a red `.tab-n`, Paid with its period as a small select at its head's right); a `.cpq-row` the creator at 500 with the Job reference in the token face over the bill number, campaign and client in 12.5 mute, the amount (tabular, 500) over Pay by, its days late in red or Paid {day} at the right, the act (`.btn-sm`: Review, Create bill, Link to Bukku, Open in Bukku) in a 128px track last; on a narrow pane the act takes the row under them at its width. Review is a `.formsheet` of Billing, Payment and Contact read as `.ovfacts`, a changed fact its grey Changed chip with Before under it, Cancel, red Decline and blue Approve in the foot |
 | A creator's payments (the creator page's Payment pane) | After the details, the Bukku band (`.bk-band`, Send to Bukku), then Payments (`#cpayJobs`, Read from Bukku a `.btn-sm` at its heading's right): a booking a `.cpay-job` row, its Job reference in the token face over its campaign and earlier job ID, its bill's state (`.chip-state`: Paid, Processing, Not billed with Pay by, Not due) over the bill's number and amount at the right, its fee (Fee RM …, else Fee not set, at Creator payments View) after the campaign, Create bill (`.btn-sm`) under the state where a bill can be made (its question asks the amount), the pen (the fee and the earlier job ID) last; Create n bills beside Read from Bukku once two are ready, a `.msg.warn` line where no Bukku account is chosen; Earlier payments the bills matching no booking, under their heading; Read from Bukku {day, time} a mute line at the foot |
 | A creator's payment details on the Creators List | After the name, never a column (the user, 2026-11-12): approved a green 8px dot alone (`.cr-paydot`, `--dot-ok`, 8px after the name, `role="img"` named Payment details approved, its title on hover), the one dot that stands without its word, since nearly every row holds it and none submitted shows nothing; To review and Declined their `.chip-state` with its word |
 | A creator's payment details (the creator's page) | `.panel.crpay` under the head: the record head's shape (`.rec-id-solo`), a 16/600 title over its standing (`.chip-state` and its parts, each held whole, `.crpay-part`), the act at the right (blue Submit details while none is held or one was declined, else tonal Change details), the details paid to as `.ovfacts` under a hairline (104px labels on a phone), numbers by their last four; its sheet a `.formsheet` of three `.fsec`s (Billing, Payment, Contact) and the confirmation tick, a choice that changes the fields under it redrawing them with what was typed kept |

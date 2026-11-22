@@ -1052,7 +1052,7 @@
         });
       } },
       /* Drawn only while a booking is in production (2026-11-22). */
-      { key: 'bookings', title: 'Creator bookings', can: canCamps, hideEmpty: true, all: ['Creator Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
+      { key: 'bookings', title: 'Creator bookings', can: canCamps, hideEmpty: true, all: ['Creators', '/admin/?s=campaigns', 'campaigns'], load: function () {
         return R.bookings().then(function (list) {
           var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
           if (!list.length) return { empty: 'No open bookings.' };
@@ -1443,9 +1443,9 @@
     var body = card.querySelector('.ovw-body'), host = card.querySelector('.ovw-srcs-host');
     var pick = '';
     var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',
-      Document: 'Clients', Campaign: 'Creator Campaigns', Performance: 'Team' };
+      Document: 'Clients', Campaign: 'Creators', Performance: 'Team' };
     /* The section's mark before its name (the revamp, 2026-11-12). */
-    var SEC_KEY = { 'My Work': 'work', Reports: 'reports', Clients: 'clients', 'Creator Campaigns': 'campaigns', Team: 'team' };
+    var SEC_KEY = { 'My Work': 'work', Reports: 'reports', Clients: 'clients', Creators: 'campaigns', Team: 'team' };
     function secMark(word) {
       var k = SEC_KEY[word], A = window.ADspaceAdmin;
       return k && A && A.glyph ? '<span class="ovw-att-mark" aria-hidden="true">' + A.glyph(k) + '</span>' : '';

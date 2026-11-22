@@ -154,7 +154,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     the Clients list's own mark: initials while none is held or where it
     fails to load, a VIC's ring with the crown; the user, 2026-11-10), as
     do Video Scripts', Reports' (a white-label brand its initials) and
-    Creator Campaigns' rows (`.cl-lead`).
+    Creators' rows (`.cl-lead`).
   - The client is a record: the mark, name and handles, and one ⋯ (Access
     code as a sheet with one Save, the handles and logo Brand's alone since
     2026-10-29, Reset link, Remove), the review link under it as every record's client link

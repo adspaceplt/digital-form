@@ -4,7 +4,7 @@
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
 - A section of its own (`suppliers`, View / Work / Manage; the user,
-  2026-10-18: "own section"), in the Internal chunk after Documents
+  2026-10-18: "own section"), in the Partners group after Creators
   (`2026-10-18-suppliers.sql`, `2026-10-18-suppliers-own-section.sql`;
   the user: the Jotform supplier sign-up "via portal and data sync into it
   similar as client billing", "invite only, with create link and set the
