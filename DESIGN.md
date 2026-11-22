@@ -1069,6 +1069,13 @@ screenshotted, and the push names any line it could not settle.
    about it (Why it is late, What needs changing, Note for them); a refusal
    names what to enter (Enter a reason.), never Say why. Approved section
    names stay (What worked, Areas to improve, Why it stood out).
+   Where the reader must act (rate, choose, tick, upload, decide, confirm),
+   the heading over it says the act, verb first (Rate your experience,
+   Choose your platforms, Upload your invoice), never a noun that could read
+   as something already done (the user, 2026-11-22: "Your experience" over
+   five grey stars read as a rating given; "When u need users to do an
+   action needs to at least say it like Rate your experience"). A field's
+   own label stays a noun (Name, Email): its box already asks.
 12. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section; a kind of wording
