@@ -130,7 +130,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--tap` | 44px | The press a finger needs: a `.btn`'s invisible press area and an icon button's box under a coarse pointer |
 | `--box-h` / `--box-h-sm` | 84 / 72px | A box of lines' floor; a short note's the smaller |
 
-A height is a token, never a figure in a rule: a section that wants a small control drawn at full height sets `--ctl-h-sm: var(--ctl-h)` on itself (a docked card's acts), and a short note sets `--box-h: var(--box-h-sm)`; it never sets the control's height (`cssguard`).
+A height is a token, never a figure in a rule: a section that wants a small control drawn at full height sets `--ctl-h-sm: var(--ctl-h)` on itself (a docked card's acts), and a short note sets `--box-h: var(--box-h-sm)`; it never sets the control's height (`cssguard`). A corner, a button's ground and a field's focus ring are the same: a section sets `--ctl-corner` (the command bar's small corner), `--btn-ground` (the combine bar's white) or `--field-ring` (the bar's search, its ring drawn inside) on itself, never on the element.
 | `--state-w` | 124px | Status select or chip column (My Work's stage track 170px) |
 | `--ctl-text` / `--field-text` | 13 / 14px (14 / 15 coarse) | Control label / field text |
 | Button min width | 116px | |

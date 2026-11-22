@@ -321,8 +321,8 @@ base element (button, field, select, chip) is styled by its own rule and its
 variants; a section arranges it and never restyles it. `tests/cssguard.js`
 (run with `ui`) fails a new section rule that sets a base element's ground,
 edge, corner, height, colour or shadow; the ones standing on 2026-10-11 are
-its baseline, folded into the shared rules as each area is touched, and the
-baseline only shrinks (`--write` refuses to add).
+its baseline, all folded into the shared rules by 2026-11-22: the baseline
+is empty and only shrinks (`--write` refuses to add).
 
 **What the two walks measure:**
 - **uxaudit** walks every page and state at 1280, and at 390 with a coarse
