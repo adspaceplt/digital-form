@@ -2021,9 +2021,10 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* The field takes its row, its label over it; the acts under it. */
 .cover-panel form:not(.verify-ask) { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; text-align: left; }
 .cover-panel form .input, .cover-panel form .select { width: 100%; }
-.cover-acts { display: flex; gap: 8px; }
+.cover-acts { display: flex; flex-wrap: wrap; gap: 8px; }
 .cover-panel > .cover-acts { margin-top: 24px; }
-.cover-acts > .btn { flex: 1 1 50%; min-width: 0; }
+/* Equal halves, each label whole: one that cannot hold a half takes a row. */
+.cover-acts > .btn { flex: 1 1 calc(50% - 4px); min-width: fit-content; white-space: nowrap; }
 /* A quiet line or way back under the acts, centred with the cover's text. */
 .cover-panel .cover-note { margin-top: 16px; font-size: 13px; color: var(--ink-mute); }
 .cover-panel .cover-alt { margin-top: 16px; min-width: 0; }
@@ -7459,7 +7460,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .lockcard-form { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 24px; text-align: left; }
 .lockcard-form[hidden] { display: none; }
 .lockcard-form .input, .lockcard-form .btn { width: 100%; flex: 0 0 auto; }
-.lockcard-form .cover-acts > .btn { flex: 1 1 50%; }
+.lockcard-form .cover-acts > .btn { flex: 1 1 calc(50% - 4px); }
 .lockcard-form .input[hidden], .lockcard-form .btn[hidden] { display: none; }
 .lockcard .msg:empty { display: none; }
 @media (max-width: 640px) { .lockcard { margin-top: 8vh; } .lockcard-title { font-size: 21px; } }
