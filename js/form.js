@@ -81,7 +81,6 @@
     return w;
   }
   function fit(seg) {
-    /* A view strip never wraps: it scrolls with its far edge faded (1c). */
     if (!seg || !seg.clientWidth || seg.__strip) return;
     seg.classList.remove('is-wrap', 'is-stack', 'is-auto');
     /* A button cutting its words with an ellipsis reports no overflow of its
@@ -149,14 +148,8 @@
     }
   }
 
-  /* A choice that only changes what is shown (a list's recipient, a year,
-     a sheet's part, a card's view) is a screen moved to, not a value kept
-     (DESIGN.md §5: round chooses, rectangular acts): `data-strip` on the
-     select draws the view strip in place of the segment, the select still
-     the source of truth. One line on the tonal track, the thumb sliding,
-     scrolling sideways with its far edge faded and never wrapping; its id
-     is the select's with `Strip`, for a region's `data-swipe` (2026-11-22,
-     the user: Email templates' Recipient read as a choice to make). */
+  /* `data-strip`: a switch of what is shown draws the view strip, id
+     `{select id}Strip` for `data-swipe` (DESIGN.md §4, 2026-11-22). */
   function upgrade(sel) {
     if (!sel || sel.__seg) return;
     var strip = sel.hasAttribute('data-strip');
