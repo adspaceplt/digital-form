@@ -3324,6 +3324,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .health-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .is-narrow .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+/* The pair's gap is its step: a card gives its own margin back (stacked at 390). */
+.health-pair > .ovcard { margin-bottom: 0; }
 .is-narrow .health-pair { grid-template-columns: minmax(0, 1fr); }
 #healthTrend > .chartcard, #healthBands > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
 .health-col { font-size: 13.5px; min-width: 0; }
