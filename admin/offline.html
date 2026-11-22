@@ -38,7 +38,8 @@
   :root[data-theme="dark"] .bar img { filter: invert(1) brightness(1.15); }
   main { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; padding: 32px 24px calc(32px + 8vh); }
   .panel { max-width: 400px; width: 100%; text-align: center; }
-  .mark { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 20px; border-radius: 50%; background: var(--line-soft); color: var(--ink-soft); }
+  :where(*), ::before, ::after { corner-shape: squircle; }
+  .mark { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 20px; border-radius: 50%; corner-shape: round; background: var(--line-soft); color: var(--ink-soft); }
   .mark svg { width: 22px; height: 22px; }
   h1 { margin: 0 0 8px; font: 600 24px/1.25 "ADspace Slate", var(--font); letter-spacing: -.02em; }
   p { margin: 0; color: var(--ink-soft); font-size: 17px; line-height: 1.45; }
