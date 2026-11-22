@@ -7705,9 +7705,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    edge of the screen pads by that edge's inset, and nothing else moves: on a
    screen with no inset the values are 0 and the desk is unchanged. */
 /* The home bar's inset already holds the clearance it needs, so the foot
-   takes whichever is larger, 16px or the inset, rather than both: added
-   together they set the two words high in the band on an iPhone. */
-.portalfoot-in { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+   never adds the two: added together they set the two words high in the
+   band on an iPhone. It takes the inset less 14px, the offset the tab bar
+   sits by (`--tabbar-bottom`), so on an iPhone (34px) the line stands 20px
+   off the edge and above the home indicator; 16px where there is no inset
+   (2026-11-22, the user: "move the footer down back to 20px"). */
+.portalfoot-in { padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) - 14px)); }
 .confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
