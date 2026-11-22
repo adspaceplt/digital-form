@@ -495,7 +495,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   its reading width.
 - The foot stands on the page's own ground (no band of its own), a `--line`
   rule above it; its bottom pad is the larger of 16px and the home bar's
-  inset, never the two added.
+  inset less 14px (20px on an iPhone, the tab bar's offset), never the two
+  added; the © line stands above the home indicator.
 - The last "not centred" is usually two type sizes. Measure the ink, the
   borders and the type before calling it even.
 
