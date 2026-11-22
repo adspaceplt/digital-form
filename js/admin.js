@@ -6757,7 +6757,7 @@
   }
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The
-     details form's days are the Settings page's Partners group, Clients part (SET-9; Partners 2026-11-22). */
+     details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
     /* A term takes the longest commitment it has reached (the user,
