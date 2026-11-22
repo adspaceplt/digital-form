@@ -3101,7 +3101,7 @@
         '<details class="fmore" data-none="Worked out from start and end"><summary>Recorded growth</summary>' +
           '<div class="row fgrid"><div><label class="field-label" for="rpAccGrowth">Growth as reported</label><input class="input" id="rpAccGrowth" data-num="int" type="text" inputmode="numeric"></div>' +
           '<div><label class="field-label" for="rpAccWhy">Reason</label><textarea class="input" id="rpAccWhy" rows="1" data-oneline placeholder="Optional"></textarea></div></div></details></section>' +
-      '<section class="fsec"><h4 class="fsec-h">Figures reported</h4>' +
+      '<section class="fsec"><h4 class="fsec-h">Choose the figures to report</h4>' +
         '<div class="rp-ticks">' + METRICS.map(function (mm) {
           return '<label class="tickline"><input type="checkbox" data-metric="' + mm[0] + '"> <span>' + esc(mm[1]) + '</span></label>';
         }).join('') + '</div>' +
