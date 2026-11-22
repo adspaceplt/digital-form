@@ -206,7 +206,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the client seen), Open in Bukku on each; Read from Bukku at Suppliers
   Work. No bill is made in the portal. The record is the creator's grid
   (`.rec.crr-body`): the strip and the pane, and a rail of Totals (Billed,
-  Paid, Outstanding, Overdue, a line a currency) and Record (Bills, Last
+  Paid, Outstanding, Overdue, a line a currency) and Bill history (Bills, Last
   bill, Last paid), following the pane on a phone; Payment holds Bills
   under the Bukku band (`#supBills`, overdue first, each a `.cpay-job` on
   the phone row with a ⋯ of Open in Bukku; No bills. when none), and its

@@ -8093,7 +8093,7 @@
   var INV_SAID = {
     'not-linked': 'This client has no Bukku contact. Link one from the client\u2019s Billing.',
     cancelled: 'This month is cancelled.',
-    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-not-set-up': window.ADspaceWords.line.bukkuNotSetUp,
     denied: 'You do not have permission to read invoices. Please ask an admin.'
   };
   function checkInvoice(e) {

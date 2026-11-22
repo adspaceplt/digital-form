@@ -197,12 +197,12 @@
      No bill is made here: a supplier's own invoice is keyed into Bukku. */
   var BILL_SAID = {
     denied: 'You do not have permission to read supplier bills. Please ask an admin.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'needs-update': window.ADspaceWords.line.notYet,
     'not-found': 'This bill is no longer in Bukku. Press Read from Bukku, then try again.',
-    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-not-set-up': window.ADspaceWords.line.bukkuNotSetUp,
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
-    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
-    'bukku-refused': 'Bukku refused the request. Please try again, or contact an admin.',
+    'bukku-unreachable': window.ADspaceWords.line.bukkuNoAnswer,
+    'bukku-refused': window.ADspaceWords.line.bukkuRefused,
     failed: 'The request failed. Please try again.'
   };
   function billSaid(d) {
@@ -476,6 +476,7 @@
   function recBills(id) {
     state.recBills = null;
     paintRail();
+    if ($('supBillList')) UI.skeleton($('supBillList'), 3);
     rpc('supplier_bills', { p_supplier: id, p_paid_from: null, p_doc: null }).then(function (x) {
       if (state.open !== id) return;
       var d = x.data || {};
@@ -559,7 +560,7 @@
         lines('Overdue', function (b) { return b.balance; }, function (b) { return billState(b, today) === 'overdue'; }) + '</dl></section>';
       var last = list.reduce(function (m, b) { return !m || b.date > m ? b.date : m; }, '');
       var paid = list.reduce(function (m, b) { return b.paid_on && (!m || b.paid_on > m) ? b.paid_on : m; }, '');
-      html += '<section class="railblock rail-after"><h3 class="railtitle">Record</h3><dl class="raildates">' +
+      html += '<section class="railblock rail-after"><h3 class="railtitle">Bill history</h3><dl class="raildates">' +
         '<div><dt>Bills</dt><dd>' + list.length + '</dd></div>' +
         (last ? '<div><dt>Last bill</dt><dd>' + esc(billDay(last)) + '</dd></div>' : '') +
         (paid ? '<div><dt>Last paid</dt><dd>' + esc(billDay(paid)) + '</dd></div>' : '') + '</dl></section>';
@@ -804,7 +805,7 @@
            the Bukku band, as a creator's Payment pane holds its payments. */
         (s.status !== 'pending' ? '<section class="readgroup" id="supBills"><div class="readgroup-head"><h4 class="fsec-h">Bills</h4>' +
           '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="supBillRead" data-gate="bukku" hidden>Read from Bukku</button></span></div>' +
-          '<div class="msg" id="supBillMsg" role="status"></div><div id="supBillList"><p class="muted">Loading.</p></div></section>' : ''),
+          '<div class="msg" id="supBillMsg" role="status"></div><div id="supBillList"></div></section>' : ''),
       documents: '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           /* Each act stands in the section it fills (2026-10-20): Issue
              document beside Add existing document; Send email in Emails.

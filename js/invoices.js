@@ -31,10 +31,10 @@
   var SAID = {
     'send-off': window.ADspaceWords.line.emailSendOff,
     denied: 'You do not have permission to change billing details. Please ask an admin.',
-    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-not-set-up': window.ADspaceWords.line.bukkuNotSetUp,
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
-    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
-    'bukku-refused': 'Bukku refused the request. Please try again, or contact an admin.',
+    'bukku-unreachable': window.ADspaceWords.line.bukkuNoAnswer,
+    'bukku-refused': window.ADspaceWords.line.bukkuRefused,
     'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'no-email': 'This client has no email address. Add one to its billing contact.',
