@@ -424,7 +424,7 @@ a { color: inherit; }
 
 .pill {
   border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
-  border-radius: 999px; min-height: var(--ctl-h); padding: 0 14px; font-size: 13px;
+  border-radius: 999px; corner-shape: round; min-height: var(--ctl-h); padding: 0 14px; font-size: 13px;
   display: inline-flex; align-items: center; gap: 7px;
   transition: border-color var(--t) var(--ease-out), background var(--t) var(--ease-out), color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
@@ -832,7 +832,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 /* Changes requested is waiting on the team: its dot, never an amber slab. */
 .approve-row .btn-changes[aria-pressed="true"]::before {
-  content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-wait);
+  content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; background: var(--dot-wait);
 }
 /* The one primary action of a view is Apple's blue (the user, 2026-10-07,
    after the colour audit): Add, Create and Save as much as Publish, Release
@@ -996,7 +996,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-media video { background: #000; }
 .mk-play {
   position: absolute; left: 50%; top: 50%; z-index: 5; transform: translate(-50%, -50%);
-  width: 64px; height: 64px; border: 1.5px solid rgba(255, 255, 255, .5); border-radius: 50%; padding: 0;
+  width: 64px; height: 64px; border: 1.5px solid rgba(255, 255, 255, .5); border-radius: 50%; corner-shape: round; padding: 0;
   display: grid; place-items: center; cursor: pointer;
   background: rgba(0, 0, 0, .55); color: #fff;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
@@ -1020,7 +1020,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-safe-box span {
   position: absolute; top: 5px; left: 5px;
   font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-  color: #fff; background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 999px;
+  color: #fff; background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 999px; corner-shape: round;
   white-space: nowrap;
 }
 /* Instagram and Facebook Reels: 250 top, 420 bottom, 60 left, 120 right of 1080 x 1920 */
@@ -1055,7 +1055,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-slide { flex: 0 0 100%; }
 .mk-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
-  width: 28px; height: 28px; border-radius: 50%; border: 0;
+  width: 28px; height: 28px; border-radius: 50%; corner-shape: round; border: 0;
   background: rgba(255,255,255,.9); color: #333; font-size: 17px; line-height: 1;
   display: grid; place-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.2);
 }
@@ -1066,13 +1066,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: flex; justify-content: center; gap: 5px;
 }
 .mk-dot {
-  width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55);
+  width: 6px; height: 6px; border-radius: 50%; corner-shape: round; background: rgba(255,255,255,.55);
   cursor: pointer; box-shadow: 0 0 2px rgba(0,0,0,.3);
 }
 .mk-dot.is-on { background: #fff; }
 .mk-counter {
   position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.6); color: #fff;
-  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; corner-shape: round;
 }
 
 /* Shared chrome */
@@ -1082,7 +1082,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    blue at the foot, with the edges of each blob dissolved so no band shows.
    A logo, when there is one, covers all of it. */
 .mk-avatar {
-  width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
+  width: 32px; height: 32px; border-radius: 50%; corner-shape: round; flex: 0 0 auto; overflow: hidden;
   background:
     radial-gradient(circle at 18% 12%,  #ffe066 0%, rgba(255,224,102,0) 58%),
     radial-gradient(circle at 80% 10%,  #ff922b 0%, rgba(255,146,43,0)  52%),
@@ -1244,12 +1244,12 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-sysicons { display: flex; align-items: center; gap: 5px; }
 .mk-island {
   position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
-  width: 84px; height: 25px; border-radius: 999px; z-index: 4;
+  width: 84px; height: 25px; border-radius: 999px; corner-shape: round; z-index: 4;
   background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.14);
 }
 .mk-home {
   position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
-  width: 108px; height: 4px; border-radius: 999px;
+  width: 108px; height: 4px; border-radius: 999px; corner-shape: round;
   /* solid white with a soft dark halo, so it stays visible on light and dark
      content alike. mix-blend-mode disappeared against dark video. */
   background: rgba(255,255,255,.92); z-index: 4; pointer-events: none;
@@ -1285,7 +1285,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-avatar-rail { width: 34px; height: 34px; }
 .mk-rail-plus {
   position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
-  width: 16px; height: 16px; border-radius: 50%; background: #fe2c55; color: #fff;
+  width: 16px; height: 16px; border-radius: 50%; corner-shape: round; background: #fe2c55; color: #fff;
   display: grid; place-items: center; font-size: 12px; font-weight: 700;
   line-height: 1; text-shadow: none;
 }
@@ -1692,7 +1692,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 .draft-media i {
   position: absolute; bottom: 5px; left: 5px; font-style: normal; font-size: 10px;
   font-weight: 600; color: #fff; background: rgba(0,0,0,.6);
-  padding: 2px 6px; border-radius: 999px;
+  padding: 2px 6px; border-radius: 999px; corner-shape: round;
 }
 .draft-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .draft-top .select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
@@ -1714,7 +1714,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 }
 /* The decision's dot (2026-10-07), the status chip's own colours. */
 .status::before {
-  content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-off);
+  content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; background: var(--dot-off);
 }
 .status-pending::before  { background: var(--dot-wait); }
 .status-approved::before { background: var(--dot-ok); }
@@ -1843,7 +1843,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 .batch.is-folded .fold-caret { transform: rotate(-90deg); }
 .batch-progress {
   margin-left: auto; font-size: 12px; color: var(--ink-mute);
-  padding: 3px 9px; border-radius: 999px; background: var(--line-soft);
+  padding: 3px 9px; border-radius: 999px; corner-shape: round; background: var(--line-soft);
 }
 .batch.is-done .batch-progress { background: var(--ok-bg); color: var(--ok); }
 .batch-body { padding-top: 22px; }
@@ -1891,9 +1891,9 @@ dd > .linkbtn::before { inset: 3px 0; }
   font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px;
 }
 .progress-head span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
-.progress-track { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.progress-track { height: 6px; border-radius: 999px; corner-shape: round; background: var(--line); overflow: hidden; }
 .progress-fill {
-  height: 100%; width: 0; border-radius: 999px; background: var(--fill);
+  height: 100%; width: 0; border-radius: 999px; corner-shape: round; background: var(--fill);
   transition: width var(--t-slow) var(--ease);
 }
 
@@ -2159,7 +2159,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 .rec-month { margin-top: 4px; margin-inline-start: -8px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px;
   font-size: 13px; color: var(--ink-soft); text-align: left; }
 .rec-month .is-err { color: var(--err); }
-.rec-month-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-wait); flex: 0 0 auto; }
+.rec-month-dot { width: 8px; height: 8px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); flex: 0 0 auto; }
 .rec-month-dot.is-ok { background: var(--dot-ok); }
 .rec-month-dot.is-late { background: var(--dot-late); }
 
@@ -2195,7 +2195,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 .chip-state::before,
 .chip:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off)::before,
 .tone:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off)::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round;
   margin-right: 6px; background: var(--dot-off);
 }
 :is(.chip, .tone, .chip-state):is(.is-ok, .is-live)::before { background: var(--dot-ok); }
@@ -2326,7 +2326,7 @@ body.is-plain .topbar { background: var(--chrome); }
    seen at all, so the checker below supplies it until an address is pasted;
    once there is an image, the image is all there is. */
 .logopreview {
-  width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
+  width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; corner-shape: round; overflow: hidden;
   background: #fff; display: grid; place-items: center;
 }
 .logopreview img { width: 100%; height: 100%; object-fit: contain; }
@@ -2336,7 +2336,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 /* A caution is the words in ink after an amber dot (2026-10-07). */
 .msg.warn { color: var(--ink); }
-.msg.warn:not(:empty)::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
+.msg.warn:not(:empty)::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
 
 /* =========================================================================
    ADMIN CONSOLE
@@ -2379,7 +2379,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .appver.is-busy { cursor: progress; color: var(--ink-soft); }
 .appver.is-busy::before {
   content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 6px; vertical-align: -1px;
-  border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; corner-shape: round; border: 1.5px solid currentColor; border-right-color: transparent;
   animation: btnspin .7s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) { .appver.is-busy::before { animation: none; border-right-color: currentColor; opacity: .6; } }
@@ -2433,7 +2433,7 @@ body.is-plain .topbar { background: var(--chrome); }
    while the menu is open is what says it is pressable. */
 .acct-btn {
   display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h);
-  border: 0; border-radius: 50%; background: none; padding: 0;
+  border: 0; border-radius: 50%; corner-shape: round; background: none; padding: 0;
   transition: background var(--t-fast) var(--ease-out);
 }
 .acct-mark { font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-soft); }
@@ -2506,15 +2506,15 @@ body.is-plain .topbar { background: var(--chrome); }
    and the track sits inside it. */
 .switch {
   position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h);
-  padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer;
+  padding: 0; border: 0; background: none; border-radius: 999px; corner-shape: round; cursor: pointer;
 }
 .switch::before {
   content: ''; position: absolute; left: 2px; right: 2px; top: 50%; height: 26px; margin-top: -13px;
-  border-radius: 13px; background: var(--line-ctl); transition: background var(--t) var(--ease);
+  border-radius: 13px; corner-shape: round; background: var(--line-ctl); transition: background var(--t) var(--ease);
 }
 .switch::after {
   content: ''; position: absolute; left: 4px; top: 50%; width: 22px; height: 22px; margin-top: -11px;
-  border-radius: 50%; background: var(--knob); transition: transform var(--t) var(--ease);
+  border-radius: 50%; corner-shape: round; background: var(--knob); transition: transform var(--t) var(--ease);
 }
 .switch[aria-checked="true"]::before { background: var(--ok-solid); }
 .switch[aria-checked="true"]::after { transform: translateX(16px); }
@@ -2753,7 +2753,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .btn.is-busy { color: transparent; }
 .btn-spin {
   position: absolute; left: 50%; top: 50%; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
-  border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; corner-shape: round; border: 2px solid currentColor; border-right-color: transparent;
   color: var(--ink-soft); animation: btnspin .7s linear infinite;
 }
 .btn-go .btn-spin, .btn-primary .btn-spin, .btn-approve .btn-spin { color: var(--on-action); }
@@ -2769,7 +2769,7 @@ body.is-plain .topbar { background: var(--chrome); }
    script hides it; a browser without :has() draws nothing, as before. */
 .pageload { display: none; min-height: 52vh; align-items: center; justify-content: center; }
 main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pageload { display: flex; }
-.pageload-spin { display: block; width: 32px; height: 32px; border-radius: 50%;
+.pageload-spin { display: block; width: 32px; height: 32px; border-radius: 50%; corner-shape: round;
   background: conic-gradient(from 0deg, transparent 0 8%, var(--ink-soft) 100%);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
@@ -3076,7 +3076,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .tally-cell span { font-size: 11.5px; color: var(--ink-mute); }
 /* Over a limit is the figure in ink with an amber dot before its label. */
 .tally-cell.is-warn span::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round;
   margin-right: 6px; background: var(--dot-wait);
 }
 .tally-cell.is-total { border-color: var(--ink); }
@@ -3177,11 +3177,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .progress-top b { font-size: 14px; font-weight: 600; }
 .progress-card .progress-track {
-  height: 8px; border-radius: 999px; background: var(--line-soft);
+  height: 8px; border-radius: 999px; corner-shape: round; background: var(--line-soft);
   overflow: hidden; margin: 10px 0 0;
 }
 .progress-card .progress-fill {
-  height: 100%; background: var(--fill); border-radius: 999px;
+  height: 100%; background: var(--fill); border-radius: 999px; corner-shape: round;
   transition: width var(--t-slow) var(--ease);
 }
 .progress-card.is-done .progress-fill { background: var(--ok); }
@@ -3491,7 +3491,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
 .kstep-mark {
   flex: 0 0 auto; width: 17px; height: 17px; display: grid; place-items: center;
-  border: 1.5px solid var(--line); border-radius: 50%; color: transparent;
+  border: 1.5px solid var(--line); border-radius: 50%; corner-shape: round; color: transparent;
 }
 .kstep-mark svg { width: 11px; height: 11px; }
 .kstep-terms.is-done .kstep-mark {
@@ -4790,7 +4790,7 @@ body > .shell { width: 100%; }
    initials on the quiet fill while none is held. */
 .crm-row:is(.client-row, .cr-client-row) .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .cl-mark {
-  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; corner-shape: round; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--line-soft); color: var(--ink-soft);
   font-size: 12px; font-weight: 600; letter-spacing: -.01em;
@@ -5143,7 +5143,7 @@ body > .shell { width: 100%; }
    32 for months on a card nothing walked. */
 .filecard-x {
   position: absolute; top: 4px; right: 4px; z-index: 2;
-  width: var(--ctl-h); height: var(--ctl-h); border-radius: 50%;
+  width: var(--ctl-h); height: var(--ctl-h); border-radius: 50%; corner-shape: round;
   border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
   font-size: 15px; line-height: 1; display: grid; place-items: center;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
@@ -5281,7 +5281,7 @@ body > .shell { width: 100%; }
 }
 .hintbtn::before {
   content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; width: 18px; height: 18px;
-  margin: -9px 0 0 -9px; border-radius: 50%; border: 1px solid var(--line-ctl); background: var(--card);
+  margin: -9px 0 0 -9px; border-radius: 50%; corner-shape: round; border: 1px solid var(--line-ctl); background: var(--card);
   transition: background var(--t-fast) var(--ease-out);
 }
 @media (hover: hover) {
@@ -5333,7 +5333,7 @@ body > .shell { width: 100%; }
   color: inherit; text-decoration: none; min-height: var(--ctl-h);
 }
 .filepin-x {
-  flex: 0 0 auto; width: var(--ctl-h-sm); height: var(--ctl-h-sm); border-radius: 50%;
+  flex: 0 0 auto; width: var(--ctl-h-sm); height: var(--ctl-h-sm); border-radius: 50%; corner-shape: round;
   border: 1px solid transparent; background: none; color: var(--ink-mute);
   font-size: 15px; line-height: 1; display: grid; place-items: center;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
@@ -5679,7 +5679,7 @@ body > .shell { width: 100%; }
 .rec-mark {
   grid-area: mark; width: 46px; height: 46px; flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; overflow: hidden;
+  border-radius: 50%; corner-shape: round; overflow: hidden;
   background: var(--line-soft); color: var(--ink-soft);
   font-size: 15px; font-weight: 600; letter-spacing: -.01em;
 }
@@ -6466,7 +6466,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    and when and with whom on the right: the shape every activity feed uses. */
 .ovlog { list-style: none; margin: 0; padding: 0; }
 .ovlog-ico {
-  width: 30px; height: 30px; border-radius: 50%; background: var(--sunk);
+  width: 30px; height: 30px; border-radius: 50%; corner-shape: round; background: var(--sunk);
   display: grid; place-items: center; color: var(--ink-soft);
 }
 .ovlog-ico svg { width: 15px; height: 15px; stroke-width: 1.8; }
@@ -6484,7 +6484,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .ovfacts dd.is-missing { color: var(--err); font-weight: 600; }
 .ovfacts dd.is-empty { color: var(--ink-mute); }
 .readlogo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: middle;
-  border-radius: 50%; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+  border-radius: 50%; corner-shape: round; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .readlogo img { width: 100%; height: 100%; object-fit: cover; }
 /* When and with whom drop under what was said, rather than squeezing it. */
 /* A header the phone hides is not a header, so the row carries its own
@@ -6597,8 +6597,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    rectangular buttons that act beside it. Tab strips and view strips move
    between screens and keep their corners. A segment wrapped onto two rows
    rounds its track by one row's half height. */
-.seg, .seg-opt, .seg.has-thumb::before { border-radius: 999px; }
-.seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); }
+.seg, .seg-opt, .seg.has-thumb::before { border-radius: 999px; corner-shape: round; }
+.seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); corner-shape: round; }
 /* A wrapped segment is separate pills (the user, 2026-10-13, after Apple's
    own choice pills: four on a phone read as one block stuck together): the
    track gives its ground to each option, 8px apart. */
@@ -6690,7 +6690,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .bcol { flex: 0 0 248px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
 .bcol-head h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bcol.is-over .bcol-n { color: var(--ink); font-weight: 600; }
-.bcol.is-over .bcol-n::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; background: var(--dot-wait); }
+.bcol.is-over .bcol-n::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 5px; vertical-align: 1px; background: var(--dot-wait); }
 /* While a card is in hand the board does not also scroll under it, and the
    text under the finger is not selected. Only while: a board wider than the
    screen has to stay scrollable the rest of the time, which is why a finger
@@ -6813,7 +6813,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* A task's stage is the dot before its client, as Calendar draws an event
    (2026-10-07); the chip stays the quiet ground. */
 .cal-chip:is(.is-ok, .is-warn, .is-danger, .is-off) .cal-chip-who::before {
-  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; corner-shape: round;
   margin-right: 5px; vertical-align: 1px; background: var(--dot-off);
 }
 .cal-chip.is-late { box-shadow: inset 3px 0 0 var(--err); }
@@ -6878,7 +6878,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    surface and its own ink (SHELL-4, 2026-10-22). */
 .notif-count {
   position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
-  border-radius: 8px; background: var(--fill); color: var(--on-fill);
+  border-radius: 8px; corner-shape: round; background: var(--fill); color: var(--on-fill);
   font-size: 11px; font-weight: 600; line-height: 16px; text-align: center;
 }
 .kmenu.notif-menu { width: 340px; max-width: calc(100vw - 32px); padding: 8px; right: 0; }
@@ -7213,7 +7213,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 }
 .tcheck::before {
   content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px;
-  margin: -9px 0 0 -9px; border: 1.6px solid var(--line-ctl); border-radius: 50%;
+  margin: -9px 0 0 -9px; border: 1.6px solid var(--line-ctl); border-radius: 50%; corner-shape: round;
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 .tcheck::after {
@@ -7326,7 +7326,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The step: what it is, why, and the one action. A blocker is the warn
    colour and says so in words; the next person rides on the same press. */
 .qnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
-.qnext.is-blocked .qnext-title::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
+.qnext.is-blocked .qnext-title::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
 .qnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .qnext-line:empty, .qnext-line[hidden] { display: none; }
 .qhand[hidden] { display: none; }
@@ -7449,7 +7449,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .lockcard[hidden] { display: none; }
 .lockcard-mark {
   display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 20px;
-  border-radius: 50%; background: var(--line-soft); color: var(--ink-soft);
+  border-radius: 50%; corner-shape: round; background: var(--line-soft); color: var(--ink-soft);
 }
 .lockcard-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .lockcard-title { margin: 0; font: 600 24px/1.25 var(--font-head); letter-spacing: -.02em; text-wrap: balance; }
@@ -7552,7 +7552,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    pair where the cell is narrow. */
 .rp-facts .rp-sendacts { display: flex; flex-wrap: wrap; gap: 8px; }
 .rp-note { margin: 0; font-size: 13px; color: var(--ink); }
-.rp-note.is-warn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
+.rp-note.is-warn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
 /* Sent to the client? (2026-10-06): one line under the head once a
    published report's PDF is drawn, shaded as a box inside a card is, the
    question then its one press and the way to close it. */
@@ -7569,7 +7569,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-group .mute { font-weight: 400; color: var(--ink-mute); margin-left: 4px; }
 .rp-paste-sum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .rp-paste-sum.is-warn { color: var(--ink); }
-.rp-paste-sum.is-warn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
+.rp-paste-sum.is-warn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
 .is-narrow .rp-acc-row { grid-template-columns: minmax(0, 1fr) 84px auto; grid-template-areas: "name grow act" "fol fol act" "figs figs act"; gap: 4px 12px; }
 .is-narrow .rp-acc-row > .rp-num:nth-child(2) { grid-area: fol; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-acc-row > :last-child { grid-area: act; }
@@ -7612,7 +7612,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
               height var(--t-slow) var(--ease), opacity var(--t-fast) var(--ease-out);
 }
 .rp-steps.has-thumb > .rp-step.is-on { background-color: transparent; box-shadow: none; }
-.rp-step-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+.rp-step-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; corner-shape: round;
   background: var(--card); color: var(--ink-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .rp-step.is-on .rp-step-n { background: var(--fill); color: var(--on-fill); }
 .rp-step.is-done .rp-step-n { background: var(--ok-solid); color: var(--on-ok); }
@@ -7641,12 +7641,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-rank .select { width: auto; min-width: 160px; }
 .rp-ctl .btn svg { width: 14px; height: 14px; }
 .rp-check + .rp-check { border-top: 1px solid var(--line-soft); }
-.rp-check-mark { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+.rp-check-mark { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; corner-shape: round;
   box-shadow: inset 0 0 0 1.5px var(--line-ctl); color: var(--on-ok); }
 .rp-check.is-done .rp-check-mark { background: var(--ok-solid); box-shadow: none; }
 .rp-check.is-missing .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--line-ctl); }
 .rp-check-mark svg { width: 13px; height: 13px; }
-.rp-check.is-override .rp-check-mark::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-wait); }
+.rp-check.is-override .rp-check-mark::after { content: ''; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); }
 .rp-check-t { display: flex; flex-direction: column; min-width: 0; }
 .rp-check-t b { font-size: 14px; font-weight: 600; }
 .rp-check-t small { font-size: 12.5px; color: var(--ink-mute); }
@@ -7667,7 +7667,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font-size: 13px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere;
 }
 .rp-anote::before, .rp-aicheck > .msg.warn:not(:empty)::before {
-  content: ""; flex: 0 0 8px; width: 8px; height: 8px; margin: 6px 0 0; border-radius: 50%; background: var(--dot-wait);
+  content: ""; flex: 0 0 8px; width: 8px; height: 8px; margin: 6px 0 0; border-radius: 50%; corner-shape: round; background: var(--dot-wait);
 }
 .rp-anote + .rp-metatable, .rp-anote + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-m-act .btn { flex: 0 0 auto; min-width: 0; margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
@@ -7711,6 +7711,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    off the edge and above the home indicator; 16px where there is no inset
    (2026-11-22, the user: "move the footer down back to 20px"). */
 .portalfoot-in { padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) - 14px)); }
+/* In a phone's browser the bar sits below the page: Safari reports no inset
+   for its compact bar and keeps about 10pt clear under the page itself, so
+   16px left the line about 30pt above it. 4px puts it about 19px above
+   Safari's controls, the nearest that holds (measured on an iPhone,
+   2026-11-22, the user: option A). The Home Screen app keeps the rule above,
+   clear of the home indicator. Terms of Service keeps a finger's press,
+   reaching upward, never down under the bar. */
+@media (pointer: coarse) and (display-mode: browser) {
+  .portalfoot-in { padding-bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 14px)); }
+}
+@media (pointer: coarse) {
+  .portalfoot-link { position: relative; }
+  .portalfoot-link::after { content: ''; position: absolute; left: -8px; right: -8px; bottom: 0; height: var(--tap); }
+}
 .confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
@@ -7748,7 +7762,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    release would reload, and turns on its own while the page is fetched. */
 .pullmark {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: var(--z-pull);
-  width: 36px; height: 36px; margin-top: -36px; border-radius: 50%;
+  width: 36px; height: 36px; margin-top: -36px; border-radius: 50%; corner-shape: round;
   display: grid; place-items: center; pointer-events: none;
   background: var(--card); color: var(--ink-mute); box-shadow: var(--shadow-lift);
   opacity: 0; transform: translate(-50%, 0);
@@ -7904,7 +7918,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 }
 .cc-col.is-tipped .cc-plot { background: var(--sunk); border-radius: 4px 4px 0 0; }
 .cl-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.cl-dot { position: absolute; width: 8px; height: 8px; margin: 0 0 -4px -4px; border-radius: 50%; background: var(--card); border: 2px solid var(--ink-soft); }
+.cl-dot { position: absolute; width: 8px; height: 8px; margin: 0 0 -4px -4px; border-radius: 50%; corner-shape: round; background: var(--card); border: 2px solid var(--ink-soft); }
 .cl-dot.is-ok { border-color: var(--ok); }
 .cl-dot.is-mute { border-color: var(--line-ctl); }
 .cl-hit .cc-plot { background: transparent; }
@@ -7927,8 +7941,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .chart-bars.is-inline .cb-fill:last-child { border-radius: 0 4px 4px 0; }
 .chart-bars.is-inline .cb-fill:only-child { border-radius: 4px; }
 .chart-bars.is-inline .cb-value { margin-left: 0; text-align: right; font-weight: 400; color: var(--ink-soft); }
-.cp-key > i.is-ok { background: var(--dot-ok); border-radius: 50%; } .cp-key > i.is-warn { background: var(--dot-wait); border-radius: 50%; }
-.cp-key > i.is-err { background: var(--dot-late); border-radius: 50%; } .cp-key > i.is-off { background: var(--dot-off); border-radius: 50%; }
+.cp-key > i.is-ok { background: var(--dot-ok); border-radius: 50%; corner-shape: round; } .cp-key > i.is-warn { background: var(--dot-wait); border-radius: 50%; corner-shape: round; }
+.cp-key > i.is-err { background: var(--dot-late); border-radius: 50%; corner-shape: round; } .cp-key > i.is-off { background: var(--dot-off); border-radius: 50%; corner-shape: round; }
 .ovw-ghost { position: absolute; margin: 0; pointer-events: none; z-index: 0; }
 .ovw-ghost.is-out-next { animation: ovw-out-next var(--t-slow) var(--ease) forwards; }
 .ovw-ghost.is-out-prev { animation: ovw-out-prev var(--t-slow) var(--ease) forwards; }
@@ -8056,7 +8070,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .topbar .chrome-actions > .langtoggle,
 .topbar .chrome-actions > .pushbtn {
   height: var(--ctl-h); min-height: var(--ctl-h); min-width: var(--ctl-h);
-  border: 0; border-radius: var(--radius-sm); padding: 0 12px;
+  border: 0; border-radius: var(--radius-sm); corner-shape: squircle; padding: 0 12px;
   background: var(--tonal); color: var(--ink-soft);
   font-size: 13px; font-weight: 500;
 }
@@ -8120,7 +8134,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cl-mark.is-vic, .rec-mark.is-vic { box-shadow: 0 0 0 1px var(--card), 0 0 0 2px color-mix(in srgb, var(--vic) 72%, transparent); }
 /* The crown on a VIC's ringed mark (the Clients list) or tile (Waiting for
    you), sitting on the ring at its top right. */
-.vic-crown { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; border-radius: 50%;
+.vic-crown { position: absolute; top: -3px; right: -3px; width: 14px; height: 14px; border-radius: 50%; corner-shape: round;
   display: grid; place-items: center; background: var(--vic-bg); color: var(--vic-ink); box-shadow: 0 0 0 1.5px var(--card); }
 .vic-crown svg { width: 9px; height: 9px; stroke-width: 1.8; }
 .vicpop.popcard { display: grid; gap: 8px; width: min(320px, calc(100vw - 16px)); padding: 14px 16px 16px; }
@@ -8707,7 +8721,7 @@ body.ncpage { background: var(--nc-ground); }
 /* A namecard not found is every page's notice, under the bar it takes. */
 body.ncpage.is-plain { background: var(--card); }
 body.is-plain .ncmain { min-height: 0; padding: 0 16px; }
-.nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
+.nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; corner-shape: round; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: 500 var(--ctl-text) var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
@@ -8783,7 +8797,7 @@ body.is-maint { overflow: hidden; }
 .maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }
 /* A neutral band led by its amber dot (2026-10-07). */
 .upgradebar > :first-child::before, .annbar-text.is-important::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round;
   margin-right: 8px; vertical-align: 1px; background: var(--dot-wait);
 }
 .upgradebar.is-err > :first-child::before { background: var(--dot-late); }
@@ -8831,7 +8845,7 @@ body.is-maint { overflow: hidden; }
 }
 .tzbar-text { margin: 0; flex: 1 1 auto; min-width: 0; padding: 4px 0; overflow-wrap: anywhere; }
 .tzbar-text::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round;
   margin-right: 8px; vertical-align: 1px; background: var(--dot-wait);
 }
 .tzbar-x { flex: 0 0 auto; }
@@ -8854,7 +8868,7 @@ body.is-maint { overflow: hidden; }
   .annbar.previewbar .msg:not(:empty) { order: 1; flex-basis: 100%; padding: 0 0 6px 16px; }
 }
 .annbar.demobar .annbar-text::before, .annbar.previewbar .annbar-text::before {
-  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round;
   margin-right: 8px; vertical-align: 1px; background: var(--dot-wait);
 }
 @media (max-width: 640px) {
@@ -8912,7 +8926,7 @@ body.is-maint { overflow: hidden; }
 .health-words > :last-child { margin-bottom: 0; }
 .health-agree .btn { flex: 0 0 auto; }
 .health-fig.is-low::before {
-  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; corner-shape: round;
   margin-right: 4px; vertical-align: 1px; background: var(--dot-wait);
 }
 .health-trow + .health-trow { border-top: 1px solid var(--line-soft); }
@@ -8929,7 +8943,7 @@ body.is-maint { overflow: hidden; }
    their line), where the work stands, what the reader owes first, and
    results led by one figure. Light only, as every client page. */
 .ic { width: 15px; height: 15px; flex: 0 0 auto; vertical-align: -2px; }
-.cx-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-off); flex: 0 0 auto; }
+.cx-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; background: var(--dot-off); flex: 0 0 auto; }
 .cx-dot.is-ok { background: var(--dot-ok); }
 .cx-dot.is-wait { background: var(--dot-wait); }
 .cx-dot.is-late { background: var(--dot-late); }
@@ -9084,8 +9098,8 @@ body.is-maint { overflow: hidden; }
 .cx-pair .btn { gap: 6px; justify-content: center; }
 .cx-pair .btn svg { width: 14px; height: 14px; }
 .cx-terms { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); display: grid; gap: 12px; }
-.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 0; }
-.cx-term-bar i { display: block; height: 100%; border-radius: 3px; background: var(--fill); }
+.cx-term-bar { height: 6px; border-radius: 3px; corner-shape: round; background: var(--line-soft); overflow: hidden; margin: 8px 0 0; }
+.cx-term-bar i { display: block; height: 100%; border-radius: 3px; corner-shape: round; background: var(--fill); }
 .svc-row.cp-eng-row, .is-narrow .svc-row.cp-eng-row {
   grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "tile name open"; align-items: center;
 }
@@ -9147,7 +9161,7 @@ body.is-maint { overflow: hidden; }
   max-width: calc(var(--tabs, 5) * 120px + 10px); margin: 0 auto;
   display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr));
   box-sizing: border-box; height: var(--tb-h, var(--tabbar-h)); padding: 4px;
-  border: 1px solid var(--line-lift); border-radius: calc(var(--tb-h, var(--tabbar-h)) / 2);
+  border: 1px solid var(--line-lift); border-radius: calc(var(--tb-h, var(--tabbar-h)) / 2); corner-shape: round;
   transition: height var(--t-slow) var(--ease), max-width var(--t-slow) var(--ease);
   background: var(--chrome-solid);
   background: color-mix(in srgb, var(--card) 86%, transparent);
@@ -9252,7 +9266,7 @@ body.is-maint { overflow: hidden; }
   width: var(--tabbar-w); max-width: none; height: auto; margin: 0;
   max-height: calc(100vh - var(--head-h) - var(--tabbar-bottom) - 16px); overflow-y: auto;
   grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(var(--tabs, 5), 52px);
-  padding: 3px; border-radius: calc(var(--tabbar-w) / 2);
+  padding: 3px; border-radius: calc(var(--tabbar-w) / 2); corner-shape: round;
 }
 :root.has-tabbar.tabbar-side .tabbar-word {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
@@ -9527,7 +9541,7 @@ body.is-maint { overflow: hidden; }
 .qs-steps li { counter-increment: qs-step; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
 .qs-steps li::before {
   content: counter(qs-step); align-self: start; display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%; background: var(--sunk); font-size: 13px; font-weight: 600; color: var(--ink);
+  width: 28px; height: 28px; border-radius: 50%; corner-shape: round; background: var(--sunk); font-size: 13px; font-weight: 600; color: var(--ink);
 }
 .qs-list { display: grid; gap: 8px; }
 /* A step's categories: each a heading over its items 8px apart, the next set off by a hairline and a 24px step. */
@@ -9558,17 +9572,17 @@ body.is-maint { overflow: hidden; }
 .qs-pick > input, .qs-chip > input, .qs-mark { grid-column: 2; grid-row: 1; width: 22px; height: 22px; margin: 0; }
 .qs-pick > input, .qs-chip > input { position: relative; z-index: 1; opacity: 0; cursor: pointer; }
 .qs-mark {
-  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; corner-shape: round;
   box-shadow: inset 0 0 0 1.5px var(--line-ctl); color: var(--on-fill);
   transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
 .qs-mark svg { opacity: 0; transition: opacity var(--t-fast) var(--ease); }
 /* Several may be chosen: a rounded square, filled in ink with its tick. One of a set: a ring with an ink dot. */
-input[type=checkbox] ~ .qs-mark { border-radius: 6px; }
+input[type=checkbox] ~ .qs-mark { border-radius: 6px; corner-shape: squircle; }
 input[type=checkbox]:checked ~ .qs-mark { background: var(--fill); box-shadow: none; }
 input[type=checkbox]:checked ~ .qs-mark svg { opacity: 1; }
 input[type=radio] ~ .qs-mark svg { display: none; }
-input[type=radio] ~ .qs-mark::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--fill); transform: scale(0); transition: transform var(--t-fast) var(--ease); }
+input[type=radio] ~ .qs-mark::after { content: ""; width: 10px; height: 10px; border-radius: 50%; corner-shape: round; background: var(--fill); transform: scale(0); transition: transform var(--t-fast) var(--ease); }
 input[type=radio]:checked ~ .qs-mark { box-shadow: inset 0 0 0 1.5px var(--ink); }
 input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-pick b { display: block; font-weight: 600; }
@@ -9674,7 +9688,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-asked { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; }
 .qs-asked > span:last-child { display: grid; gap: 2px; color: var(--ink-soft); }
 .qs-asked b { color: var(--ink); font-weight: 600; }
-.qs-asked-tick { width: 24px; height: 24px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); display: inline-flex; align-items: center; justify-content: center; }
+.qs-asked-tick { width: 24px; height: 24px; border-radius: 50%; corner-shape: round; background: var(--ok-solid); color: var(--on-ok); display: inline-flex; align-items: center; justify-content: center; }
 .qs-rep { display: grid; gap: 12px; background: var(--card); border-radius: var(--radius); padding: 16px; }
 .qs-rep-who { display: grid; gap: 2px; min-width: 0; }
 .qs-rep-who b { font-size: 15px; font-weight: 600; color: var(--ink); }
@@ -9733,7 +9747,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 .qs-done { justify-items: start; padding-top: 16px; }
 .qs-done p { margin: 0; }
-.qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); }
+.qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; corner-shape: round; background: var(--ok-solid); color: var(--on-ok); }
 body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
@@ -9774,24 +9788,19 @@ body.qs-page { background: var(--card); }
   }
 }
 
-/* Squircle corners (the user, 2026-10-24: "Yes, where supported"): where the
-   browser draws `corner-shape` (Chrome), the bounded surfaces and the
-   controls take Apple's continuous corner, the same radius tokens; a
-   browser without it keeps the round corner. Pills, discs, dots and rings
-   stay round. Every other rounded box takes it, so no two corners of one
-   radius read differently side by side: an icon mark beside a button, a
-   strip's sliding thumb in its squircle track, a count in its tab
-   (2026-11-07, the user: "it looks all different"). */
-@supports (corner-shape: squircle) {
-  .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head, .rec-part, .railblock, .readgroups,
-  .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-side,
-  .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn,
-  .iconbtn, .kmenu-btn, .plink, .stg-go, .navitem, .railrow, .backlink, .railnext, .railmiss, .linkbtn,
-  .empty, .sidebar, .tab-n, .chip, .tone, .rp-step, .rp-steps, svg.sec, .console-head, .console-main, .cr-card, .stg-go-g, .stg-hit-g,
-  .cmdbar-views.has-thumb::before, .rectabs.has-thumb::before, .tabrow.has-thumb::before, .rp-steps.has-thumb::before {
-    corner-shape: squircle;
-  }
-}
+/* Squircle corners (the user, 2026-10-24: "Yes, where supported"; 2026-11-07:
+   "it looks all different"; 2026-11-22, the client bar's bell squircle beside
+   a round sign-out). Where the browser draws `corner-shape` (Chrome, Safari),
+   every rounded box takes Apple's continuous corner on the same radius
+   tokens, by one rule at no specificity rather than a list of classes a new
+   component could miss. A round shape opts out where its radius is set:
+   every `border-radius` of 50%, 999px or half a size carries
+   `corner-shape: round` beside it (`tests/corners.js` reads both sheets for
+   it and measures every box on the walk). The review mockups copy other
+   apps' shapes and keep the round corner. A browser without it ignores both.
+   A pseudo-element cannot stand inside `:where()`, so it is named apart. */
+:where(*), ::before, ::after { corner-shape: squircle; }
+:where(.card-stage, .vs-pic-box, .mk), :where(.card-stage, .vs-pic-box, .mk) :where(*), :where(.card-stage, .vs-pic-box, .mk) ::before, :where(.card-stage, .vs-pic-box, .mk) ::after { corner-shape: round; }
 
 /* ---------- The code from an email, a box a digit (js/otp.js) ----------
    One field holds the code, unseen over the boxes; the boxes draw it, the

@@ -123,7 +123,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Value | Use |
 |---|---|---|
-| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2). Where the browser draws `corner-shape`, every rounded box takes the squircle on the same radii (surfaces, controls, icon marks, the ⋯, a strip's sliding thumb, a count, a chip), never some round and some squircle beside each other (`tests/corners.js`); a browser without it keeps the round corner; pills, discs, dots and rings stay round (the user, 2026-10-24; 2026-11-07) |
+| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2). Where the browser draws `corner-shape` (Chrome, Safari), every rounded box takes the squircle on the same radii by one rule at no specificity (`:where(*), ::before, ::after`), never a list of classes; a round shape opts out where its radius is set, every `border-radius` of 50%, 999px or half its box carrying `corner-shape: round` in the same block, and a variant taking a pill back to a corner says `squircle` beside it; the review mockups stay round; never some round and some squircle beside each other (`tests/corners.js` reads both sheets and measures every box on the client pages and console routes; the user, 2026-10-24; 2026-11-07; 2026-11-22) |
 | `--head-h` | 64px (56 phone) | Every bar, one height (the user, 2026-11-21: "Take note all client facing (brandmark \| {portal name}) height must be same"): every client page's bar (the wordmark and the portal's name), the console's signed-out pages and the console's own head; no page sets its own; never wraps; the kicker hides below 640 before anything clips |
 | `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes (the user, 2026-10-23); under a finger a `.btn` still takes a 44px press (its `::after`) |
 | `--ctl-h-sm` | 30px (32 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
@@ -496,7 +496,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The foot stands on the page's own ground (no band of its own), a `--line`
   rule above it; its bottom pad is the larger of 16px and the home bar's
   inset less 14px (20px on an iPhone, the tab bar's offset), never the two
-  added; the © line stands above the home indicator.
+  added; the © line stands above the home indicator. In a phone's browser
+  (coarse pointer, `display-mode: browser`) the floor is 4px, about 19px
+  above Safari's controls, which report no inset; Terms of Service keeps a
+  44px press reaching upward.
 - The last "not centred" is usually two type sizes. Measure the ink, the
   borders and the type before calling it even.
 
