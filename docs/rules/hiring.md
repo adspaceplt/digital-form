@@ -1,5 +1,5 @@
 <!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
-# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `hiring-mail`)
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `2026-11-22-interview-time-pending.sql`, `hiring-mail`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -89,7 +89,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   until new times are sent.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
-  not chosen. Settings, Hiring: Time limits holds the figures
+  not chosen. A time chosen and not yet confirmed (`2026-11-22-interview-time-pending.sql`;
+  the user, 2026-11-22: "It looks like it is already confirmed") reads
+  Status Interview time pending confirmation, Time chosen with its weekday
+  and Duration alone, never where: no address, Get directions, Meet link or
+  note, `careers_read` answering `picked` with the state, the time, the
+  length and online or at the office alone; then This interview time is
+  pending confirmation by ADspace. and You will receive an email once it is
+  confirmed. Please do not visit the office until then. (online: You will
+  receive an email with the Google Meet link once it is confirmed.), and To
+  change the time, please contact ADspace on WhatsApp. with Chat on
+  WhatsApp (`.btn-sm`, the chat mark, `quoteWhatsApp`, never the number).
+  No email before the confirmation names the place: hiring-mail fills
+  `{place}` in the confirmation alone, whatever a template holds. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
 - Interview held (`2026-11-20-interview-held.sql`; the user, 2026-11-20):
   a confirmed interview whose time has begun offers Interview held (the

@@ -37,7 +37,7 @@
     received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
-    cancelled: 'Interview cancelled',
+    cancelled: 'Interview cancelled', pending: 'Interview time pending confirmation',
     offer: 'Application in progress', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   /* A time the candidate waits on, in the portal's form (2026-11-20,
@@ -97,8 +97,22 @@
         '<p class="msg" id="crMsg"></p>' +
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
     }
-    if (i.state === 'picked') return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) +
-      '</dd></div>' + place(i, false) + '</dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+    /* A time chosen, not yet confirmed (2026-11-22, the user: "Before
+       confirmation … a candidate won't actually see any like Google Meet
+       details or office details"): the time and its length alone, never where
+       (`careers_read` withholds it), the time said to wait on ADspace, and
+       the way to change it, ADspace's WhatsApp chat, never its number. */
+    if (i.state === 'picked') {
+      var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
+      return '<section class="qs-sec cr-iv" id="crIv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
+        '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div></dl>' +
+        '<p class="cr-next" id="crPending">This interview time is pending confirmation by ADspace. ' + (i.mode === 'online'
+          ? 'You will receive an email with the Google Meet link once it is confirmed.'
+          : 'You will receive an email once it is confirmed. Please do not visit the office until then.') + '</p>' +
+        '<div class="cr-change"><p class="cr-next">To change the time, please contact ADspace on WhatsApp.</p>' +
+        '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') +
+        esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div></section>';
+    }
     /* An invitation not answered by its reply-by date (2026-11-19, the user:
        "Expire, tell the team"): choosing closes, the team is told. */
     if (i.state === 'expired') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">The period for choosing an interview time has ended. ' +
@@ -396,7 +410,7 @@
       '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
-      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
+      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (i && i.state === 'picked' ? STATUS.pending : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
       (d.docs && d.docs.length ? docsSection(d.docs) : (dec || (i ? interview(i) : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
     if (!(d.docs && d.docs.length) && !dec && i && i.state === 'invited') wire();
     if ($('crPool')) wirePool();

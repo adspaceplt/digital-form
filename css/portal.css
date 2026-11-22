@@ -9855,6 +9855,11 @@ body.qs-page { background: var(--card); }
    value does (104px), so an address line and a meeting link keep one line. */
 @media (max-width: 640px) { .cr-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
 .cr-iv > .qs-foot { margin: 0; max-width: none; padding-top: 8px; }
+/* A time chosen, not yet confirmed (2026-11-22): the way to change it, its
+   line at the left and Chat on WhatsApp at the right edge, the button taking
+   the line under it where both do not fit. */
+.cr-change { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.cr-change > .cr-next { flex: 1 1 240px; }
 /* A candidate's offer and contract (2026-11-17, release H2 step D): a card
    a document, its name over its reference at the left, where it stands at
    the right; opened, the code, the caution, then the terms and the reply. */

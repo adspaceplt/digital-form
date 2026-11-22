@@ -122,8 +122,10 @@ export function fields(m: Record<string, any>): Record<string, string> {
     note: String((m.kind === 'moved' ? m.decide_note : m.kind === 'invite' || m.kind === 'confirm' ? m.note : '') || ''),
     time: String(m.when || ''),
     /* The office as the candidate's page names it, with its directions on our
-       own short link, the sending domain's (2026-11-19). */
-    place: m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
+       own short link, the sending domain's (2026-11-19); in the confirmation
+       alone, never before the team confirms the time, whatever a template
+       holds (2026-11-22). */
+    place: m.kind !== 'confirm' ? '' : m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + String(m.link || '')
       : 'The interview will be held at the ADspace office:\n' + OFFICE + '\nDirections: ' + MAP,
     'google meet notice': m.mode === 'online' ? 'The Google Meet link sent earlier no longer applies.' : '',
     'decision date': String(m.decide_by || ''),
