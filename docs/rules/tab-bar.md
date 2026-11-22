@@ -65,7 +65,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   tab"), at a desk too, since the choice follows the person: up to three on
   (`TAB_PICKS`), any group's, a fourth refused on its row (The tab bar holds
   up to three sections. Turn one off first.). Over the rail's groups, the
-  Tab bar group lists the bar's tabs in the bar's order, the Dashboard and
+  Tab bar order group lists the bar's tabs in the bar's order, the Dashboard and
   the sections on, each moved by its grip or the arrow keys as the rail's
   rows are (the user, 2026-11-22: "If I want clients to be at the middle,
   it's not possible now"): the Dashboard always in the bar, in any of its

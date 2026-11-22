@@ -2035,7 +2035,7 @@
        with the arrow keys on it) within its group, and a switch a row for
        the tab bar: on for the sections the bar holds (the first ones while
        none is chosen, following a drag), up to TAB_PICKS, a fourth refused
-       on its row. Over them, the Tab bar group: the bar's tabs in the bar's
+       on its row. Over them, the Tab bar order group: the bar's tabs in the bar's
        order, the Dashboard among them, moved the same way (2026-11-22); a
        section turned on joins its end, turned off leaves it. Save keeps the
        order and the bar for the rail and the bar alike; Reset puts the
@@ -2126,7 +2126,7 @@
     }
     function roFill(order) {
       var lists = $('railLists');
-      lists.innerHTML = '<section class="fsec ro-sec ro-bar"><h4 class="fsec-h"><span id="roHtab">Tab bar</span></h4>' +
+      lists.innerHTML = '<section class="fsec ro-sec ro-bar"><h4 class="fsec-h"><span id="roHtab">Tab bar order</span></h4>' +
         '<div class="ro-list ro-tablist" id="roTabList" role="list" aria-labelledby="roHtab"></div></section>' + railGroups().map(function (g, n) {
         var label = g.querySelector('.sidebar-label');
         var items = Array.prototype.filter.call(g.querySelectorAll('.navitem[data-section]'), function (b) { return !b.hidden; });
@@ -2156,7 +2156,7 @@
     function roShown() {
       return tabPick(roOrder(), tabRoom, roTabs || [], roOv());
     }
-    /* A row of the Tab bar group: the section's glyph and name, its grip. */
+    /* A row of the Tab bar order group: the section's glyph and name, its grip. */
     function roTabRow(k) {
       var b = document.querySelector('.navitem[data-section="' + k + '"]');
       var w = b && b.querySelector('span'), glyph = b && b.querySelector('svg');
@@ -2166,7 +2166,7 @@
         '<span class="ro-name">' + esc(name) + '</span>' +
         '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + ' in the tab bar" aria-keyshortcuts="ArrowUp ArrowDown">' + RO_GRIP + '</button></div>';
     }
-    /* After a change: a move inside the Tab bar group is the bar's new
+    /* After a change: a move inside the Tab bar order group is the bar's new
        order; anything else redraws the group from the bar as it now reads.
        The switches follow either way. */
     function roMarks(moved) {
@@ -2413,8 +2413,8 @@
       { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
-      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the tab bar at the bottom of your phone. Each one joins the end of Tab bar, where the Dashboard and the sections can be put in any order.' },
-      { at: '#railSave', text: 'Save applies the order on the web and the tab bar on your phone. Reset restores the standard order and tab bar.' }] },
+      { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the tab bar at the bottom of your phone. Under Tab bar order, drag them and the Dashboard into any order.' },
+      { at: '#railSave', text: 'Save applies the order on the web and on your phone, and the tab bar on your phone. Reset restores the standard order and tab bar.' }] },
     'mine.health': { name: 'Health', steps: [
       { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },
       { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
