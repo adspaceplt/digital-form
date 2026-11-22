@@ -454,6 +454,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   control sharing its line (`uxaudit` `strip`). Tabs in a full strip share what is spare
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.
+- The chosen tab always shows its word on the sliding thumb at 4.5:1: the
+  thumb is painted in the page's own order, never promoted to a layer of
+  its own (no `translate3d`, `translateZ` or `will-change` on a
+  `.has-thumb::before`), since iOS Safari drew a promoted thumb over the
+  word inside a phone sheet (2026-11-22; `tests/segkind.js`).
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
   with the soft ink, red (`is-err`) only where what it counts needs acting
   on now (Content Review: Changes requested, on both sides; Overview: an

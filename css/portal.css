@@ -6582,18 +6582,22 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    fill as it did. The move is `transform` (the compositor's, smooth while
    the page repaints the view behind it) with the size following on the same
    curve; the first placement and a resize snap (`.is-snap`), so only a
-   choice moves. Reduced motion zeroes it with every other transition. */
+   choice moves. Reduced motion zeroes it with every other transition.
+   The thumb is never promoted to a layer of its own (no translate3d, no
+   will-change; 2026-11-22): inside a composited phone sheet and a masked
+   strip that scrolls, iOS Safari drew the promoted thumb over the chosen
+   tab, a white pill with no word (Email templates' Candidates). Painted in
+   the page's own order, the word always stands on it. */
 .cmdbar-views.has-thumb, .seg.has-thumb, .rectabs.has-thumb, .tabrow.has-thumb { position: relative; isolation: isolate; }
 .cmdbar-views.has-thumb::before, .seg.has-thumb::before, .rectabs.has-thumb::before, .tabrow.has-thumb::before {
   content: ""; position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
   width: var(--thumb-w, 0); height: var(--thumb-h, 0);
-  transform: translate3d(var(--thumb-x, 0), var(--thumb-y, 0), 0);
+  transform: translate(var(--thumb-x, 0), var(--thumb-y, 0));
   border-radius: calc(var(--radius-ctl) - 2px);
   background: var(--seg-on); box-shadow: inset 0 0 0 1px var(--line);
   opacity: var(--thumb-o, 0);
   transition: transform var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
               height var(--t-slow) var(--ease), opacity var(--t-fast) var(--ease-out);
-  will-change: transform;
 }
 .seg.has-thumb::before { border-radius: calc(var(--radius-sm) - 2px); }
 /* A CHOICE IS A PILL (the user, 2026-10-04): a value picked from two to four
@@ -7609,7 +7613,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-steps.has-thumb::before {
   content: ""; position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
   width: var(--thumb-w, 0); height: var(--thumb-h, 0);
-  transform: translate3d(var(--thumb-x, 0), var(--thumb-y, 0), 0);
+  transform: translate(var(--thumb-x, 0), var(--thumb-y, 0));
   border-radius: calc(var(--radius-ctl) - 2px); background: var(--seg-on); box-shadow: inset 0 0 0 1px var(--line);
   opacity: var(--thumb-o, 0);
   transition: transform var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
