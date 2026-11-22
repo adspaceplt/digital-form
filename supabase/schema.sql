@@ -140692,12 +140692,23 @@ select public.functions_tidy();
 --   until confirmed). The invitation (`invited`) and the confirmed interview
 --   answer as before; a cancelled one still answers its state alone. Every
 --   other answer is unchanged.
+--   `hiring_interview_move(p_interview, p_at)` (Change interview time; the
+--   user, 2026-11-22: "one clear act"): the part or an Owner moves a time
+--   chosen or confirmed, not yet held, to one new time an hour ahead at
+--   least and 60 days at most (`slot-past`, `slot-far`, `held`, `closed`,
+--   `not-picked`), confirming it; the confirmation email is let go again
+--   (`confirm_mail` cleared) and the change filed in the candidate's history.
 --
--- ORDER: the pages, then this file. A page served before it reads the
--- pending state without the note, which it never drew there.
+-- ORDER: the pages, then this file, then hiring-mail. Until this file runs,
+-- Change interview time is refused as not available (the function is not
+-- there) and the pending state still answers its note, which the page never
+-- draws; until hiring-mail is deployed, Resend may take a second
+-- confirmation within a day of the first as the first (the same key).
 --
 -- ROLLBACK
---   Restate `careers_read(text)` from HIRING BEFORE THE FIRST HIRE.
+--   Pages first; restate `careers_read(text)` from HIRING BEFORE THE FIRST
+--   HIRE and run `drop function if exists public.hiring_interview_move(uuid,
+--   timestamptz)`.
 -- ===========================================================================
 
 create or replace function public.careers_read(p_key text)
@@ -140747,6 +140758,47 @@ begin
 end $$;
 revoke all on function public.careers_read(text) from public;
 grant execute on function public.careers_read(text) to anon, authenticated;
+
+/* Change interview time (2026-11-22, the user: one clear act for the team):
+   a time chosen or confirmed, not yet held, moved to one new time and
+   confirmed, an hour ahead at least and 60 days at most. The candidate's
+   page reads it at once; the page then moves the Google Meet's own event
+   (meet-create, the same event) and emails the confirmation again. Filed in
+   the candidate's history. */
+create or replace function public.hiring_interview_move(p_interview uuid, p_at timestamptz)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  i public.hiring_interviews;
+  c public.hiring_candidates;
+  v_role text;
+  v_was timestamptz;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id for update;
+  if c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if i.held_at is not null then return jsonb_build_object('error', 'held'); end if;
+  if c.outcome is not null or c.stage not in ('invited', 'interview') then return jsonb_build_object('error', 'closed'); end if;
+  if i.state not in ('picked', 'confirmed') or i.picked is null then return jsonb_build_object('error', 'not-picked'); end if;
+  if p_at is null or p_at < now() + interval '1 hour' then return jsonb_build_object('error', 'slot-past'); end if;
+  if p_at > now() + interval '60 days' then return jsonb_build_object('error', 'slot-far'); end if;
+  v_was := i.slots[i.picked];
+  if v_was = p_at and i.state = 'confirmed' then return jsonb_build_object('ok', true, 'same', true, 'mode', i.mode); end if;
+  update public.hiring_interviews set slots = array[p_at], picked = 1, state = 'confirmed',
+    approved_by = case when i.state = 'confirmed' then i.approved_by else me.id end,
+    approved_at = case when i.state = 'confirmed' then i.approved_at else now() end,
+    confirm_mail = null, confirm_mail_at = null, updated_at = now()
+   where id = i.id;
+  update public.hiring_candidates set stage = 'interview', last_step_at = now(), updated_at = now() where id = c.id;
+  perform public.hiring_log(c.id, 'candidate.interview', 'Interview time changed from ' || public.hiring_when(v_was) || ' to ' || public.hiring_when(p_at));
+  return jsonb_build_object('ok', true, 'mode', i.mode, 'was', v_was, 'at', p_at, 'meet', i.meeting_event_id is not null);
+end $$;
+revoke all on function public.hiring_interview_move(uuid, timestamptz) from public;
+grant execute on function public.hiring_interview_move(uuid, timestamptz) to authenticated;
 
 -- END OF INTERVIEW TIME PENDING -----------------------------------------------
 

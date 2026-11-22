@@ -97,9 +97,22 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   length and online or at the office alone; then This interview time is
   pending confirmation by ADspace. and You will receive an email once it is
   confirmed. Please do not visit the office until then. (online: You will
-  receive an email with the Google Meet link once it is confirmed.), and To
+  receive an email with the Google Meet link once it is confirmed.). To
   change the time, please contact ADspace on WhatsApp. with Chat on
-  WhatsApp (`.btn-sm`, the chat mark, `quoteWhatsApp`, never the number).
+  WhatsApp (`.btn-sm`, the chat mark, `quoteWhatsApp`, never the number)
+  stands under a pending and a confirmed interview alike, until it is held.
+  Change interview time (the interview's ⋯, group 2, before Cancel; the
+  part or an Owner; a time chosen or confirmed, not held) asks one new date
+  and time, refusing in place one over an online meeting already on the
+  shared calendar (`meet-create` `busy`, this interview's own event
+  aside), and `hiring_interview_move` moves it and confirms it (an hour
+  ahead to 60 days, `slot-past`, `slot-far`, `held`, `closed`,
+  `not-picked`), filed in the candidate's history (never the Activity
+  record); online, `meet-create` `update` moves the interview's own event
+  (`adhire{id}`, never a second; `create` where only a time was chosen),
+  and a move the calendar refuses puts the earlier time back; Email {name}
+  sends the confirmation again at the new time (its Resend key carries the
+  time). An office interview holds no calendar booking.
   No email before the confirmation names the place: hiring-mail fills
   `{place}` in the confirmation alone, whatever a template holds. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).

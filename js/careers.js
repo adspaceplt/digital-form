@@ -80,6 +80,15 @@
     return '<div><dt>Location</dt><dd class="cr-where">' + where + '</dd></div>' +
       '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>';
   }
+  /* The way to change an interview's time, before its confirmation and after
+     it until it is held (2026-11-22, the user): ADspace's WhatsApp chat, never
+     its number. */
+  function change() {
+    var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
+    return '<div class="cr-change"><p class="cr-next">To change the time, please contact ADspace on WhatsApp.</p>' +
+      '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') +
+      esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>';
+  }
   function interview(i) {
     if (!i) return '';
     var head = '<h2 class="qs-sec-h">Interview</h2>';
@@ -103,15 +112,11 @@
        (`careers_read` withholds it), the time said to wait on ADspace, and
        the way to change it, ADspace's WhatsApp chat, never its number. */
     if (i.state === 'picked') {
-      var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
       return '<section class="qs-sec cr-iv" id="crIv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div></dl>' +
         '<p class="cr-next" id="crPending">This interview time is pending confirmation by ADspace. ' + (i.mode === 'online'
           ? 'You will receive an email with the Google Meet link once it is confirmed.'
-          : 'You will receive an email once it is confirmed. Please do not visit the office until then.') + '</p>' +
-        '<div class="cr-change"><p class="cr-next">To change the time, please contact ADspace on WhatsApp.</p>' +
-        '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') +
-        esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div></section>';
+          : 'You will receive an email once it is confirmed. Please do not visit the office until then.') + '</p>' + change() + '</section>';
     }
     /* An invitation not answered by its reply-by date (2026-11-19, the user:
        "Expire, tell the team"): choosing closes, the team is told. */
@@ -133,7 +138,7 @@
       var join = i.mode === 'online' && i.link && window.ADspaceWords.absUrl(i.link)
         ? '<a class="btn btn-primary" href="' + esc(window.ADspaceWords.absUrl(i.link)) + '" target="_blank" rel="noopener">Join Google Meet</a>' : '';
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
-        place(i, true) + '</dl>' + (join ? '<div class="qs-foot">' + join + '</div>' : '') + '</section>';
+        place(i, true) + '</dl>' + (join ? '<div class="qs-foot">' + join + '</div>' : '') + change() + '</section>';
     }
     return '';
   }

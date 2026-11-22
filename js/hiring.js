@@ -671,7 +671,9 @@
     if (live && i.state === 'invited' && i.invite_mail !== 'sent')
       acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
     var menu = live && !i.held_at ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
-      '<div class="kmenu" hidden><button class="kmenu-item" data-g="5" type="button" data-h="ivcancel" data-id="' + esc(i.id) + '" role="menuitem">Cancel</button></div></span>' : '';
+      '<div class="kmenu" hidden>' + (i.state === 'picked' || i.state === 'confirmed'
+        ? '<button class="kmenu-item" data-g="2" type="button" data-h="ivtime" data-id="' + esc(i.id) + '" role="menuitem">Change interview time</button>' : '') +
+      '<button class="kmenu-item" data-g="5" type="button" data-h="ivcancel" data-id="' + esc(i.id) + '" role="menuitem">Cancel</button></div></span>' : '';
     return '<div class="hir-iv' + (i.state === 'cancelled' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>Interview ' + esc(i.round) + '</b>' +
         '<span class="hir-iv-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' + menu + '</span></div>' +
       '<dl class="ovfacts">' +
@@ -1223,18 +1225,26 @@
       return !d.skipped;
     });
   }
-  function busyLine() {
-    /* The online meetings already on the shared calendar over the next two
-       weeks, named first so the times keyed avoid them. */
-    var C = window.ADspaceClock, from = new Date(), to = new Date(Date.now() + 14 * 86400000);
+  /* The online meetings already on the shared calendar over the next two
+     weeks (`meet-create` `busy`, their times alone), or null where the
+     calendar could not be read. */
+  function readBusy() {
+    var from = new Date(), to = new Date(Date.now() + 14 * 86400000);
     return fnCall('meet-create', { action: 'busy', from: from.toISOString(), to: to.toISOString() }).then(function (d) {
-      if (d.error || !d.busy) return 'The shared calendar could not be read. Check it before choosing times.';
-      if (!d.busy.length) return 'No online meetings are booked in the next two weeks.';
-      return 'Online meetings already booked: ' + d.busy.slice(0, 12).map(function (b) {
-        return C.date(b.start) + ', ' + C.clock(b.start) + (b.end ? ' to ' + C.clock(b.end) : '');
-      }).join('; ') + (d.busy.length > 12 ? '; and ' + (d.busy.length - 12) + ' more.' : '.');
+      return d.error || !d.busy ? null : d.busy;
     });
   }
+  function busyWords(busy, skip) {
+    var C = window.ADspaceClock;
+    if (!busy) return 'The shared calendar could not be read. Check it before choosing times.';
+    busy = busy.filter(function (b) { return !skip || Date.parse(b.start) !== Date.parse(skip); });
+    if (!busy.length) return 'No online meetings are booked in the next two weeks.';
+    return 'Online meetings already booked: ' + busy.slice(0, 12).map(function (b) {
+      return C.date(b.start) + ', ' + C.clock(b.start) + (b.end ? ' to ' + C.clock(b.end) : '');
+    }).join('; ') + (busy.length > 12 ? '; and ' + (busy.length - 12) + ' more.' : '.');
+  }
+  /* Named first so the times keyed avoid them. */
+  function busyLine() { return readBusy().then(function (b) { return busyWords(b); }); }
   function invite(btn) {
     var c = state.rec, C = window.ADspaceClock, today = C.today(), key = newKey();
     if (btn) btn.disabled = true;
@@ -1315,6 +1325,71 @@
     var open = (state.interviews || []).filter(function (i) { return i.state === 'confirmed' && !i.held_at; })[0];
     if (!open) { invite(btn); return; }
     cancelIv(open.id, function () { invite(null); }, true);
+  }
+  /* Change interview time (2026-11-22, the user: one clear act): a time
+     chosen or confirmed, not yet held, moved to one new time and confirmed.
+     A time over an online meeting already on the shared calendar is refused
+     in the question (this interview's own event aside); online, the
+     interview's own Google Meet event moves with it (`meet-create`, the same
+     event, never a second), or is made where the time was only chosen; the
+     candidate is emailed the confirmation at the new time. A move the
+     calendar refuses puts the earlier time back. */
+  function moveTime(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec, C = window.ADspaceClock;
+    if (!i || !i.picked) return;
+    var was = i.slots[i.picked - 1], own = i.meeting_link ? was : null, mins = Number(i.minutes) || 30;
+    readBusy().then(function (busy) {
+      var f = [
+        { name: 'day', label: 'Date', type: 'date', min: C.today(), value: C.day(was), half: true },
+        { name: 'time', label: 'Time', type: 'time', value: C.time(was), half: true },
+        { line: busyWords(busy, own) }].concat(mailFields('confirm', true));
+      window.ADspaceConfirm.ask({ title: 'Change interview time', go: 'Save', wait: true, fields: f,
+        body: 'Interview ' + i.round + ' is set for ' + when(was) + '. ' + (i.state === 'picked'
+          ? 'It will be confirmed at the new time' + (i.mode === 'online' ? ', with a Google Meet on the shared calendar.' : '.')
+          : i.mode === 'online' && i.meeting_link ? 'Its Google Meet will move to the new time on the shared calendar.' : 'It stays confirmed at the new time.'),
+        check: function (v) {
+          var t = C.at(v.day, v.time);
+          if (!t) return 'Enter the date and time.';
+          if (t.getTime() < Date.now() + 3600000) return SAID['slot-past'];
+          if (t.getTime() > Date.now() + 60 * 86400000) return 'Choose a time within the next 60 days.';
+          var s = t.getTime(), e = s + mins * 60000;
+          var clash = (busy || []).filter(function (b) {
+            var bs = Date.parse(b.start), be = b.end ? Date.parse(b.end) : bs + 1;
+            return bs < e && be > s && !(own && bs === Date.parse(own));
+          })[0];
+          if (clash) return 'Another online meeting is booked from ' + C.clock(clash.start) + (clash.end ? ' to ' + C.clock(clash.end) : '') + '. Choose another time.';
+          return '';
+        } },
+      function (v) {
+        var at = C.at(v.day, v.time).toISOString();
+        return rpc('hiring_interview_move', { p_interview: id, p_at: at }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) return said(r);
+          if (d.same) return '';
+          state.pane = 'interview';
+          var step = i.mode === 'online' ? fnCall('meet-create', { interviewId: id, action: i.meeting_link ? 'update' : 'create' }) : Promise.resolve({});
+          step.then(function (m) {
+            /* Google still making the new event's link: the time stands. */
+            if (m.error === 'meet-pending') { openRec(c.id).then(function () { msg('hirRecMsg', SAID['meet-pending'], 'warn'); }); return; }
+            if (m.error) {
+              /* The calendar kept the earlier time: the interview takes it back. */
+              rpc('hiring_interview_move', { p_interview: id, p_at: was }).then(function (b) {
+                var back = !b.error && !(b.data || {}).error;
+                openRec(c.id).then(function () {
+                  msg('hirRecMsg', (m.error === 'slot-taken' && m.start ? 'Another online meeting is booked from ' + C.clock(m.start) + (m.end ? ' to ' + C.clock(m.end) : '') + '.'
+                    : SAID[m.error] || SAID['google-refused']) + (back ? ' The interview keeps its earlier time.' : ' The shared calendar still holds the earlier time. Change the time again.'), 'err');
+                });
+              });
+              return;
+            }
+            (mailWanted('confirm', v) ? sendMail(id, 'confirm') : Promise.resolve(false)).then(function (sent) {
+              openRec(c.id).then(function () { msg('hirRecMsg', sent ? 'Saved. The candidate was emailed.' : 'Saved.', 'ok'); });
+            });
+          });
+          return '';
+        });
+      });
+    });
   }
   function cancelIv(id, then, renew) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
@@ -1530,6 +1605,7 @@
       });
     });
     on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
+    on('ivtime', function (b) { moveTime(b.getAttribute('data-id')); });
     on('ivheld', function (b) { heldIv(b.getAttribute('data-id')); });
     on('ivmove', function (b) { moveDecision(b.getAttribute('data-id')); });
     on('score', score);
