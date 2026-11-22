@@ -3282,7 +3282,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .hc-steps { margin: 0 0 6px; font-size: 12px; color: var(--ink-mute); }
 .hc-track { height: 4px; margin: 0 0 16px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
 .hc-track > i { display: block; height: 100%; background: var(--fill); transition: width var(--t) var(--ease); }
-.hc-step { display: grid; gap: 16px; }
+.hc-step { display: block; }
+.hc-q + .hc-q { margin-top: 16px; }
 .hc-step + .hc-step { margin-top: 16px; }
 .hc-q { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
 .hc-q > legend { padding: 0; margin-bottom: 8px; }
