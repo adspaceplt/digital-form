@@ -684,6 +684,60 @@
       });
     } }
   ];
+  /* Owed to us and We owe (2026-11-22, the Bukku structure mockup, item
+     6): the receivables and bills open, from Clients' Payments' own figures
+     (`payment_analysis`, read once a visit, Clients: Billing Full control as
+     Payments asks), in the currency Payments opens on. Never a Bukku read. */
+  var canPay = function () { return may('clients.billing', 'manage'); };
+  function payRead() {
+    if (!memo.pay) memo.pay = db.rpc('payment_analysis', { p_currency: null }).then(function (r) {
+      if (r.error) throw new Error(r.error.message);
+      if (!r.data || r.data.error) throw new Error(r.data && r.data.error === 'denied' ? 'You do not have permission to read payments. Please ask an admin.' : 'The payment figures could not be loaded. Refresh the page.');
+      return r.data;
+    });
+    return memo.pay;
+  }
+  function curMoney(n, cur) {
+    var M = window.ADspaceMoney;
+    return cur === 'MYR' || cur === 'SGD' || !cur ? M.money2(n || 0, cur === 'SGD' ? 'SG' : 'MY')
+      : cur + ' ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function payOut(d, src) {
+    var key = src || 'out';
+    var w = (d.weeks || []).reduce(function (a, x) { return a + (Number(x[key]) || 0); }, 0);
+    return Math.round((w + (src ? 0 : Number((d.later || {}).out) || 0)) * 100) / 100;
+  }
+  var PAY = [
+    { key: 'owed', title: 'Owed to us', sec: 'clients', can: canPay,
+      go: function () { return ['/admin/?s=clients&view=payments', 'clients', 'Clients, Payments']; },
+      load: function () {
+        return payRead().then(function (d) {
+          var s = d.summary || {}, over = Number(s.overdue) || 0;
+          return { fig: curMoney(s.open, d.currency), money: true,
+                   sub: over > 0 ? (curMoney(over, d.currency) + ' overdue').replace(/ /g, ' ') : 'None overdue', subTone: over > 0 ? 'err' : '' };
+        });
+      } },
+    { key: 'weowe', title: 'We owe', sec: 'clients', can: canPay,
+      /* Opens the Payments view holding more of it, of those the reader
+         may open: Creators' or Suppliers'. */
+      go: function (d) {
+        var cr = may('campaigns.creators'), su = may('suppliers');
+        var toSup = su && (!cr || (d && payOut(d, 'suppliers') > payOut(d, 'creators')));
+        if (toSup) return ['/admin/?s=suppliers&view=payments', 'suppliers', 'Suppliers, Payments'];
+        if (cr) return ['/admin/?s=campaigns&tab=payments', 'campaigns', 'Creators, Payments'];
+        return null;
+      },
+      load: function () {
+        return payRead().then(function (d) {
+          var all = payOut(d), c = payOut(d, 'creators'), sp = Math.round(Math.max(0, all - c) * 100) / 100;
+          /* Each part held whole (its spaces unbroken), the line wrapping
+             only between parts; a part with nothing owed left out. */
+          var part = function (n, word) { return n > 0 ? (curMoney(n, d.currency) + ' ' + word).replace(/ /g, ' ') : ''; };
+          return { fig: curMoney(all, d.currency), money: true, data: d,
+                   sub: all > 0 ? [part(c, 'creators'), part(sp, 'suppliers')].filter(Boolean).join(' · ') : 'No bills' };
+        });
+      } }
+  ];
   function completed(d) {
     return (d && Array.isArray(d.by_person) ? d.by_person : []).reduce(function (a, p) { return a + (Number(p.completed) || 0); }, 0);
   }
@@ -1099,13 +1153,14 @@
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
      starts on its first route instead of an empty page. */
-  var ALL = [].concat(SOURCES, SALES, OPS, [].concat.apply([], CHARTS));
+  var ALL = [].concat(SOURCES, SALES, OPS, PAY, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
   /* What Team draws: Needs attention's sources, the four figures, Work by
      person and Clients this month. */
   function teamAny() {
     return SOURCES.some(function (c) { return c.can(); }) || canFigures() || canTeamWork() ||
-      SALES.concat(OPS).some(function (t) { return LEAD.indexOf(t.key) > -1 && t.can(); });
+      SALES.concat(OPS).some(function (t) { return LEAD.indexOf(t.key) > -1 && t.can(); }) ||
+      PAY.some(function (t) { return t.can(); });
   }
 
   // ---- Drawing ----------------------------------------------------------------------
@@ -1124,25 +1179,28 @@
     label(el, t);
     grid.appendChild(el);
     /* A count with clients behind it opens them on Detail (2026-11-12). */
-    var to = typeof t.to === 'function' ? t.to() : t.to;
+    var to = typeof t.to === 'function' ? t.to() : t.to, way = null;
     var open = function (e) {
       if (!el.classList.contains('is-link') || e.target.closest('button')) return;
       if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault();
-      openCard(to);
+      if (way) go(way[0], way[1]); else openCard(to);
     };
-    if (to) { el.addEventListener('click', open); el.addEventListener('keydown', open); }
+    if (to || t.go) { el.addEventListener('click', open); el.addEventListener('keydown', open); }
     var run = function () {
       t.load().then(function (o) {
-        if (to) {
+        /* A tile that opens a view (Owed to us, We owe) names where it goes. */
+        way = t.go ? t.go(o.data) : null;
+        if (to || way) {
           el.classList.add('is-link'); el.setAttribute('role', 'button'); el.tabIndex = 0;
-          el.setAttribute('aria-label', titleOf(t) + ': ' + o.fig + '. Show the clients');
+          el.setAttribute('aria-label', titleOf(t) + ': ' + o.fig + '. ' + (way ? 'Open ' + way[2] : 'Show the clients'));
         }
         var fig = el.querySelector('.ovw-kpi-fig');
         fig.textContent = o.fig;
         fig.className = 'ovw-kpi-fig' + (o.tone ? ' is-' + o.tone : '') + (o.money ? ' is-money' : '');
         label(el, t);
         el.querySelector('.ovw-kpi-sub').textContent = o.sub || '';
+        el.querySelector('.ovw-kpi-sub').classList.toggle('is-err', o.subTone === 'err');
         var line = el.querySelector('.ovw-kpi-line');
         Array.prototype.forEach.call(line.querySelectorAll('.ovw-kpi-arrow, .ovw-kpi-verdict'), function (x) { x.remove(); });
         line.className = 'ovw-kpi-line' + (o.trend && o.sub ? ' is-' + o.trend.tone : '');
@@ -1154,6 +1212,7 @@
           ? '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(o.bar * 100) + '%"></i></span>'
           : (o.spark ? CH.spark(o.spark, o.tone) : '');
       }).catch(function (e) {
+        way = null;
         el.classList.remove('is-link'); el.removeAttribute('role'); el.removeAttribute('tabindex'); el.removeAttribute('aria-label');
         el.querySelector('.ovw-kpi-fig').textContent = '—';
         el.querySelector('.ovw-kpi-sub').innerHTML = '';
@@ -1179,6 +1238,21 @@
     grid.className = 'ovw-kpis ovw-lead';
     grid.id = 'ovwLead';
     box.appendChild(grid);
+    list.forEach(function (t) { tile(grid, t); });
+  }
+  /* Sales: Owed to us and We owe, under the lead row (2026-11-22), at
+     Clients: Billing Full control alone. */
+  function payGroup(box) {
+    var list = PAY.filter(function (t) { return t.can(); });
+    if (!list.length) return;
+    var sec = document.createElement('section');
+    sec.className = 'ovw-paygroup';
+    sec.id = 'ovwPay';
+    sec.innerHTML = '<h3 class="ovw-group-h">Sales</h3>';
+    var grid = document.createElement('div');
+    grid.className = 'ovw-kpis ovw-lead ovw-pay';
+    sec.appendChild(grid);
+    box.appendChild(sec);
     list.forEach(function (t) { tile(grid, t); });
   }
   /* A chart's title with its way out at the right edge ("Sales ›"), the
@@ -2327,6 +2401,7 @@
       ME.build(box);
     } else {
       lead(box);
+      payGroup(box);
       /* The line under the Dashboard's name: the open work and what of it
          is late, from the report the page already reads. */
       if (canFigures() && window.ADspaceAdmin && window.ADspaceAdmin.counts) {
