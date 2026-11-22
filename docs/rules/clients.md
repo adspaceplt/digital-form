@@ -98,7 +98,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     counts them.
 - Intake: Brand name (the trading name; the registered name belongs to Billing),
   Source, Salutation (the contact sheet's own list; 2026-10-14), Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
-  Industry (from Settings, Clients: Industries, below), Market, Urgency to commence (`clients.commence`, blank until
+  Industry (from Settings, Partners, Clients: Industries, below), Market, Urgency to commence (`clients.commence`, blank until
   asked; Within 3 months, 3 to 6 months, More than 6 months). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
   fixed: the colleague keying a lead holds it. Sales by (`crmSalesBy`, More
@@ -116,7 +116,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   with Other last, answers the team each with how many clients hold it and
   anyone else (the quotation website) the names alone; the console's
   Industry and `/quote/` read it once a visit, and `quote_website_create`
-  takes only one it holds (`bad-industry`). Settings, Clients: Industries
+  takes only one it holds (`bad-industry`). Settings, Partners, Clients: Industries
   (`#indSheet`, `team.settings`): one table, English · 中文 · Clients · the
   pen; the pen turns its row into the two fields (Enter saves, Escape
   leaves), Delete in that row only where no client holds it (asked,

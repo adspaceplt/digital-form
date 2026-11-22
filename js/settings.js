@@ -99,7 +99,7 @@
       return db.rpc('usage_report').then(function (r) {
         var d = r.data || {};
         if (r.error || d.error || !d.db) throw r.error || new Error(d.error || 'usage');
-        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
+        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI cost US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
       });
     },
     /* The latest build required (2026-11-17): the build in force, else
@@ -211,6 +211,8 @@
     },
     /* Every email's wording (2026-11-10): how many each recipient holds. */
     mailtpl: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line(); },
+    /* The supplier's emails alone, counted as their sheet lists them. */
+    supmail: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line('suppliers'); },
     /* The payments sheet (2026-11-09): on or off, and rows added. */
     crsheet: function () {
       return db.rpc('creator_sheet_get').then(function (r) {
@@ -249,7 +251,7 @@
     if (!document.querySelector('.stg-row[data-row="' + id + '"]')) return;
     var asked = READ[id] && READ[id]();
     if (!asked || !asked.then) { fillLine(id, ''); return; }
-    asked.then(function (t) { fillLine(id, t || ''); }).catch(function () { fillLine(id, 'Could not load.'); });
+    asked.then(function (t) { fillLine(id, t || ''); }).catch(function () { fillLine(id, 'Could not load. Refresh the page.'); });
   }
 
   /* The rows, group by group (regrouped 2026-10-11, the queue's task 46:
@@ -269,26 +271,14 @@
     function add(key, name, glyph, secs) {
       secs = secs.map(function (x) { return { name: x[0], rows: x[1].filter(Boolean) }; }).filter(function (x) { return x.rows.length; });
       if (!secs.length) return;
+      /* Each row knows its part, so search finds it by its part's name too. */
+      secs.forEach(function (x) { x.rows.forEach(function (r) { r.part = x.name; }); });
       out.push({ key: key, name: name, glyph: glyph, secs: secs,
         rows: secs.reduce(function (all, x) { return all.concat(x.rows); }, []) });
     }
     function opens(fn) { return function (btn) { if (fn) fn(btn); }; }
     var W = window;
     add('portal', 'Portal', 'settings', [
-      ['Pages and notices', [
-        /* Page availability (2026-10-29): Upgrade mode a page at a time. */
-        may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
-        /* Require latest build (2026-11-17): every open console below the
-           live build refreshes once nothing is open in it (js/admin.js). */
-        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
-          open: function (btn) { requireBuild(btn); } },
-        may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
-          open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
-        may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
-          open: opens(W.ADspaceNotice && W.ADspaceNotice.manage) },
-        /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
-           that opens the console on sample data (js/demo.js). */
-        biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
       ['Portal switches', [
         /* Portal switches (2026-11-17, the access restructure): AI, email
            and WhatsApp for every colleague at once, above each group's own
@@ -308,6 +298,20 @@
             history.pushState(null, '', '/admin/?s=team&tab=groups');
             W.ADspaceAdmin.show('team');
           } }]],
+      ['Pages and notices', [
+        /* Page availability (2026-10-29): Upgrade mode a page at a time. */
+        may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
+        /* Require latest build (2026-11-17): every open console below the
+           live build refreshes once nothing is open in it (js/admin.js). */
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
+          open: function (btn) { requireBuild(btn); } },
+        may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
+          open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
+        may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
+          open: opens(W.ADspaceNotice && W.ADspaceNotice.manage) },
+        /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
+           that opens the console on sample data (js/demo.js). */
+        biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
       ['Company', [
         biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta(), open: openHol },
         biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts'), open: openDepts },
@@ -343,28 +347,6 @@
       /* Usage and limits (2026-11-18, the user: "the usage, the limits,
          the charges"): what the portal uses against its plans. */
       ['Plan', [biz && { id: 'usage', name: 'Usage and limits', kind: 'open', meta: line('usage'), open: openUsage }]]]);
-    var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
-    add('clients', 'Clients', 'clients', [
-      ['Clients', [
-        biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
-        biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
-          meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
-            num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
-        /* Its days open a supplier's link too (2026-10-22, SET2-2). */
-        biz && { id: 'details', name: 'Details forms', kind: 'edit',
-          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
-        /* The month Analytics counts leads and clients from (2026-10-25). */
-        biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
-          meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
-            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
-      ['Creators', [
-        /* Creator and campaign IDs and the Job reference (2026-11-08). */
-        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
-        /* When a creator is paid after their post (2026-11-09). */
-        biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
-          meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
-            'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
-        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]]]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', 'ops', [['', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
@@ -378,10 +360,10 @@
       biz && { id: 'nudge', name: 'Task reminders', kind: 'edit',
         meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
           : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
-            num('task_start_days') === 0 ? 'Not started: Off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
+            num('task_start_days') === 0 ? 'No reminder for tasks not started' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
         meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
-          'Average lateness under ' + plural(num('timely_late_days'), 'day', 'days')]) },
+          'Average lateness at most ' + plural(num('timely_late_days'), 'day', 'days')]) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -414,31 +396,37 @@
     /* The portal's own switches over the Messages ones (SEND SWITCHES). */
     var mailOn = autoOn('email_on'), waOn = autoOn('whatsapp_on'), L = window.ADspaceWords.line;
     add('messages', 'Messages', 'whatsapp', [
-      ['Email', [
+      /* What governs the whole group heads it, above its parts (the user,
+         2026-11-22: "if a button is applied throughout all parts then be
+         at the top of the tab"); Portal's switches stay Portal's. */
+      ['', [
         /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
            nothing the portal emails by itself goes; a colleague's send does. */
         biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('auto_email_on') ? 'On · Creator and candidate emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
+        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'), off: !waOn,
+          meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
+        /* Sent again (2026-10-14): the same message sent within the window
+           asks again before it goes, WhatsApp and emails alike (SET2-1). */
+        biz && { id: 'resend', name: 'Sent again', kind: 'edit',
+          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
+      ['Email', [
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
            every email a colleague sends by hand. Off, each send act stays
            drawn, disabled with its reason. */
         biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Emails sent by colleagues' : 'Off', open: flipMail },
         /* Every email's wording, by recipient, in one editor (2026-11-10). */
-        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
+        /* A colleague with Suppliers Full Access alone reaches their
+           emails from Partners, Suppliers (2026-11-22). */
+        biz && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
           open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
         /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
            company mailbox each section's emails reply to, never a
            colleague's own address. */
         biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, HR, Accounts payable, Finance, e-Invoice, Legal and compliance',
-          open: function () { openMailboxes(); } },
-        /* Sent again (2026-10-14): the same message sent within the window
-           asks again before it goes, WhatsApp and emails alike (SET2-1). */
-        biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-          meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
+          open: function () { openMailboxes(); } }]],
       ['WhatsApp', [
-        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'), off: !waOn,
-          meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
         /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
            colleague sends by hand. */
         biz && { id: 'clientwaon', name: 'Send on WhatsApp', kind: 'switch', on: autoOn('client_wa_on'), off: !waOn,
@@ -454,6 +442,38 @@
            WhatsApp, each a message ADspace pays for. */
         biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
+    var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
+    add('partners', 'Partners', 'clients', [
+      /* Details forms opens a client's and a supplier's link alike: the
+         group's own, above its parts (2026-11-22). */
+      ['', [
+        /* Its days open a supplier's link too (2026-10-22, SET2-2): one
+           figure for both, kept with the client's link, where it began. */
+        biz && { id: 'details', name: 'Details forms', kind: 'edit',
+          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') }]],
+      ['Clients', [
+        biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
+        biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
+          meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
+            num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
+        /* The month Analytics counts leads and clients from (2026-10-25). */
+        biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
+          meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
+            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
+      ['Creators', [
+        /* Creator and campaign IDs and the Job reference (2026-11-08). */
+        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
+        /* When a creator is paid after their post (2026-11-09). */
+        biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
+          meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
+            'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
+        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]],
+      /* Suppliers (the user, 2026-11-22: "Clients tab redesign to
+         Partners … Clients, Creators and Suppliers"): a supplier's emails,
+         Email templates opened on its Suppliers tab. */
+      ['Suppliers', [
+        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'supmail', name: 'Supplier email templates', kind: 'open', meta: line('supmail'),
+          open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('supmail'), 'suppliers'); } }]]]);
     /* Performance (the user, 2026-10-29: "approve all"): one row a view,
        each opening the one sheet on its part behind the master code. */
     add('performance', 'Performance', 'mine', [['', perfMay() ? W.ADspacePerf.VIEWS.map(function (v) {
@@ -487,9 +507,12 @@
         open: function (btn) { if (W.ADspaceOps.openTemplates) W.ADspaceOps.openTemplates(btn); } },
       W.ADspaceCRM && W.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate Card wording', kind: 'open', meta: line('wording'),
         open: function (btn) { W.ADspaceCRM.openWording(btn); } }]]]);
-    return out;
+    /* The rail's order (2026-11-22, the rail regroup): the portal's own
+       groups, then Work, Partners, then Company. */
+    return out.sort(function (a, b) { return ORDER.indexOf(a.key) - ORDER.indexOf(b.key); });
   }
 
+  var ORDER = ['portal', 'ai', 'work', 'reports', 'messages', 'partners', 'templates', 'accounting', 'performance', 'hiring'];
   /* What each Performance part holds, as its sheet heads them. */
   var PERF_META = { months: 'Grades, issue points, queries, reminders', quarters: 'Prizes, flexible hours',
     company: 'Bonus pool, company trip, shares', commission: 'Score needed' };
@@ -542,7 +565,9 @@
   var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
   var chosen = '';
-  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; if (chosen === 'money') chosen = 'accounting'; }
+  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; if (chosen === 'money') chosen = 'accounting';
+    /* Clients became Partners (2026-11-22): an old link lands there. */
+    if (chosen === 'clients') chosen = 'partners'; }
 
   function current(list) {
     return list.some(function (x) { return x.key === chosen; }) ? chosen : (list[0] ? list[0].key : '');
@@ -569,7 +594,7 @@
     var q = norm(query).split(' ').filter(Boolean), out = [];
     list.forEach(function (g) {
       g.rows.forEach(function (r) {
-        var hay = norm([r.name, g.name, r.meta === ' ' ? '' : r.meta, lines[r.id] || ''].join(' '));
+        var hay = norm([r.name, g.name, r.part || '', r.meta === ' ' ? '' : r.meta, lines[r.id] || ''].join(' '));
         if (q.every(function (w) { return hay.indexOf(w) >= 0; })) out.push({ g: g, r: r });
       });
     });
@@ -581,7 +606,7 @@
     return '<div class="stg-card stg-found">' + h.map(function (x) {
       return '<button class="stg-hit" type="button" data-hit="' + x.r.id + '" data-hg="' + x.g.key + '">' +
         '<span class="stg-hit-g" aria-hidden="true">' + glyphOf(x.g) + '</span>' +
-        '<span class="stg-what"><span class="stg-name">' + esc(x.r.name) + '</span><span class="stg-meta">' + esc(x.g.name) + '</span></span>' +
+        '<span class="stg-what"><span class="stg-name">' + esc(x.r.name) + '</span><span class="stg-meta">' + esc(x.r.part && x.r.part !== x.g.name ? x.g.name + ' · ' + x.r.part : x.g.name) + '</span></span>' +
         CHEV + '</button>';
     }).join('') + '</div>';
   }
@@ -731,7 +756,7 @@
         send(live.commit, live.built).then(function (d) {
           tell('');
           var was = d.was || null;
-          bridge.undoHere('Required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
+          bridge.undoHere('Latest version required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
             document.querySelector('#setList .stg-row[data-row="build"]'));
         }).catch(function (e) { btn.disabled = false; tell(String((e && e.message) || e), 'err'); });
       });
@@ -870,7 +895,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('demo')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('demo')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* ---- Creator and campaign IDs (2026-11-08) ---------------------------
@@ -910,7 +935,7 @@
     db.rpc('creator_sheet_get').then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        rowSay('crsheet')(r.error && /function|schema cache/i.test(r.error.message) ? CS_SAID['needs-update'] : (CS_SAID[d.error] || 'Could not load.'), 'err');
+        rowSay('crsheet')(r.error && /function|schema cache/i.test(r.error.message) ? CS_SAID['needs-update'] : (CS_SAID[d.error] || 'Could not load. Refresh the page.'), 'err');
         return;
       }
       window.ADspaceConfirm.ask({
@@ -930,7 +955,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('crsheet')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('crsheet')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* A payment details reference as the database writes it (creator_pay_ref). */
@@ -946,7 +971,7 @@
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
       if (r.error || !Array.isArray(list) || !list.length) {
-        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load.', 'err');
+        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load. Refresh the page.', 'err');
         return;
       }
       var by = {};
@@ -1006,7 +1031,7 @@
                  (the overnight review, 2026-11-10). */
               var done = steps.slice(0, i).map(function (x) { return IDS_WORD[x]; });
               if (done.length) readLine('ids');
-              return (IDS_SAID[d.error] || IDS_WORD[k] + ' not saved.') + (done.length ? ' ' + done.join(' and ') + ' saved.' : '');
+              return (IDS_SAID[d.error] || IDS_WORD[k] + ' not saved. Please try again.') + (done.length ? ' ' + done.join(' and ') + ' saved.' : '');
             }
             return one(i + 1);
           });
@@ -1018,7 +1043,7 @@
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('ids')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('ids')('Could not load. Refresh the page.', 'err'); });
   }
 
   /* ---- Public holidays (2026-10-14) ------------------------------------
@@ -1042,9 +1067,9 @@
   function holMeta() {
     /* Its line's room is kept while the read is out, so nothing below moves
        when it arrives. */
-    if (!hol.rows) return hol.err ? 'Could not load.' : '\u00a0';
+    if (!hol.rows) return hol.err ? 'Could not load. Refresh the page.' : '\u00a0';
     var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
-    return next ? 'Next ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
+    return next ? 'Next ' + next.name + ', ' + holDay(next.day) : 'None ahead';
   }
   function holLine() { var meta = holMeta(); if (meta) fillLine('holidays', meta); }
   function readHol(done) {
@@ -1145,7 +1170,7 @@
           if (said) return said;
           hol.editing = null;
           return new Promise(function (ok) { readHol(function () { paintHol(); paint(); holMsg('Deleted.', 'ok'); ok(''); }); });
-        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
       });
   }
   /* ---- Departments (2026-10-23) ------------------------------------------
@@ -1263,7 +1288,7 @@
     db.rpc('department_set_active', { p_key: d.key, p_on: !d.active }).then(function (r) {
       var said = depSaid(r);
       if (said) { depMsg(said); return; }
-      depChanged(d.active ? 'Set inactive.' : 'Set active.');
+      depChanged(d.active ? 'Department set inactive.' : 'Department set active.');
     }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
   }
   function depDelete(d) {
@@ -1271,7 +1296,7 @@
       function () {
         return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
           return depSaid(r) || depChanged('Deleted.');
-        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
       });
   }
   function openDepts(opener) {
@@ -1562,7 +1587,7 @@
   }
   /* What setting the page does, said under the choice. */
   function pgNote(keys) {
-    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is Temporarily unavailable.';
+    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is unavailable.';
     if (keys.indexOf('admin') >= 0) return 'Admins continue to work under a notice bar; every other colleague sees the notice page.';
     return 'Visitors see the notice page in its place. Nothing on the page is changed.';
   }
@@ -1819,14 +1844,14 @@
     }, function () {
       return db.rpc('tax_codes_delete', { p_codes: codes }).then(function (r) {
         var d = r.data || {};
-        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not deleted.');
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not deleted. Please try again.');
         if (d.error) return taxRefusal(d);
         tax.rows = d.codes || [];
         tax.mode = 'list'; tax.picked = {};
         paintTax(); readLine('taxcodes');
         taxMsg('Deleted.', 'ok');
         return '';
-      }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+      }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
     });
   }
   function taxAsk(t) {
@@ -1919,7 +1944,7 @@
           (s3 ? '<section class="fsec"><h4 class="fsec-h">Files</h4><dl class="ovfacts">' +
             fact('Stored', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
             fact('Last counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
-        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI US$ ' + usd(t.ai_usd) + ' this month']));
+        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI cost US$ ' + usd(t.ai_usd) + ' this month']));
       }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be loaded.', paint); });
     };
     paint();
