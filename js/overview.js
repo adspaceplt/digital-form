@@ -1220,6 +1220,8 @@
       sel.className = 'select select-sm';
       sel.setAttribute('data-seg', '');
       sel.setAttribute('data-strip', '');
+      /* Its own id, so its strip is named (`ovwView-{card}Strip`), never a counter. */
+      sel.id = 'ovwView-' + c.key;
       sel.setAttribute('aria-label', 'View: ' + title);
       sel.innerHTML = views.map(function (v, i) { return '<option value="' + i + '"' + (i === view ? ' selected' : '') + '>' + esc(v.word) + '</option>'; }).join('');
       sel.addEventListener('change', function () { view = Number(sel.value) || 0; run(); });
