@@ -629,8 +629,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
-- 2026-11-22, found by the view strip release (`claude/view-strips`), failing identically on main 4519c46, so from the required-fields releases (#1322, #1328), not this one: `adsreport` (an ad needs a name), `reports` (refuses without a client, without one), `handbook` (a title is required, and a file), `notice` (a notice needs a title, said in place, 1280 and 390), `card` (a number too short is refused, the field focused), `hiring` (a candidate with no name, a bad email, refused in place, 1280 and 390): each reads a refusal in place where the one save check now says it. `demo` failed its sealed quotation PDF under three suites at once and passed alone, the same suite as the entry above.
-- 2026-11-22, found by the act headings release (`cld/fervent-hopper-ofkylq`), failing identically with main's `js/creator.js`: `creator` (the access code takes its dash after the fourth character; the right code opens the page at its eighth character; the bar names them once signed in), a refusal of the code boxes, not the headings.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
