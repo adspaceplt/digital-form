@@ -59,8 +59,8 @@
   var T = window.ADspaceWords.of({
     en: {
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
-      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send code',
-      sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in code and link have been sent to it. Enter the code, or open the link.'; },
+      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Continue',
+      sentTitle: 'Check your email', sentText: function (e) { return window.ADspaceWords.line.codeSent.replace('{email}', e); },
       code: 'Sign-in code', signIn: 'Sign in', otherEmail: 'Use another email',
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
@@ -106,8 +106,8 @@
     },
     zh: {
       kicker: '客户门户', lang: 'EN', signOut: '退出登录',
-      signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送验证码',
-      sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。请输入验证码，或打开链接。'; },
+      signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '继续',
+      sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。'; },
       code: '登录验证码', signIn: '登录', otherEmail: '使用其他邮箱',
       codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
       codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
@@ -168,8 +168,8 @@
     $('portalOutWord').textContent = t().signOut;
     $('portalOut').setAttribute('aria-label', t().signOut);  // the word gives way on a phone, as the creator page's does
     $('signGo').textContent = t().sendLink;
-    $('signEmail').setAttribute('aria-label', t().email);
-    $('signCode').setAttribute('aria-label', t().code);
+    $('signEmailLabel').textContent = t().email;
+    $('signCodeLabel').textContent = t().code;
     $('codeGo').textContent = t().signIn;
     $('codeBack').textContent = t().otherEmail;
     if ($('cpTabs')) $('cpTabs').setAttribute('aria-label', t().tabsLabel);
@@ -428,6 +428,7 @@
     var text = { sign: w.signText, sent: w.sentText(extra || ''), none: w.noAccessText, fail: w.failText }[kind];
     $('stateTitle').textContent = title;
     $('stateText').textContent = text;
+    $('stateCover').setAttribute('data-glyph', { sign: 'user', sent: 'mail', none: 'block', fail: 'alert' }[kind] || '');
     /* The database's own words never reach a client (audit, 2026-10-03). */
     msg('stateMsg', '');
     if (kind === 'sign') $('signEmail').focus();

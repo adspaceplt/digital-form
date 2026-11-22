@@ -168,6 +168,9 @@
      the code went; going back puts the ask back, from the markup. */
   var authAsk = $('authSent').textContent;
   function authStep(code) {
+    /* The code step is its own notice: Check your email, the envelope. */
+    $('authTitle').textContent = code ? 'Check your email' : 'Sign in';
+    $('authCover').setAttribute('data-glyph', code ? 'mail' : 'user');
     $('authEmailStep').hidden = code;
     $('authCodeStep').hidden = !code;
     $('authBack').hidden = !code;
@@ -221,7 +224,7 @@
       if (r.error && /seconds|rate limit|too many/i.test(m)) { msg('authMsg', 'Please wait a minute before asking for another code.', 'err'); return; }
       if (r.error && !/signup|sign up|not allowed|not found|no user|invalid/i.test(m)) { msg('authMsg', 'Not sent. Please try again.', 'err'); return; }
       authEmailSent = email;
-      $('authSent').textContent = 'If ' + email + ' is registered, a code and a sign-in link have been sent to it. Enter the code, or open the link.';
+      $('authSent').textContent = ADspaceWords.line.codeSent.replace('{email}', email);
       msg('authMsg', '');
       authStep(true);
     }, function () { b.disabled = false; msg('authMsg', 'Not sent. Please try again.', 'err'); });
@@ -676,6 +679,7 @@
         $('noTeamWho').textContent = actor;
         if (meFailed) {
           var fail = $('noTeamShell').querySelector('.cover-panel');
+          fail.setAttribute('data-glyph', 'alert');
           fail.querySelector('h2').textContent = 'Unable to load';
           fail.querySelector('p').textContent = 'Please refresh the page.';
           $('noTeamRetry').hidden = false;
@@ -694,6 +698,7 @@
         db.rpc('my_access_expired').then(function (r) {
           if (r.error || r.data !== true) return;
           var panel = $('noTeamShell').querySelector('.cover-panel');
+          panel.setAttribute('data-glyph', 'clock');
           panel.querySelector('h2').textContent = 'Access expired';
           panel.querySelector('p').innerHTML = 'Access for <b>' + String(actor).replace(/[&<>"]/g, '') + '</b> has ended. Please contact an administrator to extend it.';
         }).catch(function () {});
@@ -731,6 +736,7 @@
     var panel = $('noTeamShell').querySelector('.cover-panel');
     var where = countryName(st.country);
     var req = st.request || null, waiting = req && req.status === 'waiting';
+    panel.setAttribute('data-glyph', 'globe');
     panel.querySelector('h2').textContent = waiting ? 'Request sent' : 'Access from ' + (where || 'outside Malaysia and Singapore') + ' needs approval';
     var C = window.ADspaceClock;
     var line = waiting
@@ -748,7 +754,7 @@
     until.setAttribute('min', st.today);
     until.setAttribute('max', max);
     if (!until.value) until.value = waiting ? req.until : C.addDays(st.today, Math.min(7, st.days));
-    if (waiting && !$('abroadWhy').value) $('abroadWhy').value = req.reason || '';
+    if (waiting && !abroadFilled) { abroadFilled = true; abroadReason(req.reason || ''); }
     $('abroadAsk').hidden = Boolean(waiting) && !abroadEditing;
     $('abroadGo').textContent = waiting ? 'Update request' : 'Request access';
     $('abroadGo').hidden = $('abroadAsk').hidden;
@@ -756,17 +762,34 @@
     $('abroadCheck').hidden = !waiting;
     if (!abroadWired) wireAbroad();
   }
-  var abroadEditing = false, abroadWired = false;
+  var abroadEditing = false, abroadWired = false, abroadFilled = false;
+  /* The reason is a choice of three; Other opens the reason typed. Read
+     and set as one value, the word chosen or the words typed. */
+  var ABROAD_KINDS = ['Vacation', 'Work from home'];
+  function abroadReason(v) {
+    var kind = $('abroadKind'), why = $('abroadWhy');
+    if (arguments.length) {
+      var known = ABROAD_KINDS.indexOf(v) >= 0;
+      kind.value = known ? v : 'other';
+      why.value = known ? '' : v;
+      kind.dispatchEvent(new Event('change'));
+      return v;
+    }
+    return kind.value === 'other' ? why.value.replace(/\s+/g, ' ').trim() : kind.value;
+  }
+  function abroadKindShown() { $('abroadWhyRow').hidden = $('abroadKind').value !== 'other'; }
   function abroadMsg(text, tone) { var m = $('abroadMsg'); m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function wireAbroad() {
     abroadWired = true;
+    $('abroadKind').addEventListener('change', abroadKindShown);
+    abroadKindShown();
     $('abroadEdit').addEventListener('click', function () {
       abroadEditing = true;
       db.rpc('abroad_state').then(function (r) { if (r.data) paintAbroad(r.data); $('abroadWhy').focus(); });
     });
     $('abroadCheck').addEventListener('click', function () { location.reload(); });
     $('abroadGo').addEventListener('click', function () {
-      var btn = this, why = $('abroadWhy').value.replace(/\s+/g, ' ').trim(), until = $('abroadUntil').value;
+      var btn = this, why = abroadReason(), until = $('abroadUntil').value;
       abroadMsg('');
       if (why.length < 3) { abroadMsg('Enter a reason of 3 to 300 characters.'); $('abroadWhy').focus(); return; }
       if (!until) { abroadMsg('Choose the last day you need access.'); $('abroadUntil').focus(); return; }

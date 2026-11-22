@@ -5,7 +5,10 @@
    reader all meet a plain field; the boxes draw what it holds. The number
    of digits is `ADSPACE_CONFIG.signCodeDigits` (Supabase's OTP length).
    A whole code arriving (the last digit typed, a paste, the iPhone's code)
-   presses the field's Enter, which each page answers by checking it. */
+   presses the field's Enter, which each page answers by checking it.
+   A code of another shape names its own: `data-otp-len` its length and
+   `data-otp-chars="alnum"` letters and digits, kept in capitals (a
+   creator's access code, 2026-11-22). */
 (function () {
   'use strict';
   function digits() {
@@ -16,9 +19,11 @@
 
   function mount(inp) {
     if (!inp || inp.__otp) return;
-    var k = digits();
+    var k = +inp.getAttribute('data-otp-len') || digits();
+    var alnum = inp.getAttribute('data-otp-chars') === 'alnum';
     inp.__otp = true;
-    inp.maxLength = k;
+    /* Letters and digits may be pasted as printed (7K2M-9PQR): room for the dash. */
+    inp.maxLength = alnum ? k * 2 : k;
     inp.removeAttribute('placeholder');
     var box = document.createElement('div');
     box.className = 'otp';
@@ -37,7 +42,7 @@
     inp.classList.add('otp-input');
     var last = '';
     function paint() {
-      var raw = DESC.get.call(inp), v = raw.replace(/\D/g, '').slice(0, k);
+      var raw = DESC.get.call(inp), v = (alnum ? raw.toUpperCase().replace(/[^A-Z0-9]/g, '') : raw.replace(/\D/g, '')).slice(0, k);
       if (v !== raw) DESC.set.call(inp, v);
       var on = document.activeElement === inp;
       for (var i = 0; i < k; i++) {

@@ -359,6 +359,9 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* A sign-in's code step, the console's and the client portal's alike
+       (the cover family, 2026-11-22). */
+    codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
@@ -442,6 +445,18 @@
     sendTo: function (to, cc, file, lead) {
       return (lead || 'To') + ' ' + to + (cc ? ', with a copy to ' + cc : '') + (file ? ', with ' + file + ' attached' : '');
     }
+  };
+  /* A notice's glyph by its title, English or 中文 (the cover family,
+     2026-11-22): js/maintenance.js draws it in the locks' disc wherever a
+     cover's title is one of these and the page named none (`data-glyph`). */
+  var GLYPH = { notFound: 'linkoff', passTitle: 'lock', lockedTitle: 'lock', noAccess: 'block', failTitle: 'alert',
+    closed: 'archive', nothing: 'inbox', noScripts: 'film', linkExpired: 'clock', formReceived: 'done',
+    maintTitle: 'tool', pausedTitle: 'pause' };
+  W.glyphOf = function (title) {
+    var t = String(title || '').trim();
+    if (!t) return '';
+    for (var k in GLYPH) if ((W.en[k] && W.en[k] === t) || (W.zh[k] && W.zh[k] === t)) return GLYPH[k];
+    return '';
   };
   window.ADspaceWords = W;
 })();

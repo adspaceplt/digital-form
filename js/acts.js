@@ -65,7 +65,10 @@
     return null;
   }
   function commit(b, act) {
-    if (b.type === 'submit' || b.closest(HARD)) return true;
+    /* A way out or another way in keeps its mark on a cover too (the
+       sign-in's Use passkey, 2026-11-22); a sheet's foot, a question and
+       an Undo bar stay words. */
+    if (b.type === 'submit' || b.closest(act && act[3] ? '.sheet-foot, .askcard, .undobar' : HARD)) return true;
     if (act && act[3]) return false;
     if (b.closest(COMMIT)) return true;
     var p = b.parentElement;

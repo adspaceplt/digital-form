@@ -323,8 +323,8 @@ base element (button, field, select, chip) is styled by its own rule and its
 variants; a section arranges it and never restyles it. `tests/cssguard.js`
 (run with `ui`) fails a new section rule that sets a base element's ground,
 edge, corner, height, colour or shadow; the ones standing on 2026-10-11 are
-its baseline, folded into the shared rules as each area is touched, and the
-baseline only shrinks (`--write` refuses to add).
+its baseline, all folded into the shared rules by 2026-11-22: the baseline
+is empty and only shrinks (`--write` refuses to add).
 
 **What the two walks measure:**
 - **uxaudit** walks every page and state at 1280, and at 390 with a coarse
@@ -378,6 +378,8 @@ added to all three in the same push.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
   carries one, never inside `.claude/` (agents' worktrees live there).
+  `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
+  it where a notice wants a glyph on a page holding no icon set (2026-11-22).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new portal page joins Page availability in the same push that builds it
@@ -490,15 +492,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   disallows nothing (a blocked page's noindex cannot be read), and
   `sitemap.xml` names `/` alone (`tests/seo.js`).
 - `404.html` is the portal's cover:
-  - English only, white, title 17px, line 14px;
-  - Client sign-in (`/client/`, the one blue), Visit website and Contact
-    support as `.btn-sm`, Client sign-in taking its own row on a phone
-    (2026-10-15); the portal's foot as static markup;
+  - English only, white, the cover family's own type and glyph (a document
+    with a question mark);
+  - Visit website and Contact support (its envelope) as tonal halves, no
+    Client sign-in (the user, 2026-11-22); the portal's foot as static markup;
   - no `noscript` redirect.
   - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied, the console's
-  sign-in, a quotation waiting for the team), with the same words on
+  sign-in, a quotation waiting for the team), drawn as the cover family
+  (DESIGN.md §4 Full-page state), with the same words on
   every client page (`js/words.js`). Where the browser holds a sign-in (the console, the
   client portal), every cover ends Reference {code}, the sign-in's code as a
   colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access
@@ -1011,9 +1014,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     asks `ADspaceForm.check(scope)`. `data-check-partial` (Billing's details
     before Active, a script's draft) holds only a wrong kind, as does
     `data-check-own` (a form naming its empty fields more fully: My Work's
-    New names the post);
+    New names the post; Personnel's form its consent, then every
+    field missing);
     `data-check-group` (a list's row) asks its required fields once one
-    holds a value; `data-nocheck` is never held. A form never types its own
+    holds a value; `data-nocheck` is never held, and on a field never
+    asked (its own rule in its own words: My namecard's Mobile). A form never types its own
     required check again; a client page's own checks state its database
     function's lengths and shapes beyond it.
   - `ADspaceForm.title` sets formal names in title case.

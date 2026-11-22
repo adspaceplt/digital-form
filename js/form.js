@@ -1168,7 +1168,7 @@
      focused (its fold opened first, §reveal) and one line under it naming
      what to enter. A page that saves without a press (an Enter it answers
      itself) asks `ADspaceForm.check(scope)` first. A button marked
-     `data-nocheck` is never held; one marked `data-check-partial` (a save
+     `data-nocheck` is never held, nor a field so marked asked; one marked `data-check-partial` (a save
      that keeps what is there on purpose: Billing's details before Active, a
      script's draft) is held only for a value of the wrong kind, never for
      one left empty. One marked `data-check-own` names its own empty fields
@@ -1261,7 +1261,7 @@
       /* A date whose label names no date (From, Until) is asked as one:
          Choose a date for From. */
       if (kind === 'date' && !/date|day|month|日期|日|月/i.test(name)) return sayWord('checkChooseDate', o.rawLabel ? plainName(o.rawLabel, true) : nameOf(el, true));
-      var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg;
+      var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg || el.type === 'file';
       return sayWord(choose ? 'checkChoose' : 'checkEnter', name);
     }
     if (kind === 'number' || kind === 'amount' || kind === 'whole') {

@@ -16,7 +16,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   `me()`, so every policy and function refuses the colleague; client pages
   never ask them. `me()` answering nothing, the console asks `abroad_state()`
   and a held colleague meets the cover (`paintAbroad`, js/admin.js: Access
-  from {country} needs approval, Reason and Until, Request access; then
+  from {country} needs approval, Reason (Vacation, Work from home or
+  Other, which opens the reason typed; the word chosen is stored, 2026-11-22)
+  and Until, Request access; then
   Request sent with Change request and Check again; a decline, an end or a
   day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
   `bad-until` today to today plus `abroad_days`, a waiting request

@@ -11,6 +11,16 @@
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
 
   function cover(title, text, ways) {
+    /* The notice takes every page's bar and foot; the card never does. */
+    var chrome = document.getElementById('ncChrome');
+    if (chrome && !document.getElementById('topbar')) {
+      var tag = document.createElement('script');
+      var from = chrome.content.querySelector('script');
+      tag.src = from.getAttribute('src');
+      tag.setAttribute('data-kicker', from.getAttribute('data-kicker'));
+      document.body.insertBefore(tag, document.body.firstChild);
+      document.body.classList.add('is-plain');
+    }
     document.getElementById('ncHost').hidden = true;
     document.getElementById('ncCover').hidden = false;
     document.getElementById('ncCoverTitle').textContent = title;

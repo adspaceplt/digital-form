@@ -1826,7 +1826,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    narrow one. */
 .trow-meta { display: contents; }
 .due-short { display: none; }
-.lockcard-form > .lockcard-line { margin: -14px 0 6px; text-align: center; }
 .lockcard-form .field-label { margin: 0; }
 .lockcard .msg { margin-top: 14px; }
 .lockcard .msg:not(.err):not(.ok):not(.warn) { color: var(--ink-mute); }
@@ -1853,9 +1852,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .mine-row > .perf-score, .is-narrow .mine-row > .perf-grade, .is-narrow .mine-row > .perf-reward { display: none; }
 .is-narrow .crm-head.perf-row, .is-narrow .crm-head.mine-row { display: none; }
 .is-narrow .perf-row > .perf-sum:empty, .is-narrow .mine-row > .perf-sum:empty { display: none; }
-@media (max-width: 640px) {
-  .lockcard { margin-top: 16px; padding: 24px 18px 20px; }
-}
 
 /* ---- The review, in the side sheet ---- */
 .perf-result { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
@@ -2452,7 +2448,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    lines it was written in (Health). */
 .refl-head { justify-content: space-between; }
 .refl-ctl { display: flex; align-items: center; gap: 8px; }
-.refl-a { white-space: pre-line; overflow-wrap: anywhere; }
 .refl-acts { margin-top: 12px; }
 /* Rate yourself: one card, a row a month (MINE-1, 2026-10-22). */
 .self-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); min-height: var(--ctl-h); }
@@ -2859,8 +2854,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 /* Overseas access (2026-10-24): the cover's request form, left aligned in
    the cover's column. */
 .abroad-past { margin-top: 8px; }
-.abroad-ask { margin-top: 18px; display: grid; gap: 12px; text-align: left; }
-.abroad-ask .field, .abroad-ask .input { width: 100%; }
+.abroad-ask[hidden] { display: none; }
 #abroadMsg { margin-top: 8px; }
 #abroadMsg:empty { display: none; }
 .tax-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
@@ -3209,10 +3203,9 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* Team: Health's lock (2026-10-18) stands where Performance's does; on a
    colleague's record it is the record card's own contents, never a card
    in a card. */
-#teamHealthBox > .lockcard { justify-self: center; width: 100%; margin-top: 36px; }
+#teamHealthBox > .lockcard { justify-self: center; width: 100%; }
 .mrec-card .lockcard { margin: 0 auto; padding: 12px 0 4px; background: none; box-shadow: none; }
 @media (max-width: 640px) {
-  #teamHealthBox > .lockcard { margin-top: 4px; }
   .mrec-card .lockcard { padding: 8px 0 0; }
 }
 /* The card's title with a mute line under it (when it was checked in). */
@@ -3245,7 +3238,6 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .health-agree { display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 0 4px 0 18px; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .health-agree { padding-left: 15px; }
-.health-scale-word:empty { display: none; }
 .health-word { color: var(--ink-soft); font-size: 13px; }
 .health-note { overflow-wrap: anywhere; white-space: pre-line; color: var(--ink-soft); }
 .health-fig { display: inline-block; min-width: 22px; padding: 0 6px; border-radius: 5px; text-align: center;
@@ -3268,15 +3260,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .health-talk.is-closed .health-talk-who b { font-weight: 400; color: var(--ink-soft); }
 .health-talk-act { display: flex; align-items: center; gap: 4px; }
 .health-talk-act:empty { display: none; }
-.health-scale-word { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
-.health-scale-ends { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-mute); }
-.health-scale-ends + .health-scale-word { margin-top: 2px; }
 /* Team: Health. The summary card, then a row a colleague: name, the five
    answers of this half month, when they checked in. */
-.health-count { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
-/* The averages are the summary card's own content: the chart draws no box of
-   its own inside it. */
-#healthAvg > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
 .health-prow { grid-template-columns: minmax(0, 1fr) 160px 150px 88px 16px; cursor: pointer; }
 .health-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
 .health-line { display: none; }
@@ -3287,9 +3272,6 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .is-narrow .health-prow > .perf-chev { grid-area: chev; align-self: center; }
 .is-narrow .health-prow > .health-col { display: none; }
 .is-narrow .health-line { display: block; white-space: normal; }
-/* On a phone a colleague who checked in reads name over answers: the five
-   take the line the position held. */
-.is-narrow .health-who.has-line .health-code { display: none; }
 .is-narrow .crm-head.health-prow { display: none; }
 
 /* The check-in since 2026-11-22: the mood on seven discs, larger towards
@@ -3304,7 +3286,7 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .hc-step + .hc-step { margin-top: 16px; }
 .hc-q { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
 .hc-q > legend { padding: 0; margin-bottom: 8px; }
-.hc-opt { margin-left: 6px; font-weight: 400; color: var(--ink-mute); }
+.hc-opt { margin-left: 6px; font-size: inherit; font-weight: 400; color: var(--ink-mute); }
 .hc-mood { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .hc-dot { position: relative; display: grid; place-items: center; height: var(--tap); cursor: pointer; }
 .hc-dot > input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -3342,6 +3324,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .health-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .is-narrow .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+/* The pair's gap is its step: a card gives its own margin back (stacked at 390). */
+.health-pair > .ovcard { margin-bottom: 0; }
 .is-narrow .health-pair { grid-template-columns: minmax(0, 1fr); }
 #healthTrend > .chartcard, #healthBands > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
 .health-col { font-size: 13.5px; min-width: 0; }
@@ -6135,7 +6119,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .hir-times .chip { margin-left: 6px; }
 .hir-iv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .hir-iv-acts > .btn { flex: 0 0 auto; }
-
 
 /* ---- Personnel (js/personnel.js, 2026-11-16): a colleague's employee record ---- */
 .prs-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
