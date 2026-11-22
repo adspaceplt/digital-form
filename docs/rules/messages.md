@@ -99,7 +99,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sent, Bounced, Not confirmed) goes again through its own sender, drawn
   as the first was, at Messages Work with Send email on: a creator email
   queued again in its first words as the colleague's
-  (`creator_email_again`, Creator Campaigns: Creators at Work; `already`,
+  (`creator_email_again`, Creators: Creators at Work; `already`,
   `not-failed`, `gone`), never held by Automatic emails off; a hiring email
   by hiring-mail for the record it was about (`system_emails.ref_id`), an
   invitation by invite-member, each with `againOf`, filed on the email it
@@ -124,7 +124,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (2026-10-10): the section, the composer, the delivery status; no inbox, no
   message to a colleague but the queued reminders, nothing sent to an AI
   service.
-- A section of its own, `whatsapp`, the last of the Work chunk (the user,
+- A section of its own, `whatsapp`, the last of the Work group (the user,
   2026-10-10: "whatsapp tab should go to the last inside work"): View
   reads the messages, Work (Manage on the panel) sends, Manage (Full Access)
   sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback`,
@@ -134,9 +134,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`VIEW_PARTS`); they replaced `reports.whatsapp`, `clients.whatsapp` and
   `campaigns.whatsapp` (a shut one moved across, the old keys taken off). A
   send asks the section and its purpose's part at Work and the record's own
-  section at View (Reports, Clients, Creator Campaigns), a plain message a
+  section at View (Reports, Clients, Creators), a plain message a
   contact's Clients: Contacts or a creator's Creators List at View, an
-  approval reminder Content Review: Content sets or Creator Campaigns:
+  approval reminder Content Review: Content sets or Creators:
   Campaigns at View and the record it names at its own, a quotation
   Clients: Services at View, a Letter of Offer Clients: Documents at View
   (`wa_may_send`, `ADspaceWhatsApp.may`); at No Access no record offers

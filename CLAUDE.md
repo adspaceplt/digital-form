@@ -192,6 +192,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   updating and merging a PR, applying its migration and deploying its edge
   function, in the order the release states, and starting or messaging a
   session and adding a repository it needs; any other write still asks.
+- `all` is every `tests/*.js` but `NOT_SUITES` in `gate.sh` (modules,
+  builders, screenshot diagnostics); a suite needs no list to run, one
+  starting its own Postgres takes that lane, and a helper is named there
+  or fails the gate (2026-11-22: hiring and 24 more never ran in a full gate).
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix side by side (each its own browser, output
   and server).
@@ -928,7 +932,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     view segment it holds on a row of its own above them.
   - Tabs first, then the bar, on every section at every width (the user,
     2026-11-03: "why are some up and some below"): a section's strip (Clients,
-    Creator Campaigns and its stages, Reports, Services, Team) stands over its
+    Creators and its stages, Reports, Services, Team) stands over its
     bar, 12px above the search, and every strip on its own row is the tab
     row's height; a desk keeps My Work's views at the left of the bar's own
     line (`tests/cmdbar.js`).
@@ -1611,7 +1615,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Clients by stage;
   - a client's Engagements by content month;
   - Content Review as one card; a client's sets by content month;
-  - Creator Campaigns as a tab a state (`#campStages`: Draft, Open for
+  - Creators as a tab a state (`#campStages`: Draft, Open for
     selection, In production, Completed, each counted, opening on the first
     that holds any), a card a month made (MYT) under it, newest open; a row
     reads Updated where the state would repeat its tab, and Booked n of N
@@ -1626,7 +1630,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the Handbook by category (Archived shut, `team.handbook` alone);
   - My Work by its axis.
 - A filter never repeats the cards' own grouping: no state, kind, group or
-  category filter on a route whose cards are those groups (Creator Campaigns,
+  category filter on a route whose cards are those groups (Creators,
   Documents, Team, Services, Handbook, Short Links). An option for all reads
   All stages, All people, All months, never Every …, Everyone or Everything.
 - A list puts what needs acting on first and what is finished last (2026-11-03,
@@ -1688,7 +1692,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Hiring | `docs/rules/hiring.md` | `js/hiring.js`, `js/careers.js`, `js/hrdocs.js`, `js/onboard.js`, `careers/`, `supabase/functions/hiring-mail` |
 | Bukku | `docs/rules/bukku.md` | `js/bukku.js`, `js/invoices.js`, `supabase/functions/bukku-sync` |
 | Content Review | `docs/rules/content-review.md` | `review/`, `js/review.js`, `js/mockups.js`, `js/media.js`, `supabase/functions/caption-draft` |
-| Creator Campaigns | `docs/rules/creator-campaigns.md` | `js/campaigns.js`, `js/creators.js`, `js/creator.js`, `js/decide.js`, `creators/`, `creator/`, `supabase/functions/creator-mail` |
+| Creators | `docs/rules/creator-campaigns.md` | `js/campaigns.js`, `js/creators.js`, `js/creator.js`, `js/decide.js`, `creators/`, `creator/`, `supabase/functions/creator-mail` |
 | Dashboard | `docs/rules/dashboard.md` | `js/overview.js` |
 | Analytics | `docs/rules/analytics.md` | `js/analytics.js`, `supabase/functions/analytics-read` |
 | My Work | `docs/rules/my-work.md` | `js/ops.js`, `supabase/functions/meet-create` |
@@ -1775,8 +1779,8 @@ only a one-line pointer to it (the user, 2026-11-22).
   signs it only for that (audit P1, 2026-10-10): `review` a content set
   (`batchId`, Content Review: Sets at Work), `logo` the client (Clients or
   Content Review: Client settings at Work), `campaign` a booking whose draft
-  is owed (`optionId`, Creator Campaigns: Campaigns at Work), `invoice` a
-  campaign (`campaignId`, Creator Campaigns: Finance at Work, private where
+  is owed (`optionId`, Creators: Campaigns at Work), `invoice` a
+  campaign (`campaignId`, Creators: Finance at Work, private where
   set up), `report` a report version (`versionId`, Reports at Work, always
   private, its scope asked of the report's client), `thumb` a report's
   picture (`reportId`, Reports at Work, always private, a JPEG under
@@ -2124,7 +2128,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 - A change asked of one list or screen is made on every one of the same
   shape in the same push (2026-11-10, the user: "why need me to point out
   one by one": the client logo asked of Content Review was owed to Video
-  Scripts, Reports and Creator Campaigns too).
+  Scripts, Reports and Creators too).
 - A value only read is drawn as words at the field's height with no box
   (`.readfield` on a `p` or `div` is that, on an `.input` the shaded copy
   field): a shaded slab with its words on the edge, out of line with the

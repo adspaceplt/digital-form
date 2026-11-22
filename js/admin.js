@@ -1227,7 +1227,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'review', 'scripts', 'reports', 'whatsapp', 'clients', 'campaigns', 'suppliers', 'register', 'services', 'links', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -1253,7 +1253,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'hr', 'suppliers', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'review', 'scripts', 'reports', 'whatsapp', 'clients', 'campaigns', 'suppliers', 'register', 'hr', 'services', 'links', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -1630,7 +1630,7 @@
      so it never sits on what is typed. */
   var TAB_WORD = {
     overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'Messages', review: 'Review',
-    scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
+    scripts: 'Scripts', campaigns: 'Creators', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
@@ -1640,7 +1640,7 @@
      bar rearrange"; "mobile tab and web … both sync edits"): one list a
      colleague, kept by `rail_order_set` with a copy in this browser so the
      first paint is theirs. It orders each of the rail's groups (Work,
-     Internal; the Overview stays first), a section it does not name after
+     Partners, Company; the Overview stays first), a section it does not name after
      in the standard order, and the tab bar takes the rail as it then reads,
      so the web and the phone follow the one arrangement. */
   var railPick = [];
@@ -2161,7 +2161,7 @@
     work: 'My Work',
     review: 'Content Review',
     scripts: 'Video Scripts',
-    campaigns: 'Creator Campaigns',
+    campaigns: 'Creators',
     links: 'Short Links',
     register: 'Documents',
     suppliers: 'Suppliers',
@@ -2242,7 +2242,7 @@
     scripts: { name: 'Video Scripts', steps: [
       { at: '#vsNew', text: 'New script adds a video to a client\'s content month, numbered by month (for example 2610VS01).' },
       { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, publish it to the client\'s link and record each clip number on the shoot day.' }] },
-    campaigns: { name: 'Creator Campaigns', steps: [
+    campaigns: { name: 'Creators', steps: [
       { at: '#showAddCamp', text: 'New campaign creates a campaign for a client, with creators from the Creators List.' },
       { at: '#campSectionTabs', text: 'Campaigns, and the Creators List with every creator and their rates.' },
       { at: '#campCards .camp-row', text: 'Open a campaign to book creators, check drafts and release them to the client.' }] },
@@ -2493,7 +2493,7 @@
      no section meets No access, which says to ask an admin; the Handbook
      is a mark at the rail's foot, never a section's floor (2026-11-11). */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
+    var order = ['overview', 'work', 'review', 'scripts', 'reports', 'whatsapp', 'clients', 'campaigns', 'suppliers', 'register', 'services', 'links', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'noaccess';
   }
@@ -2677,7 +2677,8 @@
     $('sectionNoAccess').hidden  = name !== 'noaccess';
     $('sectionSettings').hidden  = name !== 'settings';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
-    /* The breadcrumb: the rail's group the section sits in (Work, Internal),
+    /* The breadcrumb: the rail's group the section sits in (Work, Partners,
+       Company),
        none for the Dashboard, Analytics or a mark at the rail's foot. */
     var crumbOf = document.querySelector('.navitem[data-section="' + name + '"]');
     var crumbWord = crumbOf && crumbOf.closest('.navgroup') && crumbOf.closest('.navgroup').querySelector('.sidebar-label');
@@ -3517,10 +3518,10 @@
      person who has learned one sequence should not have to learn a second.
      All sections leads, being the view somebody lands on (never Everything). */
   var ACT_SECTION = { all: 'All sections',
-                      ops: 'My Work', clients: 'Clients',
-                      review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-                      reports: 'Reports', whatsapp: 'Messages', register: 'Documents', hr: 'HR letters', suppliers: 'Suppliers', links: 'Short Links',
-                      services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
+                      ops: 'My Work', review: 'Content Review', scripts: 'Video Scripts', reports: 'Reports', whatsapp: 'Messages',
+                      clients: 'Clients', campaigns: 'Creators', suppliers: 'Suppliers',
+                      register: 'Documents', hr: 'HR letters', services: 'Services', links: 'Short Links',
+                      team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review shared', disputed: 'Query raised', decided: 'Query answered',
