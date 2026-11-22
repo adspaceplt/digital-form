@@ -630,6 +630,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
 - 2026-11-22, found by the view strip release (`claude/view-strips`), failing identically on main 4519c46, so from the required-fields releases (#1322, #1328), not this one: `adsreport` (an ad needs a name), `reports` (refuses without a client, without one), `handbook` (a title is required, and a file), `notice` (a notice needs a title, said in place, 1280 and 390), `card` (a number too short is refused, the field focused), `hiring` (a candidate with no name, a bad email, refused in place, 1280 and 390): each reads a refusal in place where the one save check now says it. `demo` failed its sealed quotation PDF under three suites at once and passed alone, the same suite as the entry above.
+- 2026-11-22, uxaudit on `claude/refusal-suites` (f0ec1da, tests 04d665f), the walk now completing: from #1319 the Team Health pair at 390 (`.health-pair`, its blocks adding 12px to the stack's gap, light and dark) and the Clients glyph drawn on the check-in sheet's influence but not elsewhere; from #1330 and the strips before it `mineReflMonths` reached at no width, and `seg32`, `holYearStrip`, `mtRecStrip`, `rwDDeptStrip`, `rwSViewStrip` missing from uxaudit's `STRIP_NAMES`.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

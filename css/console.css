@@ -3298,7 +3298,7 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .hc-step + .hc-step { margin-top: 16px; }
 .hc-q { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
 .hc-q > legend { padding: 0; margin-bottom: 8px; }
-.hc-opt { margin-left: 6px; font-weight: 400; color: var(--ink-mute); }
+.hc-opt { margin-left: 6px; font-size: inherit; font-weight: 400; color: var(--ink-mute); }
 .hc-mood { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .hc-dot { position: relative; display: grid; place-items: center; height: var(--tap); cursor: pointer; }
 .hc-dot > input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }

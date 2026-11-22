@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122zzx">
-<link rel="stylesheet" href="/css/console.css?v=20261122zzw">
+<link rel="stylesheet" href="/css/console.css?v=20261122zzzc">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -142,7 +142,7 @@
 <script src="/js/confirm.js?v=20261122sk"></script>
 <script src="/js/sheet.js?v=20261122"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122rg"></script>
+<script src="/js/form.js?v=20261122zzzc"></script>
 <script src="/js/otp.js?v=20261122zzq"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
@@ -588,7 +588,7 @@
             <h4 class="fsec-h">Namecard</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="mycMobile">Mobile</label>
-                <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+                <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789" data-nocheck></div>
               <!-- Hidden, the number never leaves the database: the card, its
                    WhatsApp and Save contact go without it (namecard_get). -->
               <div><label class="field-label" for="mycShow">Mobile on card</label>
@@ -5225,7 +5225,7 @@
         </div>
         <div class="sheet-body" data-narrow="560"><div id="prsBody"></div><div class="msg" id="prsSheetMsg"></div></div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="prsSave" type="button">Save</button>
+          <button class="btn btn-primary" id="prsSave" type="button" data-check-own>Save</button>
           <button class="btn btn-quiet" id="prsCancel" type="button">Cancel</button>
         </div>
       </div>
@@ -6737,7 +6737,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261122zm", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261122zzw", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "perf": {"src": "/js/perf.js?v=20261122zzzc", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261122zzw", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
