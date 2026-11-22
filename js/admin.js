@@ -2045,7 +2045,7 @@
         var at = roTabs.indexOf(k);
         Array.prototype.forEach.call(lists.querySelectorAll('.ro-why'), function (w) { w.textContent = ''; });
         if (at > -1) roTabs.splice(at, 1);
-        else if (roTabs.length >= TAB_PICKS) { row.querySelector('.ro-why').textContent = 'The tab bar holds three sections. Turn one off first.'; return; }
+        else if (roTabs.length >= TAB_PICKS) { row.querySelector('.ro-why').textContent = 'The tab bar holds up to three sections. Turn one off first.'; return; }
         else roTabs.push(k);
         roMarks();
       });
@@ -2354,13 +2354,13 @@
       { at: '#waTpl', text: 'Choose a Meta-approved template. Its variables are filled in from the record and can be changed.' },
       { at: '#waSend', text: 'The preview shows the message as it will be sent. Send asks you to confirm the number and the category.' }] },
     phone: { name: 'Your sections', steps: [
-      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'The Dashboard and your chosen sections. Press one to open it.' },
+      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'The bar holds the Dashboard and your sections. Press one to open it.' },
       { at: '#tabMore', text: 'More opens the other sections, Settings, the Activity record and Arrange sections, where you choose the sections on this bar.' },
       { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
       { at: '#railLists .ro-switch', text: 'Turn on up to three sections for the bar at the bottom of your phone. The Dashboard is always first.' },
-      { at: '#railSave', text: 'Save applies the order and the tab bar on the web and on your phone. Reset restores the standard.' }] },
+      { at: '#railSave', text: 'Save applies the order on the web and on your phone, and the tab bar on your phone. Reset restores the standard order and tab bar.' }] },
     'mine.health': { name: 'Health', steps: [
       { at: '#mineHealthBox .health-termbox', text: 'A short check-in each month, or each week while your planned work is near your weekly capacity. Management reads your answers by name to support you. They are never used in a performance review.' },
       { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },

@@ -62,8 +62,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   the Dashboard fixed first. Each row carries a Tab bar switch (the user,
   2026-11-22: "I want clients to be accessible straight from mobile bottom
   tab"), at a desk too, since the choice follows the person: up to three on
-  (`TAB_PICKS`), any group's, a fourth refused on its row (The tab bar
-  holds three sections. Turn one off first.); the bar holds the Dashboard
+  (`TAB_PICKS`), any group's, a fourth refused on its row (The tab bar holds
+  up to three sections. Turn one off first.); the bar holds the Dashboard
   first, then the sections on in the rail's order, then More. With none
   chosen the switches follow the first rows as they are dragged. One
   function (`tabPick`) decides the bar and the switches, so the two never
