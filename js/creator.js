@@ -326,12 +326,13 @@
     $('stateMsg').className = 'msg';
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
   }
-  function askCode() { tried = ''; cover(t().codeTitle, t().codeText, { ask: true }); }
+  /* Asked afresh, the field starts empty, so a code typed again is sent again. */
+  function askCode() { $('codeInput').value = ''; cover(t().codeTitle, t().codeText, { ask: true }); }
   /* A link carrying a code that opens nothing reads as the same code typed
      would: the code in the field and the invalid line under it (ux-audit
      CREATOR-5, 2026-10-14). */
   function linkWrong(c) {
-    $('codeInput').value = c.length > 4 ? c.slice(0, 4) + '-' + c.slice(4) : c;
+    $('codeInput').value = c;
     $('stateMsg').textContent = t().codeWrong;
     $('stateMsg').className = 'msg err';
   }
@@ -353,7 +354,7 @@
          lock it out, the right code included (2026-10-27). The code is kept
          in the field and in this browser, so Open works once it ends. */
       if (d.error === 'locked') {
-        if (!typed) { askCode(); $('codeInput').value = codeShape(c, false); }
+        if (!typed) { askCode(); $('codeInput').value = c; }
         $('stateMsg').textContent = W.lockedLine(t(), d.minutes);
         $('stateMsg').className = 'msg err';
         return;
@@ -1837,7 +1838,7 @@
     if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveLinks(); }
   });
 
-  var checking = false, tried = '';
+  var checking = false;
   $('codeGo').addEventListener('click', function () {
     var c = tidy($('codeInput').value);
     if (c.length !== 8) {
@@ -1846,41 +1847,19 @@
       return;
     }
     if (checking) return;
-    checking = true; tried = c;
+    checking = true;
     var done = function () { checking = false; };
     load(c, true).then(done, done);
   });
   /* The code checks itself once its eighth character is typed or pasted
-     (the user, 2026-10-27): the same code is not sent again until it is
-     changed, and nothing goes while an input method is composing. Open
-     stays for the keyboard and for a try again. */
-  function autoCheck() {
-    var c = tidy($('codeInput').value);
-    if (c.length < 8) { tried = ''; return; }
-    if (c !== tried && !checking) $('codeGo').click();
-  }
-  $('codeInput').addEventListener('compositionend', autoCheck);
+     (the user, 2026-10-27): js/otp.js presses the field's Enter on a whole
+     code, once until it changes and never while an input method composes,
+     so this page keeps no second check of its own (two sent one code
+     twice, 2026-11-22). Open stays for the keyboard and for a try again.
+     The boxes keep letters and digits alone (the user, 2026-11-22), so a
+     code pasted as printed (7K2M-9PQR) loses its dash and is sent without. */
   $('codeInput').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); $('codeGo').click(); }
-  });
-  /* The code reads as it is printed, 7K2M-9PQR: the dash comes by itself
-     once the fourth character is typed and a deletion takes it back
-     (the user, 2026-10-27); tidy() drops it, so the code sent never holds it. */
-  function codeShape(raw, adding) {
-    var c = tidy(raw).slice(0, 8);
-    return c.length > 4 || (adding && c.length === 4) ? c.slice(0, 4) + '-' + c.slice(4) : c;
-  }
-  $('codeInput').addEventListener('input', function (e) {
-    var el = this, adding = !/^delete/.test(e.inputType || '');
-    var pos = el.selectionStart == null ? el.value.length : el.selectionStart;
-    var before = tidy(el.value.slice(0, pos)).length;
-    var v = codeShape(el.value, adding);
-    if (v !== el.value) {
-      el.value = v;
-      var at = Math.min(v.length, before + (before > 4 || (before === 4 && adding) ? 1 : 0));
-      try { el.setSelectionRange(at, at); } catch (x) {}
-    }
-    if (!e.isComposing) autoCheck();
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('codeGo').click(); }
   });
 
   // ---- Start ----------------------------------------------------------------

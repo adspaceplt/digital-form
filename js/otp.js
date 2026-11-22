@@ -60,14 +60,19 @@
       get: function () { return DESC.get.call(inp); },
       set: function (x) { DESC.set.call(inp, x); last = paint(); }
     });
-    inp.addEventListener('input', function () {
+    /* Nothing is pressed while an input method composes (pinyin's keys
+       reach the field as input); its end is read as the input it was. */
+    function took(e) {
       var v = paint();
+      if (e && e.isComposing) return;
       if (v.length === k && v !== last) {
         last = v;
         inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
       }
       last = v;
-    });
+    }
+    inp.addEventListener('input', took);
+    inp.addEventListener('compositionend', function () { took(); });
     ['focus', 'blur', 'select', 'keyup', 'click'].forEach(function (e) { inp.addEventListener(e, paint); });
     /* Hiding the field hides its boxes. */
     new MutationObserver(paint).observe(inp, { attributes: true, attributeFilter: ['hidden', 'aria-invalid'] });
