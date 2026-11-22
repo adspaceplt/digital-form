@@ -16043,7 +16043,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ci = hIvOf(cc.id)[0], civ = null;
 
         if (ci && ci.state === 'cancelled' && ['invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) civ = { state: 'cancelled' };
-        if (ci && ci.state !== 'cancelled') {
+
+        if (ci && ci.state !== 'cancelled' && hIvState(ci) === 'picked') civ = { state: 'picked', minutes: ci.minutes, mode: ci.mode, at: ci.slots[ci.picked - 1] };
+        else if (ci && ci.state !== 'cancelled') {
           civ = { state: hIvState(ci), minutes: ci.minutes, mode: ci.mode };
           if (ci.note) civ.note = ci.note;
           if (civ.state === 'invited') { civ.slots = ci.slots.slice(); if (ci.reply_by) civ.reply_by = ci.reply_by; }
