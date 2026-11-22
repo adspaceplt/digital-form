@@ -1263,7 +1263,7 @@
       /* A date whose label names no date (From, Until) is asked as one:
          Choose a date for From. */
       if (kind === 'date' && !/date|day|month|日期|日|月/i.test(name)) return sayWord('checkChooseDate', o.rawLabel ? plainName(o.rawLabel, true) : nameOf(el, true));
-      var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg;
+      var choose = el.tagName === 'SELECT' || kind === 'date' || el.__seg || el.type === 'file';
       return sayWord(choose ? 'checkChoose' : 'checkEnter', name);
     }
     if (kind === 'number' || kind === 'amount' || kind === 'whole') {
