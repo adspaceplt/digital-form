@@ -4713,6 +4713,7 @@
       sheet('tplSheet', true);
     });
   }
+  var TPL_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   function varsOf(id) { return tplVars.filter(function (v) { return v.template_id === id; }); }
   function paintTplList() {
     var words = {};
@@ -4729,12 +4730,46 @@
       ].filter(Boolean).join(' · ');
       return '<div class="tplrow">' +
         '<span class="tplrow-name"><b>' + esc(x.name) + '</b>' + (bits ? '<small>' + esc(bits) + '</small>' : '') + '</span>' +
-        '<button class="btn btn-quiet btn-sm" data-edit="' + esc(x.id) + '" type="button">' + PEN_MARK + 'Edit</button>' +
+        /* Edit and Delete in one ⋯ (2026-11-23, the user: "things have to
+           be able to create, manage or modify and delete"). */
+        '<span class="team-act"><button class="kmenu-btn" data-tmenu type="button" aria-label="More actions for ' + esc(x.name) + '" aria-expanded="false">' + TPL_DOTS + '</button>' +
+          '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [], [{ a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span>' +
         '</div>';
     }).join('') : '<p class="ovnote mute">No templates.</p>';
-    Array.prototype.forEach.call($('tplList').querySelectorAll('[data-edit]'), function (b) {
-      b.addEventListener('click', function () {
-        openTplEdit(tplRows.filter(function (x) { return x.id === b.getAttribute('data-edit'); })[0]);
+    Array.prototype.forEach.call($('tplList').querySelectorAll('.tplrow'), function (rowEl, i) {
+      var x = tplRows[i], mb = rowEl.querySelector('[data-tmenu]'), m = mb && mb.parentNode.querySelector('.kmenu');
+      if (!mb) return;
+      mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = m.hidden;
+        m.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) { window.ADspaceMenu.tidy && window.ADspaceMenu.tidy(m); window.ADspaceMenu.place(mb, m); }
+      });
+      var shut = function () { m.hidden = true; mb.setAttribute('aria-expanded', 'false'); };
+      m.querySelector('[data-t="edit"]').addEventListener('click', function () { shut(); openTplEdit(x); });
+      m.querySelector('[data-t="delete"]').addEventListener('click', function () { shut(); deleteTpl(x, mb); });
+    });
+  }
+  /* A template nothing was made from is deleted; one a task or a repeat
+     rule names is refused, and set inactive instead. */
+  function deleteTpl(x, opener) {
+    ADspaceConfirm.ask({
+      title: 'Delete ' + x.name + '?', body: x.name + ' will be deleted. This cannot be undone.',
+      go: 'Delete', tone: 'danger', wait: true, opener: opener
+    }, function () {
+      return db.rpc('ops_template_delete', { p_id: x.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return dbWord(r.error.message);
+        if (d.error === 'in-use') {
+          return window.ADspaceWords.line.inUse(x.name, [[d.tasks, 'task', 'tasks'], [d.rules, 'repeat rule', 'repeat rules']]);
+        }
+        if (d.error) return said(d.error, null, d);
+        tplRows = tplRows.filter(function (y) { return y.id !== x.id; });
+        tplVars = tplVars.filter(function (v) { return v.template_id !== x.id; });
+        state.catAt = 0;
+        paintTplList();
+        msg('tplMsg', 'Deleted.', 'ok');
+        return '';
       });
     });
   }
