@@ -336,3 +336,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   run re-reads only the last 62 days and one month further back, so rows
   already held would never take the new field (2026-11-23: the reference
   no. read empty on every bill older than 62 days).
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| A record's link to another system (Bukku) | `.readgroup.bk-band`: a `--sunk` band, Bukku's own logo 16px high (`ADspaceBukku.mark`, `img/bukku-logo.png` from bukku.my/brand/bukku-logo.png at three times its size, the same file in both themes (never recoloured; the user, 2026-11-11), the word kept for a screen reader; the Settings row the same; never on a client page or an email), the code in the token face as a copy control (`.serial-copy`, pressed to copy it; the user, 2026-10-30), its state as `.chip-state`, one 12.5 mute line under it, the acts as `.btn-sm` and a ⋯ (Unlink) at the right edge, on their own line when the pane is tight. Not linked, it closes the details it would send (Link to Bukku on a client or entity, Send to Bukku on a supplier); linked, it leads them: Linked over Read {day, time} with Refresh, Differs from Bukku with Send to Bukku and Use Bukku's over a `.bk-diff` table (Field, Portal, Bukku; narrow, the field heads its row), Not read with the copy's time and Try again; a billing person Contacts lacks is the warn line with Add as contact (`.btn-sm`, its plus) at its right edge (`.bk-person`) |
