@@ -331,3 +331,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   invoices alike, searched by it too; kept alone as `ref_no`
   (`bukku_docs`, `creator_bills`, a live invoice line), never joined into
   a creator bill's `ref`. An email's invoice table keeps the number alone.
+- A field newly read from Bukku onto a kept document (`bukku_docs`) sets
+  `bukku_doc_marks.back_to` to null for its kind in the same release: a
+  run re-reads only the last 62 days and one month further back, so rows
+  already held would never take the new field (2026-11-23: the reference
+  no. read empty on every bill older than 62 days).
