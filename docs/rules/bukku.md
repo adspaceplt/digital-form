@@ -324,3 +324,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Suppliers Work (`work`), `supplierbilllink` names a bill's page only
   where the caller reads that bill. Open in Bukku is a `.btn-sm` at its own
   width or a ⋯ item, never a row's width (the user, 2026-11-22).
+- A Bukku bill or invoice reads its number with the reference no. Bukku
+  keeps beside it (`number2`), `AB2609081 / Reference: XXXX`
+  (`ADspaceWords.line.docNo`; `2026-11-23-supplier-reference-no.sql`; the
+  user, 2026-11-23): a supplier's bills, a creator's bills and Overdue
+  invoices alike, searched by it too; kept alone as `ref_no`
+  (`bukku_docs`, `creator_bills`, a live invoice line), never joined into
+  a creator bill's `ref`. An email's invoice table keeps the number alone.

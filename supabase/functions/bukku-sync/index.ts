@@ -715,6 +715,12 @@ async function matchCreators(req: Request, origin: string | null): Promise<Respo
   return json({ ok: true, rows }, 200, origin);
 }
 
+/* Bukku's reference no. (`number2`) alone, as a list draws it beside the
+   number: `AB2609081 / Reference: XXXX` (2026-11-23). */
+export function refNo(x: any): string {
+  return String((x && x.number2) || '').trim().slice(0, 60);
+}
+
 // ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
 /* Every purchase bill of the creator's Bukku contact, a hundred a page, its
    reference read where Bukku keeps it (the bill's reference no., else its
@@ -723,7 +729,7 @@ async function matchCreators(req: Request, origin: string | null): Promise<Respo
 export function billOf(x: any) {
   const ref = [x.number2, x.reference, x.title, x.description, x.remarks].filter((v) => v != null && String(v).trim() !== '')
     .map((v) => String(v).trim()).join(' ').slice(0, 200);
-  return { id: Number(x.id), number: String(x.number || ''), ref, date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
+  return { id: Number(x.id), number: String(x.number || ''), ref, ref_no: refNo(x), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
     amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
     currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
     draft: String(x.status || '') === 'draft' };
@@ -1093,7 +1099,7 @@ export function dueOf(inv: any): any | null {
 function lineOf(inv: any, od: any, today: string) {
   const days = Math.round((Date.parse(today + 'T00:00:00Z') - Date.parse(od.due + 'T00:00:00Z')) / 86400000);
   const link = String(inv.short_link || '');
-  return { id: Number(inv.id), number: String(inv.number || ''), date: String(inv.date || ''), due: od.due, days,
+  return { id: Number(inv.id), number: String(inv.number || ''), ref_no: refNo(inv), date: String(inv.date || ''), due: od.due, days,
     amount: od.amount, balance: cents(inv.balance), total: cents(inv.amount),
     currency: /^[A-Z]{3}$/.test(String(inv.currency_code || '')) ? String(inv.currency_code) : 'MYR',
     link: LINK.test(link) ? link : null, part: od.part,
@@ -1186,7 +1192,7 @@ export function docOf(x: any, whole = false): any | null {
     .filter((t: string) => DAY_RE.test(t)).sort();
   const bal = x.balance == null || x.balance === '' ? null : cents(x.balance);
   return { id: Number(x.id), contact: Number(x.contact_id), name: String(x.contact_name || '').slice(0, 200),
-    number: String(x.number || '').slice(0, 60), date, due: terms.length ? terms[terms.length - 1] : whole ? date : null,
+    number: String(x.number || '').slice(0, 60), ref_no: refNo(x), date, due: terms.length ? terms[terms.length - 1] : whole ? date : null,
     amount: cents(x.amount), balance: bal, currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
     paid_on: whole && bal != null && bal <= 0 ? paidOn(x, /invoice|bill|quot|order|deliver/) : null, gone: false };
 }

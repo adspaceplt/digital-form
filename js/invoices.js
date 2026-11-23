@@ -227,7 +227,7 @@
     var q = st.q;
     return (st.rows || []).filter(function (l) {
       if (!q) return true;
-      return [nameOf(l), l.client_code || '', l.number].join(' ').toLowerCase().indexOf(q) > -1;
+      return [nameOf(l), l.client_code || '', l.number, l.ref_no || ''].join(' ').toLowerCase().indexOf(q) > -1;
     });
   }
   function paint() {
@@ -304,7 +304,7 @@
        what they count, the column heads being hidden (2026-10-31; the
        user: "this row sequence quite confusing"). */
     var part = function (t) { return '<span class="inv-part">' + t + '</span>'; };
-    var meta = part(esc(l.number)) + (l.part ? ' · ' + part(esc(partWord(l.part))) : '') +
+    var meta = part(esc(window.ADspaceWords.line.docNo(l.number, l.ref_no))) + (l.part ? ' · ' + part(esc(partWord(l.part))) : '') +
       '<span class="inv-due-m"> · ' + part('Due ' + esc(day(l.due))) + '</span>' +
       (l.client ? (st.many && st.many[l.client] && companyOf(l) ? ' · ' + esc(companyOf(l)) : '') : ' · ' + part('Not linked to a client'));
     row.innerHTML = (st.send ? '<span class="inv-tick"><input type="checkbox"' + (st.pick[l.id] ? ' checked' : '') +
@@ -652,7 +652,7 @@
     rows.forEach(function (l) { if (cos.indexOf(l.contact) < 0) cos.push(l.contact); });
     var rowHtml = function (l) {
       var e = lastFor(l.id), s = e ? statusOf(e) : null;
-      return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
+      return '<div class="od-crow"><span class="od-who"><b>' + esc(window.ADspaceWords.line.docNo(l.number, l.ref_no)) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
         '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
         '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
         '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span>' +
