@@ -783,6 +783,7 @@
     });
     doc('invoice', 703, 'KITE AND CO PLT', add(today, -140), add(today, -110), 1850, 1850, 'MYR', null);
     doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -20), add(today, 10), 2300, 2300, 'MYR', null);
+    out[out.length - 1].ref_no = 'INV-5521';
     doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -5), add(today, 40), 1650, 1650, 'MYR', null);
     return out;
   }
@@ -3857,13 +3858,13 @@ function cardSlugFree(name, self, email) {
           body: '', status: 'queued', created_at: now }));
       };
       seen.push(x.id);
-      if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
+      if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, ref_no: x.ref_no || null, bill_date: x.date,
         amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, made_for: x.made_for || null, gone: false, read_at: now,
         paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null, paid_on: st === 'paid' ? (x.paid_on || null) : null });
       if (!b && st === 'paid' && o0 && o0.posted_on) tell(DB.creator_bills[DB.creator_bills.length - 1]);
       else if (b) {
         var was = b.status;
-        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
+        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, ref_no: x.ref_no || null, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
           currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null, paid_on: st === 'paid' ? (x.paid_on || b.paid_on || null) : null });
         if (st === 'paid' && (was === 'processing' || was === 'draft') && !b.paid_told_at && opt) tell(b);
       }
@@ -3934,7 +3935,7 @@ function cardSlugFree(name, self, email) {
     if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
     var pay = opsGranted('campaigns.pay', 'view'), bills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && !b.gone; });
     var link = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === creator; })[0];
-    var billOf = function (b) { return { number: b.number, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency,
+    var billOf = function (b) { return { number: b.number, ref_no: b.ref_no || null, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency,
       paid_on: b.status === 'paid' ? (b.paid_on || (b.paid_seen_at ? String(b.paid_seen_at).slice(0, 10) : null)) : null }; };
     var jobs = (DB.campaign_options || []).filter(function (o) { return o.creator_id === creator && BOOKED_OUT.indexOf(o.state) < 0; }).map(function (o) {
       var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
@@ -3996,7 +3997,7 @@ function cardSlugFree(name, self, email) {
         posted_on: o.posted_on || null, pay_by: o.pay_by || null,
         currency: (fe && fe.currency) || (appr && appr.currency) || 'MYR',
         fee: pay && fe ? { amount: fe.amount, currency: fe.currency } : null,
-        bill: b ? { number: b.number, status: b.status, date: b.bill_date, paid_on: paidDay(b), amount: pay ? b.amount : null, currency: b.currency } : null,
+        bill: b ? { number: b.number, ref_no: b.ref_no || null, status: b.status, date: b.bill_date, paid_on: paidDay(b), amount: pay ? b.amount : null, currency: b.currency } : null,
         _k: o.pay_by || o.posted_on || '' });
     });
     jobs.sort(function (a, b) { return String(a._k).localeCompare(String(b._k)); }).forEach(function (j) { delete j._k; });
@@ -14884,7 +14885,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sbA.p_paid_from && !(Number(d.balance) > 0) && String(d.paid_on || d.doc_date) < sbA.p_paid_from) return;
         var c = s.client_id && (DB.clients || []).filter(function (x) { return x.id === s.client_id; })[0];
         var seen = c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by);
-        sbOut.push({ id: Number(d.doc_id), supplier: s.id, code: s.code, name: s.name || s.code, number: d.number || '', date: d.doc_date,
+        sbOut.push({ id: Number(d.doc_id), supplier: s.id, code: s.code, name: s.name || s.code, number: d.number || '', ref_no: d.ref_no || null, date: d.doc_date,
           due: d.due_date || d.doc_date, amount: Number(d.amount), balance: Number(d.balance), currency: d.currency || 'MYR', paid_on: d.paid_on || null,
           client: seen ? c.name : null, client_code: seen ? c.client_code : null });
       });
