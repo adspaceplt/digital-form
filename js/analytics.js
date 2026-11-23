@@ -788,7 +788,7 @@
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
     if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. Please ask an admin to turn it on.'
-      : 'No analyses left today. Resets at 12:00 am.';
+      : window.ADspaceWords.line.aiLimit(d && d.limit != null ? d.limit : 0, ['analysis', 'analyses']);
     if (/function|schema cache|Failed to send/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return AI_SAID[k] || 'The analysis could not be written. Try again.';
   }

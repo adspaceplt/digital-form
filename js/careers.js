@@ -114,7 +114,7 @@
     if (i.state === 'picked') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Duration</dt><dd>' + esc(i.minutes) + ' minutes</dd></div></dl>' +
-        '<p class="cr-next" id="crPending">This interview time is pending confirmation by ADspace. ' + (i.mode === 'online'
+        '<p class="cr-next" id="crPending">ADspace will confirm this interview time. ' + (i.mode === 'online'
           ? 'You will receive an email with the Google Meet link once it is confirmed.'
           : 'You will receive an email once it is confirmed. Please do not visit the office until then.') + '</p>' + change() + '</section>';
     }

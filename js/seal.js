@@ -65,7 +65,7 @@
   var STEP = { issued: 'Issued', sent: 'Sent', opened: 'Opened', code: 'Code sent', signed: 'Signed', submitted: 'Submitted',
     returned: 'Sent back', confirmed: 'Confirmed', stamped: 'Stamped', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined',
     voided: 'Void' };
-  var VIA = { link: 'on the quotation link', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
+  var VIA = { link: 'on the quotation website', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
   /* Time to the second, Malaysia's (GMT+8): 17 Nov 2026, 10:42:15am. */
   function when(iso) {
     if (!iso || !C()) return '';
@@ -151,7 +151,7 @@
      Never 0 on a screen: a document nobody checked leaves the line out. */
   function checksWord(n) {
     n = Math.floor(Number(n));
-    return n >= 1 ? (n === 1 ? 'Checked once' : 'Checked ' + n + ' times') : '';
+    return n >= 1 ? window.ADspaceWords.line.checked(n) : '';
   }
   /* The Verify fact: the page and the reference where the copy is sealed,
      and the count under it where there is one. */

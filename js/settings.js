@@ -1496,7 +1496,7 @@
   var pg = { rows: null, err: null, picking: false, picked: {} };
   var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
     ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
-  var PG_SYS = { home: '/', notfound: 'Any address not found', card: '/card/' };
+  var PG_SYS = { home: '/', notfound: 'Page not found', card: '/card/' };
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
   function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
   var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };

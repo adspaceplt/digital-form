@@ -76,7 +76,7 @@
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
-      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
+      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Choose when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
@@ -111,7 +111,7 @@
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
-        'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.', 'bad-start-date': 'Choose a preferred start date from today onwards.',
+        'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Choose when you plan to commence.', 'bad-start-date': 'Choose a preferred start date from today onwards.',
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'ADspace will review this quotation and send it to you on WhatsApp.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found. Please check the link, or request a new quotation.', 'bad-answer': 'Answer both questions to proceed.',

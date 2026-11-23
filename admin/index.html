@@ -132,7 +132,7 @@
 <script src="/js/config.js?v=20261121qse"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261122zzzzzp"></script>
+<script src="/js/words.js?v=20261123c"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261122zzq"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
@@ -158,7 +158,7 @@
 <script src="/js/announce.js?v=20261120t"></script>
 <script src="/js/notice.js?v=20261122zzzu"></script>
 <script src="/js/whatsapp.js?v=20261122zzzzzzu"></script>
-<script src="/js/mailtpl.js?v=20261122zzzzzzu"></script>
+<script src="/js/mailtpl.js?v=20261123c"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261122"></script>
@@ -237,7 +237,7 @@
           <div class="field">
             <label class="field-label" for="abroadKind">Reason</label>
             <select class="select" id="abroadKind" data-seg data-seg-value>
-              <option value="Vacation">Vacation</option>
+              <option value="Vacation">Annual leave</option>
               <option value="Work from home">Work from home</option>
               <option value="other">Other</option>
             </select>
@@ -254,7 +254,7 @@
         <p class="msg" id="abroadMsg" role="status"></p>
         <div class="cover-acts">
           <button class="btn" id="noTeamOut" type="button">Sign out</button>
-          <button class="btn" id="abroadEdit" type="button" hidden>Change request</button>
+          <button class="btn" id="abroadEdit" type="button" hidden>Edit request</button>
           <button class="btn btn-primary" id="abroadCheck" type="button" hidden>Check again</button>
           <button class="btn btn-primary" id="abroadGo" type="button" hidden>Request access</button>
           <button class="btn btn-primary" id="noTeamRetry" type="button" hidden>Try again</button>
@@ -5323,17 +5323,17 @@
           </section>
           <section class="hc-step" data-step="2">
             <fieldset class="hc-q">
-              <legend class="field-label">Feelings <small class="hc-opt">Optional</small></legend>
+              <legend class="field-label">Choose your feelings <small class="hc-opt">Optional</small></legend>
               <div class="hc-tags" id="hcFeel"></div>
             </fieldset>
             <fieldset class="hc-q">
-              <legend class="field-label">Influences <small class="hc-opt">Optional</small></legend>
+              <legend class="field-label">Choose what influenced your mood <small class="hc-opt">Optional</small></legend>
               <div class="hc-tags" id="hcInfl"></div>
             </fieldset>
           </section>
           <section class="hc-step" data-step="3">
             <div class="row"><div class="field">
-              <label class="field-label" for="hcWork">Workload</label>
+              <label class="field-label" for="hcWork">Rate your workload</label>
               <select class="select" id="hcWork" data-seg data-seg-value aria-required="true"><option value="" hidden></option><option value="1">Overwhelming</option><option value="2">Heavy</option><option value="3">Busy</option><option value="4">Manageable</option><option value="5">Comfortable</option></select>
             </div></div>
             <div class="row"><div class="field">
@@ -6750,14 +6750,14 @@ raya-2026        https://example.com/raya"></textarea>
   "reports": {"src": "/js/reports.js?v=20261122zzzu", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261122sk", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261122zzzzzzsb", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261122zzzzzzu", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "hiring": {"src": "/js/hiring.js?v=20261123c", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261123"},
   "invoices": {"src": "/js/invoices.js?v=20261122zzzzzb", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261122zzzzzc", "uses": ["smreport", "reports"]},
   "quotes": {"src": "/js/quotes.js?v=20261122zzzzze", "uses": ["documents", "bukku", "quotepdf", "seal"]},
-  "quotepdf": {"src": "/js/quotepdf.js?v=20261121zzs", "uses": ["documents", "seal"]},
-  "seal": {"src": "/js/seal.js?v=20261121zzt", "uses": ["documents"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261123c", "uses": ["documents", "seal"]},
+  "seal": {"src": "/js/seal.js?v=20261123c", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261121zzs", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
@@ -6773,19 +6773,19 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261122zzzzzb", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261122zzzc", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "perf": {"src": "/js/perf.js?v=20261123c", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261122zzw", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261122zm", "uses": ["documents", "crm", "sales"]},
-  "settings": {"src": "/js/settings.js?v=20261122zzzzzp", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "analytics": {"src": "/js/analytics.js?v=20261123c", "uses": ["documents", "crm", "sales"]},
+  "settings": {"src": "/js/settings.js?v=20261123c", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261122zzzy"></script>
+<script src="/js/admin.js?v=20261123c"></script>
 <script src="/js/ops.js?v=20261122zzzzzb"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261122zzzw"></script>
-<script src="/js/overview.js?v=20261122zzzzzd"></script>
+<script src="/js/overview.js?v=20261123c"></script>
 </body>
 </html>

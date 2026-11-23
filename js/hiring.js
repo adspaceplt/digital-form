@@ -346,7 +346,7 @@
      (Standard for any other), 1 to 5 a criterion, with a recommendation; the
      part or the Owner decides Proceed, Keep in talent pool or Not proceed,
      Reopen the way back. The decision's note stays with the team. */
-  var REC = { proceed: 'Proceed', pool: 'Talent pool', not: 'Not proceed' };
+  var REC = { proceed: 'Proceed', pool: 'Talent pool', not: 'Do not proceed' };
   var OUTCOME = { proceed: ['Proceed', 'is-ok'], pool: ['Talent pool', 'is-off'], not: ['Not proceed', 'is-off'] };
   var POOL = { asked: 'Waiting for the candidate to agree', yes: 'Agreed', no: 'Declined' };
   function scoresPane(c, keeps) {
@@ -374,7 +374,7 @@
             ? '<button class="btn btn-sm" type="button" data-h="outmail" data-gate="email">Email candidate</button>' : '') +
           (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
-      decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Not proceed</button>' +
+      decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Do not proceed</button>' +
         '<button class="btn btn-sm" type="button" data-h="decide" data-o="pool">Keep in talent pool</button>' +
         '<button class="btn btn-sm btn-go" type="button" data-h="decide" data-o="proceed">Proceed</button></div>';
     } else decide = '<p class="emptyline">Not decided.</p>';
@@ -521,7 +521,7 @@
             opts(5, mine.scores ? mine.scores[k] : '', '–') + '</select></div>';
         }).join('') +
         '<div class="field"><label class="field-label" for="hivRec">Recommendation</label><select class="select" id="hivRec" data-seg data-seg-value>' +
-          [['proceed', 'Proceed'], ['pool', 'Talent pool'], ['not', 'Not proceed']].map(function (x) {
+          [['proceed', 'Proceed'], ['pool', 'Talent pool'], ['not', 'Do not proceed']].map(function (x) {
             return '<option value="' + x[0] + '"' + ((mine.recommend || 'proceed') === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
           }).join('') + '</select></div></div></section>' : '');
     if (window.ADspaceForm && ADspaceForm.segment) Array.prototype.forEach.call($('hivBody').querySelectorAll('select[data-seg]'), function (el) { ADspaceForm.segment(el); });
@@ -1192,7 +1192,7 @@
     held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision',
     confirmed: 'the confirmation' };
   var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
+    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed' };
   function readGate() {
     state.gate = null;

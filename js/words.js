@@ -364,6 +364,12 @@
   W.line = {
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
+    /* How many times a sealed copy was checked on /verify/, its Record
+       page and the verify page alike (2026-11-23, tone sweep 6). */
+    checked: function (n, zh) {
+      n = Math.floor(Number(n));
+      return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times';
+    },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
     subject: 'Enter a subject of 2 to 200 characters.',
