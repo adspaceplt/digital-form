@@ -510,8 +510,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   client portal), every cover ends Reference {code}, the sign-in's code as a
   colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access
   token's `session_id` claim, no request; `sessionShort`, the one cut, Devices
-  too), drawn by one watcher in `js/maintenance.js`; signed out, no line;
-  never the token (`tests/covers.js`).
+  too), drawn by one watcher in `js/maintenance.js`; signed out, or on a
+  public page (/verify/, /quote/, a link's page) whatever the browser holds,
+  no line; never the token (`tests/covers.js`).
 - The console's sign-in page and every cover are white to the edge
   (`body.is-plain`); the grey frame is the signed-in console's alone (the
   user, 2026-11-13: "fully white would be ok"). Client pages stay as they
