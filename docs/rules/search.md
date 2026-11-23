@@ -39,3 +39,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Team open filtered by their own search field, its bar opened.
 - A task number is read from `#WT01008`, `WT1008` or `1008` (`task_no.eq`),
   since `ilike` cannot compare a number.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |

@@ -57,3 +57,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`; a new PIN
   clears the demo's wrong tries and locks), filed
   `team.changed` under Demo access, never the PIN.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| The demo on sample data | `.upgradebar.demobar` (`#demoBar`): the upgrade line's tonal band led by the amber dot, Demo at 600, then Sample data. Changes are not saved., Client pages (its `.kmenu`, a page an item) and Exit demo as `.btn-sm`s at the right edge, above the upgrade line, on a phone the pair as equal halves under the line; on a client page `.annbar.demobar`, edge to edge under its bar, laid as an announcement |

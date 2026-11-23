@@ -143,3 +143,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
   (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
   grant. Each is filed `team.changed` under subject Notices.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
+| A notice to colleagues (Notices) | `#ntcSheet` (`js/notice.js`): the announcements list's own rows (`.ann-row`, `.ntc-row`: the title, three lines of the message, To · when · by whom; Read by n of N where the state sits, Withdrawn as a chip; Withdraw, or Restore with a ⋯ holding Delete); New opens `#ntcNewSheet`: Send to as a segment, the colleagues as a ticked list (`.meta-accs`, its own scroll past 40dvh), Title and Message, the count (`.lpicksum`) beside Send. In the bell a notice wraps its title, shows three lines and opens whole in place |
