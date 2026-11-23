@@ -629,7 +629,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
-- 2026-11-22, found by the rail regroup release (`claude/rail-regroup`), failing on main since #1342 (the act headings), which renamed the template sheet's Formats heading to Choose formats: `families` (the template sheet asks the name, Active as a switch, the formats and the checklist alone) still reads `Template | Formats | Checklist`.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

@@ -443,6 +443,12 @@
     /* A message sent again within its window (the Assistant's WhatsApp
        send, its refusal and its warning alike). */
     sentRecently: 'This was sent recently. Send it again only if it is still needed.',
+    /* A delete refused while something still uses it (2026-11-23): the
+       count of each, then the way that keeps the history. */
+    inUse: function (name, uses) {
+      var parts = (uses || []).filter(function (u) { return u && u[0] > 0; }).map(function (u) { return u[0] + ' ' + (u[0] === 1 ? u[1] : u[2]); });
+      return name + ' is used by ' + parts.join(' and ') + ', so it cannot be deleted. Set it inactive instead.';
+    },
     unknownField: function (field, fields) {
       var w = (fields || []).map(function (f) { return '{' + f + '}'; });
       return 'Unknown field ' + field + '.' + (w.length ? ' Use ' + (w.length > 1 ? w.slice(0, -1).join(', ') + ' or ' + w[w.length - 1] : w[0]) + '.' : ' Remove it from the wording.');

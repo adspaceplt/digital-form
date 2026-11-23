@@ -831,3 +831,4 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     skip past them files Scheduled alone. The page reads its moves through
     `nextsOf(t, s)`. No client default (the user: rare); Scheduled is kept.
 
+- A task template is deleted from its row's ⋯ (Edit, Delete; `ops_template_delete`, `ops.workflows` at Edit, 2026-11-23) while no task or repeat rule was made from it; one in use is refused `in-use` with the counts (`ADspaceWords.line.inUse`) and set inactive instead. Filed under Settings, Task templates.
