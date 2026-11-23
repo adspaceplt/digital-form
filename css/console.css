@@ -4877,7 +4877,7 @@ span.inv-amt { font-weight: 600; }
 .ost-km { color: var(--ink-soft); }
 .ost-time { text-align: right; white-space: nowrap; }
 .ost-credit { margin: 12px 0 0; color: var(--ink-mute); font-size: 11.5px; }
-.ost-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.ost-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ost-acts > .btn { flex: 0 0 auto; }
 .ost-shot { position: relative; cursor: pointer; }
 .ost-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }

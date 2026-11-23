@@ -90,6 +90,10 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     writes a line break in a string as `\\n`: a bare `\n` breaks the string
     and the whole seed, and the walk crashes at its first sign-in
     (2026-11-04: the Email tab's seed).
+  - A walk that reloads the console signs in again (`__signIn`) before it
+    reports: the stand-in keeps no sign-in across a load. `report()` fails a
+    console screen measured on the Sign in page (2026-11-24: My Work's
+    Outstation passed twice on the sign-in form, then the walk crashed).
   - A suite follows a record by its id, never by being the first card: a
     list's order moves when the order rules do (2026-11-04: `prod` read
     another booking once a posted one sank to the end).
