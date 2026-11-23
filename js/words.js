@@ -364,6 +364,7 @@
   W.line = {
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
+    docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
     subject: 'Enter a subject of 2 to 200 characters.',

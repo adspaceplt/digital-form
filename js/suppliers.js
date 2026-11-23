@@ -363,7 +363,7 @@
       if (fc !== 'all' && (b.client_code || b.client) !== fc) return false;
       if (fu !== 'all' && (b.currency || 'MYR') !== fu) return false;
       if (!q) return true;
-      var hay = [b.name, b.code, b.number, b.client, b.client_code].join(' ').toLowerCase();
+      var hay = [b.name, b.code, b.number, b.ref_no, b.client, b.client_code].join(' ').toLowerCase();
       return q.split(/\s+/).every(function (w) { return hay.indexOf(w) > -1; });
     };
     var inPer = function (b) { var p = b.paid_on || b.date; return p >= per.from && (!per.to || p <= per.to); };
@@ -402,7 +402,7 @@
       var sub = ['<span class="nb sup-line-code">' + esc(b.code) + '</span>'].concat(b.client
         ? ['<span class="nb">' + esc(window.ADspaceForm.named(b.client_code, b.client)) + '</span>'] : []).join(' · ');
       return '<div class="cpq-row" data-bill="' + esc(b.id) + '">' +
-        '<div class="cpq-l"><span class="cpq-name">' + esc(b.name) + ' <span class="cpq-mono cpq-job">' + esc(b.number || '') + '</span></span>' +
+        '<div class="cpq-l"><span class="cpq-name">' + esc(b.name) + ' <span class="cpq-mono cpq-job">' + esc(window.ADspaceWords.line.docNo(b.number, b.ref_no)) + '</span></span>' +
           (sub ? '<span class="cpq-sub">' + sub + '</span>' : '') + '</div>' +
         '<div class="cpq-r"><span class="cpq-fig">' + esc(money(fig, b.currency)) + '</span><span class="cpq-sub' + (late ? ' is-late' : '') + '">' + esc(when) + '</span></div>' +
         '<div class="cpq-act"><button class="btn btn-sm" type="button" data-a="bukku">Open in Bukku' + OUT + '</button></div></div>';
@@ -513,7 +513,7 @@
       if (k !== 'paid' && Number(b.balance) < Number(b.amount)) sub.push('<span class="nb">' + esc(money(b.balance, b.currency)) + ' owing</span>');
       var when = k === 'overdue' ? lateBy(b, today) : k === 'waiting' ? 'Due ' + billDay(b.due) : billDay(b.paid_on || b.date);
       return '<div class="cpay-job prow" data-bill="' + esc(b.id) + '">' +
-        '<div class="cpay-job-l pr-main"><span class="cpay-job-ref">' + esc(b.number || '') + '</span><span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
+        '<div class="cpay-job-l pr-main"><span class="cpay-job-ref">' + esc(window.ADspaceWords.line.docNo(b.number, b.ref_no)) + '</span><span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
         '<span class="cpay-job-st pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
         '<span class="cpay-job-end pr-end"><span class="cpay-job-sub">' + esc(when) + '</span></span>' +
         '<span class="pr-act"><span class="team-act"><button class="kmenu-btn" type="button" data-a="billmenu" aria-label="More actions for ' + esc(b.number || '') + '" aria-expanded="false">' + DOTS_SM + '</button>' +
