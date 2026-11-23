@@ -18992,7 +18992,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var byId = function (id) { return held.filter(function (c) { return c.id === Number(id); })[0]; };
             var nextC = function () { var f = (String(p.legal_name).match(/[A-Z0-9]/) || ['X'])[0]; return 'C-' + f + '0001'; };
             if (bkb.action === 'find') {
-              if (p.contact_id && byId(p.contact_id)) { var lc = byId(p.contact_id); return { data: { ok: true, linked: { id: lc.id, code: lc.contact_code, name: lc.legal_name, types: lc.types } }, error: null }; }
+              if (p.contact_id && byId(p.contact_id)) {
+                var lc = byId(p.contact_id);
+                var lcIs = { data: { ok: true, linked: { id: lc.id, code: lc.contact_code, name: lc.legal_name, types: lc.types } }, error: null };
+
+                if (bkb.kind !== 'supplier' || !p.client_id) return lcIs;
+                return rpc('bukku_link_get', { p_kind: 'supplier', p_id: bkb.id }).then(function (lg) {
+                  if (!lg.error && lg.data && lg.data.contact_id != null) return lcIs;
+                  return { data: { ok: true, shared: true, candidates: [{ id: lc.id, code: lc.contact_code, name: lc.legal_name, types: lc.types, why: 'client' }],
+                    details: p.details !== false }, error: null };
+                });
+              }
               var cands = held.filter(function (c) { return byJob[c.id]; })
                 .map(function (c) { return { id: c.id, code: c.contact_code, name: c.legal_name, types: c.types, why: 'job', job: byJob[c.id] }; })
                 .concat(held.filter(function (c) { return !byJob[c.id] && ((p.reg_no && c.reg_no === p.reg_no) || c.legal_name === p.legal_name); })
