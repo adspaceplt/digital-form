@@ -832,3 +832,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `nextsOf(t, s)`. No client default (the user: rare); Scheduled is kept.
 
 - A task template is deleted from its row's ⋯ (Edit, Delete; `ops_template_delete`, `ops.workflows` at Edit, 2026-11-23) while no task or repeat rule was made from it; one in use is refused `in-use` with the counts (`ADspaceWords.line.inUse`) and set inactive instead. Filed under Settings, Task templates.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| A task on My Work's board and list (v3, 2026-11-12) | A board column is a `--sunk` panel (14px corner) of white cards (12px corner, inset `--card-edge`): the priority tag and the format tag (`.chip.tfmt`) with the grip, the client's logo (18px) and name · the number, the title at 500, two lines of the brief, the checklist as a bar a check (`.tcheckbar`, amber while running, green when all ticked, n/N), the stage select, then a foot of the colleague as an initials disc in a tint of their own (`.tav`), the remarks counted (`.trem`) and the due date. A list row leads the name with the client's logo (left off on a narrow pane) and carries the format, the checklist bar and the remarks on a line under the client; the colleague's disc leads their name. Checklists and remarks are read once a list load for the open tasks (`readExtras`, 150 a request), a refused read leaving the marks off |
+| A priority's deadline (My Work) | The one status drawn filled (the user, 2026-10-11, D3 + B): a 4px strip down a task row's or board card's left edge (an inset shade, `.pri-urgent` red, `.pri-high` amber, `.pri-medium` yellow, `.pri-over` red) and, while it comes before the due date, `.task-pri` in the Due column (a board card's foot): 12/600, padding 2px 8px, radius 5, the level's tint (`--err-bg`, `--warn-bg`, `--soon-bg`), its words in ink while it counts down and `--err` once over; the task card's `.task-deadline` line on `--sunk` with the same strip. Normal, or a deadline met, draws neither |
+| A row's next step under a finger (My Work) | The row swiped left: its cells drift a fifth of the way, the stage and the ⋯ fade, and `.trow-next` (the blue `.btn`, the step's own words) stands at the right edge, 8px in; it shows the act and never takes it |

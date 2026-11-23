@@ -349,3 +349,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   alone, or links rewritten through a tracker, reads to Gmail as bulk mail
   (2026-11-18; `tests/mailfn.js`). Open tracking stays on for the Email
   log's Opened.
+
+## Components
+
+Moved from DESIGN.md §4 on 2026-11-23.
+
+| Need | Component |
+|---|---|
+| A message sent on WhatsApp (the WhatsApp section) | `#waList` (`js/whatsapp.js`): the month's figures in the line under the section's name (`ADspaceAdmin.counts`), then one `ADspaceGroup` card of `.wam-row`s: who (name over client and number, a failure's reason in `--err` under it on a narrow pane), what (purpose over template and category), who sent it, the status over when (`.chip-state` with its dot); on a narrow pane who over meta at the left and status over when at the right. Templates: `.wat-row` a purpose over its template, its `button.switch`, Edit |
+| The emails the portal sent (Messages, Email) | `#emlPane`: the WhatsApp tab's own layout (sent, delivered, opened and not delivered in red in the line under the section's name, then one `ADspaceGroup` card), a row a `button.wam-row.eml-row` (who over what and its client or supplier, what over its reference, who sent it, the status over when); `#emlSheet` a read-only `.formsheet`: the subject as its title, `dl.ovfacts.eml-facts`, each step its own fact, then the message on `--sunk` with its lines kept (`.eml-body`) |
+| Sending a template on WhatsApp from any record | `#waCompose` (`ADspaceWhatsApp.compose`): a `.formsheet` of Recipient (To as a select, the number as a `.readfield`, a warn line where it cannot be messaged), Template (Meta's approved ones; Report where it has a Document header), Variables (one `data-oneline` box each, prefilled) and Preview (`.wa-preview` on `--sunk`: header, body with each variable at 600, footer, buttons); Send asks first |
+| An email's wording (Settings, Email templates) | `#mtSheet` (`js/mailtpl.js`): Recipient as a small segment, then a section a kind of email (`.mt-sec`: the `fsec-h` heading, Add template at its right for New email) over a shaded card of rows (the name over its subject, Edit with the pen, a New email template's ⋯ holding Delete); the editor `#mtEdSheet` (880px): the fields at the left, Subject a one-line box, Message a box of lines with the sender's fields as `.btn-sm` chips under it, an unknown field the `.msg.warn` line and the field's red edge; Preview at the right on the email's own light page (`.inv-mail`), each field a tinted span, an unknown one red words with a wavy underline; stacked under 720 |
