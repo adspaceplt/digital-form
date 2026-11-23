@@ -690,6 +690,14 @@
     team_work_held: 'p_member',
     team_member_seen: 'p_id',
     team_member_sessions: 'p_id',
+    outstation_check_in: 'p_client p_venue p_purpose p_note p_companions p_lat p_lng p_accuracy p_read_at',
+    outstation_stop_add: 'p_trip p_client p_venue p_lat p_lng p_accuracy p_read_at',
+    outstation_photo_add: 'p_stop p_path p_taken_at p_lat p_lng p_accuracy',
+    outstation_check_out: 'p_trip p_lat p_lng p_accuracy p_read_at p_note p_rating',
+    outstation_trips: 'p_from p_to p_all',
+    outstation_photo_may: 'p_trip',
+    outstation_photo_key: 'p_photo',
+    outstation_geo_may: 'p_stop p_trip',
     team_session_end: 'p_id p_session',
     team_sessions_end_all: 'p_id',
     team_sessions_idle_end: 'p_now',
@@ -3358,6 +3366,8 @@ function cardSlugFree(name, self, email) {
 
     stage_back_days: 7,
 
+    outstation_office_lat: 1.553501, outstation_office_lng: 103.784857, outstation_accuracy_m: 50, outstation_keep_months: 24,
+
     quote_valid_days: 30, details_form_days: 14,
 
     wa_repeat_hours: 24,
@@ -4039,7 +4049,10 @@ function cardSlugFree(name, self, email) {
       k = keys[i]; v = vals[k];
 
       if (!(k in APP_SEED || k === 'fx_sgd') || typeof v !== 'number' || !isFinite(v) ||
-          (k === 'fx_sgd' ? Math.round(v * 1e4) / 1e4 !== v || v < 0.5 || v > 10 : Math.round(v * 100) / 100 !== v) ||
+          (k === 'fx_sgd' ? Math.round(v * 1e4) / 1e4 !== v || v < 0.5 || v > 10
+            : /^outstation_office_/.test(k) ? Math.round(v * 1e6) / 1e6 !== v : Math.round(v * 100) / 100 !== v) ||
+          (k === 'outstation_office_lat' && (v < -90 || v > 90)) || (k === 'outstation_office_lng' && (v < -180 || v > 180)) ||
+          (k === 'outstation_accuracy_m' && (v < 5 || v > 500 || v % 1)) || (k === 'outstation_keep_months' && (v < 6 || v > 120 || v % 1)) ||
           ((k === 'lead_followup_hours' || k === 'vic_lead_followup_hours') && (v < 1 || v > 720 || v % 1)) ||
           ((k === 'proposal_followup_days' || k === 'vic_proposal_followup_days') && (v < 1 || v > 365 || v % 1)) ||
           (k === 'report_due_days' && (v < 1 || v > 60 || v % 1)) || (k === 'revision_due_days' && (v < 1 || v > 60 || v % 1)) ||
@@ -5555,7 +5568,7 @@ function cardSlugFree(name, self, email) {
   function sendOk(channel) { var m = opsMe(); return Boolean(m) && manualOn(channel) && swOf(m, channel + '_on'); }
   var GRANTED_KEYS = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'ops.numbering': 1, 'ops.override': 1,
     'team.performance': 1, 'team.perfadmin': 1, 'team.settings': 1, 'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1,
-    'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1, 'reports.whitelabel': 1,
+    'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1, 'ops.outstation': 1, 'reports.whitelabel': 1,
     'reports.transfer': 1, 'reports.ai': 1, 'reports.meta': 1, 'register.types': 1, 'campaigns.files_delete': 1, 'clients.vic': 1 };
   var SENSITIVE_KEYS = { 'clients.billing': 1, 'campaigns.pay': 2, 'suppliers.pay': 2 };
   function opsAccess(m) {
@@ -5568,7 +5581,7 @@ function cardSlugFree(name, self, email) {
   var GRANTED_PARTS = ['ops.all', 'ops.reports', 'ops.workflows', 'ops.time', 'ops.numbering', 'ops.override',
     'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite', 'team.handbook', 'team.announce',
     'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai', 'reports.meta', 'register.types',
-    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay', 'team.personnel', 'team.hiring', 'team.sessions'];
+    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay', 'team.personnel', 'team.hiring', 'team.sessions', 'ops.outstation'];
 
   function notePush(row) {
     if (row && row.kind !== 'jobs.failed' && (DB.team_members || []).some(function (m) { return m.id === row.team_member_id && m.system; })) return;
@@ -10294,6 +10307,149 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var smInv = (DB.team_invites || []).filter(function (i) { return String(i.email || '').toLowerCase() === smEmail && i.kind === 'team'; })
         .map(function (i) { return i.created_at; }).sort().pop() || null;
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
+    }
+
+    if (/^outstation_/.test(name)) {
+      args = args || {};
+      var oNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      var oOk = function (d) { return Promise.resolve({ data: JSON.parse(JSON.stringify(d)), error: null }); };
+      var OST = (DB.__ost = DB.__ost || { trips: [], stops: [], photos: [] });
+      var oMe = opsMe();
+      var oUuid = function () { var h = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
+        return [h(8), h(4), '4' + h(3), 'a' + h(3), h(12)].join('-'); };
+      var oName = function (id) { var m = DB.team_members.filter(function (x) { return x.id === id; })[0]; return m || {}; };
+      var oJson = function (t) {
+        var cl = function (id) { return (DB.clients || []).filter(function (c) { return c.id === id; })[0] || {}; };
+        return { id: t.id, driver_id: t.driver_id, driver: oName(t.driver_id).name || null, driver_code: oName(t.driver_id).staff_code || null,
+          companions: t.companions.map(function (id) { var m = oName(id); return { id: id, name: m.name, code: m.staff_code || null }; })
+            .sort(function (a, b) { return String(a.name) < String(b.name) ? -1 : 1; }),
+          purpose: t.purpose, note: t.note, rating: t.rating, state: t.state, started_at: t.started_at, ended_at: t.ended_at, end_note: t.end_note,
+          end: t.end_lat == null ? null : { lat: t.end_lat, lng: t.end_lng, accuracy_m: t.end_accuracy_m },
+          km_back: t.km_back, km_total: t.km_total,
+          stops: OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return a.seq - b.seq; }).map(function (x) {
+            return { id: x.id, seq: x.seq, client_id: x.client_id, client: x.client_id ? cl(x.client_id).name || null : null,
+              client_code: x.client_id ? cl(x.client_id).client_code || null : null, venue: x.venue, lat: x.lat, lng: x.lng,
+              accuracy_m: x.accuracy_m, read_at: x.read_at, address: x.address, zone: x.zone, arrived_at: x.arrived_at, left_at: x.left_at,
+              km_from_prev: x.km_from_prev, filed: !!x.touch_id,
+              photos: OST.photos.filter(function (p) { return p.stop_id === x.id; }).sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; })
+                .map(function (p) { return { id: p.id, taken_at: p.taken_at, lat: p.lat, lng: p.lng, accuracy_m: p.accuracy_m }; }) };
+          }) };
+      };
+      var oOwn = function (id) { return OST.trips.filter(function (t) { return t.id === id && oMe && t.driver_id === oMe.id; })[0]; };
+      var oReading = function () {
+        var lim = Number(appSet('outstation_accuracy_m', appToday())) || 50, at = Date.parse(args.p_read_at);
+        if (args.p_lat == null || args.p_lng == null || args.p_accuracy == null || !at || Math.abs(args.p_lat) > 90 || Math.abs(args.p_lng) > 180 ||
+            args.p_accuracy < 0 || at > Date.now() + 120000 || at < Date.now() - 600000) return { error: 'bad-location' };
+        if (Number(args.p_accuracy) > lim) return { error: 'vague', limit: lim, accuracy: Math.round(args.p_accuracy) };
+        return null;
+      };
+      var oClient = function () {
+        if (!args.p_client && !String(args.p_venue || '').trim()) return 'no-place';
+        if (args.p_client && (!(DB.clients || []).some(function (c) { return c.id === args.p_client; }) || !opsAllowed('clients', 'view') || !scopeSeen(args.p_client, 'view'))) return 'bad-client';
+        return null;
+      };
+      var oFile = function (st) {
+        if (!st.client_id || st.touch_id || !st.left_at) return;
+        var t = OST.trips.filter(function (x) { return x.id === st.trip_id; })[0];
+        if (!scopeSeen(st.client_id, 'work')) return;
+        var clk = function (iso) { var d = new Date(Date.parse(iso) + 8 * 36e5), h = d.getUTCHours();
+          return (h % 12 || 12) + ':' + String(d.getUTCMinutes()).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
+        var w = t.companions.map(function (id) { return oName(id).name; }).filter(Boolean).sort().join(', ');
+        var tid = nid('touch');
+        DB.client_touches.push({ id: tid, client_id: st.client_id, kind: 'visit', happened_at: new Date(Date.parse(st.arrived_at) + 8 * 36e5).toISOString().slice(0, 10),
+          by_whom: oName(t.driver_id).name, summary: 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + ', ' + clk(st.arrived_at) + ' to ' + clk(st.left_at) +
+            (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : ''), created_at: new Date().toISOString(), archived_at: null, done_at: null });
+        st.touch_id = tid;
+      };
+      var oLast = function (t) { return OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return b.seq - a.seq; })[0]; };
+      var oHasPhoto = function (st) { return OST.photos.some(function (p) { return p.stop_id === st.id; }); };
+      if (name === 'outstation_trips') {
+        if (!oMe || !opsAllowed('ops', 'view')) return oNo('denied');
+        if (args.p_all && !opsGranted('ops.outstation', 'view')) return oNo('denied');
+        if (!args.p_from || !args.p_to || args.p_to < args.p_from) return oNo('bad-period');
+        var oDay = function (iso) { return new Date(Date.parse(iso) + 8 * 36e5).toISOString().slice(0, 10); };
+        return oOk({ ok: true, me: oMe.id, trips: OST.trips.filter(function (t) {
+          return ((oDay(t.started_at) >= args.p_from && oDay(t.started_at) <= args.p_to) || (t.state === 'open' && t.driver_id === oMe.id)) &&
+            (args.p_all || t.driver_id === oMe.id || t.companions.indexOf(oMe.id) > -1);
+        }).sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; }).map(oJson) });
+      }
+      if (name === 'outstation_photo_may') {
+        var pmT = oOwn(args.p_trip);
+        return oOk(pmT && pmT.state === 'open' && opsAllowed('ops', 'work') ? pmT.id : null);
+      }
+      if (name === 'outstation_geo_may') {
+        var gmS = OST.stops.filter(function (x) { return x.id === args.p_stop; })[0];
+        var gmT = oOwn(args.p_trip || (gmS && gmS.trip_id));
+        return oOk(gmT && opsAllowed('ops', 'work') ? gmT.id : null);
+      }
+      if (name === 'outstation_photo_key') {
+        if (!oMe || !opsAllowed('ops', 'view')) return oNo('denied');
+        var pkP = OST.photos.filter(function (p) { return p.id === args.p_photo; })[0];
+        if (!pkP) return oNo('not-kept');
+        var pkS = OST.stops.filter(function (x) { return x.id === pkP.stop_id; })[0];
+        var pkT = OST.trips.filter(function (x) { return x.id === pkS.trip_id; })[0];
+        if (!(pkT.driver_id === oMe.id || pkT.companions.indexOf(oMe.id) > -1 || opsGranted('ops.outstation', 'view'))) return oNo('denied');
+        return oOk({ key: pkP.path, trip: pkT.id });
+      }
+      if (!opsAllowed('ops', 'work') || !oMe) return oNo('denied');
+      if (name === 'outstation_check_in') {
+        if (OST.trips.some(function (t) { return t.driver_id === oMe.id && t.state === 'open'; })) return oNo('open-trip');
+        if (['meeting', 'shooting', 'event', 'other'].indexOf(args.p_purpose) < 0) return oNo('bad-purpose');
+        if (String(args.p_note || '').length > 2000 || String(args.p_venue || '').length > 200) return oNo('too-long');
+        var ciC = oClient(); if (ciC) return oNo(ciC);
+        var ciW = (args.p_companions || []).filter(function (x, i, all) { return all.indexOf(x) === i; });
+        if (ciW.length > 10 || ciW.indexOf(oMe.id) > -1 || ciW.some(function (id) { var m = oName(id); return !m.id || !m.active || m.removed_at || m.system; }))
+          return oNo('bad-companion');
+        var ciR = oReading(); if (ciR) return oNo(ciR.error, ciR);
+        var ciT = { id: oUuid(), driver_id: oMe.id, companions: ciW, purpose: args.p_purpose, note: String(args.p_note || '').trim() || null, rating: null,
+          started_at: new Date().toISOString(), ended_at: null, end_lat: null, end_lng: null, end_accuracy_m: null, end_note: null, km_back: null, km_total: null, state: 'open' };
+        OST.trips.push(ciT);
+        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+          lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
+          arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+        return oOk({ ok: true, trip: oJson(ciT) });
+      }
+      if (name === 'outstation_stop_add' || name === 'outstation_check_out') {
+        var saT = oOwn(args.p_trip);
+        if (!saT) return oNo('no-trip');
+        if (saT.state !== 'open') return oNo('closed');
+        if (name === 'outstation_stop_add') {
+          if (String(args.p_venue || '').length > 200) return oNo('too-long');
+          var saC = oClient(); if (saC) return oNo(saC);
+        } else {
+          if (String(args.p_note || '').length > 2000) return oNo('too-long');
+          if (args.p_rating != null && (args.p_rating < 1 || args.p_rating > 5 || args.p_rating % 1)) return oNo('bad-rating');
+        }
+        var saL = oLast(saT);
+        if (!oHasPhoto(saL)) return oNo('no-photo');
+        if (name === 'outstation_stop_add' && saL.seq >= 20) return oNo('too-many');
+        var saR = oReading(); if (saR) return oNo(saR.error, saR);
+        saL.left_at = new Date().toISOString();
+        oFile(saL);
+        if (name === 'outstation_stop_add') {
+          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+            lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
+            arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+        } else {
+          saT.state = 'closed'; saT.ended_at = new Date().toISOString(); saT.end_lat = args.p_lat; saT.end_lng = args.p_lng;
+          saT.end_accuracy_m = args.p_accuracy; saT.end_note = String(args.p_note || '').trim() || null; saT.rating = args.p_rating == null ? null : args.p_rating;
+        }
+        return oOk({ ok: true, trip: oJson(saT) });
+      }
+      if (name === 'outstation_photo_add') {
+        var paS = OST.stops.filter(function (x) { return x.id === args.p_stop; })[0];
+        var paT = paS && oOwn(paS.trip_id);
+        if (!paT) return oNo('no-trip');
+        if (paT.state !== 'open' || paS.left_at) return oNo('closed');
+        if (!new RegExp('^private/outstation/' + paT.id + '/[0-9a-f-]{36}\\.jpg$').test(String(args.p_path || ''))) return oNo('bad-key');
+        var paAt = Date.parse(args.p_taken_at);
+        if (!paAt || paAt > Date.now() + 120000 || paAt < Date.parse(paT.started_at) - 600000) return oNo('bad-location');
+        if (OST.photos.filter(function (p) { return p.stop_id === paS.id; }).length >= 10) return oNo('too-many');
+        OST.photos.push({ id: oUuid(), stop_id: paS.id, path: args.p_path, taken_at: args.p_taken_at, lat: args.p_lat == null ? null : args.p_lat,
+          lng: args.p_lng == null ? null : args.p_lng, accuracy_m: args.p_accuracy == null ? null : args.p_accuracy });
+        return oOk({ ok: true, trip: oJson(paT) });
+      }
+      return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
     if (name === 'team_member_sessions' || name === 'team_session_end' || name === 'team_sessions_end_all') {
@@ -18227,6 +18383,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
       functions: { invoke: function fnInvoke(name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
 
+        if (name === 'sign-download' && opts && opts.body && opts.body.outstation) {
+          var ofErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
+          return rpc('outstation_photo_key', { p_photo: opts.body.outstation.photo }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return ofErr(d.error === 'not-kept' ? 404 : 403);
+            return fetch('https://s3.test/get/' + d.key).then(function (res) {
+              if (!res.ok) return ofErr(404);
+              return res.blob().then(function (b) { return { data: b, error: null }; });
+            }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
+          });
+        }
+
+        if (name === 'outstation-geo') {
+          var gb = (opts && opts.body) || {};
+          return rpc('outstation_geo_may', { p_stop: gb.stop || null, p_trip: gb.trip || null }).then(function (r) {
+            if (r.error || !r.data) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 403 } };
+            var O = DB.__ost;
+            if (gb.stop) {
+              var st = O.stops.filter(function (x) { return x.id === gb.stop; })[0];
+              var pl = (window.__ostPlace && window.__ostPlace(st)) || { address: 'Jalan Setia Tropika 1/15, Johor Bahru, 81200, Johor', zone: 'johor' };
+              st.address = pl.address; st.zone = pl.zone;
+              return { data: { ok: true, address: pl.address, zone: pl.zone }, error: null };
+            }
+            if (window.__ostKm === false) return { data: { off: true }, error: null };
+            var t = O.trips.filter(function (x) { return x.id === r.data; })[0];
+            var sts = O.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return a.seq - b.seq; });
+            var km = window.__ostKm || [14.2, 9.6, 11, 8.4, 6.1, 5.5];
+            var legs = sts.map(function (x, i) { return km[i % km.length]; });
+            var back = t.state === 'closed' ? km[sts.length % km.length] : null;
+            sts.forEach(function (x, i) { x.km_from_prev = legs[i]; });
+            t.km_back = back;
+            t.km_total = back == null ? null : Math.round((legs.reduce(function (a, b) { return a + b; }, 0) + back) * 10) / 10;
+            return { data: { ok: true, legs: legs, back: back }, error: null };
+          });
+        }
         if (name === 'sign-download' && opts && opts.body && opts.body.personnel) {
           var pfErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
           return rpc('personnel_file_key', { p_member: opts.body.personnel.member || null, p_kind: opts.body.personnel.kind }).then(function (r) {
@@ -19599,6 +19790,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var ph = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
             var pk2 = 'private/personnel/' + r.data + '/' + [ph(8), ph(4), ph(4), ph(4), ph(12)].join('-') + '.' + String(bd.ext).toLowerCase();
             return { data: { uploadUrl: 'https://s3.test/put/' + pk2, publicUrl: null, key: pk2, contentType: upType }, error: null };
+          });
+        }
+
+        if (name === 'sign-upload' && bd.purpose === 'outstation') {
+          if (String(bd.ext || '').toLowerCase() !== 'jpg') return upRefuse('bad_extension');
+          if (!(Number(bd.size) >= 1 && Number(bd.size) <= 5242880)) return upRefuse('too_large');
+          return rpc('outstation_photo_may', { p_trip: bd.tripId || null }).then(function (r) {
+            if (r.error || !r.data || r.data !== bd.tripId) return upRefuse('not_allowed');
+            var oh = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
+            var ok2 = 'private/outstation/' + r.data + '/' + [oh(8), oh(4), oh(4), oh(4), oh(12)].join('-') + '.jpg';
+            return { data: { uploadUrl: 'https://s3.test/put/' + ok2, publicUrl: null, key: ok2, contentType: 'image/jpeg' }, error: null };
           });
         }
         if (bd.creatorCode) {

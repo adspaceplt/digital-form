@@ -5,7 +5,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 
 - Views (`view=`):
   - list (default, out of the address), board, calendar, months (an older
-    `view=clients` reads as it). No Report view (removed 2026-10-12: the
+    `view=clients` reads as it), outstation (`docs/rules/outstation.md`). No Report view (removed 2026-10-12: the
     Dashboard carries the team's figures, its Detail page what only the
     Report held); an old `view=report` or `view=load` opens the list.
   - Each draws through `paint()` and `viewBox()`, never straight into a hidden

@@ -184,7 +184,7 @@
     if (st.msg) { var m = document.createElement('p'); m.className = 'msg ' + (st.msg.tone || ''); m.id = 'ostMsg'; m.setAttribute('role', 'status'); m.textContent = st.msg.text; body.appendChild(m); }
     var past = (st.d.trips || []).filter(function (t) { return t !== open; });
     if (!past.length) {
-      if (!open) UI.emptyLine(body, 'No trips.');
+      if (!open) { var none = document.createElement('div'); body.appendChild(none); UI.emptyLine(none, 'No trips.'); }
       return;
     }
     body.appendChild(tripList(past, 'mine', open ? 'Recent trips' : 'These three months'));
@@ -211,7 +211,7 @@
     ex.hidden = !trips.length;
     ex.addEventListener('click', function () { exportCsv(trips); });
     if (window.ADspaceActs && window.ADspaceActs.mark) window.ADspaceActs.mark(ex);
-    if (!trips.length) { UI.emptyLine(body, 'No trips.'); return; }
+    if (!trips.length) { var none = document.createElement('div'); body.appendChild(none); UI.emptyLine(none, 'No trips.'); return; }
     body.appendChild(tripList(trips, 'all', C.month(st.month)));
   }
 
@@ -267,7 +267,7 @@
       var facts = ['Within ' + Math.round(Number(s.accuracy_m)) + ' m', plural((s.photos || []).length, 'photo', 'photos'),
         C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')];
       rows += '<li class="ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '"><span class="ost-dot" aria-hidden="true"></span>' +
-        '<span class="ost-place"><b>' + esc(placeName(s)) + '</b>' + (s.km_from_prev != null ? '<span class="ost-km"> · ' + esc(km(s.km_from_prev)) + '</span>' : '') +
+        '<span class="ost-place"><span class="ost-name"><b>' + esc(placeName(s)) + '</b>' + (s.km_from_prev != null ? '<span class="ost-km"> · ' + esc(km(s.km_from_prev)) + '</span>' : '') + '</span>' +
         '<small>' + facts.map(function (f) { return '<span class="inv-part">' + esc(f) + '</span>'; }).join(' · ') + '</small>' +
         (s.address ? '<small>' + esc(s.address) + (s.zone ? ' · ' + esc(ZONE[s.zone]) : '') + '</small>' : '') + '</span>' +
         '<span class="ost-time">' + esc(here ? 'On site' : span(s.arrived_at, s.left_at)) + '</span></li>';
@@ -275,8 +275,8 @@
     rows += trip.state === 'open'
       ? '<li class="ost-stop is-back"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="muted">Back to office</span>' +
         '<small>Worked out at check-out</small></span><span class="ost-time"></span></li>'
-      : '<li class="ost-stop is-office"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><b>Office</b>' +
-        (trip.km_back != null ? '<span class="ost-km"> · ' + esc(km(trip.km_back)) + '</span>' : '') + '</span>' +
+      : '<li class="ost-stop is-office"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="ost-name"><b>Office</b>' +
+        (trip.km_back != null ? '<span class="ost-km"> · ' + esc(km(trip.km_back)) + '</span>' : '') + '</span></span>' +
         '<span class="ost-time">' + esc(C.clock(trip.ended_at)) + '</span></li>';
     return '<ol class="ost-route">' + rows + '</ol>' +
       ((trip.stops || []).some(function (s) { return s.address; }) ? '<p class="ost-credit">Addresses © OpenStreetMap contributors</p>' : '');
@@ -339,7 +339,7 @@
   /* The best reading in up to 20 seconds, never a cached one; `tick` hears
      each better one. Settles early on 5 m, or once one inside the limit
      has stood six seconds. */
-  function readSpot(tick, limit) {
+  function readSpot(tick, limit, ctl) {
     return new Promise(function (ok, no) {
       var geo = navigator.geolocation;
       if (!geo) { no({ code: 'none' }); return; }
@@ -360,6 +360,12 @@
         if (e && e.code === 1) { done = true; if (id !== null) geo.clearWatch(id); clearTimeout(timer); no({ code: 'denied' }); }
       }, { enableHighAccuracy: true, maximumAge: 0, timeout: WATCH_MS });
       timer = setTimeout(finish, WATCH_MS);
+      /* A phone that reports once and then stays quiet settles at six
+         seconds too, where that one reading is inside the limit. */
+      setTimeout(function () { if (!done && best && limit && best.acc <= limit) finish(); }, 6100);
+      /* A read abandoned (Read again, the sheet shut) stops watching and
+         never answers. */
+      if (ctl) ctl.cancel = function () { if (done) return; done = true; if (id !== null) geo.clearWatch(id); clearTimeout(timer); };
     });
   }
   /* A photo's place: the best in eight seconds, or none. */
@@ -367,12 +373,15 @@
     return new Promise(function (ok) {
       var geo = navigator.geolocation;
       if (!geo) { ok(null); return; }
-      var best = null, id = geo.watchPosition(function (p) {
+      var best = null, done = false, timer = null, id = null;
+      var end = function () { if (done) return; done = true; clearTimeout(timer); if (id !== null) geo.clearWatch(id); ok(best); };
+      id = geo.watchPosition(function (p) {
         var c = p.coords;
         if (!best || c.accuracy < best.acc) best = { lat: Math.round(c.latitude * 1e6) / 1e6, lng: Math.round(c.longitude * 1e6) / 1e6, acc: Math.round(c.accuracy * 10) / 10 };
-        if (best.acc <= 10) { geo.clearWatch(id); ok(best); }
-      }, function () { geo.clearWatch(id); ok(best); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 });
-      setTimeout(function () { geo.clearWatch(id); ok(best); }, 8000);
+        if (best.acc <= 10) end();
+      }, end, { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 });
+      if (done) geo.clearWatch(id);
+      timer = setTimeout(end, 8000);
     });
   }
   /* The location block of a sheet: read, refuse, read again. */
@@ -389,11 +398,15 @@
       state.innerHTML = '<span class="chip chip-state is-' + tone + '">' + esc(word) + '</span>';
       note.textContent = line || '';
     };
+    o.stop = function () { if (o.ctl && o.ctl.cancel) o.ctl.cancel(); o.ctl = null; };
     o.read = function () {
+      o.stop();
+      var ctl = o.ctl = {};
       o.spot = null;
       again.hidden = true;
       say('warn', 'Reading your location…', '');
-      return readSpot(function (b) { say('warn', 'Reading your location… within ' + Math.round(b.acc) + ' m', ''); }, limit).then(function (b) {
+      return readSpot(function (b) { if (o.ctl === ctl) say('warn', 'Reading your location… within ' + Math.round(b.acc) + ' m', ''); }, limit, ctl).then(function (b) {
+        if (o.ctl !== ctl) return;
         again.hidden = false;
         if (b.acc > limit) {
           say('danger', 'Location within ' + Math.round(b.acc) + ' m', 'It must be within ' + limit + ' m. ' + PRECISE);
@@ -402,6 +415,7 @@
         o.spot = b;
         say('ok', 'Location within ' + Math.round(b.acc) + ' m', '');
       }).catch(function (e) {
+        if (o.ctl !== ctl) return;
         again.hidden = false;
         say('danger', 'Location not read', e && e.code === 'denied'
           ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Read again.'
@@ -552,7 +566,7 @@
     stopMsg('');
     stopKit.shots.reset();
     $('ostClient').innerHTML = '<option value="">Loading…</option>';
-    window.ADspaceSheet.show(stopSheet, { opener: opener });
+    window.ADspaceSheet.show(stopSheet, { opener: opener, onClose: function () { stopKit.loc.stop(); } });
     stopKit.loc.read();
     readPick().then(function () {
       $('ostClient').innerHTML = '<option value="">Choose a client</option>' + clients.map(function (c) {
@@ -666,7 +680,7 @@
     paintStars();
     $('ostOutNote').value = '';
     outMsg('');
-    window.ADspaceSheet.show(outSheet, { opener: opener });
+    window.ADspaceSheet.show(outSheet, { opener: opener, onClose: function () { outLoc.stop(); } });
     outLoc.read();
   }
   function sendOut() {
@@ -724,24 +738,31 @@
       '<div class="sheet-head"><h3 id="ostTripH">Trip · ' + esc(C.date(trip.started_at)) + '</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<dl class="ovfacts">' + facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>' +
-        '<h4 class="fsec-h">Route</h4>' + routeHtml(trip) +
-        (photos.length ? '<h4 class="fsec-h">Photos</h4><div class="ost-gallery">' + photos.map(function (x) {
+        '<section class="fsec"><dl class="ovfacts">' + facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl></section>' +
+        '<section class="fsec"><h4 class="fsec-h">Route</h4>' + routeHtml(trip) + '</section>' +
+        (photos.length ? '<section class="fsec"><h4 class="fsec-h">Photos</h4><div class="ost-gallery">' + photos.map(function (x) {
           return '<figure class="ost-photo" data-photo="' + esc(x.p.id) + '"><span class="ost-photo-img" aria-hidden="true"></span>' +
             '<figcaption>' + esc(placeName(x.s)) + ' · ' + esc(C.clock(x.p.taken_at)) + '</figcaption></figure>';
-        }).join('') + '</div>' : '') +
+        }).join('') + '</div></section>' : '') +
       '</div></div>';
     detail.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     window.ADspaceSheet.show(detail, { opener: opener });
     Array.prototype.forEach.call(detail.querySelectorAll('[data-photo]'), function (fig) {
       db.functions.invoke('sign-download', { body: { outstation: { photo: fig.getAttribute('data-photo') } } }).then(function (r) {
-        if (r.error || !(r.data instanceof Blob)) { fig.classList.add('is-gone'); return; }
+        if (r.error || !(r.data instanceof Blob)) { gone(fig); return; }
         var img = document.createElement('img');
         img.alt = fig.querySelector('figcaption').textContent;
         img.src = URL.createObjectURL(r.data);
         fig.querySelector('.ost-photo-img').replaceWith(img);
-      }).catch(function () { fig.classList.add('is-gone'); });
+      }).catch(function () { gone(fig); });
     });
+  }
+
+  /* A photo that could not be read says so in its own tile. */
+  function gone(fig) {
+    fig.classList.add('is-gone');
+    var t = fig.querySelector('.ost-photo-img');
+    if (t) t.textContent = 'Not available';
   }
 
   /* ---- Download (All trips) --------------------------------------------- */

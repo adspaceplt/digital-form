@@ -2642,10 +2642,10 @@
     if (cnt && whole) cnt.textContent = '';
     /* Outstation keeps the bar for its strip alone: the task acts and the
        period are the list's (2026-11-23). */
-    if (state.view === 'outstation') {
-      if ($('workMoreWrap')) $('workMoreWrap').hidden = true;
-      if ($('workPeriod')) $('workPeriod').hidden = true;
-    } else if ($('workMoreWrap') && state.moreAny !== undefined && state.view !== 'months') $('workMoreWrap').hidden = !state.moreAny;
+    if (state.view === 'outstation' && $('workPeriod')) $('workPeriod').hidden = true;
+    /* Its bar holds the views alone: the count and the acts are the list's. */
+    var barEnd = cnt && cnt.closest('.cmdbar-end');
+    if (barEnd) barEnd.hidden = state.view === 'outstation';
     /* The client's months carry their own New task, which knows the client;
        a second add in the bar above it would be the same act twice. */
     if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || whole;
@@ -2688,7 +2688,7 @@
     var eb = $('cwEng'), w = $('workMoreWrap');
     var inBar = !!(w && w.closest('.cwbar'));
     if (it) it.hidden = !(inBar && eb && !eb.hidden && isPhone());
-    if (w) w.hidden = !(state.moreAny || (it && !it.hidden));
+    if (w) w.hidden = state.view === 'outstation' || !(state.moreAny || (it && !it.hidden));
     if (w && window.ADspaceMenu && window.ADspaceMenu.solo) window.ADspaceMenu.solo(w);
   }
   function isPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 640px)').matches); }
@@ -9139,9 +9139,12 @@
     var q = {};
     if (state.view !== 'list') q.view = state.view;
     if (state.view === 'months' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
-    if (state.view === 'outstation' && window.ADspaceOutstation) {
-      var oq = window.ADspaceOutstation.urlPart();
-      Object.keys(oq).forEach(function (k) { q[k] = oq[k]; });
+    if (state.view === 'outstation') {
+      /* Until its script arrives, the address keeps what it said. */
+      var here = new URLSearchParams(location.search);
+      var oq = window.ADspaceOutstation ? window.ADspaceOutstation.urlPart()
+        : { ov: here.get('ov'), om: here.get('om') };
+      Object.keys(oq).forEach(function (k) { if (oq[k]) q[k] = oq[k]; });
     }
     /* The task open beside the list travels too, so a reload or a copied
        link lands on the list with that task open. */
@@ -9176,7 +9179,7 @@
        drawn only where something in it is offered, never as an empty menu. */
     var more = $('workMoreWrap');
     state.moreAny = may('ops', 'manage');
-    if (more) more.hidden = !state.moreAny;
+    if (more) more.hidden = !state.moreAny || state.view === 'outstation';
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     ['list', 'board', 'calendar'].forEach(function (k) {
       var b = document.querySelector('#workViews [data-view="' + k + '"]');

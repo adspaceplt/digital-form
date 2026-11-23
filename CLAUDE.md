@@ -1432,7 +1432,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
   2026-10-15) and `team.analytics` (Analytics, 2026-10-25) and
   `team.personnel` (Personnel, 2026-11-16) and `team.sessions` (Signed-in
-  devices, 2026-11-20); each offers Manage
+  devices, 2026-11-20); each offers Manage (`ops.outstation`, every
+  outstation trip, 2026-11-23, View alone)
   alone (on or off). Team: Health (every colleague's answers by name) is
   no part: an admin's alone, never offered to a group (2026-10-18, below).
   `suppliers.pay` (Supplier bank details,
@@ -1697,6 +1698,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Dashboard | `docs/rules/dashboard.md` | `js/overview.js` |
 | Analytics | `docs/rules/analytics.md` | `js/analytics.js`, `supabase/functions/analytics-read` |
 | My Work | `docs/rules/my-work.md` | `js/ops.js`, `supabase/functions/meet-create` |
+| Outstation record | `docs/rules/outstation.md` | `js/outstation.js`, `supabase/functions/outstation-geo` |
 | Performance | `docs/rules/performance.md` | `js/perf.js` |
 | Personnel | `docs/rules/personnel.md` | `js/personnel.js`, `js/xlsx.js` |
 | Health | `docs/rules/health.md` | `js/health.js` |
@@ -1979,7 +1981,7 @@ only a one-line pointer to it (the user, 2026-11-22).
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`, `hiring-mail`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`, `hiring-mail`, `outstation-geo`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the

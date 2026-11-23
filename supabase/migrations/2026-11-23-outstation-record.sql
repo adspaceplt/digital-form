@@ -25,7 +25,8 @@
 --     `outstation_trips(p_from, p_to, p_all)`: the trips the caller drove or
 --     joined, every trip with `p_all` at `ops.outstation`. Each refuses in
 --     the team's words through its code: `denied`, `open-trip`, `no-trip`,
---     `closed`, `bad-purpose`, `no-place`, `bad-client`, `bad-companion`,
+--     `closed`, `bad-purpose`, `no-place`, `bad-client` (a client the caller
+--     cannot read: Clients at View and its client scope), `bad-companion`,
 --     `vague` (with the limit), `bad-location`, `no-photo`, `too-many`,
 --     `bad-key`, `too-long`, `bad-rating`.
 --   * A reading worse than the accuracy limit is refused (`vague`), as the
@@ -237,6 +238,7 @@ begin
   if length(coalesce(p_note, '')) > 2000 or length(coalesce(p_venue, '')) > 200 then return jsonb_build_object('error', 'too-long'); end if;
   if p_client is null and nullif(btrim(coalesce(p_venue, '')), '') is null then return jsonb_build_object('error', 'no-place'); end if;
   if p_client is not null and (not exists (select 1 from public.clients c where c.id = p_client)
+                               or not public.allowed('clients', 'view')
                                or not public.client_scope_ok('client', p_client, 'view')) then
     return jsonb_build_object('error', 'bad-client');
   end if;
@@ -271,6 +273,7 @@ begin
   if length(coalesce(p_venue, '')) > 200 then return jsonb_build_object('error', 'too-long'); end if;
   if p_client is null and nullif(btrim(coalesce(p_venue, '')), '') is null then return jsonb_build_object('error', 'no-place'); end if;
   if p_client is not null and (not exists (select 1 from public.clients c where c.id = p_client)
+                               or not public.allowed('clients', 'view')
                                or not public.client_scope_ok('client', p_client, 'view')) then
     return jsonb_build_object('error', 'bad-client');
   end if;
