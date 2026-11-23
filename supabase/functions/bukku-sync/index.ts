@@ -1777,6 +1777,19 @@ Deno.serve(async (req) => {
     if (action === 'find') {
       if (p.contact_id) {
         const cur = await bukku('GET', `/contacts/${Number(p.contact_id)}`).then((r) => r && r.contact).catch(() => null);
+        /* A supplier with no link of its own whose client is linked
+           (2026-11-23, the user: "still no link button?"): its band reads
+           Not linked, so its client's contact is offered to link, alone,
+           never said to be linked already. */
+        let own = true;
+        if (cur && kind === 'supplier' && p.client_id) {
+          const lg = await db.rpc('bukku_link_get', { p_kind: 'supplier', p_id: id });
+          own = !lg.error && !!lg.data && lg.data.contact_id != null;
+        }
+        if (cur && !own) {
+          return json({ ok: true, shared: true, candidates: [{ id: cur.id, code: cur.contact_code, name: cur.legal_name, reg_no: cur.reg_no || null,
+            types: cur.types || [], archived: !!cur.is_archived, why: 'client' }], details: (p as any).details !== false }, 200, origin);
+        }
         if (cur) return json({ ok: true, linked: { id: cur.id, code: cur.contact_code, name: cur.legal_name, types: cur.types || [] } }, 200, origin);
       }
       const all = await allContacts();

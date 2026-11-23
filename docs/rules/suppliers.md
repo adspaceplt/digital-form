@@ -94,6 +94,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-10-18-supplier-entries.sql`, which filed the entries whose
   reference named a supplier's ID under it); on the record it opens its
   file link, and it is never offered as an email's document.
+- A client may also be a supplier; the two are never exclusive (the user,
+  2026-11-23: "a clients of ours could also be suppliers of ours"). Every
+  flow that reaches one (Bukku, emails, documents, scope) is built and
+  tested for a record that is both, each keeping its own acts: a supplier
+  whose client holds the Bukku contact links to it as a supplier (Link to
+  Bukku offers that contact alone, `bukku-sync` `find` `shared`), never
+  read as linked already.
 - A supplier that is also a client is linked to it
   (`2026-10-18-supplier-client-link.sql`, `suppliers.client_id`; the user,
   2026-10-18: the Supplier ID and the Client ID stay apart): the record's
