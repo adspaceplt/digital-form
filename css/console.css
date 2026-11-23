@@ -626,7 +626,7 @@ button.appver {
    into the section's ⋯. */
 .cmdbar[hidden] + .msg { margin-top: 0; }   /* the list's bar away, the Months bar starts where it stood */
 .cw-client { display: inline-flex; flex: 0 0 auto; min-width: 0; }
-.cw-client > .select { width: 220px; }
+.cw-client > .select { width: 184px; }
 .cw-eng { display: contents; }
 @media (max-width: 640px) {
   .cwbar .cw-client { flex: 1 1 0; }
