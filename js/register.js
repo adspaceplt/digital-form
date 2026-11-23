@@ -1435,13 +1435,55 @@
         return '<div class="dtrow' + (off ? ' is-off' : '') + '">' +
           '<span class="dtrow-name"><span class="dtrow-title"><b>' + esc(t.name) + '</b>' + (off ? '<span class="tone is-off">Inactive</span>' : '') + '</span>' +
           '<small>' + esc(typeMeta(t)) + '</small></span>' +
-          '<button class="btn btn-quiet btn-sm" data-edit="' + esc(t.id) + '" type="button">' + PEN + 'Edit</button></div>';
+          /* Edit and Delete in one ⋯ (2026-11-23); the types the portal
+             reads by name offer no Delete, so their Edit is the pen alone,
+             never a ⋯ of one item (§5 Menus, 8). */
+          (BUILT_IN.indexOf(t.id) > -1 ? '<span class="team-act"><button class="iconbtn" data-dtedit="' + esc(t.id) + '" type="button" aria-label="Edit ' + esc(t.name) + '">' + PEN + '</button></span></div>' :
+          '<span class="team-act"><button class="kmenu-btn" data-dtmenu="' + esc(t.id) + '" type="button" aria-label="More actions for ' + esc(t.name) + '" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [],
+              [{ a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span></div>');
       }).join('') + '</section>';
     }).join('');
     if (html) box.innerHTML = html; else UI.emptyLine(box, 'No document types.');
-    Array.prototype.forEach.call(box.querySelectorAll('[data-edit]'), function (b) {
-      b.addEventListener('click', function () {
-        openTypeEdit(dt.all.filter(function (t) { return t.id === b.getAttribute('data-edit'); })[0] || null, b);
+    Array.prototype.forEach.call(box.querySelectorAll('[data-dtedit]'), function (eb) {
+      var t = dt.all.filter(function (x) { return x.id === eb.getAttribute('data-dtedit'); })[0];
+      if (t) eb.addEventListener('click', function () { openTypeEdit(t, eb); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-dtmenu]'), function (mb) {
+      var t = dt.all.filter(function (x) { return x.id === mb.getAttribute('data-dtmenu'); })[0], m = mb.parentNode.querySelector('.kmenu');
+      if (!t) return;
+      var shut = function () { m.hidden = true; mb.setAttribute('aria-expanded', 'false'); };
+      mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = m.hidden;
+        m.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, m);
+      });
+      m.querySelector('[data-t="edit"]').addEventListener('click', function () { shut(); openTypeEdit(t, mb); });
+      var del = m.querySelector('[data-t="delete"]');
+      if (del) del.addEventListener('click', function () { shut(); deleteType(t, mb); });
+    });
+  }
+  var BUILT_IN = ['quote_cover', 'supplier_letter', 'supplier_sca'];
+  /* A type no document was issued under is deleted; one in use is refused,
+     and set inactive instead. */
+  function deleteType(t, opener) {
+    window.ADspaceConfirm.ask({
+      title: 'Delete ' + t.name + '?', body: t.name + ' will be deleted. This cannot be undone.',
+      go: 'Delete', tone: 'danger', wait: true, opener: opener
+    }, function () {
+      return db.rpc('doc_type_delete', { p_id: t.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return /function .* does not exist|PGRST202/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+        if (d.error === 'in-use') return window.ADspaceWords.line.inUse(t.name, [[d.documents, 'document', 'documents']]);
+        if (d.error === 'denied') return 'You do not have permission to delete document types. Please ask an admin.';
+        if (d.error === 'built-in') return t.name + ' is part of the portal and cannot be deleted. Set it inactive instead.';
+        if (d.error === 'not-found') return 'This document type no longer exists.';
+        if (d.error) return 'Not deleted. Please try again.';
+        dt.all = dt.all.filter(function (x) { return x.id !== t.id; });
+        paintTypes();
+        msg('dtMsg', 'Deleted.', 'ok');
+        return '';
       });
     });
   }

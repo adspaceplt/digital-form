@@ -2815,7 +2815,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
    editor lists every format with a tick and its hours at the right. */
 .tplrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
 .tplrow:last-child { border-bottom: 0; }
-.tplrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.tplrow > .team-act, .dtrow > .team-act { margin-block: calc((20px - var(--ctl-h)) / 2); }
 .teswitch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: var(--ctl-h); margin-top: 16px; }
 .teswitch-name { font-size: 14px; }
 .tefmts { display: grid; gap: 4px; }

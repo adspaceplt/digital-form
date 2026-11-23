@@ -226,6 +226,7 @@
     handle_of: 'p_value',
     is_team: '',
     issue_document: 'p_signed p_member p_type p_salutation p_serial p_idem p_recipient p_issued_at p_title p_signatory p_client p_languages p_body p_supplier',
+    doc_type_delete: 'p_id',
     doc_type_save: 'p_id p_family p_name p_code p_title p_salutation p_closing p_body_en p_body_zh p_body_ms p_signed p_fields',
     doc_type_set_active: 'p_id p_on',
     issue_letter: 'p_idem p_deal p_total p_replaces p_client p_subtotal p_renewal p_services p_serial p_tax',
@@ -296,7 +297,7 @@
     careers_pick: 'p_key p_slot', careers_none: 'p_key p_note', careers_pool: 'p_key p_yes',
     hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
-    hiring_sheet_save: 'p_id p_rating p_answers', hiring_sheets_of: 'p_id',
+    hiring_sheet_save: 'p_id p_rating p_answers', hiring_sheets_of: 'p_id', hiring_sheet_remove: 'p_id p_member',
     hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
     hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
     hiring_unlock: 'p_code', hiring_docs_of: 'p_id', hiring_doc_save: 'p_candidate p_doc p_kind p_terms p_expected',
@@ -402,7 +403,7 @@
     ops_stage_times: 'p_from p_to',
     ops_timeliness: 'p_from p_to',
     ops_request_due_change: 'p_version p_value p_note p_reason p_task p_kind',
-    ops_save_template: 'p_payload p_id',
+    ops_save_template: 'p_payload p_id', ops_template_delete: 'p_id',
     ops_scope_error: 'p_scope p_client',
     ops_serial: 'p_no',
     ops_set_checklist: 'p_done p_item',
@@ -782,6 +783,7 @@
     });
     doc('invoice', 703, 'KITE AND CO PLT', add(today, -140), add(today, -110), 1850, 1850, 'MYR', null);
     doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -20), add(today, 10), 2300, 2300, 'MYR', null);
+    out[out.length - 1].ref_no = 'INV-5521';
     doc('bill', 801, 'ACME PRINTING SDN BHD', add(today, -5), add(today, 40), 1650, 1650, 'MYR', null);
     return out;
   }
@@ -3856,13 +3858,13 @@ function cardSlugFree(name, self, email) {
           body: '', status: 'queued', created_at: now }));
       };
       seen.push(x.id);
-      if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
+      if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, ref_no: x.ref_no || null, bill_date: x.date,
         amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, made_for: x.made_for || null, gone: false, read_at: now,
         paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null, paid_on: st === 'paid' ? (x.paid_on || null) : null });
       if (!b && st === 'paid' && o0 && o0.posted_on) tell(DB.creator_bills[DB.creator_bills.length - 1]);
       else if (b) {
         var was = b.status;
-        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
+        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, ref_no: x.ref_no || null, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
           currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null, paid_on: st === 'paid' ? (x.paid_on || b.paid_on || null) : null });
         if (st === 'paid' && (was === 'processing' || was === 'draft') && !b.paid_told_at && opt) tell(b);
       }
@@ -3933,7 +3935,7 @@ function cardSlugFree(name, self, email) {
     if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
     var pay = opsGranted('campaigns.pay', 'view'), bills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && !b.gone; });
     var link = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === creator; })[0];
-    var billOf = function (b) { return { number: b.number, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency,
+    var billOf = function (b) { return { number: b.number, ref_no: b.ref_no || null, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency,
       paid_on: b.status === 'paid' ? (b.paid_on || (b.paid_seen_at ? String(b.paid_seen_at).slice(0, 10) : null)) : null }; };
     var jobs = (DB.campaign_options || []).filter(function (o) { return o.creator_id === creator && BOOKED_OUT.indexOf(o.state) < 0; }).map(function (o) {
       var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
@@ -3995,7 +3997,7 @@ function cardSlugFree(name, self, email) {
         posted_on: o.posted_on || null, pay_by: o.pay_by || null,
         currency: (fe && fe.currency) || (appr && appr.currency) || 'MYR',
         fee: pay && fe ? { amount: fe.amount, currency: fe.currency } : null,
-        bill: b ? { number: b.number, status: b.status, date: b.bill_date, paid_on: paidDay(b), amount: pay ? b.amount : null, currency: b.currency } : null,
+        bill: b ? { number: b.number, ref_no: b.ref_no || null, status: b.status, date: b.bill_date, paid_on: paidDay(b), amount: pay ? b.amount : null, currency: b.currency } : null,
         _k: o.pay_by || o.posted_on || '' });
     });
     jobs.sort(function (a, b) { return String(a._k).localeCompare(String(b._k)); }).forEach(function (j) { delete j._k; });
@@ -6760,6 +6762,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
       opsLog(ck.task_id, 'checklist_changed', { label: ck.label, done: Boolean(ck.completed_at) }, { label: ck.label, removed: true }, null);
       persist();
       return { removed: Object.assign({}, ck) };
+    }
+
+    if (name === 'ops_template_delete') {
+      if (!opsGranted('ops.workflows', 'work')) return { error: 'denied' };
+      var dtp = DB.ops_task_templates.filter(function (x) { return x.id === args.p_id; })[0];
+      if (!dtp) return { error: 'not-found' };
+      var nTask = (DB.ops_tasks || []).filter(function (x) { return x.template_id === dtp.id; }).length;
+      var nRule = (DB.ops_recurring_rules || []).filter(function (x) { return x.template_id === dtp.id; }).length;
+      if (nTask + nRule) return { error: 'in-use', tasks: nTask, rules: nRule };
+      DB.ops_task_templates = DB.ops_task_templates.filter(function (x) { return x !== dtp; });
+      DB.ops_template_variants = (DB.ops_template_variants || []).filter(function (v) { return v.template_id !== dtp.id; });
+      DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Task templates', detail: dtp.name + ' · Deleted', created_at: new Date().toISOString() });
+      persist();
+      return { ok: true };
     }
     if (name === 'ops_save_template') {
 
@@ -11170,6 +11186,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'campaign_revert_approval') return Promise.resolve({ data: revertApproval(args), error: null });
 
     if (name === 'issue_document')     return Promise.resolve({ data: issueDocument(args), error: null });
+
+    if (name === 'doc_type_delete') {
+      if (!opsGranted('register.types', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var ddt = docType(args.p_id);
+      if (!ddt) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (['quote_cover', 'supplier_letter', 'supplier_sca'].indexOf(ddt.id) > -1) return Promise.resolve({ data: { error: 'built-in' }, error: null });
+      var nDoc = (DB.documents || []).filter(function (x) { return x.type_id === ddt.id; }).length;
+      if (nDoc) return Promise.resolve({ data: { error: 'in-use', documents: nDoc }, error: null });
+      DB.doc_types = DB.doc_types.filter(function (x) { return x !== ddt; });
+      docTypeFiled(ddt.name + ' · Deleted');
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'doc_type_save' || name === 'doc_type_set_active') {
       var dtr = window.__refuseRpc && window.__refuseRpc[name];
       if (dtr) return Promise.resolve({ data: { error: dtr }, error: null });
@@ -14856,7 +14885,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sbA.p_paid_from && !(Number(d.balance) > 0) && String(d.paid_on || d.doc_date) < sbA.p_paid_from) return;
         var c = s.client_id && (DB.clients || []).filter(function (x) { return x.id === s.client_id; })[0];
         var seen = c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by);
-        sbOut.push({ id: Number(d.doc_id), supplier: s.id, code: s.code, name: s.name || s.code, number: d.number || '', date: d.doc_date,
+        sbOut.push({ id: Number(d.doc_id), supplier: s.id, code: s.code, name: s.name || s.code, number: d.number || '', ref_no: d.ref_no || null, date: d.doc_date,
           due: d.due_date || d.doc_date, amount: Number(d.amount), balance: Number(d.balance), currency: d.currency || 'MYR', paid_on: d.paid_on || null,
           client: seen ? c.name : null, client_code: seen ? c.client_code : null });
       });
@@ -16656,6 +16685,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.hiring_scores = DB.hiring_scores.filter(function (x) { return x !== rs; });
         hLog(hc.id, 'candidate.scored', 'Scores removed');
         return hOk({ scores: rs.scores, recommend: rs.recommend, note: rs.note });
+      }
+
+      if (name === 'hiring_sheet_remove') {
+        if (!hr || !hc || hc.removed_at) return hNo('not-found');
+        var hw = args.p_member || hMe.id;
+        if (hw !== hMe.id && hr !== 'admin' && hr !== 'owner') return hNo('denied');
+        if (hc.stage === 'hired' || hc.stage === 'closed') return hNo('closed');
+        var hs = DB.hiring_sheets.filter(function (x) { return x.candidate_id === hc.id && x.team_member_id === hw; })[0];
+        var hx = DB.hiring_scores.filter(function (x) { return x.candidate_id === hc.id && x.team_member_id === hw; })[0];
+        if (!hs && !hx) return hNo('not-found');
+        DB.hiring_sheets = DB.hiring_sheets.filter(function (x) { return x !== hs; });
+        DB.hiring_scores = DB.hiring_scores.filter(function (x) { return x !== hx; });
+        hLog(hc.id, 'candidate.scored', hw === hMe.id ? 'Interview sheet removed' : 'Interview sheet of ' + (hName(hw) || 'a colleague') + ' deleted');
+        return hOk({ sheet: !!hs, rating: hs ? hs.rating : null, answers: hs ? hs.answers : null,
+          scored: !!hx, scores: hx ? hx.scores : null, recommend: hx ? hx.recommend : null, note: hx ? hx.note : null });
       }
       if (name === 'hiring_decide') {
         if (!hr || !hc) return hNo('not-found');

@@ -1190,7 +1190,7 @@
     };
     /* A bill's day, number and amount, each part kept whole. */
     function billParts(b, withNumber) {
-      return [b.paid_on ? esc(day(b.paid_on)) : '', withNumber && b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : '']
+      return [b.paid_on ? esc(day(b.paid_on)) : '', withNumber && b.number ? esc(window.ADspaceWords.line.docNo(b.number, b.ref_no)) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : '']
         .filter(Boolean).map(function (x) { return '<span class="nb">' + x + '</span>'; }).join(' · ');
     }
     /* Every row of the pane is the phone row (`.prow`, 2026-11-22): the
@@ -1547,7 +1547,7 @@
       if (cm !== 'all' && j.campaign_id !== cm) return false;
     } else if (cl !== 'all' || cm !== 'all') return false;
     if (!q) return true;
-    var hay = [j.name, j.code, j.job, j.ref, j.campaign, j.client, j.client_code, j.bill && j.bill.number].join(' ').toLowerCase();
+    var hay = [j.name, j.code, j.job, j.ref, j.campaign, j.client, j.client_code, j.bill && j.bill.number, j.bill && j.bill.ref_no].join(' ').toLowerCase();
     return q.split(/\s+/).every(function (w) { return hay.indexOf(w) > -1; });
   }
   function cpqDay(v) { return v ? ADspaceClock.date(v) : ''; }
@@ -1598,7 +1598,7 @@
     };
     var sub = function (j, withBill) {
       var parts = [];
-      if (withBill && j.bill && j.bill.number) parts.push('<span class="nb cpq-mono">' + esc(j.bill.number) + '</span>');
+      if (withBill && j.bill && j.bill.number) parts.push('<span class="nb cpq-mono">' + esc(window.ADspaceWords.line.docNo(j.bill.number, j.bill.ref_no)) + '</span>');
       parts.push('<span class="nb">' + esc(j.campaign || '') + '</span>');
       if (j.client_code || j.client) parts.push('<span class="nb">' + esc(j.client_code || j.client) + '</span>');
       return parts.join(' · ');
