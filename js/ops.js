@@ -1647,7 +1647,7 @@
     if (window.ADspaceOutstation) { draw(); return; }
     if (window.ADspaceState) window.ADspaceState.skeleton(box, 3);
     if (A && A.need) A.need('outstation').then(draw).catch(function () {
-      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Outstation', 'The page did not finish loading.', function () { paintOutstation(box); });
+      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Outstation', 'Outstation could not be loaded.', function () { paintOutstation(box); });
     });
   }
   function paint() {

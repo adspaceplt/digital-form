@@ -37,6 +37,7 @@
   function me() { return bridge.me ? bridge.me() : null; }
   function esc(s) { return window.ADspaceWords.esc(s); }
   var UI = window.ADspaceState;
+  var W = window.ADspaceWords.en;
   var F = window.ADspaceForm;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -57,19 +58,19 @@
     'bad-purpose': 'Choose the purpose.',
     'no-place': 'Choose the client, or enter the venue.',
     'bad-client': 'You do not have access to this client. Please ask an admin.',
-    'bad-companion': 'A colleague chosen cannot join the trip. Choose again.',
+    'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
     'bad-location': 'The location could not be read. Press Read again.',
     'no-photo': 'Take a photo at this stop first.',
-    'too-many': 'This trip holds the most it can. Check out and start a new trip.',
+    'too-many': 'This trip has reached the maximum number of stops or photos. Check out and start a new trip.',
     'bad-key': 'The photo could not be saved. Take it again.',
-    'too-long': 'The note is too long. Shorten it.',
+    'too-long': 'Enter a note of up to 2,000 characters.',
     'bad-rating': 'Choose a rating from 1 to 5.',
     'bad-period': 'Choose another month.'
   };
   function said(d) {
-    if (!d) return 'Not saved. Try again.';
+    if (!d) return W.notSaved;
     if (d.error === 'vague') return 'Your location is accurate to ' + d.accuracy + ' m; it must be within ' + d.limit + ' m. ' + PRECISE;
-    return SAID[d.error] || 'Not saved. Try again.';
+    return SAID[d.error] || W.notSaved;
   }
   function setting(key, dflt) {
     var M = window.ADspaceMoney;
@@ -84,7 +85,7 @@
     var m = Math.round(ms / 60000), h = Math.floor(m / 60);
     return h ? h + 'h ' + (m % 60) + 'm' : m + 'm';
   }
-  function placeName(s) { return s.client || s.venue || 'Client removed'; }
+  function placeName(s) { return s.client || s.venue || 'Client deleted'; }
 
   /* ---- State and the address ------------------------------------------- */
   var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null };
@@ -187,7 +188,7 @@
       if (!open) { var none = document.createElement('div'); body.appendChild(none); UI.emptyLine(none, 'No trips.'); }
       return;
     }
-    body.appendChild(tripList(past, 'mine', open ? 'Recent trips' : 'These three months'));
+    body.appendChild(tripList(past, 'mine', open ? 'Recent trips' : 'Last three months'));
   }
   function paintAll(body) {
     var bar = document.createElement('div');
@@ -274,7 +275,7 @@
     });
     rows += trip.state === 'open'
       ? '<li class="ost-stop is-back"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="muted">Back to office</span>' +
-        '<small>Worked out at check-out</small></span><span class="ost-time"></span></li>'
+        '<small>Calculated at check-out</small></span><span class="ost-time"></span></li>'
       : '<li class="ost-stop is-office"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="ost-name"><b>Office</b>' +
         (trip.km_back != null ? '<span class="ost-km"> · ' + esc(km(trip.km_back)) + '</span>' : '') + '</span></span>' +
         '<span class="ost-time">' + esc(C.clock(trip.ended_at)) + '</span></li>';
@@ -575,7 +576,7 @@
       $('ostPeople').innerHTML = people.map(function (p) {
         return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.id) + '"> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
       }).join('');
-    }).catch(function () { stopMsg('The clients could not be loaded. Close and open the sheet again.', 'err'); });
+    }).catch(function () { stopMsg('The clients could not be loaded. Close this form and open it again.', 'err'); });
   }
   function sendStop() {
     var trip = stopSheet.trip, go = $('ostStopGo');
@@ -601,7 +602,7 @@
     stopMsg('');
     var shots = stopKit.shots.list.slice();
     call.then(function (r) {
-      if (r.error || !r.data || r.data.error) throw new Error(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || 'Not saved. Try again.');
+      if (r.error || !r.data || r.data.error) throw new Error(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || W.notSaved);
       var t = r.data.trip, stop = t.stops[t.stops.length - 1];
       keep(t);
       /* The photos follow the stop they belong to, one after another. */
@@ -624,7 +625,7 @@
       });
     }).catch(function (e) {
       go.disabled = false;
-      stopMsg((e && e.message) || 'Not saved. Try again.', 'err');
+      stopMsg((e && e.message) || W.notSaved, 'err');
     });
   }
 
@@ -691,14 +692,14 @@
     db.rpc('outstation_check_out', { p_trip: trip.id, p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at,
       p_note: $('ostOutNote').value.trim() || null, p_rating: outSheet.rating || null }).then(function (r) {
       go.disabled = false;
-      if (r.error || !r.data || r.data.error) { outMsg(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || 'Not saved. Try again.', 'err'); return; }
+      if (r.error || !r.data || r.data.error) { outMsg(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || W.notSaved, 'err'); return; }
       keep(r.data.trip);
       if (window.ADspaceSheet.clean) window.ADspaceSheet.clean();
       window.ADspaceSheet.close();
       st.msg = { text: 'Checked out.', tone: 'ok' };
       paint(); st.msg = null;
       geo({ trip: trip.id }).then(reread);
-    }).catch(function (e) { go.disabled = false; outMsg((e && e.message) || 'Not saved. Try again.', 'err'); });
+    }).catch(function (e) { go.disabled = false; outMsg((e && e.message) || W.notSaved, 'err'); });
   }
 
   /* The place and the road distance arrive after the write; the list is
