@@ -385,3 +385,4 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - the employment type reads in words (Permanent, full-time), and a
     document sent back carries its reason in the email.
 
+- A colleague's interview sheet and scores are one card and are taken off as one (`hiring_sheet_remove`, 2026-11-23, the user: "interview sheet couldnt be deleted"): one's own from its ⋯, Remove with Undo where it happened (the sheet and the scores written back); another colleague's by the candidate's Owner or an admin, Delete, asked first; never once the candidate is hired or closed. Filed on the candidate.

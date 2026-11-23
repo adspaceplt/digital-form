@@ -396,8 +396,14 @@
           return '<div class="hir-score"><div class="hir-iv-head"><b>' + esc(p.name) + '</b><span class="hir-iv-ctl">' +
             (sh.rating ? '<span class="hir-rating">' + esc(sh.rating) + '/10</span>' : '') +
             (x ? '<span class="hir-total">' + esc(Number(x.total).toFixed(1)) + '</span><span class="chip">' + esc(REC[x.recommend] || '') + '</span>' : '') +
-            (x && x.mine && open ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for your scores" aria-expanded="false">' + DOTS + '</button>' +
-              '<div class="kmenu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" data-h="unscore" role="menuitem">Remove</button></div></span>' : '') +
+            /* A colleague's sheet and scores are one card, taken off as
+               one (2026-11-23, the user: "interview sheet couldnt be
+               deleted"): one's own Removed with Undo, another's Deleted
+               by the Owner or an admin, asked first. */
+            (open && ((x && x.mine) || sh.mine || keeps) ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for ' + esc((x && x.mine) || sh.mine ? 'your interview sheet' : p.name + '\'s interview sheet') + '" aria-expanded="false">' + DOTS + '</button>' +
+              '<div class="kmenu" hidden>' + ((x && x.mine) || sh.mine
+                ? '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="unsheet" role="menuitem">Remove</button>'
+                : '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="delsheet" data-id="' + esc(p.id) + '" data-name="' + esc(p.name) + '" role="menuitem">Delete</button>') + '</div></span>' : '') +
             '</span></div>' +
             (x ? '<p class="hir-card-line">' + crit.map(function (k) { return '<span class="nb">' + esc(k) + ' ' + esc((x.scores || {})[k] || '') + '</span>'; }).join(' · ') + '</p>' : '<p class="hir-card-line">Not scored</p>') +
             (x && x.note ? '<p class="hir-note">' + esc(x.note) + '</p>' : '') +
@@ -1630,14 +1636,30 @@
         load();
       });
     });
-    on('unscore', function () {
-      rpc('hiring_score_remove', { p_id: c.id }).then(function (r) {
+    on('unsheet', function () {
+      rpc('hiring_sheet_remove', { p_id: c.id, p_member: null }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) { msg('hirRecMsg', said(r), 'err'); return; }
         openRec(c.id).then(function () {
-          if (bridge.undoHere) bridge.undoHere('Your scores were removed.', function () {
-            return rpc('hiring_score_save', { p_id: c.id, p_scores: d.scores, p_recommend: d.recommend, p_note: d.note }).then(function () { openRec(c.id); });
+          if (bridge.undoHere) bridge.undoHere('Your interview sheet was removed.', function () {
+            return (d.sheet ? rpc('hiring_sheet_save', { p_id: c.id, p_rating: d.rating == null ? null : d.rating, p_answers: d.answers || {} }) : Promise.resolve())
+              .then(function () { return d.scored ? rpc('hiring_score_save', { p_id: c.id, p_scores: d.scores, p_recommend: d.recommend, p_note: d.note }) : null; })
+              .then(function () { openRec(c.id); });
           }, $('hirRecMsg'));
+        });
+      });
+    });
+    on('delsheet', function (b) {
+      var who = b.getAttribute('data-name');
+      window.ADspaceConfirm.ask({
+        title: 'Delete ' + who + '\'s interview sheet?',
+        body: who + '\'s answers and scores for ' + c.name + ' will be deleted. This cannot be undone.',
+        go: 'Delete', tone: 'danger', wait: true, opener: b
+      }, function () {
+        return rpc('hiring_sheet_remove', { p_id: c.id, p_member: b.getAttribute('data-id') }).then(function (r) {
+          if (r.error || (r.data || {}).error) return said(r);
+          openRec(c.id).then(function () { msg('hirRecMsg', 'Deleted.', 'ok'); });
+          return '';
         });
       });
     });
