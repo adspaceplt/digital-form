@@ -626,7 +626,7 @@ button.appver {
    into the section's ⋯. */
 .cmdbar[hidden] + .msg { margin-top: 0; }   /* the list's bar away, the Months bar starts where it stood */
 .cw-client { display: inline-flex; flex: 0 0 auto; min-width: 0; }
-.cw-client > .select { width: 220px; }
+.cw-client > .select { width: 184px; }
 .cw-eng { display: contents; }
 @media (max-width: 640px) {
   .cwbar .cw-client { flex: 1 1 0; }
@@ -4850,6 +4850,77 @@ span.inv-amt { font-weight: 600; }
 .pyn-sum dd { font-variant-numeric: tabular-nums; }
 .pyn-sum dd.is-late { color: var(--err); }
 .pyn-note { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+/* OUTSTATION RECORD (2026-11-23): My Work's Outstation view. The trip in
+   progress is three record parts (the head, the route, the distance) and
+   its foot of acts; a trip row is the phone row (`.prow`). */
+.ost-strip { margin-bottom: 12px; }
+.ost-strip .actstrip { padding: 0; }
+.ost-strip .actstrip > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+/* A part's body keeps the part head's inset (15px, the record parts'). */
+.ost-part > :not(.viewhead) { margin-left: 15px; margin-right: 15px; }
+.ost-part > :last-child, .ost-part > .ost-acts { margin-bottom: 15px; }
+.ost-part > .ovfacts { margin-top: 6px; }
+.ost-trip { display: grid; gap: 16px; margin-bottom: 12px; }
+.ost-part > .viewhead { margin-top: 0; }
+.ost-line { margin: 0; color: var(--ink-soft); }
+.ost-break { margin-top: 8px; }
+.ost-route { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.ost-stop { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; column-gap: 10px; align-items: start; }
+.ost-dot { width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; corner-shape: round; background: var(--dot-ok); }
+.ost-stop.is-office .ost-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--line-ctl); }
+.ost-stop.is-here .ost-dot { background: var(--dot-wait); }
+.ost-stop.is-back .ost-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--line-ctl); }
+.ost-place { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.ost-place b { font-weight: 500; }
+.ost-name { min-width: 0; }
+.ost-place small, .ost-time { color: var(--ink-mute); font-size: 12.5px; }
+.ost-km { color: var(--ink-soft); }
+.ost-time { text-align: right; white-space: nowrap; }
+.ost-credit { margin: 12px 0 0; color: var(--ink-mute); font-size: 11.5px; }
+.ost-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.ost-acts > .btn { flex: 0 0 auto; }
+.ost-shot { position: relative; cursor: pointer; }
+.ost-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.ost-foot { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; }
+.ost-foot > .btn { flex: 0 0 auto; }
+.ost-soon { color: var(--ink-mute); cursor: not-allowed; }
+.ost-loc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px; border-radius: var(--radius); background: var(--sunk); }
+.ost-loc-mark { display: none; }
+.ost-loc-words { display: grid; gap: 4px; min-width: 0; }
+.ost-loc-note { color: var(--ink-soft); font-size: 12.5px; }
+.ost-shots { display: flex; flex-wrap: wrap; gap: 8px; }
+.ost-shot-tile, .ost-shot-add { position: relative; width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
+.ost-shot-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ost-shot-tile .iconbtn { position: absolute; top: 2px; right: 2px; background: var(--veil); }
+.ost-shot-add { display: flex; align-items: center; justify-content: center; background: var(--tonal); color: var(--ink-soft); cursor: pointer; }
+.ost-shot-add svg { width: 24px; height: 24px; }
+.ost-shot-add:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
+.ost-stars { display: flex; gap: 4px; }
+.ost-star { width: var(--tap); height: var(--tap); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--line-ctl); cursor: pointer; padding: 8px; }
+.ost-star svg { width: 100%; height: 100%; fill: currentColor; }
+.ost-star.is-on { color: var(--warn-solid); }
+.ost-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.ost-photo { margin: 0; display: grid; gap: 4px; min-width: 0; align-content: start; }
+.ost-photo-img { display: flex; min-height: 96px; align-items: center; justify-content: center; color: var(--ink-mute); font-size: 12.5px; }
+.ost-photo img, .ost-photo-img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-sm); background: var(--sunk); display: block; }
+.ost-photo figcaption { color: var(--ink-mute); font-size: 12px; }
+.ost-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1.6fr) 140px 80px 96px var(--state-w); }
+.crm-head.ost-row { padding: 12px 15px 8px; }
+button.ost-row { font: inherit; color: inherit; cursor: pointer; text-align: left; width: 100%; }
+.ost-what { display: grid; gap: 2px; min-width: 0; }
+.ost-what b { font-weight: 500; }
+.ost-what small { color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-m { display: none; }
+.ost-n { text-align: right; }
+.is-narrow .ost-m { display: inline; }
+.is-narrow .ost-row { padding: 12px 15px; }
+@media (max-width: 640px) {
+  .ost-acts > .btn { flex: 1 1 calc(50% - 4px); }
+  /* The primary takes its own row nearest the thumb; Add claim's words
+     stay whole on the row above. */
+  .ost-foot { flex-direction: column-reverse; }
+  .ost-foot > .btn { width: 100%; }
+}
 .pyn-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1.6fr) 96px 96px 80px 160px 96px; }
 .crm-head.pyn-row { padding: 12px 15px 8px; }
 button.pyn-row { font: inherit; color: inherit; cursor: pointer; }

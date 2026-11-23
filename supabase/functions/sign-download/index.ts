@@ -140,7 +140,8 @@ Deno.serve(async (req) => {
 
   let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string;
     thumbs?: { report?: string; keys?: unknown };
-    personnel?: { member?: string | null; kind?: string } };
+    personnel?: { member?: string | null; kind?: string };
+    outstation?: { photo?: string } };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -242,6 +243,35 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data, error } = await admin.rpc('quote_seal_key', { p_key: qk });
     return kept(data, error, true);
+  }
+
+  if (body.outstation) {
+    /* A trip's photo (OUTSTATION RECORD, 2026-11-23), as bytes: the key is
+       what `outstation_photo_key` answers the caller (who drove the trip,
+       who joined it, or `ops.outstation`), under that trip's own folder. */
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const photo = String(body.outstation.photo ?? '');
+    if (!UUID.test(photo)) return json({ error: 'bad_request' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('outstation_photo_key', { p_photo: photo });
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
+    const key = String(data.key || ''), trip = String(data.trip || '');
+    const m = key.match(/^private\/outstation\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.jpg$/);
+    if (!m || m[1] !== trip) return json({ error: 'bad_key' }, 400, origin);
+    const aws = new AwsClient({
+      accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+      secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+      region: Deno.env.get('S3_REGION')!,
+      service: 's3'
+    });
+    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
+    return new Response(got.body, {
+      status: 200,
+      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', ...cors(origin) }
+    });
   }
 
   if (body.personnel) {

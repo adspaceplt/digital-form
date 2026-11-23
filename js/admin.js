@@ -1261,7 +1261,7 @@
        falling back for them, exactly as `ops_granted()` does in the
        database. A group given `{"ops":"work"}` reads its own work and
        nothing else, today and after somebody adds a group next year. */
-    ops:       ['all', 'reports', 'workflows', 'time', 'numbering', 'override'],
+    ops:       ['all', 'reports', 'workflows', 'time', 'numbering', 'override', 'outstation'],
     /* Everybody's monthly performance review. Granted and never inherited
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
@@ -1283,7 +1283,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'team.sessions': 1, 'ops.outstation': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -6693,7 +6693,8 @@
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
     month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true],
     clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true],
-    caph: [1, 80, true], near: [50, 100, true], taskh: [0.5, 40, false, 1], hcrem: [0, 14, true], onoff: [0, 1, true] };
+    caph: [1, 80, true], near: [50, 100, true], taskh: [0.5, 40, false, 1], hcrem: [0, 14, true], onoff: [0, 1, true],
+    lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
      demand"): a weekday's start and end as HHMM (1000, 1900), the lunch in
@@ -6836,6 +6837,12 @@
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     /* A colleague's sign-in unused this long is signed out each night
        (2026-11-20, `team_sessions_idle_end`). */
+    /* OUTSTATION RECORD (2026-11-23): the office every trip starts and
+       ends at, the worst location a trip accepts and how long a trip is kept. */
+    outstation: { title: 'Outstation', keys: [['outstation_office_lat', 'Latitude', 'lat', 'Office pin', 'Office latitude', String],
+      ['outstation_office_lng', 'Longitude', 'lng', 'Office pin', 'Office longitude', String],
+      ['outstation_accuracy_m', 'Location accuracy limit (metres)', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
+      ['outstation_keep_months', 'Trips kept (months, 6 to 120)', 'keep', 'Trips', 'Kept', per('month')]] },
     idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],

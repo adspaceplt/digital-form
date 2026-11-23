@@ -126,7 +126,8 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
   2026-10-15) and `team.analytics` (Analytics, 2026-10-25) and
   `team.personnel` (Personnel, 2026-11-16) and `team.sessions` (Signed-in
   devices, 2026-11-20); each offers Manage
-  alone (on or off). Team: Health (every colleague's answers by name) is
+  alone (on or off), but `ops.outstation` (every outstation trip, read only,
+  2026-11-23), which offers View alone. Team: Health (every colleague's answers by name) is
   no part: an admin's alone, never offered to a group (2026-10-18, below).
   `suppliers.pay` (Supplier bank details,
   2026-10-18) is granted too, at View (read) or Work (write). A

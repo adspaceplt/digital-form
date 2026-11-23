@@ -20,7 +20,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   and notices: Page availability, Announcements, Notices, Demo access;
   Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health check-ins, Health data
   kept), AI (AI usage and limits, AI prices), My Work (Due
-  dates, Priority deadlines, Task reminders, Delivery targets, Task numbering), Reports (Meta
+  dates, Priority deadlines, Task reminders, Delivery targets, Outstation (the office pin, the location accuracy limit, trips kept), Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
   and emails; Email: Send by email, Email templates at `team.settings`,

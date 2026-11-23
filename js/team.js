@@ -241,7 +241,9 @@
                 ['workflows', 'Templates and repeating tasks'], ['time', 'Another person\'s time records'],
                 /* What an admin alone did before (2026-10-07): an admin's by
                    itself, any other group's once set. */
-                ['numbering', 'Task numbering'], ['override', 'Move anyone\'s task and due date']],
+                ['numbering', 'Task numbering'], ['override', 'Move anyone\'s task and due date'],
+                /* OUTSTATION RECORD (2026-11-23): every trip, read only. */
+                ['outstation', 'Every outstation trip']],
     /* Everybody's monthly performance review: View reads them, Work scores,
        releases and answers disputes, Manage also reopens a final record.
        Granted like the four above, because administering the team is not
@@ -309,7 +311,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'team.sessions': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'team.sessions': ['work'], 'ops.outstation': ['view'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full control. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -1357,7 +1359,7 @@
      properly rearranged"). */
   var ADMIN_TOOLS = [
     ['Portal', ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'team.analytics']],
-    ['My Work', ['ops.numbering', 'ops.override']],
+    ['My Work', ['ops.numbering', 'ops.override', 'ops.outstation']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Clients', ['clients.vic']],
     ['Creators', ['campaigns.files_delete']],
@@ -1402,6 +1404,7 @@
     'team.personnel': 'Each colleague\'s employee record, their salary behind the master code, and the AutoCount HRMS download.',
     'team.sessions': 'Each colleague\'s signed-in devices, when each was last active, and signing one device out.',
     'ops.all': 'Every colleague\'s tasks, not only their own.',
+    'ops.outstation': 'Every colleague\'s outstation trips, their stops and photos, and the export.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'
   };

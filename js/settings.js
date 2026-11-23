@@ -364,6 +364,10 @@
       biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
         meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
           'Average lateness at most ' + plural(num('timely_late_days'), 'day', 'days')]) },
+      /* OUTSTATION RECORD (2026-11-23). */
+      biz && { id: 'outstation', name: 'Outstation', kind: 'edit',
+        meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
+          'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months')]) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
