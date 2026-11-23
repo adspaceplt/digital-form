@@ -629,6 +629,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
+- 2026-11-24, `uxaudit` (the day's full gate, in code no release that day
+  touched): at 390 a campaign's schedule row cuts its visit date and time
+  (`span.kcard-sum` "20 Sept 2026, 2:00pm" is clipped) on six Creators
+  screens, light and dark. Its cause (the row's track or the phone label
+  `sched-lab` added before it) is to be found; held here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
