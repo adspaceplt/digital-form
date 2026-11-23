@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261122zzzzzzu">
-<link rel="stylesheet" href="/css/console.css?v=20261123a">
+<link rel="stylesheet" href="/css/console.css?v=20261123g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2881,6 +2881,9 @@
                  client is sold and sent. Named Months, so no tab in My Work
                  reads as the Clients section (2026-09-28). -->
             <button class="acttab btn-sm" data-view="months" type="button" aria-pressed="false">Months</button>
+            <!-- A driver's trips out of the office, in place of the Lark
+                 form (OUTSTATION RECORD, 2026-11-23). -->
+            <button class="acttab btn-sm" data-view="outstation" type="button" aria-pressed="false">Outstation</button>
           </span>
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -2973,6 +2976,7 @@
         <div id="workBoard" hidden></div>
         <div id="workCal" hidden></div>
         <div id="workClients" hidden></div>
+        <div id="workOut" hidden></div>
       </div>
     </div>
 
@@ -6763,7 +6767,7 @@ raya-2026        https://example.com/raya"></textarea>
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261122zzzu", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
-  "team": {"src": "/js/team.js?v=20261122zzzw", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261123g", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
@@ -6778,12 +6782,13 @@ raya-2026        https://example.com/raya"></textarea>
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261120zt", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261123f", "uses": ["documents", "crm", "sales"]},
-  "settings": {"src": "/js/settings.js?v=20261123f", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "outstation": {"src": "/js/outstation.js?v=20261123g"},
+  "settings": {"src": "/js/settings.js?v=20261123g", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261123f"></script>
-<script src="/js/ops.js?v=20261123a"></script>
+<script src="/js/admin.js?v=20261123g"></script>
+<script src="/js/ops.js?v=20261123g"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261122zzzw"></script>
 <script src="/js/overview.js?v=20261123f"></script>

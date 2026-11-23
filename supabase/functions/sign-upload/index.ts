@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
     purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string; quotationId?: string;
-    memberId?: string | null; kind?: string;
+    memberId?: string | null; kind?: string; tripId?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -186,6 +186,34 @@ Deno.serve(async (req) => {
         aws: { signQuery: true, allHeaders: true }
       });
       return json({ uploadUrl: psigned.url, publicUrl: null, key: pkey, contentType: ptype }, 200, origin);
+    }
+
+    /* A trip's photo (OUTSTATION RECORD, 2026-11-23): a JPEG the page took
+       from the camera, private under the trip's own folder, signed only
+       where the database answers that the caller drives that open trip
+       (`outstation_photo_may`, asked as the caller). */
+    if (body.purpose === 'outstation') {
+      const want = String(body.tripId ?? '');
+      if (!UUID.test(want)) return json({ error: 'bad_parent' }, 400, origin);
+      const { data: tripOk, error: tripErr } = await supa.rpc('outstation_photo_may', { p_trip: want });
+      if (tripErr || !tripOk || String(tripOk) !== want) return json({ error: 'not_allowed' }, 403, origin);
+      if (String(body.ext ?? '').toLowerCase() !== 'jpg') return json({ error: 'bad_extension' }, 400, origin);
+      const osize = Number(body.size ?? 0);
+      if (!Number.isSafeInteger(osize) || osize < 1 || osize > 5 * 1024 * 1024) return json({ error: 'too_large' }, 400, origin);
+      const okey = `private/outstation/${want}/${crypto.randomUUID()}.jpg`;
+      const oreg = Deno.env.get('S3_REGION')!;
+      const oaws = new AwsClient({
+        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+        region: oreg,
+        service: 's3'
+      });
+      const osigned = await oaws.sign(`https://${Deno.env.get('S3_BUCKET')!}.s3.${oreg}.amazonaws.com/${okey}?X-Amz-Expires=${PUT_EXPIRES}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg', 'Content-Length': String(osize) },
+        aws: { signQuery: true, allHeaders: true }
+      });
+      return json({ uploadUrl: osigned.url, publicUrl: null, key: okey, contentType: 'image/jpeg' }, 200, origin);
     }
 
     const clientId = String(body.clientId ?? '');

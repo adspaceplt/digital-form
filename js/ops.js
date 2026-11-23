@@ -1239,13 +1239,15 @@
      (who has room this week) is the question being asked. */
   function viewBox() {
     var list = $('workQueue'), board = $('workBoard'), cal = $('workCal');
-    var wc = $('workClients');
+    var wc = $('workClients'), out = $('workOut');
     if (wc) wc.hidden = state.view !== 'months';
+    if (out) out.hidden = state.view !== 'outstation';
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
     if (cal) cal.hidden = state.view !== 'calendar';
     return state.view === 'board' ? board
          : state.view === 'months' ? wc
+         : state.view === 'outstation' ? out
          : state.view === 'calendar' ? cal : list;
   }
 
@@ -1637,11 +1639,23 @@
     A.counts('work', [[open.length, 'open'], late ? [late, 'late', 'late'] : null,
       week ? [week, 'due this week'] : null, blocked ? [blocked, 'blocked'] : null]);
   }
+  /* OUTSTATION RECORD (2026-11-23): a driver's trips, drawn by its own
+     script (`js/outstation.js`, fetched on first ask) into its own box. */
+  function paintOutstation(box) {
+    var A = window.ADspaceAdmin;
+    var draw = function () { if (state.view === 'outstation' && window.ADspaceOutstation) window.ADspaceOutstation.draw(box); };
+    if (window.ADspaceOutstation) { draw(); return; }
+    if (window.ADspaceState) window.ADspaceState.skeleton(box, 3);
+    if (A && A.need) A.need('outstation').then(draw).catch(function () {
+      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Outstation', 'The page did not finish loading.', function () { paintOutstation(box); });
+    });
+  }
   function paint() {
     var box = viewBox();
     paintWaiting();
     if (!box) return;
     if (state.view === 'months') { paintClients(false); return; }
+    if (state.view === 'outstation') { paintOutstation(box); return; }
     if (!state.tasks) return;
     /* The count is read against the view somebody chose, not against every
        row the database sent: "Open work, mine" is where this route opens, so
@@ -2597,13 +2611,13 @@
     /* The view was Clients until 2026-09-28; an address that still says so
        lands on Months. */
     if (v === 'clients') v = 'months';
-    if (v === 'months' && !may('ops', 'view')) v = '';
+    if ((v === 'months' || v === 'outstation') && !may('ops', 'view')) v = '';
     /* List, Board and Calendar follow My Work unless the user group shuts
        one (2026-09-24). A view the group may not open falls to the first it
        may, and the list stays when every one of them is shut, because a
        route with no view at all is a blank page. */
     if ((v === 'list' || v === 'board' || v === 'calendar') && !may('ops.' + v, 'view')) v = '';
-    if (!v || ['list', 'board', 'calendar', 'months'].indexOf(v) < 0) {
+    if (!v || ['list', 'board', 'calendar', 'months', 'outstation'].indexOf(v) < 0) {
       v = ['list', 'board', 'calendar'].filter(function (k) { return may('ops.' + k, 'view'); })[0] || 'list';
     }
     state.view = v;
@@ -2616,8 +2630,8 @@
     if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
     /* The client's months are not a filtered list, so the list's own
        controls say nothing about them. */
-    var whole = state.view === 'months';
-    if (!whole) placeMore(false);
+    var whole = state.view === 'months' || state.view === 'outstation';
+    if (state.view !== 'months') placeMore(false);
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
@@ -2625,11 +2639,17 @@
     var findMark = find && find.parentElement && find.parentElement.previousElementSibling;
     if (findMark && findMark.classList.contains('cmdbar-search')) findMark.hidden = whole;
     if (stg) stg.hidden = whole;
-    if (cnt && state.view === 'months') cnt.textContent = '';
+    if (cnt && whole) cnt.textContent = '';
+    /* Outstation keeps the bar for its strip alone: the task acts and the
+       period are the list's (2026-11-23). */
+    if (state.view === 'outstation') {
+      if ($('workMoreWrap')) $('workMoreWrap').hidden = true;
+      if ($('workPeriod')) $('workPeriod').hidden = true;
+    } else if ($('workMoreWrap') && state.moreAny !== undefined && state.view !== 'months') $('workMoreWrap').hidden = !state.moreAny;
     /* The client's months carry their own New task, which knows the client;
        a second add in the bar above it would be the same act twice. */
-    if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'months';
-    showPeriod();
+    if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || whole;
+    if (state.view !== 'outstation') showPeriod();
     if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
   }
   /* The segment answers the press first and the view is drawn a frame
@@ -9119,6 +9139,10 @@
     var q = {};
     if (state.view !== 'list') q.view = state.view;
     if (state.view === 'months' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
+    if (state.view === 'outstation' && window.ADspaceOutstation) {
+      var oq = window.ADspaceOutstation.urlPart();
+      Object.keys(oq).forEach(function (k) { q[k] = oq[k]; });
+    }
     /* The task open beside the list travels too, so a reload or a copied
        link lands on the list with that task open. */
     if (state.drawer && state.drawerFrom === 'work') q.open = state.drawer;
