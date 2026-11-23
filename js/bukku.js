@@ -370,7 +370,7 @@
   }
   function shut() { if (sheet) sheet.hidden = true; if (window.ADspaceSheet && window.ADspaceSheet.isOpen(sheet)) window.ADspaceSheet.close(); cur = null; }
   function say(text, tone) { var m = $('bkMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (text && tone ? ' ' + tone : ''); } }
-  var WHY = { brn: 'Same Business Registration No.', name: 'Same name', similar: 'Similar name', job: 'Bill for' };
+  var WHY = { brn: 'Same Business Registration No.', name: 'Same name', similar: 'Similar name', job: 'Bill for', client: 'Linked to client' };
 
   function send(kind, id, btn, only, done) {
     build();
@@ -396,7 +396,9 @@
           return '<label class="tickline bk-cand"><input type="radio" name="bkPick" value="' + esc(c.id) + '"' + (n === 0 ? ' checked' : '') + '> ' +
             '<span><b>' + esc(c.code) + ' · ' + esc(c.name) + '</b><span class="muted"> · ' + esc((WHY[c.why] || '') + (c.why === 'job' ? ' ' + c.job : '')) +
             (c.archived ? ' · Archived' : '') + '</span></span></label>';
-        }).join('') + (me.only ? '' :
+        /* A supplier whose client is linked is offered that contact
+           alone (2026-11-23): one Bukku contact is one company's. */
+        }).join('') + (me.only || d.shared ? '' :
           '<label class="tickline bk-cand"><input type="radio" name="bkPick" value=""' + (list.length ? '' : ' checked') + '> ' +
           '<span><b>New contact</b><span class="muted"> · ' + esc(d.next_code || '') + '</span></span></label>');
         /* Linked only, a creator is never made in Bukku from here. */
