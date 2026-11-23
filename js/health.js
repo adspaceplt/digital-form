@@ -348,7 +348,7 @@
   function withdraw(b) {
     window.ADspaceConfirm.ask({
       title: 'Withdraw your agreement?',
-      body: 'Check-ins stop, and your answers leave management\'s view. You can agree again at any time.',
+      body: 'Check-ins stop, and management will no longer see your answers. You can agree again at any time.',
       go: 'Withdraw', tone: 'warn'
     }, function () {
       b.disabled = true;

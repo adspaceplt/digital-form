@@ -21,6 +21,9 @@
 --     unsuccessful, as Settings names the two templates; the Decision date
 --     subject is renamed only where the team has not edited it.
 --   * `bukku_take`: Used Bukku's details.
+--   * Health's agreement (version 2) reads Management will then no longer
+--     see your answers, where its words are still the first (the user,
+--     2026-11-23: "ok change now").
 --
 -- ORDER: the pages first (they draw the same words), then this file. An
 -- old line already filed keeps its words.
@@ -906,6 +909,9 @@ update public.ops_task_checklist_items set label = 'Decision made to keep the po
  where label = 'Keep live or take down decided';
 update public.hiring_email_templates set subject = 'Decision date changed: {position}'
  where kind = 'moved' and subject = 'Decision date updated: {position}';
+update public.health_wordings
+   set terms = replace(terms::text, 'You can withdraw at any time here, and your answers leave management''s view.', 'You can withdraw at any time here. Management will then no longer see your answers.')::jsonb
+ where version = 2 and position('You can withdraw at any time here, and your answers leave management''s view.' in terms::text) > 0;
 
 -- END OF TONE SWEEP 6 --------------------------------------------------------
 select public.functions_tidy();
