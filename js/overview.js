@@ -708,7 +708,7 @@
     return Math.round((w + (src ? 0 : Number((d.later || {}).out) || 0)) * 100) / 100;
   }
   var PAY = [
-    { key: 'owed', title: 'Owed to us', sec: 'clients', can: canPay,
+    { key: 'owed', title: 'Receivable', sec: 'clients', can: canPay,
       go: function () { return ['/admin/?s=clients&view=payments', 'clients', 'Clients, Payments']; },
       load: function () {
         return payRead().then(function (d) {
@@ -717,7 +717,7 @@
                    sub: over > 0 ? (curMoney(over, d.currency) + ' overdue').replace(/ /g, ' ') : 'None overdue', subTone: over > 0 ? 'err' : '' };
         });
       } },
-    { key: 'weowe', title: 'We owe', sec: 'clients', can: canPay,
+    { key: 'weowe', title: 'Payable', sec: 'clients', can: canPay,
       /* Opens the Payments view holding more of it, of those the reader
          may open: Creators' or Suppliers'. */
       go: function (d) {
@@ -1007,7 +1007,7 @@
       /* Where work waits holds its views (2026-11-22, the user: Time in stage
          joins it as one card): WAIT_VIEWS, a segment at its head once two
          are drawn. */
-      { key: 'waits', title: 'Where work waits', can: canFigures, views: function () { return WAIT_VIEWS; },
+      { key: 'waits', title: 'Work in progress', can: canFigures, views: function () { return WAIT_VIEWS; },
         all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
           /* Each stage's open work beside its time (the Report's Open work by

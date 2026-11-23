@@ -403,14 +403,14 @@
       /* Files and further filming (2026-11-12, the user's own sentence). */
       grp('Exclusions', ['Additional footage, working files and raw files are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
-          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An Advertising Budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
+          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An advertising budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
           return w.join(', ') + ' shall be quoted separately upon request.';
         })() : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
       grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. ' +
-        (termsAt('This Quotation, together with the ') ? termsAt('This Quotation, together with the ') + ', shall constitute the contract between the parties.'
-          : 'This Quotation shall constitute the contract between the parties.'),
-        'All rates are based on the ' + agency() + ' Rate Card v.' + q.version + '. E&OE.']);
+        (termsAt('This quotation, together with the ') ? termsAt('This quotation, together with the ') + ', shall constitute the contract between the parties.'
+          : 'This quotation shall constitute the contract between the parties.'),
+        'All rates are based on the ' + agency() + ' Rate Card Version ' + q.version + '. E&OE.']);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
@@ -485,7 +485,7 @@
     }
     notes.push('This quotation becomes binding once accepted and signed on its acceptance page.' +
       (termsAt('') ? ' Together with the ' + termsAt('') + ', it forms the contract between the parties.' : ''));
-    notes.push('Rates are based on the ' + agency() + ' Rate Card v.' + q.version + '. E&OE.');
+    notes.push('Rates are based on the ' + agency() + ' Rate Card Version ' + q.version + '. E&OE.');
     room(30);
     y -= 8;
     text('TERMS', M, y, SM, book, mute);

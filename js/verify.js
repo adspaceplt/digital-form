@@ -35,7 +35,6 @@
       noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
       noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
       history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
-      checkedOnce: 'Checked once', checkedN: 'Checked {n} times',
       fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match the sealed copy', fileFailed: 'Unable to check the file. Please try again.',
       state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' },
@@ -59,7 +58,6 @@
       noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
       noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
-      checkedOnce: '已核验1次', checkedN: '已核验{n}次',
       fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '与封存副本不一致', fileFailed: '无法核验文件，请稍后再试。',
       state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
@@ -149,7 +147,7 @@
   function checksLine(n) {
     n = Math.floor(Number(n));
     if (!(n >= 1)) return '';
-    return '<p class="verify-checks">' + esc(n === 1 ? t().checkedOnce : t().checkedN.replace('{n}', String(n))) + '</p>';
+    return '<p class="verify-checks">' + esc(window.ADspaceWords.line.checked(n, zh())) + '</p>';
   }
 
   function paint(a) {

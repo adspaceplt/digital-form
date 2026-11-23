@@ -326,10 +326,16 @@
         '<span class="lockcard-mark" data-mark="' + o.g + '" aria-hidden="true">' + I.svg(o.g) + '</span>');
     });
   }
+  /* Only where a colleague or a client signs in (the console, the client
+     portal): a public page (/verify/, /quote/, a link's page) never draws
+     a sign-in it does not use, which read as a second reference beside
+     /verify/'s own field (the user, 2026-11-23: "what is the eaeb08"). */
+  var REF_PAGE = /^\/(admin|client)\//.test(location.pathname);
   var refBusy = false;
   function refs() {
     marks();
     if (refBusy) return;
+    if (!REF_PAGE) { [].forEach.call(document.querySelectorAll('.cover-ref'), function (x) { x.remove(); }); return; }
     var panels = [].filter.call(document.querySelectorAll('.cover .cover-panel'), function (x) { return x.getClientRects().length; });
     var stale = [].filter.call(document.querySelectorAll('.cover-ref'), function (x) { return panels.indexOf(x.parentNode) < 0 || x !== x.parentNode.lastElementChild; });
     stale.forEach(function (x) { x.remove(); });

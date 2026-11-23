@@ -2323,7 +2323,7 @@
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     noaccess:  'The sections your account can open.',
-    mine:      'Your own reviews, recognitions, HR letters and health check-ins.',
+    mine:      'Your own reviews, recognitions, HR Letters and health check-ins.',
     settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };
   var INTRO_SHOWS = 3;
@@ -3640,7 +3640,7 @@
   var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', review: 'Content Review', scripts: 'Video Scripts', reports: 'Reports', whatsapp: 'Messages',
                       clients: 'Clients', campaigns: 'Creators', suppliers: 'Suppliers',
-                      register: 'Documents', hr: 'HR letters', services: 'Services', links: 'Short Links',
+                      register: 'Documents', hr: 'HR Letters', services: 'Services', links: 'Short Links',
                       team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */

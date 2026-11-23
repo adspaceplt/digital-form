@@ -106,7 +106,7 @@ function signOff(m: Record<string, any>): string {
 /* Each email's name, as Settings, Messages: Email templates lists it. */
 export const NAMES: Record<string, string> = {
   invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
-  held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Talent pool', not: 'Not proceed',
+  held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful',
   doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
 };
 /* The template an email is written from (CANDIDATE EMAILS, 2026-11-21). */
@@ -175,10 +175,10 @@ export function words(m: Record<string, any>, tpl: { subject: string; body: stri
   const subject = fill(tpl.subject, v).replace(/\s+/g, ' ').trim(), body = fill(tpl.body, v);
   const heading = ({
     doc: 'Your ' + title, expired: title + ' expired', confirmed: title + ' confirmed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date updated', pool: 'Your application', not: 'Your application',
+    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Your application', not: 'Your application',
     invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed'
   } as Record<string, string>)[String(m.kind)] || 'Your application';
-  const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
+  const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'View contract' : 'View offer', PAGE + m.key)
     : m.kind === 'invite' ? button('Choose a time', PAGE + m.key)
     : m.kind === 'expired' || m.kind === 'cancelled' || m.kind === 'not' ? ''
     : button('View your application', PAGE + m.key);

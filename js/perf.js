@@ -2732,7 +2732,7 @@
        limit for each person, and whether management confirms each. */
     ['Recognition (0 turns this off)', [['rec_points', 'Points per recognition', 'points', 'Points per recognition'],
       ['rec_cap', 'Most points per person per month', 'points', 'Most recognition points per month'],
-      ['rec_confirm', 'Management confirms each recognition', 'onoff', 'Management confirms each recognition']], 'fgrid-3', 'months'],
+      ['rec_confirm', 'Management confirmation', 'onoff', 'Management confirmation']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
     ['Reminders (0 turns this off)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
       ['remind_again_days', 'Days after the 1st to remind again', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
