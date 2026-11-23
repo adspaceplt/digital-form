@@ -56,7 +56,7 @@
     closed: 'This trip has been checked out. Refresh the page.',
     'bad-purpose': 'Choose the purpose.',
     'no-place': 'Choose the client, or enter the venue.',
-    'bad-client': 'This client is outside your access. Choose another client.',
+    'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'A colleague chosen cannot join the trip. Choose again.',
     'bad-location': 'The location could not be read. Press Read again.',
     'no-photo': 'Take a photo at this stop first.',
