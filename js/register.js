@@ -1436,13 +1436,19 @@
           '<span class="dtrow-name"><span class="dtrow-title"><b>' + esc(t.name) + '</b>' + (off ? '<span class="tone is-off">Inactive</span>' : '') + '</span>' +
           '<small>' + esc(typeMeta(t)) + '</small></span>' +
           /* Edit and Delete in one ⋯ (2026-11-23); the types the portal
-             reads by name offer no Delete. */
+             reads by name offer no Delete, so their Edit is the pen alone,
+             never a ⋯ of one item (§5 Menus, 8). */
+          (BUILT_IN.indexOf(t.id) > -1 ? '<span class="team-act"><button class="iconbtn" data-dtedit="' + esc(t.id) + '" type="button" aria-label="Edit ' + esc(t.name) + '">' + PEN + '</button></span></div>' :
           '<span class="team-act"><button class="kmenu-btn" data-dtmenu="' + esc(t.id) + '" type="button" aria-label="More actions for ' + esc(t.name) + '" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [],
-              [BUILT_IN.indexOf(t.id) < 0 && { a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span></div>';
+              [{ a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span></div>');
       }).join('') + '</section>';
     }).join('');
     if (html) box.innerHTML = html; else UI.emptyLine(box, 'No document types.');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-dtedit]'), function (eb) {
+      var t = dt.all.filter(function (x) { return x.id === eb.getAttribute('data-dtedit'); })[0];
+      if (t) eb.addEventListener('click', function () { openTypeEdit(t, eb); });
+    });
     Array.prototype.forEach.call(box.querySelectorAll('[data-dtmenu]'), function (mb) {
       var t = dt.all.filter(function (x) { return x.id === mb.getAttribute('data-dtmenu'); })[0], m = mb.parentNode.querySelector('.kmenu');
       if (!t) return;
