@@ -364,12 +364,7 @@
   W.line = {
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
-    /* A Bukku bill's or invoice's number with the reference no. Bukku keeps
-       beside it (`number2`), on every list that draws one (2026-11-23). */
-    docNo: function (number, ref) {
-      number = String(number || ''); ref = String(ref || '').trim();
-      return ref && ref !== number ? number + ' / Reference: ' + ref : number;
-    },
+    docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
     subject: 'Enter a subject of 2 to 200 characters.',
