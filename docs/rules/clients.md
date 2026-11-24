@@ -691,8 +691,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     3-, 6-, 12-, 18- and 24-month commitments (3 to 5, 6 to 11, 12 to 17,
     18 to 23, 24 and more; `quote_term_pct`, `termPct`, the Rate Card's
     3 months reading `term_4_5`), each percentage a setting (`term_1_3` 25,
-    `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
-    from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
+    `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` (12's where it has no
+    row of its own, page and `quote_term_pct` alike, never a seed of the page's), `term_24` −10), Tax and
     terms at `team.settings` alone, 0 for none; a quotation takes them, and
     SST, as in force today over the live version's (`quote_card`,
     `2026-11-06-quotations-priced-on-todays-terms.sql`; the user,

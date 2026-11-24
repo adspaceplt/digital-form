@@ -147,8 +147,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     whole span takes the percentage and SST once, the one-off apart
     (`quote_term` on each snapshot line; one without it redraws as
     issued), and prints each line
-    at its rate before the term with the term as one summary row
-    (`6-month commitment (5%)`), so its rows add up to the subtotal.
+    at its rate before the term with the term as a summary row a
+    percentage (`6-month term discount (5%)`), so its rows add up to the
+    subtotal. Its lines are grouped by tax rate and term percentage as
+    `quote_totals` groups them, each group's adjustment rounded once, and
+    each line hands `quote_totals` its own percentage in `issue_letter`, so
+    a letter on several rates or percentages is never refused as stale
+    (2026-11-24, `2026-11-24-letter-priced-by-rate-and-percentage.sql`).
     `issue_letter` works
     the same price from the stored lines (the term's rate rounded to the
     cent, by the month where every line of more than a month shares a
