@@ -23,19 +23,39 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `?tab=` (Overview left out) and pushes history; a refresh lands on it. Every
   section is a white card (`.panel.cp-card`) with its title inside
   (`.cp-card-head`); a table inside a card is the card's rows.
-  - Overview: the summary on the left on the record's proportion (one column
-    at 900): Services (Confirmed and To quote as lines, open requests),
-    Next content meeting (the soonest ahead: a calendar leaf and the time in
-    MYT, Join and Add to calendar, an .ics), Latest report (Download),
-    Engagements (the token links with a tile, Open at the right edge); each summary card's
-    View all opens its tab. On the right: Your account manager (the person in
-    charge, WhatsApp and Email) and Company (the facts).
+  - Overview (the approved boards, 2026-11-25): on the left on the
+    record's proportion, Rate your experience while asked, a tile a tab
+    drawn (`#ovTiles`, `.cp-tile`: its glyph, its name, where it stands, one
+    fact; the whole tile opens its tab; three across, two where four would
+    leave one alone, two on a phone), Services (Confirmed and To quote as
+    lines, open requests, each line of two months or more as a month a part
+    of `.cx-track`), Engagements (Content Review over its latest month's
+    sets, each campaign still running, each as it stands); on the right
+    Your account manager (a person's round tile, the name over Account
+    manager, WhatsApp and Email), Next meeting (a calendar leaf and the time
+    in MYT, Join and Add to calendar, an .ics), Latest report (Download) and
+    Company. One column at 900, read in the order rate, tiles, Services,
+    Next meeting, Latest report, Engagements, account manager, Company. Each
+    summary card's View all opens its tab.
+  - A piece of work as it stands (`progRow`): its glyph tile, the name over
+    its facts, the state at the right, a track of its parts
+    (`ADspaceIcons.track`, the one segmented track, the selection page's
+    standing too) and its words (`ADspaceIcons.legend`) on Open's line,
+    unless a note (the next shoot) takes it. A content set's parts are its
+    posts (Approved green; Changes requested and To review amber; the rest
+    still to come), a campaign's its booked creators (`get_portal`
+    `booked`, states alone, furthest along first), never who they are.
+  - Every table row's name is led by its section's glyph tile
+    (`.cx-tile.is-sm`): Services the grid, Requests the note, Letters the
+    envelope, Reports the chart, Meetings the calendar, Feedback the star.
   - Services: confirmed and To quote lines (enquired never shown), with
     Upgrade / Downgrade / Cancel in a confirmed line's ⋯ and, for a line of
     two months or more, where its term is (Month n of N, ending); then Requests once
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
   - Letters: Download redraws the snapshot.
+  - Content Review's tab groups its sets by content month (`.cp-group-head`,
+    the month and its count), newest first.
   - Content Review, Video Scripts and Creator Campaigns (one sign-in,
     `2026-11-08-client-portal-one-sign-in.sql`; the user, 2026-11-08,
     approving the portal's release 1): tabs after Overview, each drawn only
@@ -78,6 +98,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   press file one request; `portal_request` is the same with no key.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
+- The bar holds Sign out and 中文 alone: no bell, no notifications (the
+  user, 2026-11-25).
 - A contact reads its name with Primary contact at the right of the line, the
   role under it, then the reach chips; who signs in is said once, under
   Portal access. A past meeting is Completed (已完成), a future one Upcoming.

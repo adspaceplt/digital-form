@@ -60,6 +60,11 @@
     userx: '<circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 11-5.7"/><path d="m17 15 4 4M21 15l-4 4"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
     docq: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M10.2 12.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><path d="M12 18h.01"/>',
+    /* The client portal's sections (2026-11-25): Services, Reports and
+       Feedback, each a tile before its rows. */
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-4M12 17V8M16 17v-6M20 17v-2"/>',
+    star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
     key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>'
   };
   /* A platform's glyph by the words the pages hold for it. */
@@ -82,6 +87,20 @@
      understand the stage name"), and so were large ringed marks ("Do you
      think Apple would put such huge stage status"). `at` is the step in
      hand; past the last, all are done. */
+  /* Progress as a row of equal parts, one a creator, a post or a month,
+     each toned by its state's dot (ok, wait, late, off; none is still to
+     come): the selection page's standing, the client portal's months,
+     campaigns and terms alike (css .cx-track). */
+  function track(tones, label) {
+    return '<div class="cx-track"' + (label ? ' role="img" aria-label="' + window.ADspaceWords.esc(label) + '"' : ' aria-hidden="true"') + '>' +
+      (tones || []).map(function (t) { return '<i' + (t ? ' class="is-' + t + '"' : '') + '></i>'; }).join('') + '</div>';
+  }
+  /* The words under a track: each state's dot, its word and its count. */
+  function legend(items) {
+    var esc = window.ADspaceWords.esc;
+    return '<p class="cx-legend">' + (items || []).filter(function (x) { return x && x.n; }).map(function (x) {
+      return '<span><i class="cx-dot is-' + x.dot + '"></i>' + esc(x.word) + ' <b>' + x.n + '</b></span>'; }).join('') + '</p>';
+  }
   function journey(words, at) {
     var esc = window.ADspaceWords.esc;
     return '<ol class="cx-journey">' + words.map(function (w, i) {
@@ -97,5 +116,5 @@
   var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
                     scheduled: 4, posted: 5, completed: 6 };
   function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
-  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; } };
+  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!P[n]; } };
 })();

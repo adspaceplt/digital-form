@@ -100,7 +100,7 @@
       rateTitle: 'Rate your experience', fbRequested: 'Requested {d}', fbSubmit: 'Submit',
       fbBy: 'Submitted {d} by {n}', fbOn: 'Submitted {d}', fbScore: '{v} of {m}',
       posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
-      toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved',
+      toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved', toReviewWord: 'To review',
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
       scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
@@ -147,7 +147,7 @@
       rateTitle: '请评价您的体验', fbRequested: '请求日期：{d}', fbSubmit: '提交',
       fbBy: '{n}于{d}提交', fbOn: '{d}提交', fbScore: '{v}/{m}',
       posts: function (n) { return n + '篇帖子'; },
-      toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准',
+      toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准', toReviewWord: '待审阅',
       noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
       scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
@@ -274,6 +274,13 @@
     });
     return out.join(' · ');
   }
+  /* The same parts as plain words, for a place that escapes its own. */
+  function parts0(list) { return list.filter(Boolean).join(' · '); }
+  /* A row's name led by its section's glyph tile (2026-11-25): the name
+     over its facts beside it. `inner` is the name cell's own markup. */
+  function led(name, inner) {
+    return '<span class="svc-name cp-led"><span class="cx-tile is-sm">' + glyph(name) + '</span><span class="cp-led-words">' + inner + '</span></span>';
+  }
   /* A press whose file is being drawn is answered on its button (Doherty;
      the console's js/acts.js): disabled at once, so a second press draws no
      second file, and after 150ms its words give way to the turning ring in
@@ -389,6 +396,7 @@
     tab.hidden = !on;
     if (on && wantPane === name) showPane(name, false);
     if (!on && pane === name) showPane('overview', false);
+    paintTiles();
   }
   Array.prototype.forEach.call(document.querySelectorAll('#cpTabs .tab'), function (b) {
     b.addEventListener('click', function () { showPane(b.getAttribute('data-pane'), true); });
@@ -602,6 +610,7 @@
       tabShown('reports', list.length > 0);
       paintLatestReport(w, list[0]);
       if (!list.length) { box.innerHTML = ''; return; }
+      setTile('reports', { head: monthOf(list[0].period_start, list[0].period_end), sub: w.published });
       var fc = SMR ? ' is-file' : '';
       var tb = table('<div class="crm-head svc-row doc-row' + fc + '"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
@@ -611,8 +620,8 @@
         row.innerHTML =
           /* The report's own name, as its cover and file print it: the first
              kind was stored as Social Media Report (2026-09-27). */
-          '<span class="svc-name"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
-            parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small></span>' +
+          led('chart', '<b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
+            parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small>') +
           '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
           '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
           (SMR ? dlCell(w) : '<span class="team-act"></span>');
@@ -623,6 +632,119 @@
       box.innerHTML = ''; box.appendChild(tb);
     });
   }
+  // ---- The Overview's tiles ------------------------------------------------
+  /* Each section at a glance (2026-11-25, the approved boards): a tile a
+     tab drawn, its glyph, its name, where it stands and one fact under it,
+     the whole tile opening its tab. Each source fills its own tile as its
+     read answers; a tab not drawn has no tile. */
+  var TILES = [['review', 'image'], ['scripts', 'film'], ['campaigns', 'megaphone'], ['services', 'grid'], ['reports', 'chart'], ['meetings', 'calendar']];
+  var tiles = {};
+  function setTile(key, v) { tiles[key] = v; paintTiles(); }
+  function paintTiles() {
+    var box = $('ovTiles');
+    if (!box) return;
+    var w = t();
+    var shown = TILES.filter(function (x) { var b = tabOf(x[0]); return tiles[x[0]] && b && !b.hidden; });
+    box.hidden = !shown.length;
+    /* Three across, two where four would leave one alone (a phone is two
+       across, the last alone taking the row). */
+    box.setAttribute('data-n', String(shown.length));
+    box.innerHTML = shown.map(function (x) {
+      var v = tiles[x[0]];
+      return '<button class="cp-tile" type="button" data-go="' + x[0] + '">' +
+        '<span class="cp-tile-top"><span class="cx-tile">' + glyph(x[1]) + '</span>' + GO + '</span>' +
+        '<span class="cp-tile-label">' + esc(w.tabs[x[0]]) + '</span>' +
+        '<b class="cp-tile-head">' + (v.dot ? '<i class="cx-dot is-' + v.dot + '"></i>' : '') + esc(v.head) + '</b>' +
+        (v.sub ? '<span class="cp-tile-sub">' + esc(v.sub) + '</span>' : '') + '</button>';
+    }).join('');
+  }
+
+  /* One piece of work as it stands (2026-11-25): its tile, its name over
+     its facts, its state at the right, a track of its parts toned by their
+     states with the words under it, a note, and Open at the right edge. */
+  var DOT = { 'is-ok': 'ok', 'is-live': 'ok', 'is-warn': 'wait', 'is-danger': 'late', 'is-off': 'off' };
+  function progRow(o) {
+    var I = window.ADspaceIcons;
+    var row = document.createElement('div');
+    row.className = 'svc-row cp-work-row cp-prog' + (o.glyph ? '' : ' is-bare');
+    row.innerHTML = (o.glyph ? '<span class="cx-tile">' + glyph(o.glyph) + '</span>' : '') +
+      '<div class="cp-prog-body"><div class="cp-prog-top"><span class="svc-name"><b>' + esc(o.name) + '</b>' +
+        (o.sub ? '<small>' + o.sub + '</small>' : '') + '</span>' +
+        (o.state ? '<span class="svc-state">' + o.state + '</span>' : '') + '</div>' +
+      (I && o.tones && o.tones.length ? I.track(o.tones) + (o.note ? I.legend(o.legend) : '') : '') +
+      /* The words under the track share Open's line, unless a note takes it. */
+      '<div class="cp-prog-foot">' + (o.note ? '<span class="cp-prog-note">' + o.note + '</span>' :
+        I && o.tones && o.tones.length ? I.legend(o.legend) : '') +
+        '<a class="btn btn-sm cp-open" href="' + esc(o.url) + '">' + esc(t().open) + ' ' + GO + '</a></div></div>';
+    return row;
+  }
+  /* A content set: its approved posts green, those with changes asked and
+     those waiting on the client amber, the rest still to come. */
+  function setRow(w, x, token, withGlyph) {
+    var ap = x.approved || 0, ch = x.changes || 0, wt = x.waiting || 0, n = x.posts || 0;
+    var tones = [];
+    for (var i = 0; i < n; i++) tones.push(i < ap ? 'ok' : i < ap + ch + wt ? 'wait' : '');
+    var st = wt ? chip(w.toReview(wt), 'is-warn') : ch ? chip(w.changesAsked, 'is-warn') :
+      n ? chip(w.allApproved, 'is-ok') : chip(w.noPosts, 'is-off');
+    return progRow({ glyph: withGlyph ? 'image' : '', name: x.title || '', sub: parts([monthWord(x.period), w.posts(n)]), state: st,
+      tones: tones, legend: [{ dot: 'ok', word: w.allApproved, n: ap }, { dot: 'wait', word: w.changesAsked, n: ch }, { dot: 'wait', word: w.toReviewWord, n: wt }],
+      url: '/review/?k=' + encodeURIComponent(token) + '#s-' + String(x.id).slice(0, 8) });
+  }
+  /* A campaign: one part a booked creator, furthest along first, as the
+     selection page draws its standing (js/creators.js). */
+  var BOOK_ORDER = ['confirmed', 'pending_visit', 'pending_draft', 'changes', 'reviewing', 'scheduled', 'posted', 'completed'];
+  function campName(w, m) {
+    var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
+    nm = String(nm == null ? '' : nm).trim();
+    return (!nm || nm === '0' || nm === 'null' || nm === 'undefined') ? w.untitled : nm;
+  }
+  function campStanding(w, m) {
+    var booked = (m.booked || []).slice().sort(function (a, b) { return BOOK_ORDER.indexOf(b) - BOOK_ORDER.indexOf(a); });
+    var live = booked.filter(function (s) { return s === 'posted' || s === 'completed'; }).length;
+    var seeding = m.push_format === 'seeding';
+    var counts = [];
+    booked.forEach(function (s) {
+      var word = w.step[s === 'pending_visit' && seeding ? 'pending_delivery' : s] || s;
+      var hit = counts.filter(function (c) { return c.word === word; })[0];
+      if (hit) hit.n++; else counts.push({ word: word, n: 1, dot: DOT[window.ADspaceWords.tone(s)] || 'wait' });
+    });
+    return { booked: booked, live: live, counts: counts,
+      tones: booked.map(function (s) { return DOT[window.ADspaceWords.tone(s)] || 'wait'; }),
+      shoot: m.next_shoot && !seeding ? m.next_shoot : null };
+  }
+  function campRow(w, m, withGlyph) {
+    var sd = campStanding(w, m);
+    return progRow({ glyph: withGlyph ? 'megaphone' : '', name: campName(w, m),
+      sub: parts([w.campaign, sd.booked.length ? w.ofPosted(sd.live, sd.booked.length) : '']),
+      state: chip(w.campState[m.state] || '', m.state === 'completed' ? 'is-ok' : (m.state === 'open' ? 'is-warn' : 'is-live')),
+      tones: sd.tones, legend: sd.counts,
+      note: sd.shoot ? glyph('camera') + esc(w.nextShoot(niceDate(sd.shoot, 'ahead'))) : '',
+      url: '/creators/?k=' + encodeURIComponent(m.token) });
+  }
+
+  /* The Overview's engagements: Content Review with its latest month's
+     sets under it, then each campaign still running, each as it stands. */
+  function paintEng(w, sets) {
+    var wrap = $('engWrap'), ebox = $('engBox');
+    if (!wrap || !ebox) return;
+    var camps = (feed.campaigns || []).filter(function (m) { return m.state !== 'completed'; });
+    if (!camps.length) camps = (feed.campaigns || []).slice(0, 1);
+    var token = feed.review && feed.review.token;
+    wrap.hidden = !token && !camps.length;
+    var etb = table('');
+    if (token) {
+      var head = document.createElement('div');
+      head.className = 'svc-row cp-eng-row';
+      head.innerHTML = '<span class="cx-tile">' + glyph('image') + '</span><span class="svc-name"><b>' + esc(w.review) + '</b></span>' +
+        '<a class="btn btn-sm cp-open" href="/review/?k=' + esc(encodeURIComponent(token)) + '">' + esc(w.open) + ' ' + GO + '</a>';
+      etb.appendChild(head);
+      var last = (sets || []).map(function (x) { return x.period || ''; }).sort().pop();
+      (sets || []).filter(function (x) { return (x.period || '') === last; }).forEach(function (x) { etb.appendChild(setRow(w, x, token, false)); });
+    }
+    camps.forEach(function (m) { etb.appendChild(campRow(w, m, true)); });
+    ebox.innerHTML = ''; ebox.appendChild(etb);
+  }
+
   // ---- One sign-in: Content Review, Video Scripts, Creator campaigns -------
   /* What the team shares with the client, a tab each, every row opening its
      own page in this tab, signed in: no access code and no name to type
@@ -634,9 +756,6 @@
     if (!m) return p;
     return lang === 'zh' ? m[1] + '年' + Number(m[2]) + '月' : MON_EN[Number(m[2]) - 1] + ' ' + m[1];
   }
-  function openCell(w, url) {
-    return '<span class="team-act cp-go"><a class="btn btn-sm" href="' + esc(url) + '">' + esc(w.open) + ' ' + GO + '</a></span>';
-  }
   function paintWork(w, c, feed) {
     var camps = (feed && feed.campaigns) || [];
     var cmBox = $('cmBox');
@@ -645,19 +764,17 @@
       cmBox.innerHTML = '';
       if (camps.length) {
         var ctb = table('');
-        camps.forEach(function (m) {
-          var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
-          nm = String(nm == null ? '' : nm).trim() || w.untitled;
-          var row = document.createElement('div');
-          row.className = 'svc-row cp-work-row';
-          row.innerHTML = '<span class="svc-name"><b>' + esc(nm) + '</b></span>' +
-            '<span class="svc-state">' + chip(w.campState[m.state] || '', m.state === 'completed' ? 'is-ok' : (m.state === 'open' ? 'is-warn' : 'is-live')) + '</span>' +
-            openCell(w, '/creators/?k=' + encodeURIComponent(m.token));
-          ctb.appendChild(row);
-        });
+        camps.forEach(function (m) { ctb.appendChild(campRow(w, m, true)); });
         cmBox.appendChild(ctb);
       }
     }
+    var cmTile = camps.filter(function (m) { return m.state !== 'completed'; })[0] || camps[0];
+    if (cmTile) {
+      var cs = campStanding(w, cmTile);
+      setTile('campaigns', { head: cs.booked.length ? w.ofPosted(cs.live, cs.booked.length) : campName(w, cmTile),
+        sub: w.campState[cmTile.state] || '' });
+    }
+    paintEng(w, null);
     if (!c.id) return;
     db.rpc('portal_work', { p_client: c.id }).then(function (r) {
       if (stale(c)) return;
@@ -671,21 +788,27 @@
       if (crBox) {
         crBox.innerHTML = '';
         if (sets.length) {
-          var rtb = table('');
-          sets.forEach(function (x) {
-            var st = x.waiting ? chip(w.toReview(x.waiting), 'is-warn') : x.changes ? chip(w.changesAsked, 'is-warn') :
-              x.posts ? chip(w.allApproved, 'is-ok') : chip(w.noPosts, 'is-off');
-            var row = document.createElement('div');
-            row.className = 'svc-row cp-work-row';
-            row.innerHTML = '<span class="svc-name"><b>' + esc(x.title || '') + '</b><small>' +
-              parts([monthWord(x.period), w.posts(x.posts || 0)]) + '</small></span>' +
-              '<span class="svc-state">' + st + '</span>' +
-              openCell(w, '/review/?k=' + encodeURIComponent(rv.token) + '#s-' + String(x.id).slice(0, 8));
-            rtb.appendChild(row);
+          /* A content month a group, its sets under it, newest first. */
+          var months = [];
+          sets.forEach(function (x) { var k = x.period || ''; if (months.indexOf(k) < 0) months.push(k); });
+          months.forEach(function (k) {
+            var of = sets.filter(function (x) { return (x.period || '') === k; });
+            var mh = document.createElement('div');
+            mh.className = 'cp-group-head';
+            mh.innerHTML = '<h4>' + esc(monthWord(k)) + '</h4><span class="tab-n">' + of.length + '</span>';
+            crBox.appendChild(mh);
+            var rtb = table('');
+            of.forEach(function (x) { rtb.appendChild(setRow(w, x, rv.token, true)); });
+            crBox.appendChild(rtb);
           });
-          crBox.appendChild(rtb);
         }
       }
+      if (sets.length) {
+        var lt = sets[0];
+        setTile('review', waiting ? { head: w.toReview(waiting), dot: 'wait', sub: parts0([monthWord(lt.period), w.posts(lt.posts || 0)]) }
+          : { head: lt.changes ? w.changesAsked : lt.posts ? w.allApproved : w.noPosts, sub: parts0([monthWord(lt.period), w.posts(lt.posts || 0)]) });
+      }
+      paintEng(w, sets);
       var sc = d.scripts, list = (sc && sc.list) || [];
       tabShown('scripts', list.length > 0);
       var vsBox = $('vsBox');
@@ -694,17 +817,21 @@
         if (list.length) {
           var stb = table('');
           list.forEach(function (x) {
-            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on, 'ahead')) : '';
-            var row = document.createElement('div');
-            row.className = 'svc-row cp-work-row';
-            row.innerHTML = '<span class="svc-name"><b>' + esc([x.code, x.title].filter(Boolean).join(' · ')) + '</b><small>' +
-              parts([(w.scriptKind || {})[x.kind] || '', monthWord(x.period), shoot]) + '</small></span>' +
-              '<span class="svc-state"></span>' +
-              openCell(w, '/script/?k=' + encodeURIComponent(sc.key) + '#' + encodeURIComponent(x.id));
-            stb.appendChild(row);
+            stb.appendChild(progRow({ glyph: 'film', name: [x.code, x.title].filter(Boolean).join(' · '),
+              sub: parts([(w.scriptKind || {})[x.kind] || '', monthWord(x.period)]),
+              note: x.shoot_on ? glyph('camera') + esc(w.shoot(niceDate(x.shoot_on, 'ahead'))) : '',
+              url: '/script/?k=' + encodeURIComponent(sc.key) + '#' + encodeURIComponent(x.id) }));
           });
           vsBox.appendChild(stb);
         }
+      }
+      if (list.length) {
+        var today = ADspaceClock.today();
+        var next = list.filter(function (x) { return x.shoot_on && String(x.shoot_on).slice(0, 10) >= today; })
+          .sort(function (a, b) { return String(a.shoot_on).localeCompare(String(b.shoot_on)); })[0];
+        var sx = next || list[0];
+        setTile('scripts', { head: next ? w.shoot(niceDate(next.shoot_on, 'ahead')) : [sx.code, sx.title].filter(Boolean).join(' · '),
+          sub: (w.scriptKind || {})[sx.kind] || '' });
       }
     }).catch(function () { tabShown('review', false); tabShown('scripts', false); });
   }
@@ -800,6 +927,10 @@
       tabShown('meetings', list.length > 0);
       paintNextMeeting(w, list);
       if (!list.length) { box.innerHTML = ''; return; }
+      var soon = list.filter(function (v) { return new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > Date.now(); })
+        .sort(function (a, b) { return new Date(a.at) - new Date(b.at); })[0];
+      var past = list.slice().sort(function (a, b) { return new Date(b.at) - new Date(a.at); })[0];
+      setTile('meetings', soon ? { head: niceDate(soon.at, 'ahead'), sub: w.upcoming } : { head: niceDate(past.at), sub: w.held });
       var tb = table('<div class="crm-head svc-row doc-row meet-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       var now = Date.now();
@@ -820,7 +951,7 @@
            Overview draws it (2026-10-20, POR-2). */
         var join = ahead && v.link;
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
+          led('calendar', '<b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small>') +
           '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
           '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held, 'is-ok')) + '</span>' +
           '<span class="team-act">' + (join ? '<a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + ' ' + EXT + '</a>' : '') + '</span>';
@@ -864,7 +995,7 @@
       } else box.innerHTML = '';
       hbox.innerHTML = hist.length ? '<div class="fbh-list">' + hist.map(function (h) {
         var when = niceDate(h.submitted_at);
-        return '<details class="fbh"><summary class="fbh-row"><span class="fbh-name"><b>' + esc(F.title(h.kind, lang)) + '</b><small>' +
+        return '<details class="fbh"><summary class="fbh-row"><span class="cx-tile is-sm">' + glyph('star') + '</span><span class="fbh-name"><b>' + esc(F.title(h.kind, lang)) + '</b><small>' +
           esc(h.by ? fbFill(w.fbBy, { d: when, n: h.by }) : fbFill(w.fbOn, { d: when })) + '</small></span>' +
           '<span class="fbh-score">' + esc(fbFill(w.fbScore, { v: h.score, m: h.max })) + '</span>' +
           '<svg class="fbh-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></summary>' +
@@ -978,10 +1109,12 @@
       /* The line, where it is in its term under it, then the bar: a line
          reads over its own sub-line, as every card's name does (2026-10-31,
          POR-10: the bar between them stood the two 20px apart). */
-      return '<div class="cx-term"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
+      /* A month a part, those begun green (2026-11-25, the approved boards). */
+      var tones = [];
+      for (var i = 0; i < n; i++) tones.push(i < at ? 'ok' : '');
+      return '<div class="cx-term"><span class="cx-tile is-sm">' + glyph('grid') + '</span><div class="cx-term-words"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
         '<p class="cp-sub">' + parts([w.monthOf(at, n), w.endsOn(endWord)]) + '</p>' +
-        '<div class="cx-term-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + at + '"><i style="width:' +
-          Math.round(at / n * 100) + '%"></i></div></div>';
+        (window.ADspaceIcons ? window.ADspaceIcons.track(tones, w.monthOf(at, n)) : '') + '</div></div>';
     }).join('');
     return rows ? '<div class="cx-terms">' + rows + '</div>' : '';
   }
@@ -990,6 +1123,7 @@
   function build() {
     var w = t();
     var c = feed.client || {};
+    tiles = {};
     document.body.classList.remove('is-plain');
     $('stateBox').hidden = true;
     $('app').hidden = false;
@@ -1064,7 +1198,7 @@
     var mgr = $('ovMgr');
     if (mgr) {
       mgr.hidden = !c.owner;
-      $('ovMgrBox').innerHTML = c.owner ? '<p class="cp-person">' + esc(c.owner) + '</p><div class="cp-reach">' +
+      $('ovMgrBox').innerHTML = c.owner ? '<div class="cp-who"><span class="cx-tile is-round">' + glyph('user') + '</span><span class="cp-led-words"><b class="cp-person">' + esc(c.owner) + '</b><small>' + esc(w.manager) + '</small></span></div><div class="cp-reach">' +
         (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
         (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + glyph('mail') + esc(w.email) + '</a>' : '') + '</div>' : '';
     }
@@ -1119,7 +1253,7 @@
           .filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
+          led('grid', '<b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '')) +
           /* One phrase that never breaks, "1 × RM 2,830.00 × 6 months", in a
              track wide enough for it at a desk (2026-10-31, POR-4: the
              months on a line of their own made a phone's row five lines). */
@@ -1162,6 +1296,7 @@
         '<div class="is-total"><dt>' + parts([w.confirmedTotal, w.lines(cf.length)]) + '</dt><dd>' + esc(money(cf)) + '</dd></div>' +
         (q.length ? '<div><dt>' + parts([w.quotedTotal, w.lines(q.length)]) + '</dt><dd>' + esc(money(q)) + '</dd></div>' : '') +
         (open ? '<div><dt>' + esc(w.openRequests) + '</dt><dd>' + open + '</dd></div>' : '') + '</dl>' + termsHtml(cf, w);
+      setTile('services', cf.length ? { head: w.lines(cf.length), sub: w.confirmedTotal } : { head: w.lines(q.length), sub: w.quotedTotal });
     }
 
     // Requests, once there is one.
@@ -1182,9 +1317,9 @@
            button, Undo as before (MENU-19, 2026-10-22). */
         var canWithdraw = !gone && r.state === 'requested';
         row.innerHTML =
-          '<span class="svc-name"><b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
+          led('note', '<b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
-            (r.reply ? '<small>' + esc(w.reply + (lang === 'zh' ? '：' : ': ') + r.reply) + '</small>' : '') + '</span>' +
+            (r.reply ? '<small>' + esc(w.reply + (lang === 'zh' ? '：' : ': ') + r.reply) + '</small>' : '')) +
           /* No fee is a mute dash at a desk under its head, nothing on a
              phone, where the head is hidden (2026-10-20, POR-1). */
           '<span class="svc-rate svc-amt' + (r.fee != null && r.fee !== '' ? '' : ' is-none') + '">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +
@@ -1208,7 +1343,7 @@
         var row = document.createElement('div');
         row.className = 'svc-row doc-row' + dc;
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + parts([w.offer, niceDate(d.issued_at)]) + '</small></span>' +
+          led('mail', '<b>' + esc(d.number) + '</b><small>' + parts([w.offer, niceDate(d.issued_at)]) + '</small>') +
           '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
           '<span class="svc-state">' + chip(w.issued, 'is-ok') + '</span>' +
           (DOCS ? dlCell(w) : '<span class="team-act"></span>');
@@ -1227,30 +1362,6 @@
     paintFeedback(w, c);
     paintReports(w, c);
     paintWork(w, c, feed);
-
-    // Engagements: the two client pages, opened with their own links.
-    var eng = [];
-    if (feed.review && feed.review.token) eng.push({ name: w.review, glyph: 'image', url: '/review/?k=' + encodeURIComponent(feed.review.token) });
-    (feed.campaigns || []).forEach(function (m) {
-      var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
-      nm = String(nm == null ? '' : nm).trim();
-      if (!nm || nm === '0' || nm === 'null' || nm === 'undefined') nm = w.untitled;
-      eng.push({ name: nm, glyph: 'megaphone', sub: w.campaign + (w.campState[m.state] ? ' · ' + w.campState[m.state] : ''),
-        url: '/creators/?k=' + encodeURIComponent(m.token) });
-    });
-    $('engWrap').hidden = !eng.length;
-    var ebox = $('engBox');
-    if (eng.length) {
-      var etb = table('');
-      eng.forEach(function (e) {
-        var row = document.createElement('div');
-        row.className = 'svc-row cp-eng-row';
-        row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + parts([e.sub]) + '</small>' : '') + '</span>' +
-          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '">' + esc(w.open) + ' ' + GO + '</a>';
-        etb.appendChild(row);
-      });
-      ebox.innerHTML = ''; ebox.appendChild(etb);
-    } else ebox.innerHTML = '';
 
     // Payment guidance, only once the bank line is set.
     $('payWrap').hidden = !ORG.bank;
