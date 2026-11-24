@@ -253,10 +253,10 @@
     h += box('subject', it.two ? 'Subject for one invoice' : 'Subject', it.subject, 'input');
     if (it.two) h += box('subject2', 'Subject for several invoices', it.subject2, 'input');
     h += box('body', 'Message', it.body, 'area');
-    if (it.btn) h += box('button', 'Button', it.button, 'input');
     h += '<div class="mt-chips" role="group" aria-label="Insert a field">' + f.map(function (x) {
       return '<button class="btn btn-sm mt-chip" type="button" data-f="' + esc(x) + '">{' + esc(x) + '}</button>';
     }).join('') + '</div><p class="msg warn mt-odd" id="mtOdd" role="status" hidden></p>';
+    if (it.btn) h += box('button', 'Button', it.button, 'input');
     if (it.kind === 'invoice') h += box('legal', 'Legal note', it.legal, 'area3') + box('disclaimer', 'Disclaimer', it.disclaimer, 'area3');
     if (it.fine) h += box('foot', 'Fine print', it.foot, 'area3');
     $('mtEdForm').innerHTML = h;
