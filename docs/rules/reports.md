@@ -946,8 +946,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     inside its cell: each figure column is at least its widest entry in the
     cheapest row's heavier face, every objective's table shares those
     tracks, and the name takes the rest.
-  - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
-    line; no draft or version line.
+  - The foot is the template's (AL): a published version's row, Document ID
+    {code} · Verify document authenticity: go.adspace.me/verify from the left margin and the
+    page count at the right margin (DOCUMENT ID ON EVERY FOOT, 2026-11-24;
+    `sm_report_versions.doc_code`, which `sm_report_version_code` stamps and
+    writes into the snapshot, so the kept file, the client's copy and every
+    redraw print it); a draft the page count alone; a white-label report the
+    page count alone too, since its partner fronts it and the row would
+    print ADspace's address on the partner's paper; no draft or version
+    line. /verify/ answers the code typed as the reference (Social Media
+    Accounts Report or Social Media Advertising Report; Valid, Replaced by a
+    later version, Withdrawn).
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
     REVIEW (INTERNAL USE ONLY), repeated over every page and drawn last
     (`WM` in `js/smreport.js`, drawn by `ADspaceDocs.watermark`) on the report's golden scale: S(4) in Slate

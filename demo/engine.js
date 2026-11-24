@@ -51,7 +51,7 @@
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
-    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
+    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version doc_code',
     video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb ai_frame',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
@@ -107,7 +107,7 @@
     sm_report_ads: 'id report_id position name objective result_label audience starts_on ends_on spend results reach impressions ctr cpr cpr_basis age hook_rate hold_rate avg_play retention thumb_data remark created_at ad_ids ad_account platform ad_error purchase_value',
     sm_report_platforms: 'id report_id platform account_name handle group_key group_label position metrics followers_start followers_end growth_override growth_reason er_basis metric_notes summary worked improve actions created_at platform_name',
     sm_report_posts: 'id report_id platform_id posted_on title caption content_type url thumb_data views reach impressions interactions engagements likes comments shares saves notable observation position created_at',
-    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by',
+    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by doc_code',
     sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print',
     team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at ai_on email_on whatsapp_on sensitive_on',
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
@@ -2491,12 +2491,14 @@ function cardSlugFree(name, self, email) {
   }
 
   function docCodeOf(a, keyed) {
-    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[a.p_kind];
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews',
+      report: 'sm_report_versions', script: 'video_scripts' }[a.p_kind];
     var row = T && (DB[T] || []).filter(function (x) { return x.id === a.p_id; })[0];
     if (!row) return null;
     var k = String(a.p_key || '').trim();
     if (!opsMe() && !(keyed && k && (a.p_kind === 'quotation' ? row.access_key === k && !row.removed_at
         : a.p_kind === 'hiring' ? row.sent_at && row.state !== 'draft' && (DB.hiring_candidates || []).some(function (c) { return c.id === row.candidate_id && c.link_key === k.toLowerCase(); })
+        : a.p_kind === 'script' ? row.status === 'shared' && (DB.clients || []).some(function (c) { return c.id === row.client_id && c.script_key === k; })
         : false)) && !(a.p_kind === 'letter' && portalClientIds().indexOf(row.client_id) > -1)) return null;
     var c = docCode(row, DB[T]);
     return c.slice(0, 4) + '-' + c.slice(4);
@@ -2572,6 +2574,27 @@ function cardSlugFree(name, self, email) {
     if (pd) return { src: 'perf_deleted', id: pd.id, serial: pd.serial, kind: 'HR Letter', issued: mday(pd.released_at), code: null, sealed: false, state: 'voided',
       names: verifyNames(mn(pd.team_member_id)),
       steps: steps([['issued', mday(pd.released_at)], ['voided', mday(pd.deleted_at)]]) };
+
+    var vc = v.replace(/[^0-9A-Z]/g, '');
+    if (/^[2-9A-Z]{8}$/.test(vc)) {
+      var vser = vc.slice(0, 4) + '-' + vc.slice(4);
+      var rv = (DB.sm_report_versions || []).filter(function (x) { return x.doc_code === vc; })[0];
+      if (rv) {
+        var rr = (DB.sm_reports || []).filter(function (x) { return x.id === rv.report_id; })[0] || {};
+        var rsnap = (rv.snapshot && rv.snapshot.report) || {};
+        var rnext = (DB.sm_report_versions || []).filter(function (x) { return x.report_id === rv.report_id && x.version_no > rv.version_no; })
+          .map(function (x) { return mday(x.published_at); }).sort()[0] || null;
+        return { src: 'report', id: rv.id, serial: vser, by_code: true,
+          kind: (rsnap.kind || rr.kind) === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report',
+          issued: mday(rv.published_at), code: rv.doc_code, sealed: false,
+          state: rv.withdrawn_at ? 'withdrawn' : rnext ? 'replaced' : 'valid',
+          steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
+      }
+      var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
+      if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
+        issued: mday(vs.shared_at), code: vs.doc_code, sealed: false, state: vs.status === 'shared' ? 'valid' : 'withdrawn',
+        steps: steps([['issued', mday(vs.shared_at)], ['withdrawn', vs.status !== 'shared' ? mday(vs.updated_at) : null]]) };
+    }
     return null;
   }
 
@@ -2582,6 +2605,7 @@ function cardSlugFree(name, self, email) {
 
   function verifyByDay(f) {
     if (!f || !f.issued) return false;
+    if (f.by_code) return false;
     if (!f.code) return true;
     appDb();
     if (!DB.app_settings.some(function (r) { return r.key === 'verify_code_from'; }))
@@ -2599,6 +2623,7 @@ function cardSlugFree(name, self, email) {
 
     var byName = verifyByDay(f);
     var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName };
+    if (f.by_code) out.by_code = true;
     if (!byName) out.issued_month = f.issued ? f.issued.slice(0, 7) : null;
     return out;
   }
@@ -10161,6 +10186,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.sm_report_versions = DB.sm_report_versions.filter(function (v) { return !(v.report_id === r.id && v.version_no === r.version_no); });
       var v = { id: nid('smv'), report_id: r.id, version_no: r.version_no, snapshot: smSnap(r, true), published_by: me.name, published_at: now,
         withdrawn_at: null, withdrawn_by: null, withdraw_reason: null };
+
+      docCode(v, DB.sm_report_versions); v.snapshot.doc_code = v.doc_code;
       DB.sm_report_versions.push(v);
       r.status = 'published';
       smPostsFollow(r, 'confirmed');
@@ -17904,6 +17931,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           context: null, vo: null, vo_vc: null, vo_shot_at: null, vo_shot_by: null, remarks: null, status: 'draft',
           shared_at: null, round: 1, version: 1, idem_key: args.p_idem || null, created_by: vsMe.id, created_by_name: vsWho,
           created_at: vsNow, updated_at: vsNow, updated_by_name: vsWho };
+        docCode(row, DB.video_scripts);
         DB.video_scripts.push(row);
         vsLog('script.created', cc.name, vsLabel(row) + ' · ' + vsKind[kd] + (from ? ' · header from ' + vsCode(from.period, from.seq) : ''));
         return vsOk({ id: row.id, code: row.code, period: per, seq: sq });

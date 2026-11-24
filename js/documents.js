@@ -683,6 +683,11 @@
       return c;
     }).catch(function () { return ''; });
   }
+  /* A stored Document ID as printed (XXXX-XXXX), else ''. */
+  function codeWord(raw) {
+    var c = String(raw || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+    return /^[2-9A-Z]{8}$/.test(c) ? c.slice(0, 4) + '-' + c.slice(4) : '';
+  }
   /* A copy of a document's fields with its Document ID, the caller's own
      object left as it was. */
   function withCode(doc, code) {
@@ -799,9 +804,11 @@
       return y0;
     };
     p.plainHead = function () { return p.head(); };
-    /* The foot, at the template's place on every page. */
-    p.foot = function (i, n) {
+    /* The foot. `code`: the page's own Document ID where one PDF holds
+       several documents. */
+    p.foot = function (i, n, code) {
       var count = 'Page ' + (i + 1) + ' of ' + n;
+      var id = code === undefined ? p.code : (code || '');
       if (acl) {
         /* One row (the user, 2026-11-24: "the serial id or document id and
            the computer generated document and the page x of x should be
@@ -811,20 +818,20 @@
            line would reach the page count. */
         var cw = p.width(count, G.aclCount, font);
         p.right(count, R, at(G.aclCountAt), G.aclCount, font, faint);
-        var ver = verifyLine(tpl === 'ACL_SIGN') + (p.code ? ' · Document ID ' + p.code : '');
+        var ver = verifyLine(tpl === 'ACL_SIGN') + (id ? ' · Document ID ' + id : '');
         var lead = n > 1 && p.reference ? p.reference + '  ·  ' : '';
         if (lead && M + p.width(lead + ver, G.verify, font) > R - cw - 16) lead = '';
         p.text(lead + ver, M, at(G.aclCountAt), G.verify, font, faint);
         return;
       }
+      /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
+      if (tpl !== 'ALP' && id) {
+        p.right(count, R, at(G.countAt), G.count, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        return;
+      }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
       if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, faint);
-      /* A document /verify/ answers on the AL template (a quotation) names
-         its Document ID on every page at the bottom margin's left, on the
-         page count's own baseline, so the foot reads as one line (the user,
-         2026-11-21: "not inline same row?"). A performance record carries it
-         in its own reference line instead. */
-      else if (p.code) p.text('Document ID ' + p.code, M, at(G.countAt), G.ref, font, faint);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
@@ -1835,7 +1842,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, codeOf: codeOf, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
+    pen: pen, codeOf: codeOf, codeWord: codeWord, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };

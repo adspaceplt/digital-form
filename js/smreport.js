@@ -1008,6 +1008,7 @@
     ZH = false;
     var mdl = model(snap);
     var rep = mdl.rep;
+    mdl.code = (snap && snap.doc_code) || '';
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
       Object.keys(rep.insights || {}).map(function (k) { return rep.insights[k]; }),
       mdl.accounts.map(function (a) { return [a.account_name, a.summary, a.worked, a.improve, a.actions, a.metric_notes].join(' '); }),
@@ -2336,7 +2337,13 @@
        (`ADspaceDocs.watermark`, which a letter's Preview carries too). */
     var watermark = function (page) { window.ADspaceDocs.watermark(page, WM, book); };
     var n = pages.length;
-    var pn = window.ADspaceDocs.pen(PDF, fonts, null, { kind: 'report' });
+    /* A published version's Document ID (DOCUMENT ID ON EVERY FOOT,
+       2026-11-24): its snapshot carries it, so the file kept, the client's
+       copy and every redraw print it; a draft carries none. A white-label
+       report keeps the page count alone: its partner fronts it, and the
+       verify line would name ADspace's address on the partner's paper. */
+    var pn = window.ADspaceDocs.pen(PDF, fonts, null, { kind: 'report',
+      code: rep.partner ? '' : (window.ADspaceDocs.codeWord ? window.ADspaceDocs.codeWord(mdl.code) : '') });
     /* The head's mark: the template's wordmark, or for a partner's client
        the partner's landscape logo in its place (white label, 2026-10-06),
        its top on the wordmark's capitals and no wider than two fifths of
