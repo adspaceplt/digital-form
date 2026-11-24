@@ -5670,6 +5670,7 @@ svg.sec {
 /* Analytics' feedback by Person in charge: on a narrow pane the counts
    give way, the scores stay, so the table never scrolls sideways. */
 .is-narrow .anl-fb :is(th, td):is(:nth-child(2), :nth-child(3)) { display: none; }
+.anl-fb thead .is-end { white-space: normal; }
 /* Needs attention beside the on-time trend (1.618 : 1). */
 .ovw-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-pair.is-one, .is-narrow .ovw-pair { grid-template-columns: minmax(0, 1fr); }
