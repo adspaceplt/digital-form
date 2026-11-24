@@ -1737,7 +1737,7 @@
 
             if (meEm && 'system' in pending && Boolean(pending.system) !== Boolean(r.system)) blocked = 'system-account';
             if (meEm && r.system && String(r.email || '').toLowerCase() !== meEm &&
-                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['email']].some(function (k) {
+                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['removed_at'], ['erased_at'], ['email']].some(function (k) {
                   k = k[0]; if (!(k in pending)) return false;
                   var a1 = pending[k] == null ? null : (k === 'email' ? String(pending[k]).toLowerCase() : k === 'access_until_time' ? t5(pending[k]) : pending[k]);
                   var a0 = r[k] == null ? null : (k === 'email' ? String(r[k]).toLowerCase() : k === 'access_until_time' ? t5(r[k]) : r[k]);
@@ -10323,10 +10323,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var oRef = function (t) {
         if (t.ref) return t.ref;
-        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(0, 7).replace('-', '');
+        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = 'OS/' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
         return t.ref;
       };
       var oJson = function (t) {
