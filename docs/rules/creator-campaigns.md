@@ -279,7 +279,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   user, 2026-11-12: "straight approval (but mark as internally added?)"):
   the creator's fields checked as their own, a number left blank keeping
   the one held, saved approved at once (`entered_by`, read Source Added by
-  {name}), no email to the creator, the sheet taking it as any approval;
+  {name}), the sheet taking it as any approval; where it replaces details
+  on file and something changed, Details changed and `creator_changed` go
+  to the email and WhatsApp on file as on the creator page (`changes`,
+  `prior_id`; `2026-11-24-saved-whole-and-told.sql`), else no email;
   Approve and Decline in its head (a reason the
   creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
   `no-note`; filed `creator.updated`); the newest approval is paid to, the

@@ -211,7 +211,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Letter; the letter's date; the lowest number free for that client that
     day from 01, under an advisory lock); older `AD/[SA/]…` letters keep
     theirs;
-  - an HR letter `ADHR/{staff_code}/{code}{YYMM}`.
+  - an HR letter `ADHR/{staff_code}/{code}{YYMM}`, under an advisory lock
+    as a client letter's (2026-11-24).
   - `-2`, `-3` where an HR base is spent. `serial_taken()` spans both tables.
 - HR is its own part:
   - `register_may(family, level)` is the read policy and the check in every
