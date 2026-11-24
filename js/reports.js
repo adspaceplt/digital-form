@@ -4450,6 +4450,7 @@
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-failed': 'The draft did not complete. Try again.',
     'ai-incomplete': 'The draft did not complete. Try again.',
+    'ai-slow': 'The draft took too long. Try again.',
     'no-ads': 'Add the period\'s ads before drafting.',
     'no-posts': 'Add the month\'s posts before drafting.',
     'not-draft': 'Write with AI works only on a draft.',

@@ -65,10 +65,16 @@ Deno.serve(async (req) => {
     const { data: list, error } = await admin.rpc('sm_report_thumb_versions', { p_limit: 10 });
     if (error || !list) return say({ error: 'read_failed', detail: error && error.message }, 500);
     let rewritten = 0, failed = 0;
+    /* Why a snapshot was not rewritten, by reason (review 2026-11-24: one
+       whose report has no client was answered every call, so `left` never
+       reached 0); the database skips those and counts them as `stuck`. */
+    const why: Record<string, number> = {};
+    const miss = (k: string) => { failed++; why[k] = (why[k] || 0) + 1; };
     for (const id of (list.ids || []) as string[]) {
       const { data: v } = await admin.from('sm_report_versions').select('id, report_id, snapshot, sm_reports(client_id)').eq('id', id).maybeSingle();
-      if (!v) { failed++; continue; }
+      if (!v) { miss('not-found'); continue; }
       const client = String(((v.sm_reports as Record<string, unknown> | null) || {}).client_id || '');
+      if (!/^[0-9a-f-]{36}$/.test(client)) { miss('no-client'); continue; }
       const snap = v.snapshot as Record<string, unknown>;
       const [{ data: ps }, { data: as }] = await Promise.all([
         admin.from('sm_report_posts').select('id, thumb_data').eq('report_id', v.report_id),
@@ -85,7 +91,7 @@ Deno.serve(async (req) => {
           let k = byId[String(r.id)] || byData[u];
           if (!k) {
             const bytes = bytesOf(u);
-            if (!bytes || !/^[0-9a-f-]{36}$/.test(client)) { ok = false; continue; }
+            if (!bytes) { ok = false; continue; }
             k = `private/${client}/thumbs/${crypto.randomUUID()}.jpg`;
             const put = await aws.fetch(`${bucket}/${k}`, { method: 'PUT', body: bytes, headers: { 'Content-Type': 'image/jpeg' } });
             if (!put.ok) { ok = false; continue; }
@@ -95,10 +101,10 @@ Deno.serve(async (req) => {
         }
       }
       const { error: ue } = await admin.from('sm_report_versions').update({ snapshot: snap }).eq('id', v.id);
-      if (ue || !ok) failed++; else rewritten++;
+      if (ue) miss('write-failed'); else if (!ok) miss('picture-failed'); else rewritten++;
     }
     const { data: after } = await admin.rpc('sm_report_thumb_versions', { p_limit: 1 });
-    return say({ rewritten, failed, left: after ? after.left : null });
+    return say({ rewritten, failed, why, left: after ? after.left : null, stuck: after ? after.stuck : null });
   }
 
   const n = Math.min(100, Math.max(1, Number(body.batch) || 50));
