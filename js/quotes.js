@@ -117,6 +117,10 @@
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
     /* A website quotation waits for the team before the prospect sees the
        price (2026-10-29). */
+    /* The prospect asked for changes on the sent quotation's link
+       (QUOTATION CHANGES REQUESTED, 2026-11-25): the team owes the
+       revision by its reply day. */
+    if (q.change_requested_at) return ['Changes requested', 'is-warn', q.reply_due ? 'Reply by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     if (awaiting(q)) return ['Awaiting review', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     var today = window.ADspaceClock.today();
     if (q.valid_until < today) return ['Expired', 'is-off'];
@@ -162,7 +166,7 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -291,7 +295,10 @@
              unless the ⋯ would pass seven: then it is the commonest act and
              stays on the row (DESIGN.md §5 Menus 8). */
           var edit = (maySet && !q.removed_at && q.source !== 'website' && editable(q)) || (maySet && awaiting(q) && editable(q));
-          if (maySet && awaiting(q) && editable(q)) {
+          if (maySet && !q.removed_at && q.change_requested_at && !q._revised && !q.signed_at && q.status !== 'not_proceeding') {
+            /* The prospect's changes open in Build quote, made the next revision. */
+            acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
+          } else if (maySet && awaiting(q) && editable(q)) {
             /* Its Edit is below. */
           } else if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
@@ -792,7 +799,7 @@
       return;
     }
     if (a === 'withdraw') { withdraw(q, ctx); return; }
-    if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
+    if (a === 'adjust') { build(ctx, q.change_requested_at && q.change_request && q.change_request.selection ? q.change_request.selection : q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */
     if (a === 'edit') { if (sentOut(q) || (q._lines || []).length) build(ctx, q.selection, btn, q); else build(ctx, q.selection, btn, null, q); return; }
