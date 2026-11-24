@@ -55,7 +55,7 @@
     linked: 'This record is already linked to a contact in Bukku. Refresh the page.',
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-offered': 'That Bukku contact does not match this record. Choose one of the contacts offered.',
-    busy: 'This record is already being sent to Bukku. Please refresh the page in a moment.',
+    busy: 'Sending to Bukku is already in progress. Please refresh the page in a moment.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
     moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
