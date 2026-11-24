@@ -10222,3 +10222,64 @@ body.qs-page { background: var(--card); }
 .cx-term-words { min-width: 0; }
 .cx-term-words .cx-track { margin-top: 8px; }
 .cx-terms { border-top: 0; padding-top: 0; }
+
+/* ===== The creator's page as the approved boards (2026-11-25) =====
+   The bookings a row of cards over the open one (a phone scrolls them
+   sideways), the live six steps as glyph discs with their days, each fact
+   led by its glyph's disc two across, the brief on a shaded box, and
+   Payments and Profile two cards side by side at a desk. */
+@media (min-width: 900px) { .cwork { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+.cwork { gap: 12px; }
+.queue {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 8px;
+  background: none; border: 0; border-radius: 0; overflow-x: auto; overflow-y: hidden; position: relative;
+  scrollbar-width: none; padding: 2px;
+}
+.queue::-webkit-scrollbar { display: none; }
+@media (max-width: 640px) { .queue { grid-auto-columns: minmax(0, 72%); margin-inline: -2px; } }
+.queue .qrow {
+  grid-template-columns: minmax(0, 1fr); grid-template-areas: "name" "meta" "flag"; align-content: start; gap: 2px;
+  background: var(--card); border: 0; border-radius: var(--radius); padding: 14px 16px; min-height: 88px;
+}
+.queue .qrow:last-child { border-bottom: 0; }
+.queue .qrow-flag { justify-self: start; margin-top: 6px; }
+.queue .qrow.is-on { background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); }
+.queue .qrow.is-on::after { content: none; }
+@media (hover: hover) { .queue .qrow:not(.is-on):hover { background: var(--sunk); } }
+
+.cx-journey.has-discs { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; margin: 16px 0 4px; }
+.cx-journey.has-discs li { position: relative; justify-items: center; align-content: start; grid-auto-rows: min-content; text-align: center; gap: 4px; }
+.cx-journey.has-discs li::before { position: absolute; top: 17px; left: calc(-50% + 22px); right: calc(50% + 22px); height: 2px; border-radius: 0; }
+.cx-journey.has-discs li:first-child::before { content: none; }
+.cx-journey.has-discs li.is-done::before, .cx-journey.has-discs li.is-now::before { background: var(--ok-solid); }
+.cx-jdisc { width: 36px; height: 36px; border-radius: 50%; corner-shape: round; display: grid; place-items: center;
+  background: var(--sunk); color: var(--ink-mute); margin-bottom: 4px; }
+.cx-jdisc .ic { width: 16px; height: 16px; }
+.cx-journey.has-discs li.is-done .cx-jdisc { background: var(--ok-solid); color: var(--on-ok); }
+.cx-journey.has-discs li.is-now .cx-jdisc { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.cx-journey.has-discs li.is-done { color: var(--ink); }
+.cx-journey.has-discs small { font-size: 11px; color: var(--ink-mute); font-weight: 400; font-variant-numeric: tabular-nums; }
+@media (max-width: 400px) { .cx-jdisc { width: 30px; height: 30px; } .cx-journey.has-discs li::before { top: 14px; left: calc(-50% + 18px); right: calc(50% + 18px); } }
+
+.booking .cx-facts.booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+.booking .cx-facts.booking-facts > div:nth-child(n) { grid-column: auto; }
+.booking .cx-facts > div { position: relative; padding-left: 44px; min-height: 32px; }
+.booking .cx-facts dt .ic { position: absolute; left: 0; top: 0; width: 32px; height: 32px; padding: 8px; box-sizing: border-box;
+  border-radius: 50%; corner-shape: round; background: var(--sunk); color: var(--ink); }
+.booking .cx-facts dt { display: block; font-weight: 400; font-size: 12.5px; }
+@media (max-width: 640px) { .booking .cx-facts.booking-facts { grid-template-columns: minmax(0, 1fr); } }
+.booking > .booking-brief:not(.is-warn), .booking-fold-body > .booking-brief:not(.is-warn) {
+  background: var(--sunk); border-top: 0; border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .cr-pane.cr-two:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 20px; align-items: start; }
+  .cr-pane.cr-two[data-pane="profile"]:not([hidden]) { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); }
+  .cr-pane.cr-two > .panel, .cr-pane.cr-two > .panel + .panel, .cr-pane.cr-two > .crpay:first-child, .cr-pane.cr-two > .crprof:first-child { margin-top: 0; }
+  .cr-pane.cr-two:not(:has(> .panel:not([hidden]) ~ .panel:not([hidden]))) > .panel { grid-column: 1 / -1; }
+}
+.crpay .rec-id-solo { display: flex; align-items: center; gap: 12px; }
+.crpay .rec-id-solo > .rec-who { flex: 1 1 auto; min-width: 0; }
+.crpay-row { grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; }
+.crpay-row .crpay-what { flex-direction: column; align-items: flex-start; gap: 2px; }
+.crpay-row .crpay-job { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
