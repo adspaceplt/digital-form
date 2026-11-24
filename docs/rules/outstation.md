@@ -59,6 +59,10 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
   credited under the route (© openrouteservice.org by HeiGIT · Map data ©
   OpenStreetMap contributors).
+- A trip of the driver's own missing a stop's address or a leg is asked
+  again when the driver opens the list, once a visit (each stop, then the
+  legs; 2026-11-24: OS/20261101 came before the lookup worked and never
+  asked again).
 - The location block shows the reading's coordinates as it arrives and the
   place the geocoder names once the reading is accepted (2026-11-24).
 - A photo reaches the page as `application/octet-stream` and is named by
