@@ -60,7 +60,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   already on the shared calendar, by time alone, one row under the times
   (`meet-create` `busy`, 15 days at most, `hiring_busy_may`). A new invitation replaces one still
   open. The candidate picks a time on their page, or None of these times
-  with a note (`careers_pick`, `careers_none`, anon, the link's own key;
+  with a note (`careers_pick`, `careers_none`, anon, the link's own key,
+  refused `not-open` once the candidate is past New, Invited or
+  Interview; any decision, Proceed included, cancels an invitation still
+  open or answered with other times, 2026-11-24;
   the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
   name). An invitation is answered by its reply-by date (`reply_by`,
   stamped as it is made: the earlier of `hiring_reply_days`, 3, 1 to 14,
@@ -207,7 +210,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   lists each by its reference; Read asks a six-digit code emailed to the
   candidate (`hiring-mail` `code`, no sign-in; `hiring_doc_code`, the
   service role's, hashed, 15 minutes, five an hour, the address
-  Cloudflare saw), then the caution step, then the terms and salary for
+  Cloudflare saw; ten wrong codes a document a Malaysian day, over any of
+  its codes, answer `locked-today` to both until the next day,
+  `hiring_doc_wrong_today`, 2026-11-24), then the caution step, then the terms and salary for
   30 minutes (`careers_doc_open`, a view token hashed); an offer is
   accepted (name typed, the confirmation ticked) or declined (a reason
   optional), a contract signed (name, NRIC or passport number, a

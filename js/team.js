@@ -2055,12 +2055,14 @@
           load(function () {
             if (!n) { msg('teamMsg', 'Saved.', 'ok'); return; }
             undoHere('Access until set for ' + n + (n === 1 ? ' colleague.' : ' colleagues.'), function () {
-              /* Each row put back over the row as read again, one line filed. */
+              /* Each row put back over the row as read again, one line filed;
+                 a row the write did not reach (none answered) is refused,
+                 never counted as neither (review 2026-11-24). */
               var jobs = was.map(function (w) {
                 var row = (state.rows || []).filter(function (x) { return x.id === w.id; })[0];
                 if (!row || (row.access_until || null) === w.access_until && (row.access_until_time || null) === w.access_until_time) return Promise.resolve(0);
                 return asRead(db.from('team_members').update({ access_until: w.access_until, access_until_time: w.access_until_time }).eq('id', w.id), row)
-                  .select('id').then(function (q) { return q.error ? -1 : (q.data || []).length; });
+                  .select('id').then(function (q) { return q.error || !(q.data || []).length ? -1 : 1; });
               });
               Promise.all(jobs).then(function (got) {
                 var back = got.filter(function (x) { return x > 0; }).length, refused = got.filter(function (x) { return x < 0; }).length;
