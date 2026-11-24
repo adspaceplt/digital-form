@@ -13851,9 +13851,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           commence_on: won };
         DB.quotations.push(wrow);
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: wcl.name,
-          detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
+          detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         var wbody =
-          wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-off') + ' · ' + wn +
+          wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-time') + ' · ' + wn +
           (won ? ' · Preferred start date ' + wonWord(won)
             : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by';
         if (wknown) {
@@ -14394,7 +14394,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
           else sq2.lines.filter(function (l) { return !l.renews; }).forEach(function (l) {
             have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-              label: qtLineLabel(sq2.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
+              label: qtLineLabel(sq2.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-time', state: 'confirmed', note: 'Quotation ' + sq2.ref,
               tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: l.start || null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
               detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
             DB.client_services.push(have[have.length - 1]);
@@ -14598,7 +14598,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         DB.quotations.push(qrow);
-        qtLog(qc.name, qrow.ref + ' sent · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + qrow.version +
+        qtLog(qc.name, qrow.ref + ' sent · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + qrow.version +
           (qpr.adjusted ? ' · ' + qpr.adjusted + (qpr.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qrow.id, ref: qrow.ref, key: null });
       }
@@ -14750,7 +14750,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.valid_until < qtToday) return qtOk({ error: 'expired' });
         var qids = qq.lines.map(function (l) {
           var row = { id: nid('cs'), client_id: qq.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-            label: qtLineLabel(qq.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'quoted', note: 'Quotation ' + qq.ref,
+            label: qtLineLabel(qq.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-time', state: 'quoted', note: 'Quotation ' + qq.ref,
             tenure: l.basis === 'month' ? (l.months || qq.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? qq.totals.term_pct : 0,
             detail: (l.detail || []).join('\n') || null, quotation_id: qq.id, created_at: new Date().toISOString(), archived_at: null, tax_code: l.tax_code || null };
           DB.client_services.push(row);
