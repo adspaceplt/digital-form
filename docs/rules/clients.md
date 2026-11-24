@@ -845,6 +845,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     against its client, with Undo where it happened putting back each
     client's own.
 
+- Every write to a client goes through `writeClient(id, patch[, since])`:
+  it asks `id, updated_at` back and every copy the page holds takes the new
+  stamp, so the next Edit is never refused as changed by someone else; a
+  write built from the copy read at open (Edit, the Brand sheet's content
+  brief) passes `since` and a refusal reads `ADspaceWords.line.stale`
+  through `staleClient` (review 2026-11-24, `tests/editstamps.js`).
+
 ## Components
 
 Moved from DESIGN.md §4 on 2026-11-22.

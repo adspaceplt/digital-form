@@ -237,7 +237,9 @@
   // ---- Creators list ------------------------------------------------------
   function loadRoster(then) {
     if (!state.creators.length) UI.skeleton($('rosterList'), 4);
-    db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
+    /* Every creator, a thousand a page, in a stable order (review
+       2026-11-24: the list stopped at the thousandth). */
+    window.ADspaceAPI.readPages(function () { return db.from('creators').select('*, creator_profiles(*)').order('name').order('id'); }).then(function (r) {
       if (r.error) {
         state.creators = [];
         UI.failLine($('rosterList'), 'The Creators List', r.error.message, function () { loadRoster(then); });
@@ -2272,8 +2274,9 @@
   function loadCampaigns() {
     var box = $('campCards');
     if (!state.campaigns) UI.skeleton(box, 3);
-    db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').order('created_at', { ascending: false })
-      .then(function (r) {
+    window.ADspaceAPI.readPages(function () {
+      return db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').order('created_at', { ascending: false }).order('id');
+    }).then(function (r) {
         if (r.error) {
           state.campaigns = null;
           UI.failLine(box, 'Campaigns', r.error.message, loadCampaigns);
@@ -2610,9 +2613,30 @@
     else createCampaign(clientId, title, slots);
   });
 
+  /* A write to a campaign holds to the copy it was read from and answers
+     the new stamp, which the copy takes (review 2026-11-24: an Edit or a
+     Publish left open put back what a colleague had changed since). */
+  function writeCamp(c, patch, cols) {
+    var q = db.from('campaigns').update(patch).eq('id', c.id);
+    if (c.updated_at) q = q.eq('updated_at', c.updated_at);
+    return q.select(cols || 'id, updated_at').then(function (r) {
+      var row = r && !r.error && r.data && r.data[0];
+      if (row && row.updated_at) c.updated_at = row.updated_at;
+      return r;
+    });
+  }
+  /* Refused as moved: the campaign is read again and drawn from what
+     stands, said where the act was. */
+  function staleCamp(c, box) {
+    db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').eq('id', c.id).maybeSingle().then(function (r) {
+      if (r.error || !r.data) { msg(box, 'This campaign no longer exists.', 'err'); return; }
+      openCampaign(r.data);
+      msg('campWorkMsg', window.ADspaceWords.line.stale, 'err');
+    }).catch(function () { msg(box, 'Not saved. Please try again.', 'err'); });
+  }
   function saveCampaign(clientId, title, slots) {
     var c = editingCamp;
-    var patch = {
+    var all = {
       client_id: clientId, title: title,
       purpose: ($('campPurpose').value || '').trim() || null,
       slots: slots,
@@ -2622,15 +2646,22 @@
       owner: ($('campOwner').value || '').trim() || null,
       backups_open: $('campBackups').checked
     };
-    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').single().then(function (r) {
+    /* Only what moved from the copy the sheet opened on is sent. */
+    var patch = {};
+    Object.keys(all).forEach(function (k) {
+      if (String(all[k] == null ? '' : all[k]) !== String(c[k] == null ? '' : c[k])) patch[k] = all[k];
+    });
+    if (!Object.keys(patch).length) { shutCampForm(); return; }
+    writeCamp(c, patch, '*, clients(name, market, bill_sgd, sst_applies, logo_url)').then(function (r) {
       if (r.error && /slots-booked/.test((r.error.hint || '') + (r.error.message || ''))) {
         msg('campMsg', 'Not saved. The number of creators cannot be fewer than those already booked.', 'err'); return;
       }
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { shutCampForm(); staleCamp(c, 'campWorkMsg'); return; }
       log('campaign.edited', title, slots + ' creators');
       shutCampForm();
-      openCampaign(r.data);
-    });
+      openCampaign(r.data[0]);
+    }).catch(function () { msg('campMsg', 'Not saved. Please try again.', 'err'); });
   }
 
   function createCampaign(clientId, title, slots) {
@@ -3036,9 +3067,9 @@
     function save() {
       var patch = { state: move.to };
       if (move.reopen) patch.selection_closed_at = null;
-      db.from('campaigns').update(patch).eq('id', c.id).select('id').then(function (r) {
+      writeCamp(c, patch).then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (!(r.data || []).length) { staleCamp(c, 'campWorkMsg'); return; }
         c.state = move.to;
         if (move.reopen) c.selection_closed_at = null;
         log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
@@ -3457,7 +3488,7 @@
     var want = !live.length ? 'open' : done ? 'completed' : 'production';
     if (want === c.state) return;
     var was = c.state;
-    db.from('campaigns').update({ state: want }).eq('id', c.id).select('id').then(function (r) {
+    writeCamp(c, { state: want }).then(function (r) {
       if (r.error || !(r.data || []).length) return;
       c.state = want;
       if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
@@ -3684,11 +3715,10 @@
     return String(h).padStart(2, '0') + ':' + (m[2] || '00');
   }
 
+  /* Malaysia's clock is js/clock.js alone (review 2026-11-24). */
   function addDays(day, n) {
-    var d = new Date(day + 'T00:00:00Z');
-    if (isNaN(d)) return null;
-    d.setUTCDate(d.getUTCDate() + n);
-    return d.toISOString().slice(0, 10);
+    var CK = window.ADspaceClock, d = /^\d{4}-\d{2}-\d{2}$/.test(String(day || '')) ? day : CK.day(day);
+    return (d && CK.addDays(d, n)) || null;
   }
 
   /* ---- Deliverables ----------------------------------------------------
@@ -4775,17 +4805,21 @@
     var go = ids.length
       ? db.from('campaign_options').delete().in('id', ids).select('id')
       : Promise.resolve({ data: [] });
+    var refused = false;
     go.then(function (r) {
-      if (r.error || (r.data || []).length !== ids.length) {
-        msg('campWorkMsg', 'Not undone. The database refused the request.', 'err');
-      } else {
-        log('campaign.unoffered', logSubject(), (names || []).join(', ') + ' · undone');
-      }
+      if (r.error || (r.data || []).length !== ids.length) refused = true;
+      else if (ids.length) log('campaign.unoffered', logSubject(), (names || []).join(', ') + ' · undone');
       return Promise.all(was.map(function (w) {
         return db.from('campaign_options').update({ state: w.state, drop_reason: w.drop_reason, rate: w.rate, platforms: w.platforms })
           .eq('id', w.id).select('id');
       }));
-    }).then(function () { loadOptions(); })
+    }).then(function (back) {
+      /* A creator offered again whose row the write did not reach is named
+         as not undone, never passed over (review 2026-11-24). */
+      if ((back || []).some(function (q) { return q.error || !(q.data || []).length; })) refused = true;
+      if (refused) msg('campWorkMsg', 'Not undone. The database refused the request.', 'err');
+      loadOptions();
+    })
       .catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); loadOptions(); });
   }
 
@@ -6692,9 +6726,9 @@
   }
   function setInvoiceFile(c, url, stamp) {
     var was = { url: c.invoice_url, stamp: c.invoice_uploaded_at };
-    db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp }).eq('id', c.id).select('id').then(function (r) {
+    writeCamp(c, { invoice_url: url, invoice_uploaded_at: stamp }).then(function (r) {
       if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { msg('invMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      if (!(r.data || []).length) { staleCamp(c, 'invMsg'); return; }
       c.invoice_url = url; c.invoice_uploaded_at = stamp;
       log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
       paintInvoice(c);
@@ -6735,9 +6769,9 @@
       var patch = { invoice_no: no };
       var stamp = null;
       if (url) { stamp = new Date().toISOString(); patch.invoice_url = url; patch.invoice_uploaded_at = stamp; }
-      return db.from('campaigns').update(patch).eq('id', c.id).select('id').then(function (r) {
+      return writeCamp(c, patch).then(function (r) {
         if (r.error) throw new Error(r.error.message);
-        if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
+        if (!(r.data || []).length) { staleCamp(c, 'invMsg'); return; }
         c.invoice_no = no;
         if (url) { c.invoice_url = url; c.invoice_uploaded_at = stamp; }
         log(url ? 'campaign.invoice_file' : 'campaign.invoice', c.title, no || 'cleared');

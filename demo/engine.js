@@ -1829,6 +1829,8 @@
               })) pending.content_version = (r.content_version || 1) + 1;
 
           if (table === 'clients') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
+
+          if (table === 'campaigns') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
           if (table === 'client_requests') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
 
           if (table === 'team_members' || table === 'team_roles') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
@@ -17331,7 +17333,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return spOk();
       }
       if (name === 'supplier_save') {
-        var vals = args.p_values || {}, code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
+
+        var sent = args.p_values || {};
+        if ('expected' in sent && Date.parse(sx.updated_at) !== Date.parse(sent.expected)) return spNo('stale', { supplier: spJson(sx, payView) });
+        var vals = {};
+        Object.keys(sx).forEach(function (k) { if (['id', 'status', 'created_at', 'updated_at'].indexOf(k) < 0) vals[k] = sx[k]; });
+        Object.keys(sent).forEach(function (k) { if (k !== 'expected') vals[k] = sent[k]; });
+        var code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
         if (!/^[A-Z0-9]{2,12}$/.test(code)) return spNo('bad-code');
         var other = DB.suppliers.filter(function (x) { return String(x.code).toUpperCase() === code && x.id !== sx.id; })[0];
         if (other) return spNo('code-taken', { name: other.name });

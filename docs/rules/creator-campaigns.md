@@ -675,6 +675,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `submit_review`, `confirm_selection_with`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
+- A write to a campaign goes through `writeCamp(c, patch)`: held to the
+  copy's `updated_at`, its new stamp taken back; refused, `staleCamp` reads
+  the campaign again and says `ADspaceWords.line.stale`. Edit sends only
+  the fields that moved. The Creators List and the campaigns list read
+  every row through `ADspaceAPI.readPages` (review 2026-11-24,
+  `tests/editstamps.js`).
+
 ## Components
 
 Moved from DESIGN.md §4 on 2026-11-22.
