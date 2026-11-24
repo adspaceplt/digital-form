@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261124zzfb">
-<link rel="stylesheet" href="/css/console.css?v=20261124rs">
+<link rel="stylesheet" href="/css/console.css?v=20261124rt">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5442,20 +5442,17 @@
           <button class="iconbtn" id="selfClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sheet-body">
-          <div class="row fgrid">
-            <div class="field"><label class="field-label" for="selfS_output">Role output quality (out of 25)</label>
-              <input class="input" id="selfS_output" type="number" inputmode="decimal" min="0" max="25" step="0.1" aria-required="true"></div>
-            <div class="field"><label class="field-label" for="selfS_accuracy">Accuracy and compliance (out of 15)</label>
-              <input class="input" id="selfS_accuracy" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
-            <div class="field"><label class="field-label" for="selfS_delivery">Delivery and reliability (out of 15)</label>
-              <input class="input" id="selfS_delivery" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
-            <div class="field"><label class="field-label" for="selfS_client">Client ownership (out of 20)</label>
-              <input class="input" id="selfS_client" type="number" inputmode="decimal" min="0" max="20" step="0.1" aria-required="true"></div>
-            <div class="field"><label class="field-label" for="selfS_comms">Communication and collaboration (out of 15)</label>
-              <input class="input" id="selfS_comms" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
-            <div class="field"><label class="field-label" for="selfS_initiative">Initiative and improvement (out of 10)</label>
-              <input class="input" id="selfS_initiative" type="number" inputmode="decimal" min="0" max="10" step="0.1" aria-required="true"></div>
+          <!-- Each category a letter and its step (js/perf.js, the letter
+               ladder, 2026-11-24), drawn into its field on open. -->
+          <div class="perf-cats self-lads">
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_outputL">Role output quality (out of 25)</label></span><span class="perf-lad-host" id="selfL_output"></span></div>
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_accuracyL">Accuracy and compliance (out of 15)</label></span><span class="perf-lad-host" id="selfL_accuracy"></span></div>
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_deliveryL">Delivery and reliability (out of 15)</label></span><span class="perf-lad-host" id="selfL_delivery"></span></div>
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_clientL">Client ownership (out of 20)</label></span><span class="perf-lad-host" id="selfL_client"></span></div>
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_commsL">Communication and collaboration (out of 15)</label></span><span class="perf-lad-host" id="selfL_comms"></span></div>
+            <div class="perf-cat is-edit"><span class="perf-cat-name"><label for="selfS_initiativeL">Initiative and improvement (out of 10)</label></span><span class="perf-lad-host" id="selfL_initiative"></span></div>
           </div>
+          <p class="perf-quiet perf-lad-total" id="selfTotal" role="status"></p>
           <div class="msg" id="selfMsg"></div>
         </div>
         <div class="sheet-foot">
@@ -6817,7 +6814,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261124zd", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261124rs", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "perf": {"src": "/js/perf.js?v=20261124rt", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261124zzzpr", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},

@@ -134,6 +134,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   how many went live by its day; Timeline adherence, the tasks they own
   that reached their review in the month, and how many by every deadline
   they had (My Work's late rule).
+- A category is scored by the letter ladder (the user, 2026-11-24), on the
+  review sheet and in Rate yourself alike (`ladderHtml`, `ladderWire`): the
+  letter (A Exceptional, B Strong, C Meets, D Below, E Poor; a select of
+  five), then its steps, each a fifth of the maximum a point apart from the
+  top (25: A1 25 to E5 1; 20: four a letter; 15: three; 10: two) and E0 for
+  none (a segment while four or fewer, else the select); the readout
+  `A2 · 24 / 25` and the total of 100 follow each choice; a suggestion from
+  the rates is its nearest step. Points are stored as before and the grade
+  bands stand; a figure stored off a step shows its nearest step, written
+  once the form is saved, and reads as its figure alone where only read.
 - Notifications never carry a score.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed

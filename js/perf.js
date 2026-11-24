@@ -44,6 +44,100 @@
   ];
   var CAT_WORD = {};
   CATS.forEach(function (c) { CAT_WORD[c[0]] = c[1]; });
+  /* The letter ladder (the user, 2026-11-24): a category is scored by a
+     letter, A Exceptional to E Poor, each a fifth of its maximum in steps of
+     a point from the top (25: A1 25 to A5 21 … E5 1), and E0 for none. The
+     points are stored as before; a stored figure off a step shows its
+     nearest step, written once the form is saved. */
+  var LETTERS = [['A', 'Exceptional'], ['B', 'Strong'], ['C', 'Meets'], ['D', 'Below'], ['E', 'Poor']];
+  function rungs(max) {
+    var n = max / 5, out = [];
+    LETTERS.forEach(function (L, i) {
+      for (var j = 1; j <= n; j++) out.push({ letter: L[0], code: L[0] + j, v: max - i * n - (j - 1) });
+    });
+    out.push({ letter: 'E', code: 'E0', v: 0 });
+    return out;
+  }
+  function rungOf(v, max) {
+    if (v == null || v === '' || isNaN(Number(v))) return null;
+    var x = Math.max(0, Math.min(max, Math.round(Number(v))));
+    return rungs(max).filter(function (r) { return r.v === x; })[0] || null;
+  }
+  /* "A2 · 24" where the figure is on a step; the figure alone where it is
+     not, so a record keeps the score its grade was worked out from. */
+  function rungWord(v, max) {
+    var r = rungOf(v, max);
+    return r && r.v === Number(v) ? r.code + ' \u00b7 ' + num(r.v) : num(v);
+  }
+  /* One category's control: the letter (five, so a select), then its steps
+     (a segment while four or fewer, else the select), the figure kept in a
+     hidden field of the id the page reads, the readout beside. */
+  function ladderHtml(id, max, label, v) {
+    var r = rungOf(v, max);
+    return '<span class="perf-lad" data-ladder="' + id + '" data-max="' + max + '">' +
+      '<input type="hidden" id="' + id + '" value="' + (r ? r.v : '') + '">' +
+      '<select class="select select-sm perf-lad-letter" id="' + id + 'L" aria-label="' + esc(label) + ', letter">' +
+        '<option value=""' + (r ? '' : ' selected') + '>Not set</option>' +
+        LETTERS.map(function (L) {
+          return '<option value="' + L[0] + '"' + (r && r.letter === L[0] ? ' selected' : '') + '>' + L[0] + ' \u00b7 ' + L[1] + '</option>';
+        }).join('') +
+      '</select>' +
+      '<span class="perf-lad-steps"><select class="select select-sm" id="' + id + 'P" data-seg data-seg-value aria-label="' + esc(label) + ', step"></select></span>' +
+    '</span>';
+  }
+  function ladderOut(id, max) {
+    return '<span class="perf-cat-val perf-lad-val" id="' + id + 'V"></span>';
+  }
+  /* Wires every ladder inside `root`; `changed` runs after each choice. */
+  function ladderWire(root, changed) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-ladder]'), function (box) {
+      var id = box.getAttribute('data-ladder'), max = Number(box.getAttribute('data-max'));
+      var val = $(id), lt = $(id + 'L'), step = $(id + 'P'), out = $(id + 'V');
+      var steps = function () {
+        var L = lt.value, list = rungs(max).filter(function (r) { return r.letter === L; });
+        var want = list.map(function (r) { return r.v + '|' + r.code; }).join(',');
+        if (step.__want !== want) {
+          step.__want = want;
+          step.innerHTML = '';
+          list.forEach(function (r) { step.add(new Option(r.code + ' \u00b7 ' + num(r.v), String(r.v))); });
+          if (window.ADspaceForm && window.ADspaceForm.segFit) window.ADspaceForm.segFit(step);
+        }
+        step.closest('.perf-lad-steps').hidden = !L;
+        if (L) step.value = val.value;
+      };
+      var paint = function () {
+        var r = rungOf(val.value, max);
+        if (out) out.innerHTML = r ? esc(r.code + ' \u00b7 ' + num(r.v)) + '<small> / ' + max + '</small>'
+          : '<span class="perf-dash">\u2014</span><small> / ' + max + '</small>';
+        if (changed) changed();
+      };
+      lt.addEventListener('change', function () {
+        var top = rungs(max).filter(function (r) { return r.letter === lt.value; })[0];
+        val.value = top ? top.v : '';
+        steps(); paint();
+      });
+      step.addEventListener('change', function () { val.value = step.value; paint(); });
+      /* Set from outside (the rates' suggestion): the nearest step. */
+      val.addEventListener('input', function () {
+        var r = rungOf(val.value, max);
+        val.value = r ? r.v : '';
+        lt.value = r ? r.letter : '';
+        steps(); paint();
+      });
+      steps(); paint();
+    });
+  }
+  /* The total of the six as chosen, said under them. */
+  function ladderTotal(prefix, el) {
+    if (!el) return;
+    var sum = 0, all = true;
+    CATS.forEach(function (c) {
+      var f = $(prefix + c[0]);
+      if (!f || f.value === '') { all = false; return; }
+      sum += Number(f.value);
+    });
+    el.textContent = 'Total ' + num(sum) + ' of 100' + (all ? '' : ' so far');
+  }
   var RATES = [
     ['posting',      'On-time posting',        95, 'delivery'],
     ['timeline',     'Timeline adherence',     90, 'delivery'],
@@ -960,7 +1054,8 @@
   function selfLine(r, k) {
     var g = r.self && r.self.scores;
     if (!g || g[k] == null) return '';
-    return '<small class="perf-cat-self">' + (manage() ? 'Self-rated ' : 'You gave ') + esc(num(g[k])) + '</small>';
+    var max = 0; CATS.forEach(function (c) { if (c[0] === k) max = c[2]; });
+    return '<small class="perf-cat-self">' + (manage() ? 'Self-rated ' : 'You gave ') + esc(rungWord(g[k], max)) + '</small>';
   }
   function selfSum(r) {
     if (!r.self) return manage() && r.status === 'draft' ? '<p class="perf-quiet perf-self-sum">No self-rating.</p>' : '';
@@ -973,7 +1068,7 @@
       return '<div class="perf-cat"><span class="perf-cat-name">' + esc(c[1]) +
         selfLine(r, c[0]) +
         (note ? '<small class="perf-cat-note">' + esc(note) + '</small>' : '') + '</span>' +
-        '<span class="perf-cat-val">' + esc(num((r.scores || {})[c[0]])) + '<small> / ' + c[2] + '</small></span></div>';
+        '<span class="perf-cat-val">' + esc(rungWord((r.scores || {})[c[0]], c[2])) + '<small> / ' + c[2] + '</small></span></div>';
     }).join('');
     return card('Scores', selfSum(r) + '<div class="perf-cats">' + rows + '</div>');
   }
@@ -981,16 +1076,19 @@
     var sug = res.suggested || {};
     var rows = CATS.map(function (c) {
       var k = c[0], v = (r.scores || {})[k], s = sug[k];
+      var sr = rungOf(s, c[2]);
       return '<div class="perf-cat is-edit">' +
-        '<span class="perf-cat-name"><label for="pvS_' + k + '">' + esc(c[1]) + '</label>' +
+        '<span class="perf-cat-name"><label for="pvS_' + k + 'L">' + esc(c[1]) + '</label>' +
           selfLine(r, k) +
-          (s != null ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + s + '">Suggested ' + esc(num(s)) + ' from the rates</button>' : '') +
+          (sr ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + sr.v + '">Suggested ' + esc(sr.code + ' \u00b7 ' + num(sr.v)) + ' from the rates</button>' : '') +
         '</span>' +
-        '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
+        ladderOut('pvS_' + k, c[2]) +
+        ladderHtml('pvS_' + k, c[2], c[1], v) +
         '<textarea class="input perf-evidence" id="pvN_' + k + '" rows="1" maxlength="2000" placeholder="Notes" aria-label="' + esc(c[1]) + ' notes">' + esc((r.notes || {})[k] || '') + '</textarea>' +
       '</div>';
     }).join('');
-    return card('Scores', selfSum(r) + '<div class="perf-cats">' + rows + '</div>');
+    return card('Scores', selfSum(r) + '<div class="perf-cats">' + rows + '</div>' +
+      '<p class="perf-quiet perf-lad-total" id="pvTotal" role="status"></p>');
   }
   function rateLabel(x, ads) {
     return x[0] === 'pacing' ? x[1] + ', target ' + x[2] + '% or under' : x[1] + ', target ' + x[2] + '%';
@@ -1311,6 +1409,7 @@
 
   function wireSheet(r) {
     var on = function (id, fn) { var el = $(id); if (el) el.addEventListener('click', function () { fn(el); }); };
+    if ($('pvTotal')) ladderWire($('pvBody'), function () { ladderTotal('pvS_', $('pvTotal')); });
     on('pvSave', function (b) { busy(b, true); save(); });
     /* The colleague's own record, where the Employee ID is set. */
     on('pvSetId', function () {
@@ -1362,7 +1461,11 @@
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-use'), rk = b.getAttribute('data-rate');
         var el = $(k ? 'pvS_' + k : 'pvR_' + rk);
-        if (el) { el.value = b.getAttribute('data-v'); el.dispatchEvent(new Event('input', { bubbles: true })); el.focus(); }
+        if (el) {
+          el.value = b.getAttribute('data-v'); el.dispatchEvent(new Event('input', { bubbles: true }));
+          var lt = k ? $('pvS_' + k + 'L') : null;
+          (lt || el).focus();
+        }
       });
     });
     Array.prototype.forEach.call($('pvBody').querySelectorAll('[data-a="bmenu"]'), function (btn) {
@@ -1691,7 +1794,11 @@
     st.selfAt = m;
     var sc = (m.rating && m.rating.scores) || {};
     $('selfSheetTitle').textContent = 'Rate yourself, ' + m.month;
-    CATS.forEach(function (c) { var el = $('selfS_' + c[0]); if (el) el.value = sc[c[0]] == null ? '' : sc[c[0]]; });
+    CATS.forEach(function (c) {
+      var host = $('selfL_' + c[0]);
+      if (host) host.innerHTML = ladderOut('selfS_' + c[0], c[2]) + ladderHtml('selfS_' + c[0], c[2], c[1], sc[c[0]]);
+    });
+    ladderWire($('selfSheet'), function () { ladderTotal('selfS_', $('selfTotal')); });
     msg('selfMsg', '');
     window.ADspaceSheet.show($('selfSheet'), { opener: opener });
   }
@@ -1702,11 +1809,11 @@
     CATS.forEach(function (c) {
       if (bad) return;
       var el = $('selfS_' + c[0]), raw = String(el.value || '').trim(), v = Number(raw);
-      if (raw === '' || isNaN(v) || v < 0 || v > c[2] || Math.round(v * 10) !== v * 10) { bad = [el, c]; return; }
+      if (raw === '' || isNaN(v) || v < 0 || v > c[2]) { bad = [$('selfS_' + c[0] + 'L'), c]; return; }
       scores[c[0]] = v;
     });
     if (bad) {
-      msg('selfMsg', bad[1][1] + ': a score from 0 to ' + bad[1][2] + ', in steps of 0.1.', 'err');
+      msg('selfMsg', 'Choose a score for ' + bad[1][1] + '.', 'err');
       bad[0].focus(); return;
     }
     var m = st.selfAt;

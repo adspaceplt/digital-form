@@ -1888,6 +1888,14 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .perf-cat-name label { font-weight: 500; }
 .perf-cat-note { color: var(--ink-soft) !important; white-space: pre-line; }
 .perf-cat-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; }
+/* The letter ladder (2026-11-24): the letter, then its steps, on their own
+   line under the category's name and its readout. */
+.perf-lad-host { display: contents; }
+.perf-cat .perf-lad { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.perf-lad-letter { flex: 0 0 auto; width: auto; }
+.perf-lad-steps { flex: 1 1 auto; min-width: 0; }
+.perf-lad-steps[hidden] { display: none; }
+.perf-lad-total { margin-top: 12px; }
 .perf-cat .perf-evidence { grid-column: 1 / -1; resize: none; min-height: var(--ctl-h); padding-block: 9px; line-height: 1.45; font-size: 13px; }
 /* A suggestion is pressed, so it clears the control floor; the negative
    block margin keeps its footprint the line of text it reads as, the device
