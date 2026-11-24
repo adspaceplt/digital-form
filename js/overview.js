@@ -494,7 +494,7 @@
           .sort(function (a, b) { return String(a.stage_next_on).localeCompare(String(b.stage_next_on)); })
           .map(function (c) {
             var on = String(c.stage_next_on).slice(0, 10);
-            return { name: c.name, meta: [((W.stage || {})[c.stage_next] || c.stage_next) + ' from ' + dateWord(on),
+            return { name: c.name, meta: [window.ADspaceWords.line.stageFrom((W.stage || {})[c.stage_next] || c.stage_next, dateWord(on)),
                        S && S.reasonWord ? S.reasonWord(c.stage_next_reason) : ''].filter(Boolean).join(' · '),
                      tag: 'Client', who: c.owner || '', client: c.id, days: 0, since: 'From ' + CK.date(on, { year: false }), tone: 'off',
                      url: clientUrl(c), section: 'clients' };

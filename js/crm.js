@@ -260,7 +260,7 @@
   /* "Past from 1 Dec 2026", the same words on the record and, without the
      year, the list's chip. */
   function aheadWord(c, o) {
-    return c && c.stage_next ? stageWord(c.stage_next)[1] + ' from ' + aheadDay(c, o) : '';
+    return c && c.stage_next ? window.ADspaceWords.line.stageFrom(stageWord(c.stage_next)[1], aheadDay(c, o)) : '';
   }
   function stageWord(v) {
     for (var i = 0; i < STAGES.length; i++) if (STAGES[i][0] === v) return STAGES[i];
