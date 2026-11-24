@@ -107,7 +107,12 @@ async function graph(path: string, params: Record<string, string> = {}, token = 
   if (!url.searchParams.get('access_token')) url.searchParams.set('access_token', token);
   const p = token === TOKEN() ? await appProof() : null;
   if (p && !url.searchParams.get('appsecret_proof')) url.searchParams.set('appsecret_proof', p);
-  const res = await fetch(url.toString());
+  /* A network failure's message names the whole address, the token and
+     its proof in it: it is never passed on to a log (the audit of
+     2026-11-24). */
+  let res: Response;
+  try { res = await fetch(url.toString()); }
+  catch (e) { throw new Error('Meta could not be reached (' + String((e as Error)?.name || 'fetch failed') + ')'); }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || (body && (body as Record<string, unknown>).error)) throw new MetaError(body);
   return body as Record<string, unknown>;
