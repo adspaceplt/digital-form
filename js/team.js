@@ -1050,7 +1050,7 @@
         if (a.error === 'in-use') {
           return (a.held || []).indexOf('trips') >= 0
             ? 'This colleague cannot be deleted because other colleagues joined outstation trips they drove. They remain removed.'
-            : 'This colleague cannot be deleted because other records still name them. They remain removed.';
+            : 'This colleague cannot be deleted because other work in the portal still names them. They remain removed.';
         }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
         closeRec();
