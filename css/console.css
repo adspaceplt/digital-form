@@ -6466,3 +6466,23 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    (`sectionHeld`, js/admin.js). */
 .console.is-fetching #consoleBoot { display: block; }
 .console.is-fetching .console-body:not(#consoleBoot) { display: none; }
+
+/* The viewer's trace (js/trace.js, 2026-11-24): the reader's name, email
+   and time tiled faintly over a screen of personal data, cleared under
+   every word and control. Never a press, never selected, never printed. */
+.trace-host { position: relative; }
+.trace-ink {
+  position: absolute; left: 0; top: 0; z-index: var(--z-trace);
+  pointer-events: none; user-select: none; -webkit-user-select: none;
+  color: var(--trace-ink); opacity: var(--trace-strength);
+  font: 500 12px var(--font);
+}
+@media (max-width: 640px) { .trace-ink { font-size: 11px; } }
+/* Its foot line (option C): in the layout, the card's last line, at the
+   right over a hairline. */
+.trace-foot {
+  margin: 16px 0 0; padding-top: 8px; border-top: 1px solid var(--line-soft);
+  font-size: 12px; line-height: 16px; color: var(--ink-mute); text-align: right;
+  overflow-wrap: anywhere;
+}
+@media print { .trace-ink { display: none !important; } }

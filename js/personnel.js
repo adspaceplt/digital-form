@@ -334,7 +334,7 @@
     team.people = people || [];
     team.m = m; team.host = host; team.live = live;
     if (!team.rec || team.rec.member !== m.id) team.rec = null;
-    host.innerHTML = '<div class="panel mrec-card prs-card"><div class="msg" id="prsMsg"></div><div id="prsBox"></div></div>';
+    host.innerHTML = '<div class="panel mrec-card prs-card" data-trace><div class="msg" id="prsMsg"></div><div id="prsBox"></div></div>';
     if (!team.rec) UI.skeleton($('prsBox'), 4);
     call('personnel_get', { p_member: m.id }, function (d) {
       if (!live()) return;
@@ -605,7 +605,7 @@
         if (relock(d, go)) return;
         if (d.error) { msg('prsMsg', said(d)); return; }
         window.ADspaceConfirm.ask({
-          title: 'Salary', body: m.name, go: 'Save', wait: true,
+          title: 'Salary', body: m.name, go: 'Save', wait: true, trace: true,
           fields: [
             { name: 'probation', label: 'Salary during probation (RM)', type: 'number', min: '0', value: money(d.probation).replace(/,/g, ''), required: false },
             { name: 'confirmed', label: 'Salary after probation (RM)', type: 'number', min: '0', value: money(d.confirmed).replace(/,/g, ''), required: false }],
@@ -665,10 +665,11 @@
     });
   }
   function view(member, kind) {
-    /* Through ADspaceDocs: a tab opened at the press at a desk; in the
-       installed app no window (it has no way back), the viewer instead. */
+    /* Through ADspaceDocs' viewer over the page, never a tab of its own:
+       the viewer carries the reader's trace (js/trace.js), which a tab
+       holding the bare picture cannot (2026-11-24). */
     var Docs = window.ADspaceDocs;
-    var tab = Docs.previewTab();
+    var tab = Docs.previewTab(false, { trace: true });
     return db.functions.invoke('sign-download', { body: { personnel: { member: member || null, kind: kind } } }).then(function (r) {
       if (!r || r.error) throw new Error('The file could not be opened. Try again.');
       return window.ADspaceAPI.fileOf(r.data).then(function (f) {
@@ -733,7 +734,7 @@
     if (!box || !rec) return;
     var act = '<button class="btn btn-sm' + (rec.declared_at ? '' : ' btn-primary') + '" type="button" data-p="edit">' +
       (rec.declared_at ? PEN + 'Edit' : 'Fill in') + '</button>';
-    box.innerHTML = '<div class="panel mrec-card prs-card"><div class="readgroups">' +
+    box.innerHTML = '<div class="panel mrec-card prs-card" data-trace><div class="readgroups">' +
       statusGroup(rec, false, act) +
       (rec.join_date || rec.employee_status ? termsGroup(rec, false) : '') +
       filesGroup(rec, true) + readSections(rec) + '</div></div>';
