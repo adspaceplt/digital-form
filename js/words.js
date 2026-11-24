@@ -52,6 +52,10 @@
     linkExpired: 'Link expired', formEnds: 'This form is open until {d}.', formReceived: 'Details received',
     formSubmitted: 'This form has already been submitted.', tickToContinue: 'Tick the box to continue.',
     badMobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.',
+    /* A form in steps, the quotation's and the details forms' alike
+       (2026-11-25, js/icons.js stepTrack). */
+    stepOf: 'Step {n} of {m}', stepStart: 'Start', stepBack: 'Back', stepNext: 'Continue', stepExpect: 'What to expect',
+    yourDetails: 'Your details', stepEdit: 'Edit', stepReview: 'Review and submit',
     // A wait past the expected, and a read the connection lost (2026-11-10).
     stillLoading: 'Still loading…',
     offline: 'The connection was lost or is too slow. Please try again.',
@@ -179,6 +183,8 @@
     notSaved: '未能保存，请重试。',
     linkExpired: '链接已过期', formEnds: '此表格开放至{d}。', formReceived: '资料已收到',
     formSubmitted: '此表格已提交。', tickToContinue: '请勾选后继续。',
+    stepOf: '第{n}步，共{m}步', stepStart: '开始', stepBack: '返回', stepNext: '继续', stepExpect: '流程说明',
+    yourDetails: '您的资料', stepEdit: '编辑', stepReview: '检查并提交',
     badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
     stillLoading: '仍在加载…',
     offline: '网络连接中断或过慢，请重试。',

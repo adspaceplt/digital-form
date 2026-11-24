@@ -60,7 +60,11 @@
     userx: '<circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 11-5.7"/><path d="m17 15 4 4M21 15l-4 4"/>',
     shield: '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
     docq: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M10.2 12.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4"/><path d="M12 18h.01"/>',
-    key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>'
+    key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>',
+    /* A form in steps (2026-11-25): a bank's payment details, and Edit's pen
+       as the console's act table draws it (js/acts.js `pen`). */
+    bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 21h16M5 18h14M6.5 10v8M10.5 10v8M13.5 10v8M17.5 10v8"/>',
+    pen: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>'
   };
   /* A platform's glyph by the words the pages hold for it. */
   var PLAT = { rednote: 'rednote', xhs: 'rednote', xiaohongshu: 'rednote', instagram: 'instagram', ig: 'instagram',
@@ -97,5 +101,48 @@
   var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
                     scheduled: 4, posted: 5, completed: 6 };
   function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
-  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; } };
+  /* A client's form in steps (the user, 2026-11-25: /details/ and /supplier/
+     as the quotation's steps), one copy each for every page that asks in
+     steps, /quote/ included:
+     - stepCards: the opening page's What to expect, a shaded card a step,
+       its glyph in a white disc carrying the step's number, its name over
+       one line of what it asks (`items`: { glyph, name, line });
+     - stepTrack: Step n of m over the 4px track (`word` the line said);
+     - stepHead: a step's glyph in the locks' disc beside its title and the
+       page's lead (`lead` is markup, escaped by the caller);
+     - summary: what was typed, read back as groups of label and value, an
+       empty value left out (`edit`, when given, is the Edit button's words
+       and its attributes). */
+  function stepCards(items) {
+    var esc = window.ADspaceWords.esc;
+    return '<ol class="stepcards">' + items.map(function (x, i) {
+      return '<li class="stepcard"><span class="stepcard-mark">' + svg(x.glyph) + '<b class="stepcard-n" aria-hidden="true">' + (i + 1) + '</b></span>' +
+        '<span class="stepcard-text"><b>' + esc(x.name) + '</b><span>' + esc(x.line) + '</span></span></li>';
+    }).join('') + '</ol>';
+  }
+  function stepTrack(n, m, word) {
+    var esc = window.ADspaceWords.esc;
+    return '<div class="qs-progress"><span>' + esc(word) + '</span>' +
+      '<div class="qs-track" aria-hidden="true"><i style="width:' + Math.round(n / m * 100) + '%"></i></div></div>';
+  }
+  function stepHead(glyph, title, lead) {
+    var esc = window.ADspaceWords.esc;
+    return '<div class="stephead"><span class="stephead-mark">' + svg(glyph) + '</span>' +
+      '<div class="qs-top"><h1 class="qs-title">' + esc(title) + '</h1>' + (lead ? '<p class="qs-lead">' + lead + '</p>' : '') + '</div></div>';
+  }
+  function summary(title, groups, edit) {
+    var esc = window.ADspaceWords.esc;
+    var body = groups.map(function (g) {
+      var rows = g.rows.filter(function (r) { return r[1] != null && String(r[1]).trim() !== ''; });
+      if (!rows.length) return '';
+      return '<div class="sumcard-group">' + (g.name ? '<h3>' + esc(g.name) + '</h3>' : '') + '<dl>' + rows.map(function (r) {
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+      }).join('') + '</dl></div>';
+    }).join('');
+    return '<section class="sumcard"><div class="sumcard-head"><h2>' + esc(title) + '</h2>' +
+      (edit ? '<button class="btn btn-sm" type="button" ' + (edit.attrs || '') + '>' + svg('pen') + esc(edit.label) + '</button>' : '') +
+      '</div>' + body + '</section>';
+  }
+  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; },
+    stepCards: stepCards, stepTrack: stepTrack, stepHead: stepHead, summary: summary };
 })();

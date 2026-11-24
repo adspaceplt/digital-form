@@ -35,14 +35,12 @@
 
   var WORDS = {
     en: {
-      lang: '中文', step: 'Step {n} of {m}', cont: 'Continue', back: 'Back',
+      lang: '中文',
       introT: 'Get your quotation',
       introP: 'Select the services your brand requires and request your quotation.',
-      introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
         'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ADspace will then confirm your start date.'],
       introNote: 'This takes approximately three minutes.',
-      start: 'Start',
       needT: 'What do you need?',
       need: {
         social: ['Social media management', 'Monthly content and account management'],
@@ -153,13 +151,11 @@
       lang3: { en: 'English', zh: '中文', ms: 'Bahasa Melayu' }
     },
     zh: {
-      lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
+      lang: 'EN',
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可申请报价。',
-      introH: '流程说明',
       introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
       introNote: '整个流程约需三分钟。',
-      start: '开始',
       needT: '您需要什么服务？',
       need: {
         social: ['社交媒体管理', '每月内容制作与账号管理'],
@@ -268,7 +264,14 @@
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: '马来文' }
     }
-  };
+  };  /* A form in steps says its step, Back, Continue, Start and What to expect
+     as every form in steps does (js/words.js, 2026-11-25). */
+  ['en', 'zh'].forEach(function (l) {
+    var sh = window.ADspaceWords[l];
+    WORDS[l].step = sh.stepOf; WORDS[l].cont = sh.stepNext; WORDS[l].back = sh.stepBack;
+    WORDS[l].start = sh.stepStart; WORDS[l].introH = sh.stepExpect;
+  });
+
   // A graphic is named by its kind (the user, 2026-10-14: a plan's graphic is a static post, a carousel or a GIF).
   var EN_KIND = { graphic: 'Graphic (Static)', carousel: 'Graphic (Carousel)', gif: 'Graphic (GIF)' };
   var ZH_KIND = { graphic: '图文（静态）', carousel: '图文（轮播）', gif: '图文（GIF 动图）', reel30: '短视频（30秒内）',
@@ -403,8 +406,7 @@
   // ---- Drawing ----------------------------------------------------------------
   function frame(body, foot) {
     var a = steps(), i = a.indexOf(S.step) + 1;
-    return '<div class="qs-step" data-shown><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
-      '<div class="qs-track"><i style="width:' + Math.round(i / (a.length + 1) * 100) + '%"></i></div></div>' + body +
+    return '<div class="qs-step" data-shown>' + window.ADspaceIcons.stepTrack(i, a.length + 1, f(t().step, { n: i, m: a.length + 1 })) + body +
       '<p class="msg" id="qsMsg" role="status"></p></div>' +
       '<div class="qs-foot">' + foot + '</div>';
   }

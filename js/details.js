@@ -31,6 +31,11 @@
       badEmail: 'Enter a valid email address.', 
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.',
       doneP: 'Thank you. Your ADspace account manager will review your details.',
+      /* The form in steps (2026-11-25, the approved canvas). */
+      introP: 'Provide your company\'s billing details to ADspace.', billing: 'Billing',
+      companyLine: 'Registered Company Name, Business Registration No., Old Registration No., Tax Identification Number (TIN) and SST Registration No.',
+      billingLine: 'Billing address and finance email.', contactLine: 'Salutation, name, mobile number and email.',
+      reviewLine: 'Confirm that the details are correct, then submit.'
     },
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
@@ -46,6 +51,10 @@
       badEmail: '请输入有效的邮箱地址。', 
       badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。',
       doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
+      introP: '请向 ADspace 提供贵公司的账单资料。', billing: '账单',
+      companyLine: '公司注册名称、商业注册号码、旧注册号码、税务识别号（TIN）及 SST 注册号码。',
+      billingLine: '账单地址及财务邮箱。', contactLine: '称谓、姓名、手机号码及邮箱。',
+      reviewLine: '确认资料无误后提交。'
     }
   });
   var t = function () { return WORDS[lang]; };
@@ -61,6 +70,16 @@
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var info = null, state = 'loading', typed = {}, consent = false, sending = false;
+  /* The form in steps (the user, 2026-11-25): the opening page (0), then a
+     step a section, the last reading the answers back before Submit. */
+  var at = 0;
+  var STEPS = [
+    { glyph: 'building', name: 'company', line: 'companyLine', keys: ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no'] },
+    { glyph: 'pin', name: 'billing', line: 'billingLine', keys: ['billing_address', 'finance_email'] },
+    { glyph: 'user', name: 'contact', line: 'contactLine', keys: ['contact_salutation', 'contact_name', 'contact_phone', 'contact_email'] },
+    { glyph: 'check', name: 'stepReview', line: 'reviewLine', keys: ['consent'] }
+  ];
+  function stepOfKey(k) { for (var i = 0; i < STEPS.length; i++) if (STEPS[i].keys.indexOf(k) > -1) return i + 1; return STEPS.length; }
   var root = function () { return $('dfRoot'); };
 
   /* `named`: a day the reader waits on carries its weekday (js/clock.js). */
@@ -80,34 +99,58 @@
     return '<input class="input" id="' + id + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + ' ' + (attrs || '') +
       ' value="' + esc(typed[k] || '') + '">';
   }
-  function paintForm() {
+  function salWord(x) { return (lang === 'zh' && SAL_ZH[x]) || x; }
+  function lead() { return esc(f(t().for, { b: info.brand })); }
+  /* The opening page: what the form asks, step by step, and when it closes. */
+  function paintIntro() {
+    var w = t(), I = window.ADspaceIcons;
+    return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(w.title) + '</h1>' +
+      '<p class="qs-lead">' + lead() + '</p><p class="qs-intro-p">' + esc(w.introP) + '</p></div>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.stepExpect) + '</h2>' +
+        I.stepCards(STEPS.map(function (x) { return { glyph: x.glyph, name: w[x.name], line: w[x.line] }; })) + '</section>' +
+      '<p class="qs-when">' + I.svg('clock') + '<span>' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</span></p></div>' +
+      '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfStart">' + esc(w.stepStart) + '</button></div>';
+  }
+  function stepBody(n) {
     var w = t();
-    return '<div class="qs-step" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(w.title) + '</h1>' +
-      '<p class="qs-lead">' + esc(f(w.for, { b: info.brand })) + '</p></div>' +
-      '<form class="qs-form" id="dfForm" novalidate>' +
-      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.company) + '</h2>' +
+    if (n === 1) return '<section class="qs-sec">' +
         // A name that may outrun its width wraps in the one-line box, in the capitals it is kept in.
         field('dfLegal', w.legal, true, '<textarea class="input qs-caps" id="dfLegal" data-k="legal_name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="COMPANY NAME SDN BHD">' + esc(typed.legal_name || '') + '</textarea>') +
         field('dfBrn', w.brn, true, input('dfBrn', 'company_no', true, 'maxlength="24" inputmode="text" autocapitalize="characters" placeholder="' + esc(w.brnPh) + '"')) +
         field('dfOld', w.old, false, input('dfOld', 'company_no_old', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfTin', w.tin, false, input('dfTin', 'tin', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfSst', w.sst, false, input('dfSst', 'sst_no', false, 'maxlength="30" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
+      '</section>';
+    if (n === 2) return '<section class="qs-sec">' +
         field('dfAddr', w.address, true, '<textarea class="textarea" id="dfAddr" data-k="billing_address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.billing_address || '') + '</textarea>') +
         field('dfFin', w.finance, false, input('dfFin', 'finance_email', false, 'type="email" maxlength="160" autocomplete="email" placeholder="' + esc(w.optional) + '"')) +
-      '</section>' +
-      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.contact) + '</h2>' +
+      '</section>';
+    if (n === 3) return '<section class="qs-sec">' +
         field('dfSal', w.sal, false, '<select class="select" id="dfSal" data-k="contact_salutation"><option value="">' + esc(w.optional) + '</option>' +
-          SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (typed.contact_salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
+          SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (typed.contact_salutation === x ? ' selected' : '') + '>' + esc(salWord(x)) + '</option>'; }).join('') + '</select>') +
         field('dfName', w.name, true, input('dfName', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
         field('dfPhone', w.phone, true, input('dfPhone', 'contact_phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"')) +
         field('dfEmail', w.email, true, input('dfEmail', 'contact_email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
-      '</section>' +
+      '</section>';
+    /* The answers read back, an empty one left out, then the consent. */
+    var v = function (k) { return String(typed[k] || '').trim(); };
+    return window.ADspaceIcons.summary(w.yourDetails, [
+        { name: w.company, rows: [[w.legal, v('legal_name').toUpperCase()], [w.brn, v('company_no')], [w.old, v('company_no_old')], [w.tin, v('tin')], [w.sst, v('sst_no')]] },
+        { name: w.billing, rows: [[w.address, v('billing_address')], [w.finance, v('finance_email')]] },
+        { name: w.contact, rows: [[w.name, (v('contact_salutation') ? salWord(v('contact_salutation')) + ' ' : '') + v('contact_name')], [w.phone, v('contact_phone')], [w.email, v('contact_email')]] }
+      ], { label: w.stepEdit, attrs: 'id="dfEdit"' }) +
       '<label class="qs-consent"><input type="checkbox" id="dfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(w.consent) + '</span></label>' +
       '<span class="msg" id="dfConsentMsg"></span>' +
-      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>' +
-      '<p class="msg" id="dfMsg" role="status"></p>' +
-      '</form></div>' +
-      '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button></div>';
+      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>';
+  }
+  function paintForm() {
+    var w = t(), I = window.ADspaceIcons, x = STEPS[at - 1], last = at === STEPS.length;
+    return '<div class="qs-step" data-shown>' + I.stepTrack(at, STEPS.length, f(w.stepOf, { n: at, m: STEPS.length })) +
+      I.stepHead(x.glyph, w[x.name], lead()) +
+      '<form class="qs-form" id="dfForm" novalidate>' + stepBody(at) + '<p class="msg" id="dfMsg" role="status"></p></form></div>' +
+      '<div class="qs-foot"><button class="btn qs-back" type="button" id="dfBack">' + esc(w.stepBack) + '</button>' +
+      (last ? '<button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button>'
+        : '<button class="btn btn-primary" type="button" id="dfNext">' + esc(w.stepNext) + '</button>') + '</div>';
   }
   function paintDone(title, text) {
     root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
@@ -124,13 +167,13 @@
     if (state === 'expired') { cover(w.linkExpired, w.notFoundText); return; }
     if (state === 'submitted') { paintDone(w.formReceived, w.formSubmitted); return; }
     if (state === 'done') { paintDone(w.formReceived, w.doneP); return; }
-    root().innerHTML = paintForm();
+    root().innerHTML = at ? paintForm() : paintIntro();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
   }
   function read() {
     Array.prototype.forEach.call(root().querySelectorAll('[data-k]'), function (el) { typed[el.getAttribute('data-k')] = el.value; });
-    consent = Boolean($('dfConsent') && $('dfConsent').checked);
+    if ($('dfConsent')) consent = $('dfConsent').checked;
   }
   function say(id, text, tone) {
     var m = $(id); if (!m) return;
@@ -139,15 +182,11 @@
   var ID = { legal_name: 'dfLegal', company_no: 'dfBrn', company_no_old: 'dfOld', tin: 'dfTin', sst_no: 'dfSst',
     billing_address: 'dfAddr', finance_email: 'dfFin', contact_salutation: 'dfSal', contact_name: 'dfName',
     contact_phone: 'dfPhone', contact_email: 'dfEmail' };
-  function check() {
-    var w = t(), first = null, mail = { test: ADspaceWords.emailOk };
-    var bad = function (k, text) {
-      var id = ID[k] || k; say(id + 'Msg', text);
-      if ($(id)) $(id).setAttribute('aria-invalid', 'true');
-      if (!first) first = id;
-    };
-    Object.keys(ID).forEach(function (k) { say(ID[k] + 'Msg', ''); if ($(ID[k])) $(ID[k]).removeAttribute('aria-invalid'); });
-    say('dfConsentMsg', '');
+  /* Every field's fault, in the form's order: [key, words]. The consent is
+     the last step's. */
+  function faults() {
+    var w = t(), out = [], mail = ADspaceWords.emailOk;
+    var bad = function (k, text) { out.push([k, text]); };
     var v = function (k) { return String(typed[k] || '').trim(); };
     if (v('legal_name').length < 2) bad('legal_name', w.req.legal_name);
     var brn = v('company_no').replace(/\s+/g, '');
@@ -158,14 +197,45 @@
       if (x && !new RegExp('^[A-Za-z0-9-]{' + CODE[k][0] + ',' + CODE[k][1] + '}$').test(x)) bad(k, fault(k));
     });
     if (!v('billing_address')) bad('billing_address', w.req.billing_address); else if (v('billing_address').length < 10 || v('billing_address').length > 400) bad('billing_address', w.badAddr);
-    if (v('finance_email') && !mail.test(v('finance_email'))) bad('finance_email', w.badEmail);
+    if (v('finance_email') && !mail(v('finance_email'))) bad('finance_email', w.badEmail);
     if (v('contact_name').length < 2) bad('contact_name', w.req.contact_name);
     var digits = v('contact_phone').replace(/\D/g, '');
     if (!digits) bad('contact_phone', w.req.contact_phone); else if (digits.length < 8 || digits.length > 15) bad('contact_phone', w.badMobile);
-    if (!v('contact_email')) bad('contact_email', w.req.contact_email); else if (!mail.test(v('contact_email'))) bad('contact_email', w.badEmail);
-    if (!consent) { say('dfConsentMsg', w.tickToContinue); if (!first) first = 'dfConsent'; }
-    if (first && $(first)) $(first).focus();
+    if (!v('contact_email')) bad('contact_email', w.req.contact_email); else if (!mail(v('contact_email'))) bad('contact_email', w.badEmail);
+    if (!consent) bad('consent', w.tickToContinue);
+    return out;
+  }
+  /* The faults of the step on show, each under its field, the first focused. */
+  function show(list) {
+    var first = null;
+    Object.keys(ID).forEach(function (k) { say(ID[k] + 'Msg', ''); if ($(ID[k])) $(ID[k]).removeAttribute('aria-invalid'); });
+    say('dfConsentMsg', '');
+    list.forEach(function (x) {
+      var id = x[0] === 'consent' ? 'dfConsent' : ID[x[0]];
+      if (!$(id)) return;
+      say(id + 'Msg', x[1]);
+      if (x[0] !== 'consent') $(id).setAttribute('aria-invalid', 'true');
+      if (!first) first = id;
+    });
+    if (first) $(first).focus();
     return !first;
+  }
+  function stepFaults(n) { return faults().filter(function (x) { return STEPS[n - 1].keys.indexOf(x[0]) > -1; }); }
+  function go(n) { at = n; paint(); window.scrollTo(0, 0); }
+  /* Continue holds the step until its own fields are right. */
+  function next() {
+    read();
+    if (!show(stepFaults(at))) return;
+    go(at + 1);
+  }
+  /* Submit asks every step again: a fault takes the reader to its step. */
+  function check() {
+    var all = faults();
+    if (!all.length) return true;
+    var n = stepOfKey(all[0][0]);
+    if (n !== at) go(n);
+    show(stepFaults(n));
+    return false;
   }
   var CODE = { company_no_old: [4, 20], tin: [6, 20], sst_no: [6, 25] };
   /* What a field's refusal says: its own fault, never "This is required." under an optional field. */
@@ -193,10 +263,9 @@
       if (d.error === 'expired') { state = 'expired'; paint(); return; }
       if (d.error === 'not_found') { state = 'bad'; paint(); return; }
       if (d.error && SERVER[d.error]) {
-        var id = ID[SERVER[d.error]];
         if (SERVER[d.error] === 'contact_salutation') { say('dfMsg', t().notSent); return; }
-        say(id + 'Msg', fault(SERVER[d.error]));
-        if ($(id)) { $(id).setAttribute('aria-invalid', 'true'); $(id).focus(); }
+        go(stepOfKey(SERVER[d.error]));
+        show([[SERVER[d.error], fault(SERVER[d.error])]]);
         return;
       }
       if (d.error) throw new Error(d.error);
@@ -207,8 +276,13 @@
   }
 
   document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
     var b = e.target.closest('#dfSubmit');
-    if (b) submit(b);
+    if (b) { submit(b); return; }
+    if (e.target.closest('#dfStart')) { go(1); return; }
+    if (e.target.closest('#dfNext')) { next(); return; }
+    if (e.target.closest('#dfBack')) { read(); go(at - 1); return; }
+    if (e.target.closest('#dfEdit')) { read(); go(1); }
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#dfForm input:not([type=checkbox]), #dfForm textarea[data-oneline]') && !e.isComposing) {
@@ -218,9 +292,10 @@
       var all = Array.prototype.filter.call($('dfForm').querySelectorAll('input, select, textarea'), function (x) {
         return !x.disabled && x.offsetParent !== null && x.type !== 'hidden';
       });
-      var next = all[all.indexOf(e.target) + 1];
-      if (next) { next.focus(); return; }
-      if ($('dfSubmit')) submit($('dfSubmit'));
+      var to = all[all.indexOf(e.target) + 1];
+      if (to) { to.focus(); return; }
+      /* The step's last field goes on to the next step; the last step's submits. */
+      if ($('dfSubmit')) submit($('dfSubmit')); else if ($('dfNext')) next();
     }
   });
   if ($('langToggle')) $('langToggle').addEventListener('click', function () {
