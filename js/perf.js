@@ -51,13 +51,6 @@
     ['pacing',       'Budget pacing variance', 10, 'client'],
     ['sla',          'Response within SLA',    90, 'comms']
   ];
-  var ROLE_WORD = window.ADspaceWords.roleStd;
-  var ROLE_STD = {
-    visual: 'Visual hierarchy, brand consistency, detail accuracy, clean handover. Choices reduce client revision risk.',
-    video: 'Shot quality, editing flow, hook strength, retention, export accuracy. Improves watchability and performance.',
-    planner: 'Campaign direction, content angles, brief clarity. Identifies weak accounts and proposes improvement.',
-    account: 'Client servicing, posting accuracy, budget pacing, escalation. Proactively manages every account.'
-  };
   /* A department's name, from the list kept in Settings (2026-10-23). */
   function deptWord(k) {
     var A = window.ADspaceAdmin;
@@ -485,7 +478,7 @@
     var el = document.createElement('div');
     el.className = 'crm-row perf-row';
     el.setAttribute('data-member', p.team_member_id);
-    var meta = [deptWord(p.department), ROLE_WORD[p.role_family]].filter(Boolean);
+    var meta = [deptWord(p.department)].filter(Boolean);
     if (p.breaches) meta.push(p.breaches + (p.breaches === 1 ? ' issue' : ' issues'));
     var sum = res && res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '';
     el.innerHTML =
@@ -614,9 +607,9 @@
   function openProfile(p, opener) {
     profileFor = p;
     $('ppTitle').textContent = p.name;
-    /* Department and role standard are set on the Members tab and only read
-       here; Edit on Members opens that person's own sheet there. */
-    $('ppFacts').innerHTML = [['Department', deptWord(p.department)], ['Role standard', ROLE_WORD[p.role_family]]]
+    /* The department is set on the Members tab and only read here; Edit on
+       Members opens that person's own record there. */
+    $('ppFacts').innerHTML = [['Department', deptWord(p.department)]]
       .map(function (f) {
         return '<div><dt>' + f[0] + '</dt><dd' + (f[1] ? '' : ' class="is-empty"') + '>' + esc(f[1] || 'Not set') + '</dd></div>';
       }).join('');
@@ -756,7 +749,7 @@
     var m = r.member || {};
     var said = r.id && window.ADspaceSeal ? window.ADspaceSeal.checksWord(checksFor[r.id]) : '';
     var ctx = (manage()
-      ? [r.month, deptWord(m.department), ROLE_WORD[m.role_family], said]
+      ? [r.month, deptWord(m.department), said]
       : [r.reviewer ? 'Reviewed by ' + r.reviewer : '', said]).filter(Boolean).join(' · ');
     $('pvCtx').textContent = ctx;
     $('pvCtx').hidden = !ctx;
@@ -962,10 +955,6 @@
     return '<div><dt>Recognitions</dt><dd>' + esc(got ? '+' + num(got) : '0') +
       (raw > got ? '<small>' + esc('Capped at ' + num(got) + ' from ' + num(raw)) + '</small>' : '') + '</dd></div>';
   }
-  function roleLine(r) {
-    var fam = r.member && r.member.role_family;
-    return fam ? '<small class="perf-std">' + esc(ROLE_WORD[fam] + ': ' + ROLE_STD[fam]) + '</small>' : '';
-  }
   /* The colleague's own rating of the month (2026-10-07), beside each score
      and summed once; it never enters the grade. */
   function selfLine(r, k) {
@@ -982,7 +971,7 @@
     var rows = CATS.map(function (c) {
       var note = (r.notes || {})[c[0]];
       return '<div class="perf-cat"><span class="perf-cat-name">' + esc(c[1]) +
-        (c[0] === 'output' ? roleLine(r) : '') + selfLine(r, c[0]) +
+        selfLine(r, c[0]) +
         (note ? '<small class="perf-cat-note">' + esc(note) + '</small>' : '') + '</span>' +
         '<span class="perf-cat-val">' + esc(num((r.scores || {})[c[0]])) + '<small> / ' + c[2] + '</small></span></div>';
     }).join('');
@@ -994,7 +983,7 @@
       var k = c[0], v = (r.scores || {})[k], s = sug[k];
       return '<div class="perf-cat is-edit">' +
         '<span class="perf-cat-name"><label for="pvS_' + k + '">' + esc(c[1]) + '</label>' +
-          (k === 'output' ? roleLine(r) : '') + selfLine(r, k) +
+          selfLine(r, k) +
           (s != null ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + s + '">Suggested ' + esc(num(s)) + ' from the rates</button>' : '') +
         '</span>' +
         '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
@@ -1965,7 +1954,7 @@
       [lab('Team member'), m.name || none, lab('Review month'), r.month],
       [lab('Employee ID'), m.staff_code || none, lab('Date of evaluation'), r.evaluated_on ? dateWord(r.evaluated_on) : none],
       [lab('Department'), deptWord(m.department) || none, lab('Queries until'), r.dispute_until ? timeWord(r.dispute_until) : none],
-      [lab('Role'), ROLE_WORD[m.role_family] || m.designation || none, lab('Reviewed by'), r.reviewer || none]
+      [lab('Position'), m.designation || none, lab('Reviewed by'), r.reviewer || none]
     ]);
 
     heading('Result', ROW * 4);

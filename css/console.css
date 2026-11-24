@@ -1894,7 +1894,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    the rate card's ⋯ uses. */
 .perf-use { align-self: flex-start; text-align: left; display: inline-flex; align-items: center;
   min-height: var(--ctl-h); margin-block: calc((19px - var(--ctl-h)) / 2); }
-.perf-std { line-height: 1.45; }
 .perf-rates { display: grid; gap: 10px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .perf-rates .perf-use { grid-column: auto; }
 @media (max-width: 460px) { .perf-rates { grid-template-columns: minmax(0, 1fr); } }

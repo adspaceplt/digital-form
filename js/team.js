@@ -20,10 +20,8 @@
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
-  /* The role standard is said once, in js/words.js, and set on the
-     colleague's record. The departments are the
-     list kept in Settings (2026-10-23), read once beside me(). */
-  var ROLE_STD = window.ADspaceWords.roleStd;
+  /* The departments are the list kept in Settings (2026-10-23), read once
+     beside me(). */
   function deptName(k) {
     var A = window.ADspaceAdmin;
     return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
@@ -2328,7 +2326,6 @@
   var MEMBER_LOG = [
     ['name', 'Name'], ['email', 'Email'], ['role', 'User group', function (v) { return roleName(v); }], ['staff_code', 'Employee ID'],
     ['designation', 'Position'], ['department', 'Department', deptName],
-    ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
     ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
     ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
     ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
@@ -2425,7 +2422,6 @@
         opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
         '</select></dd></div>';
     };
-    var map = function (o, none) { return [['', none || 'Not set']].concat(Object.keys(o).map(function (k) { return [k, o[k]]; })); };
     /* An admin group is offered to an admin alone, and nobody moves
        themselves or an admin's row without being an admin (TEAM2-1). */
     var roles = state.roles.filter(function (r) { return amSuper() || !adminGroup(r) || r.slug === m.role; })
@@ -2445,7 +2441,6 @@
         word('staff_code', 'Employee ID', m.staff_code) +
         pick('department', 'Department', [['', 'Not set']].concat(deptChoices(m.department)), m.department || '', deptName(m.department)) +
         word('designation', 'Position', m.designation) +
-        pick('role_family', 'Role standard', map(ROLE_STD), m.role_family || '', ROLE_STD[m.role_family]) +
         word('capacity_minutes_week', 'Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
       group('Namecard', '<dl class="ovfacts">' +
         word('mobile', 'Mobile', window.ADspaceAPI.phoneWord(m.mobile)) +

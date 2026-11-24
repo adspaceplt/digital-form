@@ -118,7 +118,6 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - department, from the Departments list (below; a segment while four
     choices or fewer, else the select, `ADspaceForm.segFit`);
   - Position (`designation`);
-  - role standard;
   - `capacity_minutes_week` (entered as hours);
   - Access until (`access_until`, a day in Malaysia, with an optional time
     `access_until_time`, five-minute steps, offered only once a day is set;
@@ -130,7 +129,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   ID; Access until, department, position and mobile fold under More details;
   Send invitation email, unticked, is drawn only at `team.invite`; Add opens
   the new colleague's record, which says what happened (TEAM2-10,
-  2026-10-24). Role standard, capacity and the namecard are set there.
+  2026-10-24). Capacity and the namecard are set there; no role standard is drawn
+  (the user, 2026-11-24; `role_family` kept, unread).
 - A colleague is stood down or removed (the user, 2026-10-14;
   `2026-10-14-colleague-hand-over.sql`, `2026-10-14-colleague-remove.sql`,
   the second run in the SQL Editor), and once removed an admin may delete

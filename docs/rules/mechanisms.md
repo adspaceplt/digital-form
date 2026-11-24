@@ -141,8 +141,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   review, Post date, Results; never a bare verb or a word that could read
   as one, the user, 2026-10-15), each breaking at its space, never cut.
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
-  English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept` /
-  `W.roleStd`.
+  English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept`.
   - Pages merge with `ADspaceWords.of({en, zh})`; `/review/` takes
     `ADspaceWords.en`.
   - The console's `STAGES`, `SV_STATE`, `RQ_STATE`, `RQ_KIND`, `OPTION_WORD`
