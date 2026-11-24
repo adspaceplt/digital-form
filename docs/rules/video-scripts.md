@@ -199,4 +199,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   opened at the press) and Download from the month draw the whole month;
   on a script's own page they ask This script or Whole month once there
   are two.
+  - Its foot (DOCUMENT ID ON EVERY FOOT, 2026-11-24): each page names the
+    Document ID of the script it carries as shared (`video_scripts.doc_code`,
+    stamped on insert; a page ending one script and opening the next names
+    the first), a draft's pages none; /verify/ answers the code typed as the
+    reference (Video Script, Valid while shared, Withdrawn once back in
+    draft).
 - Delete is Full Access, the title typed back (else the code).

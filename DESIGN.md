@@ -262,6 +262,14 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     first where the row would reach the page count); Client initials is a
     box (112 by 36pt) at the right over the row, and the body stops 14pt
     above it;
+  - an AL document a client receives (a quotation, a report as published, a
+    video script as shared, the Monthly Performance Record) is one row on
+    the page count's baseline (794.9pt; the user, 2026-11-24: "Document ID
+    | Verify document | Page x of x"): `Document ID XXXX-XXXX · Verify document
+    authenticity: go.adspace.me/verify` in Slate Book 6.5pt from the left margin, Page n
+    of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
+    and the template's page count, and a draft and a white-label report the
+    page count alone;
   - a summary of totals never stands on a page alone: the last line carries
     the summary's height, and moves over with it where both do not fit
     (letters and quotations alike, 2026-11-24);
