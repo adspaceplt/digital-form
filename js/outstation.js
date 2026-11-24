@@ -559,7 +559,6 @@
     if (stopSheet) return stopSheet;
     stopSheet = document.createElement('div');
     stopSheet.className = 'sheet'; stopSheet.id = 'ostStopSheet'; stopSheet.hidden = true;
-    var keepMonths = setting('outstation_keep_months', 24);
     stopSheet.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostStopH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="ostStopH">Check in</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
@@ -578,9 +577,7 @@
         '<div class="row ost-in"><div><label class="field-label" for="ostNote">Note</label>' +
           '<textarea class="input" id="ostNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
         '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Going together</span>' +
-          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div>' +
-          '<p class="asknote">You are the driver. Only the driver records the trip.</p></div></div>' +
-        '<p class="asknote ost-in">Personal data notice: your location and photos are recorded with this trip and kept for ' + esc(plural(keepMonths, 'month', 'months')) + '.</p>' +
+          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div></div></div>' +
         '<p class="msg" id="ostStopMsg" role="status"></p>' +
       '</div>' +
       '<div class="sheet-foot">' +
