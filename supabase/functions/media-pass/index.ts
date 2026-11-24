@@ -210,7 +210,11 @@ Deno.serve(async (req) => {
          client's contact is refused here as every portal function refuses
          them (2026-11-24, the review's finding 3). */
       const { data: mine, error: mineErr } = await supa.rpc('portal_clients');
-      const ids = Array.isArray(mine) ? mine.filter((x: unknown) => typeof x === 'string').slice(0, MAX_FOLDERS) : [];
+      /* A set of one column answers as bare values or as rows named for
+         the function, whichever PostgREST gives; both are read. */
+      const ids = (Array.isArray(mine) ? mine : [])
+        .map((x: unknown) => (x && typeof x === 'object' ? (x as Record<string, unknown>).portal_clients : x))
+        .filter((x: unknown) => typeof x === 'string').slice(0, MAX_FOLDERS) as string[];
       if (mineErr || !ids.length) return json({ error: 'not_allowed' }, 403, origin);
       ids.forEach((id: string) => clientFolder(id));
     } else {
