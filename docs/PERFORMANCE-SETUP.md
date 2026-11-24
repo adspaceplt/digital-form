@@ -50,7 +50,7 @@ An admin has every level and still needs the master code.
 - **Employee ID** on the Team page. The printed reference is
   `ADHR/{Employee ID}/PR{YYMM}`, so a month cannot be released without one.
 - **Review profile** from the person's ⋯ on Team → Performance: department,
-  role standard, whether they run client ads (budget pacing counts only for
+  whether they run client ads (budget pacing counts only for
   them), and whether they are reviewed at all.
 
 ## 5. Everybody signs in as themselves

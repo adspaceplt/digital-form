@@ -66,8 +66,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   review of that month has begun, a colleague who has left included where
   that review is not a draft (`active` false; 2026-11-15); the Review list
   sheet ticks active colleagues code first, A to Z (`perf_profile_set`, Work).
-- Department and role standard (`role_family`) live on `team_members`.
-  Performance reads them; `perf_profile_set` sets only its two ticks.
+- The department lives on `team_members`; Performance reads it and draws
+  no role standard (the user, 2026-11-24; `role_family` kept, unread);
+  `perf_profile_set` sets only its two ticks.
 - Departments (`2026-10-23-departments.sql`, its SQL Editor part
   `2026-10-23-departments-editor.sql`; the user, 2026-10-23: "can add more
   departments?"): `departments` (key made once from the name and never
