@@ -54,7 +54,7 @@
      step a section, the last the authorisation and Submit. */
   var at = 0;
   var STEPS = [
-    { glyph: 'building', name: 'Billing details', line: 'Supplier type, registered name, Business Registration No., Tax Identification Number (TIN), SST Registration No., number and billing address.',
+    { glyph: 'building', name: 'Billing details', line: 'Supplier type, Registered Company Name, Business Registration No., Tax Identification Number (TIN), SST Registration No., office or mobile number and billing address.',
       keys: ['kind', 'name', 'brn', 'nric', 'tin', 'sst_no', 'phone', 'address'] },
     { glyph: 'user', name: 'Person in charge', line: 'Legal name, designation, email and mobile number.', keys: ['contact_name', 'designation', 'email', 'mobile'] },
     { glyph: 'bank', name: 'Payment details', line: 'Payment term, currency and bank account.',
