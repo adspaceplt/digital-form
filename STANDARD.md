@@ -579,9 +579,13 @@ section holds only what is true of the project as a whole.
   sign-download for a contact, every function `authenticated` may run):
   nothing a client can reach crosses to another client; checked live,
   sign-ups are off and Auth's captcha refuses an emailed sign-in without
-  a token. Left with the owner: GoTrue answers an unknown address
-  differently from a known one (captcha per probe), and the email code's
-  length and expiry are dashboard settings.
+  a token. A Past client's contacts, and an inactive client's, are
+  refused by every portal function, media-pass and portal-login as a
+  stranger is, unless the team keeps the client's access on from its
+  record (finding 3, closed 2026-11-24, `portal_client_open`,
+  `tests/portalpastsql.js`). Left with the owner: GoTrue answers an unknown
+  address differently from a known one (captcha per probe), and the email
+  code's length and expiry are dashboard settings.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
   unescaped in the console), 3 (a post link holding a quote) and 4

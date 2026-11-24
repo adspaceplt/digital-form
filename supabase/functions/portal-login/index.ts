@@ -10,8 +10,9 @@
  * granted: one failed call there and the client hit a wall nobody could see.
  *
  * So the page asks here first. This function creates the login only for an
- * address the team has already marked `portal_access` on a live contact, and
- * refuses every other address. Nothing is emailed: the client gets the
+ * address the team has already marked `portal_access` on a live contact of a
+ * client whose portal is open (never a Past client's, unless the team kept
+ * it on), and refuses every other address. Nothing is emailed: the client gets the
  * ordinary sign-in link they asked for, one step later. The invitation in the
  * console is a separate, deliberate thing.
  *
@@ -71,14 +72,16 @@ async function work(req: Request): Promise<void> {
 
   /* The one question that decides it, asked of the database rather than of
      anything the browser sent: has the team given this address access to a
-     client, and is that contact still live? */
-  const { data: contact, error: readError } = await admin.from('client_contacts')
-    .select('id, name').ilike('email', exactEmail(email))
-    .eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
+     client, is that contact still live, and is the client's portal open (a
+     Past client's is shut unless the team kept it on; 2026-11-24)? The
+     database answers it (`portal_login_name`, `portal_client_open`), the
+     same gate every portal function asks. */
+  const { data: found, error: readError } = await admin.rpc('portal_login_name', { p_email: email });
   /* A failed read is logged: the client is told to check their email
      either way, so the log is the only trace of an outage. */
   if (readError) console.error('portal-login: contact read failed', readError.message);
-  let name = contact ? String(contact.name ?? '') : '';
+  const contact = typeof found === 'string';
+  let name = contact ? found : '';
   /* A colleague the team added and never invited (2026-11-11, the user: the
      record read Active, yet no code came): the console's sign-in asks here
      too, so an active colleague's first sign-in makes their login. A
