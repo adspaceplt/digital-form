@@ -109,7 +109,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     scheduled. pg_cron `agent-schedules` runs `agent_schedules_run()` every
     five minutes: each row due as the colleague who confirmed it
     (`request.jwt.claims`, as `ops_recurring_daily`), their access asked
-    again, a condition no longer holding Skipped, a refusal or a fault
+    again (a Mark as sent filing the day it wrote), a condition no longer holding Skipped, a refusal or a fault
     Failed and told to them (`assistant.failed`); a reminder is a notice to
     the bell and the phone (`assistant.reminder`, opening its task, report
     or client); a WhatsApp is queued through `wa_enqueue` under the

@@ -18292,7 +18292,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       else if (pgM.system) pgOut = { error: 'system-account' };
       else if (!pgM.removed_at) pgOut = { error: 'not-removed' };
       else if (String(pgA.p_name || '').trim().toLowerCase() !== String(pgM.name).trim().toLowerCase()) pgOut = { error: 'bad-name' };
+
+      else if ((DB.outstation_trips || []).some(function (t) {
+        return t.driver_id === pgM.id && (t.companions || []).some(function (c) { return c !== pgM.id; }); })) pgOut = { error: 'in-use', held: ['trips'] };
       else {
+        (DB.outstation_trips || []).forEach(function (t) {
+          if ((t.companions || []).indexOf(pgM.id) >= 0) t.companions = t.companions.filter(function (c) { return c !== pgM.id; });
+        });
+        DB.outstation_trips = (DB.outstation_trips || []).filter(function (t) { return t.driver_id !== pgM.id; });
         Object.keys(DB).forEach(function (t) {
           if (!Array.isArray(DB[t]) || t === 'team_members' || t === 'activity_log') return;
           DB[t] = DB[t].filter(function (r) { return !r || !['team_member_id', 'member_id'].some(function (k) { return r[k] === pgM.id; }); });

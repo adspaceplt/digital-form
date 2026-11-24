@@ -57,6 +57,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     a link offers Join on its row, never in a ⋯ (2026-10-20, POR-2).
   - Account: Contacts read-only, Portal access (Person · Sign-in email),
     Payment only once `ADSPACE_ORG.bank` is set.
+- A Past client's portal is shut (2026-11-24, the review's finding 3,
+  `2026-11-24-past-clients-leave-the-portal.sql`): `portal_client_open` is
+  the one answer (not inactive, and not Past unless kept on since its last
+  move: `portal_kept_at` at or after `stage_since`), asked by
+  `portal_clients()` and so by every portal function, by media-pass as the
+  caller and by portal-login (`portal_login_name`); a contact of a shut
+  client reads Access denied, answered exactly as a stranger. Enable access
+  and Revoke access in a Past client's ⋯ (lifecycle, Clients: Contacts at
+  Work) go through `client_portal_access_set` alone, filed `client.edited`
+  (Client portal: off → on); a move back to Active opens it by itself and a
+  later move to Past shuts it again, nothing written by the move
+  (`tests/portalpastsql.js`, `tests/portalpast.js`).
 - The portal never writes a record. A request is a row the team applies.
   Request change opens through `js/sheet.js` (focus held, Escape, focus back
   to the button, a press outside never closes it over typed text), and an

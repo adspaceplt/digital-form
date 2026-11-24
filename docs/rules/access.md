@@ -5,7 +5,9 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
 
 - Access is a level per section, **none < view < work < manage**, in
   `team_roles.access` / `team_members.access`. `allowed(section, level)` is
-  every policy's predicate.
+  every policy's predicate; `allowed_of(member, section, level)` answers
+  the same for another colleague (who a bell tells), never a raw read of
+  `access ->> part` (`2026-11-24-saved-whole-and-told.sql`, `tests/wholesql.js`).
   - The page names them Off, View, Edit, Full control (`LEVELS` in
     `js/team.js`; the access restructure, 2026-11-17); the stored keys
     never move.
