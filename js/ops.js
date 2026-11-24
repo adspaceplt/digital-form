@@ -6538,7 +6538,7 @@
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'serial', label: 'Type the task number to confirm', placeholder: serial, match: serial,
-          need: 'Type the task number to confirm.', mismatch: 'That is not this task\'s number.' },
+          need: 'Type the task number to confirm.', mismatch: 'The task number does not match. Type it exactly as shown.' },
         { name: 'why', label: 'Reason', rows: 2, required: false, placeholder: 'Optional' }
       ]
     }, function (v) {

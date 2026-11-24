@@ -778,7 +778,7 @@
   var GONE = {
     denied: 'You do not have permission to delete this trip. Please ask an admin.',
     'not-found': 'This trip no longer exists.',
-    'confirm-required': 'That is not this trip\'s number.'
+    'confirm-required': 'The trip number does not match. Type it exactly as shown.'
   };
   function askDelete(trip) {
     var stops = (trip.stops || []).length, photos = 0;
