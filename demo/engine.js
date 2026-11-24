@@ -13692,6 +13692,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
             read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: cid });
         });
       };
+
+      var qtWebOnce = function (x) { return !!x && !!x.spec && (['content', 'verify', 'koc', 'kol'].indexOf(x.spec.role) >= 0 ||
+        (x.spec.role === 'addon' && String(x.spec.group || '').toLowerCase() === 'file release')); };
+      var qtWebSel = function (wsel0, snap) {
+        if (!wsel0 || typeof wsel0 !== 'object' || Array.isArray(wsel0) || (Array.isArray(wsel0.once) && wsel0.once.length > 20) ||
+          (wsel0.extra && typeof wsel0.extra === 'object' && Object.keys(wsel0.extra).length > 10)) return { error: 'bad-selection' };
+        var wsel = {};
+        ['mix', 'plan', 'term', 'budget'].forEach(function (k) { if (wsel0[k] != null && typeof wsel0[k] !== 'object') wsel[k] = wsel0[k]; });
+        if (Array.isArray(wsel0.platforms)) wsel.platforms = wsel0.platforms.filter(function (v, i, a) { return ['meta', 'tiktok', 'rednote', 'linkedin'].indexOf(v) >= 0 && a.indexOf(v) === i; });
+        if (Array.isArray(wsel0.langs)) wsel.langs = wsel0.langs.filter(function (v, i, a) { return ['en', 'zh', 'ms'].indexOf(v) >= 0 && a.indexOf(v) === i; });
+        if (wsel0.extra && typeof wsel0.extra === 'object') wsel.extra = JSON.parse(JSON.stringify(wsel0.extra));
+        if (Array.isArray(wsel0.once)) wsel.once = wsel0.once.filter(function (o) { return o && typeof o === 'object'; }).map(function (o) { return { slug: o.slug, qty: o.qty }; });
+        if (!/^[0-9]{1,2}$/.test(String(wsel.term == null ? '' : wsel.term)) || [1, 6, 12, 24].indexOf(Number(wsel.term)) < 0) return { error: 'bad-term' };
+        var svc = (snap && snap.services) || [];
+        if ((wsel.once || []).some(function (o) { return !qtWebOnce(svc.filter(function (x) { return x.slug === o.slug; })[0]); })) return { error: 'bad-once' };
+        return wsel;
+      };
       if (name === 'quote_catalogue') {
         if (!qtCard) return qtOk({ error: 'no-card' });
         var cs = (qtCard.snapshot.services || []).filter(function (x) { return x.active !== false && x.spec; });
@@ -13699,16 +13716,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var pOrder = ['meta', 'tiktok', 'rednote', 'linkedin'];
         return qtOk(JSON.parse(JSON.stringify({ version: qtCard.version, valid_days: Number(appSet('quote_valid_days', qtToday) || 30),
           plans: on('plan').sort(function (a, b) { return a.spec.plan < b.spec.plan ? -1 : 1; }).map(function (x) {
+            var txt = (qtCard.snapshot.text || {})[x.spec.ad_budget > 0 ? 'plans_ads_included' : 'plans_included'] || '';
             return { slug: x.slug, plan: x.spec.plan, ads: !!x.spec.ads, platforms: x.spec.platforms, contents: x.spec.contents, mix: x.spec.mix,
-              ad_budget: x.spec.ad_budget == null ? null : x.spec.ad_budget, best_for: x.spec.best_for || null }; }),
+              ad_budget: x.spec.ad_budget == null ? null : x.spec.ad_budget, best_for: x.spec.best_for || null,
+              included: String(txt).split('\n').map(function (d) { return d.trim(); }).filter(Boolean) }; }),
+          terms: [6, 12, 24],
+          files: cs.filter(function (x) { return x.spec.role === 'addon' && qtWebOnce(x) && x.rate != null; }).sort(function (a, b) { return a.rate - b.rate; })
+            .map(function (x) { return { slug: x.slug, name: x.name }; }),
           platforms: on('platform').map(function (x) { return x.spec.platform; }).sort(function (a, b) { return pOrder.indexOf(a) - pOrder.indexOf(b); }),
           contents: on('content').sort(function (a, b) { return a.rate - b.rate; }).map(function (x) { return { slug: x.slug, name: x.name, kind: x.spec.kind }; }),
           budgets: on('ads').concat(on('booster')).map(function (x) { return x.spec.budget; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }),
-          verify: on('verify').map(function (x) { return { slug: x.slug, name: x.name }; }),
+          verify: on('verify').map(function (x) { return { slug: x.slug, name: x.name,
+            platform: x.spec.platform || ['meta', 'tiktok', 'rednote', 'linkedin'].filter(function (k) { return new RegExp('\\b' + { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' }[k] + '\\b', 'i').test(x.name); })[0] || null }; }),
           koc: cs.filter(function (x) { return x.spec.role === 'koc'; }).sort(function (a, b) { return (a.spec.creators || 1e9) - (b.spec.creators || 1e9); })
             .map(function (x) { return { slug: x.slug, name: x.name, creators: x.spec.creators || null }; }),
           kol: (cs.filter(function (x) { return x.spec.role === 'kol'; })[0] || {}).slug || null,
-          translation: cs.some(function (x) { return x.spec.role === 'language'; }) })));
+          translation: false })));
       }
       if (name === 'quote_website_create') {
         if (!window.__quoteFn) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_website_create' } });
@@ -13749,16 +13772,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         var wonWord = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
         if (wc.consent !== true) return qtOk({ error: 'consent' });
-        var wsel0 = args.p_sel;
-        if (!wsel0 || typeof wsel0 !== 'object' || Array.isArray(wsel0) || (Array.isArray(wsel0.once) && wsel0.once.length > 20) ||
-          (wsel0.extra && typeof wsel0.extra === 'object' && Object.keys(wsel0.extra).length > 10)) return qtOk({ error: 'bad-selection' });
-        var wsel = {};
-        ['mix', 'plan', 'term', 'budget'].forEach(function (k) { if (wsel0[k] != null && typeof wsel0[k] !== 'object') wsel[k] = wsel0[k]; });
-        if (typeof wsel0.translate === 'boolean') wsel.translate = wsel0.translate;
-        if (Array.isArray(wsel0.platforms)) wsel.platforms = wsel0.platforms.filter(function (v, i, a) { return ['meta', 'tiktok', 'rednote', 'linkedin'].indexOf(v) >= 0 && a.indexOf(v) === i; });
-        if (Array.isArray(wsel0.langs)) wsel.langs = wsel0.langs.filter(function (v, i, a) { return ['en', 'zh', 'ms'].indexOf(v) >= 0 && a.indexOf(v) === i; });
-        if (wsel0.extra && typeof wsel0.extra === 'object') wsel.extra = JSON.parse(JSON.stringify(wsel0.extra));
-        if (Array.isArray(wsel0.once)) wsel.once = wsel0.once.filter(function (o) { return o && typeof o === 'object'; }).map(function (o) { return { slug: o.slug, qty: o.qty }; });
+        var wsel = qtWebSel(args.p_sel, qtCard ? qtCard.snapshot : null);
+        if (wsel.error) return qtOk(wsel);
         var dayAgo = Date.now() - 864e5;
         if (DB.quotations.filter(function (q) { return q.source === 'website' && Date.parse(q.issued_at) > dayAgo && q.contact &&
           (String(q.contact.email).toLowerCase() === we || q.contact.whatsapp === '+' + ww); }).length >= 5) return qtOk({ error: 'limit' });
