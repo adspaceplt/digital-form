@@ -62,3 +62,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `team.changed` under whom it is about. Drawn in the browser on the
   internal template (ALP, FOR INTERNAL USE; `ADspaceDocs.templateOf`) and never stored
   (`tests/hrforms.js`).
+- Hidden values (`2026-11-25-personal-details-revealed.sql`; the user,
+  2026-11-24: "Maybe can add the hidden or view eye?", "Log it"): NRIC
+  Number, Old IC Number, Passport Number, Immigration Number, Spouse NRIC
+  Number, Spouse Income Tax Number, Account number, EPF Number, SOCSO
+  Number and Income Tax Number read as dots and their last four characters
+  (`•••• 1234`) on both records. The eye at the fact's right edge (Show
+  {label} / Hide {label}, `aria-pressed`) shows one only once
+  `personnel_revealed(p_member, p_field)` answers `ok`: asked as the read
+  is asked (`team.personnel` at Work; one's own behind `perf_mine_gate()`),
+  filed `team.revealed` (Personal detail shown) under the colleague,
+  {label} shown, never the value, once a minute a reader; a refusal
+  keeps it hidden and says why. A value shown hides again after
+  `reveal_seconds` (Business setting, 30, 10 to 600; Settings, Portal:
+  Hidden personal details), on a second press, when the record is redrawn
+  or left, and when the page is hidden. The edit sheet shows the real
+  values. The salary is drawn nowhere but its own sheet, which edits it.
+  Page-side masking over what the read already answers: the access rules
+  and the master code stand as they are (`tests/reveal.js`).
