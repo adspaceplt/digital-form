@@ -42,6 +42,10 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   `feedback_followup`. Its rows are the phone row on a narrow pane.
 - Settings, Clients: Client feedback holds `feedback_quiet_months` (1 to
   24), the months since a client was last asked before the Dashboard counts it.
+- Once sent, the link draws the shared received page (DESIGN.md §4,
+  2026-11-25): Feedback submitted, Review by your account manager, Your
+  feedback read back (`ADspaceFeedback.read`, a score as 9 of 10), Follow
+  ADspace (the social links and Visit website).
 - One answer a request, whoever answers first (the link or a signed-in
   contact); the request then reads Already submitted to everyone. The link
   (`/feedback/?k=`, 16 characters) answers that one request alone and names

@@ -52,7 +52,7 @@
   var update = false, bankHeld = false, nricHeld = false;
   /* The form in steps (the user, 2026-11-25): the opening page (0), then a
      step a section, the last the authorisation and Submit. */
-  var at = 0;
+  var at = 0, sentAt = null;
   var STEPS = [
     { glyph: 'building', name: 'Billing details', line: 'Supplier type, Registered Company Name, Business Registration No., Tax Identification Number (TIN), SST Registration No., office or mobile number and billing address.',
       keys: ['kind', 'name', 'brn', 'nric', 'tin', 'sst_no', 'phone', 'address'] },
@@ -148,12 +148,33 @@
       (last ? '<button class="btn btn-primary" type="button" id="sfSubmit">Submit</button>'
         : '<button class="btn btn-primary" type="button" id="sfNext">' + esc(W.stepNext) + '</button>') + '</div>';
   }
-  /* Received, just sent or opened again, reads one way: the tick, the title
-     and its line (2026-10-31, DET-10). */
+  /* Received (the board ReceivedSupplier, 2026-11-25; js/icons.js received):
+     just sent, where it stands and what was sent (the account by its last
+     four digits, never the NRIC); a link opened again once sent, the
+     statement alone. A supplier holds no account manager, so no contact. */
   function paintDone(text) {
-    root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
-      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">' + esc(W.formReceived) + '</h1><p>' + esc(text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.')) + '</p></div>';
+    var I = window.ADspaceIcons, C = window.ADspaceClock, sent = state === 'done' ? sentAt : null;
+    var v = function (k) { return String(typed[k] || '').trim(); }, acct = v('bank_account').replace(/\D/g, '');
+    var when = sent && C ? C.date(sent) + ', ' + C.clock(sent) : '';
+    root().innerHTML = I.received({
+      title: W.formReceived, line: text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.'),
+      refHtml: sent ? lead() : '',
+      steps: sent ? [
+        { state: 'done', title: W.detailsSent, sub: esc(when) },
+        { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
+        update ? null : { glyph: 'verified', title: 'Supplier approved' }
+      ] : [],
+      cards: sent ? [I.summary(W.yourDetails, [
+        { name: 'Billing details', rows: [['Supplier type', typed.kind === 'individual' ? 'Individual' : 'Company'],
+          [typed.kind === 'individual' ? 'Full Name as per NRIC' : 'Registered Company Name', v('name')], ['Business Registration No.', v('brn')],
+          ['Tax Identification Number (TIN)', v('tin').toUpperCase()], ['SST Registration No.', v('sst_no').toUpperCase()],
+          ['Office or mobile number', v('phone')], ['Billing address', v('address')]] },
+        { name: 'Person in charge', rows: [['Legal name', v('contact_name')], ['Designation', v('designation')], ['Email', v('email')], ['Mobile number (WhatsApp)', v('mobile')]] },
+        { name: 'Payment details', rows: [['Payment term', v('payment_term')], ['Currency', v('currency') === 'SGD' ? 'SGD / S$' : 'MYR / RM'],
+          ['Payee name', v('payee_name')], ['Bank', v('bank_name') ? window.ADspaceWords.bank(v('bank_name')) : ''],
+          ['Account number', acct ? 'Ending ' + acct.slice(-4) : ''], ['Finance email', v('finance_email')]] }
+      ])] : []
+    });
   }
   function paint() {
     if (state === 'loading') return;
@@ -279,7 +300,7 @@
         return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; paint(); window.scrollTo(0, 0);
+      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say('sfMsg', W.notSentAdspace);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });

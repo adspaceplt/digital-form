@@ -15625,7 +15625,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (Date.parse(df.expires_at) <= dfNow.getTime()) return dfNo('expired');
         var dcl = DB.clients.filter(function (c) { return c.id === df.client_id; })[0] || {};
         if (dcl.stage === 'past') return dfNo('not_found');
-        if (name === 'client_details_read') return dfOk({ brand: dcl.name, expires_at: df.expires_at });
+        if (name === 'client_details_read') {
+
+          var drep = String(dcl.owner || '').trim() && DB.team_members.filter(function (m) {
+            return m.active && !m.system && !m.removed_at && m.name === dcl.owner; })[0];
+          return dfOk({ brand: dcl.name, expires_at: df.expires_at,
+            rep: drep ? { name: drep.name, title: drep.designation || null, whatsapp: drep.card_on !== false && drep.card_mobile !== false && drep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(drep.mobile) : null } : null });
+        }
         var a = args.p_answers || {}, tr = function (v) { return String(v == null ? '' : v).trim(); };
         var up = function (v) { return tr(v).replace(/\s+/g, '').toUpperCase(); };
         var an = { legal_name: tr(a.legal_name).replace(/\s+/g, ' ').toUpperCase(), company_no: up(a.company_no), company_no_old: up(a.company_no_old) || null,

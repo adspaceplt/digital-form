@@ -413,6 +413,28 @@
     if (last.state === 'declined') return 'Offer declined';
     return last.kind === 'contract' ? 'Contract expired' : 'Offer expired';
   }
+  /* An application only received (the board ReceivedCareers, 2026-11-25;
+     js/icons.js received): where it stands, what was sent and how to reach
+     ADspace. */
+  function paintReceived(d) {
+    var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
+    var mail = CONTACT && window.ADspaceWords.emailOk(CONTACT) ? '<a class="plink" href="mailto:' + esc(CONTACT) + '">' + I.svg('mail') + esc(CONTACT) + '</a>' : '';
+    root().innerHTML = I.received({
+      title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ADspace.', note: NEXT.received,
+      steps: [
+        { state: 'done', title: STATUS.received, sub: esc(window.ADspaceClock.date(d.received_at)) },
+        { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
+        { glyph: 'calendar', title: 'Interview' },
+        { glyph: 'scale', title: 'Decision' }
+      ],
+      cards: [
+        I.summary('Your application', [{ rows: [['Position', d.position], ['Received on', day(d.received_at)]] }]),
+        I.card('Contact ADspace', '<div class="rcv-acts">' + mail +
+          '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + I.svg('chat') +
+          esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>')
+      ]
+    });
+  }
   function paint(d) {
     var i = d.interview, dec = decision(d);
     root().innerHTML = '<div class="qs-step cr-page" data-shown>' +
@@ -461,6 +483,7 @@
       if (d.contact) CONTACT = d.contact;
       if (d.error === 'expired') { cover('Link expired', W.contactAdspace); return; }
       if (d.error || !d.ok) { cover(W.notFound, W.contactAdspace); return; }
+      if (d.stage === 'received' && !d.interview && !(d.docs && d.docs.length) && !decision(d)) { paintReceived(d); return; }
       paint(d);
     }).catch(function () { cover(W.failTitle, W.failTextAdspace); });
   }
