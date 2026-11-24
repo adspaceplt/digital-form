@@ -258,8 +258,37 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `quote_totals`, the names in `totals.brands`; the term, date, Rate Card,
   payment terms, validity, advertising budget, Bill to, terms and title stay
   the quotation's (one contract, one term); no `brands` is priced as before,
-  and a website selection with them is refused (`bad-brands`). The pages do
-  not send `brands` yet.
+  and a website selection with them is refused (`bad-brands`).
+- Build quote (the user, 2026-11-24, the approved basket and sheet): one
+  column in the order a quote is built, a numbered step each (`.qb-num`):
+  1 Plan (Without ads / With ads, the plan cards, Content, Advertising
+  budget managed per month), 2 Platforms and content (platforms, the extra
+  content steppers, languages), 3 Extras (Add one-off item and Add
+  advertising budget, each opening its rows only when used), 4 Term (Term,
+  Date, Payment terms, Valid for); then one fold, More details (`#qbMore`:
+  Title, Rate Card version, Make every content piece bilingual, Custom
+  lines with Renew lines, Bill to, Terms), open where the quotation holds
+  any of them. The foot reads the monthly total incl. SST (with `· n
+  brands`), View lines (the sheet turned to the priced lines, every
+  brand's under its name, the brand on the board changed where read, the
+  others read; Preview PDF there; Back returns), Cancel and Create
+  quotation (Save when editing). Add to quotation under Extras puts the
+  board's brand in Brands in this quotation (`#qbBrandList`: a row a
+  brand, its plan, platforms and term, its monthly figure from
+  `quote_preview`'s `brands`, Edit and Remove with Undo where it happened;
+  the board's own row marked Editing) and clears the board for the next,
+  the first press naming the brand after the client; Edit brings a brand
+  back with Save brand and Cancel; a brand choosing nothing is not priced;
+  one brand never pressed through Add to quotation creates as before. With
+  two brands or more, Create asks One for all brands (the answer it opens
+  on) or One per brand, which makes a quotation each from the same list,
+  its own reference, PDF, link, signature and invoicing, a key each
+  (`{idem}-{n}`); a revision stays one. The PDF names the Brands (one made
+  per brand its Brand) in its facts and each brand over its lines, the
+  totals the whole quotation's; /quote/ likewise, offering no Change.
+  Brand name carries no `aria-required` (the one save check would hold
+  Create on the empty name of a new board); a brand's name is required
+  only once it chooses something (`bad-brands`).
 - Quotation signing (`2026-10-31-quotation-signing.sql`; the user,
   2026-10-31: "Jane picks the reviewer, approve"): the client accepts on
   the quotation's link (a team's quotation takes one from

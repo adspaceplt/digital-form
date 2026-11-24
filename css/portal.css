@@ -9663,6 +9663,9 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 .qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qs-what { overflow-wrap: anywhere; }
+/* A brand's name over its lines where one quotation covers several (2026-11-24). */
+.qs-brandrow { padding-top: 16px; font-weight: 600; }
+.qs-brandrow .qs-what { grid-column: 1 / -1; }
 .qs-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's inclusions, a point each (the quotation's PDF prints them so):
    the bullet hung, the words wrapping under the first (2026-11-04). */
