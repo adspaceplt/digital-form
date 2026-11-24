@@ -9644,17 +9644,13 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-step > .msg { margin: 0; }
 .qs-step .msg:empty, .qs-cf:empty { display: none; }
 .qs-foot { display: flex; gap: 8px; padding: 20px 0 8px; }
-/* Equal halves grow from a half's basis, never from 0 (DESIGN.md §5): Back
-   and Continue stand one width whatever their words. */
+/* Equal halves grow from a half's basis (DESIGN.md §5). */
 .qs-foot > .btn { flex: 1 1 50%; }
 /* A forward move is a button at its own width: a lone Submit stands at the
    column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
 
-/* A client's form in steps (2026-11-25, the approved canvas; js/icons.js
-   stepCards, stepHead, summary): the opening page's step cards, a step's
-   head with its glyph, and what was typed read back before it is sent. One
-   copy for /details/, /supplier/ and /quote/. */
+/* A form in steps (2026-11-25; js/icons.js, DESIGN.md §4). */
 .qs-intro-p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-soft); }
 .stepcards { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .stepcard {
@@ -9684,9 +9680,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .stephead-mark .ic { width: 22px; height: 22px; }
 .stephead .qs-top { gap: 2px; min-width: 0; }
 .stephead .qs-title { overflow-wrap: anywhere; }
-/* What was typed, read back: a shaded card (a client page draws no card
-   edge), its groups a hairline apart, a label over its value on a phone and
-   beside it at a desk. */
 .sumcard { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); min-width: 0; }
 .sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }

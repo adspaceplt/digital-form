@@ -101,18 +101,8 @@
   var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
                     scheduled: 4, posted: 5, completed: 6 };
   function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
-  /* A client's form in steps (the user, 2026-11-25: /details/ and /supplier/
-     as the quotation's steps), one copy each for every page that asks in
-     steps, /quote/ included:
-     - stepCards: the opening page's What to expect, a shaded card a step,
-       its glyph in a white disc carrying the step's number, its name over
-       one line of what it asks (`items`: { glyph, name, line });
-     - stepTrack: Step n of m over the 4px track (`word` the line said);
-     - stepHead: a step's glyph in the locks' disc beside its title and the
-       page's lead (`lead` is markup, escaped by the caller);
-     - summary: what was typed, read back as groups of label and value, an
-       empty value left out (`edit`, when given, is the Edit button's words
-       and its attributes). */
+  /* A form in steps (2026-11-25, DESIGN.md §4): step cards, the track, a
+     step's head, and the answers read back. */
   function stepCards(items) {
     var esc = window.ADspaceWords.esc;
     return '<ol class="stepcards">' + items.map(function (x, i) {
