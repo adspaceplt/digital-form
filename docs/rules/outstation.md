@@ -93,6 +93,8 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   or checked out, and for an admin on any; My Work at Full control deletes
   with the number typed back, at Edit it is Request delete, filed through
   `delete_kinds` (`rpc:outstation_trip_delete`, named by the number) for an
-  admin. The trip goes with its stops and photo rows; the visits it filed
-  stay, and the photo files stay in storage. Filed `ops.deleted` under the
+  admin. The trip goes with its stops, its photo rows and the visits it
+  filed on the clients' Calls and visits (a deleted trip did not happen;
+  the user, 2026-11-24); a visit written by hand stays, and the photo files
+  stay in storage. Filed `ops.deleted` under the
   number. A deleted open trip frees its driver to check in again.
