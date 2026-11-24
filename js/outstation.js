@@ -786,7 +786,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: ref + ' · The trip on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
-        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it filed stay on the clients\' Calls and visits.' : '') + ' This cannot be undone.',
+        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it recorded on the clients\' Calls and visits stay.' : '') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [{ name: 'ref', label: 'Type the trip number to confirm', placeholder: ref, match: ref,
         need: 'Type the trip number to confirm.', mismatch: GONE['confirm-required'] }]
