@@ -35,6 +35,11 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   - Focuses the card (`tabindex="-1"`, no ring), never a field (iOS zoom).
     Exception: a sheet whose whole purpose is one value.
   - After a failed save, focus goes to the first invalid field.
+  - A line a sheet writes in its own `.msg` (`err`, `warn`) scrolls into
+    view the moment it reads, one observer for every sheet; a form puts
+    what its action waits for before what is optional (2026-11-24: Check in
+    refused below a phone's screen read as a press that ran nothing;
+    `tests/sheetline.js`).
   - The scrim closes only an untouched sheet. Escape and the close mark always
     close it. The close mark presses that sheet's own Cancel.
   - On a phone (≤640): a sheet is pulled down from its head (the grabber) to
