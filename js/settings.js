@@ -209,10 +209,6 @@
         return t.on + ' of ' + t.all + ' on';
       });
     },
-    /* Every email's wording (2026-11-10): how many each recipient holds. */
-    mailtpl: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line(); },
-    /* The supplier's emails alone, counted as their sheet lists them. */
-    supmail: function () { return window.ADspaceMailTpl && window.ADspaceMailTpl.line('suppliers'); },
     /* The payments sheet (2026-11-09): on or off, and rows added. */
     crsheet: function () {
       return db.rpc('creator_sheet_get').then(function (r) {
@@ -420,11 +416,8 @@
            drawn, disabled with its reason. */
         biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Emails sent by colleagues' : 'Off', open: flipMail },
-        /* Every email's wording, by recipient, in one editor (2026-11-10). */
-        /* A colleague with Suppliers Full Access alone reaches their
-           emails from Partners, Suppliers (2026-11-22). */
-        biz && W.ADspaceMailTpl && { id: 'mailtpl', name: 'Email templates', kind: 'open', meta: line('mailtpl'),
-          open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('mailtpl')); } },
+        /* Every email's wording is its own section's (Edit email templates
+           in the section's ⋯; 2026-11-24), never a row here. */
         /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
            company mailbox each section's emails reply to, never a
            colleague's own address. */
@@ -474,13 +467,7 @@
         biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
           meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
             'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
-        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]],
-      /* Suppliers (the user, 2026-11-22: "Clients tab redesign to
-         Partners … Clients, Creators and Suppliers"): a supplier's emails,
-         Email templates opened on its Suppliers tab. */
-      ['Suppliers', [
-        (biz || full('suppliers')) && W.ADspaceMailTpl && { id: 'supmail', name: 'Supplier email templates', kind: 'open', meta: line('supmail'),
-          open: function (btn) { W.ADspaceMailTpl.open(btn, rowSay('supmail'), 'suppliers'); } }]]]);
+        biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet'), open: function () { openCrSheet(); } }]]]);
     /* Performance (the user, 2026-10-29: "approve all"): one row a view,
        each opening the one sheet on its part behind the master code. */
     add('performance', 'Performance', 'mine', [['', perfMay() ? W.ADspacePerf.VIEWS.map(function (v) {

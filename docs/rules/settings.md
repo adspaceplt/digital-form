@@ -9,8 +9,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Ten groups
+  `ops.numbering`, `ops.workflows`, `team.performance` (View), or WhatsApp or Services at
+  Full Access (2026-10-22, SET2-11; 2026-10-29; Suppliers left with its email templates, 2026-11-24); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings, in the
@@ -23,7 +23,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   dates, Priority deadlines, Task reminders, Delivery targets, Outstation (the office pin, the location accuracy limit, trips kept), Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
-  and emails; Email: Send by email, Email templates at `team.settings`,
+  and emails; Email: Send by email at `team.settings`,
   Reply-to mailboxes; WhatsApp: Send on WhatsApp, WhatsApp
   templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
@@ -32,10 +32,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   old `tab=clients` landing on it; Details forms first: one figure for a
   client's and a supplier's link alike; Clients: Industries, Follow-up
   limits, Analytics; Creators: Creator and campaign IDs,
-  Creator payments, Creator payments sheet; Suppliers: Supplier email templates,
-  Email templates opened on its Suppliers tab (`ADspaceMailTpl.open(btn,
-  say, 'suppliers')`), at `team.settings` or Suppliers Full Access, the
-  one row a colleague at Suppliers Full Access alone meets), Templates
+  Creator payments, Creator payments sheet), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access), Accounting (Tax and terms, Tax codes, Bukku),
   Performance (Months, Quarters, Bonus and trip, Commission at
@@ -43,25 +40,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   (Candidates: Time limits at `team.settings`, Interview scorecards at
   `team.hiring`, its row the Standard's criteria and how many positions hold
   their own, Standard: 5 criteria · 1 position with its own; New colleagues:
-  Welcome Kit; 2026-11-17). Email templates (`js/mailtpl.js`,
-  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
-  supplier's every template, fixed or New email's, at either, a client's and
-  a creator's at `team.settings` alone: `email_template_may`, 2026-11-10) lists
-  every email by recipient (Clients: Quotation, Letter of Offer, Client
-  letter, Overdue reminder, Invoice email and New email's own; Suppliers:
-  Supplier approved, Document and New email's own; Creators: the six
-  creator emails; Candidates: the twelve candidate emails, each with its own
-  switch (`hiring_email_templates`, 2026-11-21); Sign-in and codes: Verification code, the one email every
-  code the portal sends goes out in (`code_email_template`, its fields
-  {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
-  `code_email_template_save` at `team.settings`, read by `quote-request` and `hiring-mail`
-  through `_shared/mail.ts` `codeEmail`; 2026-11-17, SEAL-SPEC decision 9),
-  and Supabase's Sign-in code and Invitation listed with no Edit), each saved through its own function, and one editor
-  (`#mtEdSheet`): the words at the left, the email as it reads at the right
-  (stacked under 720), the sender's fields from `template_fields_all()` as
-  chips inserting at the caret, a field it cannot fill marked as it is
-  typed; no test email (Send test to me removed, the user, 2026-11-10;
-  `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
+  Welcome Kit; 2026-11-17). No email's wording is a row here: each is
+  its own section's (`docs/rules/messages.md`, Email templates; the user,
+  2026-11-24). A row carries what a press opens (`open`); a switch acts at the
   press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
   phone's page), finding a row by its name, group, part or value across every
   group (a hit's line its group, then its part: Partners · Suppliers) and opening its group on its control (Enter takes the first);

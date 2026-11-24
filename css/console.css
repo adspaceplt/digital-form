@@ -5158,6 +5158,8 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .inv-mail-card .mt-pv-subj { font-weight: 600; }
 .inv-mail-card .mt-pv-fine { font-size: 12px; color: #767676; }
 .inv-mail-card .mt-pv-none { color: #515151; }
+/* A feedback request's one button, as the email draws it. */
+.inv-mail-card .mt-pv-btn span { display: inline-block; padding: 8px 16px; border-radius: var(--radius-ctl-sm); background: var(--action); color: var(--on-action); font-weight: 600; }
 .inv-mail-card .mt-f { background: #eef3fb; color: #1a1a1a; border-radius: 4px; padding: 0 2px; }
 .inv-mail-card .mt-f.is-bad { background: #fdeceb; color: #b3261e; text-decoration: underline wavy; }
 #mtEdSheet .sheet-card > .msg:empty, #mtSheet .msg:empty { display: none; }
