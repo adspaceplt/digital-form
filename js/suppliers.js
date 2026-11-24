@@ -1221,11 +1221,26 @@
     F.forEach(function (x) { if (!PAY[x[0]] || payWork()) v[x[0]] = $(x[1]).value.trim(); });
     var badMail = [['email', 'supEdEmail'], ['finance_email', 'supEdFin']].filter(function (x) { return v[x[0]] && !ADspaceWords.emailOk(v[x[0]]); })[0];
     if (badMail) { msg('supEditMsg', 'Enter a valid email address.', 'err'); $(badMail[1]).focus(); return; }
+    /* Only what moved from the copy the sheet opened on is sent, with that
+       copy's stamp: a colleague's newer bank account is never put back
+       (review 2026-11-24). The Supplier ID always goes, the function's
+       one check reading it. */
+    var rec = state.rec, out = { code: v.code, expected: rec.updated_at || null };
+    Object.keys(v).forEach(function (k) {
+      if (String(v[k] == null ? '' : v[k]) !== String(rec[k] == null ? '' : rec[k])) out[k] = v[k];
+    });
+    if (!out.expected) delete out.expected;
     var go = $('supEditGo');
     go.disabled = true;
-    rpc('supplier_save', { p_id: state.rec.id, p_values: v, p_form: editing.form || null }).then(function (r) {
+    rpc('supplier_save', { p_id: rec.id, p_values: out, p_form: editing.form || null }).then(function (r) {
       go.disabled = false;
       var d = r.data || {};
+      if (d.error === 'stale') {
+        shutEdit();
+        openRec(rec.id);
+        setTimeout(function () { msg('supRecMsg', window.ADspaceWords.line.stale, 'err'); }, 400);
+        return;
+      }
       if (r.error || d.error) {
         msg('supEditMsg', said(r), 'err');
         var k = d.error && d.error.indexOf('bad-') === 0 ? d.error.slice(4) : d.error === 'code-taken' ? 'code' : null;

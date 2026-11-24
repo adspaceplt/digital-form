@@ -204,7 +204,9 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   const r = await db.rpc('hiring_doc_code', { p_key: key, p_doc: doc, p_device: String(b.device || '').slice(0, 200), p_ip: ipOf(req) || null });
   const m = r.data as Record<string, any>;
   if (r.error || !m) return json({ error: 'not-sent' }, 200, origin);
-  if (m.error) return json({ error: m.error === 'too-many' ? 'too-many' : 'not_found' }, 200, origin);
+  /* Ten wrong codes in a Malaysian day lock the document until the next
+     (review 2026-11-24); the page says so in its own words. */
+  if (m.error) return json({ error: m.error === 'too-many' || m.error === 'locked-today' ? m.error : 'not_found' }, 200, origin);
   if (!EMAIL.test(String(m.to || m.email || ''))) return json({ error: 'not-sent' }, 200, origin);
   /* The one Verification code email (CLAUDE.md, VERIFICATION CODE
      TEMPLATE): the team's words, the code in its box, never in the subject. */

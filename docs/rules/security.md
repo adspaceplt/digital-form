@@ -57,7 +57,11 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   registered, …").
 - An edge function reads a caller's address as `cf-connecting-ip`, else the
   last X-Forwarded-For entry, never the first (`media-pass`, `sign-download`,
-  `quote-request`; 2026-10-25).
+  `quote-request`; 2026-10-25), and asks every function that counts a
+  caller (one reading `request_ip()`, directly or through another, as
+  `creator_code_try` does) on a client carrying it as `x-adspace-ip` beside
+  the relay secret, never the bare service role, whose address every caller
+  shares (`sign-upload`'s creator calls, 2026-11-24; `tests/iprelay.js`).
 - An email is matched as itself in every edge function (`exactEmail`: `_`
   and `%` are letters, never wildcards; audit P2, 2026-10-10).
 - A colleague's upload names its purpose and record, and `sign-upload`

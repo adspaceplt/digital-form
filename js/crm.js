@@ -535,7 +535,7 @@
        PostgREST's thousand at about 350 clients (the audit of 2026-10-26,
        finding 5). */
     window.ADspaceAPI.readPages(function () { return db.rpc('client_last_activity').order('client_id').order('source'); })
-      .then(function (r) { return r.data || []; }, function () { return []; }).then(function (all) {
+      .then(function (r) { return r.data || []; }).catch(function () { return []; }).then(function (all) {
       all.forEach(function (x) {
         take(x.client_id, x.at, x.source === 'touch' ? (KIND_WORD[x.kind] || 'Call')
           : x.source === 'letter' ? 'Letter of Offer' : (x.kind ? title(x.kind) : 'Document'));
@@ -875,7 +875,7 @@
     list.reduce(function (p, c) {
       return p.then(function () {
         var to = nameOf(c);
-        return db.from('clients').update({ owner: to || null }).eq('id', c.id).select('id').then(function (r) {
+        return writeClient(c.id, { owner: to || null }).then(function (r) {
           if (r.error || !(r.data || []).length) { out.bad.push({ c: c, err: r.error ? r.error.message : 'refused' }); return; }
           var was = c.owner || '';
           var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
@@ -1174,7 +1174,7 @@
          rename by a colleague is never put back (audit 2026-11-15). */
       patch = onlyChanged(patch, state.editing);
       if (!Object.keys(patch).length) { shutForm(); return; }
-      db.from('clients').update(patch).eq('id', id).eq('updated_at', state.editing.updated_at).select('id').then(function (r) {
+      writeClient(id, patch, state.editing.updated_at).then(function (r) {
         if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
         if (!(r.data || []).length) {
           staleClient(id, function (found) {
@@ -1633,7 +1633,6 @@
      client with no month now, or a reader without My Work draws nothing.
      Read with the Engagements pane (js/engage.js, 2026-10-10), so the
      record reads the client's months once. */
-  var SHORT_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function paintMonthLine(c) {
     var meta = $('crmIdMeta'), line = $('crmMonthLine');
     if (!meta) return;
@@ -1650,8 +1649,8 @@
     var parts = ['<span class="part">' + esc(f.word + ': ' + f.done + ' of ' + f.held + ' done') + '</span>'];
     if (f.late) parts.push('<span class="part"><span aria-hidden="true">· </span><span class="is-err">' + f.late + ' overdue</span></span>');
     if (f.due) {
-      var due = new Date(f.due + 'T00:00:00Z');
-      parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + due.getUTCDate() + ' ' + SHORT_MON[due.getUTCMonth()] + '</span>');
+      /* Malaysia's clock reads the day (review 2026-11-24: a second copy). */
+      parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + esc(ADspaceClock.date(f.due, { year: false })) + '</span>');
     }
     var tone = f.late ? 'is-late' : (f.held && f.done >= f.held) ? 'is-ok' : 'is-wait';
     line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
@@ -2014,7 +2013,7 @@
   }
   function saveRestrict(c, patch, words, after) {
     var was = { p: c.restricted_platform, s: c.restricted_since, n: c.restricted_note };
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
@@ -2317,7 +2316,24 @@
      the record drawn from it, then `then` reopens the sheet on the latest
      version (audit 2026-11-15: a Billing or Edit save sent every field and
      put back a colleague's newer finance email or Reassign). */
-  var STALE_LINE = 'Not saved. This record was changed by someone else. The latest version is now shown.';
+  var STALE_LINE = window.ADspaceWords.line.stale;
+  /* Every write to a client asks its new stamp back, and every copy the
+     page holds takes it, so the next Edit is not refused as changed by
+     someone else (review 2026-11-24: Mark restricted, a stage move, Take
+     lead and Reassign left the old stamp behind). */
+  function stampClient(id, r) {
+    var u = r && !r.error && r.data && r.data[0] && r.data[0].updated_at;
+    if (!u) return r;
+    state.clients.forEach(function (x) { if (x.id === id) x.updated_at = u; });
+    if (state.client && state.client.id === id) state.client.updated_at = u;
+    if (state.editing && state.editing.id === id) state.editing.updated_at = u;
+    return r;
+  }
+  function writeClient(id, patch, since) {
+    var q = db.from('clients').update(patch).eq('id', id);
+    if (since !== undefined) q = q.eq('updated_at', since);
+    return q.select('id, updated_at').then(function (r) { return stampClient(id, r); });
+  }
   function staleClient(id, then) {
     db.from('clients').select(API.CLIENT_COLS).eq('id', id).maybeSingle().then(function (r) {
       return r.data ? API.withBilling([r.data]).then(function () { return r; }) : r;
@@ -2731,7 +2747,7 @@
     /* Taking a lead is selling it (the user, 2026-11-06: "Take lead … its
        equivalent to sales by"): Sales by is theirs, Person in charge left
        for whoever runs the account. */
-    db.from('clients').update({ sales_by: me.id }).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, { sales_by: me.id }).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!r.data || !r.data.length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       c.sales_by = me.id;
@@ -2836,7 +2852,7 @@
        moves (a Client ID another client holds, which this colleague's own
        list may not show). */
     var inSheet = also && also.inSheet;
-    return db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+    return writeClient(c.id, row).then(function (r) {
       if (r.error) {
         var em = r.error.message || '';
         var said = /stage-reason/.test(em) ? 'Choose a reason to move to ' + stageWord(to)[1] + '.'
@@ -3262,7 +3278,7 @@
         BK_FIELDS.forEach(function (k) { if (k !== 'bill_contact_id' && k in x.values) patch[k] = x.values[k]; });
       }
       if (!Object.keys(port).length) return { data: [{ id: rid }], bukku: n };
-      return db.from('clients').update(port).eq('id', rid).select('id').then(function (r) { r.bukku = n; return r; });
+      return writeClient(rid, port).then(function (r) { r.bukku = n; return r; });
     });
   }
   function entBand(fold) {
@@ -4010,7 +4026,7 @@
     var was = {}, patch = {};
     was[k] = c[k] || null; patch[k] = v || null;
     if (was[k] === patch[k]) { paintSocial(c); return; }
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error) { msg('crmSocialMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error.message, 'err'); paintSocial(c); return; }
       if (!(r.data || []).length) { msg('crmSocialMsg', 'Not saved. The database refused the request.', 'err'); paintSocial(c); return; }
       c[k] = patch[k];
@@ -4084,7 +4100,7 @@
     var was = { white_label: Boolean(c.white_label) }, patch = { white_label: on };
     var sw = $('crmWlSwitch');
     if (sw) { sw.setAttribute('aria-checked', String(on)); sw.disabled = true; }
-    return db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    return writeClient(c.id, patch).then(function (r) {
       if (r.error || !(r.data || []).length) {
         paintWlPart(c);
         msg('crmWlMsg', r.error ? (/denied|whitelabel|white_label/i.test(r.error.message || '') ? 'You do not have permission to change white label settings. Please ask an admin.' : r.error.message) : 'Not saved. The database refused the request.', 'err');
@@ -4740,7 +4756,7 @@
     if (!String(c.handle_fb || '').trim() && page && String(page.name || '').trim()) patch.handle_fb = String(page.name).trim().slice(0, 120);
     if (!Object.keys(patch).length) return;
     Object.keys(patch).forEach(function (k) { was[k] = c[k] || null; });
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error || !(r.data || []).length) return;
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
       log('client.brand', c.name, 'Filled from Meta: ' + changed(was, patch, HANDLES));
@@ -5062,11 +5078,21 @@
       return;
     }
     $('crmBrandSave').disabled = true;
-    db.from('clients').update(patch).eq('id', c.id)
-      .select('id').then(function (r) {
+    /* The brief is one object rebuilt from the copy read at open, so the
+       write holds to that copy's stamp: a colleague's newer brief is never
+       put back (review 2026-11-24). */
+    writeClient(c.id, patch, c.updated_at).then(function (r) {
         $('crmBrandSave').disabled = false;
         if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change the content brief and other notes. Please ask an admin.' : r.error.message, 'err'); return; }
-        if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (!(r.data || []).length) {
+          staleClient(c.id, function (found) {
+            if (!found) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            if (window.ADspaceSheet) window.ADspaceSheet.clean();
+            shutSheet('crmBrandSheet');
+            msg('crmBrandNote', STALE_LINE, 'err');
+          });
+          return;
+        }
         Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
         log('client.brand', c.name, [changed(was, patch, [
           ['website', 'Website'], ['phone', 'Office phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
@@ -5090,7 +5116,7 @@
      as the client named them. */
   function dfBillTo(id, name) {
     var c = state.client;
-    db.from('clients').update({ bill_contact_id: id }).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, { bill_contact_id: id }).then(function (r) {
       if (!r.error && (r.data || []).length) {
         c.bill_contact_id = id;
         log('client.billing', c.name, 'Billing contact · from the details form');
@@ -5395,7 +5421,7 @@
     if (ct.portal_login_at) return;
     ct.portal_login_at = new Date().toISOString();
     db.from('client_contacts').update({ portal_login_at: ct.portal_login_at })
-      .eq('id', ct.id).then(function () { loadContacts(); }, function () {});
+      .eq('id', ct.id).then(function () { loadContacts(); }).catch(function () {});
   }
 
   function setPortal(ct, on, invite) {
@@ -5872,7 +5898,7 @@
       // `was`, since shutTouch() above has already let go of editingTouch:
       // an old entry edited never moves the lead (audit 2026-11-15).
       if (!was && (state.client.stage || 'lead') === 'lead') {
-        db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
+        writeClient(state.client.id, { stage: 'contacted' }).then(function (q) {
           if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Logged. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
           var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
@@ -5960,7 +5986,7 @@
        refused write is named rather than taken for done. */
     if (on) on.addEventListener('click', function () {
       on.disabled = true;
-      db.from('clients').update({ review_hidden: false }).eq('id', c.id).select('id').then(function (r) {
+      writeClient(c.id, { review_hidden: false }).then(function (r) {
         if (r.error || !r.data || !r.data.length) {
           on.disabled = false;
           msg('crmEngageMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
@@ -6627,7 +6653,7 @@
         if (v === was) { done(); return; }
         /* A refused update answers 204 with no row: the figure is kept as
            read and only the lines are read again (audit 2026-11-15). */
-        return db.from('clients').update({ deal_value: v }).eq('id', cl.id).select('id').then(function (q) {
+        return writeClient(cl.id, { deal_value: v }).then(function (q) {
           if (!q.error && (q.data || []).length) { done(); return; }
           if (state.client === cl) loadServices();
         });
@@ -8733,7 +8759,7 @@
     // keeping a list of their own.
     active: function (then) {
       readPages(function () { return db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name').order('id'); })
-        .then(function (r) { then(r.data || []); }, function () { then([]); });
+        .then(function (r) { then(r.data || []); }).catch(function () { then([]); });
     },
     // How long a stage may run before it reads Overdue (the Overview asks).
     staleH: staleH,

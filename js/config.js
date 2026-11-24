@@ -60,7 +60,9 @@ window.ADSPACE_CONFIG = {
   // /verify/ (js/verify.js): a QR code's Document ID opens the details, and
   // a refresh in that tab keeps them for passMinutes after the scan; a link
   // shared on never carries it.
-  verify: { passMinutes: 30 },
+  // page is the address a sealed copy's QR code and Record page name, with
+  // the reference after `?s=` (js/quotes.js, js/hiring.js, js/hrdocs.js).
+  verify: { passMinutes: 30, page: 'https://digital.adspace.me/verify/' },
 
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change

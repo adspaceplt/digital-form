@@ -359,6 +359,7 @@
     ops_duplicate_task: 'p_idem p_task p_opts',
     ops_edit_checklist_item: 'p_item p_label',
     ops_edit_comment: 'p_body p_event',
+    client_engagement_items: 'p_client',
     ops_engagement_counts: 'p_engagements',
     ops_engagement_json: 'p_engagement',
     ops_engagement_log: 'p_detail p_engagement p_type',
@@ -1737,7 +1738,7 @@
 
             if (meEm && 'system' in pending && Boolean(pending.system) !== Boolean(r.system)) blocked = 'system-account';
             if (meEm && r.system && String(r.email || '').toLowerCase() !== meEm &&
-                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['email']].some(function (k) {
+                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['removed_at'], ['erased_at'], ['email']].some(function (k) {
                   k = k[0]; if (!(k in pending)) return false;
                   var a1 = pending[k] == null ? null : (k === 'email' ? String(pending[k]).toLowerCase() : k === 'access_until_time' ? t5(pending[k]) : pending[k]);
                   var a0 = r[k] == null ? null : (k === 'email' ? String(r[k]).toLowerCase() : k === 'access_until_time' ? t5(r[k]) : r[k]);
@@ -1829,6 +1830,8 @@
               })) pending.content_version = (r.content_version || 1) + 1;
 
           if (table === 'clients') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
+
+          if (table === 'campaigns') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
           if (table === 'client_requests') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
 
           if (table === 'team_members' || table === 'team_roles') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
@@ -7747,6 +7750,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return opsEngJson(es.id);
     }
 
+    if (name === 'client_engagement_items') {
+      var ceMe = opsMe();
+      if (!ceMe || !args.p_client) return { error: 'denied' };
+      if (!opsAllowed('ops', 'view')) return { ok: true, tasks: null, visits: null };
+      var ceTasks = DB.ops_tasks.filter(function (t) { return t.client_id === args.p_client && !t.archived_at && scopeOk('ops_tasks', t, 'view'); })
+        .map(function (t) {
+          var st = opsStage(t.workflow_id, t.stage_key) || {};
+          var en = DB.ops_engagements.filter(function (e) { return e.id === t.engagement_id; })[0];
+          return { id: t.id, serial: opsSerial(t.task_no), title: opsTitle(t), stage: st.label || t.stage_key, stage_group: st.stage_group || null,
+            period: en ? en.period : null, made: new Date(Date.parse(t.created_at || now) + 8 * 36e5).toISOString().slice(0, 10),
+            done: !!t.completed_at, cancelled: !!t.cancelled_at, late: !t.completed_at && !t.cancelled_at && opsTaskLate(t),
+            _k: [(t.completed_at || t.cancelled_at) ? 1 : 0, t.current_final_due_at || '9999', t.task_no] };
+        }).sort(function (a, b) { return a._k[0] - b._k[0] || String(a._k[1]).localeCompare(String(b._k[1])) || a._k[2] - b._k[2]; })
+        .map(function (x) { delete x._k; return x; });
+      var ceCl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+      var OSTc = DB.__ost || { trips: [], stops: [] };
+      var ceVisits = ceCl && scopeOk('clients', ceCl, 'view') ? OSTc.stops.filter(function (x) { return x.client_id === args.p_client; }).map(function (x) {
+        var t = OSTc.trips.filter(function (y) { return y.id === x.trip_id; })[0] || {};
+        var dr = DB.team_members.filter(function (m) { return m.id === t.driver_id; })[0];
+        return { trip: t.id, ref: t.ref || null, day: new Date(Date.parse(x.arrived_at) + 8 * 36e5).toISOString().slice(0, 10), purpose: t.purpose,
+          driver: dr ? dr.name : null, open: !x.left_at, mine: t.driver_id === ceMe.id || (t.companions || []).indexOf(ceMe.id) > -1, _at: x.arrived_at };
+      }).sort(function (a, b) { return String(b._at).localeCompare(String(a._at)); }).map(function (x) { delete x._at; return x; }) : null;
+      return { ok: true, tasks: ceTasks, visits: ceVisits };
+    }
+
     if (name === 'ops_engagement_counts') {
       if (!opsAllowed('ops', 'view')) return [];
       var ecIds = args.p_engagements || [];
@@ -10323,10 +10351,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var oRef = function (t) {
         if (t.ref) return t.ref;
-        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(0, 7).replace('-', '');
+        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = 'OS/' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
         return t.ref;
       };
       var oJson = function (t) {
@@ -11221,7 +11249,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_engagement_items$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
@@ -11571,8 +11599,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
     function cpTpl() {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
         { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
-        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
+        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\n{changes}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
         { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+
+        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If this was not you, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
         { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
@@ -11584,7 +11614,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { id: r.id, ref: r.ref, status: r.status, created_at: r.created_at, decided_at: r.decided_at || null, note: r.note || null,
         bill_kind: r.bill_kind, id_no: whole ? r.id_no : null, id_end: r.id_no.replace(/\W/g, '').slice(-4), legal_name: r.legal_name,
         tin: r.tin || null, address: r.address, currency: r.currency, method: r.method, method_word: cpMethod(r.method, r.bank), bank: r.bank || null,
-        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator' };
+        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator', changes: (r.changes || []).slice() };
     }
     var CP_BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank', 'Alliance Bank',
       'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB', '[SG] Maybank', '[SG] Bank of China'];
@@ -11623,14 +11653,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var t = cpTpl().filter(function (x) { return x.purpose === purpose; })[0];
       if (!t || !t.on_send) return;
       var c = DB.creators.filter(function (x) { return x.id === r.creator_id; })[0] || {};
-      var to = String((purpose === 'review' ? t.to_email : r.email) || '').toLowerCase().trim();
+      var was = purpose === 'changed' ? (DB.creator_pay_requests || []).filter(function (x) { return x.id === r.prior_id; })[0] : null;
+      var to = String((purpose === 'review' ? t.to_email : purpose === 'changed' ? (was && was.email) : r.email) || '').toLowerCase().trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return;
       var vals = { 'creator name': c.name, 'creator id': c.creator_code || '', reference: r.ref, payee: r.payee, method: cpMethod(r.method, r.bank),
-        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id };
+        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id,
+        date: (function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); })(String(r.created_at).slice(0, 10)), 'chinese date': String(r.created_at).slice(0, 10).replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日'),
+        changes: (r.changes || []).join('\n') };
       var fill = function (x) { Object.keys(vals).forEach(function (k) { x = x.replace(new RegExp('\\{\\s*' + k + '\\s*\\}', 'gi'), vals[k]); }); return x; };
       DB.creator_emails = DB.creator_emails || [];
       DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
-        body: fill(t.body), status: 'queued', created_at: new Date().toISOString() }));
+        body: fill(t.body).replace(/\n{3,}/g, '\n\n'), status: 'queued', created_at: new Date().toISOString() }));
     }
 
     if (/^creator_sheet_/.test(name)) {
@@ -11907,11 +11940,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var cpRef = cpPat.replace('{creator}', cpC.creator_code || '');
             cpRef = cpRun ? cpRef.replace('{' + cpRun + '}', (new Array(cpRun.length + 1).join('0') + cpSeq).slice(-Math.max(cpRun.length, String(cpSeq).length))) : cpRef + cpSeq;
             var cpNew = Object.assign({ id: nid('cp'), creator_id: cpC.id, seq: cpSeq, ref: cpRef, status: 'pending', created_at: new Date().toISOString() }, cpK.values);
+
+            var cpWas = cpReqs.filter(function (r) { return r.creator_id === cpC.id && r.status === 'approved'; }).sort(function (a, b) { return b.seq - a.seq; })[0];
+            cpNew.prior_id = cpWas ? cpWas.id : null;
+            cpNew.changes = !cpWas ? [] : [
+              [cpWas.method, cpWas.bank || '', cpWas.currency, cpWas.account].join('|') !== [cpNew.method, cpNew.bank || '', cpNew.currency, cpNew.account].join('|')
+                ? 'Bank account changed: ending ' + cpWas.account.slice(-4) + ' → ' + cpNew.account.slice(-4) : null,
+              String(cpWas.payee).trim() !== String(cpNew.payee).trim() ? 'Account holder changed: ' + cpWas.payee + ' → ' + cpNew.payee : null,
+              String(cpWas.email).trim().toLowerCase() !== String(cpNew.email).trim().toLowerCase() ||
+                String(cpWas.whatsapp || '').replace(/\D/g, '') !== String(cpNew.whatsapp || '').replace(/\D/g, '') ? 'Contact details changed' : null
+            ].filter(Boolean);
             cpReqs.push(cpNew);
             logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details submitted · ' + cpRef + ' · ' +
               cpMethod(cpNew.method, cpNew.bank) + ' ending ' + cpNew.account.slice(-4));
             DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
             cpQueue('received', cpNew); cpQueue('review', cpNew);
+            if (cpWas && cpNew.changes.length) cpQueue('changed', cpNew);
 
             DB.ops_notifications = DB.ops_notifications || [];
             (DB.team_members || []).forEach(function (tm) {
@@ -16238,6 +16282,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var pc = DB.hiring_candidates.filter(function (x) { return x.link_key === pk && !x.removed_at; })[0];
         if (!pc) return hNo('not_found');
         if (Date.parse(pc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
+        if (['new', 'invited', 'interview'].indexOf(pc.stage) < 0) return hNo('not-open');
         var pi = hIvOf(pc.id).filter(function (i) { return i.state === 'invited'; })[0];
         if (!pi) return hNo('not-open');
         if (pi.reply_by && Date.parse(pi.reply_by) <= Date.now()) return hNo('reply-passed');
@@ -16310,8 +16355,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var od = hdOf(args.p_key, args.p_doc);
         if (!od) return hNo('not_found');
         var oc = (window.__hireCodes || {})[od.id];
+
+        var owd = (window.__hireWrong = window.__hireWrong || {}), oday = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+        if (!owd[od.id] || owd[od.id].day !== oday) owd[od.id] = { day: oday, n: 0 };
+        if (owd[od.id].n >= 10) return hNo('locked-today');
         if (!oc || oc.used) return hNo('no-code');
-        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
+        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; owd[od.id].n++; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
         oc.used = true;
         var ov = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
         DB.hiring_doc_views.push({ doc_id: od.id, view: ov, email: oc.email, until: Date.now() + 30 * 60000 });
@@ -16918,7 +16967,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso,
           decide_by: null, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null });
         if (oc !== 'proceed') (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
-        if (oc !== 'proceed') DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'picked', 'none'].indexOf(i.state) > -1 || (i.state === 'confirmed' && !i.held_at))) i.state = 'cancelled'; });
+        DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'none'].indexOf(i.state) > -1 ||
+          (oc !== 'proceed' && (i.state === 'picked' || (i.state === 'confirmed' && !i.held_at))))) i.state = 'cancelled'; });
         hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Do not proceed');
         return hOk({ was: was, email: oc !== 'proceed' });
       }
@@ -17331,7 +17381,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return spOk();
       }
       if (name === 'supplier_save') {
-        var vals = args.p_values || {}, code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
+
+        var sent = args.p_values || {};
+        if ('expected' in sent && Date.parse(sx.updated_at) !== Date.parse(sent.expected)) return spNo('stale', { supplier: spJson(sx, payView) });
+        var vals = {};
+        Object.keys(sx).forEach(function (k) { if (['id', 'status', 'created_at', 'updated_at'].indexOf(k) < 0) vals[k] = sx[k]; });
+        Object.keys(sent).forEach(function (k) { if (k !== 'expected') vals[k] = sent[k]; });
+        var code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
         if (!/^[A-Z0-9]{2,12}$/.test(code)) return spNo('bad-code');
         var other = DB.suppliers.filter(function (x) { return String(x.code).toUpperCase() === code && x.id !== sx.id; })[0];
         if (other) return spNo('code-taken', { name: other.name });
