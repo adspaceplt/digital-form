@@ -276,7 +276,7 @@
     var rows = '';
     (trip.stops || []).forEach(function (s) {
       var here = !s.left_at && trip.state === 'open';
-      var facts = ['Within ' + Math.round(Number(s.accuracy_m)) + ' m', plural((s.photos || []).length, 'photo', 'photos'),
+      var facts = ['Accurate to ' + Math.round(Number(s.accuracy_m)) + ' m', plural((s.photos || []).length, 'photo', 'photos'),
         C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')];
       rows += '<li class="ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '"><span class="ost-dot" aria-hidden="true"></span>' +
         '<span class="ost-place"><span class="ost-name"><b>' + esc(placeName(s)) + '</b>' + (s.km_from_prev != null ? '<span class="ost-km"> · ' + esc(km(s.km_from_prev)) + '</span>' : '') + '</span>' +
@@ -419,15 +419,15 @@
       o.spot = null;
       again.hidden = true;
       say('warn', 'Reading your location…', '');
-      return readSpot(function (b) { if (o.ctl === ctl) say('warn', 'Reading your location… within ' + Math.round(b.acc) + ' m', at(b)); }, limit, ctl).then(function (b) {
+      return readSpot(function (b) { if (o.ctl === ctl) say('warn', 'Reading your location… accurate to ' + Math.round(b.acc) + ' m', at(b)); }, limit, ctl).then(function (b) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
         if (b.acc > limit) {
-          say('danger', 'Location within ' + Math.round(b.acc) + ' m', 'It must be within ' + limit + ' m. ' + PRECISE);
+          say('danger', 'Location accurate to ' + Math.round(b.acc) + ' m', 'It must be within ' + limit + ' m. ' + PRECISE);
           return;
         }
         o.spot = b;
-        say('ok', 'Location within ' + Math.round(b.acc) + ' m', at(b));
+        say('ok', 'Location accurate to ' + Math.round(b.acc) + ' m', at(b));
         geo({ near: { lat: b.lat, lng: b.lng } }).then(function (d) {
           if (o.ctl !== ctl || o.spot !== b || !d || !d.address) return;
           note.textContent = d.address + ' · ' + at(b);
