@@ -2233,7 +2233,7 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var list = team.slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.pick, keep).slice().sort(F.byStaff);
     if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
       list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
@@ -2241,7 +2241,9 @@
   }
 
   function loadTeam(then) {
-    db.from('team_members').select('name, staff_code').eq('active', true).order('name').then(function (r) {
+    /* Who the owner picker offers: those who may work Creators (2026-11-24). */
+    window.ADspaceAdmin.pickable('campaigns').then(function (ids) { state.pick = ids; });
+    db.from('team_members').select('id, name, staff_code').eq('active', true).order('name').then(function (r) {
       /* A system account (2026-10-08) never runs a campaign. */
       var S = window.ADspaceAdmin;
       state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m.name)); });
