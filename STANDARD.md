@@ -657,6 +657,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   an hour later and on main; its seed counts days from `current_date`
   (UTC), so the cause is to be found in how the function's day and the
   seed's meet; held here until it ships.
+- 2026-11-24, `demo` (the Interactions tab release, which touches neither
+  the stand-in nor the engine): "demo/engine.js is the stand-in of today"
+  fails on main: #1412 added `portal_kept_at`, `portal_kept_by` and
+  `client_portal_access_set` to `tests/stub2.js` without running
+  `node tests/demo-build.js`. Held here until the rebuilt engine ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
