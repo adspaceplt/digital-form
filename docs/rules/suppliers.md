@@ -131,7 +131,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   back); an email still Sending ten minutes after it was filed (its
   function stopped) reads Not confirmed (`mail_sweep`, pg_cron
   `mail-sweep` every fifteen minutes; overdue reminders alike). The two templates (`{contact name}` … `{sender name}`) are
-  Settings, Messages: Email templates under Suppliers (`ADspaceMailTpl`,
+  Suppliers' own Email templates (Edit email templates in its bar's ⋯; `ADspaceMailTpl`,
   Suppliers Full Access or `team.settings`, `email_template_may`). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
@@ -162,8 +162,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   client); Resend's word and `mail_sweep` reach `client_emails` as they do
   the supplier's. The record's row reads its last email under its
   reference (Emailed {day} · Delivered; `client_emails_of`, one read a
-  visit to the client). The three templates are Settings, Messages:
-  Email templates under Clients (`ADspaceMailTpl`, `team.settings`; filed
+  visit to the client). The three templates are Clients' Email
+  templates (`ADspaceMailTpl`, `team.settings`; filed
   `team.changed` under Client emails). `client_email_templates` and `client_emails` have
   RLS on, no policy, no grant.
 

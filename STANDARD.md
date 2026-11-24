@@ -657,6 +657,14 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   an hour later and on main; its seed counts days from `current_date`
   (UTC), so the cause is to be found in how the function's day and the
   seed's meet; held here until it ships.
+- 2026-11-25, `hiringsql` (the section email templates release, which
+  touches neither hiring nor its functions): "an interview never moved is
+  refused the time-changed email" failed once while 40 suites ran
+  (`hiring_mail_prepare` answered other than `not-moved`, then
+  `careers_read` answered no interview), and passed alone at once and in
+  the same release's earlier run. Its cause (the interview's slot or a
+  read meeting the suite's next step under load) is to be found; held
+  here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

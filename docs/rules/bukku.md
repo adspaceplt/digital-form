@@ -203,7 +203,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   list again once the one on its way answers. Once every email has gone
   its foot holds Done alone, tonal, never blue (it only shuts the sheet;
   the user, 2026-11-10).
-  The words are Settings, Messages: Email templates, Overdue reminder (`invoice_email_template`,
+  The words are Clients' Email templates, Overdue reminder (`invoice_email_template`,
   `team.settings`; two subjects, the message holding `{invoices}`, the
   legal note and the disclaimer, in the dark grey). Resend's word
   reaches it through `supplier_email_status`. `invoice_emails` and the
@@ -269,7 +269,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sends share, `invoice_mail_begin`), from ADspace Finance with the same
   table and Bukku's own link (View PDF; Bukku's API holds no PDF to
   attach), and closed as Invoice emailed to … on the client. Its own
-  words (`invoice_send_template`, Settings, Messages: Email templates, Invoice email,
+  words (`invoice_send_template`, Clients' Email templates, Invoice email,
   `team.settings`; `invoice_send_template_get`, `_save`, filed under
   Invoice email) and its own Sent recently: a reminder never holds an
   invoice back, nor an invoice a reminder. The Email log reads it as

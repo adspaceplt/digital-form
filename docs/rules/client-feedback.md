@@ -25,6 +25,15 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   as its one button, and closes it (`feedback_mail_done`); a failed send
   withdraws the request. The WhatsApp feedback template is no longer offered
   from the record.
+- Its words are Clients' Email templates, Feedback (`feedback_email_templates`,
+  2026-11-24): each form in English and 中文, a subject, a message and a
+  button, its fields {contact name}, {client name} and {link}
+  (`template_fields('feedback')`), seeded with the words the function wrote;
+  `feedback_email_template_save` at `team.settings` (`bad-subject`,
+  `bad-body`, `bad-button`, `unknown-field`), filed `team.changed` under
+  Email templates; `feedback_mail_begin` fills the contact's language's
+  template, a form missing one refused `not-found` before a request is made
+  (`tests/feedbacksql.js`).
 - The record's Feedback part (Interactions' second, under Calls and visits;
   `tab=feedback` opens it there) lists every request newest first:
   Sent, Opened, Answered, Follow-up open (a low score whose task is not done),

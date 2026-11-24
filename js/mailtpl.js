@@ -1,9 +1,14 @@
 /* Email templates (2026-11-10; the overnight Settings review): every email
- * wording the portal sends, one sheet listing them by recipient (Clients,
- * Suppliers, Creators, Sign-in and codes) and one editor for all of them.
+ * wording the portal sends, one editor for all of them, each recipient's
+ * templates opened from the one section whose emails they are (2026-11-24,
+ * the user: "deduplicate every sections"): Edit email templates in the
+ * command bar's ⋯ of Clients, Suppliers, Creators, Team's Hiring tab
+ * (Candidates) and Messages' Email tab (Sign-in and codes), never from
+ * Settings and never from two places.
  *
- *   ADspaceMailTpl.open(btn, say)   Settings, Messages: Email templates
- *   ADspaceMailTpl.line()           what its Settings row reads
+ *   ADspaceMailTpl.open(btn, say, rec)   one recipient's templates
+ *   ADspaceMailTpl.may(rec)              whether the reader may open them
+ *   a button carrying `data-mailtpl="{rec}"` opens them at its press
  *
  * The words stay where each sender reads them (supplier_email_templates,
  * client_email_templates, email_templates, the two invoice tables,
@@ -33,9 +38,9 @@
     'not-found': 'This template no longer exists.',
     'foot-long': 'Keep the fine print to 1,000 characters.',
     'no-code': 'Keep {code} in the message, where the code goes.',
-    'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its lock screen.'
+    'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its lock screen.',
+    'bad-button': 'Enter a button label of 2 to 40 characters.'
   };
-  var REC = [['clients', 'Clients'], ['suppliers', 'Suppliers'], ['creators', 'Creators'], ['candidates', 'Candidates'], ['codes', 'Sign-in and codes']];
   /* The candidate emails (CANDIDATE EMAILS, 2026-11-21): each an automatic
      email with its own switch, hiring-mail's words before they were
      editable. */
@@ -56,6 +61,13 @@
      or Business settings, as email_template_may holds it. */
   function sup() { return full('suppliers') || biz(); }
   function canAdd(rec) { return rec === 'suppliers' ? sup() : rec === 'clients' ? biz() : false; }
+  /* Who opens a recipient's templates: a supplier's at Suppliers Full
+     Access or Business settings, every other at Business settings. */
+  function mayRec(rec) { return rec === 'suppliers' ? sup() : biz(); }
+  /* A client's feedback request (2026-11-24): each form in English and
+     Chinese, its subject, message and button (feedback_email_templates). */
+  var FB_WORD = { quick: 'Service rating', review: 'Performance review' };
+  var LANG_WORD = { en: 'English', zh: '中文' };
 
   /* One read of a list; a refusal or a missing function is null, so a
      recipient whose part the reader may not open is left out. */
@@ -79,20 +91,22 @@
 
   var st = { rec: 'clients', items: [], fields: {}, say: null, opener: null, wired: false, ed: null };
 
-  /* Every template the reader may change, each with how it is edited and
-     saved. */
+  /* Every template of the recipient open, each with how it is edited and
+     saved: only that recipient's lists are read. */
   function load() {
-    var ins = window.ADspaceInvoices;
+    var r = st.rec;
+    var on = function (want, ok, fn) { return r === want && ok ? soft(rpc(fn)) : null; };
     return Promise.all([
       soft(rpc('template_fields_all')),
-      biz() ? soft(rpc('client_email_templates_list')) : null,
-      biz() && ins ? soft(rpc('invoice_email_template_get')) : null,
-      biz() && ins ? soft(rpc('invoice_send_template_get')) : null,
-      sup() ? soft(rpc('email_templates_list')) : null,
-      sup() ? soft(rpc('supplier_email_templates_list')) : null,
-      biz() ? soft(rpc('creator_email_templates_get')) : null,
-      biz() ? soft(rpc('code_email_template_get')) : null,
-      biz() ? soft(rpc('hiring_email_templates_get')) : null
+      on('clients', biz(), 'client_email_templates_list'),
+      on('clients', biz(), 'invoice_email_template_get'),
+      on('clients', biz(), 'invoice_send_template_get'),
+      (r === 'clients' || r === 'suppliers') && canAdd(r) ? soft(rpc('email_templates_list')) : null,
+      on('suppliers', sup(), 'supplier_email_templates_list'),
+      on('creators', biz(), 'creator_email_templates_get'),
+      on('codes', biz(), 'code_email_template_get'),
+      on('candidates', biz(), 'hiring_email_templates_get'),
+      on('clients', biz(), 'feedback_email_templates_get')
     ]).then(function (a) {
       st.fields = a[0] || {};
       var out = [];
@@ -111,8 +125,17 @@
             return saveWith(x[3], { p_subject_one: v.subject, p_subject_many: v.subject2, p_body: v.body, p_legal: v.legal, p_disclaimer: v.disclaimer });
           } });
       });
+      ((a[9] && a[9].rows) || []).forEach(function (t) {
+        out.push({ id: 'feedback:' + t.kind + ':' + t.lang, rec: 'clients', sec: 'Feedback',
+          name: (FB_WORD[t.kind] || t.kind) + ' (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'feedback', btn: true,
+          subject: t.subject, body: t.body, button: t.button,
+          save: function (v) {
+            return saveWith('feedback_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
+          } });
+      });
       ((a[4] && a[4].rows) || []).forEach(function (t) {
-        if (canAdd(t.audience === 'supplier' ? 'suppliers' : 'clients')) out.push(free(t));
+        var to = t.audience === 'supplier' ? 'suppliers' : 'clients';
+        if (to === r) out.push(free(t));
       });
       var SK = { approved: 'Supplier approved', document: 'Document' };
       ((a[5] && a[5].rows) || []).forEach(function (t) {
@@ -156,27 +179,13 @@
   }
 
   /* ---- The list ---------------------------------------------------------- */
-  function recs() {
-    return REC.filter(function (r) {
-      return st.items.some(function (i) { return i.rec === r[0]; }) || (st.free && canAdd(r[0]));
-    });
-  }
   function msg(text, tone) { var m = $('mtMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (tone ? ' ' + tone : ''); } }
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
 
   function paint() {
-    var box = $('mtList'), seg = $('mtRec');
-    var list = recs();
-    if (!list.some(function (r) { return r[0] === st.rec; })) st.rec = list[0] ? list[0][0] : 'clients';
-    var want = list.map(function (r) { return r[0]; }).join(',');
-    if (seg.getAttribute('data-has') !== want) {
-      seg.innerHTML = list.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('');
-      seg.setAttribute('data-has', want);
-    }
-    seg.value = st.rec;
-    $('mtRecRow').hidden = list.length < 2;
+    var box = $('mtList');
     var mine = st.items.filter(function (i) { return i.rec === st.rec; });
     var secs = [];
     mine.forEach(function (i) { if (secs.indexOf(i.sec) < 0) secs.push(i.sec); });
@@ -211,11 +220,12 @@
     var b = focusId && document.querySelector('#mtList .mt-row[data-id="' + focusId + '"] [data-a="edit"]');
     if (b) b.focus({ preventScroll: true });
   }
-  /* `rec` opens it on one recipient (Partners, Suppliers; 2026-11-22). */
+  /* `rec` is the section's recipient: its templates alone. */
   function open(btn, say, rec) {
     wire();
     st.opener = btn || null; st.say = say || null;
-    if (rec) st.rec = rec;
+    st.rec = rec || st.rec;
+    st.items = [];
     msg('');
     window.ADspaceSheet.show($('mtSheet'), { opener: st.opener });
     var box = $('mtList');
@@ -226,7 +236,7 @@
   }
 
   /* ---- The editor -------------------------------------------------------- */
-  var KIND_FIELDS = { client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code', candidate: 'candidate' };
+  var KIND_FIELDS = { feedback: 'feedback', client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code', candidate: 'candidate' };
   function fieldsOf(kind) { return st.fields[KIND_FIELDS[kind]] || []; }
   var last = null;
 
@@ -246,6 +256,7 @@
     h += '<div class="mt-chips" role="group" aria-label="Insert a field">' + f.map(function (x) {
       return '<button class="btn btn-sm mt-chip" type="button" data-f="' + esc(x) + '">{' + esc(x) + '}</button>';
     }).join('') + '</div><p class="msg warn mt-odd" id="mtOdd" role="status" hidden></p>';
+    if (it.btn) h += box('button', 'Button', it.button, 'input');
     if (it.kind === 'invoice') h += box('legal', 'Legal note', it.legal, 'area3') + box('disclaimer', 'Disclaimer', it.disclaimer, 'area3');
     if (it.fine) h += box('foot', 'Fine print', it.foot, 'area3');
     $('mtEdForm').innerHTML = h;
@@ -277,7 +288,8 @@
     }
     return out;
   }
-  function texts() { return ['subject', 'subject2', 'body', 'legal', 'disclaimer', 'foot'].map(val).join('\n'); }
+  var TEXTS = ['subject', 'subject2', 'body', 'button', 'legal', 'disclaimer', 'foot'];
+  function texts() { return TEXTS.map(val).join('\n'); }
   function marked(text, list) {
     return esc(text).replace(/\{\s*([^{}]*?)\s*\}/g, function (all, k) {
       var ok = list.indexOf(k.toLowerCase().replace(/\s+/g, ' ')) >= 0;
@@ -290,7 +302,7 @@
     var o = $('mtOdd');
     o.hidden = !bad.length;
     o.textContent = bad.length ? L().unknownField(bad[0], list) : '';
-    ['subject', 'subject2', 'body', 'legal', 'disclaimer', 'foot'].forEach(function (n) {
+    TEXTS.forEach(function (n) {
       var el = $('mt-' + n);
       if (el) el.setAttribute('aria-invalid', String(odd(el.value, list).length > 0));
     });
@@ -298,6 +310,7 @@
     $('mtPreview').innerHTML = '<div class="inv-mail-card">' +
       '<p class="mt-pv-subj">' + (val('subject') ? marked(val('subject'), list) : '<span class="mt-pv-none">No subject</span>') + '</p>' +
       (paras.length ? paras.map(function (p) { return '<p>' + marked(p, list).replace(/\n/g, '<br>') + '</p>'; }).join('') : '<p class="mt-pv-none">No message</p>') +
+      (val('button') ? '<p class="mt-pv-btn"><span>' + marked(val('button'), list) + '</span></p>' : '') +
       (val('legal') ? '<p class="mt-pv-fine">' + marked(val('legal'), list) + '</p>' : '') +
       (val('disclaimer') ? '<p class="mt-pv-fine">' + marked(val('disclaimer'), list) + '</p>' : '') +
       (val('foot') ? '<p class="mt-pv-fine">' + marked(val('foot'), list) + '</p>' : '') + '</div>';
@@ -315,7 +328,7 @@
 
   function save() {
     var it = st.ed, go = $('mtEdSave');
-    var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), legal: val('legal'),
+    var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), button: val('button'), legal: val('legal'),
       disclaimer: val('disclaimer'), foot: val('foot'), to: val('to'), on: $('mtOn') ? $('mtOn').getAttribute('aria-checked') === 'true' : true };
     var bad = odd(texts(), fieldsOf(it.kind));
     var refuse = it.named && (v.name.length < 2 || v.name.length > 80) ? ['name', SAID['bad-name']]
@@ -323,6 +336,7 @@
       : v.subject.length < 2 ? ['subject', SAID['bad-subject']]
       : it.two && v.subject2.length < 2 ? ['subject2', SAID['bad-subject']]
       : v.body.length < 2 ? ['body', SAID['bad-body']]
+      : it.btn && (v.button.length < 2 || v.button.length > 40) ? ['button', SAID['bad-button']]
       : it.kind === 'invoice' && !/\{\s*invoices\s*\}/i.test(v.body) ? ['body', SAID['no-invoices']]
       : it.kind === 'code' && /\{\s*code\s*\}/i.test(v.subject) ? ['subject', SAID['code-in-subject']]
       : it.kind === 'code' && !/\{\s*code\s*\}/i.test(v.body) ? ['body', SAID['no-code']]
@@ -361,7 +375,6 @@
     st.wired = true;
     $('mtClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('mtDone').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    $('mtRec').addEventListener('change', function () { st.rec = this.value; msg(''); paint(); });
     $('mtList').addEventListener('click', function (e) {
       var b = e.target.closest('[data-a]');
       if (!b) return;
@@ -395,26 +408,13 @@
     $('mtEdClose').addEventListener('click', back);
   }
 
-  /* The Settings row: how many each recipient holds. */
-  /* Settings asks twice in one paint (Messages and Partners): one read
-     serves both, never the lists read again a row. */
-  var lineRead = null;
-  function line(rec) {
-    if (!lineRead) {
-      lineRead = load();
-      lineRead.then(function () { lineRead = null; }, function () { lineRead = null; });
-    }
-    return lineRead.then(function (items) {
-      if (rec) {
-        var n = items.filter(function (i) { return i.rec === rec; }).length;
-        return n + (n === 1 ? ' template' : ' templates');
-      }
-      return recs().map(function (r) {
-        var n = items.filter(function (i) { return i.rec === r[0]; }).length;
-        return r[1] + ' ' + n;
-      }).join(' · ');
-    });
-  }
+  /* A section's ⋯ item (`data-mailtpl="{rec}"`): drawn for a reader who
+     may open that recipient's templates (`ADspaceAdmin`'s access pass asks
+     `may`), opened at its press. */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-mailtpl]');
+    if (b && !b.closest('#mtSheet, #mtEdSheet')) open(b, null, b.getAttribute('data-mailtpl'));
+  });
 
-  window.ADspaceMailTpl = { open: open, line: line, _odd: odd };
+  window.ADspaceMailTpl = { open: open, may: mayRec, _odd: odd };
 })();
