@@ -482,12 +482,10 @@
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
   /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
-     2026-11-25): the services as tiles with their glyphs, What to expect as
-     cards, each its glyph in a white disc with its number on an ink badge,
-     then the time with the clock. Words unchanged. Each tile is the Need
-     step's own choice (S.need), pressed in place and carried by Start to
-     that step with the same ticks (2026-11-25: the tiles read as choices
-     and pressed as nothing). */
+     2026-11-25): What to expect as cards, each its glyph in a white disc
+     with its number on an ink badge, then the time with the clock. The
+     services are chosen on the Need step alone, as its tiles (2026-11-25:
+     tiles drawn here read as choices and pressed as nothing). */
   var NEED_GLYPH = { 'social': 'plancontent', 'ads': 'planads', 'content': 'picture', 'koc': 'people', 'verify': 'verified' };
   var STEP_GLYPH = ['grid', 'sliders', 'bubble', 'pen'];
   /* The services offered, one list for the opening page's tiles and the
@@ -498,11 +496,8 @@
     });
   }
   function paintIntro() {
-    var N = t().need;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
-      '<div class="qs-svcs" role="group" aria-label="' + esc(t().needT) + '">' + needKeys().map(function (k) {
-        return '<button class="qs-svc' + (S.need[k] ? ' is-on' : '') + '" type="button" data-a="svc" data-k="' + k + '" aria-pressed="' + Boolean(S.need[k]) + '">' +
-          '<span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><span>' + esc(N[k][0]) + '</span>' + MARK + '</button>'; }).join('') + '</div>' +
+
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2>' +
         window.ADspaceIcons.stepCards(t().introSteps.map(function (x, i) { return { glyph: STEP_GLYPH[i], line: x }; })) + '</section>' +
       '<p class="qs-note qs-time">' + ic('clock', 'qs-g') + esc(t().introNote) + '</p></div>' +
@@ -512,9 +507,14 @@
 
   function paintNeed() {
     var N = t().need;
-    return frame('<h1 class="qs-title">' + esc(t().needT) + '</h1><div class="qs-list">' +
+    /* The services as tiles (the user, 2026-11-25: "the five boxes replace
+       here"): each a toggle on S.need, its glyph in a disc over its name and
+       its line, chosen ringed in ink with the several-of mark filled at its
+       corner. */
+    return frame('<h1 class="qs-title" id="qsNeedT">' + esc(t().needT) + '</h1><div class="qs-svcs" role="group" aria-labelledby="qsNeedT">' +
       needKeys().map(function (k) {
-        return pick('checkbox', 'need', k, S.need[k], N[k][0], N[k][1]);
+        return '<button class="qs-svc' + (S.need[k] ? ' is-on' : '') + '" type="button" data-a="svc" data-k="' + k + '" aria-pressed="' + Boolean(S.need[k]) + '">' +
+          '<span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><b>' + esc(N[k][0]) + '</b><small>' + esc(N[k][1]) + '</small>' + MARK + '</button>';
       }).join('') + '</div>', navFoot());
   }
 
@@ -530,11 +530,12 @@
   }
   /* The plans as cards (the boards, 2026-11-25): its mark on top, the name,
      then a line a fact with its glyph; the middle of the three is
-     Recommended and wider (1.4 to 1), first and the row's width on a phone. */
+     Recommended and wider (1.4 to 1), first and the row's width on a phone,
+     its tag on the mark's row at the right edge, never a row of its own. */
   function planCard(p, i, n) {
     var w = t(), on = S.plan === p.slug, feat = n === 3 && i === 1;
     return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="plan" value="' + esc(p.slug) + '"' + (on ? ' checked' : '') + '>' +
-      (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
+      '<span class="qs-plan-top">' + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') + (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + '</span>' +
       '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
       '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
       '<span class="qs-pl">' + ic('device') + esc(p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms })) + '</span>' +
@@ -1485,9 +1486,7 @@
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
-      /* Afresh on arrival; a language switch on the page keeps its tiles. */
-      var held = root() && root().querySelector('.qs-intro') ? S.need : null;
-      S = blank(); if (held) S.need = held;
+      S = blank();
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       root().innerHTML = paintIntro(); decorate(); return;
     }
@@ -1744,7 +1743,10 @@
     }
     if (a === 'svc') {
       var k = b.getAttribute('data-k'), on = !S.need[k];
-      S.need[k] = on; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on));
+      S.need[k] = on; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); keep();
+      var a = steps(), sp = root().querySelector('.qs-progress span'), bar = root().querySelector('.qs-track i');
+      if (sp) sp.textContent = f(t().step, { n: 1, m: a.length + 1 });
+      if (bar) bar.style.width = Math.round(1 / (a.length + 1) * 100) + '%';
       return;
     }
     if (a === 'next') next();
@@ -1803,13 +1805,7 @@
       }
       chPrice(); chDraw(); return;
     }
-    if (nm === 'need') {
-      S.need[el.value] = el.checked;
-      var a = steps(), sp = root().querySelector('.qs-progress span'), bar = root().querySelector('.qs-track i');
-      if (sp) sp.textContent = f(t().step, { n: 1, m: a.length + 1 });
-      if (bar) bar.style.width = Math.round(1 / (a.length + 1) * 100) + '%';
-    }
-    else if (nm === 'plat') {
+    if (nm === 'plat') {
       S.platforms = S.platforms.filter(function (p) { return p !== el.value; });
       if (el.checked) S.platforms.push(el.value);
     }

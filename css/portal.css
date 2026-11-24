@@ -9696,7 +9696,9 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-plan.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .qs-plan:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
 .qs-plan.is-feat { padding: 18px 16px; }
-.qs-rec { margin-bottom: 4px; padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 600; background: var(--fill); color: var(--on-fill); }
+/* The mark's row: the glyph at the left, Recommended at the card's right edge on its top (2026-11-25). */
+.qs-plan-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; align-self: stretch; }
+.qs-rec { flex: 0 0 auto; padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 600; background: var(--fill); color: var(--on-fill); }
 .qs-plan-ic { width: 28px; height: 28px; stroke-width: 1.6; margin-bottom: 2px; color: var(--ink); }
 .qs-plan > b { font-size: 15px; font-weight: 600; }
 .qs-pl { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
@@ -9737,27 +9739,38 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-disc.is-sm { width: 30px; height: 30px; }
 .qs-disc.is-sm .ic { width: 15px; height: 15px; }
 /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
-   2026-11-25): the services as tiles, five in a row at a desk, three over
-   two on a phone; What to expect as shaded cards; the time with its clock. */
-.qs-svcs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-/* Each tile is the Need step's choice (2026-11-25): a shaded card as .qs-pick,
-   on its own white ground and ringed in ink once chosen, the several-of mark
-   (the rounded square filled in ink with its tick) at its corner. */
-.qs-svc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; min-height: var(--tap);
-  margin: 0; padding: 14px 8px; border: 0; border-radius: var(--radius); background: var(--sunk); color: var(--ink); font: inherit;
-  font-size: 12.5px; line-height: 1.35; text-align: center; overflow-wrap: anywhere; cursor: pointer; -webkit-appearance: none; appearance: none;
+   2026-11-25): What to expect as shaded cards; the time with its clock. */
+/* The Need step's services as tiles (the user, 2026-11-25: "the five boxes
+   replace here"): a shaded card as .qs-pick, white and ringed in ink once
+   chosen, the several-of mark (the rounded square filled in ink with its
+   tick) at its corner. Three over two at a desk, two across on a phone, a
+   last tile alone taking its row, never a cell alone. */
+.qs-svcs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.qs-svc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; min-height: var(--tap);
+  margin: 0; padding: 16px 12px; border: 0; border-radius: var(--radius); background: var(--sunk); color: var(--ink); font: inherit;
+  text-align: center; overflow-wrap: anywhere; cursor: pointer; -webkit-appearance: none; appearance: none;
   transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.qs-svc:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 641px) {
+  .qs-svcs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .qs-svc, .qs-svc:last-child:nth-child(odd) { grid-column: span 2; }
+  .qs-svc:nth-child(4):nth-last-child(2), .qs-svc:nth-child(5):last-child,
+  .qs-svc:first-child:nth-last-child(4), .qs-svc:first-child:nth-last-child(4) ~ .qs-svc,
+  .qs-svc:first-child:nth-last-child(2), .qs-svc:first-child:nth-last-child(2) ~ .qs-svc { grid-column: span 3; }
+  .qs-svc:only-child { grid-column: 1 / -1; }
+}
+.qs-svc .qs-disc { margin-bottom: 4px; background: var(--card); }
+.qs-svc b { font-size: var(--ctl-text); font-weight: 600; line-height: 1.35; }
+.qs-svc small { font-size: 12.5px; line-height: 1.4; color: var(--ink-soft); }
 .qs-svc:active { transform: scale(.97); }
 .qs-svc:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
-.qs-svc .qs-disc { background: var(--card); }
 .qs-svc.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .qs-svc.is-on:focus-visible { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
 .qs-svc.is-on .qs-disc { background: var(--field); }
-.qs-svc .qs-mark { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 6px; corner-shape: squircle; }
+.qs-svc .qs-mark { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 6px; corner-shape: squircle; }
 .qs-svc.is-on .qs-mark { background: var(--fill); box-shadow: none; }
 .qs-svc.is-on .qs-mark svg { opacity: 1; }
 @media (hover: hover) { .qs-svc:not(.is-on):hover { background: var(--line-soft); } }
-@media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
 .qs-time .ic { color: var(--ink-soft); }
 /* The received page (js/icons.js received, 2026-11-25; /details/, /supplier/,
