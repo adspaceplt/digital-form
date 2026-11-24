@@ -91,6 +91,14 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
     `2026-11-17-deletes-and-builds-held.sql`). A new delete function or table joins
     `delete_kinds` and the stand-in's `DK` together. `delete_kinds` and
     `delete_requests` have RLS on, no policy, no grant (`tests/delreq.js`).
+  - A Request delete press arms that one question alone
+    (`js/delreq.js`; review 2026-11-24): the question must open within
+    10 seconds of the press, a question shut unanswered disarms it, and an
+    answered one stays armed 30 seconds for the screen's call; every task
+    of a list request is within the requester's clients (`client_seen`),
+    and a request another admin is approving is refused `approving` for
+    ten minutes from their press (`2026-11-24-delete-requests-held.sql`,
+    `tests/delreq.js`).
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no

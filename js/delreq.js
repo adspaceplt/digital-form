@@ -40,6 +40,7 @@
     var c = d && d.error;
     return c === 'own' ? LINE.own
       : c === 'decided' || c === 'not-yours' ? 'This request has already been decided. Refresh the page.'
+      : c === 'approving' ? 'Another admin is deleting this now. Refresh the page in a few minutes.'
       : c === 'too-long' ? 'Keep the note to 500 characters.'
       : 'Not ' + word + '. Please try again.';
   }
@@ -94,15 +95,31 @@
     var open = document.querySelector('.kmenu-btn[aria-expanded="true"]');
     armed = { section: it.getAttribute('data-req'), host: open, at: Date.now(), reason: '' };
   }, true);
+  /* A press arms for its own question alone (review 2026-11-24: a Cancel
+     left it armed ten minutes, and a later Void read Request delete and
+     voided at once): the question must open within ARM_ASK of the press,
+     a question shut without its answer disarms, and an answered one keeps
+     the request armed only for ARM_DONE while the screen's call is made. */
+  var ARM_ASK = 10000, ARM_DONE = 30000;
   function active() {
-    if (armed && Date.now() - armed.at > 10 * 60 * 1000) armed = null;
+    if (!armed) return false;
+    var now = Date.now();
+    if ((!armed.asked && now - armed.at > ARM_ASK) || (armed.done && now - armed.done > ARM_DONE)) armed = null;
     return Boolean(armed);
   }
 
   /* The question the screen asks: a Reason (or its own, where it asks
      one), its button Request delete. */
   function wraps(o) {
-    return active() && o && (o.tone === 'danger' || /^Delete\b/.test(String(o.go || '')));
+    var w = active() && !armed.asked && o && (o.tone === 'danger' || /^Delete\b/.test(String(o.go || '')));
+    if (w) armed.asked = true;
+    return Boolean(w);
+  }
+  /* ADspaceConfirm shut: answered, the screen's call follows; not, the
+     request is dropped. */
+  function closed(went) {
+    if (!armed || !armed.asked) return;
+    if (went) armed.done = Date.now(); else armed = null;
   }
   function fields(specs) {
     var own = specs.filter(function (f) { return f && /^Reason\b/.test(String(f.label || '')); })[0];
@@ -315,7 +332,13 @@
     if (!x) return;
     var C = window.ADspaceConfirm;
     if (a === 'withdraw') {
-      Promise.resolve(db.rpc('delete_request_withdraw', { p_id: id })).then(function () { paint(); });
+      /* A refused withdraw is said on its row, never repainted as done
+         (review 2026-11-24). */
+      Promise.resolve(db.rpc('delete_request_withdraw', { p_id: id })).then(function (r) {
+        var d = r && r.data;
+        if (r && r.error || !d || !d.ok) { say(btn, refused(d, 'withdrawn')); return; }
+        paint();
+      }).catch(function () { say(btn, refused(null, 'withdrawn')); });
       return;
     }
     if (a === 'decline') {
@@ -325,7 +348,7 @@
           var d = r && r.data;
           if (!d || !d.ok) say(btn, refused(d, 'declined'));
           else paint();
-        });
+        }).catch(function () { say(btn, refused(null, 'declined')); });
       });
       return;
     }
@@ -336,17 +359,17 @@
         if (!d || !d.ok) { say(btn, refused(d, 'deleted')); return null; }
         return replay(d.kind, d.args).then(function (res) {
           return Promise.resolve(db.rpc('delete_request_done', { p_id: id, p_ok: res.ok, p_error: res.ok ? null : res.why })).then(function () {
-            if (!res.ok) { paint(); setTimeout(function () { var b = document.querySelector('.dr-row[data-id="' + id + '"] .dr-acts button'); if (b) say(b, res.why); }, 400); }
+            if (!res.ok) { paint(); setTimeout(function () { var b = document.querySelector('.dr-row[data-id="' + id + '"] .ann-acts button'); if (b) say(b, res.why); }, 400); }
             else paint();
           });
         });
-      });
+      }).catch(function () { say(btn, refused(null, 'deleted')); });
     });
   }
 
   window.ADspaceDelReq = {
     load: load, adapt: adapt, liveItem: liveItem,
-    asking: active, wraps: wraps, fields: fields,
+    asking: active, wraps: wraps, fields: fields, closed: closed,
     title: function () { return LINE.title + '?'; },
     body: function (b) { return (b ? b.replace(/\s*This cannot be undone\.?\s*$/, '') + ' ' : '') + LINE.body; },
     go: function () { return LINE.title; },
