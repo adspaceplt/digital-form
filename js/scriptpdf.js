@@ -111,8 +111,14 @@
       return out.length ? out : [''];
     };
 
+    /* Each page's Document ID (DOCUMENT ID ON EVERY FOOT, 2026-11-24): the
+       script the page carries, as shared with the client; a page that ends
+       one script and opens the next names the first. A draft names none. */
+    var codes = [], cur = '';
+    var codeOf = function (v) { return v.status === 'shared' && D().codeWord ? D().codeWord(v.doc_code) : ''; };
     /* The template's head on every page. */
     var newPage = function () {
+      codes.push(cur);
       page = pdf.addPage([W, H]);
       pn.page = page;
       pn.frameHead(false);
@@ -246,6 +252,8 @@
         .filter(Boolean).join('\n');
     };
     var video = function (v, many) {
+      cur = codeOf(v);
+      if (!codes[codes.length - 1]) codes[codes.length - 1] = cur;
       /* Each video's own shape (2026-11-05): its aspect ratio and length
          under its name, so videos of one shoot keep one header table. */
       var sub = [many ? v.kind_word : '', v.aspect || '', v.length_word || '', v.reference_url ? 'Reference: ' + v.reference_url : ''].filter(Boolean).join(' · ');
@@ -292,13 +300,14 @@
       if (last && key(last[0]) === key(v)) last.push(v); else groups.push([v]);
     });
     groups.forEach(function (g) {
+      cur = '';
       newPage();
       header(g);
       g.forEach(function (v) { video(v, g.length > 1); });
     });
 
     var pages = pdf.getPages();
-    pages.forEach(function (pg, i) { pn.page = pg; pn.foot(i, pages.length); });
+    pages.forEach(function (pg, i) { pn.page = pg; pn.foot(i, pages.length, codes[i] || ''); });
   }
 
   window.ADspaceScriptPdf = { draw: draw };

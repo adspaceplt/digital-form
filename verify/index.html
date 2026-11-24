@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands;
      this page answers the sample agency's documents alone, any reference typed. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124zf"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124zzg"><\/script>');}}catch(e){}</script>
 <script src="/js/config.js?v=20261124zzfb"></script>
 <!-- js/demo.js only while the demo stands: the public page carries nothing for it. -->
 <script>if(window.ADSPACE_DEMO)document.write('<script src="/js/demo.js?v=20261121qse"><\/script>');</script>
@@ -36,7 +36,7 @@
     <div class="cover-inner">
       <div class="cover-panel verify-panel" data-glyph="shield">
         <h2 id="vTitle">Verify document</h2>
-        <p id="vText">Enter the reference printed on the document.</p>
+        <p id="vText">Enter the reference or the Document ID printed on the document.</p>
         <form id="vForm" novalidate>
           <input class="input" id="vSerial" placeholder="AQL/AC001/260901" aria-label="Reference" autocomplete="off" autocapitalize="characters" spellcheck="false">
           <button class="btn btn-primary" id="vGo" type="submit">Verify</button>
@@ -50,6 +50,6 @@
 </main>
 
 <script src="/js/seal.js?v=20261123f"></script>
-<script src="/js/verify.js?v=20261124w"></script>
+<script src="/js/verify.js?v=20261124dh"></script>
 </body>
 </html>

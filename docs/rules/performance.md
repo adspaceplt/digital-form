@@ -105,9 +105,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     one bold figure; page one the result (who, Result, Scores, What This
     Grade Means), page two the follow-up (Issues, If This Result Repeats,
     Improvement and Follow-up, Queries, Record of This Document); a
-    heading keeps its block, a short paragraph never splits; the foot
-    PRIVATE & CONFIDENTIAL beside the page count, the reference and who
-    downloaded it above.
+    heading keeps its block, a short paragraph never splits; the foot the
+    template's row (each page its own record's Document ID · Verify document
+    authenticity: go.adspace.me/verify, the page count at the right margin; 2026-11-24),
+    the reference and who downloaded it above.
   - The download is filed first (`perf_printed` answers the server's time,
     who, their address and the released / acknowledged / finalised steps); a
     refused filing makes no file, and one's own record asks the fresh proof

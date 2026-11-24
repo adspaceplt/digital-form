@@ -1820,16 +1820,17 @@
         pdf = doc;
         D.meta(pdf, recs.length === 1 && recs[0].serial ? recs[0].serial : name, 'Performance Review');
         /* Each record's Document ID (VERIFY DETAILS, 2026-11-20), printed
-           in its reference line on every page. */
+           on the foot's row of each of its pages (2026-11-24). */
         return Promise.all([D.embedFonts(pdf, PDF), D.embedLogo(pdf), Promise.all(recs.map(function (r) {
           return r.serial && D.codeOf ? D.codeOf('perf', r.id) : '';
         }))]);
       }).then(function (a) {
         recs.forEach(function (r, i) { r.__code = a[2][i] || ''; });
         var p = D.pen(PDF, a[0], a[1], { kind: 'perf' });
+        p.pageCodes = [];
         recs.forEach(function (r) { drawRecord(pdf, p, r); });
         var pages = pdf.getPages();
-        pages.forEach(function (pg, i) { p.page = pg; p.foot(i, pages.length); });
+        pages.forEach(function (pg, i) { p.page = pg; p.foot(i, pages.length, p.pageCodes[i] || ''); });
         return pdf.save();
       }).then(function (bytes) {
         D.save(new Blob([bytes], { type: 'application/pdf' }), name, tab);
@@ -1881,11 +1882,12 @@
     var page = function (first) {
       p.page = pdf.addPage([p.W, p.H]);
       pageNo++;
+      if (p.pageCodes) p.pageCodes.push(r.__code || '');
       /* The template's head (AL) on every page; its foot is drawn once the
          pages are counted. */
       y = first ? p.head() - SP.under : (p.head(), p.H - p.TOP);
       var st0 = r.__stamp;
-      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + (r.__code ? 'Document ID ' + r.__code + ' · ' : '') + r.month +
+      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
         (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
         M, STAMP, TY.small, book, SOFT);
     };

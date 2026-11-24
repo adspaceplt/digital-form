@@ -911,6 +911,16 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    desk, and beside it on the phone's second line (2026-11-22, screen (f)). */
 .bookreg .kcard-tags > .kcard-pay { flex-basis: 100%; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags > .kcard-pay { flex-basis: auto; }
+/* Where the second line holds more than the state (its payment, Goodwill,
+   Replacement), the date takes a line of its own under it, read whole, and
+   the chips wrap between themselves: beside four chips the date had 23px
+   at 390 (2026-11-24, the day's gate). The state alone keeps it beside. */
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) {
+  grid-template-areas: "lead name name" "lead tags tags" "lead sum sum";
+}
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-tags { flex-wrap: wrap; min-width: 0; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-sum { text-align: left; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-sum:empty { display: none; }
 /* A stated track outlives the cell in it, so the row that draws no ⋯ gives
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
@@ -5604,6 +5614,11 @@ svg.sec {
 .console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; padding: 0 5px 2px; }
 .console .rec-part:has(> .viewhead[hidden]) { display: none; }
 .console .rec-part > .viewhead { margin: 0; padding: 14px 15px 6px; }
+/* A part showing its head alone (White label switched off, a part not yet
+   filled) stands as high under the head as over it: 14 over, 12 here and
+   the part's own 2 under (the user, 2026-11-24: "spacing looks weird
+   uneven"). */
+.console .rec-part > .viewhead:not(:has(~ :not(:empty):not([hidden]))) { padding-bottom: 12px; }
 /* Every heading in a record's panes is one size, whether it heads a card or
    the cards under it (a record's pane heads itself one way, 2026-11-03). */
 .console .rec:not(.cportal) .viewhead h2 { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 0 1 auto; }
