@@ -50,7 +50,21 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   sender) on the bell, `client.feedback`, opening the client; its follow-up
   is a My Work task linked by `feedback_followup`, the score open until that
   task is done.
-- `tests/feedbacksql.js` holds the database, `tests/feedbackui.js` the record's tab and Request feedback; the walk seeds Laman Citra's
+- The figures (`feedback_figures(p_from, p_to)`, one read a span, at
+  Clients Full Access; nothing is drawn or read below it): the Dashboard's
+  Team tab, Client feedback after Sales (`#ovwFb`, the lead row's tiles,
+  three across, one over the other when narrow): Service rating (the mean
+  of the Service rating's lead, `4.0 of 10`), Net Promoter Score (promoters
+  less detractors over the Performance reviews answered), each with its
+  answers and its change on the period before, and Low scores open (red
+  with the oldest's date, whatever the period); under them, only while any,
+  `N active clients have not been asked for feedback in M months.` (the
+  Business setting). Analytics' Clients tab, This week: Client feedback by
+  Person in charge (the account manager named on each request when sent):
+  Requested, Answered, Service rating, NPS and As account manager (the
+  manager's own score, a dash where `feedback_sees_manager` withholds it);
+  on a narrow pane the two counts give way.
+- `tests/feedbacksql.js` holds the database, `tests/feedbackui.js` the record's tab, Request feedback and the figures; the walk seeds Laman Citra's
   Service rating open (`fbwalkopen234567`), its Performance review answered
   and an earlier low Service rating.
 

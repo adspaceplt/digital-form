@@ -742,6 +742,72 @@
         });
       } }
   ];
+  /* Client feedback (2026-11-24, CLIENT FEEDBACK): the period's Service
+     rating and NPS against the one before, the low scores whose follow-up
+     is still open, and the active clients not asked within the Business
+     setting's months; one `feedback_figures` read a span, at Clients Full
+     Access. */
+  var canFb = function () { return may('clients', 'manage'); };
+  function fbRead(prev) {
+    var k = prev ? 'fbPrev' : 'fb';
+    if (!memo[k]) {
+      var r = prev ? prevOf(period) : rangeOf(period);
+      memo[k] = db.rpc('feedback_figures', { p_from: CK.day(r.from), p_to: CK.day(new Date(r.to.getTime() - 1)) }).then(function (x) {
+        if (x.error) throw new Error(x.error.message);
+        if (!x.data || x.data.error) throw new Error(x.data && x.data.error === 'denied' ? 'You do not have permission to read client feedback. Please ask an admin.' : 'The feedback figures could not be loaded. Refresh the page.');
+        return x.data;
+      });
+      memo[k].catch(function () { delete memo[k]; });
+    }
+    return memo[k];
+  }
+  function fbTile(key, title, n, fmt) {
+    return { key: key, title: title, sec: 'clients', can: canFb, load: function () {
+      return Promise.all([fbRead(), fbRead(true).catch(function () { return null; })]).then(function (r) {
+        var now = r[0][key], cnt = Number(r[0][n]) || 0, before = r[1] ? r[1][key] : null;
+        if (now == null) return { fig: '\u2014', sub: 'No answers' };
+        now = Number(now);
+        var d = before == null ? null : Math.round((now - Number(before)) * 10) / 10;
+        var ans = cnt + (cnt === 1 ? ' answer' : ' answers');
+        return { fig: fmt(now), sub: d == null ? ans : ans + ' · ' + (!d ? 'Same as ' + prevWord(period) : (d > 0 ? '+' : '\u2212') + Math.abs(d) + ' on ' + prevWord(period)),
+                 trend: d == null ? null : trendOf(now, Number(before), 'up', key === 'nps' ? 10 : 0.5) };
+      });
+    } };
+  }
+  var FB = [
+    fbTile('rating', 'Service rating', 'rating_n', function (v) { return v.toFixed(1) + ' of 10'; }),
+    fbTile('nps', 'Net Promoter Score', 'nps_n', function (v) { return (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v); }),
+    { key: 'fblow', title: 'Low scores open', sec: 'clients', can: canFb, load: function () {
+      return fbRead().then(function (d) {
+        var n = Number(d.low_open) || 0;
+        return { fig: String(n), tone: n ? 'err' : '',
+                 sub: n ? 'Oldest ' + CK.date(new Date(d.low_oldest)) : 'None open' };
+      });
+    } }
+  ];
+  function fbGroup(box) {
+    var list = FB.filter(function (t) { return t.can(); });
+    if (!list.length) return;
+    var sec = document.createElement('section');
+    sec.className = 'ovw-paygroup';
+    sec.id = 'ovwFb';
+    sec.innerHTML = '<h3 class="ovw-group-h">Client feedback</h3>';
+    var grid = document.createElement('div');
+    grid.className = 'ovw-kpis ovw-lead ovw-fb';
+    sec.appendChild(grid);
+    box.appendChild(sec);
+    list.forEach(function (t) { tile(grid, t); });
+    /* The clients nobody has asked lately: a line under the tiles, drawn
+       only where there are some. */
+    fbRead().then(function (d) {
+      var n = Number(d.quiet) || 0, m = Number(d.quiet_months) || 6;
+      if (!n) return;
+      var p = document.createElement('p');
+      p.className = 'ovw-fbquiet';
+      p.textContent = n + (n === 1 ? ' active client has' : ' active clients have') + ' not been asked for feedback in ' + m + (m === 1 ? ' month.' : ' months.');
+      sec.appendChild(p);
+    }).catch(function () {});
+  }
   function completed(d) {
     return (d && Array.isArray(d.by_person) ? d.by_person : []).reduce(function (a, p) { return a + (Number(p.completed) || 0); }, 0);
   }
@@ -1157,14 +1223,14 @@
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
      starts on its first route instead of an empty page. */
-  var ALL = [].concat(SOURCES, SALES, OPS, PAY, [].concat.apply([], CHARTS));
+  var ALL = [].concat(SOURCES, SALES, OPS, PAY, FB, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
   /* What Team draws: Needs attention's sources, the four figures, Work by
      person and Clients this month. */
   function teamAny() {
     return SOURCES.some(function (c) { return c.can(); }) || canFigures() || canTeamWork() ||
       SALES.concat(OPS).some(function (t) { return LEAD.indexOf(t.key) > -1 && t.can(); }) ||
-      PAY.some(function (t) { return t.can(); });
+      PAY.some(function (t) { return t.can(); }) || FB.some(function (t) { return t.can(); });
   }
 
   // ---- Drawing ----------------------------------------------------------------------
@@ -2406,6 +2472,7 @@
     } else {
       lead(box);
       payGroup(box);
+      fbGroup(box);
       /* The line under the Dashboard's name: the open work and what of it
          is late, from the report the page already reads. */
       if (canFigures() && window.ADspaceAdmin && window.ADspaceAdmin.counts) {
