@@ -4874,6 +4874,8 @@ function cardSlugFree(name, self, email) {
       if (name === 'personnel_salary_get') return { ok: true, probation: s ? s.probation : null, confirmed: s ? s.confirmed : null, updated_at: s ? s.updated_at : null };
       var t3 = who(a.p_member);
       if (!t3) return { error: 'not-found' };
+
+      if (t3.id === m.id && !(m.is_admin || m.role === 'admin')) return { error: 'own-salary' };
       var okAmt = function (n) { return n == null || (typeof n === 'number' && n >= 0 && n < 1e7); };
       if (!okAmt(a.p_probation) || !okAmt(a.p_confirmed)) return { error: 'bad-amount' };
       var rd = function (n) { return n == null ? null : Math.round(n * 100) / 100; };
