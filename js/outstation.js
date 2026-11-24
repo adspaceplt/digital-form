@@ -94,9 +94,6 @@
     var q = new URLSearchParams(location.search);
     if (q.get('ov') === 'all') st.mode = 'all';
     if (/^\d{4}-\d{2}$/.test(q.get('om') || '')) st.month = q.get('om');
-    /* A trip asked by its address (a client's Engagements, 2026-11-24)
-       opens once its month is read. */
-    if (/^[0-9a-f-]{36}$/i.test(q.get('trip') || '')) st.ask = q.get('trip');
   })();
   function urlPart() {
     var q = {};
@@ -104,7 +101,6 @@
       q.ov = 'all';
       if (st.month !== C.today().slice(0, 7)) q.om = st.month;
     }
-    if (st.ask) { q.om = st.month; q.trip = st.ask; }
     return q;
   }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }
@@ -115,8 +111,7 @@
       var next = C.addMonths(st.month + '-01', 1);
       return { from: st.month + '-01', to: C.addDays(next + '-01', -1) };
     }
-    var from = C.addMonths(C.today(), -2) + '-01';
-    return { from: st.ask && st.month + '-01' < from ? st.month + '-01' : from, to: C.today() };
+    return { from: C.addMonths(C.today(), -2) + '-01', to: C.today() };
   }
   function load() {
     var mine = ++st.seq, p = period();
@@ -127,12 +122,6 @@
       if (r.error || !r.data || r.data.error) { st.err = (r.data && SAID[r.data.error]) || (r.error && r.error.message) || 'The trips could not be loaded.'; }
       else { st.d = r.data; heal(st.d.trips || []); }
       paint();
-      if (st.ask && st.d) {
-        var ask = st.ask, hit = (st.d.trips || []).filter(function (t) { return t.id === ask; })[0];
-        st.ask = null;
-        var u = new URL(location.href); u.searchParams.delete('trip'); history.replaceState(null, '', u.pathname + u.search);
-        if (hit) openDetail(hit, null);
-      }
     }).catch(function (e) {
       if (mine !== st.seq) return;
       st.err = (e && e.message) || 'The trips could not be loaded.'; paint();
