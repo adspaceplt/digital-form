@@ -428,8 +428,7 @@
         { glyph: 'scale', title: 'Decision' }
       ],
       cards: [
-        I.summary('Your application', [{ rows: [['Position', d.position], ['Received on', day(d.received_at)],
-          ['Status', '<span class="chip-state is-warn">' + esc(STATUS.received) + '</span>', true]] }]),
+        I.summary('Your application', [{ rows: [['Position', d.position], ['Received on', day(d.received_at)]] }]),
         I.card('Contact ADspace', '<div class="rcv-acts">' + mail +
           '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + I.svg('chat') +
           esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>')
