@@ -143445,7 +143445,6 @@ grant execute on function public.outstation_check_out(uuid, numeric, numeric, nu
 
 -- ===========================================================================
 -- THE SYSTEM ACCOUNT CANNOT BE REMOVED BY A DIRECT WRITE (2026-11-24)
--- ====================================================================
 -- ===========================================================================
 -- WHY: the code review of everything since 2026-11-09 found that
 -- `team_members_system_guard` held a system account's active flag, access
@@ -143494,7 +143493,8 @@ end $$;
 revoke all on function public.team_members_system_guard() from public, anon, authenticated;
 
 -- END OF THE SYSTEM ACCOUNT CANNOT BE REMOVED BY A DIRECT WRITE -------------
-=======
+
+-- ===========================================================================
 -- A SUPPLIER'S EDIT HOLDS TO ITS COPY (2026-11-24)
 -- ===========================================================================
 -- WHY: the review of 2026-11-24 (C1): `supplier_save` wrote every field the
