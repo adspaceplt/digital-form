@@ -97,7 +97,7 @@ begin
   v_role := public.hiring_role(i.candidate_id);
   if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
   -- A confirmed interview the decision cancelled keeps its Google Meet for
-  -- the page to remove: answered with no time, so only a delete proceeds.
+  -- the page to remove: answered with no time, so only its removal proceeds.
   if not (i.state = 'confirmed' or (i.state = 'cancelled' and i.meeting_event_id is not null))
      or i.mode <> 'online' or i.picked is null then return jsonb_build_object('error', 'not-confirmed'); end if;
   select * into c from public.hiring_candidates where id = i.candidate_id;
