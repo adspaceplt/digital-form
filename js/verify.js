@@ -21,7 +21,7 @@
 
   var WORDS = {
     en: {
-      title: 'Verify document', text: 'Enter the reference printed on the document.',
+      title: 'Verify document', text: 'Enter the reference or the Document ID printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
       notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
@@ -46,7 +46,7 @@
         replaced: 'Replaced', expired: 'Expired' }
     },
     zh: {
-      title: '文件核验', text: '请输入文件上印有的编号。',
+      title: '文件核验', text: '请输入文件上印有的编号或文件识别码。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
       notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
       failed: '无法核验', failedText: '请稍后再试。',
@@ -73,7 +73,8 @@
          the team added) reads as it was sent. */
       kind: { 'quotation': '报价单', 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
         'letter to client': '客户函件', 'thank you letter': '感谢函', 'quotation cover': '报价单封面函',
-        'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件' }
+        'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件',
+        'social media accounts report': '社交媒体账户报告', 'social media advertising report': '社交媒体广告报告', 'video script': '视频脚本' }
     }
   };
   /* The issuer's own names, as the page's settings hold them: the demo
@@ -137,11 +138,13 @@
        page draws its month alike. */
     var month = a.issued_month || (a.issued_at ? ADspaceClock.day(a.issued_at).slice(0, 7) : '');
     return '<dl class="verify-facts">' +
-      row(t().ref, esc(a.serial || '')) +
+      /* A report or a script holds no reference: its Document ID is what
+         was asked, and stands in the reference's place (2026-11-24). */
+      (a.by_code ? row(t().docId, '<span class="verify-code">' + esc(a.serial || '') + '</span>') : row(t().ref, esc(a.serial || ''))) +
       row(t().issuedBy, esc(issuer())) +
       row(t().doc, esc(kindWord(a.kind))) +
       (d ? row(t().issued, esc(dayWord(d.issued_on))) : month ? row(t().issued, esc(monthWord(month))) : '') +
-      (d && d.document_id ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
+      (d && d.document_id && !a.by_code ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
       row(t().status, '<span class="tone ' + stateTone(state) + '">' + esc(t().state[state] || state) + '</span>') +
       '</dl>';
   }
@@ -382,7 +385,10 @@
     go.disabled = true; go.textContent = t().checking;
     var done = function (a) {
       go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial);
-      // A pass held in this tab for this reference opens its details.
+      /* A pass held in this tab for this reference opens its details; a
+         Document ID typed as the reference (a report, a script) opens them
+         at once, being the code itself. */
+      if (a.found && a.more && a.by_code) { details(a, a.serial, '', ''); return; }
       var code = a.found && a.more ? readPass(serial) : '';
       if (code) details(a, code, '', serial);
     };
