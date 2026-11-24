@@ -270,7 +270,10 @@ Deno.serve(async (req) => {
     if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
     return new Response(got.body, {
       status: 200,
-      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', ...cors(origin) }
+      /* As octet-stream: supabase-js hands the page a file only for
+         octet-stream or a PDF, and an image/jpeg answer reached it as text
+         (2026-11-24); the page names the type (`ADspaceAPI.fileOf`). */
+      headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store', ...cors(origin) }
     });
   }
 
@@ -299,7 +302,8 @@ Deno.serve(async (req) => {
     });
     const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
     if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
-    const type = m[2] === 'pdf' ? 'application/pdf' : m[2] === 'png' ? 'image/png' : 'image/jpeg';
+    /* A picture as octet-stream, as a trip's photo (2026-11-24). */
+    const type = m[2] === 'pdf' ? 'application/pdf' : 'application/octet-stream';
     return new Response(got.body, {
       status: 200,
       headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...cors(origin) }

@@ -18,9 +18,14 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   Other place with its venue; the purpose a segment of Meeting, Shooting,
   Event, Other; a note; Going together; the location; at least one photo),
   then Next stop (the place, the location, a photo) as often as needed, Add
-  photo at any time, and Check out (the location, a note, Rate your trip, 1
-  to 5 stars, optional). The visit date and the hours come from the times,
-  never typed. A trip open more than four hours shows the break reminder.
+  photo at any time, and Check out (a note, Rate your trip, 1 to 5 stars,
+  optional; no location: only the site is read, once; the user, 2026-11-24).
+  The visit date and the hours come from the times (check-in at the first
+  site to check-out), never typed. A trip open more than four hours shows
+  the break reminder.
+- The route lists the client sites alone, each from its check-in to its
+  check-out; the office is no stop, only the road distance's start and end
+  (Settings' pin; the user, 2026-11-24).
 - Add claim (Coming soon) stands beside Check out, tonal, its words mute,
   `aria-disabled`, opening nothing, until claims are built (the user,
   2026-11-23): the one act drawn disabled for being not yet built.
@@ -43,12 +48,22 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   under the driver's name; one the client scope refuses is left unfiled,
   never failing the trip. Naming a client asks Clients at View and its
   client scope (`bad-client`).
-- Place and distance (`outstation-geo`): the address and zone (Johor,
-  Singapore, Beyond Johor) from OpenStreetMap Nominatim, once a stop, one
-  request a second across the portal (`outstation_geo_turn`), credited under
-  the route (Addresses © OpenStreetMap contributors); the road km from
-  openrouteservice, office to each stop in order and, once checked out,
-  back to the office (`km_from_prev`, `km_back`, `km_total`). The office is
+- Place and distance (`outstation-geo`), both from openrouteservice on the
+  one `ORS_API_KEY` (Nominatim refused the function's servers, 403,
+  2026-11-24): the address and zone (Johor, Singapore, Beyond Johor) from
+  its geocoder, once a stop and once for a reading before it is saved
+  (`near`, My Work at Work, nothing written), one request a second across
+  the portal (`outstation_geo_turn`); the road km from its matrix (each
+  leg its row i, column i; the directions answer asked without
+  instructions carried no legs), office to each stop in order and, once
+  checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
+  credited under the route (© openrouteservice.org by HeiGIT · Map data ©
+  OpenStreetMap contributors).
+- The location block shows the reading's coordinates as it arrives and the
+  place the geocoder names once the reading is accepted (2026-11-24).
+- A photo reaches the page as `application/octet-stream` and is named by
+  `ADspaceAPI.fileOf` (2026-11-24: an image/jpeg answer reached it as
+  text, and every photo read Not available). The office is
   Settings' pin (`outstation_office_lat`, `outstation_office_lng`). With no
   `ORS_API_KEY` secret the route answers `{ off: true }` and the page reads
   Not available.

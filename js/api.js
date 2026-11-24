@@ -457,9 +457,32 @@
     });
   }
 
+  /* A file a function answered as bytes (sign-download's trip photos and
+     employee record files), named by its own first bytes: supabase-js
+     hands over a file only for application/octet-stream or
+     application/pdf and turns an image/jpeg answer into text, so the
+     function answers octet-stream and the page reads the type here, the
+     one copy (2026-11-24: every trip photo read Not available). Answers a
+     promise of a Blob typed image/jpeg, image/png or application/pdf, or
+     null for anything else. */
+  function fileOf(data) {
+    if (!data || typeof data.size !== 'number' || !data.size || typeof data.slice !== 'function') return Promise.resolve(null);
+    const head = data.slice(0, 8);
+    const read = typeof head.arrayBuffer === 'function' ? head.arrayBuffer()
+      : new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = no; f.readAsArrayBuffer(head); });
+    return read.then((buf) => {
+      const b = new Uint8Array(buf);
+      const type = b[0] === 0xFF && b[1] === 0xD8 ? 'image/jpeg'
+        : b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 ? 'image/png'
+        : b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46 ? 'application/pdf' : '';
+      return type ? new Blob([data], { type }) : null;
+    }).catch(() => null);
+  }
+
   window.ADspaceAPI = {
     readPages,
     openStored,
+    fileOf,
     steadyFetch,
     loading: { begin: loadBegin, end: loadEnd, get slowAfter() { return LOADING().slowAfter; }, get busy() { return busyN; } },
     accessToken,

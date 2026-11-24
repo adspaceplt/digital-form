@@ -377,8 +377,8 @@
   function isAdmin() { var A = window.ADspaceAdmin; return Boolean(A && A.isAdmin && A.isAdmin()); }
   function fileBlob(member, kind) {
     return db.functions.invoke('sign-download', { body: { personnel: { member: member, kind: kind } } }).then(function (r) {
-      var b = r && r.data;
-      return !r.error && b && typeof b.size === 'number' && b.size && /image\/(png|jpe?g)/.test(b.type) ? b : null;
+      if (!r || r.error) return null;
+      return window.ADspaceAPI.fileOf(r.data).then(function (b) { return b && /^image\//.test(b.type) ? b : null; });
     }).catch(function () { return null; });
   }
   function recordForm() {
@@ -657,10 +657,12 @@
     var Docs = window.ADspaceDocs;
     var tab = Docs.previewTab();
     return db.functions.invoke('sign-download', { body: { personnel: { member: member || null, kind: kind } } }).then(function (r) {
-      var b = r && r.data;
-      if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('The file could not be opened. Try again.');
-      var ext = /pdf/.test(b.type) ? 'pdf' : /png/.test(b.type) ? 'png' : 'jpg';
-      return Docs.save(b, kind + '.' + ext, tab);
+      if (!r || r.error) throw new Error('The file could not be opened. Try again.');
+      return window.ADspaceAPI.fileOf(r.data).then(function (f) {
+        if (!f) throw new Error('The file could not be opened. Try again.');
+        var ext = /pdf/.test(f.type) ? 'pdf' : /png/.test(f.type) ? 'png' : 'jpg';
+        return Docs.save(f, kind + '.' + ext, tab);
+      });
     }).catch(function (e) { if (tab && tab.close) tab.close(); throw e; });
   }
   function wireFiles(box, member) {

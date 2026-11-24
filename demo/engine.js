@@ -10310,6 +10310,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
     }
 
+    if (name === 'allowed' && args && args.p_section) return Promise.resolve({ data: !!(opsMe() && opsAllowed(args.p_section, args.p_level || 'view')), error: null });
     if (/^outstation_/.test(name)) {
       args = args || {};
       var oNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
@@ -10453,7 +10454,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var saL = oLast(saT);
         if (!oHasPhoto(saL)) return oNo('no-photo');
         if (name === 'outstation_stop_add' && saL.seq >= 20) return oNo('too-many');
-        var saR = oReading(); if (saR) return oNo(saR.error, saR);
+
+        var saR = name === 'outstation_check_out' && args.p_lat == null && args.p_lng == null ? null : oReading(); if (saR) return oNo(saR.error, saR);
         saL.left_at = new Date().toISOString();
         oFile(saL);
         if (name === 'outstation_stop_add') {
@@ -18426,13 +18428,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (r.error || d.error) return ofErr(d.error === 'not-kept' ? 404 : 403);
             return fetch('https://s3.test/get/' + d.key).then(function (res) {
               if (!res.ok) return ofErr(404);
-              return res.blob().then(function (b) { return { data: b, error: null }; });
+
+              return res.blob().then(function (b) { return { data: new Blob([b], { type: 'application/octet-stream' }), error: null }; });
             }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
           });
         }
 
         if (name === 'outstation-geo') {
           var gb = (opts && opts.body) || {};
+
+          if (gb.near) {
+            return rpc('allowed', { p_section: 'ops', p_level: 'work' }).then(function (r) {
+              if (r.error || r.data !== true) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 403 } };
+              var pl = (window.__ostPlace && window.__ostPlace(gb.near)) || { address: 'Jalan Setia Tropika 1/15, Johor Bahru, 81200, Johor', zone: 'johor' };
+              return { data: { ok: true, address: pl.address, zone: pl.zone }, error: null };
+            });
+          }
           return rpc('outstation_geo_may', { p_stop: gb.stop || null, p_trip: gb.trip || null }).then(function (r) {
             if (r.error || !r.data) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 403 } };
             var O = DB.__ost;
@@ -18461,7 +18472,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (r.error || d.error) return pfErr(d.error === 'not-kept' ? 404 : 403);
             return fetch('https://s3.test/get/' + d.key).then(function (res) {
               if (!res.ok) return pfErr(404);
-              return res.blob().then(function (b) { return { data: b, error: null }; });
+
+              return res.blob().then(function (b) { return { data: new Blob([b], { type: 'application/octet-stream' }), error: null }; });
             }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
           });
         }
