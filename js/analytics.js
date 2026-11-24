@@ -761,7 +761,7 @@
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
   }
   function fbCard(grid, r) {
-    var el = card(grid, 'feedback', 'Client feedback by Person in charge', spanWord(r), '<span class="skel skel-w"></span>');
+    var el = card(grid, 'feedback', 'Client feedback by person in charge', spanWord(r), '<span class="skel skel-w"></span>');
     var body = el.querySelector('.ovw-body');
     var dash = '<span class="mute">\u2014</span>';
     var num = function (v, f) { return v == null ? dash : esc(f(Number(v))); };
@@ -771,10 +771,10 @@
         var d = x.data || {};
         if (d.error) throw new Error(d.error === 'denied' ? 'You do not have permission to read client feedback. Please ask an admin.' : 'The feedback figures could not be loaded. Refresh the page.');
         var ppl = (d.people || []).filter(function (p) { return p.requested || p.answered; });
-        if (!ppl.length) { UI.emptyLine(body, 'No feedback requested in the period.'); return; }
+        if (!ppl.length) { UI.emptyLine(body, 'No requests.'); return; }
         body.innerHTML = '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl anl-fb"><thead><tr><th scope="col">Person in charge</th>' +
           '<th scope="col" class="is-end">Requested</th><th scope="col" class="is-end">Answered</th><th scope="col" class="is-end">Service rating</th>' +
-          '<th scope="col" class="is-end">NPS</th><th scope="col" class="is-end">As account manager</th></tr></thead><tbody>' +
+          '<th scope="col" class="is-end">NPS</th><th scope="col" class="is-end">Account manager score</th></tr></thead><tbody>' +
           ppl.map(function (p) {
             return '<tr><th scope="row">' + esc(p.name || 'Former colleague') + '</th><td class="is-end">' + (Number(p.requested) || 0) +
               '</td><td class="is-end">' + (Number(p.answered) || 0) + '</td><td class="is-end">' + num(p.rating, function (v) { return v.toFixed(1); }) +

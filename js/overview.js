@@ -777,7 +777,7 @@
   var FB = [
     fbTile('rating', 'Service rating', 'rating_n', function (v) { return v.toFixed(1) + ' of 10'; }),
     fbTile('nps', 'Net Promoter Score', 'nps_n', function (v) { return (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v); }),
-    { key: 'fblow', title: 'Low scores open', sec: 'clients', can: canFb, load: function () {
+    { key: 'fblow', title: 'Open low scores', sec: 'clients', can: canFb, load: function () {
       return fbRead().then(function (d) {
         var n = Number(d.low_open) || 0;
         return { fig: String(n), tone: n ? 'err' : '',

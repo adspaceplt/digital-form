@@ -56,12 +56,12 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   three across, one over the other when narrow): Service rating (the mean
   of the Service rating's lead, `4.0 of 10`), Net Promoter Score (promoters
   less detractors over the Performance reviews answered), each with its
-  answers and its change on the period before, and Low scores open (red
+  answers and its change on the period before, and Open low scores (red
   with the oldest's date, whatever the period); under them, only while any,
   `N active clients have not been asked for feedback in M months.` (the
   Business setting). Analytics' Clients tab, This week: Client feedback by
-  Person in charge (the account manager named on each request when sent):
-  Requested, Answered, Service rating, NPS and As account manager (the
+  person in charge (the account manager named on each request when sent):
+  Requested, Answered, Service rating, NPS and Account manager score (the
   manager's own score, a dash where `feedback_sees_manager` withholds it);
   on a narrow pane the two counts give way.
 - `tests/feedbacksql.js` holds the database, `tests/feedbackui.js` the record's tab, Request feedback and the figures; the walk seeds Laman Citra's
