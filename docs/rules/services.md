@@ -258,7 +258,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `quote_totals`, the names in `totals.brands`; the term, date, Rate Card,
   payment terms, validity, advertising budget, Bill to, terms and title stay
   the quotation's (one contract, one term); no `brands` is priced as before,
-  and a website selection with them is refused (`bad-brands`).
+  and a website selection with them is refused (`bad-brands`). A line
+  leaving a quotation of two brands or more (a service line on approval,
+  a Letter of Offer's To quote line, each cycle's invoice line to Bukku) is
+  named after its brand, `{brand} · {line}` (`quote_line_label`,
+  `2026-11-24-quotation-brands-lines.sql`); one brand reads as before.
 - Build quote (the user, 2026-11-24, the approved basket and sheet): one
   column in the order a quote is built, a numbered step each (`.qb-num`):
   1 Plan (Without ads / With ads, the plan cards, Content, Advertising

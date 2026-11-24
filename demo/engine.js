@@ -941,6 +941,12 @@
     var v = String(p == null ? '' : p).replace(/[\u0000-\u001f\u007f<>"`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
     return v || null;
   }
+
+  function qtLineLabel(t, l) {
+    var b = t && Array.isArray(t.brands) && t.brands.length > 1 && l && l.brand != null ? t.brands[l.brand] : null;
+    var lab = String((l && l.label) || '').trim() || 'Service';
+    return b && String(b.name || '').trim() ? String(b.name).trim() + ' · ' + lab : lab;
+  }
   function nid(p) {
     seq++;
     try { sessionStorage.setItem('__stubseq', String(seq)); } catch (e) {}
@@ -14026,7 +14032,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
           else sq2.lines.filter(function (l) { return !l.renews; }).forEach(function (l) {
             have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-              label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
+              label: qtLineLabel(sq2.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
               tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: l.start || null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
               detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
             DB.client_services.push(have[have.length - 1]);
@@ -14377,7 +14383,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.valid_until < qtToday) return qtOk({ error: 'expired' });
         var qids = qq.lines.map(function (l) {
           var row = { id: nid('cs'), client_id: qq.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-            label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'quoted', note: 'Quotation ' + qq.ref,
+            label: qtLineLabel(qq.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'quoted', note: 'Quotation ' + qq.ref,
             tenure: l.basis === 'month' ? (l.months || qq.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? qq.totals.term_pct : 0,
             detail: (l.detail || []).join('\n') || null, quotation_id: qq.id, created_at: new Date().toISOString(), archived_at: null, tax_code: l.tax_code || null };
           DB.client_services.push(row);
@@ -15636,7 +15642,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
           var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
           var sst = Number(e.sst != null ? e.sst : (tot.sst_pct || 0));
-          out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
+          out.push({ label: qtLineLabel(q.totals, e), qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
             sst: sst, sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null,
             _g: mo && pct ? sst + '|' + pct : null, _v: Number(e.qty || 1) * Number(e.rate || 0), _p: pct });
         });
