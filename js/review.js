@@ -779,9 +779,7 @@
         refused(wrap,
           res && res.error === 'note_required'
             ? 'Please describe the changes required.'
-            : res && res.error === 'changed'
-              ? 'This post was updated after the page opened. Please refresh to review the latest version.'
-              : res && res.error === 'locked' ? window.ADspaceWords.lockedLine(W, res.minutes)
+            : res && res.error === 'locked' ? window.ADspaceWords.lockedLine(W, res.minutes)
               : res && /^too[-_]long$/.test(res.error || '') ? W.tooLong
               : W.notSent);
         return;
