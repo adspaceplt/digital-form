@@ -63,9 +63,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
   `bukku_link_only` refuse `taken` (2026-10-22, BE-2). A contact the page
   names for an unlinked record is read or written only where find offers it
-  for that record (its registration no. or name), else `not-offered` unless
-  the colleague sees every client (`invoice_scope` `all`; security audit
-  2026-11-07).
+  for that record, else `not-offered`: the same registration no. (or a
+  creator's job ID in its bills) to every colleague, a name alone only to
+  one who sees every client (`invoice_scope` `all`; security audit
+  2026-11-07; 2026-11-24, a record renamed reached any contact). A new
+  contact is made once a press: `bukku_send_claim` (two minutes,
+  `bukku_send_claims`, RLS on, no policy) refuses a second `busy`, and
+  `bukku_send_release` lets the caller's own claim go once the send has its
+  answer (`2026-11-24-bukku-send-claimed.sql`).
   Bukku by entity (`2026-10-29-bukku-by-entity.sql`, the SQL Editor's; the
   user, 2026-10-29: one brand billed by several companies): a Bukku contact
   is a company, so `bukku_links` takes the kind `entity`; an entity's fold
