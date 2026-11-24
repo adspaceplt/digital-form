@@ -75,8 +75,8 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   no policy, no grant; every read and write a security definer function.
   Kept for `outstation_keep_months` (24) after check-out, then pruned nightly
   (`outstation-prune`, 03:47 MYT), the filed visits kept.
-- Check in carries one personal data notice line naming how long a trip is
-  kept.
+- Check in carries no explanatory line: neither who records the trip nor
+  the personal data notice (the user, 2026-11-24: "remove these").
 - Check in reads Client (and Venue), Location, the photo, then Purpose,
   Note and Going together: what it waits for first (2026-11-24).
 - Every trip has a number, `#OS{YYMM}{NN}` (`#OS261101`, as a task is `#WT00001`; the user, 2026-11-24) (`outstation_trips.ref`; the
@@ -93,6 +93,8 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   or checked out, and for an admin on any; My Work at Full control deletes
   with the number typed back, at Edit it is Request delete, filed through
   `delete_kinds` (`rpc:outstation_trip_delete`, named by the number) for an
-  admin. The trip goes with its stops and photo rows; the visits it filed
-  stay, and the photo files stay in storage. Filed `ops.deleted` under the
+  admin. The trip goes with its stops, its photo rows and the visits it
+  filed on the clients' Calls and visits (a deleted trip did not happen;
+  the user, 2026-11-24); a visit written by hand stays, and the photo files
+  stay in storage. Filed `ops.deleted` under the
   number. A deleted open trip frees its driver to check in again.

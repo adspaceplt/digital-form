@@ -9143,7 +9143,7 @@
       /* Until its script arrives, the address keeps what it said. */
       var here = new URLSearchParams(location.search);
       var oq = window.ADspaceOutstation ? window.ADspaceOutstation.urlPart()
-        : { ov: here.get('ov'), om: here.get('om'), trip: here.get('trip') };
+        : { ov: here.get('ov'), om: here.get('om') };
       Object.keys(oq).forEach(function (k) { if (oq[k]) q[k] = oq[k]; });
     }
     /* The task open beside the list travels too, so a reload or a copied
