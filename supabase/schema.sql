@@ -151934,7 +151934,7 @@ begin
   values ('Quotation website', 'client.quotation', q.brand, q.ref || ' · changes requested on the quotation link');
   v_body := q.ref || coalesce(' · ' || coalesce(q.totals->>'currency', 'RM') || ' ' ||
               to_char((v_p->'totals'->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', '')
-            || ' · Reply by ' || public.register_day((q.reply_due at time zone 'Asia/Kuala_Lumpur')::date);
+            || ' · Send by ' || public.register_day((q.reply_due at time zone 'Asia/Kuala_Lumpur')::date);
   -- Who prepared it and the person in charge are told; where neither is
   -- here, the team who work leads.
   if public.quote_sign_member(q.made_by) is null and public.quote_sign_member(cl.owner) is null then

@@ -120,7 +120,7 @@
     /* The prospect asked for changes on the sent quotation's link
        (QUOTATION CHANGES REQUESTED, 2026-11-25): the team owes the
        revision by its reply day. */
-    if (q.change_requested_at) return ['Changes requested', 'is-warn', q.reply_due ? 'Reply by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
+    if (q.change_requested_at) return ['Changes requested', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     if (awaiting(q)) return ['Awaiting review', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     var today = window.ADspaceClock.today();
     if (q.valid_until < today) return ['Expired', 'is-off'];

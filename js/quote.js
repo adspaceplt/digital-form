@@ -129,7 +129,8 @@
         signed: 'This quotation has already been signed. Please contact ADspace on WhatsApp.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.',
-        changes: 'Your changes are with ADspace. The revised quotation will appear on this page once it has been sent.',
+        changes: 'This quotation cannot be signed while your changes are being reviewed. Withdraw the request to sign it as it stands.',
+        brands: 'Changes to this quotation cannot be requested online. Please contact ADspace on WhatsApp.',
         recent: 'Your changes were sent a moment ago. Please try again in a minute.'
       },
       /* Accepting the quotation on its link (2026-10-31). */
@@ -256,7 +257,8 @@
         signed: '本报价已签署，请通过 WhatsApp 联系 ADspace。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。',
-        changes: '您的修改请求已提交至 ADspace，修订后的报价发送后将显示于此页面。',
+        changes: '您的修改请求正在审核中，暂时无法签署此报价。如需按原报价签署，请先撤回请求。',
+        brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ADspace。',
         recent: '刚刚已提交修改请求，请一分钟后再试。'
       },
       sg: {
@@ -1056,6 +1058,8 @@
       '<span class="qs-num qs-r">' + esc(f(w.rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(w.sub, { c: qc() })) + '</span></div>' + rows + '</div>' +
       '<dl class="qs-tot">' + chTotals(tt, P.lines).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
   }
+  /* The shared refused-send line (`js/words.js`), in the page's language. */
+  function chNotSent() { var A = window.ADspaceWords; var w = A && A.of ? A.of({ en: {}, zh: {} })[lang === 'zh' ? 'zh' : 'en'] : null; return (w && w.notSentAdspace) || t().err.any; }
   function chTotals(tt, lines) { LINES_AT = lines || []; try { return totalsRows(tt); } finally { LINES_AT = null; } }
   function chSide() {
     var w = t(), changed = chChanged(), tt = CH.P && CH.P.totals;
@@ -1094,18 +1098,18 @@
     btn.disabled = true;
     db.rpc('quote_change_request', { p_key: qKey(), p_sel: chSel() }).then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
       CH = null; CHP = {};
       read(qKey(), function () { var s2 = $('qsSide'); if (s2) s2.scrollIntoView({ block: 'start' }); });
-    }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
   function chWithdraw(btn) {
     btn.disabled = true;
     db.rpc('quote_change_request', { p_key: qKey(), p_sel: null }).then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
       read(qKey());
-    }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
   /* Whether a change request stands, read with the link (the preview
      answers it; nothing is kept). */
@@ -1645,7 +1649,7 @@
       if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[{ closed: 'not-proceeding', unsent: 'not-sent' }[d.error] || d.error] || t().err.any); return; }
       Q.status = 'not_proceeding'; Q.stage = 'closed'; Q.declined = true;
       paint();
-    }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
   function pdf(btn) {
     var said = $('qsPdfMsg'); if (said) said.remove();
