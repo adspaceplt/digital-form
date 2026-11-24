@@ -539,6 +539,10 @@
           '<select class="select" id="ostClient" aria-required="true"></select></div></div>' +
         '<div class="row" id="ostVenueRow" hidden><div><label class="field-label" for="ostVenue">Venue</label>' +
           '<textarea class="input" id="ostVenue" data-oneline rows="1" maxlength="200" placeholder="ADspace Advertising"></textarea></div></div>' +
+        /* What Check in waits for comes first, under the place: a long list
+           of colleagues once pushed both below a phone's screen (2026-11-24). */
+        '<div class="row"><div><span class="field-label">Location</span><div id="ostLoc"></div></div></div>' +
+        '<div class="row"><div><span class="field-label" id="ostShotsL">Take a photo on site</span><div id="ostShots" role="group" aria-labelledby="ostShotsL"></div></div></div>' +
         '<div class="row ost-in"><div><label class="field-label" for="ostPurpose">Purpose</label>' +
           '<select class="select" id="ostPurpose" data-seg data-seg-value><option value="meeting">Meeting</option><option value="shooting">Shooting</option>' +
           '<option value="event">Event</option><option value="other">Other</option></select></div></div>' +
@@ -547,8 +551,6 @@
         '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Going together</span>' +
           '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div>' +
           '<p class="asknote">You are the driver. Only the driver records the trip.</p></div></div>' +
-        '<div class="row"><div><span class="field-label">Location</span><div id="ostLoc"></div></div></div>' +
-        '<div class="row"><div><span class="field-label" id="ostShotsL">Take a photo on site</span><div id="ostShots" role="group" aria-labelledby="ostShotsL"></div></div></div>' +
         '<p class="asknote ost-in">Personal data notice: your location and photos are recorded with this trip and kept for ' + esc(plural(keepMonths, 'month', 'months')) + '.</p>' +
         '<p class="msg" id="ostStopMsg" role="status"></p>' +
       '</div>' +
