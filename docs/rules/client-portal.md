@@ -53,6 +53,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     two months or more, where its term is (Month n of N, ending); then Requests once
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
+  - Invoices (2026-11-25, read from Bukku): a card in Services, after the
+    lines and before Requests, never a tab of its own: a part of the
+    client's work joins the tab it belongs to before the strip grows. Each
+    invoice its number over its date, due date (until paid) and balance
+    where part is paid, its amount, Paid, Outstanding or Overdue, and
+    Download PDF (Bukku's own copy, a new tab); overdue first, then
+    outstanding by due date, then paid, newest first. Read through
+    `bukku-sync` `portal` as the signed-in contact: `portal_invoice_contacts`
+    answers that client's Bukku contacts alone (as `month_invoice_contacts`
+    reads them, a company billing another brand too left out) and refuses
+    any other client as `get_portal` does; nothing is kept. Bukku not set
+    up, or no linked contact, draws no card; a failed read says so in it
+    (`tests/portalinvoices.js`, `tests/portalpastsql.js`).
   - Letters: Download redraws the snapshot.
   - Content Review's tab groups its sets by content month (`.cp-group-head`,
     the month and its count), newest first.
