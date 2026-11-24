@@ -58,3 +58,5 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   (`outstation-prune`, 03:47 MYT), the filed visits kept.
 - Check in carries one personal data notice line naming how long a trip is
   kept.
+- Check in reads Client (and Venue), Location, the photo, then Purpose,
+  Note and Going together: what it waits for first (2026-11-24).

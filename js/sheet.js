@@ -138,6 +138,30 @@
     }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
   }
 
+  /* **A refusal comes into view.** A sheet that names what it waits for in
+     its own message line (`.msg.err`, `.msg.warn`) writes it where the form
+     ends, below the screen on a phone once the form is long: Check in
+     refused for its location and photo read as a press that ran nothing
+     (2026-11-24, the user on an iPhone). Whatever line a sheet writes, the
+     body scrolls it into view, once, the moment it reads. */
+  if (window.MutationObserver) {
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    new MutationObserver(function (list) {
+      var seen = [];
+      list.forEach(function (m) {
+        var n = m.target.nodeType === 3 ? m.target.parentNode : m.target;
+        var line = n && n.closest ? n.closest('.sheet .msg') : null;
+        if (!line || seen.indexOf(line) >= 0) return;
+        seen.push(line);
+        if (!/(^|\s)(err|warn)(\s|$)/.test(line.className) || !line.textContent.trim()) return;
+        var sheet = line.closest('.sheet');
+        if (!sheet || sheet.hidden || !line.offsetHeight) return;
+        try { line.scrollIntoView({ block: 'nearest', behavior: calm && calm.matches ? 'auto' : 'smooth' }); }
+        catch (e) { line.scrollIntoView(false); }
+      });
+    }).observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+  }
+
   window.ADspaceSheet = {
     show: show,
     close: shut,
