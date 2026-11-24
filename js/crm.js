@@ -425,7 +425,7 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var list = window.ADspaceAdmin.pickFrom(team, state.pick, keep).slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, keep).slice().sort(F.byStaff);
     if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
       list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
@@ -436,7 +436,7 @@
      left stays the chosen option, named as the team list last held them. */
   function salesBySelect(el, team, current) {
     if (!el) return;
-    var list = window.ADspaceAdmin.pickFrom(team, state.pick, current).slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, current).slice().sort(F.byStaff);
     var opts = '<option value="">Not set</option>' + list.map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
     }).join('');
@@ -463,7 +463,7 @@
 
   function loadTeam(then) {
     /* Who the pickers offer: those who may work Clients (2026-11-24). */
-    window.ADspaceAdmin.pickable('clients').then(function (ids) { state.pick = ids; if (ids) peopleSelect($('crmOwnerPick'), state.team || []); });
+    window.ADspaceAdmin.pickable('clients').then(function (ids) { state.offerIds = ids; if (ids) peopleSelect($('crmOwnerPick'), state.team || []); });
     db.from('team_members').select('id, name, email, staff_code, designation, department, role, is_admin, system, active').eq('active', true).order('name').then(function (r) {
       /* A system account (2026-10-08) holds no clients and is never offered. */
       var S = window.ADspaceAdmin;

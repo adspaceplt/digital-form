@@ -122,6 +122,7 @@
     vic_clients: '',
     team_rows: '',
     team_task_takers: '',
+    team_pickable: 'p_section',
     ops_task_client_facts: 'p_tasks',
     ai_check_done: 'p_id p_ok p_result p_basis',
     ai_check_last: 'p_report',
@@ -7073,6 +7074,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           String(a.name || '').localeCompare(String(b.name || ''));
       }))).map(function (t) { if (!trFull) t.last_seen_at = null; return t; });
     }
+
+    if (name === 'team_pickable') {
+      if (!opsMe()) return [];
+      return DB.team_members.filter(function (t) {
+        if (t.active === false || t.system) return false;
+        var ta = opsAccess(t);
+        return ta.admin || RANK[ta.map[args.p_section] || 'none'] >= RANK.work;
+      }).sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (t) { return t.id; });
+    }
     if (name === 'team_task_takers') {
       if (!opsMe()) return [];
       return DB.team_members.filter(function (t) {
@@ -11276,7 +11286,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
