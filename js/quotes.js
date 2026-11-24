@@ -161,7 +161,7 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -515,11 +515,13 @@
     }).then(function (b) {
       blob = b;
       return ctx.db.functions.invoke(s3.functionName || 'sign-upload', {
-        body: { ext: 'pdf', clientId: q.client_id, size: b.size, private: true, purpose: 'seal', quotationId: q.id } });
+        body: { ext: 'pdf', clientId: q.client_id, size: b.size, private: true, purpose: 'seal', quotationId: q.id, sha256: b.seal.sha } });
     }).then(function (r) {
       var d = r.data || {};
       if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be stored.');
-      return window.ADspaceAdmin.putToS3(d.uploadUrl, blob, d.contentType || 'application/pdf').then(function () {
+      /* The hash is signed into the PUT: S3 keeps this file or none (2026-11-24). */
+      return window.ADspaceAdmin.putToS3(d.uploadUrl, blob, d.contentType || 'application/pdf', null,
+        d.checksum ? { 'x-amz-checksum-sha256': d.checksum } : null).then(function () {
         return ctx.db.rpc('quotation_seal', { p_id: q.id, p_key: d.key, p_sha: blob.seal.sha, p_pages_sha: blob.seal.pagesSha });
       });
     }).then(function (r) {
@@ -558,14 +560,21 @@
     }
     return drawPlain(q, ctx, extra);
   }
+  /* A signed quotation is drawn in the words it was signed in (the review
+     of 2026-11-24): the cover kept at signing (`signed_words.cover`) and the
+     agency's name and Service Terms address kept at its submit, never
+     today's. */
+  function keptWords(q) { var w = q.signed_at && q.signed_words; return w && typeof w === 'object' ? w : null; }
   function drawPlain(q, ctx, extra) {
     var c = ctx.client || {};
     var by = q.made_by || (q.source === 'website' ? c.owner : '') || '';
-    return Promise.all([coverWords(ctx), roleOf(ctx, by)]).then(function (got) {
+    var kept = keptWords(q);
+    return Promise.all([kept && kept.cover ? Promise.resolve(kept.cover) : coverWords(ctx), roleOf(ctx, by)]).then(function (got) {
       var named = q.contact && q.contact.name;
       var o = { attention: named || ctx.attention || '', attentionRole: named ? '' : (ctx.attentionRole || ''),
         to: { name: c.legal_name || c.name || q.brand, address: c.billing_address || '' },
-        cover: got[0], preparedBy: { name: by, designation: got[1] }, client: c };
+        cover: got[0], preparedBy: { name: by, designation: got[1] }, client: c,
+        agency: kept && kept.agency ? kept.agency : null, termsUrl: kept && kept.agency ? (kept.terms_url || '') : null };
       var sx = signedExtra(q);
       Object.keys(sx).forEach(function (k) { o[k] = sx[k]; });
       Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
@@ -1033,7 +1042,14 @@
     var who = sel.options[sel.selectedIndex].textContent.replace(/^[A-Z0-9]+ · /, '');
     var fix = Object.keys(CK.fix).length ? CK.fix : null;
     go.disabled = true;
-    ctx.db.rpc('quotation_submit', { p_id: q.id, p_reviewer: sel.value, p_company: fix }).then(function (r) {
+    /* The agency's name and Service Terms address as the quotation was
+       signed under, kept once for its sealed copy (2026-11-24); a refusal
+       here never holds the submit. */
+    var cfg = window.ADSPACE_CONFIG || {};
+    ctx.db.rpc('quotation_words_keep', { p_id: q.id, p_agency: cfg.agencyName || 'ADspace', p_terms_url: cfg.serviceTermsUrl || null })
+      .then(function () { return null; }).catch(function () { return null; }).then(function () {
+        return ctx.db.rpc('quotation_submit', { p_id: q.id, p_reviewer: sel.value, p_company: fix });
+      }).then(function (r) {
       var d = r.data || {};
       go.disabled = false;
       if (r.error || d.error) { sheetMsg('qsgCheckMsg', said(r.error || d.error), 'err'); return; }

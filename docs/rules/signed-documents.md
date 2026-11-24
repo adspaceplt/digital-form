@@ -30,6 +30,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   send and Preview hands that file over (`sign-download` `quotation`); one
   confirmed before, or whose keep failed, is sealed at its next Download by
   a colleague at Work. Gated on `s3.privateInvoices`.
+- A sealed copy holds what was signed (2026-11-24, the review): its
+  SHA-256 is signed into its upload (`sign-upload` `seal` takes `sha256`,
+  signs `x-amz-checksum-sha256` and records the key and hash through
+  `quotation_seal_intent`, the service role's), so S3 keeps that file or
+  none and `quotation_seal` files only that key and hash (`bad-sha`); it is
+  drawn in the words the quotation was signed in, never today's: the
+  Quotation Cover's kept by trigger at signing (`signed_words.cover`), the
+  agency's name and Service Terms address kept once at submit
+  (`quotation_words_keep`).
 - A sealed copy is print only (2026-11-21; the user: "no annotation, no
   edits etc. except printing only to the pdf"): `ADspaceSeal.finish`
   writes it with PDF standard security, AES-256 R6, no user password
