@@ -296,7 +296,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   The emails (`creator_emails`, RLS on, no policy, no grant) are queued in
   their templates' words (`creator_email_templates`: Details received to
   the creator, Details to review to the finance address with the account's
-  last four and the console link, Details approved to the creator; each
+  last four, each change and the console link, Details approved to the creator,
+  Details changed to the email on file (never the new one) where a set
+  sent on the creator page changes the bank account, the account holder,
+  the email or the WhatsApp of the set approved last, naming the day in
+  English and Chinese, with the WhatsApp template `creator_changed` to the
+  number on file (`creator_pay_changes`, the request's `changes`, read on
+  the record and the review sheet; 2026-11-24, the code review); each
   sent or not; Settings, Messages: Email templates under Creators, `team.settings`) and
   sent by the `creator-mail` edge function (woken by `creator_mail_kick`
   with the wake secret, and by pg_cron `creator-mail-drain` every five
@@ -674,6 +680,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Client-side decisions write an activity row under the typed name:
   `submit_review`, `confirm_selection_with`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
+
+- A write to a campaign goes through `writeCamp(c, patch)`: held to the
+  copy's `updated_at`, its new stamp taken back; refused, `staleCamp` reads
+  the campaign again and says `ADspaceWords.line.stale`. Edit sends only
+  the fields that moved. The Creators List and the campaigns list read
+  every row through `ADspaceAPI.readPages` (review 2026-11-24,
+  `tests/editstamps.js`).
 
 ## Components
 
