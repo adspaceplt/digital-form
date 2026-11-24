@@ -112,6 +112,11 @@
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
       newQuote: 'New quotation',
+      chgT: 'Change your selection', chgReq: 'Request these changes', chgCancel: 'Cancel', chgTotal: 'Your quotation with these changes',
+      chgNone: 'Change a choice to see the revised price.', chgPendT: 'Changes requested',
+      chgPend: 'Your changes were requested on {d}. ADspace will send the revised quotation by {r}.', chgWithdraw: 'Withdraw request',
+      perMonth: '{a} per month', plusMonth: '+{a} per month', incl: 'Included', each: '{a} each', eachMonth: '{a} each per month',
+      termOff: 'A {n}-month commitment reduces every monthly charge by {p}%.',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
@@ -121,7 +126,10 @@
         'not-found': 'This quotation could not be found. Please check the link, or request a new quotation.', 'bad-answer': 'Answer both questions to proceed.',
         signed: 'This quotation has already been signed. Please contact ADspace on WhatsApp.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
-        any: 'Not sent. Please try again.'
+        any: 'Not sent. Please try again.',
+        changes: 'This quotation cannot be signed while your changes are being reviewed. Withdraw the request to sign it as it stands.',
+        brands: 'Changes to this quotation cannot be requested online. Please contact ADspace on WhatsApp.',
+        recent: 'Your changes were sent a moment ago. Please try again in a minute.'
       },
       /* Accepting the quotation on its link (2026-10-31). */
       sg: {
@@ -230,6 +238,11 @@
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
       newQuote: '申请新报价',
+      chgT: '修改您的选择', chgReq: '提交修改请求', chgCancel: '取消', chgTotal: '修改后的报价',
+      chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
+      chgPend: '您已于{d}提交修改请求，ADspace 将于{r}前发送修订后的报价。', chgWithdraw: '撤回请求',
+      perMonth: '每月 {a}', plusMonth: '每月另加 {a}', incl: '已包含', each: '每项 {a}', eachMonth: '每项每月 {a}',
+      termOff: '签订{n}个月合约，每月费用减免{p}%。',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
@@ -239,7 +252,10 @@
         'not-found': '找不到此报价，请检查链接，或申请新的报价。', 'bad-answer': '请回答以上两个问题。',
         signed: '本报价已签署，请通过 WhatsApp 联系 ADspace。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
-        any: '未能提交，请重试。'
+        any: '未能提交，请重试。',
+        changes: '您的修改请求正在审核中，暂时无法签署此报价。如需按原报价签署，请先撤回请求。',
+        brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ADspace。',
+        recent: '刚刚已提交修改请求，请一分钟后再试。'
       },
       sg: {
         title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',
@@ -651,7 +667,10 @@
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */
-  function taxed(tt) { return window.ADspaceMoney.sstOf(Q && Q.lines, tt.sst_pct); }
+  /* The lines priced: the quotation's own, or a change's while its figures draw. */
+  var LINES_AT = null;
+  function curLines() { return LINES_AT || (Q && Q.lines); }
+  function taxed(tt) { return window.ADspaceMoney.sstOf(curLines(), tt.sst_pct); }
   function sstOn(tt) { return taxed(tt).on; }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function adsOf(tt) { return tt.layout === 2 && Array.isArray(tt.ads) ? tt.ads : []; }
@@ -671,7 +690,7 @@
     /* A quotation in sections (layout 2, 2026-11-12) never adds the one-off
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
-    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
+    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : curLines(), on).map(function (x) {
       /* a row a term percentage where the lines differ (2026-11-15), in
          the PDF's words: a row whose lines run different months names
          none (2026-11-24) */
@@ -738,7 +757,7 @@
     notes.push(f(t().basis, { v: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
-      ((st !== 'quote' && st !== 'ready') || q.revised || bn ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
+      ((st !== 'quote' && st !== 'ready') || q.revised || bn || q.change ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1>' + (tt.title ? '<span class="qs-meta qs-own">' + esc(tt.title) + '</span>' : '') + '<span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span>' +
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
@@ -898,12 +917,215 @@
        details, the signature and a code emailed to the billing contact
        (2026-10-31, in place of Ready to proceed). */
     if (SG && SG.step) return signHtml(q);
+    /* A change request stands (QUOTATION CHANGES REQUESTED, 2026-11-25): no
+       Accept and sign until the team sends the revision. */
+    if (q.change) {
+      return '<h2>' + esc(w.chgPendT) + '</h2><p>' + esc(f(w.chgPend, { d: day(myDay(q.change.at)), r: day(myDay(q.change.reply_due || q.reply_due || q.change.at), false, 'ahead') })) + '</p>' +
+        (PREVIEW ? '' : '<button class="btn btn-quiet" type="button" data-a="chwithdraw">' + esc(w.chgWithdraw) + '</button>') +
+        '<p class="msg" id="qsSideMsg" role="status"></p>' + rep;
+    }
     return '<h2>' + esc(w.sg.title) + '</h2><p>' + esc(w.sg.line) + '</p>' + signSteps(0) +
       '<button class="btn btn-primary" type="button" data-a="signgo">' + esc(w.sg.go) + '</button>' +
       /* The client may decline instead (QUOTATION WAYS OUT, 2026-11-17). */
       (PREVIEW ? '' : '<button class="btn btn-quiet" type="button" data-a="decline">' + esc(w.decline) + '</button>') +
       '<p class="msg" id="qsSideMsg" role="status"></p>' + rep;
   }
+
+  // ---- Changing a sent quotation (QUOTATION CHANGES REQUESTED, 2026-11-25) -------
+  /* "Prices after we send" (the user, 2026-11-25): on the quotation the team
+     sent, the prospect may change the plan, content option, platforms,
+     additional content, files and commitment and see the price follow
+     (`quote_website_preview` by the link's key, on the quotation's own Rate
+     Card); every line the team added stays. A changed selection is not
+     signed: Request these changes returns it to the team, who send the
+     revision the link then shows. */
+  var CH = null, CHP = {};
+  /* A moment as Malaysia's day (a timestamp's own date is UTC's). */
+  function myDay(iso) { var C = window.ADspaceClock; return C && C.day ? C.day(iso) : iso; }
+  function chEditable(q) { return Boolean(q && !q.signed && !q.revised && CAT && !(Array.isArray((q.totals || {}).brands) && q.totals.brands.length > 1) && (stageOf(q) === 'quote' || stageOf(q) === 'ready')); }
+  function chFileSlugs() { return (CAT && CAT.files || []).map(function (x) { return x.slug; }); }
+  function chBase(q) {
+    var s0 = q.selection || {}, files = {}, fs = chFileSlugs();
+    (s0.once || []).forEach(function (o) { if (fs.indexOf(o.slug) >= 0) files[o.slug] = Number(o.qty) || 0; });
+    return { plan: s0.plan || null, mix: Number(s0.mix) || 0, platforms: (s0.platforms || []).slice(), extra: JSON.parse(JSON.stringify(s0.extra || {})),
+      files: files, term: Number(s0.term) || 12 };
+  }
+  function chSel() {
+    var c = CH.sel, x = {}, f2 = {};
+    Object.keys(c.extra).forEach(function (k) { if (c.extra[k] > 0) x[k] = c.extra[k]; });
+    chFileSlugs().forEach(function (k) { f2[k] = c.files[k] || 0; });
+    var o = { platforms: CAT.platforms.filter(function (k) { return c.platforms.indexOf(k) >= 0; }), extra: x, files: f2, term: c.term };
+    if (c.plan) { o.plan = c.plan; o.mix = String(c.mix); }
+    return o;
+  }
+  function chKey(sel) { return JSON.stringify(sel); }
+  function chChanged() { return chKey(chSel()) !== CH.baseKey; }
+  function chPlan() { return CAT && CH.sel.plan ? CAT.plans.filter(function (p) { return p.slug === CH.sel.plan; })[0] || null : null; }
+  function chMoney(v) { return qc() + ' ' + n0(v); }
+  function chOpen() {
+    CH = { sel: chBase(Q), P: null, fail: false };
+    var s0 = chSel(); CH.baseKey = chKey(s0);
+    CH.withAds = Boolean((chPlan() || {}).ads);
+    paint(); window.scrollTo(0, 0); chPrice();
+  }
+  var chTimer = null;
+  /* The first answer brings the card's prices, so the choices are drawn again with them. */
+  function chShow(d) { var had = CH.P && CH.P.card; CH.P = d; CH.fail = false; if (had) chDraw(); else chRepaint(); }
+  function chPrice() {
+    if (!CH) return;
+    var sel = chSel(), k = chKey(sel);
+    if (CHP[k]) { chShow(CHP[k]); return; }
+    clearTimeout(chTimer);
+    chTimer = setTimeout(function () {
+      var box = $('qsChFig'); if (box) box.setAttribute('aria-busy', 'true');
+      db.rpc('quote_website_preview', { p_key: qKey(), p_sel: sel }).then(function (r) {
+        var d = r && r.data;
+        if (!CH || k !== chKey(chSel())) return;
+        if (r.error || !d || d.error) { CH.P = null; CH.fail = true; chDraw(); return; }
+        CHP[k] = d; chShow(d);
+      }).catch(function () { if (CH && k === chKey(chSel())) { CH.P = null; CH.fail = true; chDraw(); } });
+    }, 180);
+  }
+  /* What each platform adds, as the quotation prices it: the plan's places
+     go to the cheapest chosen, a dearer one inside the plan adding the
+     difference from Meta's fee; one past the places its own fee. */
+  function chPlatNotes() {
+    var R = (CH.P && CH.P.card && CH.P.card.platforms) || {}, p = chPlan(), out = {};
+    var order = CAT.platforms, fee = function (k) { return Number(R[k] || 0); }, base = fee('meta');
+    var picked = CH.sel.platforms.filter(function (k) { return order.indexOf(k) >= 0; })
+      .sort(function (a, b) { return fee(a) - fee(b) || order.indexOf(a) - order.indexOf(b); });
+    var slots = p ? p.platforms : 0;
+    order.forEach(function (k) {
+      if (R[k] == null) return;
+      if (!p) { out[k] = f(t().perMonth, { a: chMoney(fee(k)) }); return; }
+      var i = picked.indexOf(k), inPlan = i >= 0 ? i < slots : picked.length < slots;
+      out[k] = inPlan ? (fee(k) > base ? f(t().plusMonth, { a: chMoney(fee(k) - base) }) : t().incl) : f(t().plusMonth, { a: chMoney(fee(k)) });
+    });
+    return out;
+  }
+  function chEditor() {
+    var w = t(), p = chPlan(), P = CH.P || {}, card = P.card || {}, I = window.ADspaceIcons;
+    var plans = CAT.plans.filter(function (x) { return Boolean(x.ads) === Boolean(CH.withAds); });
+    var notes = chPlatNotes(), xr = P.extra_rates || {};
+    var h = sec(w.planH, seg('qsChAds', w.need.ads[0], [['no', w.noAds], ['ads', w.withAds]], CH.withAds ? 'ads' : 'no', true) +
+      '<div class="qs-plans">' + plans.map(function (x, i) {
+        var on = CH.sel.plan === x.slug, feat = plans.length === 3 && i === 1, r = (card.plans || {})[x.slug];
+        return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="chplan" value="' + esc(x.slug) + '"' + (on ? ' checked' : '') + '>' +
+          (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(x.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
+          '<b>' + esc(f(w.plan, { p: x.plan })) + '</b>' + (r != null ? '<span class="qs-planprice">' + esc(f(w.perMonth, { a: chMoney(r) })) + '</span>' : '') +
+          '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: x.contents })) + '</span>' +
+          '<span class="qs-pl">' + ic('device') + esc(x.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: x.platforms })) + '</span>' +
+          (x.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(qb(x.ad_budget)) })) + '</span>' : '') + '</label>';
+      }).join('') + '</div>');
+    if (p && (p.mix || []).length > 1) {
+      h += sec(f(w.piecesPick, { n: p.contents }), '<select class="select" id="qsChMix" data-seg data-seg-value aria-label="' + esc(f(w.piecesHead, { n: p.contents })) + '">' +
+        p.mix.map(function (m, i) { return '<option value="' + i + '"' + (i === CH.sel.mix ? ' selected' : '') + '>' + esc(mixShort(m)) + '</option>'; }).join('') + '</select>');
+    }
+    if (p) {
+      h += sec(w.extra, extrasOf(p).map(function (c) {
+        return stepper('chx', c.slug, contentName(c), CH.sel.extra[c.slug] || 0, xr[c.slug] != null ? f(w.eachMonth, { a: chMoney(xr[c.slug]) }) : '');
+      }).join(''));
+    }
+    h += sec(w.platsH, '<div class="qs-chips qs-two qs-plats">' + CAT.platforms.map(function (k) {
+      var on = CH.sel.platforms.indexOf(k) >= 0;
+      return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="chplat" value="' + esc(k) + '"' + (on ? ' checked' : '') + '><span class="qs-text">' +
+        '<span class="qs-lead-mark">' + (I && I.mark ? I.mark(k) : '') + '</span><span class="qs-chip-w">' + esc(w.plat[k] || k) + '</span>' +
+        (notes[k] ? '<small class="qs-price" data-chnote="' + esc(k) + '">' + esc(notes[k]) + '</small>' : '') + '</span>' + MARK + '</label>';
+    }).join('') + '</div>');
+    if ((card.files || []).length) {
+      h += sec(w.files, card.files.map(function (x) {
+        return stepper('chf', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, CH.sel.files[x.slug] || 0, f(w.each, { a: chMoney(x.rate) }));
+      }).join(''));
+    }
+    var terms = (card.terms || []).map(function (x) { return Number(x.months); });
+    if (terms.length) {
+      var off = (card.terms || []).filter(function (x) { return Number(x.pct) < 0; }).map(function (x) { return f(w.termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
+      h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true) +
+        (off.length ? '<p class="qs-note">' + esc(off.join(lang === 'zh' ? '' : ' ')) + '</p>' : ''));
+    }
+    return h;
+  }
+  /* The figures as the quotation would read with the changes. */
+  function chFigures() {
+    var w = t(), P = CH.P;
+    if (CH.fail) return '<p class="msg err">' + esc(w.offP) + '</p>';
+    if (!P) return '';
+    var tt = P.totals || {};
+    var rows = (P.lines || []).map(function (l) {
+      return '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1 ') + (l.basis === 'once' ? '<small>' + esc(w.onceTag) + '</small>' : '') + '</span>' +
+        '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(Number(l.qty) ? l.amount / l.qty : l.amount)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
+    }).join('');
+    return '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(w.line) + '</span><span class="qs-num qs-q">' + esc(w.qty) + '</span>' +
+      '<span class="qs-num qs-r">' + esc(f(w.rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(w.sub, { c: qc() })) + '</span></div>' + rows + '</div>' +
+      '<dl class="qs-tot">' + chTotals(tt, P.lines).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
+  }
+  /* The shared refused-send line (`js/words.js`), in the page's language. */
+  function chNotSent() { var A = window.ADspaceWords; var w = A && A.of ? A.of({ en: {}, zh: {} })[lang === 'zh' ? 'zh' : 'en'] : null; return (w && w.notSentAdspace) || t().err.any; }
+  function chTotals(tt, lines) { LINES_AT = lines || []; try { return totalsRows(tt); } finally { LINES_AT = null; } }
+  function chSide() {
+    var w = t(), changed = chChanged(), tt = CH.P && CH.P.totals;
+    /* The totals the changes come to, beside the acts (the page's title is not said again). */
+    var tot = tt ? chTotals(tt, CH.P.lines).filter(function (x) { return x[2]; }) : [];
+    return (tot.length ? '<dl class="qs-tot">' + tot.map(function (x) { return '<div class="is-total"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
+      (changed ? '' : '<p>' + esc(w.chgNone) + '</p>') +
+      '<div class="qs-sfoot is-stack"><button class="btn" type="button" data-a="chcancel">' + esc(w.chgCancel) + '</button>' +
+      (changed ? '<button class="btn btn-primary" type="button" data-a="chsend">' + esc(w.chgReq) + '</button>' : '') + '</div>' +
+      '<p class="msg" id="qsSideMsg" role="status"></p>';
+  }
+  function paintChange() {
+    var q = Q, w = t();
+    return '<div class="qs-quote" data-shown><section class="qs-main">' +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(w.chgT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
+      '<div class="qs-secs"><div class="qs-xbox" id="qsChEdit">' + chEditor() + '</div>' +
+      '<section class="qs-sec qs-chfig"><h2 class="qs-sec-h">' + esc(w.chgTotal) + '</h2><div id="qsChFig" aria-live="polite">' + chFigures() + '</div></section></div>' +
+      '</section><aside class="qs-side" id="qsSide">' + chSide() + '</aside></div>';
+  }
+  function chDraw() {
+    if (!CH) return;
+    var fig = $('qsChFig'); if (fig) { fig.innerHTML = chFigures(); fig.removeAttribute('aria-busy'); }
+    var side = $('qsSide'); if (side) side.innerHTML = chSide();
+    var notes = chPlatNotes();
+    Array.prototype.forEach.call(root().querySelectorAll('[data-chnote]'), function (n) { n.textContent = notes[n.getAttribute('data-chnote')] || ''; });
+    var xr = (CH.P && CH.P.extra_rates) || {};
+    Array.prototype.forEach.call(root().querySelectorAll('[data-group="chx"][data-step="1"]'), function (b) {
+      var row = b.closest('.qs-stepper'), lab = row && row.querySelector('span'), r = xr[b.getAttribute('data-slug')];
+      if (!lab || r == null) return;
+      var sm = lab.querySelector('small'); if (!sm) { sm = document.createElement('small'); lab.appendChild(sm); }
+      sm.textContent = f(t().eachMonth, { a: chMoney(r) });
+    });
+  }
+  function chRepaint() { var e = $('qsChEdit'); if (e) { e.innerHTML = chEditor(); decorate(); } chDraw(); }
+  function chSend(btn) {
+    btn.disabled = true;
+    db.rpc('quote_change_request', { p_key: qKey(), p_sel: chSel() }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
+      CH = null; CHP = {};
+      read(qKey(), function () { var s2 = $('qsSide'); if (s2) s2.scrollIntoView({ block: 'start' }); });
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
+  }
+  function chWithdraw(btn) {
+    btn.disabled = true;
+    db.rpc('quote_change_request', { p_key: qKey(), p_sel: null }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
+      read(qKey());
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
+  }
+  /* Whether a change request stands, read with the link (the preview
+     answers it; nothing is kept). */
+  function chState(k) {
+    if (!Q || !chEditable(Q)) return;
+    db.rpc('quote_website_preview', { p_key: k, p_sel: null }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || d.error || !Q) return;
+      var before = !!Q.change;
+      Q.change = d.change || null;
+      CHP[chKey(chBaseSel())] = d;
+      if (before !== !!Q.change && !CH) paint();
+    }).catch(function () {});
+  }
+  function chBaseSel() { var keep = CH; CH = { sel: chBase(Q) }; var s0 = chSel(); CH = keep; return s0; }
 
   // ---- Accepting the quotation (2026-10-31) ----------------------------------------
   /* Held in this page alone, never kept in the tab (as the details step is):
@@ -1251,6 +1473,7 @@
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
+    if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
       S = blank();
@@ -1384,6 +1607,7 @@
       Q = d; paint();
       if (then) then(); else window.scrollTo(0, 0);
       sealRead(k);
+      chState(k);
     }).catch(function () { paint.off = true; paint(); });
   }
   /* The link read, kept as a step of the signed document's record (never a
@@ -1426,7 +1650,7 @@
       if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[{ closed: 'not-proceeding', unsent: 'not-sent' }[d.error] || d.error] || t().err.any); return; }
       Q.status = 'not_proceeding'; Q.stage = 'closed'; Q.declined = true;
       paint();
-    }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
   function pdf(btn) {
     var said = $('qsPdfMsg'); if (said) said.remove();
@@ -1483,7 +1707,7 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', previewBar); else previewBar();
     setTimeout(previewBar, 600);
     document.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('#qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"], ' +
+      var b = e.target.closest && e.target.closest('#qsRoot [data-a="new"], #qsRoot [data-a="chsend"], #qsRoot [data-a="chwithdraw"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"], ' +
         '#qsRoot [data-a="signcode"], #qsRoot [data-a="signresend"], #qsRoot [data-a="signfinish"]');
       if (b) previewRefuse(e);
     }, true);
@@ -1495,11 +1719,16 @@
     if (!b) return;
     var a = b.getAttribute('data-a');
     if (b.hasAttribute('data-step')) {
-      var g = b.getAttribute('data-group'), slug = b.getAttribute('data-slug'), n = (S[g][slug] || 0) + Number(b.getAttribute('data-step'));
-      S[g][slug] = Math.max(0, Math.min(30, n)); keep();
+      var g = b.getAttribute('data-group'), slug = b.getAttribute('data-slug');
+      /* The change editor's steppers keep their counts on the change, the steps' in the tab. */
+      var bag = g === 'chx' && CH ? CH.sel.extra : g === 'chf' && CH ? CH.sel.files : S[g];
+      var n = (bag[slug] || 0) + Number(b.getAttribute('data-step'));
+      bag[slug] = Math.max(0, Math.min(30, n));
+      if (g !== 'chx' && g !== 'chf') keep();
       var row = b.closest('.qs-stepper');
-      row.querySelector('b').textContent = S[g][slug];
-      row.querySelector('[data-step="-1"]').disabled = !S[g][slug];
+      row.querySelector('b').textContent = bag[slug];
+      row.querySelector('[data-step="-1"]').disabled = !bag[slug];
+      if (CH && (g === 'chx' || g === 'chf')) chPrice();
       return;
     }
     if (a === 'next') next();
@@ -1518,6 +1747,10 @@
     else if (a === 'signmode') { signRead(); SG.mode = SG.mode === 'draw' ? 'type' : 'draw'; signShow(); var m = $('qsSide').querySelector('[data-a="signmode"]'); if (m) m.focus(); }
     else if (a === 'pdf') pdf(b);
     else if (a === 'sealed') sealedPdf(b);
+    else if (a === 'change' && Q && chEditable(Q)) { if (!Q.change) chOpen(); }
+    else if (a === 'chcancel') { CH = null; paint(); window.scrollTo(0, 0); }
+    else if (a === 'chsend') chSend(b);
+    else if (a === 'chwithdraw') chWithdraw(b);
     else if (a === 'change' || a === 'new') {
       if (madeBy) S.contact = madeBy;
       if (Q && Q.selection) adopt(Q.selection);
@@ -1530,6 +1763,30 @@
     var el = e.target;
     if (!el.closest || !el.closest('#qsRoot')) return;
     var nm = el.name, id = el.id;
+    if (CH && (nm === 'chplan' || nm === 'chplat' || id === 'qsChMix' || id === 'qsChTerm' || id === 'qsChAds')) {
+      if (nm === 'chplan') {
+        CH.sel.plan = el.value; CH.sel.mix = 0; CH.sel.extra = {};
+        chRepaint(); chPrice(); return;
+      }
+      if (nm === 'chplat') {
+        CH.sel.platforms = CH.sel.platforms.filter(function (x) { return x !== el.value; });
+        if (el.checked) CH.sel.platforms.push(el.value);
+        if (!CH.sel.platforms.length) { CH.sel.platforms = [el.value]; el.checked = true; }
+        var lb = el.closest('.qs-chip'); if (lb) lb.classList.toggle('is-on', el.checked);
+      }
+      if (id === 'qsChMix') CH.sel.mix = Number(el.value) || 0;
+      if (id === 'qsChTerm') CH.sel.term = Number(el.value);
+      if (id === 'qsChAds') {
+        CH.withAds = el.value === 'ads';
+        var cur = chPlan();
+        if (cur && Boolean(cur.ads) !== CH.withAds) {
+          var same = CAT.plans.filter(function (x) { return Boolean(x.ads) === CH.withAds && x.platforms === cur.platforms; })[0];
+          if (same) { CH.sel.plan = same.slug; CH.sel.mix = 0; CH.sel.extra = {}; }
+        }
+        chRepaint();
+      }
+      chPrice(); chDraw(); return;
+    }
     if (nm === 'need') {
       S.need[el.value] = el.checked;
       var a = steps(), sp = root().querySelector('.qs-progress span'), bar = root().querySelector('.qs-track i');

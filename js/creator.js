@@ -513,7 +513,7 @@
       var st = b && b.status === 'paid' ? 'paid' : (b || x.posted_on || x.state === 'posted' || x.state === 'completed') ? 'pending' : 'due';
       var tone = st === 'paid' ? 'is-ok' : st === 'pending' ? 'is-warn' : 'is-off';
       var word = st === 'paid' && b.paid_on ? fill(T0.paysPaid, { d: day(b.paid_on) }) : T0.paysWord[st];
-      return '<div class="crpay-row">' +
+      return '<div class="crpay-row"><span class="cx-tile is-sm" aria-hidden="true">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('megaphone') : '') + '</span>' +
         '<span class="crpay-what"><span class="crpay-name">' + esc(x.campaign || '') + '</span>' +
           (x.job ? '<small class="crpay-job">' + esc(x.job) + '</small>' : '') + '</span>' +
         '<span class="crpay-st"><span class="chip-state ' + tone + '">' + esc(word) + '</span></span>' +
@@ -755,8 +755,14 @@
     var at = AT[b.state];
     if (at == null || !window.ADspaceIcons) return '';
     var words = t().journey.slice();
-    if (b.push_format === 'seeding') words[1] = t().journeyDelivery;
-    return window.ADspaceIcons.journey(words, at);
+    var seeding = b.push_format === 'seeding';
+    if (seeding) words[1] = t().journeyDelivery;
+    /* The live six steps as the approved board draws them (2026-11-25): a
+       glyph a step, each dated where the booking holds its day. */
+    var short = function (d) { return d ? ADspaceClock.date(String(d).slice(0, 10), { zh: lang === 'zh', year: false }) : ''; };
+    return window.ADspaceIcons.journey(words, at, {
+      glyphs: ['check', seeding ? 'box' : 'camera', 'upload', 'eye', 'calendar', 'chart'],
+      days: ['', short(b.visit_date), short(b.submission_due), '', short(b.planned_publish), ''] });
   }
   /* A number to reach on the day: WhatsApp and a call, read as every wa.me
      link reads one (`ADspaceAPI.waNumber`). */

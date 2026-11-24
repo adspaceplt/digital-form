@@ -631,7 +631,7 @@
     client_request_add: 'p_client p_kind p_service p_contact p_note p_idem',
     client_request_delete: 'p_id',
     quotation_offer: 'p_id',
-    quote_catalogue: '',
+    quote_catalogue: '', quote_website_preview: 'p_key p_sel', quote_change_request: 'p_key p_sel',
     public_holidays_between: 'p_from p_to',
     departments_list: '',
     industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
@@ -13330,7 +13330,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$|change_request$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -13933,7 +13933,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return { signer: o, signature: s2 };
       };
 
-      var qsOpen = function (q) {
+      var qsChangeOpen = function (q) {
         var sh = qsShown(q);
         if (sh.status === 'not_proceeding' || q.status === 'not_proceeding') return { error: 'closed' };
         if (sh.source === 'website' && !sh.released_at) return { error: 'unsent' };
@@ -13941,6 +13941,123 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sh.valid_until < qtToday) return { error: 'expired' };
         return { q: sh };
       };
+
+      var qsOpen = function (q) {
+        var o = qsChangeOpen(q);
+        if (!o.error && o.q.change_requested_at) return { error: 'changes' };
+        return o;
+      };
+
+      var qsChangeSel = function (base, p, snap) {
+        var v = JSON.parse(JSON.stringify(base || {}));
+        if (p == null) return v;
+        if (typeof p !== 'object' || Array.isArray(p)) return { error: 'bad-selection' };
+        if (v.brands) return { error: 'brands' };
+        var svc = function (slug) { return ((snap && snap.services) || []).filter(function (x) { return x.slug === slug; })[0]; };
+        if ('plan' in p) {
+          var ps = svc(p.plan);
+          if (typeof p.plan !== 'string' || !ps || !ps.spec || ps.spec.role !== 'plan' || ps.rate == null) return { error: 'bad-plan' };
+          if (p.plan !== v.plan) { delete v.mix; delete v.extra; }
+          v.plan = p.plan;
+        }
+        if ('mix' in p) { if (!/^[0-9]$/.test(String(p.mix))) return { error: 'bad-selection' }; v.mix = String(p.mix); }
+        if ('platforms' in p) {
+          if (!Array.isArray(p.platforms)) return { error: 'bad-selection' };
+          v.platforms = p.platforms.filter(function (x, i, a) { return ['meta', 'tiktok', 'rednote', 'linkedin'].indexOf(x) >= 0 && a.indexOf(x) === i; });
+        }
+        if ('extra' in p) {
+          if (!p.extra || typeof p.extra !== 'object' || Object.keys(p.extra).length > 10) return { error: 'bad-extra' };
+          var ex = {};
+          for (var ek in p.extra) {
+            var es = svc(ek);
+            if (!es || !es.spec || es.spec.role !== 'content' || !/^[0-9]{1,2}$/.test(String(p.extra[ek]))) return { error: 'bad-extra' };
+            if (Number(p.extra[ek]) > 0) ex[ek] = Number(p.extra[ek]);
+          }
+          v.extra = ex;
+        }
+        if ('files' in p) {
+          if (!p.files || typeof p.files !== 'object' || Object.keys(p.files).length > 5) return { error: 'bad-once' };
+          var once = (v.once || []).filter(function (o) { var os = svc(o.slug); return !(os && os.spec && os.spec.role === 'addon' && qtWebOnce(os)); });
+          for (var fk in p.files) {
+            var fs = svc(fk);
+            if (!fs || !fs.spec || fs.spec.role !== 'addon' || !qtWebOnce(fs) || !/^[0-9]{1,2}$/.test(String(p.files[fk]))) return { error: 'bad-once' };
+            if (Number(p.files[fk]) > 0) once.push({ slug: fk, qty: Number(p.files[fk]) });
+          }
+          v.once = once;
+        }
+        if ('term' in p) {
+          if (!/^[0-9]{1,2}$/.test(String(p.term)) || ([6, 12, 24].indexOf(Number(p.term)) < 0 && Number(p.term) !== Number(base.term))) return { error: 'bad-term' };
+          v.term = Number(p.term);
+        }
+        return v;
+      };
+      var qsChangeSnap = function (q) {
+        var vs = DB.rate_card_versions.filter(function (x) { return q.version_id && x.id === q.version_id; })[0] ||
+          DB.rate_card_versions.filter(function (x) { return String(x.version) === String(q.version); }).slice(-1)[0] || qtCard;
+        if (!vs) return null;
+        var fx = qtFx(q.client_id);
+        return { fx: fx, version: vs.version, snap: qtFxSnap(qtTax(vs.snapshot, q.client_id), fx) };
+      };
+      if (name === 'quote_website_preview' && args.p_key != null) {
+        var pvq = qsByKey(args.p_key);
+        if (!pvq) return qtOk({ error: 'not-found' });
+        var pvo = qsChangeOpen(pvq);
+        if (pvo.error) return qtOk({ error: pvo.error });
+        var pq = pvo.q;
+        if ((pq.selection || {}).brands) return qtOk({ error: 'brands' });
+        var pc = qsChangeSnap(pq);
+        if (!pc) return qtOk({ error: 'no-card' });
+        if (pc.fx === 0) return qtOk({ error: 'no-fx' });
+        var psel = qsChangeSel(pq.selection, args.p_sel, pc.snap);
+        if (psel.error) return qtOk(psel);
+        var pp = qtFxOut(qtCompose(pc.snap, psel, pq.source !== 'website'), pc.fx);
+        if (pp.error) return qtOk({ error: pp.error });
+        var pset = pc.snap.settings || {}, psv = (pc.snap.services || []).filter(function (x) { return x.active !== false && x.spec && x.rate != null; });
+        var pterms = [6, 12, 24].concat(Number((pq.selection || {}).term || 12)).filter(function (m, i, a) { return m > 1 && a.indexOf(m) === i; }).sort(function (a, b) { return a - b; });
+        return qtOk(JSON.parse(JSON.stringify({ selection: psel,
+          lines: (pp.lines || []).map(function (l) { return { slug: l.slug, kind: l.kind, basis: l.basis, label: l.label, qty: Number(l.qty), months: l.months, sst: l.sst != null ? l.sst : l.tax_pct,
+            amount: l.amount != null ? Number(l.amount) : Math.round(Number(l.qty) * Number(l.rate) * 100) / 100 }; }),
+          on_request: pp.on_request || [], extra_rates: pp.extra_rates || {},
+          totals: { term: pp.totals.term, term_pct: pp.totals.term_pct, sst_pct: pp.totals.sst_pct, budget: pp.totals.budget, month: pp.totals.month,
+            once: pp.totals.once, term_rows: pp.totals.term_rows, currency: (pq.totals || {}).currency, fx: (pq.totals || {}).fx, layout: (pq.totals || {}).layout,
+            ads: (pq.totals || {}).ads, ads_total: (pq.totals || {}).ads_total },
+          card: { plans: psv.filter(function (x) { return x.spec.role === 'plan'; }).reduce(function (o, x) { o[x.slug] = Number(x.rate); return o; }, {}),
+            platforms: psv.filter(function (x) { return x.spec.role === 'platform'; }).reduce(function (o, x) { o[x.spec.platform] = Number(x.rate); return o; }, {}),
+            files: psv.filter(function (x) { return x.spec.role === 'addon' && qtWebOnce(x); }).sort(function (a, b) { return a.rate - b.rate; })
+              .map(function (x) { return { slug: x.slug, name: x.name, rate: Number(x.rate) }; }),
+            terms: pterms.map(function (m) { return { months: m, pct: Number(qtTermPct(pset, m) || 0) }; }) },
+          change: pq.change_requested_at ? Object.assign({}, pq.change_request, { at: pq.change_requested_at, reply_due: pq.reply_due }) : null, version: pc.version })));
+      }
+      if (name === 'quote_change_request') {
+        var crq = qsByKey(args.p_key);
+        if (!crq) return qtOk({ error: 'not-found' });
+        var cro = qsChangeOpen(crq);
+        if (cro.error) return qtOk({ error: cro.error });
+        var cq = cro.q;
+        if (args.p_sel == null) {
+          if (!cq.change_requested_at) return qtOk({ ok: true, again: true });
+          cq.change_request = null; cq.change_requested_at = null;
+          DB.activity_log.push({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: cq.brand, detail: cq.ref + ' · changes withdrawn on the quotation link', created_at: new Date().toISOString() });
+          return qtOk({ ok: true });
+        }
+        if ((cq.selection || {}).brands) return qtOk({ error: 'brands' });
+        if (cq.change_requested_at && Date.now() - Date.parse(cq.change_requested_at) < 60e3) return qtOk({ error: 'recent' });
+        var cc = qsChangeSnap(cq);
+        if (!cc) return qtOk({ error: 'no-card' });
+        var csel = qsChangeSel(cq.selection, args.p_sel, cc.snap);
+        if (csel.error) return qtOk(csel);
+        var cNorm = function (x) { var y = JSON.parse(JSON.stringify(x || {})); y.platforms = (y.platforms || []).slice().sort(); return JSON.stringify(Object.keys(y).sort().reduce(function (o, k) { o[k] = y[k]; return o; }, {})); };
+        if (cNorm(csel) === cNorm(cq.selection)) return qtOk({ error: 'unchanged' });
+        var cp = qtFxOut(qtCompose(cc.snap, csel, cq.source !== 'website'), cc.fx);
+        if (cp.error) return qtOk({ error: cp.error });
+        var cnow = new Date().toISOString();
+        cq.change_request = { selection: csel, month: cp.totals.month ? cp.totals.month.incl : null, once: cp.totals.once ? cp.totals.once.incl : null, version: cc.version };
+        cq.change_requested_at = cnow;
+        cq.reply_due = new Date(Date.now() + 2 * 864e5).toISOString();
+        DB.activity_log.push({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: cq.brand, detail: cq.ref + ' · changes requested on the quotation link', created_at: cnow });
+        qtTell(cq.client_id, 'quote.changes', 'Changes requested · ' + cq.brand, cq.ref, cq.id + ':' + cnow);
+        return qtOk({ ok: true, reply_due: cq.reply_due });
+      }
       if (name === 'quote_sign_code') {
         var scq = qsByKey(args.p_key);
         if (!scq) return qtOk({ error: 'not-found' });
