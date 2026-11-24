@@ -222,7 +222,6 @@
       }
       var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))],
         ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
-      if (Array.isArray(t.brands) && t.brands.length > 1) facts.push(['Brands', t.brands.map(function (b) { return String((b && b.name) || '').trim(); }).join(', ')]);
       if (t.month) facts.push(['Minimum term', t.term + (Number(t.term) === 1 ? ' month' : ' months')]);
       var colW = FULL / 3;
       for (var fi = 0; fi < facts.length; fi += 3) {
@@ -263,19 +262,8 @@
     /* `tail`: the height of the totals under the list. The last line
        carries it, so the totals never stand on a page alone; where both do
        not fit, the line moves over with them (the user, 2026-11-24). */
-    /* Several brands on one quotation (2026-11-24): each brand's lines under
-       its name, the totals the whole quotation's. */
-    var brandNames = Array.isArray(t.brands) && t.brands.length > 1 ? t.brands.map(function (b) { return String((b && b.name) || '').trim(); }) : null;
     var drawLines = function (list, quiet, tail) {
-    var lastB = null;
     list.forEach(function (l, li) {
-      if (brandNames && l.brand != null && l.brand !== lastB && brandNames[l.brand]) {
-        lastB = l.brand;
-        if (room(48)) headRow();
-        y -= 16;
-        text(brandNames[l.brand], M, y + 2, TB, reg, pn.strong);
-        y -= 2;
-      }
       var name = wrap(l.label, wD, TB, reg);
       /* Each inclusion a point of its own, as the service lists it, its
          words hung under its first (the user, 2026-11-04: one run of

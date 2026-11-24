@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261124a">
-<link rel="stylesheet" href="/css/console.css?v=20261124b">
+<link rel="stylesheet" href="/css/portal.css?v=20261124">
+<link rel="stylesheet" href="/css/console.css?v=20261124a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -161,7 +161,7 @@
 <script src="/js/mailtpl.js?v=20261124a"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
-<script src="/js/money.js?v=20261124r"></script>
+<script src="/js/money.js?v=20261124q"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
 <script src="/js/mockups.js?v=20261117zzzf"></script>
 </head>
@@ -1608,17 +1608,6 @@
               <button class="iconbtn" id="qbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
             <div class="sheet-body">
-              <!-- Several brands of the client on one quotation (2026-11-24):
-                   a tab a brand once a second is added, each its own board. -->
-              <div class="qb-brandbar" id="qbBrandBar">
-                <div class="qb-brandtabs" id="qbBrandTabs" hidden><select class="select" id="qbBrand" data-seg data-strip aria-label="Brand"></select></div>
-                <button class="btn btn-sm btn-quiet qb-brandadd" id="qbBrandAdd" type="button">Add brand</button>
-              </div>
-              <div class="row qb-brandrow" id="qbBrandRow" hidden>
-                <div><label class="field-label" for="qbBrandName">Brand name</label>
-                  <input class="input" id="qbBrandName" type="text" maxlength="120" data-noenter data-nodraft aria-required="true" placeholder="ADspace Advertising"></div>
-                <button class="btn btn-sm" id="qbBrandRemove" type="button">Remove</button>
-              </div>
               <section class="fsec">
                 <div class="qb-planhead"><h4 class="fsec-h">Choose a plan</h4>
                   <select class="select select-sm" id="qbAds" data-seg data-seg-value aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
@@ -6770,8 +6759,8 @@ raya-2026        https://example.com/raya"></textarea>
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261124w", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261124zd", "uses": ["documents", "bukku", "quotepdf", "seal"]},
-  "quotepdf": {"src": "/js/quotepdf.js?v=20261124zd", "uses": ["documents", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261124zc", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261124zc", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261123f", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
@@ -6801,7 +6790,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/admin.js?v=20261124zc"></script>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
-<script src="/js/agent.js?v=20261124v"></script>
+<script src="/js/agent.js?v=20261124u"></script>
 <script src="/js/overview.js?v=20261124u"></script>
 </body>
 </html>

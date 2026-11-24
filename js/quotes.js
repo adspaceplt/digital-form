@@ -30,7 +30,6 @@
     'bad-once': 'Enter whole numbers for one-off items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
-    'bad-brands': 'Enter each brand\'s name.',
     'over-term': 'A line cannot run longer than the term. Set its months to the term or fewer.',
     'bad-card': 'That Rate Card version is no longer available. Choose another.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
@@ -168,10 +167,8 @@
   function metaOf(q) {
     var t = q.totals || {};
     var bits = [];
-    var plans = (q.lines || []).filter(function (l) { return l.kind === 'plan'; });
-    /* Several brands (2026-11-24): their count, then each plan. */
-    if (Array.isArray(t.brands) && t.brands.length > 1) bits.push(t.brands.length + ' brands');
-    if (plans.length) bits.push(plans.map(function (p) { return p.label.replace(/^Social Media Services · /, '').replace(/ \(.*\)$/, ''); }).join(', '));
+    var plan = (q.lines || []).filter(function (l) { return l.kind === 'plan'; })[0];
+    if (plan) bits.push(plan.label.replace(/^Social Media Services · /, '').replace(/ \(.*\)$/, ''));
     if (t.month) bits.push(t.term + ' months');
     if (!bits.length) bits.push('One-off');
     return bits.join(' · ');
@@ -1459,15 +1456,9 @@
     /* `edits`: a line's quantity, rate and months the team typed, by the
        line's key (2026-10-15, the user: "fully customised for the rates qty
        and months"); priced and kept by the database as typed. */
-    /* Several brands of the client on one quotation (2026-11-24, the user:
-       "1x plan F and 1x plan B for another brand"): each brand's own
-       choices kept in `brands`, the board showing one at a time (`bi`). */
-    var brands = Array.isArray(sel.brands) && sel.brands.length ? JSON.parse(JSON.stringify(sel.brands)) : null;
-    var bi = brands ? Math.min(Math.max(0, Number(sel._bi) || 0), brands.length - 1) : 0;
-    var s1 = brands ? Object.assign({}, sel, brands[bi]) : sel;
-    B = { ctx: ctx, seq: 0, idem: null, plan: s1.plan || null, edits: JSON.parse(JSON.stringify(s1.edits || {})), revises: revises || null, editing: editing || null, opener: opener,
+    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})), revises: revises || null, editing: editing || null, opener: opener,
       /* The order the team arranged the lines in (2026-11-16), by the lines' keys. */
-      order: Array.isArray(s1.order) ? s1.order.slice() : null, brands: brands, bi: bi };
+      order: Array.isArray(sel.order) ? sel.order.slice() : null };
     /* The tax codes a line may take (2026-10-22), drawn once read. */
     MON.taxCodes().then(function (list) {
       if (!B) return;
@@ -1483,8 +1474,7 @@
     $('qbDate').value = /^\d{4}-\d{2}-\d{2}$/.test(String(sel.date || '')) ? sel.date : window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
     $('qbHeading').value = String(sel.title || '');
     adsLoad(sel);
-    advLoad(Object.assign({}, sel, { custom: s1.custom }));
-    brandBar();
+    advLoad(sel);
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
@@ -1504,8 +1494,25 @@
         if (on && on !== c.version) { var s0 = Object.assign({}, sel, { card: on }); build(ctx, s0, opener, revises, editing); return; }
       }
       $('qbFor').textContent += ' · priced from v.' + c.version;
+      var chosen = planOf();
+      $('qbAds').value = chosen && chosen.spec.ads ? 'ads' : 'none';
+      $('qbAds').dispatchEvent(new Event('input'));
+      paintPlans();
+      mixFor(Number(sel.mix) || 0);
+      Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
+        i.checked = (sel.platforms || []).indexOf(i.value) > -1;
+      });
+      $('qbGraphic').value = String((sel.extra || {})[extraSlug('graphic')] || 0);
+      $('qbReel').value = String((sel.extra || {})[extraSlug('reel')] || 0);
+      Array.prototype.forEach.call(document.querySelectorAll('#qbLangs input'), function (i) {
+        i.checked = (sel.langs || ['en']).indexOf(i.value) > -1;
+      });
+      $('qbTranslate').checked = Boolean(sel.translate);
+      budgets(sel.budget == null ? 0 : sel.budget);
       termOptions();
       $('qbTerm').value = String(sel.term || 6);
+      var once = {};
+      (sel.once || []).forEach(function (o) { once[o.slug] = o.qty; });
       /* Add-ons (an outstation fee, a shoot, a revision, files) are one-off
          items too, each under its group on the card (the user, 2026-11-07:
          "couldnt add the outstation fees and add ons"). */
@@ -1524,140 +1531,17 @@
           var id = 'qbO-' + esc(s.slug), nm = esc(s.name);
           return '<div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="' + id + '" aria-label="One fewer ' + nm + '">' + MINUS + '</button>' +
             '<input class="qb-stepval" type="number" min="0" max="999" step="1" inputmode="numeric" id="' + id + '" data-slug="' + esc(s.slug) +
-            '" value="0" aria-label="' + nm + '">' +
+            '" value="' + esc(once[s.slug] || 0) + '" aria-label="' + nm + '">' +
             '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button>' +
             '<span class="qb-stepname">' + nm + ' <small class="qb-rate">' + CUR + ' ' + esc(rm(cv(s.rate))) + ' each</small></span></div>';
         }).join('');
       }).join('');
-      fill(s1);
+      $('qbOnceMore').open = Boolean((sel.once || []).length);
+      stepQtys(true);
+      sync();
       if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
       preview();
     });
-  }
-
-  /* One brand's choices drawn on the board: its plan, content, platforms,
-     extra contents, languages, budget, one-off items, line edits, order
-     and custom lines (the sheet opening, or another brand chosen). */
-  function fill(s) {
-    B.plan = s.plan || null;
-    B.edits = JSON.parse(JSON.stringify(s.edits || {}));
-    B.order = Array.isArray(s.order) ? s.order.slice() : null;
-    B.nameKey = null; B.descKey = null;
-    var chosen = planOf();
-    $('qbAds').value = chosen && chosen.spec.ads ? 'ads' : 'none';
-    $('qbAds').dispatchEvent(new Event('input'));
-    paintPlans();
-    mixFor(Number(s.mix) || 0);
-    Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
-      i.checked = (s.platforms || []).indexOf(i.value) > -1;
-    });
-    $('qbGraphic').value = String((s.extra || {})[extraSlug('graphic')] || 0);
-    $('qbReel').value = String((s.extra || {})[extraSlug('reel')] || 0);
-    Array.prototype.forEach.call(document.querySelectorAll('#qbLangs input'), function (i) {
-      i.checked = (s.langs || ['en']).indexOf(i.value) > -1;
-    });
-    $('qbTranslate').checked = Boolean(s.translate);
-    budgets(s.budget == null ? 0 : s.budget);
-    var once = {};
-    (s.once || []).forEach(function (o) { once[o.slug] = o.qty; });
-    Array.prototype.forEach.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) {
-      i.value = String(once[i.getAttribute('data-slug')] || 0);
-    });
-    $('qbOnceMore').open = Boolean((s.once || []).length);
-    stepQtys(true);
-    if (B.brands) {
-      $('qbCusRows').innerHTML = (s.custom || []).map(cusRow).join('');
-      if ((s.custom || []).length) advOn(true);
-    }
-    sync();
-  }
-  /* What a brand chooses on its own; the rest is the quotation's. */
-  var BRAND_KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order'];
-  /* The board's choices kept with the brand shown. */
-  function keepBrand(s) {
-    if (!B || !B.brands) return;
-    var b = { name: B.brands[B.bi].name || '' };
-    BRAND_KEYS.forEach(function (k) { if (s[k] !== undefined) b[k] = s[k]; });
-    B.brands[B.bi] = b;
-  }
-  /* The selection as it is priced and kept: the board's alone for one
-     brand; for several, the quotation's own choices with each brand's. */
-  function fullSel() {
-    var s = selection();
-    if (!B.brands) return s;
-    keepBrand(s);
-    BRAND_KEYS.forEach(function (k) { delete s[k]; });
-    s.brands = B.brands.map(function (b) { return Object.assign({}, b, { name: String(b.name || '').replace(/\s+/g, ' ').trim() }); });
-    return s;
-  }
-  /* The brands' strip, name and acts: Add brand alone while the quotation
-     covers one brand. */
-  function brandWord(b, i) { return String((b && b.name) || '').trim() || 'Brand ' + (i + 1); }
-  function brandBar() {
-    var many = Boolean(B && B.brands);
-    $('qbBrandTabs').hidden = !many;
-    $('qbBrandRow').hidden = !many;
-    if (!many) return;
-    var sel = $('qbBrand');
-    sel.innerHTML = B.brands.map(function (b, i) { return '<option value="' + i + '">' + esc(brandWord(b, i)) + '</option>'; }).join('');
-    sel.value = String(B.bi);
-    if (window.ADspaceForm) { window.ADspaceForm.segment(sel); window.ADspaceForm.paint(sel); }
-    $('qbBrandName').value = B.brands[B.bi].name || '';
-  }
-  function brandShow(i) {
-    if (!B || !B.brands || i === B.bi || !B.brands[i]) return;
-    keepBrand(selection());
-    B.bi = i;
-    fill(B.brands[i]);
-    brandBar();
-    preview();
-  }
-  function brandAdd() {
-    if (!B) return;
-    var s = selection();
-    if (!B.brands) {
-      B.brands = [{ name: B.ctx.client.name }];
-      B.bi = 0;
-    }
-    keepBrand(s);
-    B.brands.push({ name: '', platforms: [], langs: ['en'], budget: 0, once: [] });
-    B.bi = B.brands.length - 1;
-    fill(B.brands[B.bi]);
-    brandBar();
-    preview();
-    $('qbBrandName').focus();
-  }
-  /* Remove takes the brand shown off the quotation, Undo where it happened
-     puts it back in its place; the last left makes the quotation one
-     brand's again. */
-  function brandRemove() {
-    if (!B || !B.brands) return;
-    keepBrand(selection());
-    var at = B.bi, gone = B.brands.splice(at, 1)[0], left = B.brands.length === 1 ? B.brands[0].name : null;
-    var undo = function () {
-      if (!B) return;
-      if (B.brands) keepBrand(selection());
-      else B.brands = [Object.assign({ name: left || '' }, pickBrand(selection()))];
-      B.brands.splice(at, 0, gone);
-      B.bi = at;
-      fill(gone); brandBar(); preview();
-    };
-    if (left != null) { var only = B.brands[0]; B.brands = null; B.bi = 0; fill(only); }
-    else { B.bi = Math.min(at, B.brands.length - 1); fill(B.brands[B.bi]); }
-    brandBar();
-    preview();
-    if (window.ADspaceAdmin && window.ADspaceAdmin.undoHere) window.ADspaceAdmin.undoHere(brandWord(gone, at) + ' removed.', undo, $('qbBrandBar'));
-    $('qbBrandAdd').focus();
-  }
-  function pickBrand(s) {
-    var b = {};
-    BRAND_KEYS.forEach(function (k) { if (s[k] !== undefined) b[k] = s[k]; });
-    return b;
-  }
-  /* The lines of the brand shown, which the board edits. */
-  function mine() {
-    var all = (B && B.priced && B.priced.lines) || [];
-    return B && B.brands ? all.filter(function (l) { return l.brand === B.bi; }) : all;
   }
 
   /* The plans of the chosen kind as cards: the letter and its fee over its
@@ -2029,8 +1913,8 @@
   /* Build quote drawn again on another version, what is chosen kept. */
   function rebuildOn(version, picked) {
     if (!B) return;
-    var s = fullSel();
-    s.card = version; s.cardPicked = picked; s._bi = B.bi;
+    var s = selection();
+    s.card = version; s.cardPicked = picked;
     if (B.entity) s.entity = B.entity;
     build(B.ctx, s, B.opener, B.revises, B.editing);
   }
@@ -2074,7 +1958,7 @@
   /* The rates beside the extras and the translation come from the same
      answer that prices the lines. */
   function hints(d) {
-    var x = (d && (B.brands && d.brands && d.brands[B.bi] ? d.brands[B.bi].extra_rates : d.extra_rates)) || {};
+    var x = (d && d.extra_rates) || {};
     var gs = extraSlug('graphic'), rs = extraSlug('reel');
     $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = gs && x[gs] != null ? CUR + ' ' + rm(x[gs]) + ' each' : '';
     $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = rs && x[rs] != null ? CUR + ' ' + rm(x[rs]) + ' each' : '';
@@ -2091,7 +1975,7 @@
     timer = setTimeout(function () {
       if (!B) return;
       var seq = ++B.seq;
-      B.sel = fullSel();
+      B.sel = selection();
       B.priced = null;
       $('qbSave').disabled = true;
       $('qbPreview').disabled = true;
@@ -2102,12 +1986,12 @@
         var d = r.data || {};
         hints(d);
         if (r.error || d.error) {
-          $('qbLines').innerHTML = '<p class="ovnone">' + esc((d.brand != null && B.brands ? brandWord(B.brands[d.brand], d.brand) + ': ' : '') + said(r.error || d.error)) + '</p>';
+          $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(r.error || d.error)) + '</p>';
           return;
         }
         B.priced = d;
         /* What was typed for a line the selection no longer holds is let go. */
-        var keys = mine().map(function (l) { return l.key; });
+        var keys = (d.lines || []).map(function (l) { return l.key; });
         Object.keys(B.edits).forEach(function (k) { if (keys.indexOf(k) < 0) delete B.edits[k]; });
         $('qbLines').innerHTML = table(d);
         $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '');
@@ -2140,16 +2024,9 @@
     var hasTax = (B && B.codes || []).some(function (c) { return c.active; });
     var hasPlan = rows.some(function (l) { return l.kind === 'plan'; });
     var mixedPct = (t.term_rows || []).length > 1;
-    /* Several brands (2026-11-24): each brand's lines under its name, the
-       brand shown changed here, the others read. */
-    var names = (B && B.brands) || t.brands || null, many = Boolean(names && names.length > 1 && rows.some(function (l) { return l.brand != null; }));
-    var lastBrand = null;
     var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Line</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
       '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
-        var ro = Boolean(B && B.brands && l.brand !== B.bi);
-        var bhead = '';
-        if (many && l.brand !== lastBrand) { lastBrand = l.brand; bhead = '<div class="qb-brandh">' + esc(brandWord(names[l.brand], l.brand)) + '</div>'; }
         /* Quantity, rate and months are typed where they are read; a line
            quoted off the card names the card's rate under it. */
         var sub = [];
@@ -2168,7 +2045,7 @@
            second option beside that code (2026-11-12). */
         var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
         if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
-        var tax = codes.length + (own ? 1 : 0) && l.kind !== 'custom' && !ro ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+        var tax = codes.length + (own ? 1 : 0) && l.kind !== 'custom' ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
           '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
@@ -2177,7 +2054,7 @@
         var flex = l.kind !== 'custom' && (l.basis === 'once' || l.was_once);
         var box = function (what, v, cls, mode, label) {
           /* A custom line is changed in Advanced, where it is typed. */
-          if (l.kind === 'custom' || ro) return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
+          if (l.kind === 'custom') return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
@@ -2187,7 +2064,7 @@
         /* Include in plan (the user, 2026-11-06, option A): a line at RM 0
            beside a plan is listed under the plan's inclusions on the
            quotation, not as a row of its own; on unless unticked. */
-        var fold = !ro && hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 ?
+        var fold = hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 ?
           '<label class="tickline qb-inplan"><input type="checkbox" data-key="' + esc(l.key || '') + '"' + (l.in_plan ? ' checked' : '') + '> Include in plan</label>' : '';
         /* The description is the Rate Card's until the team changes it for
            this quotation (2026-11-13, the user: "shouldnt be dead end when
@@ -2197,12 +2074,11 @@
         /* Changed from the Rate Card for this quotation (2026-11-16): its
            name, its description or its rate, said once on the line. */
         var edited = l.kind !== 'custom' && (l.list_label != null || l.list_detail != null || l.list_rate != null);
-        var grp = B && B.brands ? rows.filter(function (x) { return x.brand === l.brand; }) : rows;
-        var at = grp.indexOf(l);
-        var move = B && !ro ? '<button type="button" class="iconbtn qb-move" data-move="-1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move up, ' + l.label) + '"' + (at === 0 ? ' disabled' : '') + '>' + UP + '</button>' +
-          '<button type="button" class="iconbtn qb-move" data-move="1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move down, ' + l.label) + '"' + (at === grp.length - 1 ? ' disabled' : '') + '>' + DOWN + '</button>' : '';
+        var at = rows.indexOf(l);
+        var move = B ? '<button type="button" class="iconbtn qb-move" data-move="-1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move up, ' + l.label) + '"' + (at === 0 ? ' disabled' : '') + '>' + UP + '</button>' +
+          '<button type="button" class="iconbtn qb-move" data-move="1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move down, ' + l.label) + '"' + (at === rows.length - 1 ? ' disabled' : '') + '>' + DOWN + '</button>' : '';
         var desc = '';
-        if (l.kind !== 'custom' && B && !ro) {
+        if (l.kind !== 'custom' && B) {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
             (B.descKey === l.key ?
               '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
@@ -2216,16 +2092,16 @@
         } else {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
             (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-            (B && !ro ? '<div class="qb-desc-acts"><span class="qb-moves">' + move + '</span></div>' : '') + '</div>';
+            (B ? '<div class="qb-desc-acts"><span class="qb-moves">' + move + '</span></div>' : '') + '</div>';
         }
         /* The line's name, changed for this quotation where it is read. */
-        var naming = !ro && B && B.nameKey === l.key && l.kind !== 'custom';
+        var naming = B && B.nameKey === l.key && l.kind !== 'custom';
         var nameCell = naming ?
           '<input class="input input-sm qb-name-in" type="text" maxlength="120" data-noenter data-nodraft data-key="' + esc(l.key || '') + '" value="' + esc(l.label) + '" aria-label="Name">' +
           '<span class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-name-cancel" data-key="' + esc(l.key || '') + '">Cancel</button><button type="button" class="btn btn-sm qb-name-done" data-key="' + esc(l.key || '') + '">Done</button></span>' :
           esc(l.label);
         if (l.list_label != null) sub.unshift('Rate Card: ' + l.list_label);
-        return bhead + '<div class="svc-row qb-row' + (ro ? ' is-other' : '') + '"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           desc +
           /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
@@ -2274,16 +2150,6 @@
     if (!$('qbBox') || wire.done) return;
     wire.done = true;
     var on = function () { if (!B) return; sync(); preview(); };
-    $('qbBrandAdd').addEventListener('click', brandAdd);
-    $('qbBrandRemove').addEventListener('click', brandRemove);
-    $('qbBrand').addEventListener('change', function () { brandShow(Number(this.value)); });
-    $('qbBrandName').addEventListener('input', function () {
-      if (!B || !B.brands) return;
-      B.brands[B.bi].name = this.value;
-      var o = $('qbBrand').options[B.bi];
-      if (o) { o.textContent = brandWord(B.brands[B.bi], B.bi); if (window.ADspaceForm) window.ADspaceForm.paint($('qbBrand')); }
-      preview();
-    });
     $('qbAds').addEventListener('change', function () {
       if (!B || !B.card) return;
       var p = planOf();
@@ -2390,7 +2256,7 @@
       if (!B) return;
       var mv = e.target.closest('.qb-move');
       if (mv) {
-        var keys = mine().map(function (l) { return l.key; });
+        var keys = (B.priced && B.priced.lines || []).map(function (l) { return l.key; });
         var i = keys.indexOf(mv.getAttribute('data-key')), j = i + Number(mv.getAttribute('data-move'));
         if (i < 0 || j < 0 || j >= keys.length) return;
         var tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
@@ -2414,7 +2280,7 @@
       var inp = $('qbLines').querySelector('.qb-name-in');
       if (!inp) return;
       var v = inp.value.replace(/\s+/g, ' ').trim();
-      var line = mine().filter(function (l) { return l.key === k; })[0] || {};
+      var line = (B.priced.lines || []).filter(function (l) { return l.key === k; })[0] || {};
       var card = line.list_label != null ? line.list_label : line.label;
       var e4 = B.edits[k] || {};
       /* Empty, or the Rate Card's own name, puts back the card's. */
@@ -2551,12 +2417,11 @@
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
-      var wrong = (B.brands && B.brands.some(function (b) { return !String(b.name || '').trim(); }) ? SAID['bad-brands'] : '') || adsWrong() || cusWrong();
+      var wrong = adsWrong() || cusWrong();
       if (wrong) {
         $('qbMsg').textContent = wrong; $('qbMsg').className = 'msg err';
         var miss = Array.prototype.filter.call(document.querySelectorAll('#qbAdRows input:not([disabled])'), function (i) { return !Number(String(i.value).replace(/[^0-9.]/g, '')); })[0] ||
           Array.prototype.filter.call(document.querySelectorAll('#qbCusRows .qb-cusname, #qbCusRows .qb-cusqty, #qbCusRows .qb-cusmo:not([disabled])'), function (i) { return !String(i.value).trim() || (!i.classList.contains('qb-cusname') && !Number(i.value)); })[0];
-        if (wrong === SAID['bad-brands']) miss = $('qbBrandName');
         if (miss) miss.focus();
         return;
       }
