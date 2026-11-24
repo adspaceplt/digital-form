@@ -2082,15 +2082,50 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* The steps by day, each the status's dot and its word. */
 .verify-history h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 12px 0 8px; }
 .verify-history ol { list-style: none; margin: 0; padding: 0; display: grid; }
-.verify-history li { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line-soft); }
-.verify-history li:first-child { border-top: 0; }
-.verify-history .verify-day { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* A Chinese date (2026年11月19日) takes a wider column, whole on one line. */
-.verify-history li:lang(zh) { grid-template-columns: 124px minmax(0, 1fr); }
+/* The approved boards (2026-11-25): a line a step on a timeline, its glyph
+   in a disc on the hairline that joins them, the step over its day;
+   Signed and Confirmed filled green, as the sealed copy's record fills
+   their dots. */
+.verify-history li { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; align-items: start; padding: 0 0 14px; }
+.verify-history li:last-child { padding-bottom: 0; }
+.verify-history li:not(:last-child)::before { content: ""; position: absolute; left: 15.5px; top: 34px; bottom: 2px; width: 1px; background: var(--line); }
+.verify-history .verify-disc { width: 32px; height: 32px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.verify-history .verify-disc .ic { width: 15px; height: 15px; }
+.verify-history .verify-disc.is-filled { background: var(--ok-solid); color: var(--on-ok); box-shadow: none; }
+.verify-history li.is-danger .verify-disc { color: var(--err); }
+.verify-step { display: grid; gap: 1px; padding-top: 1px; min-width: 0; }
+.verify-step b { font-size: 14px; font-weight: 500; }
+.verify-history .verify-day { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* How many times the document has been checked: one small line under the
    steps (VERIFY CHECKS COUNTED, 2026-11-21). */
 :root[data-face="client"] .verify-panel .verify-checks, .verify-checks { margin: 4px 0 0; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .verify-out .verify-file-out { font-size: 14px; margin: 0; text-align: center; }
+/* The answer's head (2026-11-25, the approved boards): the document's glyph
+   in a white disc, its kind over its reference, its state at the right,
+   the facts under a hairline; a notice (not found, unable, too many) the
+   same disc beside its title and line; each way on led by its disc. */
+.verify-disc { width: 40px; height: 40px; border-radius: 50%; corner-shape: round; background: var(--card); color: var(--ink);
+  display: inline-grid; place-items: center; flex: 0 0 auto; }
+.verify-disc .ic { width: 19px; height: 19px; }
+.verify-head { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.verify-head-words { display: grid; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.verify-out .verify-head-words b { font-size: 15px; }
+.verify-ref { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.verify-state { flex: 0 0 auto; align-self: flex-start; padding-top: 2px; }
+.verify-out .verify-note-out { margin: 0; font-size: 13px; color: var(--ink-mute); line-height: 1.5; text-align: center; }
+.verify-notice { display: flex; align-items: flex-start; gap: 14px; }
+.verify-notice-words { display: grid; gap: 4px; min-width: 0; padding-top: 2px; }
+.verify-out .verify-notice-words > span { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+.verify-ask .verify-notice-words > span { font-size: 12.5px; color: var(--ink-mute); line-height: 1.45; }
+.verify-ask .verify-notice-words b { font-size: 14px; }
+.verify-ask-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+.verify-pick .verify-disc, .verify-ask .verify-disc { width: 36px; height: 36px; margin-bottom: 4px; }
+.verify-pick .verify-disc .ic, .verify-ask .verify-disc .ic { width: 17px; height: 17px; }
+.verify-pick .btn .ic { width: 15px; height: 15px; }
+.verify-noid summary { display: inline-flex; align-items: center; gap: 6px; list-style: none; }
+.verify-noid summary::-webkit-details-marker { display: none; }
+.verify-noid summary .ic { width: 14px; height: 14px; transition: transform var(--t-fast); }
+.verify-noid[open] summary .ic { transform: rotate(90deg); }
 @media (max-width: 640px) {
   .verify-acts { grid-template-columns: minmax(0, 1fr); }
   .verify-card, .verify-ask { padding: 14px; }
@@ -9644,7 +9679,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-step > .msg { margin: 0; }
 .qs-step .msg:empty, .qs-cf:empty { display: none; }
 .qs-foot { display: flex; gap: 8px; padding: 20px 0 8px; }
-.qs-foot > .btn { flex: 1 1 0; }
+/* Equal halves grow from a half's basis (DESIGN.md §5). */
+.qs-foot > .btn { flex: 1 1 50%; }
 /* A forward move is a button at its own width: a lone Submit stands at the
    column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
@@ -9698,11 +9734,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-disc { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 40px; height: 40px;
   border-radius: 50%; corner-shape: round; background: var(--field); color: var(--ink); }
 .qs-disc .ic { width: 20px; height: 20px; }
-.qs-disc.is-white { background: var(--card); }
 .qs-disc.is-sm { width: 30px; height: 30px; }
 .qs-disc.is-sm .ic { width: 15px; height: 15px; }
-.qs-badge { position: absolute; top: -4px; right: -4px; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
-  border-radius: 50%; corner-shape: round; background: var(--fill); color: var(--on-fill); font-size: 11px; font-weight: 600; }
 /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
    2026-11-25): the services as tiles, five in a row at a desk, three over
    two on a phone; What to expect as shaded cards; the time with its clock. */
@@ -9710,10 +9743,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-svcs li { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; text-align: center;
   border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line-soft); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.qs-stepcards { gap: 10px; }
-.qs-stepcards li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); }
-.qs-stepcards li::before { content: none; }
-.qs-stepcards li > span:last-child { padding-top: 9px; font-size: 14.5px; line-height: 1.5; }
 .qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
 .qs-time .ic { color: var(--ink-soft); }
 /* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk):
@@ -9756,6 +9785,52 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* A platform's name with its marks needs the column's width on a phone. */
 @media (max-width: 560px) { .qs-plats { grid-template-columns: minmax(0, 1fr); } }
 .qs-chip.is-on .ic-cut { fill: var(--card); }
+/* A form in steps (2026-11-25; js/icons.js, DESIGN.md §4). */
+.qs-intro-p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-soft); }
+.stepcards { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.stepcard {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; align-items: start;
+  padding: 14px 16px; border-radius: var(--radius); background: var(--sunk);
+}
+.stepcard-mark {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  border-radius: 50%; corner-shape: round; background: var(--card); color: var(--ink);
+}
+.stepcard-mark .ic { width: 20px; height: 20px; }
+.stepcard-n {
+  position: absolute; top: -4px; right: -4px; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; border-radius: 50%; corner-shape: round; background: var(--fill); color: var(--on-fill);
+  font-size: 11px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.stepcard-text { display: grid; gap: 2px; min-width: 0; padding-top: 2px; }
+.stepcard-text b { font-size: 15px; font-weight: 600; color: var(--ink); }
+.stepcard-text span { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
+/* A step said in one sentence (the quotation's opening page) stands on the disc's middle. */
+.stepcard-text.is-one { padding-top: 9px; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.stephead { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; align-items: center; }
+.stephead-mark {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border-radius: 50%; corner-shape: round; background: var(--line-soft); color: var(--ink);
+}
+.stephead-mark .ic { width: 22px; height: 22px; }
+.stephead .qs-top { gap: 2px; min-width: 0; }
+.stephead .qs-title { overflow-wrap: anywhere; }
+.sumcard { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); min-width: 0; }
+.sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.sumcard-head .btn { flex: 0 0 auto; }
+.sumcard-group { display: grid; gap: 10px; min-width: 0; }
+.sumcard-group + .sumcard-group { border-top: 1px solid var(--line); padding-top: 14px; }
+.sumcard-group h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.sumcard-group dl { display: grid; gap: 10px; margin: 0; }
+.sumcard-group dl > div { display: grid; gap: 2px; min-width: 0; }
+.sumcard-group dt { font-size: 12.5px; color: var(--ink-mute); }
+.sumcard-group dd { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; white-space: pre-line; }
+@media (min-width: 641px) {
+  .sumcard-group dl { gap: 8px; }
+  .sumcard-group dl > div { grid-template-columns: 196px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
+  .sumcard-group dt { font-size: 13px; }
+}
 
 .qs-quote { display: grid; gap: 24px; }
 /* A quotation is read as a document of figures, not page copy: its lines,
@@ -9903,7 +9978,9 @@ body.qs-page { background: var(--card); }
 
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */
-.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; gap: 4px; color: var(--ink-soft); }
+/* The authorisation a supplier agrees to, its own step, read on its shaded box (2026-11-25). */
+.sf-auth { margin: 0; padding: 16px 18px 16px 38px; border-radius: var(--radius); background: var(--sunk); list-style: lower-alpha; gap: 8px; font-size: 14px; line-height: 1.55; color: var(--ink); }
+.sf-auth li { padding-left: 4px; }
 
 /* Buttons sharing a row share one width under a finger wider than a phone
    too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a

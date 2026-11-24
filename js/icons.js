@@ -64,6 +64,11 @@
        Feedback, each a tile before its rows. */
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-4M12 17V8M16 17v-6M20 17v-2"/>',
+    /* /verify/'s record of a document (2026-11-25): issued, signed, and
+       the document found. */
+    plane: '<path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/>',
+    pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14 8 3 3"/>',
+    doccheck: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2.2 2.2 4-4.2"/>',
     star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
     key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>',
     /* A quotation plan's mark and the facts under its name (/quote/, the
@@ -83,7 +88,9 @@
     bubble: '<path d="M4 19.5l1.3-3.8A8 8 0 1 1 8.6 19z"/>',
     pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 8l3 3"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
-    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>'
+    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    /* A form in steps (2026-11-25): a bank's payment details. */
+    bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 21h16M5 18h14M6.5 10v8M10.5 10v8M13.5 10v8M17.5 10v8"/>'
   };
   /* A platform's glyph by the words the pages hold for it. */
   var PLAT = { rednote: 'rednote', xhs: 'rednote', xiaohongshu: 'rednote', instagram: 'instagram', ig: 'instagram',
@@ -134,6 +141,39 @@
   var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
                     scheduled: 4, posted: 5, completed: 6 };
   function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
+  /* A form in steps (2026-11-25, DESIGN.md §4): step cards, the track, a
+     step's head, and the answers read back. */
+  function stepCards(items) {
+    var esc = window.ADspaceWords.esc;
+    return '<ol class="stepcards">' + items.map(function (x, i) {
+      return '<li class="stepcard"><span class="stepcard-mark">' + svg(x.glyph) + '<b class="stepcard-n" aria-hidden="true">' + (i + 1) + '</b></span>' +
+        (x.name ? '<span class="stepcard-text"><b>' + esc(x.name) + '</b><span>' + esc(x.line) + '</span></span>'
+          : '<span class="stepcard-text is-one">' + esc(x.line) + '</span>') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function stepTrack(n, m, word) {
+    var esc = window.ADspaceWords.esc;
+    return '<div class="qs-progress"><span>' + esc(word) + '</span>' +
+      '<div class="qs-track" aria-hidden="true"><i style="width:' + Math.round(n / m * 100) + '%"></i></div></div>';
+  }
+  function stepHead(glyph, title, lead) {
+    var esc = window.ADspaceWords.esc;
+    return '<div class="stephead"><span class="stephead-mark">' + svg(glyph) + '</span>' +
+      '<div class="qs-top"><h1 class="qs-title">' + esc(title) + '</h1>' + (lead ? '<p class="qs-lead">' + lead + '</p>' : '') + '</div></div>';
+  }
+  function summary(title, groups, edit) {
+    var esc = window.ADspaceWords.esc;
+    var body = groups.map(function (g) {
+      var rows = g.rows.filter(function (r) { return r[1] != null && String(r[1]).trim() !== ''; });
+      if (!rows.length) return '';
+      return '<div class="sumcard-group">' + (g.name ? '<h3>' + esc(g.name) + '</h3>' : '') + '<dl>' + rows.map(function (r) {
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+      }).join('') + '</dl></div>';
+    }).join('');
+    return '<section class="sumcard"><div class="sumcard-head"><h2>' + esc(title) + '</h2>' +
+      (edit ? '<button class="btn btn-sm" type="button" ' + (edit.attrs || '') + '>' + svg('pen') + esc(edit.label) + '</button>' : '') +
+      '</div>' + body + '</section>';
+  }
   /* A platform's own mark, single colour in ink (the user, 2026-11-24: no
      brand colour fills), where a prospect chooses platforms (/quote/): the
      mark in currentColor, what is cut out of it in the card's ground
@@ -154,5 +194,6 @@
       return '<svg class="ic-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + MARK[m] + '</svg>';
     }).join('');
   }
-  window.ADspaceIcons = { svg: svg, platform: platform, mark: mark, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!P[n]; } };
+  window.ADspaceIcons = { svg: svg, platform: platform, mark: mark, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!P[n]; },
+    stepCards: stepCards, stepTrack: stepTrack, stepHead: stepHead, summary: summary };
 })();
