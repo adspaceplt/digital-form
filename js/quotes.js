@@ -148,7 +148,7 @@
     return (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number((t || {}).term); });
   }
   /* The first month holds the one-off items too (the user, 2026-10-18). */
-  function sum2(a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; }
+  function sum2(a, b) { return MON.cents(Number(a || 0) + Number(b || 0)); }
   function firstIncl(t) { return sum2(t.month.incl, t.once && t.once.incl); }
   function headline(q) {
     var m = monthly(q);
@@ -496,7 +496,7 @@
      confirmed before the seal, or whose first keep failed, is sealed at its
      next Download by a colleague at Work; anyone else reads it drawn. */
   function sealOn() { var s3 = (window.ADSPACE_CONFIG || {}).s3; return Boolean(s3 && s3.privateInvoices && window.ADspaceSeal && window.ADspaceAdmin && window.ADspaceAdmin.putToS3); }
-  function verifyUrl(q) { return 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(q.ref); }
+  function verifyUrl(q) { return window.ADSPACE_CONFIG.verify.page + '?s=' + encodeURIComponent(q.ref); }
   function readSealed(q, ctx) {
     return ctx.db.functions.invoke('sign-download', { body: { quotation: q.id } }).then(function (r) {
       var b = r && r.data;
@@ -1721,8 +1721,11 @@
     adsPaint();
   }
   /* Ticked, one Meta row from the budget chosen above (else the plan's) and
-     the term. */
+     the term. A quotation in S$ takes the budget the Singapore ad account
+     holds, typed in S$, never a ringgit tier turned over (the user,
+     2026-11-24): its row opens empty. */
   function adsBudget() {
+    if (FX != null) return 0;
     var p = planOf(), v = Number($('qbBudget').value);
     return v > 0 ? v : v === 0 && p ? Number(p.spec.ad_budget) || 0 : 0;
   }
@@ -1745,7 +1748,7 @@
     if (!$('qbAdOn').checked) return '';
     var rows = adsRead();
     if (!rows.length) return 'Add a platform, or untick Include advertising budget.';
-    if (rows.some(function (r) { return !(r.budget > 0); })) return 'Enter each platform\'s budget.';
+    if (rows.some(function (r) { return !(r.budget > 0); })) return FX != null ? 'Enter each platform\'s budget in S$.' : 'Enter each platform\'s budget.';
     if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 36); })) return 'Enter each platform\'s months, from 1 to 36.';
     return '';
   }
@@ -1877,10 +1880,10 @@
   function extras(sel) {
     var rows = (sel.ads || []).map(function (r) {
       var n = r.freq === 'once' ? null : r.months;
-      return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: Math.round(r.budget * (n || 1) * 100) / 100 };
+      return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: MON.cents(r.budget * (n || 1)) };
     });
     var out = { layout: 2, pay_days: sel.pay || 7, valid_days: sel.valid || validDefault(), ads: rows, terms: sel.terms || [], title: sel.title || null,
-      ads_total: Math.round(rows.reduce(function (a, r) { return a + r.amount; }, 0) * 100) / 100 };
+      ads_total: MON.cents(rows.reduce(function (a, r) { return a + r.amount; }, 0)) };
     var ent = sel.entity && (B.entities || []).filter(function (x) { return x.id === sel.entity; })[0];
     if (ent) out.bill_to = { entity_id: ent.id, legal_name: ent.legal_name, company_no: ent.company_no, billing_address: ent.billing_address };
     return out;
