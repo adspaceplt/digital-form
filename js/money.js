@@ -25,8 +25,10 @@
      `app_settings_read()`), each kept with the day it took effect, so a
      letter redrawn later is priced by the figures of its own day. `load()`
      reads them once per page; `FIRST` is what each held before the setting
-     existed (the migration's seed), used only where the read fails. */
-  var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_18_23: -5, term_24: -10,
+     existed (the migration's seed), used only where the read fails.
+     `term_18_23` has no seed: unset, 18 months takes 12's, as
+     `quote_term_pct` does (2026-11-24). */
+  var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_24: -10,
     lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
     ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10, ai_price_image: 0.07,
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72, task_remind_hours: 3, task_start_days: 2, task_past_days: 30, stage_back_days: 7, quote_valid_days: 30, quote_reply_days: 2, details_form_days: 14, wa_repeat_hours: 24, quote_wa_day: 30,
@@ -199,10 +201,9 @@
   ];
   function termPct(months, at) {
     var n = Math.max(1, Math.floor(Number(months || 1)));
-    for (var i = 0; i < TERM_PCT.length; i++) {
-      if (n >= TERM_PCT[i][0] && n <= TERM_PCT[i][1]) return setting(TERM_PCT[i][2], at);
-    }
-    return 0;
+    var k = termKey(n), v = k ? setting(k, at) : 0;
+    if (v == null && k === 'term_18_23') v = setting('term_12_23', at);
+    return v == null ? 0 : v;
   }
   /* The setting a term's adjustment is read from. */
   function termKey(months) {
@@ -279,13 +280,20 @@
      total, at the rate set in Tax and terms (`fx_sgd`, RM to S$1):
      " (approx. S$ 952.38)". Nothing where the rate is unset, or for any
      other client. */
-  function approx(n, c, at) {
-    if (!c || String(c.market || '').toUpperCase() !== 'SG' || curOf(c) === 'SG') return '';
-    if (n == null || n === '') return '';
-    var fx = Number(setting('fx_sgd', at)) || 0;
+  /* `fx` is the rate a record kept (a letter's `bill_to.fx_sgd`), else
+     the setting on `at`. `approxSgd` is the figure, null where none is
+     said; one copy for every page and the Letter of Offer (2026-11-24). */
+  function approxSgd(n, c, at, fx) {
+    if (!c || String(c.market || '').toUpperCase() !== 'SG' || curOf(c) === 'SG') return null;
+    if (n == null || n === '') return null;
+    var r = Number(fx != null && fx !== '' ? fx : setting('fx_sgd', at)) || 0;
     var v = Number(n);
-    if (!(fx > 0) || !isFinite(v)) return '';
-    return ' (approx. ' + money2(Math.round(v / fx * 100) / 100, 'SG') + ')';
+    if (!(r > 0) || !isFinite(v)) return null;
+    return cents(v / r);
+  }
+  function approx(n, c, at, fx) {
+    var v = approxSgd(n, c, at, fx);
+    return v == null ? '' : ' (approx. ' + money2(v, 'SG') + ')';
   }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.
@@ -328,7 +336,7 @@
      oneOff. */
   function quoteRows(t, lines, on) {
     t = t || {};
-    var add = function (a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; };
+    var add = function (a, b) { return cents(Number(a || 0) + Number(b || 0)); };
     var own = Boolean(t.month) && (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
     var r = [], o = t.once || {};
     if (t.month) {
@@ -383,10 +391,12 @@
   /* A quotation's term adjustment says what it is (the user, 2026-11-12):
      "6-month term discount (5%)" with its amount in minus, or "3-month term
      surcharge (15%)" in plus. One copy for Build quote, the quotation's
-     PDF, /quote/ and the Letter of Offer. */
-  function termLine(n, pct) {
-    var p = Math.round(Math.abs(Number(pct) || 0) * 100) / 100;
-    return (n ? n + '-month ' : '') + 'term ' + (Number(pct) < 0 ? 'discount' : 'surcharge') + ' (' + p + '%)';
+     PDF, /quote/ and the Letter of Offer; `zh` writes it in Chinese. */
+  function termLine(n, pct, zh) {
+    var p = Math.round(Math.abs(Number(pct) || 0) * 100) / 100, off = Number(pct) < 0;
+    /* In Chinese for /quote/ (2026-11-24): 12个月合约优惠（5%）. */
+    if (zh) return (n ? n + '个月' : '') + '合约' + (off ? '优惠' : '附加费') + '（' + p + '%）';
+    return (n ? n + '-month ' : '') + 'term ' + (off ? 'discount' : 'surcharge') + ' (' + p + '%)';
   }
   /* The advertising budget's platforms (2026-11-12): the client's money
      paid to the platform on their behalf, never a service line. */
@@ -436,6 +446,7 @@
     sign: signOf,
     curOf: curOf,
     approx: approx,
+    approxSgd: approxSgd,
     market: market,
     MARKETS: MARKETS,
     TAX: TAX,

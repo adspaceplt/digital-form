@@ -414,11 +414,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-11-12-quotations-advanced.sql`): one made from then on (`totals.layout`
   2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
   closing on its own total, the term's total a sentence in TERMS, the term
-  row a discount or a surcharge (`ADspaceMoney.termLine`); an older one redraws
+  row a discount or a surcharge (`ADspaceMoney.termLine`, in Chinese on
+  /quote/'s 中文, a row whose lines run different months naming none); an older one redraws
   as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
   subject to ADspace's approval, `payLine`) and Include advertising budget (a
   row a platform, Monthly or One-off; the client's money, kept in the totals,
-  never a service line or revenue; `quote_extras`). Its Advanced switch adds
+  never a service line or revenue; `quote_extras`; in an S$ quotation the
+  Singapore ad account's own S$ figure, typed, never a ringgit tier turned
+  over: its row opens empty and Create asks Enter each platform's budget in
+  S$., the user, 2026-11-24). Its Advanced switch adds
   custom lines (`quote_custom`, priced by `quote_totals`, a quotation of them
   alone through `quote_base`), each with a start printed as its period; Renew
   lines (a client's confirmed lines, each `renews` its line, confirmed for the

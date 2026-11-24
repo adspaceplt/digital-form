@@ -59,6 +59,10 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
   credited under the route (© openrouteservice.org by HeiGIT · Map data ©
   OpenStreetMap contributors).
+- A trip of the driver's own missing a stop's address or a leg is asked
+  again when the driver opens the list, once a visit (each stop, then the
+  legs; 2026-11-24: OS/20261101 came before the lookup worked and never
+  asked again).
 - The location block shows the reading's coordinates as it arrives and the
   place the geocoder names once the reading is accepted (2026-11-24).
 - A photo reaches the page as `application/octet-stream` and is named by
@@ -75,7 +79,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   kept.
 - Check in reads Client (and Venue), Location, the photo, then Purpose,
   Note and Going together: what it waits for first (2026-11-24).
-- Every trip has a number, `OS/{YYYYMM}{NN}` (`outstation_trips.ref`; the
+- Every trip has a number, `#OS{YYMM}{NN}` (`#OS261101`, as a task is `#WT00001`; the user, 2026-11-24) (`outstation_trips.ref`; the
   user, 2026-11-24): the Malaysian month of check-in and its count from 01,
   two digits and more past 99, given on insert from `outstation_ref_months`
   under the month's row lock, never changed (`code-fixed`) and never given
