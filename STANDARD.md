@@ -641,6 +641,14 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   an hour later and on main; its seed counts days from `current_date`
   (UTC), so the cause is to be found in how the function's day and the
   seed's meet; held here until it ships.
+- 2026-11-24, `auditfix` (release B2, which touches none of it): "the
+  schema runs again with no new error" reads 5 errors on main at 58a6be8
+  (3 allowed): `creator_email_templates_purpose_check` (CREATOR DETAILS
+  CHANGED, #1379) re-asserted over rows a later band wrote, beside the
+  standing `sm_report_create_for`, `wa_templates_purpose_check`,
+  `team_roles_reports_to_fkey` and `mail_boxes_key_check`; the cause is to
+  be found in the band that re-adds its check before its rows move; held
+  here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
