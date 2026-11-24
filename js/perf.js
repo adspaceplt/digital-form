@@ -3416,12 +3416,17 @@
   function readRecPeople(then) {
     if (recPeople) { then(); return; }
     if (!db) { recPeople = []; then(); return; }
+    /* A read that failed opens nothing and is asked again next time: an
+       empty list would read as no colleagues (audit 2026-11-24). */
+    var fail = function () { msg('mineRecMsg', 'The colleagues could not be loaded. Try again.', 'err'); };
     db.from('team_members').select('id, name, staff_code, active, system').eq('active', true).then(function (res) {
+      if (!res || res.error) { fail(); return; }
+      msg('mineRecMsg', '');
       var F = window.ADspaceForm, mine = (me() || {}).id;
-      recPeople = (res && !res.error && res.data || []).filter(function (p) { return !p.system && p.id !== mine; })
+      recPeople = (res.data || []).filter(function (p) { return !p.system && p.id !== mine; })
         .sort(F && F.byStaff ? F.byStaff : function () { return 0; });
       then();
-    }).catch(function () { recPeople = []; then(); });
+    }).catch(fail);
   }
   function openRecognise(opener) {
     readRecPeople(function () {
