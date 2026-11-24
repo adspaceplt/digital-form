@@ -23,13 +23,11 @@
   /* The issuer and the agency, read from the shared config at the draw, as
      every PDF reads them (the demo's sample agency on sample data). */
   function CFG() { return window.ADSPACE_CONFIG || {}; }
-  /* A signed quotation's own words (2026-11-24): its agency's name and
-     Service Terms address as kept at signing, for the draw in hand. */
   var KEPT = null;
-  function agency() { return (KEPT && KEPT.agency) || CFG().agencyName || 'ADspace'; }
+  function agency() { return (KEPT && KEPT.a) || CFG().agencyName || 'ADspace'; }
   function issuer() { return (window.ADSPACE_ORG || {}).name || 'ADSPACE PLT'; }
   /* The Service Terms clause, left out where none is set. */
-  function termsAt(lead) { var u = KEPT && KEPT.agency ? KEPT.termsUrl : CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
+  function termsAt(lead) { var u = KEPT ? KEPT.t : CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
   var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
@@ -104,8 +102,7 @@
             sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ' + issuer() + '.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
-        /* Held for this draw's layout and its file title, let go after. */
-        KEPT = opts.agency ? { agency: String(opts.agency), termsUrl: opts.termsUrl || '' } : null;
+        KEPT = opts.agency ? { a: opts.agency, t: opts.termsUrl || '' } : null;
         var form = layout(pdf, PDF, got[0], got[1], q, opts);
         signedN = pdf.getPageCount();
         return docs.formFields(pdf, PDF, form.page, form.boxes);
