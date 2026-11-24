@@ -734,6 +734,11 @@
     }, spanWord(tr));
     heading(ac, [{ label: 'Active clients', d: direction(h, 'active', 'up') }]);
     insights(g1, clientChanges(f, fp, n));
+    /* This week: client feedback by Person in charge (2026-11-24, CLIENT
+       FEEDBACK), each asked of its own clients on the period; the account
+       manager's own score only where `feedback_figures` answers it (the
+       colleague, the group they report to, Clients Full Access). */
+    if (may('clients', 'manage')) fbCard(row(B.week), r);
     /* Monthly review: joined and left beside why clients paused or left;
        Reference: the active clients by industry, market and length of stay. */
     var g0 = row(B.month);
@@ -754,6 +759,31 @@
     var BANDS = [['Under 3 months', 0, 91], ['3 to 6 months', 91, 183], ['6 to 12 months', 183, 365], ['1 to 2 years', 365, 730], ['Over 2 years', 730, 1e9]];
     chart(row(B.ref), 'stay', 'Active clients by length of stay', { kind: 'bars', inline: true, empty: 'No active clients.',
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
+  }
+  function fbCard(grid, r) {
+    var el = card(grid, 'feedback', 'Client feedback by person in charge', spanWord(r), '<span class="skel skel-w"></span>');
+    var body = el.querySelector('.ovw-body');
+    var dash = '<span class="mute">\u2014</span>';
+    var num = function (v, f) { return v == null ? dash : esc(f(Number(v))); };
+    var run = function () {
+      db.rpc('feedback_figures', { p_from: CK.day(r.from), p_to: CK.day(new Date(r.to.getTime() - 1)) }).then(function (x) {
+        if (x.error) throw new Error(x.error.message);
+        var d = x.data || {};
+        if (d.error) throw new Error(d.error === 'denied' ? 'You do not have permission to read client feedback. Please ask an admin.' : 'The feedback figures could not be loaded. Refresh the page.');
+        var ppl = (d.people || []).filter(function (p) { return p.requested || p.answered; });
+        if (!ppl.length) { UI.emptyLine(body, 'No requests.'); return; }
+        body.innerHTML = '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl anl-fb"><thead><tr><th scope="col">Person in charge</th>' +
+          '<th scope="col" class="is-end">Requested</th><th scope="col" class="is-end">Answered</th><th scope="col" class="is-end">Service rating</th>' +
+          '<th scope="col" class="is-end">NPS</th><th scope="col" class="is-end">Account manager score</th></tr></thead><tbody>' +
+          ppl.map(function (p) {
+            return '<tr><th scope="row">' + esc(p.name || 'Former colleague') + '</th><td class="is-end">' + (Number(p.requested) || 0) +
+              '</td><td class="is-end">' + (Number(p.answered) || 0) + '</td><td class="is-end">' + num(p.rating, function (v) { return v.toFixed(1); }) +
+              '</td><td class="is-end">' + num(p.nps, function (v) { return (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v); }) +
+              '</td><td class="is-end">' + num(p.manager_score, function (v) { return v.toFixed(1) + ' of ' + (Number(p.manager_max) || 5); }) + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }).catch(function (e) { UI.failLine(body, 'Client feedback', (e && e.message) || '', run); });
+    };
+    run();
   }
   /* Operations, all of it the Dashboard's cards: Where work waits and the
      month's reports to act on now, then on time by person, then the months. */

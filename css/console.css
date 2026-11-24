@@ -5661,6 +5661,16 @@ svg.sec {
 .ovw-kpis.ovw-pay { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .ovw-kpi-sub.is-err { color: var(--err); }
 .ovw-pay > .ovw-kpi > .ovw-kpi-fig.is-money { font-size: 20px; grid-column: 1 / -1; }
+/* Client feedback (2026-11-24): three figures across, one over the
+   other when narrow (never one alone on a row), and the line naming the
+   clients not asked lately under them. */
+.ovw-kpis.ovw-fb { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.is-narrow .ovw-kpis.ovw-fb { grid-template-columns: minmax(0, 1fr); }
+.ovw-fbquiet { margin: 0; font-size: 13px; color: var(--ink-mute); }
+/* Analytics' feedback by Person in charge: on a narrow pane the counts
+   give way, the scores stay, so the table never scrolls sideways. */
+.is-narrow .anl-fb :is(th, td):is(:nth-child(2), :nth-child(3)) { display: none; }
+.anl-fb thead .is-end { white-space: normal; }
 /* Needs attention beside the on-time trend (1.618 : 1). */
 .ovw-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-pair.is-one, .is-narrow .ovw-pair { grid-template-columns: minmax(0, 1fr); }
