@@ -215,6 +215,7 @@
     campaign_reset_link: 'p_campaign',
     get_creator: 'p_code',
     get_portal: 'p_client',
+    portal_invoice_contacts: 'p_client',
     get_review_feed: 'p_passcode p_token',
     handbook_add_version: 'p_note p_size p_doc p_mime p_name p_path',
     handbook_required_set: 'p_id p_on',
@@ -10382,6 +10383,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
       .map(function (k) { return k.client_id; });
   }
 
+  function portalInvoiceContacts(a) {
+    if (!whoNow()) return { error: 'not-signed-in' };
+    if (portalClientIds().indexOf(a.p_client) < 0) return { error: 'no-access' };
+    var L = DB.bukku_links || [], out = [];
+    L.forEach(function (b) {
+      var hit = (b.kind === 'client' && b.record_id === a.p_client) ||
+        (b.kind === 'supplier' && (DB.suppliers || []).some(function (x) { return x.id === b.record_id && x.client_id === a.p_client; })) ||
+        (b.kind === 'entity' && (DB.client_entities || []).some(function (x) { return x.entity_id === b.record_id && x.client_id === a.p_client; }) &&
+          !(DB.client_entities || []).some(function (x) { return x.entity_id === b.record_id && x.client_id !== a.p_client; }));
+      if (hit && out.indexOf(Number(b.contact_id)) < 0) out.push(Number(b.contact_id));
+    });
+    return { contacts: out };
+  }
+
   function rpc(name, args) {
     try { return rpcCall(name, args); }
     catch (e) { if (e && e.__rpcErr) return Promise.resolve({ data: null, error: e.__rpcErr }); throw e; }
@@ -11448,6 +11463,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: pout, error: null });
     }
+    if (name === 'portal_invoice_contacts') return Promise.resolve({ data: portalInvoiceContacts(args || {}), error: null });
     if (name === 'portal_meetings') {
       var pmr = window.__refuseRpc && window.__refuseRpc[name];
       if (pmr) return Promise.resolve({ data: null, error: { message: pmr } });
@@ -13794,6 +13810,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return ['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0 && (DB.client_contacts || []).some(function (k) {
             return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
         })[0];
+
+        var wknown = false;
+        if (!wcl) {
+          var whits = DB.clients.filter(function (c) {
+            return ['lead', 'contacted', 'proposal'].indexOf(c.stage) < 0 && (DB.client_contacts || []).some(function (k) {
+              return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
+          });
+          if (whits.length === 1) { wcl = whits[0]; wknown = true; }
+        }
         var wnew = false;
         if (!wcl) {
           var wbase = wb.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'client', wslug = wbase, wk = 1;
@@ -13805,7 +13830,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
             is_primary: true, created_at: new Date().toISOString(), archived_at: null });
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
-        } else if (wstart && wcl.commence !== wstart) {
+        } else if (!wknown && wstart && wcl.commence !== wstart) {
           var wsw = { '1_3': 'Within 3 months', '3_6': '3 to 6 months', '6_plus': 'More than 6 months' };
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.edited', subject: wcl.name,
             detail: 'Planned commencement: ' + (wsw[wcl.commence] || 'not set') + ' → ' + wsw[wstart], created_at: new Date().toISOString() });
@@ -13827,10 +13852,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.quotations.push(wrow);
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: wcl.name,
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
-        qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
+        var wbody =
           wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-off') + ' · ' + wn +
           (won ? ' · Preferred start date ' + wonWord(won)
-            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by', wrow.id);
+            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by';
+        if (wknown) {
+
+          var wpic = (DB.team_members || []).filter(function (m) {
+            return m.active && !m.system && !m.removed_at && (wcl.owner_id ? m.id === wcl.owner_id : !!String(wcl.owner || '').trim() && m.name === String(wcl.owner).trim()); })[0];
+          (DB.team_members || []).filter(function (m) {
+            if (!m.active || m.system) return false;
+            if (wpic) return m.id === wpic.id;
+            var a = m.access || {}, lv = a['clients.leads'] || a.clients;
+            return m.is_admin || m.role === 'admin' || lv === 'manage';
+          }).forEach(function (m) {
+            var dk = 'quote.website:' + wrow.id + ':' + m.id;
+            if (DB.ops_notifications.some(function (x) { return x.dedupe_key === dk; })) return;
+            notePush({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: 'quote.website', title: 'Quotation to review · ' + wcl.name, body: wbody,
+              read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: wcl.id });
+          });
+        } else qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name, wbody, wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
@@ -14270,6 +14311,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return m.active && !m.system && !m.removed_at && m.id === wqc.sales_by; })[0];
 
           var wUnsent = wsh.source === 'website' && !wsh.released_at;
+
+          var wOwn = wq.source === 'website' && wqc && new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
+            !DB.quotations.some(function (o) { return o.client_id === wq.client_id && o.id !== wq.id && o.issued_at < wq.issued_at; });
+          var wHeld = wUnsent && !wOwn && !!wqc && ['lead', 'contacted', 'proposal'].indexOf(wqc.stage) < 0;
+          if (wHeld) wrep = null;
           var wlines = DB.client_services.filter(function (l) { return l.quotation_id === wsh.id; }).map(function (l) { return l.id; });
           var wdoc = (DB.client_documents || []).filter(function (d) {
             return d.kind === 'offer' && !d.voided_at && !d.superseded_by && (d.lines || []).some(function (x) { return wlines.indexOf(x.service_id) >= 0; });
@@ -14300,7 +14346,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           } else if (wbilled && wq.proceed_at) wstage = 'billing_sent';
           if (!wstage) wstage = wq.proceed_at ? 'ready' : 'quote';
           return qtOk(JSON.parse(JSON.stringify({ ref: wsh.ref, first_ref: wq.ref, revised: wsh.id !== wq.id,
-            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wqc && wqc.market === 'SG' ? 'SG' : 'MY',
+            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wHeld ? (/^\+65/.test(String((wq.contact || {}).whatsapp || '')) ? 'SG' : 'MY') : wqc && wqc.market === 'SG' ? 'SG' : 'MY',
             version: wUnsent ? null : wsh.version, issued_at: wsh.issued_at,
             valid_until: wUnsent ? null : wsh.valid_until, lines: wUnsent ? null : wsh.lines,
             totals: wUnsent ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
@@ -14311,7 +14357,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             today: qtToday,
             signed: wsh.signed_at ? { at: wsh.signed_at, via: wsh.signed.via, signer: wsh.signed.signer, signature: wsh.signed.signature,
               company: wsh.signed.company, contact: wsh.signed.contact, record: wsh.signed.via === 'online' ? wsh.signed.record : null } : null,
-            prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm ? { name: pm.name, title: pm.designation || null } : (wsh.made_by ? { name: wsh.made_by, title: null } : null); })(),
+            prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm && !wHeld ? { name: pm.name, title: pm.designation || null } : (wsh.made_by && !wHeld ? { name: wsh.made_by, title: null } : null); })(),
             reviewed: wsh.reviewed_at ? { name: wsh.reviewed_by, title: wsh.reviewed_role || null, at: wsh.reviewed_at } : null,
 
             prefill: !wsh.signed_at && wqc && !wUnsent && wstage !== 'closed' && wstage !== 'expired' ? (function () {
@@ -19750,10 +19796,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 reg_no: x.reg_no || null, held: lk.indexOf(Number(x.id)) > -1 }; }) });
             });
           }
-          if (bkb.action === 'invoices' || bkb.action === 'remind' || bkb.action === 'deliver') {
-            var ivT = appToday();
-            var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
-            var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || [
+
+          var ivSeed = function (ivAdd) { return [
               { id: 9001, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00412', date: ivAdd(-75),
                 amount: 4320, balance: 4320, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/AbC123', term_items: [{ date: ivAdd(-45), amount: 4320, balance: 4320 }] },
               { id: 9002, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00431', date: ivAdd(-40),
@@ -19762,7 +19806,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
               { id: 9003, contact_id: 777, contact_name: 'NORTHWIND TRADING', contact_email: 'finance@example.com', number: 'IV-00398', date: ivAdd(-130),
                 amount: 1180, balance: 1180, currency_code: 'SGD', status: 'ready', short_link: '', term_items: [] },
               { id: 9004, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00452', date: ivAdd(-5),
-                amount: 2500, balance: 2500, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/GhI789', term_items: [{ date: ivAdd(25), amount: 2500, balance: 2500 }] }];
+                amount: 2500, balance: 2500, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/GhI789', term_items: [{ date: ivAdd(25), amount: 2500, balance: 2500 }] }]; };
+
+          if (bkb.action === 'portal') {
+            var piA = portalInvoiceContacts({ p_client: bkb.client });
+            if (piA.error) return bkR({ error: piA.error });
+            var piT = appToday();
+            var piAdd = function (n) { var d = new Date(Date.parse(piT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
+            var piAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(piAdd);
+            var piFrom = piT.slice(0, 4) - 2 + piT.slice(4, 7) + '-01';
+            var piOut = piAll.filter(function (x) { return piA.contacts.indexOf(Number(x.contact_id)) > -1 && (!x.status || x.status === 'ready') &&
+              String(x.date).slice(0, 10) >= piFrom; }).map(function (x) {
+              var terms = (x.term_items || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+              var open = terms.filter(function (t) { return t.balance == null || Number(t.balance) > 0; });
+              var due = (open[0] && open[0].date) || (terms.length && terms[terms.length - 1].date) || String(x.date).slice(0, 10);
+              var bal = Number(x.balance) || 0;
+              return { id: Number(x.id), number: String(x.number), date: String(x.date).slice(0, 10), due: due, amount: Number(x.amount), balance: bal,
+                currency: x.currency_code || 'MYR', state: bal <= 0 ? 'paid' : due < piT ? 'overdue' : 'outstanding',
+                link: /^https:\/\/[a-z0-9-]+\.bukku\.my\/[A-Za-z0-9\/_-]+$/.test(String(x.short_link || '')) ? x.short_link : null };
+            }).sort(function (a, b) { return b.date.localeCompare(a.date) || b.number.localeCompare(a.number); });
+            return bkR({ ok: true, invoices: piOut });
+          }
+          if (bkb.action === 'invoices' || bkb.action === 'remind' || bkb.action === 'deliver') {
+            var ivT = appToday();
+            var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
+            var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(ivAdd);
             var ivCents = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
             var ivOver = function (inv) {
               var bal = ivCents(inv.balance);

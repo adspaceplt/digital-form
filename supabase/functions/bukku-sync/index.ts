@@ -99,6 +99,11 @@
  *                                             where no balance stands; answers
  *                                             `creator_bills_list` as the
  *                                             caller. Read again every night.
+ *   POST { action: 'portal', client }        a signed-in client contact's own
+ *                                             invoices of the last 24 months
+ *                                             (2026-11-25): the contacts
+ *                                             `portal_invoice_contacts` answers
+ *                                             as the caller, read, never kept.
  *   POST { action: 'remind', contact, invoices, cc, to?, ccs?, subject, body, again }
  *                                             one reminder to one Bukku
  *                                             contact: each invoice read
@@ -1153,6 +1158,42 @@ export async function monthInvoices(contacts: number[], from: string, to: string
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.number.localeCompare(b.number));
 }
+/* A client's own invoices on its portal (2026-11-25, the client portal's
+   release 2): every invoice Bukku holds for the contacts asked, dated in
+   the last 24 months, paid or not, never a draft or a void, a hundred a
+   page and three pages a contact. Read, never written. Its due date is the
+   earliest instalment still owing, else the last, else the invoice's date;
+   its state Paid where no balance stands, Overdue where its due date has
+   passed, else Outstanding. */
+export async function portalInvoices(contacts: number[], today: string): Promise<any[]> {
+  const want = new Set(contacts.map(Number));
+  const from = monthStart(today, 24);
+  const out: any[] = [];
+  for (const c of Array.from(want).slice(0, 10)) {
+    for (let page = 1; page <= 3; page++) {
+      const r = await bukku('GET', `/sales/invoices?contact_id=${c}&date_from=${from}&date_to=${today}&status=ready&page=${page}&page_size=100`);
+      const rows = (r && r.transactions) || [];
+      for (const x of rows) {
+        const d = String(x && x.date || '').slice(0, 10);
+        if (!x || !want.has(Number(x.contact_id)) || !/^\d{4}-\d{2}-\d{2}$/.test(d) || d < from || (x.status && x.status !== 'ready') ||
+            out.some((o) => o.id === Number(x.id))) continue;
+        const terms = (Array.isArray(x.term_items) ? x.term_items : []).filter((t: any) => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date || '')))
+          .slice().sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+        const open = terms.filter((t: any) => t.balance == null || cents(t.balance) > 0);
+        const due = String((open[0] && open[0].date) || (terms.length && terms[terms.length - 1].date) || d);
+        const bal = x.balance == null || x.balance === '' ? 0 : cents(x.balance);
+        const link = String(x.short_link || '');
+        out.push({ id: Number(x.id), number: String(x.number || '').slice(0, 60), date: d, due, amount: cents(x.amount), balance: bal,
+          currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+          state: bal <= 0 ? 'paid' : due < today ? 'overdue' : 'outstanding', link: LINK.test(link) ? link : null });
+      }
+      const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+      const total = Number(r && r.paging && r.paging.total) || 0;
+      if (!rows.length || page * per >= total || rows.length < per) break;
+    }
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date) || b.number.localeCompare(a.number));
+}
 async function oneInvoice(id: number): Promise<any | null> {
   return bukku('GET', `/sales/invoices/${id}`).then((r) => (r && r.transaction) || null)
     .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
@@ -1736,6 +1777,21 @@ Deno.serve(async (req) => {
       if (!((r.data && r.data.bills) || []).length) return json({ error: 'not-found' }, 200, origin);
       const url = billWeb(secret('BUKKU_SUBDOMAIN'), id);
       return url ? json({ ok: true, url }, 200, origin) : json({ error: 'not-found' }, 200, origin);
+    }
+    /* A client's own invoices (2026-11-25): asked as the signed-in
+       contact (`portal_invoice_contacts`: a client the contact may open,
+       else refused), then the Bukku contacts linked to that client alone
+       read for their invoices. Nothing is kept or written. */
+    if (action === 'portal') {
+      const cid = String(body.client || '');
+      if (!/^[0-9a-f-]{36}$/i.test(cid)) return json({ error: 'bad-request' }, 400, origin);
+      const ask = await db.rpc('portal_invoice_contacts', { p_client: cid });
+      if (ask.error) return json({ error: 'needs-update' }, 200, origin);
+      const a = ask.data || {};
+      if (a.error) return json({ error: a.error }, 200, origin);
+      const ids = (Array.isArray(a.contacts) ? a.contacts : []).map(Number).filter((n: number) => n > 0);
+      if (!ids.length) return json({ ok: true, invoices: [] }, 200, origin);
+      return json({ ok: true, invoices: await portalInvoices(ids, todayMY()) }, 200, origin);
     }
     /* A completed month's invoice (2026-11-10): asked as the caller, read
        from Bukku, kept by the service role. */
