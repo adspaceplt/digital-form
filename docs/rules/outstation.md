@@ -60,3 +60,20 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   kept.
 - Check in reads Client (and Venue), Location, the photo, then Purpose,
   Note and Going together: what it waits for first (2026-11-24).
+- Every trip has a number, `OS/{YYYYMM}{NN}` (`outstation_trips.ref`; the
+  user, 2026-11-24): the Malaysian month of check-in and its count from 01,
+  two digits and more past 99, given on insert from `outstation_ref_months`
+  under the month's row lock, never changed (`code-fixed`) and never given
+  again after a delete. It leads the trip in progress's line and a list
+  row's meta line, heads the trip read whole's facts (Trip number, a copy
+  control where it is not inside a row's button) and is the CSV's first
+  column. Console search does not read trips (no table a page reads).
+- Delete (`outstation_trip_delete(p_trip, p_confirm)`; the user,
+  2026-11-24): the last item of the trip's ⋯ (the trip in progress's head,
+  the trip read whole's sheet head), drawn for the driver's own trip, open
+  or checked out, and for an admin on any; My Work at Full control deletes
+  with the number typed back, at Edit it is Request delete, filed through
+  `delete_kinds` (`rpc:outstation_trip_delete`, named by the number) for an
+  admin. The trip goes with its stops and photo rows; the visits it filed
+  stay, and the photo files stay in storage. Filed `ops.deleted` under the
+  number. A deleted open trip frees its driver to check in again.

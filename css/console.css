@@ -4863,6 +4863,9 @@ span.inv-amt { font-weight: 600; }
 .ost-trip { display: grid; gap: 16px; margin-bottom: 12px; }
 .ost-part > .viewhead { margin-top: 0; }
 .ost-line { margin: 0; color: var(--ink-soft); }
+/* The trip number leads the line as a copy control; its padding is given
+   back on both sides, so the words after it stand one space away. */
+.ost-line .serial-copy { margin-right: -6px; }
 .ost-break { margin-top: 8px; }
 .ost-route { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .ost-stop { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; column-gap: 10px; align-items: start; }
