@@ -629,6 +629,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
+- 2026-11-24, `demo` (the audit function release, which touches neither
+  Analytics nor the stand-in): at 390 `s=analytics&tab=clients` read
+  Analytics could not be loaded while 44 suites ran, and passed alone at
+  once; likely the same cause as the 2026-11-21 entry above. Held here
+  until it ships.
 - 2026-11-24, `crm` (the audit database release, which touches no page):
   "the Clients list's Last seen" timed out waiting for `.crm-c-seen` on
   Laman Citra's row while 44 suites ran, and passed alone at once. Its
