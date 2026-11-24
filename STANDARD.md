@@ -665,6 +665,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   the same release's earlier run. Its cause (the interview's slot or a
   read meeting the suite's next step under load) is to be found; held
   here until it ships.
+- 2026-11-25, `quotes` (the forms in steps release, which touches no
+  console page): at 390 "a page ready … not reached in 10s" after "the
+  check names a code sent to an address outside Contacts" while 35 suites
+  ran, and passed alone at once; likely the load cause of the entries
+  above. Held here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
