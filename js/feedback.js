@@ -21,15 +21,15 @@
     en: {
       lang: '中文', preparedFor: 'Prepared for', requested: 'Requested {d}', submit: 'Submit',
       doneTitle: 'Feedback received', doneText: 'ADspace appreciates the time you have taken to share your feedback.',
-      usedTitle: 'Already submitted', usedText: 'This request was answered on {d}.',
-      closedTitle: 'Request closed', closedText: 'This feedback request is no longer open. Please contact your ADspace account manager.',
+      usedTitle: 'Already submitted', usedText: 'This feedback was submitted on {d}.',
+      closedTitle: 'Request closed', closedText: 'Please contact your ADspace account manager.',
       website: 'Visit website'
     },
     zh: {
       lang: 'EN', preparedFor: '客户', requested: '请求日期：{d}', submit: '提交',
       doneTitle: '已收到您的反馈', doneText: '感谢您抽出宝贵时间提供反馈。',
-      usedTitle: '已提交', usedText: '此反馈请求已于{d}提交。',
-      closedTitle: '请求已关闭', closedText: '此反馈请求已不再开放。请联系您的 ADspace 客户经理。',
+      usedTitle: '已提交', usedText: '此反馈已于{d}提交。',
+      closedTitle: '请求已关闭', closedText: '请联系您的 ADspace 客户经理。',
       website: '访问网站'
     }
   });

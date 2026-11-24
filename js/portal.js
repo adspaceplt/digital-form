@@ -98,7 +98,7 @@
       tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
         services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', feedback: 'Feedback', account: 'Account' },
       rateTitle: 'Rate your experience', fbRequested: 'Requested {d}', fbSubmit: 'Submit',
-      fbBy: 'Answered {d} by {n}', fbOn: 'Answered {d}', fbScore: '{v} of {m}',
+      fbBy: 'Submitted {d} by {n}', fbOn: 'Submitted {d}', fbScore: '{v} of {m}',
       posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved',
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',

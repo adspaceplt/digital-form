@@ -20,7 +20,7 @@
   var esc = W.esc;
   var WORDS = W.of({
     en: { quick: 'Service rating', review: 'Performance review', optional: 'Optional',
-      required: 'Choose a score.', tooLong: 'Shorten this to 2,000 characters or fewer.' },
+      required: 'Please choose a score.', tooLong: 'Please shorten this to 2,000 characters or fewer.' },
     zh: { quick: '服务评分', review: '绩效评估', optional: '选填',
       required: '请选择分数。', tooLong: '请缩减至2,000字以内。' }
   });
