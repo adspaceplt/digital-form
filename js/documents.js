@@ -835,7 +835,7 @@
          keep the template's foot alone. */
       if (tpl !== 'ALP' && id) {
         p.right(count, R, at(G.countAt), G.count, font, faint);
-        p.text('Document ID ' + id + ' · Verify at ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);

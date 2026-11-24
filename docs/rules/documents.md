@@ -278,7 +278,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     through the one pen (`pen({ code })`, `foot(i, n, code)` where one PDF
     holds several: an ACL letter's verify line ends ` · Document ID
     XXXX-XXXX`; an AL document's row reads `Document ID XXXX-XXXX · Verify
-    at go.adspace.me/verify`, DESIGN.md Print); a report version and a
+    document authenticity: go.adspace.me/verify`, DESIGN.md Print); a report version and a
     video script hold one too (`sm_report_versions`, `video_scripts`;
     2026-11-24) and, holding no reference, are found by it typed as the
     reference (`verify_find` `by_code`, the page opening the details at

@@ -23,7 +23,7 @@
     en: {
       title: 'Verify document', text: 'Enter the reference or the Document ID printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
-      notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
+      notFound: 'Not found', notFoundText: 'Please check the reference or the Document ID, or contact ADspace.', enterRef: 'Enter the reference or the Document ID.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many checks were made from this network. Please try again in {wait}.',
       ref: 'Reference', issuedBy: 'Issued by', doc: 'Document', issued: 'Issued', docId: 'Document ID', status: 'Status',
@@ -48,7 +48,7 @@
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号或文件识别码。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
-      notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
+      notFound: '未找到', notFoundText: '请核对编号或文件识别码，或联系 ADspace。', enterRef: '请输入编号或文件识别码。',
       failed: '无法核验', failedText: '请稍后再试。',
       locked: '查询次数过多', lockedText: '此网络的查询次数过多。请于{wait}后重试。',
       ref: '编号', issuedBy: '签发方', doc: '文件', issued: '签发', docId: '文件识别码', status: '状态',
