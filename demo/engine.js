@@ -4790,7 +4790,11 @@ function cardSlugFree(name, self, email) {
     var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
     var files = {};
     Object.keys(r.files || {}).forEach(function (k) { files[k] = { at: r.files[k].at, type: r.files[k].type }; });
-    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), files: files,
+
+    var prefill = {};
+    if (String(t.email || '').trim()) prefill.email = String(t.email).trim();
+    if (String(t.mobile || '').trim()) prefill.mobile = String(t.mobile).trim();
+    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), prefill: prefill, files: files,
       consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
       requested_at: r.requested_at || null, updated_at: r.updated_at || null,
       updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,

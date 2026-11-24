@@ -476,11 +476,23 @@
       '<div class="row"><div class="field"><label class="field-label" for="prsSign">Full name as signature</label>' +
       '<input class="input" id="prsSign" aria-required="true" maxlength="100" autocomplete="name" data-nodraft></div></div></section>' : '');
   }
+  /* The form starts from the record, a field left empty taking what the
+     colleague's Overview holds (the database's `prefill`: their sign-in
+     email and namecard mobile; the user, 2026-11-24). Prefilled, not fixed:
+     a saved value always wins, and nothing is kept until Save. */
+  function startData(rec) {
+    var out = {}, data = rec.data || {}, pre = rec.prefill || {};
+    Object.keys(data).forEach(function (k) { out[k] = data[k]; });
+    Object.keys(pre).forEach(function (k) {
+      if (field(k) && (out[k] == null || out[k] === '') && pre[k]) out[k] = pre[k];
+    });
+    return out;
+  }
   function openForm(rec, member, opener) {
     form.member = member; form.own = !member; form.rec = rec;
     $('prsSheetTitle').textContent = form.own ? 'Employee record' : 'Edit employee record';
     $('prsSave').textContent = form.own ? 'Submit' : 'Save';
-    $('prsBody').innerHTML = formBody(rec.data || {});
+    $('prsBody').innerHTML = formBody(startData(rec));
     msg('prsSheetMsg', '');
     if (form.own && rec.declared_name) $('prsSign').value = '';
     var mar = $('prs_marital');
