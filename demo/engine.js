@@ -656,7 +656,7 @@
     quote_sign_code: 'p_key p_payload',
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
-    quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
+    quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_words_keep: 'p_id p_agency p_terms_url', quotation_seal_key: 'p_id',
     quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
@@ -13458,6 +13458,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fp = (function (str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16)).slice(-8); })(
           sq.ref + JSON.stringify(sq.lines) + JSON.stringify(sq.totals) + JSON.stringify(sfr.payload) + at);
         sq.signed_at = at;
+
+        var swc = (DB.doc_types || []).filter(function (d) { return d.id === 'quote_cover'; })[0];
+        if (swc) sq.signed_words = Object.assign({}, sq.signed_words || {}, { cover: { title: swc.title, salutation: swc.salutation, closing: swc.closing, body_en: swc.body_en } });
         var sfPay = JSON.parse(JSON.stringify(sfr.payload)), sfDev = sfPay.device || null;
         delete sfPay.device;
         sq.signed = Object.assign({ via: 'online' }, sfPay,
@@ -13536,6 +13539,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
           signed: !!rq.signed_at, confirmed: !!rq.reviewed_at, withdrawn: !!rq.withdrawn_at, declined: !!rq.declined_at,
           seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
       }
+
+      if (name === 'quotation_words_keep') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
+        var wq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        if (!wq) return qtOk({ error: 'not-found' });
+        if (!wq.signed_at) return qtOk({ error: 'not-signed' });
+        if (wq.seal_key || (wq.signed_words && wq.signed_words.agency)) return qtOk({ ok: true, same: true });
+        wq.signed_words = Object.assign({}, wq.signed_words || {}, { agency: String(args.p_agency || '').trim(), terms_url: args.p_terms_url || null });
+        return qtOk({ ok: true });
+      }
       if (name === 'quotation_seal') {
         if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
         var lq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
@@ -13545,6 +13558,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (lq.seal_key) return qtOk({ ok: true, kept: true, sha: lq.seal_sha });
         if (!new RegExp('^private/' + lq.client_id + '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$').test(String(args.p_key || ''))) return qtOk({ error: 'bad-key' });
         if (!/^[0-9a-f]{64}$/.test(String(args.p_sha || '')) || !/^[0-9a-f]{64}$/.test(String(args.p_pages_sha || ''))) return qtOk({ error: 'bad-sha' });
+
+        if (!lq.seal_pending || lq.seal_pending.key !== args.p_key || lq.seal_pending.sha !== args.p_sha) return qtOk({ error: 'bad-sha' });
+        lq.seal_pending = null;
         Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
         qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
         return qtOk({ ok: true, sha: args.p_sha });
@@ -20021,6 +20037,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           }
           if (bd.ext !== 'pdf') return upRefuse('bad_private');
           var pk = 'private/' + (bd.clientId || 'c1') + '/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.pdf';
+
+          if (bd.purpose === 'seal') {
+            var sh = String(bd.sha256 || '').toLowerCase();
+            if (!/^[0-9a-f]{64}$/.test(sh)) return upRefuse('bad_sha');
+            var sq = (DB.quotations || []).filter(function (r) { return r.id === bd.quotationId; })[0];
+            if (!sq || !sq.reviewed_at || sq.seal_key) return upRefuse(!sq ? 'not-found' : sq.seal_key ? 'sealed' : 'not-reviewed');
+            sq.seal_pending = { key: pk, sha: sh, at: new Date().toISOString() };
+            persist();
+            var ck = btoa(sh.match(/../g).map(function (h) { return String.fromCharCode(parseInt(h, 16)); }).join(''));
+            return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType, checksum: ck }, error: null });
+          }
           return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType }, error: null });
         }
         if (bd.purpose === 'script') {

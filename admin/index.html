@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124za"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124zc"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -6759,8 +6759,8 @@ raya-2026        https://example.com/raya"></textarea>
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261124w", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261124q", "uses": ["documents", "bukku", "quotepdf", "seal"]},
-  "quotepdf": {"src": "/js/quotepdf.js?v=20261124v", "uses": ["documents", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261124zc", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261124zc", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261123f", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
@@ -6787,7 +6787,7 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261124s"></script>
+<script src="/js/admin.js?v=20261124zc"></script>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261122zzzw"></script>

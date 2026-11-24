@@ -5582,7 +5582,9 @@
 
   /* fetch() cannot report how much of a body has gone out, so a 40 MB video
      looks frozen until it lands. XHR can, and it is the same request. */
-  function putToS3(url, blob, contentType, onProgress) {
+  /* `headers`: any further header the PUT was signed with (a sealed copy's
+     `x-amz-checksum-sha256`, 2026-11-24), sent exactly as signed. */
+  function putToS3(url, blob, contentType, onProgress, headers) {
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
       state.xhrs.push(xhr);
@@ -5591,6 +5593,7 @@
       xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
       // filenames are random and never reused, so this is safe to cache hard
       xhr.setRequestHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      Object.keys(headers || {}).forEach(function (k) { xhr.setRequestHeader(k, headers[k]); });
       if (onProgress) {
         xhr.upload.onprogress = function (e) {
           if (e.lengthComputable) onProgress(e.loaded / e.total);
