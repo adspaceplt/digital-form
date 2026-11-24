@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -972,6 +972,29 @@
         body: by[m] + (by[m] === 1 ? ' open task' : ' open tasks') + ' to deliver', read_at: null, created_at: now });
     });
   }
+
+  function myDayNow() { return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); }
+  var STAGE_NEXT_WORD = { budget: 'Budget', results: 'Results', in_house: 'Moved in-house', closed: 'Business closed',
+    no_reply: 'No reply', completed: 'Completed', other: 'Other' };
+  var SHORT_MON_STUB = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  function clientsStageDue() {
+    var day = myDayNow();
+    (DB.clients || []).filter(function (c) { return c.stage_next && c.stage_next_on && String(c.stage_next_on).slice(0, 10) <= day; })
+      .sort(function (a, b) { return String(a.stage_next_on).localeCompare(String(b.stage_next_on)) || String(a.name).localeCompare(String(b.name)); })
+      .forEach(function (c) {
+        var to = c.stage_next, on = String(c.stage_next_on).slice(0, 10), why = c.stage_next_reason, note = c.stage_next_note || null;
+        var patch = { stage: to, stage_reason: why, stage_note: note };
+        stageClock('clients', c, patch);
+        Object.assign(c, patch);
+        var d = on.split('-');
+        DB.activity_log = DB.activity_log || [];
+        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name,
+          detail: (to === 'paused' ? 'Paused' : 'Past') + ' from ' + Number(d[2]) + ' ' + SHORT_MON_STUB[Number(d[1]) - 1] + ' ' + d[0] +
+            ', as scheduled · ' + (STAGE_NEXT_WORD[why] || 'Other') + (note ? ': ' + note : ''),
+          created_at: new Date().toISOString() });
+        clientLeftNotice(c, to);
+      });
+  }
   function stageClock(table, row, patch) {
 
     if (table === 'campaigns' && patch && 'state' in patch && patch.state !== row.state && !('state_log' in patch)) {
@@ -983,8 +1006,14 @@
       else patch.completed_at = null;
       return;
     }
+
+    if (table === 'clients' && patch && 'stage_next' in patch && !patch.stage_next) {
+      patch.stage_next_on = null; patch.stage_next_reason = null; patch.stage_next_note = null;
+    }
     if (table !== 'clients' || !patch || !('stage' in patch)) return;
     if (patch.stage === row.stage) return;
+
+    patch.stage_next = null; patch.stage_next_on = null; patch.stage_next_reason = null; patch.stage_next_note = null;
 
     if ('stage_since' in patch || 'stage_log' in patch) return;
     var now = new Date().toISOString();
@@ -1356,6 +1385,8 @@
     });
 
     if (table === 'creators' || table === 'campaigns' || table === 'campaign_options') idBackfill();
+
+    if (table === 'clients') clientsStageDue();
     var rows = (DB[table] || []).slice();
 
     if (table === 'documents') {
@@ -1731,6 +1762,19 @@
             if (srWhy && (['budget', 'results', 'in_house', 'closed', 'no_reply', 'other', 'completed'].indexOf(srWhy) < 0 ||
                 (srWhy === 'completed' && srAt !== 'past')))
               blocked = 'new row for relation "clients" violates check constraint "clients_stage_reason"';
+          }
+
+          if (!blocked && table === 'clients' && pending && pending.stage_next && !('stage' in pending && pending.stage !== r.stage)) {
+            var snRow = Object.assign({}, r, pending);
+            var snChanged = ['stage_next', 'stage_next_on', 'stage_next_reason'].some(function (k) { return k in pending && pending[k] !== r[k]; });
+            if (['paused', 'past'].indexOf(snRow.stage_next) < 0 || !snRow.stage_next_on || !snRow.stage_next_reason ||
+                ['budget', 'results', 'in_house', 'closed', 'no_reply', 'other', 'completed'].indexOf(snRow.stage_next_reason) < 0 ||
+                (snRow.stage_next_reason === 'completed' && snRow.stage_next !== 'past'))
+              blocked = 'new row for relation "clients" violates check constraint "clients_stage_next_shape"';
+            else if (snChanged && String(snRow.stage_next_on).slice(0, 10) <= myDayNow()) blocked = 'stage-next-day';
+            else if (snChanged && snRow.stage_next === snRow.stage) blocked = 'stage-next-same';
+            else if (snChanged && snRow.stage_next_reason === 'completed' && snRow.stage !== 'active' &&
+                     !(snRow.stage_log || []).some(function (e) { return e.stage === 'active'; })) blocked = 'stage-next-reason';
           }
 
           if (table === 'clients' && pending && ('stage' in pending || 'client_code' in pending)) {

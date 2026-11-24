@@ -225,7 +225,7 @@
         /* The Dashboard's own columns too, so the Operations and Sales cards
            it draws here read this list, never every client again (audit 2026-11-15). */
         return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, industry, bill_sgd, ' +
-          'restricted_platform, restricted_since, restricted_note').order('id');
+          'restricted_platform, restricted_since, restricted_note, stage_next, stage_next_on, stage_next_reason').order('id');
       }).then(rows).then(function (l) { return l || []; });
     });
   }
@@ -456,7 +456,7 @@
       { key: 'win', label: 'Win rate', fig: wr ? pct(wr.rate) : '—',
         verdict: cmp && wr && wrP && wr.decided >= 3 && wrP.decided >= 3 ? judge(wr.rate, wrP.rate, 'up') : null,
         sub: wr ? wr.won + ' of ' + wr.decided + ' leads decided' + (cmp && wrP ? ' · ' + pct(wrP.rate) + ' before' : '') : 'No lead decided in the period' },
-      lostTile(f, fp, ch, keys, per)
+      lostTile(f, fp, ch, keys, per, cl)
     ], K ? function (grid) { K.tile(grid, 'value'); } : null);
     var g1 = row(B.now, true);
     insights(g1, clientChanges(f, fp, n).filter(function (x) { return x.verdict && x.verdict.tone === 'late'; }).concat(salesChanges(f, fp, h, cmp)));
@@ -522,10 +522,19 @@
   /* A source reads as Clients names it (Referral, Walk-in), never its key. */
   function srcWord(k) { var C = window.ADspaceCRM; return C && C.sourceWord ? C.sourceWord(k) : k; }
 
-  function lostTile(f, fp, ch, keys, per) {
+  /* A move set ahead (CLIENT STAGE AHEAD, 2026-11-24) counts in the month
+     it takes effect, once the database has made it; until then the tile
+     says how many are set, from the soonest day. */
+  function aheadOf(cl) {
+    var list = (cl || []).filter(function (c) { return c.stage_next && c.stage_next_on && c.stage === 'active'; })
+      .map(function (c) { return String(c.stage_next_on).slice(0, 10); }).sort();
+    return list.length ? plain(list.length) + (list.length === 1 ? ' client' : ' clients') + ' scheduled to leave from ' + CK.date(list[0], { year: false }) : '';
+  }
+  function lostTile(f, fp, ch, keys, per, cl) {
+    var ahead = aheadOf(cl);
     return { key: 'lost', label: 'Clients lost', fig: plain(f.churned.length),
       verdict: ch && ch.over ? { tone: 'late', word: 'Above alert' } : judge(f.churned.length, fp.churned.length, 'down', 2),
-      sub: (ch ? 'Churn ' + pct(ch.rate) + ' per quarter, alert ' + pct(ch.alert) + ' · ' : '') + plain(fp.churned.length) + ' before',
+      sub: (ch ? 'Churn ' + pct(ch.rate) + ' per quarter, alert ' + pct(ch.alert) + ' · ' : '') + plain(fp.churned.length) + ' before' + (ahead ? ' · ' + ahead : ''),
       spark: keys.map(function (k) { return per(k, 'churned'); }) };
   }
 
@@ -712,7 +721,7 @@
     var ten = f.activeEndList.map(sinceActive).filter(function (x) { return x != null; }).sort(function (a, b) { return a - b; });
     var med = ten.length ? ten[Math.floor((ten.length - 1) / 2)] : null;
     var n = monthsIn(r), ch = churnOf(f, n);
-    var lt = lostTile(f, fp, ch, keys, per);
+    var lt = lostTile(f, fp, ch, keys, per, cl);
     lt.key = 'left'; lt.label = 'Clients left';
     /* Act now: the four figures, then the trend beside What changed. */
     tiles(B.now, [

@@ -70,6 +70,34 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   activity row carries it. `clients_stage_notice` tells each owner of the client's
   open work once (`client_left`, "{client} moved to Paused · 3 open tasks to
   deliver", opening My Work).
+- A stage set ahead (`2026-11-24-client-stage-ahead.sql`, CLIENT STAGE AHEAD;
+  the user, 2026-11-24: "if some client has told us to end for the
+  following month, so we could mark it first"): the Paused and Past
+  question asks an Effective date (today by default, never earlier); today
+  moves the client now, a later day writes `clients.stage_next`,
+  `stage_next_on`, `stage_next_reason` and `stage_next_note`, one a client,
+  and the client works in its stage until then. Trigger
+  `clients_stage_next` holds the day after today in Malaysia
+  (`stage-next-day`), another stage (`stage-next-same`) and Completed for a
+  client once Active (`stage-next-reason`); `clients_stage_next_shape` all
+  four or none; any real move of the stage, by hand or by the job, lets it
+  go, so a stage set by hand meanwhile replaces it. `clients_stage_due()`
+  (pg_cron `clients-stage-ahead`, 00:01 Malaysia) makes the move on the
+  day with its reason and note through the stage clock, filed
+  `client.stage` under system ({Stage} from {day}, as scheduled · {reason});
+  a stored move, not a stage derived on each read, since about three
+  hundred lines of the schema read `clients.stage` (every policy through
+  `client_row_seen`, the client portal, Active clients alone in Content
+  Review, campaigns and reports), so on the day every one of them sees it
+  at once. The record head reads it under the meta (`#crmAheadLine`: Past
+  from 1 Dec 2026 (Tuesday) · Completed, then Edit and Withdraw at the
+  band's Work; Edit the same question filled in, refusing today; Withdraw
+  with Undo where it happened while the day is ahead); the list row a grey
+  chip after the name (`.crm-ahead-tag`, Past from 1 Dec), the client kept
+  in its band; each set, change (from → to) and withdrawal filed
+  `client.stage` (Scheduled: …; Scheduled change withdrawn: …). The
+  Dashboard and Analytics: `docs/rules/dashboard.md`,
+  `docs/rules/analytics.md`.
 - No Sales view (removed 2026-10-12, the user: "Priority is the dashboard";
   what it held that the Dashboard did not moved there); an old
   `view=sales` address opens the list. `js/sales.js` is the figures alone

@@ -217,7 +217,7 @@
       return once('clients', function () {
         return API.readPages(function () {
           return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, bill_sgd, ' +
-            'restricted_platform, restricted_since, restricted_note').order('id');
+            'restricted_platform, restricted_since, restricted_note, stage_next, stage_next_on, stage_next_reason').order('id');
         }).then(rows).then(function (l) { return l || []; });
       });
     },
@@ -480,6 +480,27 @@
                    tag: 'Client', who: c.owner || '', client: c.id, late: true, days: daysSince(c.restricted_since), since: sinceWord(c.restricted_since),
                    url: clientUrl(c), section: 'clients' };
         });
+      });
+    } },
+    /* Clients set to leave ahead (CLIENT STAGE AHEAD, 2026-11-24; the
+       user: "mark it first and analytics and dashboard would catch it"):
+       each client whose Paused or Past takes effect this month or next,
+       soonest first, until its day moves it. */
+    { key: 'leaving', word: 'Stage changes', title: 'Scheduled stage changes', can: canClients, load: function () {
+      var t0 = CK.today(), m = Number(t0.slice(5, 7)), y = Number(t0.slice(0, 4));
+      var to = m === 12 ? (y + 1) + '-02' : m === 11 ? (y + 1) + '-01' : y + '-' + String(m + 2).padStart(2, '0');
+      var end = to + '-01';
+      var S = window.ADspaceSales;
+      return R.clients().then(function (list) {
+        return list.filter(function (c) { return c.stage_next && c.stage_next_on && String(c.stage_next_on).slice(0, 10) < end; })
+          .sort(function (a, b) { return String(a.stage_next_on).localeCompare(String(b.stage_next_on)); })
+          .map(function (c) {
+            var on = String(c.stage_next_on).slice(0, 10);
+            return { name: c.name, meta: S && S.reasonWord ? S.reasonWord(c.stage_next_reason) : '',
+                     tag: 'Client', who: c.owner || '', client: c.id, days: 0,
+                     since: window.ADspaceWords.line.stageFrom((W.stage || {})[c.stage_next] || c.stage_next, CK.date(on, { year: false })), tone: 'off',
+                     url: clientUrl(c), section: 'clients' };
+          });
       });
     } },
     { key: 'requests', word: 'Requests', title: 'Unanswered requests', can: canRequests, load: function () {
