@@ -134,3 +134,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     pasted one becomes a space), Enter submitting its form as a field's
     would. `ADspaceAsk.rename` opens words in one; a date, a time, a number
     or a code stays an `input`.
+- A sheet's refusal line comes into view (`js/sheet.js`): an observer is
+  held on each open `.sheet` alone, from its unhiding (by `show()` or
+  directly) until it is hidden, never on the whole document (review
+  2026-11-24, `tests/sheetline.js`).
