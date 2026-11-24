@@ -383,6 +383,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
 | An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
 | A value only read | `.readfield` (the field's height, no box) |
+| A value hidden until asked (an employee record's NRIC Number, Account number) | Dots and its last four (`•••• 1234`), the eye (`.prs-eye`, an `.iconbtn`: the eye to show, the struck eye to hide) at the fact's right edge, its press overflowing the line evenly; shown only once filed (`docs/rules/personnel.md`) |
 | A screen of a colleague's personal data | `data-trace` on its card or sheet (`js/trace.js`): the reader's name, email and time tiled at -24° in `--trace-ink`, cleared under every word and control, and the card's last line `.trace-foot` (Viewed by {name} · {date, time} · Confidential, 12px mute at the right over a hairline; `docs/rules/security.md`) |
 | A client billed by several companies (billing entities) | `docs/rules/clients.md`, Components |
 | A record's link to another system (Bukku) | `docs/rules/bukku.md`, Components |

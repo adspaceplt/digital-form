@@ -6305,6 +6305,13 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* ---- Personnel (js/personnel.js, 2026-11-16): a colleague's employee record ---- */
 .prs-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .prs-miss { margin: 8px 0 0; }
+/* A hidden value and its eye (PERSONAL DETAILS REVEALED, 2026-11-25): the
+   eye at the fact's right edge, its press overflowing the line evenly, so
+   showing a value moves nothing. */
+.prs-secret dd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.prs-secret-v { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+.prs-eye { align-self: center; margin-block: calc((1.55em - var(--ctl-h)) / 2); }
+@media (pointer: coarse) { .prs-eye { margin-block: calc((1.55em - var(--tap)) / 2); } }
 .prs-files { display: grid; }
 .prs-file { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .prs-file:first-child { border-top: 0; padding-top: 0; }
