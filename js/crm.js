@@ -2020,7 +2020,7 @@
     if (may) $('crmClientMenuWrap').hidden = false;
   }
   var KEPT_SAID = { denied: 'You do not have permission to change client portal access. Please ask an admin.',
-    'not-found': 'Not saved. This client no longer exists.', 'not-past': 'Access can be enabled for a Past client only.' };
+    'not-found': 'Not saved. This client no longer exists.', 'not-past': 'This client is no longer Past. Refresh the page.' };
   function setPortalKept(c, on, then) {
     return db.rpc('client_portal_access_set', { p_client: c.id, p_on: on }).then(function (r) {
       if (r.error) return /client_portal_access_set/.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
