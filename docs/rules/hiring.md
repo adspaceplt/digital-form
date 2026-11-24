@@ -363,8 +363,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Settings, Messages: Reply-to mailboxes; the user, 2026-11-20);
   - Keep in talent pool and Not proceed email the candidate only once their
     Undo's 30 seconds pass with no Undo (the user; this act's own window,
-    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8); a decision
-    reopened is refused the email by the database (`no-email`);
+    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8): the email
+    is queued in the database, never timed in the tab (2026-11-24, the
+    review: a tab shut in those seconds sent nothing;
+    `hiring_outcome_mail_queue`, due 30 seconds on, read Queued; sent by
+    hiring-mail's drain, woken every minute while one is due,
+    `hiring_outcome_mail_claim` and `_close`); Reopen (Undo, filed only
+    once the database holds it) cancels it, and a decision reopened is
+    refused the email (`no-email`); the decision is asked first, and the
+    Google Meets of the interviews it cancelled (`hiring_decide` `meets`)
+    are removed after it, never before;
   - Proceed promises no offer: the page reads ADspace will contact you
     about the next step. (Status Application in progress) until an offer is
     sent; a candidate who declined the talent pool reads ADspace will not
