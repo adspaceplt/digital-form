@@ -110,6 +110,9 @@
     },
     rqKind: { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' },
     campState: { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' },
+    /* Where a campaign stands: the selection page and the client portal. */
+    ofPosted: function (a, b) { return a + ' of ' + b + ' posted'; },
+    nextShoot: function (d) { return 'Next shoot on ' + d; },
     /* A booking's six steps, named under each mark on the client's page and
        the creator's own (2026-10-08); a seeding campaign delivers in place
        of the shoot. */
@@ -234,6 +237,8 @@
     },
     rqKind: { upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更' },
     campState: { draft: '草稿', open: '待客户选择', production: '制作中', completed: '已完成' },
+    ofPosted: function (a, b) { return '已发布' + a + '位，共' + b + '位'; },
+    nextShoot: function (d) { return '下次拍摄：' + d; },
     journey: ['已预约', '拍摄日', '初稿截止', '客户审核', '发布日期', '数据'], journeyDelivery: '寄送日',
     untitled: '未命名项目',
 

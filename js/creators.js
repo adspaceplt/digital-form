@@ -177,8 +177,6 @@
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
       noneYet: 'No creators.',
       /* The campaign room (2026-10-07, the client pages refresh). */
-      ofPosted: function (a, b) { return a + ' of ' + b + ' posted'; },
-      nextShoot: function (d) { return 'Next shoot ' + d; },
       waitingYou: 'Waiting for your approval',
       engRate: 'Engagement rate', perEng: 'Per engagement', viewsWord: 'views',
       topPost: 'Top post', measuredWord: function (d) { return 'Measured ' + d; }
@@ -279,8 +277,6 @@
       placements: '发布数', cpe: '单次互动成本',
       impressions: '曝光', engagements: '互动', views: '播放',
       noneYet: '暂无创作者。',
-      ofPosted: function (a, b) { return '已发布 ' + a + '/' + b; },
-      nextShoot: function (d) { return '下次拍摄 ' + d; },
       waitingYou: '待您确认',
       engRate: '互动率', perEng: '单次互动成本', viewsWord: '播放',
       topPost: '表现最佳内容', measuredWord: function (d) { return '统计于 ' + d; }
@@ -669,10 +665,8 @@
     box.innerHTML =
       '<p class="cx-standing-line"><b>' + esc(t().ofPosted(live, booked.length)) + '</b>' +
         (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0], true))) + '</span>' : '') + '</p>' +
-      '<div class="cx-track" aria-hidden="true">' + bars.map(function (o) {
-        return '<i class="is-' + dotOf(o.state) + '"></i>'; }).join('') + '</div>' +
-      '<p class="cx-legend">' + counts.map(function (c) {
-        return '<span><i class="cx-dot is-' + c.dot + '"></i>' + esc(c.w) + ' ' + c.n + '</span>'; }).join('') + '</p>';
+      window.ADspaceIcons.track(bars.map(function (o) { return dotOf(o.state); })) +
+      window.ADspaceIcons.legend(counts.map(function (c) { return { dot: c.dot, word: c.w, n: c.n }; }));
   }
 
   /* A draft the client is asked to decide on: theirs, and only once it has
