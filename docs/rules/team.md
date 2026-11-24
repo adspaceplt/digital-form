@@ -144,8 +144,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   press (as a report's function, `adspace.sm_fn`, so a report they
   submitted or confirmed keeps itself without their name;
   `2026-11-17-deletes-and-builds-held.sql`), clears each nullable one, deletes the rows a required one holds
-  (their time records, extension requests, assignments, quality checks,
-  personnel record and salary, guides, section order), lets the cascades
+  only in the tables named as theirs (their time records, extension
+  requests, assignments, quality checks, personnel record and salary,
+  guides, section order, delete requests, a trip they drove alone), refuses
+  `in-use` (`held`) where they drove a trip another colleague joined or a
+  required key not named holds a row, and takes their id off a trip they
+  joined (`2026-11-24-colleague-delete-spares-shared-trips.sql`), lets the cascades
   take their own data (performance reviews, health, notifications,
   devices), deletes their sign-in where no live client contact holds the
   address, and files `team.changed` Deleted permanently; their name stays
