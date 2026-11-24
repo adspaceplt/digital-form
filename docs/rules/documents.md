@@ -275,10 +275,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Document ID (`doc_code`): eight characters of the link alphabet in upper
     case from `gen_random_bytes`, stamped on insert (`doc_code_stamp`,
     `doc_code_new`), unique in its table, printed XXXX-XXXX on every page
-    through the one pen (`pen({ code })`: an ACL letter's verify line ends
-    ` · Document ID XXXX-XXXX`, centred, clear of the page count; an AL
-    quotation's stands at the bottom margin's left at `G.refAt`; a
-    performance record's in its reference line); the page asks it by the id
+    through the one pen (`pen({ code })`, `foot(i, n, code)` where one PDF
+    holds several: an ACL letter's verify line ends ` · Document ID
+    XXXX-XXXX`; an AL document's row reads `Document ID XXXX-XXXX · Verify
+    at go.adspace.me/verify`, DESIGN.md Print); a report version and a
+    video script hold one too (`sm_report_versions`, `video_scripts`;
+    2026-11-24) and, holding no reference, are found by it typed as the
+    reference (`verify_find` `by_code`, the page opening the details at
+    once, never a name in the answer); the page asks it by the id
     it holds (`ADspaceDocs.codeOf`), never a preview's or a draft's:
     `doc_code_of` answers a colleague, and a client's portal login its own
     Letter of Offer's; a page outside the team names its own key
