@@ -623,6 +623,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
     `location.hash`. A lone booking has no queue and runs the page's width.
+    The queue is a row of cards over the open booking (2026-11-25, the
+    approved CreatorBooking board), scrolling sideways on a phone, the open
+    one ringed in ink; the open booking's steps are discs on a line
+    (`ADspaceIcons.journey` with `glyphs` and `days`: done the green tick,
+    the step in hand outlined, each with its date under it where one is
+    held), its facts two columns of glyph discs, its brief a shaded box.
+    Payments and Profile are two columns at 900 and over (Profile 1.618 to
+    1), a lone card the pane's width; Payments' rows lead with the
+    campaign's glyph tile.
   - A completed booking ranks with the ended ones, faded last, and the page
     opens on a running one; its card is its name and state, the rating while
     not given, and Booking details folded shut with no steps

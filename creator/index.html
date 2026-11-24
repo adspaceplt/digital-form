@@ -17,7 +17,7 @@
      it: the page is installed at its own address, the link that proves it. -->
 <link rel="manifest" href="/creator/manifest.webmanifest">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261125vg">
+<link rel="stylesheet" href="/css/portal.css?v=20261125cr">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
@@ -29,7 +29,7 @@
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261124x"></script>
-<script src="/js/maintenance.js?v=20261125vg"></script>
+<script src="/js/maintenance.js?v=20261125cr"></script>
 <script src="/js/announce.js?v=20261124ts"></script>
 <script src="/js/menu.js?v=20261125zeu"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
@@ -141,12 +141,13 @@
     </section>
 
       </div>
-      <div class="cr-pane" data-pane="payments" hidden>
+      <div class="cr-pane cr-two" data-pane="payments" hidden>
     <!-- Payment details (2026-11-08): asked once, from the first booking,
          and read back as the team approved them; a change goes back for
          approval. The ID and account numbers are shown as their last four. -->
     <section class="panel crpay" id="payBox" hidden>
       <div class="rec-id rec-id-solo">
+        <span class="cx-tile is-sm crpay-tile" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 11h-4a2 2 0 0 0 0 4h4z"/><path d="M3 7h16a2 2 0 0 1 2 2v2"/></svg></span>
         <div class="rec-who">
           <h2 class="crpay-title" id="payTitle">Payment details</h2>
           <p class="rec-id-meta" id="payLine"></p>
@@ -165,7 +166,7 @@
       <div id="crPaysList"></div>
     </section>
       </div>
-      <div class="cr-pane" data-pane="profile" hidden>
+      <div class="cr-pane cr-two" data-pane="profile" hidden>
     <section class="panel crprof">
       <div class="rec-id rec-id-solo">
         <div class="rec-who"><h2 class="crpay-title" id="profTitle">Profile links</h2></div>
@@ -187,8 +188,8 @@
 </main>
 
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/icons.js?v=20261125vg"></script>
+<script src="/js/icons.js?v=20261125cr"></script>
 <script src="/js/otp.js?v=20261122zzr"></script>
-<script src="/js/creator.js?v=20261124"></script>
+<script src="/js/creator.js?v=20261125cr"></script>
 </body>
 </html>
