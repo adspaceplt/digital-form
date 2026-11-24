@@ -6149,7 +6149,7 @@ language sql immutable parallel safe as $$
     when action in ('service.added', 'service.changed', 'service.deleted',
                     'service.off', 'service.on', 'service.published') then 'services'
     when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
-                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+                    'team.group_changed', 'team.group_removed', 'team.invited', 'team.revealed') then 'team'
     else 'other'
   end
   from (select p_action as action) t
@@ -150355,10 +150355,10 @@ grant execute on function public.bukku_send_release(text, uuid) to authenticated
 --     asks (`team.personnel` at Work: `denied`; `not-found`); the
 --     colleague's own (`p_member` null) asks what `personnel_mine` asks
 --     (`perf_mine_gate()`: `code-needed`). A field off the list is
---     `bad-field`. Files `team.revealed` under the colleague's name:
---     Revealed {label} (Revealed their own {label} on one's own record),
---     the label from `personnel_fields()`, never the value; the same line
---     by the same reader within a minute is filed once. Answers `ok`.
+--     `bad-field`. Files `team.revealed` (Personal detail shown) under the
+--     colleague's name: {label} shown, the label from `personnel_fields()`,
+--     never the value; the same line by the same reader within a minute is
+--     filed once. Answers `ok`.
 --   * `team.revealed` joins `activity_section()` under Team.
 --   * `reveal_seconds` (30, 10 to 600 whole seconds), a Business setting
 --     (Settings, Portal: Hidden personal details): how long a value shown
@@ -150670,7 +150670,7 @@ begin
     return jsonb_build_object('error', 'bad-field');
   end if;
   v_label := public.personnel_fields() -> p_field ->> 1;
-  v_line := case when t.id = me.id then 'Revealed their own ' else 'Revealed ' end || v_label;
+  v_line := v_label || ' shown';
   if not exists (select 1 from public.activity_log a
                   where a.action = 'team.revealed' and a.actor = me.name and a.subject = t.name and a.detail = v_line
                     and a.created_at > now() - interval '1 minute') then

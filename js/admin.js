@@ -3457,7 +3457,7 @@
     'team.changed':          ['Access changed', 'is-warn', 'team'],
     'team.edited':           ['Team member edited', '', 'team'],
     'team.invited':          ['Invitation sent', '', 'team'],
-    'team.revealed':         ['Personal detail revealed', '', 'team'],
+    'team.revealed':         ['Personal detail shown', '', 'team'],
     'team.group_added':      ['User group added', 'is-ok', 'team'],
     'team.group_changed':    ['User group changed', 'is-warn', 'team'],
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],

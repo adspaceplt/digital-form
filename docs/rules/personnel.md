@@ -71,8 +71,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   {label} / Hide {label}, `aria-pressed`) shows one only once
   `personnel_revealed(p_member, p_field)` answers `ok`: asked as the read
   is asked (`team.personnel` at Work; one's own behind `perf_mine_gate()`),
-  filed `team.revealed` under the colleague, Revealed {label} (Revealed
-  their own {label}), never the value, once a minute a reader; a refusal
+  filed `team.revealed` (Personal detail shown) under the colleague,
+  {label} shown, never the value, once a minute a reader; a refusal
   keeps it hidden and says why. A value shown hides again after
   `reveal_seconds` (Business setting, 30, 10 to 600; Settings, Portal:
   Hidden personal details), on a second press, when the record is redrawn

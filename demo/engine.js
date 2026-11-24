@@ -4917,7 +4917,7 @@ function cardSlugFree(name, self, email) {
       if (!m) return { error: 'denied' };
       if (['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'].indexOf(a.p_field) < 0) return { error: 'bad-field' };
       var lab = (prsFields()[a.p_field] || [])[2] || a.p_field;
-      var line = (tr.id === m.id ? 'Revealed their own ' : 'Revealed ') + lab;
+      var line = lab + ' shown';
       var since = Date.now() - 60000;
       if (!DB.activity_log.some(function (x) { return x.action === 'team.revealed' && x.actor === whoNow() && x.subject === tr.name && x.detail === line && Date.parse(x.created_at) > since; })) logAct('team.revealed', tr.name, line);
       return { ok: true };
