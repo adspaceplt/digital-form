@@ -215,6 +215,7 @@
     campaign_reset_link: 'p_campaign',
     get_creator: 'p_code',
     get_portal: 'p_client',
+    portal_invoice_contacts: 'p_client',
     get_review_feed: 'p_passcode p_token',
     handbook_add_version: 'p_note p_size p_doc p_mime p_name p_path',
     handbook_required_set: 'p_id p_on',
@@ -10382,6 +10383,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
       .map(function (k) { return k.client_id; });
   }
 
+  function portalInvoiceContacts(a) {
+    if (!whoNow()) return { error: 'not-signed-in' };
+    if (portalClientIds().indexOf(a.p_client) < 0) return { error: 'no-access' };
+    var L = DB.bukku_links || [], out = [];
+    L.forEach(function (b) {
+      var hit = (b.kind === 'client' && b.record_id === a.p_client) ||
+        (b.kind === 'supplier' && (DB.suppliers || []).some(function (x) { return x.id === b.record_id && x.client_id === a.p_client; })) ||
+        (b.kind === 'entity' && (DB.client_entities || []).some(function (x) { return x.entity_id === b.record_id && x.client_id === a.p_client; }) &&
+          !(DB.client_entities || []).some(function (x) { return x.entity_id === b.record_id && x.client_id !== a.p_client; }));
+      if (hit && out.indexOf(Number(b.contact_id)) < 0) out.push(Number(b.contact_id));
+    });
+    return { contacts: out };
+  }
+
   function rpc(name, args) {
     try { return rpcCall(name, args); }
     catch (e) { if (e && e.__rpcErr) return Promise.resolve({ data: null, error: e.__rpcErr }); throw e; }
@@ -11448,6 +11463,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: pout, error: null });
     }
+    if (name === 'portal_invoice_contacts') return Promise.resolve({ data: portalInvoiceContacts(args || {}), error: null });
     if (name === 'portal_meetings') {
       var pmr = window.__refuseRpc && window.__refuseRpc[name];
       if (pmr) return Promise.resolve({ data: null, error: { message: pmr } });
@@ -19735,10 +19751,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 reg_no: x.reg_no || null, held: lk.indexOf(Number(x.id)) > -1 }; }) });
             });
           }
-          if (bkb.action === 'invoices' || bkb.action === 'remind' || bkb.action === 'deliver') {
-            var ivT = appToday();
-            var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
-            var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || [
+
+          var ivSeed = function (ivAdd) { return [
               { id: 9001, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00412', date: ivAdd(-75),
                 amount: 4320, balance: 4320, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/AbC123', term_items: [{ date: ivAdd(-45), amount: 4320, balance: 4320 }] },
               { id: 9002, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00431', date: ivAdd(-40),
@@ -19747,7 +19761,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
               { id: 9003, contact_id: 777, contact_name: 'NORTHWIND TRADING', contact_email: 'finance@example.com', number: 'IV-00398', date: ivAdd(-130),
                 amount: 1180, balance: 1180, currency_code: 'SGD', status: 'ready', short_link: '', term_items: [] },
               { id: 9004, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00452', date: ivAdd(-5),
-                amount: 2500, balance: 2500, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/GhI789', term_items: [{ date: ivAdd(25), amount: 2500, balance: 2500 }] }];
+                amount: 2500, balance: 2500, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/GhI789', term_items: [{ date: ivAdd(25), amount: 2500, balance: 2500 }] }]; };
+
+          if (bkb.action === 'portal') {
+            var piA = portalInvoiceContacts({ p_client: bkb.client });
+            if (piA.error) return bkR({ error: piA.error });
+            var piT = appToday();
+            var piAdd = function (n) { var d = new Date(Date.parse(piT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
+            var piAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(piAdd);
+            var piFrom = piT.slice(0, 4) - 2 + piT.slice(4, 7) + '-01';
+            var piOut = piAll.filter(function (x) { return piA.contacts.indexOf(Number(x.contact_id)) > -1 && (!x.status || x.status === 'ready') &&
+              String(x.date).slice(0, 10) >= piFrom; }).map(function (x) {
+              var terms = (x.term_items || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+              var open = terms.filter(function (t) { return t.balance == null || Number(t.balance) > 0; });
+              var due = (open[0] && open[0].date) || (terms.length && terms[terms.length - 1].date) || String(x.date).slice(0, 10);
+              var bal = Number(x.balance) || 0;
+              return { id: Number(x.id), number: String(x.number), date: String(x.date).slice(0, 10), due: due, amount: Number(x.amount), balance: bal,
+                currency: x.currency_code || 'MYR', state: bal <= 0 ? 'paid' : due < piT ? 'overdue' : 'outstanding',
+                link: /^https:\/\/[a-z0-9-]+\.bukku\.my\/[A-Za-z0-9\/_-]+$/.test(String(x.short_link || '')) ? x.short_link : null };
+            }).sort(function (a, b) { return b.date.localeCompare(a.date) || b.number.localeCompare(a.number); });
+            return bkR({ ok: true, invoices: piOut });
+          }
+          if (bkb.action === 'invoices' || bkb.action === 'remind' || bkb.action === 'deliver') {
+            var ivT = appToday();
+            var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
+            var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(ivAdd);
             var ivCents = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
             var ivOver = function (inv) {
               var bal = ivCents(inv.balance);
