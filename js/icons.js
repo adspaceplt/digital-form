@@ -64,6 +64,11 @@
        Feedback, each a tile before its rows. */
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-4M12 17V8M16 17v-6M20 17v-2"/>',
+    /* /verify/'s record of a document (2026-11-25): issued, signed, and
+       the document found. */
+    plane: '<path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/>',
+    pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14 8 3 3"/>',
+    doccheck: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2.2 2.2 4-4.2"/>',
     star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
     key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>',
     /* A quotation plan's mark and the facts under its name (/quote/, the

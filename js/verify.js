@@ -128,6 +128,19 @@
   }
   function issuer() { return (ORG.name || 'ADSPACE PLT') + (ORG.regno ? ' (' + ORG.regno + ')' : ''); }
   function stateTone(s) { return s === 'valid' ? 'is-ok' : s === 'voided' ? 'is-danger' : 'is-off'; }
+  function ic(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
+  /* A step's glyph on the History's line (2026-11-25, the approved boards);
+     signed and confirmed in a filled green disc, as the sealed copy's
+     record fills their dots. */
+  var STEP_GLYPH = { issued: 'plane', sent: 'mail', signed: 'pen', confirmed: 'check', sealed: 'lock', acknowledged: 'done',
+    finalised: 'done', declined: 'block', withdrawn: 'block', voided: 'block', replaced: 'archive', expired: 'clock' };
+  var STEP_FILLED = { signed: true, confirmed: true };
+  /* A notice in the answer's place: its glyph in the disc, its title over
+     its line, on the shaded card. */
+  function notice(glyph, title, text) {
+    return '<div class="verify-card verify-notice"><span class="verify-disc">' + ic(glyph) + '</span>' +
+      '<div class="verify-notice-words"><b>' + esc(title) + '</b><span>' + esc(text) + '</span></div></div>';
+  }
 
   /* The facts of an answer: the first answer's month, or the details' day
      and Document ID. */
@@ -137,15 +150,21 @@
     /* A database from before VERIFY DETAILS answers the day of issue; the
        page draws its month alike. */
     var month = a.issued_month || (a.issued_at ? ADspaceClock.day(a.issued_at).slice(0, 7) : '');
-    return '<dl class="verify-facts">' +
-      /* A report or a script holds no reference: its Document ID is what
-         was asked, and stands in the reference's place (2026-11-24). */
-      (a.by_code ? row(t().docId, '<span class="verify-code">' + esc(a.serial || '') + '</span>') : row(t().ref, esc(a.serial || ''))) +
+    /* The head names the document, its reference under it and its state at
+       the right (2026-11-25, the approved boards); each label is said to a
+       screen reader. The facts under the hairline say the rest once. */
+    var sr = function (w) { return '<span class="cx-sr">' + esc(w) + ' </span>'; };
+    return '<div class="verify-head"><span class="verify-disc">' + ic('doccheck') + '</span>' +
+      '<div class="verify-head-words"><b>' + sr(t().doc) + esc(kindWord(a.kind)) + '</b>' +
+        /* A report or a script holds no reference: its Document ID is what
+           was asked, and stands in the facts in the reference's place (2026-11-24). */
+        (a.by_code ? '' : '<span class="verify-ref">' + sr(t().ref) + esc(a.serial || '') + '</span>') + '</div>' +
+      '<span class="verify-state">' + sr(t().status) + '<span class="tone ' + stateTone(state) + '">' + esc(t().state[state] || state) + '</span></span></div>' +
+      '<dl class="verify-facts">' +
+      (a.by_code ? row(t().docId, '<span class="verify-code">' + esc(a.serial || '') + '</span>') : '') +
       row(t().issuedBy, esc(issuer())) +
-      row(t().doc, esc(kindWord(a.kind))) +
       (d ? row(t().issued, esc(dayWord(d.issued_on))) : month ? row(t().issued, esc(monthWord(month))) : '') +
       (d && d.document_id && !a.by_code ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
-      row(t().status, '<span class="tone ' + stateTone(state) + '">' + esc(t().state[state] || state) + '</span>') +
       '</dl>';
   }
 
@@ -162,28 +181,30 @@
     last = a;
     var out = $('vOut');
     out.hidden = false;
-    out.classList.toggle('is-answer', !!a.found);
+    out.classList.toggle('is-answer', !a.need);
     if (a.need) { out.innerHTML = '<span class="verify-need">' + esc(t().enterRef) + '</span>'; return; }
     if (a.failed) {
-      out.innerHTML = '<b>' + esc(t().failed) + '</b><span>' + esc(t().failedText) + '</span>';
+      out.innerHTML = notice('alert', t().failed, t().failedText);
       return;
     }
     /* Thirty lookups an hour from one connection (`verify_serial`). */
     if (a.locked) {
-      out.innerHTML = '<b>' + esc(t().locked) + '</b><span>' + esc(lockedLine(a.minutes)) + '</span>';
+      out.innerHTML = notice('clock', t().locked, lockedLine(a.minutes));
       return;
     }
     if (!a.found) {
-      out.innerHTML = '<b>' + esc(t().notFound) + '</b><span>' + esc(t().notFoundText) + '</span>';
+      out.innerHTML = notice('docq', t().notFound, t().notFoundText);
       return;
     }
-    var html = '<div class="verify-card" id="vCard">' + facts(a, detail) +
-      (detail ? '' : '<p class="verify-note">' + esc(t().note) + '</p>') + '</div>';
+    var html = '<div class="verify-card" id="vCard">' + facts(a, detail) + '</div>' +
+      (detail ? '' : '<p class="verify-note verify-note-out">' + esc(t().note) + '</p>');
     if (detail) {
       html += '<section class="verify-history" aria-labelledby="vHistH"><h3 id="vHistH">' + esc(t().history) + '</h3><ol>' +
         (detail.history || []).map(function (h) {
-          return '<li><span class="verify-day">' + esc(dayWord(h.day)) + '</span><span class="tone ' + (STEP_TONE[h.step] || 'is-ok') + '">' +
-            esc(t().step[h.step] || h.step) + '</span></li>';
+          /* A line a step: its glyph in the disc, the step over its day. */
+          return '<li' + (STEP_TONE[h.step] === 'is-danger' ? ' class="is-danger"' : '') + '><span class="verify-disc' + (STEP_FILLED[h.step] ? ' is-filled' : '') + '">' +
+            ic(STEP_GLYPH[h.step] || 'done') + '</span><span class="verify-step"><b>' + esc(t().step[h.step] || h.step) + '</b>' +
+            '<span class="verify-day">' + esc(dayWord(h.day)) + '</span></span></li>';
         }).join('') + '</ol>' + checksLine(detail.checks) + '<p class="verify-note">' + esc(t().never) + '</p></section>';
     } else if (asking) {
       html += askHtml(a);
@@ -191,11 +212,13 @@
     var moreBox = !detail && !asking && a.more;
     if (moreBox || a.sealed) {
       html += '<div class="verify-acts">' +
-        (moreBox ? '<section class="verify-pick" aria-labelledby="vMoreH"><h3 id="vMoreH">' + esc(t().more) + '</h3><p>' + esc(t().moreText) + '</p>' +
+        (moreBox ? '<section class="verify-pick" aria-labelledby="vMoreH"><span class="verify-disc">' + ic('lock') + '</span>' +
+          '<h3 id="vMoreH">' + esc(t().more) + '</h3><p>' + esc(t().moreText) + '</p>' +
           '<button class="btn btn-sm" type="button" id="vMoreGo">' + esc(t().moreGo) + '</button></section>' : '') +
-        (a.sealed ? '<section class="verify-pick" aria-labelledby="vFileH"><h3 id="vFileH">' + esc(t().file) + '</h3><p>' + esc(t().fileText) + '</p>' +
+        (a.sealed ? '<section class="verify-pick" aria-labelledby="vFileH"><span class="verify-disc">' + ic('note') + '</span>' +
+          '<h3 id="vFileH">' + esc(t().file) + '</h3><p>' + esc(t().fileText) + '</p>' +
           '<input type="file" id="vFile" accept="application/pdf,.pdf" hidden>' +
-          '<button class="btn btn-sm" type="button" id="vFileGo">' + esc(t().fileGo) + '</button></section>' : '') +
+          '<button class="btn btn-sm" type="button" id="vFileGo">' + ic('upload') + esc(t().fileGo) + '</button></section>' : '') +
         '</div>';
     }
     if (a.sealed) html += '<p class="verify-file-out" id="vFileOut" role="status"' + (fileSaid ? '' : ' hidden') + '>' + (fileSaid ? fileLine(fileSaid) : '') + '</p>';
@@ -212,10 +235,12 @@
   var typed = { code: '', name: '', open: false };
   function askHtml(a) {
     var said = askSaid ? '<p class="msg err" id="vDetailMsg" role="alert">' + esc(askSaid) + '</p>' : '<p class="msg err" id="vDetailMsg" role="alert" hidden></p>';
-    return '<form class="verify-ask" id="vAsk" novalidate>' +
+    var head = '<div class="verify-ask-head"><span class="verify-disc">' + ic('lock') + '</span><div class="verify-notice-words"><b>' + esc(t().more) +
+      '</b><span>' + esc(t().moreText) + '</span></div></div>';
+    return '<form class="verify-ask" id="vAsk" novalidate>' + head +
       '<label class="verify-label" for="vCode">' + esc(t().codeLabel) + '</label>' +
       '<input class="input" id="vCode" placeholder="' + esc(t().codeHint) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" value="' + esc(typed.code) + '">' +
-      (a.by_name ? '<details class="verify-noid" id="vNoId"' + (typed.open ? ' open' : '') + '><summary>' + esc(t().noId) + '</summary>' +
+      (a.by_name ? '<details class="verify-noid" id="vNoId"' + (typed.open ? ' open' : '') + '><summary>' + ic('chevron') + esc(t().noId) + '</summary>' +
         '<label class="verify-label" for="vName">' + esc(t().nameLabel) + '</label>' +
         '<input class="input" id="vName" placeholder="' + esc(t().nameHint) + '" autocomplete="off" spellcheck="false" maxlength="200" value="' + esc(typed.name) + '"></details>' : '') +
       said +
