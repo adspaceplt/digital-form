@@ -267,7 +267,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The console fetches a section's scripts on first ask (ON DEMAND,
   2026-11-22): a section script is never a tag of `admin/index.html` but a
   line of its `#lazyScripts` (address with `?v=`, `first` what it reads as
-  it loads, `uses` what it calls; `tests/lazy.js`); `showSection` draws
+  it loads, `uses` what it calls; `tests/lazy.js`; a script is added only
+  once its `first` have run, so a failed fetch leaves those after it to be
+  fetched again, 2026-11-24); `showSection` draws
   `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
   always-loaded script calling a listed global asks `ADspaceAdmin.need`,
   `needThen` or `whenSection` first, and what it decides before any section

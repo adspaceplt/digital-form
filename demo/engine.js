@@ -359,7 +359,6 @@
     ops_duplicate_task: 'p_idem p_task p_opts',
     ops_edit_checklist_item: 'p_item p_label',
     ops_edit_comment: 'p_body p_event',
-    client_engagement_items: 'p_client',
     ops_engagement_counts: 'p_engagements',
     ops_engagement_json: 'p_engagement',
     ops_engagement_log: 'p_detail p_engagement p_type',
@@ -708,7 +707,7 @@
     team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', verify_checks_of: 'p_kind p_id', hiring_register: ''
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', verify_details_name: 'p_serial p_name', doc_code_of: 'p_kind p_id', doc_code_of_key: 'p_kind p_id p_key', verify_checks_of: 'p_kind p_id', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2442,10 +2441,15 @@ function cardSlugFree(name, self, email) {
     }
     return row.doc_code;
   }
-  function docCodeOf(a) {
+
+  function docCodeOf(a, keyed) {
     var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[a.p_kind];
     var row = T && (DB[T] || []).filter(function (x) { return x.id === a.p_id; })[0];
     if (!row) return null;
+    var k = String(a.p_key || '').trim();
+    if (!opsMe() && !(keyed && k && (a.p_kind === 'quotation' ? row.access_key === k && !row.removed_at
+        : a.p_kind === 'hiring' ? row.sent_at && row.state !== 'draft' && (DB.hiring_candidates || []).some(function (c) { return c.id === row.candidate_id && c.link_key === k.toLowerCase(); })
+        : false)) && !(a.p_kind === 'letter' && portalClientIds().indexOf(row.client_id) > -1)) return null;
     var c = docCode(row, DB[T]);
     return c.slice(0, 4) + '-' + c.slice(4);
   }
@@ -2464,14 +2468,19 @@ function cardSlugFree(name, self, email) {
     var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : appToday();
     var d = (DB.documents || []).filter(function (x) { return same(x.serial); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
+    var cn = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0] || {}; return [c.legal_name, c.name]; };
+    var mn = function (id) { return [((DB.team_members || []).filter(function (x) { return x.id === id; })[0] || {}).name]; };
     if (d) return { src: 'document', id: d.id, serial: d.serial, kind: d.family === 'hr' ? 'HR Letter' : d.kind, issued: mday(d.issued_at),
+      names: verifyNames([(d.recipient || {}).name].concat(cn(d.client_id), mn(d.member_id))),
       code: docCode(d, DB.documents), sealed: false, state: d.voided_at ? 'voided' : 'valid',
       steps: steps([['issued', mday(d.issued_at)], ['voided', mday(d.voided_at)]]) };
     var o = (DB.client_documents || []).filter(function (x) { return same(x.number); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
     if (o) {
       var by = o.superseded_by && (DB.client_documents || []).filter(function (x) { return x.id === o.superseded_by; })[0];
+      var bt = o.bill_to || {};
       return { src: 'letter', id: o.id, serial: o.number, kind: 'Letter of Offer', issued: mday(o.issued_at), code: docCode(o, DB.client_documents), sealed: false,
+        names: verifyNames([bt.legal_name, bt.name, bt.contact].concat(cn(o.client_id))),
         state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid'),
         steps: steps([['issued', mday(o.issued_at)], ['signed', mday(o.signed_at)], ['confirmed', mday(o.verified_at)],
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
@@ -2486,6 +2495,7 @@ function cardSlugFree(name, self, email) {
         : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid';
       var after = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
       return { src: 'quotation', id: qt.id, serial: qt.ref, kind: 'Quotation', issued: mday(qt.issued_at), code: docCode(qt, DB.quotations), sealed: !!qt.seal_key,
+        names: verifyNames([qt.brand, (qt.contact || {}).name, (qt.bill_to || {}).legal_name].concat(cn(qt.client_id))),
         state: qs, steps: steps([['issued', mday(qt.issued_at)], ['sent', mday(qt.sent_out_at)], ['signed', mday(qt.signed_at)],
           ['confirmed', mday(qt.reviewed_at)], ['sealed', mday(qt.sealed_at)], ['declined', mday(qt.declined_at)], ['withdrawn', qt.withdrawn_on || null],
           ['voided', mday(qt.removed_at)], ['replaced', rev], ['expired', qs === 'expired' ? after(String(qt.valid_until).slice(0, 10)) : null]]) };
@@ -2497,6 +2507,7 @@ function cardSlugFree(name, self, email) {
       var hs = hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
         : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid';
       return { src: 'hiring', id: hd.id, serial: hd.serial, kind: 'HR Letter', issued: mday(hd.sent_at), code: docCode(hd, DB.hiring_docs), sealed: !!hd.seal_sha,
+        names: verifyNames([((DB.hiring_candidates || []).filter(function (c) { return c.id === hd.candidate_id; })[0] || {}).name]),
         state: hs, steps: steps([['issued', mday(hd.sent_at)], ['signed', mday(hd.signed_at)], ['confirmed', mday(hd.confirmed_at)], ['sealed', mday(hd.sealed_at)],
           ['declined', hd.state === 'declined' ? mday(hd.answered_at || hd.updated_at) : null], ['withdrawn', hd.state === 'withdrawn' ? mday(hd.updated_at) : null],
           ['voided', mday(hd.voided_at)], ['expired', hs === 'expired' ? mday(hd.reply_by) : null]]) };
@@ -2505,13 +2516,20 @@ function cardSlugFree(name, self, email) {
       return x.serial && same(x.serial) && (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
     })[0];
     if (pr) return { src: 'perf', id: pr.id, serial: pr.serial, kind: 'HR Letter', issued: mday(pr.released_at), code: docCode(pr, DB.perf_reviews), sealed: false,
+      names: verifyNames(mn(pr.team_member_id)),
       state: pr.status === 'draft' ? 'replaced' : 'valid',
       steps: steps([['issued', mday(pr.released_at)], ['acknowledged', mday(pr.acknowledged_at)], ['finalised', mday(pr.finalised_at)]]) };
 
     var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
     if (pd) return { src: 'perf_deleted', id: pd.id, serial: pd.serial, kind: 'HR Letter', issued: mday(pd.released_at), code: null, sealed: false, state: 'voided',
+      names: verifyNames(mn(pd.team_member_id)),
       steps: steps([['issued', mday(pd.released_at)], ['voided', mday(pd.deleted_at)]]) };
     return null;
+  }
+
+  function verifyNameKey(x) { return String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase(); }
+  function verifyNames(list) {
+    return list.map(verifyNameKey).filter(function (k, i, all) { return k.length >= 2 && all.indexOf(k) === i; });
   }
 
   function verifyByDay(f) {
@@ -2530,8 +2548,11 @@ function cardSlugFree(name, self, email) {
     var f = verifyFind(a.p_serial);
     if (!f) return { found: false };
     verifyCheckNote(f);
-    return { found: true, serial: f.serial, kind: f.kind, state: f.state, issued_month: f.issued ? f.issued.slice(0, 7) : null,
-      sealed: !!f.sealed, more: true, by_day: verifyByDay(f) };
+
+    var byName = verifyByDay(f);
+    var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName };
+    if (!byName) out.issued_month = f.issued ? f.issued.slice(0, 7) : null;
+    return out;
   }
 
   function verifyCheckNote(f) {
@@ -2554,8 +2575,7 @@ function cardSlugFree(name, self, email) {
     return b ? b.address : null;
   }
 
-  function verifyDetails(a) {
-    var contact = legalBox();
+  function verifyDetailCount(contact) {
     if (window.__verifyDetailLocked) return { locked: true, minutes: window.__verifyDetailLocked, contact: contact };
     if (!opsMe()) {
       var t = DB.verify_detail_tries = DB.verify_detail_tries || { n: 0, since: Date.now() };
@@ -2563,17 +2583,47 @@ function cardSlugFree(name, self, email) {
       t.n++;
       if (t.n > 10) return { locked: true, minutes: Math.max(1, Math.ceil((t.since + 36e5 - Date.now()) / 6e4)), contact: contact };
     }
+    return null;
+  }
+
+  function verifyAnswer(f, contact) {
+    var o = { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
+      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed, history: f.steps, contact: contact };
+    if (opsMe()) o.checks = Math.max(1, verifyCheckCount(f.src, f.id));
+    return o;
+  }
+
+  function verifyDetailsName(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
+    var f = verifyFind(a.p_serial), k = verifyNameKey(String(a.p_name || '').slice(0, 200));
+    if (!f || !verifyByDay(f) || k.length < 2) return { no_match: true, contact: contact };
+    var key = String(f.serial).toUpperCase().replace(/\//g, '-');
+    var rows = DB.verify_name_tries = DB.verify_name_tries || {};
+    var r = rows[key];
+    if (!opsMe() && r && r.locked_until && r.locked_until > Date.now())
+      return { locked: true, reference: true, minutes: Math.max(1, Math.ceil((r.locked_until - Date.now()) / 6e4)), contact: contact };
+    if ((f.names || []).indexOf(k) < 0) {
+      if (!opsMe()) {
+        if (!r || Date.now() - r.since > 864e5) r = rows[key] = { n: 0, since: Date.now(), locked_until: null };
+        r.n++;
+        if (r.n >= 5 && !(r.locked_until > Date.now())) r.locked_until = Date.now() + 864e5;
+      }
+      return { no_match: true, contact: contact };
+    }
+    return verifyAnswer(f, contact);
+  }
+  function verifyDetails(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
     var f = verifyFind(a.p_serial);
     var c = String(a.p_code || '').slice(0, 80).replace(/[^0-9A-Za-z]/g, '').toUpperCase(), ok = false;
     if (f) {
       if (c && f.code && c === f.code) ok = true;
       else if (/^[0-9A-F]{32}$/.test(c) && f.sealed && (f.src === 'quotation' || f.src === 'hiring') && c === String(f.id).replace(/-/g, '').toUpperCase()) ok = true;
-      else if (!c && a.p_day && verifyByDay(f) && String(a.p_day) === f.issued) ok = true;
     }
     if (!ok) return { no_match: true, contact: contact };
-    return { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
-      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed,
-      checks: Math.max(1, verifyCheckCount(f.src, f.id)), history: f.steps, contact: contact };
+    return verifyAnswer(f, contact);
   }
 
   function issueLetter(a) {
@@ -7750,31 +7800,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return opsEngJson(es.id);
     }
 
-    if (name === 'client_engagement_items') {
-      var ceMe = opsMe();
-      if (!ceMe || !args.p_client) return { error: 'denied' };
-      if (!opsAllowed('ops', 'view')) return { ok: true, tasks: null, visits: null };
-      var ceTasks = DB.ops_tasks.filter(function (t) { return t.client_id === args.p_client && !t.archived_at && scopeOk('ops_tasks', t, 'view'); })
-        .map(function (t) {
-          var st = opsStage(t.workflow_id, t.stage_key) || {};
-          var en = DB.ops_engagements.filter(function (e) { return e.id === t.engagement_id; })[0];
-          return { id: t.id, serial: opsSerial(t.task_no), title: opsTitle(t), stage: st.label || t.stage_key, stage_group: st.stage_group || null,
-            period: en ? en.period : null, made: new Date(Date.parse(t.created_at || now) + 8 * 36e5).toISOString().slice(0, 10),
-            done: !!t.completed_at, cancelled: !!t.cancelled_at, late: !t.completed_at && !t.cancelled_at && opsTaskLate(t),
-            _k: [(t.completed_at || t.cancelled_at) ? 1 : 0, t.current_final_due_at || '9999', t.task_no] };
-        }).sort(function (a, b) { return a._k[0] - b._k[0] || String(a._k[1]).localeCompare(String(b._k[1])) || a._k[2] - b._k[2]; })
-        .map(function (x) { delete x._k; return x; });
-      var ceCl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
-      var OSTc = DB.__ost || { trips: [], stops: [] };
-      var ceVisits = ceCl && scopeOk('clients', ceCl, 'view') ? OSTc.stops.filter(function (x) { return x.client_id === args.p_client; }).map(function (x) {
-        var t = OSTc.trips.filter(function (y) { return y.id === x.trip_id; })[0] || {};
-        var dr = DB.team_members.filter(function (m) { return m.id === t.driver_id; })[0];
-        return { trip: t.id, ref: t.ref || null, day: new Date(Date.parse(x.arrived_at) + 8 * 36e5).toISOString().slice(0, 10), purpose: t.purpose,
-          driver: dr ? dr.name : null, open: !x.left_at, mine: t.driver_id === ceMe.id || (t.companions || []).indexOf(ceMe.id) > -1, _at: x.arrived_at };
-      }).sort(function (a, b) { return String(b._at).localeCompare(String(a._at)); }).map(function (x) { delete x._at; return x; }) : null;
-      return { ok: true, tasks: ceTasks, visits: ceVisits };
-    }
-
     if (name === 'ops_engagement_counts') {
       if (!opsAllowed('ops', 'view')) return [];
       var ecIds = args.p_engagements || [];
@@ -10443,6 +10468,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           detail: 'Outstation trip · ' + tdD.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][tdD.getUTCMonth()] + ' ' + tdD.getUTCFullYear() +
             ' · ' + (oName(tdT.driver_id).name || 'a colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
         var tdIds = tdS.map(function (x) { return x.id; });
+        var tdTouch = tdS.map(function (x) { return x.touch_id; }).filter(Boolean);
+        DB.client_touches = (DB.client_touches || []).filter(function (x) { return tdTouch.indexOf(x.id) < 0; });
         OST.photos = OST.photos.filter(function (p) { return tdIds.indexOf(p.stop_id) < 0; });
         OST.stops = OST.stops.filter(function (x) { return x.trip_id !== tdT.id; });
         OST.trips = OST.trips.filter(function (t) { return t.id !== tdT.id; });
@@ -11249,7 +11276,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_engagement_items$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
@@ -11430,6 +11457,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
     if (name === 'verify_details')     return Promise.resolve({ data: verifyDetails(args), error: null });
     if (name === 'doc_code_of')        return Promise.resolve({ data: docCodeOf(args), error: null });
+    if (name === 'doc_code_of_key')    return Promise.resolve({ data: docCodeOf(args, true), error: null });
+    if (name === 'verify_details_name') return Promise.resolve({ data: verifyDetailsName(args), error: null });
 
     if (name === 'verify_checks_of') {
       if (!opsMe()) return Promise.resolve({ data: null, error: null });
@@ -15841,6 +15870,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!r) return drNo('not-found');
       if (name === 'delete_request_decide') {
         if (r.requested_by === drMe.id) return drNo('own');
+
+        if (r.state === 'approving' && r.decided_by !== drMe.id && Date.now() - Date.parse(r.decided_at || 0) < 600000) return drNo('approving');
         if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
         var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
         if (args.p_approve) {
@@ -20095,6 +20126,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     } };
   } };
+
+  window.__docCode = function (kind, id) {
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[kind];
+    var row = T && (DB[T] || []).filter(function (x) { return x.id === id; })[0];
+    if (!row) return null;
+    var c = docCode(row, DB[T]);
+    return c.slice(0, 4) + '-' + c.slice(4);
+  };
   window.__signIn = function (e, amr) { session = mkSession(e, amr); if (listener) listener('SIGNED_IN', session); };
 
   window.__signInCode = function (e) { session = mkSession(e, [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]); if (listener) listener('SIGNED_IN', session); };

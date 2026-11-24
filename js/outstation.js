@@ -60,7 +60,7 @@
     'no-place': 'Choose the client, or enter the venue.',
     'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
-    'bad-location': 'The location could not be read. Press Read again.',
+    'bad-location': 'The location could not be read. Press Locate again.',
     'no-photo': 'Take a photo at this stop first.',
     'too-many': 'This trip has reached the maximum number of stops or photos. Check out and start a new trip.',
     'bad-key': 'The photo could not be saved. Take it again.',
@@ -394,7 +394,7 @@
       /* A phone that reports once and then stays quiet settles at six
          seconds too, where that one reading is inside the limit. */
       setTimeout(function () { if (!done && best && limit && best.acc <= limit) finish(); }, 6100);
-      /* A read abandoned (Read again, the sheet shut) stops watching and
+      /* A read abandoned (Locate again, the sheet shut) stops watching and
          never answers. */
       if (ctl) ctl.cancel = function () { if (done) return; done = true; if (id !== null) geo.clearWatch(id); clearTimeout(timer); };
     });
@@ -422,7 +422,7 @@
     host.className = 'ost-loc';
     host.innerHTML = '<div class="ost-loc-mark" aria-hidden="true"></div><div class="ost-loc-words" role="status">' +
       '<span class="ost-loc-state"></span><small class="ost-loc-note"></small></div>' +
-      '<button class="btn btn-sm" type="button" data-a="again" hidden>Read again</button>';
+      '<button class="btn btn-sm" type="button" data-a="again" hidden>Locate again</button>';
     var state = host.querySelector('.ost-loc-state'), note = host.querySelector('.ost-loc-note'), again = host.querySelector('[data-a="again"]');
     var say = function (tone, word, line) {
       host.setAttribute('data-tone', tone);
@@ -453,14 +453,14 @@
         say('ok', 'Location accurate to ' + Math.round(b.acc) + ' m', at(b));
         geo({ near: { lat: b.lat, lng: b.lng } }).then(function (d) {
           if (o.ctl !== ctl || o.spot !== b || !d || !d.address) return;
-          note.textContent = d.address + ' · ' + at(b);
+          note.innerHTML = esc(d.address) + '<br>' + esc(at(b));
         });
       }).catch(function (e) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
         say('danger', 'Location not read', e && e.code === 'denied'
-          ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Read again.'
-          : 'The location could not be read. Move to an open spot, then press Read again. ' + PRECISE);
+          ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Locate again.'
+          : 'The location could not be read. Move to an open spot, then press Locate again. ' + PRECISE);
       });
     };
     again.addEventListener('click', o.read);
@@ -559,7 +559,6 @@
     if (stopSheet) return stopSheet;
     stopSheet = document.createElement('div');
     stopSheet.className = 'sheet'; stopSheet.id = 'ostStopSheet'; stopSheet.hidden = true;
-    var keepMonths = setting('outstation_keep_months', 24);
     stopSheet.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostStopH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="ostStopH">Check in</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
@@ -578,9 +577,7 @@
         '<div class="row ost-in"><div><label class="field-label" for="ostNote">Note</label>' +
           '<textarea class="input" id="ostNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
         '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Going together</span>' +
-          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div>' +
-          '<p class="asknote">You are the driver. Only the driver records the trip.</p></div></div>' +
-        '<p class="asknote ost-in">Personal data notice: your location and photos are recorded with this trip and kept for ' + esc(plural(keepMonths, 'month', 'months')) + '.</p>' +
+          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div></div></div>' +
         '<p class="msg" id="ostStopMsg" role="status"></p>' +
       '</div>' +
       '<div class="sheet-foot">' +
@@ -816,7 +813,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: ref + ' · The trip on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
-        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it recorded on the clients\' Calls and visits stay.' : '') + ' This cannot be undone.',
+        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it recorded on the clients\' Calls and visits are deleted with it.' : '') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [{ name: 'ref', label: 'Type the trip number to confirm', placeholder: ref, match: ref,
         need: 'Type the trip number to confirm.', mismatch: GONE['confirm-required'] }]
