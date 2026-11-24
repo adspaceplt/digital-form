@@ -359,8 +359,6 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
-    /* A client's stage set ahead (CLIENT STAGE AHEAD, 2026-11-24): the
-       record head, the Clients list's chip and the Dashboard's Leaving. */
     stageFrom: function (stage, day) { return stage + ' from ' + day; },
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
