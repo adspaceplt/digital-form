@@ -96,7 +96,9 @@
       send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'Please describe the change required.', company: 'Company',
       tabsLabel: 'Portal sections', sideLabel: 'Account manager and company',
       tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-        services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
+        services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', feedback: 'Feedback', account: 'Account' },
+      rateTitle: 'Rate your experience', fbRequested: 'Requested {d}', fbSubmit: 'Submit',
+      fbBy: 'Submitted {d} by {n}', fbOn: 'Submitted {d}', fbScore: '{v} of {m}',
       posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved',
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
@@ -141,7 +143,9 @@
       send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请描述所需的更改。', company: '公司',
       tabsLabel: '门户分页', sideLabel: '客户经理与公司',
       tabs: { overview: '概览', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
-        services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
+        services: '服务', letters: '函件', reports: '报告', meetings: '会议', feedback: '反馈', account: '账户' },
+      rateTitle: '请评价您的体验', fbRequested: '请求日期：{d}', fbSubmit: '提交',
+      fbBy: '{n}于{d}提交', fbOn: '{d}提交', fbScore: '{v}/{m}',
       posts: function (n) { return n + '篇帖子'; },
       toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准',
       noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
@@ -351,7 +355,7 @@
      through the tabs and a refresh lands on the one that was open. Reports and
      Meetings draw once there is one; an address naming a tab not drawn yet
      opens it as soon as it is. */
-  var PANES = ['overview', 'review', 'scripts', 'campaigns', 'services', 'letters', 'reports', 'meetings', 'account'];
+  var PANES = ['overview', 'review', 'scripts', 'campaigns', 'services', 'letters', 'reports', 'meetings', 'feedback', 'account'];
   var pane = 'overview';
   var wantPane = null;
   function paneFromUrl() {
@@ -826,6 +830,72 @@
     });
   }
 
+  /* Client feedback (CLIENT FEEDBACK, 2026-11-24): a request ADspace sent
+     is the Overview's first card until it is answered, the lead question on
+     it and the rest of the form under it once a score is chosen; the
+     Feedback tab holds past answers, read only, once there is one. The
+     answer goes as the signed-in contact (`feedback_submit`). */
+  var fbState = { key: null, answers: {}, sending: false };
+  function fbFill(s, v) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return v[k] == null ? m : v[k]; }); }
+  function paintFeedback(w, c) {
+    var card = $('ovFb'), box = $('ovFbBox'), hbox = $('fbBox'), F = window.ADspaceFeedback;
+    if (!card || !box || !hbox || !c.id || !F) return;
+    db.rpc('portal_feedback', { p_client: c.id }).then(function (r) {
+      if (stale(c)) return;
+      if (r.error || !r.data || r.data.error) { card.hidden = true; tabShown('feedback', false); return; }
+      var d = r.data, open = d.open, hist = d.history || [];
+      tabShown('feedback', hist.length > 0);
+      card.hidden = !open;
+      if (open) {
+        if (fbState.key !== open.key) fbState = { key: open.key, answers: {}, sending: false };
+        var lead = open.questions.filter(function (q) { return q.lead; })[0];
+        var picked = lead && fbState.answers[lead.key] != null;
+        box.innerHTML = '<p class="cp-sub fb-ask-meta">' + parts([F.title(open.kind, lang), fbFill(w.fbRequested, { d: niceDate(open.requested_at) })]) + '</p>' +
+          '<form class="fb-form" id="ovFbForm" novalidate data-lang="' + lang + '">' +
+          F.form(picked ? open.questions : [lead], lang, fbState.answers) + '</form>' +
+          '<p class="msg" id="ovFbMsg" role="status"></p>' +
+          (picked ? '<div class="cp-card-acts fb-ask-acts"><button class="btn btn-primary" type="button" id="ovFbSubmit">' + esc(w.fbSubmit) + '</button></div>' : '');
+        /* The first score chosen brings the rest of the form under it. */
+        F.wire($('ovFbForm'), picked ? open.questions : [lead], fbState.answers, function (k) {
+          if (!picked && lead && k === lead.key) paintFeedback(w, c);
+        }, lang);
+        var sb = $('ovFbSubmit');
+        if (sb) sb.addEventListener('click', function () { submitFeedback(w, c, open, sb); });
+      } else box.innerHTML = '';
+      hbox.innerHTML = hist.length ? '<div class="fbh-list">' + hist.map(function (h) {
+        var when = niceDate(h.submitted_at);
+        return '<details class="fbh"><summary class="fbh-row"><span class="fbh-name"><b>' + esc(F.title(h.kind, lang)) + '</b><small>' +
+          esc(h.by ? fbFill(w.fbBy, { d: when, n: h.by }) : fbFill(w.fbOn, { d: when })) + '</small></span>' +
+          '<span class="fbh-score">' + esc(fbFill(w.fbScore, { v: h.score, m: h.max })) + '</span>' +
+          '<svg class="fbh-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></summary>' +
+          '<div class="fbread">' + (h.answers || []).map(function (a) {
+            var q = '<p class="fbread-q">' + esc(lang === 'zh' ? a.zh : a.en) + '</p>';
+            if (a.type === 'scale') {
+              var end = Number(a.value) === a.max ? (lang === 'zh' ? a.high_zh : a.high_en) : '';
+              return '<div>' + q + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>' + esc(lang === 'zh' ? '/' + a.max : 'of ' + a.max) +
+                (end ? ' · ' + esc(end) : '') + '</span></p></div>';
+            }
+            return '<div>' + q + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
+          }).join('') + '</div></details>';
+      }).join('') + '</div>' : '';
+    }).catch(function () { card.hidden = true; tabShown('feedback', false); });
+  }
+  function submitFeedback(w, c, open, btn) {
+    var F = window.ADspaceFeedback, form = $('ovFbForm');
+    if (fbState.sending || !form) return;
+    if (F.check(form, open.questions, fbState.answers, lang)) return;
+    fbState.sending = true; btn.disabled = true; msg('ovFbMsg', '');
+    db.rpc('feedback_submit', { p_key: open.key, p_answers: F.payload(open.questions, fbState.answers) }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) throw r.error;
+      if (d.error && d.error !== 'answered' && d.error !== 'closed') throw new Error(d.error);
+      fbState = { key: null, answers: {}, sending: false };
+      paintFeedback(w, c);
+    }).catch(function () {
+      fbState.sending = false; btn.disabled = false; msg('ovFbMsg', w.notSent, 'err');
+    });
+  }
+
   /* The Overview's next meeting: the soonest one still ahead, with Join where
      it has a link. The card leaves while none is ahead. */
   function paintNextMeeting(w, list) {
@@ -932,13 +1002,13 @@
     ['ovHead:company', 'ctHead:contacts', 'svcHead:services', 'ovSvcHead:services', 'rqHead:requests',
      'docHead:letters', 'meetHead:meetings', 'repHead:reports', 'engHead:engagements',
      'payHead:payment', 'accHead:account', 'ovMeetHead:nextMeeting', 'ovRepHead:latestReport',
-     'ovMgrHead:yourManager'].forEach(function (p) {
+     'ovMgrHead:yourManager', 'ovFbHead:rateTitle'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
     /* An Overview card's way to its tab: the console Overview's own control. */
     Array.prototype.forEach.call(document.querySelectorAll('.cp-card .ovgo-word'), function (x) { x.textContent = w.viewAll; });
     PANES.forEach(function (k) { var b = tabOf(k); if (b) b.textContent = w.tabs[k]; });
-    ['crHead:review', 'vsHead:scripts', 'cmHead:campaigns'].forEach(function (p) {
+    ['crHead:review', 'vsHead:scripts', 'cmHead:campaigns', 'fbHead:feedback'].forEach(function (p) {
       var a = p.split(':'); if ($(a[0])) $(a[0]).textContent = w.tabs[a[1]];
     });
     if (!feed.__shown) { feed.__shown = true; showPane(paneFromUrl(), false); }
@@ -1154,6 +1224,7 @@
     }
 
     paintMeetings(w, c);
+    paintFeedback(w, c);
     paintReports(w, c);
     paintWork(w, c, feed);
 

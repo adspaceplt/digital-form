@@ -160,6 +160,13 @@ window.ADSPACE_CONFIG = {
      length); js/otp.js draws one box each. */
   signCodeDigits: 8,
   turnstileSiteKey: '0x4AAAAAAFEI21WUxApWeD2V',
+  /* The agency's social pages, offered on /feedback/ once a client has
+     answered (CLIENT FEEDBACK, 2026-11-24). */
+  socialLinks: [
+    { name: 'Facebook', url: 'https://www.facebook.com/adspacestudios' },
+    { name: 'Instagram', url: 'https://www.instagram.com/adspace.advertising' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/company/adspacestudios' }
+  ],
   // The quotation website's Chat on WhatsApp (2026-10-14), the front door's own.
   quoteWhatsApp: 'https://wa.me/adspace'
 
