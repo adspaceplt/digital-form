@@ -21,7 +21,7 @@
   var WORDS = W.of({
     en: { quick: 'Service rating', review: 'Performance review', optional: 'Optional', scoreOf: '{v} of {m}',
       required: 'Please choose a score.', tooLong: 'Please shorten this to 2,000 characters or fewer.' },
-    zh: { quick: '服务评分', review: '绩效评估', optional: '选填', scoreOf: '{v}分（满分{m}分）',
+    zh: { quick: '服务评分', review: '服务表现评估', optional: '选填', scoreOf: '{v}分（满分{m}分）',
       required: '请选择分数。', tooLong: '请缩减至2,000字以内。' }
   });
   var t = function (lang) { return WORDS[lang === 'zh' ? 'zh' : 'en']; };

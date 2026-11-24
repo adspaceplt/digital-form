@@ -534,7 +534,7 @@
     var ahead = aheadOf(cl);
     return { key: 'lost', label: 'Clients lost', fig: plain(f.churned.length),
       verdict: ch && ch.over ? { tone: 'late', word: 'Above alert' } : judge(f.churned.length, fp.churned.length, 'down', 2),
-      sub: (ch ? 'Churn ' + pct(ch.rate) + ' per quarter, alert ' + pct(ch.alert) + ' · ' : '') + plain(fp.churned.length) + ' before' + (ahead ? ' · ' + ahead : ''),
+      sub: (ch ? 'Churn ' + pct(ch.rate) + ' per quarter (alert at ' + pct(ch.alert) + ') · ' : '') + plain(fp.churned.length) + ' before' + (ahead ? ' · ' + ahead : ''),
       spark: keys.map(function (k) { return per(k, 'churned'); }) };
   }
 

@@ -1049,8 +1049,8 @@
            own, holds the delete (review 2026-11-24). */
         if (a.error === 'in-use') {
           return (a.held || []).indexOf('trips') >= 0
-            ? 'This colleague cannot be deleted because other colleagues joined outstation trips they drove. They remain removed.'
-            : 'This colleague cannot be deleted because other work in the portal still names them. They remain removed.';
+            ? 'This colleague cannot be deleted because other colleagues travelled on outstation trips this colleague drove. This colleague remains removed.'
+            : 'This colleague cannot be deleted because other work in the portal still names this colleague. This colleague remains removed.';
         }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
         closeRec();
