@@ -24,6 +24,7 @@
   --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
   --z-drawer-scrim: 55; --z-drawer: 60; --z-pull: 70; --z-sheet-side: 85;
   --z-sheet: 90; --z-guide-sheet: 92; --z-pop-sheet: 93; --z-ask: 95; --z-picker: 96;
+  --z-trace: 10;
   --ink:        #1a1a1a;
   --ink-soft:   #515151;
   --ink-mute:   #666666;
@@ -136,6 +137,8 @@
      more transparent, similar as apple"): 72% over a 20px blur. */
   --chrome:     rgba(255,255,255,.72);   /* the translucent sticky bar */
   --veil:       rgba(255,255,255,.88);   /* a label or a question laid over a thumbnail, kept legible */
+  --trace-ink:  #1a1a1a;
+  --trace-strength: .06;
   --knob:       #ffffff;                 /* a switch's thumb, white on its track in both themes */
   --chrome-solid: #ffffff;               /* the same bar, opaque, where a phone's status bar takes its colour */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
@@ -289,6 +292,8 @@
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(23,23,23,.72);
     --veil:       rgba(23,23,23,.88);
+    --trace-ink:  #f0f0f0;
+    --trace-strength: .07;
     --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.6);

@@ -77,11 +77,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else (2026-10-11) |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
+| `--trace-ink` / `--trace-strength` | `#1a1a1a` / .06 | `#f0f0f0` / .07 | The viewer's trace over a screen of personal data (`js/trace.js`), nothing else |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
-| `--z-sticky` … `--z-picker` | 20 sticky bar, 30 console head, 39 notice cover, 40 top and confirm bars, 43 to 45 the tab bar, 50 menus and cards, 55 and 60 the drawer, 70 pull mark, 85 side sheet, 90 sheets, 92 and 93 a card over a sheet, 95 the question and canvas, 96 the finder | | Every page-level layer is one of these; a component's own stacking keeps a small figure. A new layer joins the scale, never a literal |
+| `--z-trace`, `--z-sticky` … `--z-picker` | 10 the viewer's trace over its screen, 20 sticky bar, 30 console head, 39 notice cover, 40 top and confirm bars, 43 to 45 the tab bar, 50 menus and cards, 55 and 60 the drawer, 70 pull mark, 85 side sheet, 90 sheets, 92 and 93 a card over a sheet, 95 the question and canvas, 96 the finder | | Every page-level layer is one of these; a component's own stacking keeps a small figure. A new layer joins the scale, never a literal |
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.
@@ -382,6 +383,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
 | An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
 | A value only read | `.readfield` (the field's height, no box) |
+| A screen of a colleague's personal data | `data-trace` on its card or sheet (`js/trace.js`): the reader's name, email and time tiled at -24° in `--trace-ink`, cleared under every word and control, and the card's last line `.trace-foot` (Viewed by {name} · {date, time} · Confidential, 12px mute at the right over a hairline; `docs/rules/security.md`) |
 | A client billed by several companies (billing entities) | `docs/rules/clients.md`, Components |
 | A record's link to another system (Bukku) | `docs/rules/bukku.md`, Components |
 | A read group with its own act (Brand: Meta) | `docs/rules/clients.md`, Components |

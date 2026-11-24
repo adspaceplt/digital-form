@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261124zzfb">
-<link rel="stylesheet" href="/css/console.css?v=20261124rt">
+<link rel="stylesheet" href="/css/portal.css?v=20261124zzzzwm">
+<link rel="stylesheet" href="/css/console.css?v=20261124zzzzwm">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -139,7 +139,7 @@
 <script src="/js/acts.js?v=20261122zzq"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261124s"></script>
+<script src="/js/confirm.js?v=20261124zzzzwm"></script>
 <script src="/js/sheet.js?v=20261124s"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
 <script src="/js/form.js?v=20261122zzzc"></script>
@@ -152,6 +152,7 @@
 <script src="/js/records.js?v=20261117zzzf"></script>
 <script src="/js/chart.js?v=20261117zzzf"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
+<script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261124"></script>
 <script src="/js/delreq.js?v=20261124s"></script>
 <script src="/js/maintenance.js?v=20261124zzfb"></script>
@@ -1015,6 +1016,8 @@
                   <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-g="4" data-a="restrict" hidden>Mark restricted</button>
                   <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-g="4" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
                   <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-g="4" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
+                  <button class="kmenu-item" id="crmPortalOn" type="button" role="menuitem" data-g="5" data-a="portalon" data-need="clients.contacts:work" hidden>Enable access</button>
+                  <button class="kmenu-item" id="crmPortalOff" type="button" role="menuitem" data-g="5" data-a="portaloff" data-need="clients.contacts:work" hidden>Revoke access</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
               </div>
@@ -4304,7 +4307,7 @@
           </form>
           <div class="msg" id="perfLockMsg"></div>
         </div>
-        <div id="perfOpen" data-swipe="perfViews" hidden>
+        <div id="perfOpen" data-swipe="perfViews" data-trace hidden>
           <!-- ---- Performance rewards (2026-09-28): the month, the quarter and
                its two prizes, the bonus pool and trip over two quarters, and
                growth commission, one view each. Every figure is worked out by
@@ -5250,7 +5253,7 @@
           <button class="acttab btn-sm" data-mv="personnel" type="button" aria-pressed="false">Personnel</button>
           <button class="acttab btn-sm acttab-health" data-mv="health" type="button" aria-pressed="false"><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
         </span></div>
-        <div id="mineReviews">
+        <div id="mineReviews" data-trace>
           <!-- Rate yourself (js/perf.js, 2026-10-07): a month that has ended,
                until its review is shared; drawn only while one is open. -->
           <div id="mineSelf" data-narrow="640" hidden></div>
@@ -5298,7 +5301,7 @@
     <!-- The employee record form (js/personnel.js, 2026-11-16): sections A
          to H drawn from FIELDS, and the declaration on the colleague's own. -->
     <div class="sheet" id="prsSheet" hidden>
-      <div class="sheet-card formsheet prs-sheet" role="dialog" aria-modal="true" aria-labelledby="prsSheetTitle" tabindex="-1">
+      <div class="sheet-card formsheet prs-sheet" role="dialog" aria-modal="true" aria-labelledby="prsSheetTitle" tabindex="-1" data-trace>
         <div class="sheet-head">
           <h3 id="prsSheetTitle">Employee record</h3>
           <button class="iconbtn" id="prsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
@@ -5467,7 +5470,7 @@
          same sheet reads for management and for the person it is about; the
          database decides what each is sent. -->
     <div class="sheet sheet-side" id="perfSheet" hidden>
-      <div class="sheet-card taskcard perfcard" role="dialog" aria-modal="true" aria-labelledby="pvTitle" tabindex="-1">
+      <div class="sheet-card taskcard perfcard" role="dialog" aria-modal="true" aria-labelledby="pvTitle" tabindex="-1" data-trace>
         <div class="sheet-head qhead">
           <div class="qhead-top">
             <button class="serial-copy rec-token" id="pvRef" type="button" hidden></button>
@@ -6785,7 +6788,7 @@ raya-2026        https://example.com/raya"></textarea>
      are bumped with every other. -->
 <script type="application/json" id="lazyScripts">
 {
-  "documents": {"src": "/js/documents.js?v=20261124dh"},
+  "documents": {"src": "/js/documents.js?v=20261124zzzzwm"},
   "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
@@ -6802,7 +6805,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261124zzzfd", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261124zzzps", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
   "team": {"src": "/js/team.js?v=20261124rt", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
@@ -6817,7 +6820,7 @@ raya-2026        https://example.com/raya"></textarea>
   "perf": {"src": "/js/perf.js?v=20261124ru", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
-  "personnel": {"src": "/js/personnel.js?v=20261124zzzpr", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
+  "personnel": {"src": "/js/personnel.js?v=20261124zzzzwm", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261124zzzfe", "uses": ["documents", "crm", "sales"]},
   "outstation": {"src": "/js/outstation.js?v=20261124zzd"},
   "settings": {"src": "/js/settings.js?v=20261124zzzfd", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
