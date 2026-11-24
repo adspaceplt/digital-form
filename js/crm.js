@@ -2744,7 +2744,7 @@
     'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
     'not-active': 'Feedback can be requested of an active client only.',
     'no-contact': 'The primary contact holds no email. Add one under Account first.',
-    'not-found': 'This client no longer exists.', 'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
+    'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
     'needs-update': 'This feature is not available yet. Please contact an admin.' };
   function askFeedback(c) {
