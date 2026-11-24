@@ -647,7 +647,7 @@
     department_ac_code_set: 'p_key p_code',
     personnel_get: 'p_member', personnel_mine: '', personnel_save: 'p_member p_data p_expected',
     personnel_save_mine: 'p_data p_consent p_name p_expected', personnel_terms_set: 'p_member p_join p_status p_type p_probation p_contract_end p_superior',
-    personnel_request: 'p_member', personnel_file_member: 'p_member', personnel_file_set: 'p_member p_kind p_key',
+    personnel_request: 'p_member', personnel_revealed: 'p_member p_field', personnel_file_member: 'p_member', personnel_file_set: 'p_member p_kind p_key',
     personnel_file_remove: 'p_member p_kind', personnel_file_key: 'p_member p_kind', personnel_unlock: 'p_code',
     personnel_salary_get: 'p_token p_member', personnel_salary_set: 'p_token p_member p_probation p_confirmed',
     personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
@@ -3522,7 +3522,7 @@ function cardSlugFree(name, self, email) {
 
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7,
 
-    health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
+    health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30, reveal_seconds: 30,
 
     hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12, feedback_quiet_months: 6,
 
@@ -3540,7 +3540,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], reveal_seconds: ['Hidden personal details', ' seconds'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
     work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
@@ -4204,7 +4204,7 @@ function cardSlugFree(name, self, email) {
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
-          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
+          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) || (k === 'reveal_seconds' && (v < 10 || v > 600 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_decision_days' && (v < 1 || v > 30 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'feedback_quiet_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
@@ -4908,6 +4908,19 @@ function cardSlugFree(name, self, email) {
       r1.superior_id = a.p_superior || null; r1.updated_at = nowIso; r1.updated_by = m.id;
       logAct('team.edited', t1.name, 'Employment terms: ' + moves.join(', '));
       return prsJson(t1.id, true);
+    }
+
+    if (name === 'personnel_revealed') {
+      var tr, own2 = a.p_member == null;
+      if (own2) { if (!m) return { error: 'not-team' }; if (!fresh) return { error: 'code-needed' }; tr = m; }
+      else { if (!part) return { error: 'denied' }; tr = who(a.p_member); if (!tr) return { error: 'not-found' }; }
+      if (!m) return { error: 'denied' };
+      if (['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'].indexOf(a.p_field) < 0) return { error: 'bad-field' };
+      var lab = (prsFields()[a.p_field] || [])[2] || a.p_field;
+      var line = lab + ' shown';
+      var since = Date.now() - 60000;
+      if (!DB.activity_log.some(function (x) { return x.action === 'team.revealed' && x.actor === whoNow() && x.subject === tr.name && x.detail === line && Date.parse(x.created_at) > since; })) logAct('team.revealed', tr.name, line);
+      return { ok: true };
     }
     if (name === 'personnel_request') {
       if (!part) return { error: 'denied' };

@@ -206,7 +206,7 @@
     'bad-kind': 'Choose a file to add.', 'bad-key': 'The file could not be saved. Try again.', 'not-kept': 'No file has been added.',
     'code-needed': 'Enter the master code.', 'no-code': 'The master code is not set. Please contact an admin.',
     'wrong-code': 'The master code is incorrect. Enter it again.', locked: 'Too many attempts. Try again in 15 minutes.',
-    'bad-value': 'Choose a value from the list.', 'bad-code': 'Enter an AutoCount code of 2 to 10 letters or digits.',
+    'bad-value': 'Choose a value from the list.', 'bad-field': 'This value cannot be shown. Refresh the page.', 'bad-code': 'Enter an AutoCount code of 2 to 10 letters or digits.',
     taken: 'This AutoCount code is already used by another department.'
   };
   function said(d) {
@@ -274,11 +274,71 @@
       });
       var inner = rows.length ? '<dl class="ovfacts">' + rows.map(function (f) {
         var w = valueWord(f, data[f[1]]);
+        if (w && HIDDEN.indexOf(f[1]) > -1) return secretFact(f, w);
         return '<div><dt>' + esc(f[2]) + '</dt><dd' + (w ? '' : ' class="is-missing"') + '>' + esc(w || 'Not set') + '</dd></div>';
       }).join('') + '</dl>' : '<p class="prs-none">Not set</p>';
       return group(s[1], inner);
     }).join('');
   }
+  // ---- Hidden values (PERSONAL DETAILS REVEALED, 2026-11-25) -------------------------
+  /* The most sensitive answers start hidden, dots and their last four
+     characters; the eye at the value's right edge shows one only once the
+     database has filed it (`personnel_revealed`: its label, never the
+     value). A value shown hides again after `reveal_seconds` (a Business
+     setting), when the page is left or hidden, and on every redraw. Editing
+     in the sheet shows the real values, as before. */
+  var HIDDEN = ['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'];
+  function masked(w) { var s = String(w); return '•••• ' + (s.length > 4 ? s.slice(-4) : ''); }
+  function eyeGlyph(shown) {
+    return shown ? window.ADspaceActs.glyph('hide') : window.ADspaceIcons.svg('eye');
+  }
+  function secretFact(f, w) {
+    return '<div class="prs-secret"><dt>' + esc(f[2]) + '</dt><dd><span class="prs-secret-v" data-secret="' + esc(f[1]) + '">' + esc(masked(w)) + '</span>' +
+      '<button class="iconbtn prs-eye" type="button" data-eye="' + esc(f[1]) + '" aria-pressed="false" aria-label="Show ' + esc(f[2]) + '">' +
+      eyeGlyph(false) + '</button></dd></div>';
+  }
+  var shownTimers = [];
+  function hideAll(box) {
+    shownTimers.forEach(clearTimeout); shownTimers = [];
+    Array.prototype.forEach.call((box || document).querySelectorAll('.prs-eye[aria-pressed="true"]'), function (b) { setShown(b, null); });
+  }
+  function setShown(b, value) {
+    var k = b.getAttribute('data-eye'), f = field(k), v = b.parentNode.querySelector('[data-secret]');
+    var on = value != null;
+    v.textContent = on ? value : masked(v.getAttribute('data-real') || '');
+    if (!on) v.removeAttribute('data-real');
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-label', (on ? 'Hide ' : 'Show ') + (f ? f[2] : k));
+    b.innerHTML = eyeGlyph(on);
+  }
+  function revealSeconds() {
+    var M = window.ADspaceMoney, C = window.ADspaceClock;
+    var n = M && M.setting && C ? Number(M.setting('reveal_seconds', C.today())) : NaN;
+    return n > 0 ? n : null;
+  }
+  function wireEyes(box, rec, member, line) {
+    Array.prototype.forEach.call(box.querySelectorAll('.prs-eye'), function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-eye');
+        if (b.getAttribute('aria-pressed') === 'true') { setShown(b, null); return; }
+        var real = valueWord(field(k), (rec.data || {})[k]);
+        b.disabled = true;
+        (member ? call : mineCall)('personnel_revealed', { p_member: member || null, p_field: k }, function (d) {
+          b.disabled = false;
+          if (d.error) { msg(line, said(d)); return; }
+          msg(line, '');
+          b.parentNode.querySelector('[data-secret]').setAttribute('data-real', real);
+          setShown(b, real);
+          var secs = revealSeconds();
+          if (secs) shownTimers.push(setTimeout(function () { if (b.isConnected) setShown(b, null); }, secs * 1000));
+        });
+      });
+    });
+  }
+  /* A page left, or put behind another, hides every value shown. */
+  document.addEventListener('visibilitychange', function () { if (document.hidden) hideAll(); });
+  window.addEventListener('pagehide', function () { hideAll(); });
+
   function group(title, inner, act) {
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>' + inner + '</section>';
   }
@@ -349,6 +409,7 @@
   function paintTeam() {
     var box = $('prsBox'), rec = team.rec, m = team.m;
     if (!box || !rec) return;
+    hideAll();
     var self = me() && me().id === m.id;
     var acts = '<div class="prs-acts">' +
       (!self && m.active && !m.system ? '<button class="btn btn-sm" type="button" data-p="request">Request employee record</button>' : '') +
@@ -358,6 +419,7 @@
       statusGroup(rec, true, acts) +
       termsGroup(rec, true) + salaryGroup(rec) + filesGroup(rec, true) + readSections(rec) + '</div>';
     wire(box, rec, m.id);
+    wireEyes(box, rec, m.id, 'prsMsg');
   }
   function wire(box, rec, member) {
     Array.prototype.forEach.call(box.querySelectorAll('[data-p]'), function (b) {
@@ -732,6 +794,7 @@
   function paintMine() {
     var box = $('minePrsBox'), rec = mine.rec;
     if (!box || !rec) return;
+    hideAll();
     var act = '<button class="btn btn-sm' + (rec.declared_at ? '' : ' btn-primary') + '" type="button" data-p="edit">' +
       (rec.declared_at ? PEN + 'Edit' : 'Fill in') + '</button>';
     box.innerHTML = '<div class="panel mrec-card prs-card" data-trace><div class="readgroups">' +
@@ -741,6 +804,7 @@
     var e = box.querySelector('[data-p="edit"]');
     e.addEventListener('click', function () { openForm(rec, null, e); });
     wireFiles(box, null);
+    wireEyes(box, rec, null, 'minePrsMsg');
   }
 
   // ---- Download for AutoCount (decision 9) -------------------------------------------
