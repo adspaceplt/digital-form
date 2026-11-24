@@ -2473,7 +2473,7 @@ function cardSlugFree(name, self, email) {
     var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : appToday();
     var d = (DB.documents || []).filter(function (x) { return same(x.serial); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
-    var cn = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0] || {}; return [c.legal_name, c.name]; };
+    var cn = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0] || {}; return [c.legal_name]; };
     var mn = function (id) { return [((DB.team_members || []).filter(function (x) { return x.id === id; })[0] || {}).name]; };
     if (d) return { src: 'document', id: d.id, serial: d.serial, kind: d.family === 'hr' ? 'HR Letter' : d.kind, issued: mday(d.issued_at),
       names: verifyNames([(d.recipient || {}).name].concat(cn(d.client_id), mn(d.member_id))),
@@ -2485,7 +2485,7 @@ function cardSlugFree(name, self, email) {
       var by = o.superseded_by && (DB.client_documents || []).filter(function (x) { return x.id === o.superseded_by; })[0];
       var bt = o.bill_to || {};
       return { src: 'letter', id: o.id, serial: o.number, kind: 'Letter of Offer', issued: mday(o.issued_at), code: docCode(o, DB.client_documents), sealed: false,
-        names: verifyNames([bt.legal_name, bt.name, bt.contact].concat(cn(o.client_id))),
+        names: verifyNames([bt.legal_name || bt.name, bt.contact].concat(cn(o.client_id))),
         state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid'),
         steps: steps([['issued', mday(o.issued_at)], ['signed', mday(o.signed_at)], ['confirmed', mday(o.verified_at)],
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
@@ -2500,7 +2500,7 @@ function cardSlugFree(name, self, email) {
         : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid';
       var after = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
       return { src: 'quotation', id: qt.id, serial: qt.ref, kind: 'Quotation', issued: mday(qt.issued_at), code: docCode(qt, DB.quotations), sealed: !!qt.seal_key,
-        names: verifyNames([qt.brand, (qt.contact || {}).name, (qt.bill_to || {}).legal_name].concat(cn(qt.client_id))),
+        names: verifyNames([(qt.contact || {}).name, (qt.bill_to || {}).legal_name].concat(cn(qt.client_id))),
         state: qs, steps: steps([['issued', mday(qt.issued_at)], ['sent', mday(qt.sent_out_at)], ['signed', mday(qt.signed_at)],
           ['confirmed', mday(qt.reviewed_at)], ['sealed', mday(qt.sealed_at)], ['declined', mday(qt.declined_at)], ['withdrawn', qt.withdrawn_on || null],
           ['voided', mday(qt.removed_at)], ['replaced', rev], ['expired', qs === 'expired' ? after(String(qt.valid_until).slice(0, 10)) : null]]) };
@@ -2603,20 +2603,28 @@ function cardSlugFree(name, self, email) {
     if (held) return held;
     var f = verifyFind(a.p_serial), k = verifyNameKey(String(a.p_name || '').slice(0, 200));
     if (!f || !verifyByDay(f) || k.length < 2) return { no_match: true, contact: contact };
+
     var key = String(f.serial).toUpperCase().replace(/\//g, '-');
     var rows = DB.verify_name_tries = DB.verify_name_tries || {};
-    var r = rows[key];
-    if (!opsMe() && r && r.locked_until && r.locked_until > Date.now())
-      return { locked: true, reference: true, minutes: Math.max(1, Math.ceil((r.locked_until - Date.now()) / 6e4)), contact: contact };
+    var ipKey = key + '|' + (window.__ip || 'stub');
+    var r = rows[key], rc = rows[ipKey];
+    var until = Math.max((r && r.locked_until) || 0, (rc && rc.locked_until) || 0);
+    if (!opsMe() && until > Date.now())
+      return { locked: true, reference: true, minutes: Math.max(1, Math.ceil((until - Date.now()) / 6e4)), contact: contact };
     if ((f.names || []).indexOf(k) < 0) {
       if (!opsMe()) {
-        if (!r || Date.now() - r.since > 864e5) r = rows[key] = { n: 0, since: Date.now(), locked_until: null };
-        r.n++;
-        if (r.n >= 5 && !(r.locked_until > Date.now())) r.locked_until = Date.now() + 864e5;
+        [[key, 50], [ipKey, 5]].forEach(function (x) {
+          var t = rows[x[0]];
+          if (!t || Date.now() - t.since > 864e5) t = rows[x[0]] = { n: 0, since: Date.now(), locked_until: null };
+          t.n++;
+          if (t.n >= x[1] && !(t.locked_until > Date.now())) t.locked_until = Date.now() + 864e5;
+        });
       }
       return { no_match: true, contact: contact };
     }
-    return verifyAnswer(f, contact);
+
+    var ans = verifyAnswer(f, contact); delete ans.document_id;
+    return ans;
   }
   function verifyDetails(a) {
     var contact = legalBox(), held = verifyDetailCount(contact);
