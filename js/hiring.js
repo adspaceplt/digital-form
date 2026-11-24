@@ -123,7 +123,7 @@
     if (!state.rows) UI.skeleton(box, 4);
     return rpc('hiring_list', {}).then(function (r) {
       var d = r.data || {};
-      if (r.error || d.error) { state.rows = null; UI.failLine(box, 'the candidates', said(r), load); return; }
+      if (r.error || d.error) { state.rows = null; UI.failLine(box, 'The candidates', said(r), load); return; }
       state.rows = d.rows || []; state.admin = Boolean(d.admin);
       if (state.admin && !state.swept) sweepFiles();
       $('hirPositions').innerHTML = uniq(state.rows.map(function (c) { return c.position; })).map(function (p) { return '<option value="' + esc(p) + '">'; }).join('');
@@ -221,7 +221,7 @@
       var d = r.data || {};
       if (r.error || d.error) {
         if (d.error === 'not-found') { state.open = null; state.rec = null; setUrl(); paint(); msg('hirMsg', 'This candidate no longer exists.', 'err'); return; }
-        UI.failLine(rec, 'the candidate', said(r), function () { openRec(id); });
+        UI.failLine(rec, 'The candidate', said(r), function () { openRec(id); });
         return;
       }
       state.rec = d.candidate; state.role = d.role; state.people = d.people || []; state.events = d.events || [];
@@ -315,10 +315,10 @@
         return '<div class="readgroups hir-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
       }).join('') + '</div>';
     paintLog();
-    if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', '', function () { openRec(c.id); });
-    if ($('hirShFail')) UI.failLine($('hirShFail'), 'the interview sheets', '', function () { openRec(c.id); });
-    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', '', function () { openRec(c.id); });
-    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', '', function () { openRec(c.id); });
+    if ($('hirScFail')) UI.failLine($('hirScFail'), 'The scores', '', function () { openRec(c.id); });
+    if ($('hirShFail')) UI.failLine($('hirShFail'), 'The interview sheets', '', function () { openRec(c.id); });
+    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'The interviews', '', function () { openRec(c.id); });
+    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'The documents', '', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
     /* The strip slides its thumb and fades the edge that has more beyond
@@ -1841,7 +1841,7 @@
   function hscPaint() {
     var box = $('hscList');
     if (!box) return;
-    if (hsc.err) { UI.failLine(box, 'the scorecards', said(hsc.err), hscRead); return; }
+    if (hsc.err) { UI.failLine(box, 'The scorecards', said(hsc.err), hscRead); return; }
     if (!hsc.rows) { UI.skeleton(box, 3); return; }
     $('hscCount').textContent = hsc.rows.length + (hsc.rows.length === 1 ? ' scorecard' : ' scorecards');
     box.innerHTML = '<div class="ind-row ind-head is-hsc" aria-hidden="true"><span>Position</span><span>Criteria</span><span></span></div>' +
