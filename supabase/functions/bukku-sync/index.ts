@@ -1778,8 +1778,6 @@ Deno.serve(async (req) => {
       const url = billWeb(secret('BUKKU_SUBDOMAIN'), id);
       return url ? json({ ok: true, url }, 200, origin) : json({ error: 'not-found' }, 200, origin);
     }
-    /* A completed month's invoice (2026-11-10): asked as the caller, read
-       from Bukku, kept by the service role. */
     /* A client's own invoices (2026-11-25): asked as the signed-in
        contact (`portal_invoice_contacts`: a client the contact may open,
        else refused), then the Bukku contacts linked to that client alone
@@ -1795,6 +1793,8 @@ Deno.serve(async (req) => {
       if (!ids.length) return json({ ok: true, invoices: [] }, 200, origin);
       return json({ ok: true, invoices: await portalInvoices(ids, todayMY()) }, 200, origin);
     }
+    /* A completed month's invoice (2026-11-10): asked as the caller, read
+       from Bukku, kept by the service role. */
     if (action === 'month') {
       const eid = String(body.engagement || '');
       if (!/^[0-9a-f-]{36}$/i.test(eid)) return json({ error: 'bad-request' }, 400, origin);
