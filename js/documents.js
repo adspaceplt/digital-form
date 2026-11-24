@@ -606,7 +606,7 @@
   var G = {
     mark: 16, markAt: 60.2, internalAt: 58.9, countX: 493.75, countAt: 794.9, count: 8, pcAt: 793.0,
     aclMark: 14, aclMarkAt: 56.3, regAt: 68.1, addrAt: 80.1, contactAt: 92.3, monoAt: 44.3, mono: 20.3,
-    aclCountAt: 794.5, aclCount: 7.5, verifyAt: 798.1, verify: 6, refAt: 784.9, ref: 6.5,
+    aclCountAt: 794.5, aclCount: 7.5, verify: 6, ref: 6.5,
     aclBodyAt: 155.1, bodyAt: 81.9,
     line: 12.5, refLine: 14.35, afterPc: 26.9, block: 25
   };
@@ -771,20 +771,18 @@
     p.foot = function (i, n) {
       var count = 'Page ' + (i + 1) + ' of ' + n;
       if (acl) {
-        p.text(count, G.countX, at(G.aclCountAt), G.aclCount, font, faint);
-        /* The Document ID ends the verify line (VERIFY DETAILS, 2026-11-20):
-           /verify/ shows a document's days and steps to whoever holds a
-           copy, and the copy proves it by this code. The longest line, with
-           No signature required., ends at 476pt, clear of the page count
-           at 493.75pt. */
-        p.centre(verifyLine(tpl === 'ACL_SIGN') + (p.code ? ' · Document ID ' + p.code : ''), at(G.verifyAt), G.verify, font, faint);
-        /* A lettered document of two pages or more names its reference on
-           every page (2026-11-20, restored after the templates' foot
-           dropped it): a page swapped out of a signed agreement still says
-           which agreement it is. Fine print in the bottom margin's left,
-           above the verify line and level with the Client initials on the
-           right, so it touches neither nor the page count. */
-        if (n > 1 && p.reference) p.text(p.reference, M, at(G.refAt), G.ref, font, faint);
+        /* One row (the user, 2026-11-24: "the serial id or document id and
+           the computer generated document and the page x of x should be
+           same in line same row"): the reference, the verify line with its
+           Document ID, from the left margin; the page count at the right
+           margin; one baseline. The reference gives way first where the
+           line would reach the page count. */
+        var cw = p.width(count, G.aclCount, font);
+        p.right(count, R, at(G.aclCountAt), G.aclCount, font, faint);
+        var ver = verifyLine(tpl === 'ACL_SIGN') + (p.code ? ' · Document ID ' + p.code : '');
+        var lead = n > 1 && p.reference ? p.reference + '  ·  ' : '';
+        if (lead && M + p.width(lead + ver, G.verify, font) > R - cw - 16) lead = '';
+        p.text(lead + ver, M, at(G.aclCountAt), G.verify, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
@@ -1052,6 +1050,12 @@
          first), the body from under it. y counts down from the top. */
       var head = function () { y = pn.head(); };
       var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); head(); };
+      /* The initials are a box of their own in the bottom margin, over the
+         foot's row, and the body stops a line clear of it (the user,
+         2026-11-24: the line drawn under the summary left small spaces for
+         signing and the page's lower part looked crumpled). */
+      var INIT = { w: 112, h: 36, at: 58 };
+      var FLOOR = INIT.at + INIT.h + 14;
       var need = function (h) { if (y - h < FLOOR) newPage(); };
       newPage();
       /* Every page names the letter it belongs to, and every page but the one
@@ -1069,9 +1073,12 @@
            side of the page the signature is on. They sit in the bottom
            margin over the template's page count, clear of it and of the
            body above. */
+        /* One column with the page count under it, from its left edge
+           (the user, 2026-11-24: "the footer is really not good design"),
+           the label on the reference's baseline across the page. */
         if (i < n - 1) {
-          rule(67, R - 96, R);
-          right('Client initials', R, 57, 7.5, font, mute);
+          pn.page.drawRectangle({ x: R - INIT.w, y: INIT.at, width: INIT.w, height: INIT.h, borderColor: pn.line, borderWidth: 0.6 });
+          text('Client initials', R - INIT.w + 6, INIT.at + INIT.h - 10, 6.5, font, mute);
         }
       };
       var para = function (s, f, size) {
@@ -1140,7 +1147,17 @@
         y -= 7; rule(y); y -= 15;
       };
       need(60); thead();
-      (doc.lines || []).forEach(function (l) {
+      /* The summary never stands on a page alone (the user, 2026-11-24: "the
+         sudden line break of pricing summary table"): the last line carries
+         the summary's height with it, so where both do not fit, that line
+         moves over with the totals it adds up to. */
+      var sumH = (function () {
+        var qd0 = price.quote, adj0 = qd0 && Number(qd0.pct) ? 1 : 0;
+        var sg = String(b.market || '').toUpperCase() === 'SG' && String(doc.market || '').toUpperCase() !== 'SG' && Number(b.fx_sgd) > 0;
+        return 14 + (price.term && price.once > 0 ? 90 : 66) + adj0 * 15 + (price.plan ? 15 : 0) + (sg ? 13 : 0);
+      })();
+      var lastAt = (doc.lines || []).length - 1;
+      (doc.lines || []).forEach(function (l, li) {
         var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
         var names = wrap(l.label, descW, 10, bold);
         /* What it includes sits with the name. How it is priced and when it
@@ -1158,7 +1175,7 @@
         var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
-        if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < FLOOR) { newPage(); thead(); }
+        if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP + (li === lastAt ? sumH : 0)) < FLOOR) { newPage(); thead(); }
         text(names[0] || '', cols.desc, y, 10, bold);
         // A letter priced line by line prints the rate the client is billed,
         // term adjustment included, because that is the figure they are
