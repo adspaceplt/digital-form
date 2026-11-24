@@ -66,6 +66,7 @@
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-4M12 17V8M16 17v-6M20 17v-2"/>',
     /* /verify/'s record of a document (2026-11-25): issued, signed, and
        the document found. */
+    wallet: '<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 11h-4a2 2 0 0 0 0 4h4z"/><path d="M3 7h16a2 2 0 0 1 2 2v2"/>',
     plane: '<path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/>',
     pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14 8 3 3"/>',
     doccheck: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 14.5 2.2 2.2 4-4.2"/>',
@@ -126,11 +127,18 @@
     return '<p class="cx-legend">' + (items || []).filter(function (x) { return x && x.n; }).map(function (x) {
       return '<span><i class="cx-dot is-' + x.dot + '"></i>' + esc(x.word) + ' <b>' + x.n + '</b></span>'; }).join('') + '</p>';
   }
-  function journey(words, at) {
+  /* `o.glyphs` (2026-11-25, the creator's page as the approved boards): each
+     step a disc on the line joining them, done ticked in a filled green
+     disc, the one in hand outlined with its glyph, what follows grey; with
+     `o.days`, the step's day under its name. Without, the hairline track. */
+  function journey(words, at, o) {
     var esc = window.ADspaceWords.esc;
-    return '<ol class="cx-journey">' + words.map(function (w, i) {
+    var g = o && o.glyphs, days = (o && o.days) || [];
+    return '<ol class="cx-journey' + (g ? ' has-discs' : '') + '">' + words.map(function (w, i) {
       var cls = i < at ? 'is-done' : i === at ? 'is-now' : '';
-      return '<li' + (cls ? ' class="' + cls + '"' : '') + (i === at ? ' aria-current="step"' : '') + '><span>' + esc(w) + '</span></li>';
+      return '<li' + (cls ? ' class="' + cls + '"' : '') + (i === at ? ' aria-current="step"' : '') + '>' +
+        (g ? '<i class="cx-jdisc" aria-hidden="true">' + svg(i < at ? 'check' : g[i] || 'done') + '</i>' : '') +
+        '<span>' + esc(w) + '</span>' + (g && days[i] ? '<small>' + esc(days[i]) + '</small>' : '') + '</li>';
     }).join('') + '</ol>';
   }
   /* Where a booking stands on the client's six steps, one map for the
