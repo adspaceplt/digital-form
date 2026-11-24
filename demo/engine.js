@@ -697,6 +697,7 @@
     outstation_trips: 'p_from p_to p_all',
     outstation_photo_may: 'p_trip',
     outstation_photo_key: 'p_photo',
+    outstation_trip_delete: 'p_trip p_confirm',
     outstation_geo_may: 'p_stop p_trip',
     team_session_end: 'p_id p_session',
     team_sessions_end_all: 'p_id',
@@ -10318,9 +10319,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var oUuid = function () { var h = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
         return [h(8), h(4), '4' + h(3), 'a' + h(3), h(12)].join('-'); };
       var oName = function (id) { var m = DB.team_members.filter(function (x) { return x.id === id; })[0]; return m || {}; };
+
+      var oRef = function (t) {
+        if (t.ref) return t.ref;
+        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(0, 7).replace('-', '');
+        var refs = (OST.refs = OST.refs || {});
+        refs[m] = (refs[m] || 0) + 1;
+        t.ref = 'OS/' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+        return t.ref;
+      };
       var oJson = function (t) {
         var cl = function (id) { return (DB.clients || []).filter(function (c) { return c.id === id; })[0] || {}; };
-        return { id: t.id, driver_id: t.driver_id, driver: oName(t.driver_id).name || null, driver_code: oName(t.driver_id).staff_code || null,
+        return { id: t.id, ref: oRef(t), driver_id: t.driver_id, driver: oName(t.driver_id).name || null, driver_code: oName(t.driver_id).staff_code || null,
           companions: t.companions.map(function (id) { var m = oName(id); return { id: id, name: m.name, code: m.staff_code || null }; })
             .sort(function (a, b) { return String(a.name) < String(b.name) ? -1 : 1; }),
           purpose: t.purpose, note: t.note, rating: t.rating, state: t.state, started_at: t.started_at, ended_at: t.ended_at, end_note: t.end_note,
@@ -10391,6 +10401,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!(pkT.driver_id === oMe.id || pkT.companions.indexOf(oMe.id) > -1 || opsGranted('ops.outstation', 'view'))) return oNo('denied');
         return oOk({ key: pkP.path, trip: pkT.id });
       }
+      if (name === 'outstation_trip_delete') {
+        if (!oMe || !opsAllowed('ops', 'manage')) return oNo('denied');
+        var tdT = OST.trips.filter(function (t) { return t.id === args.p_trip; })[0];
+        if (!tdT) return oNo('not-found');
+        if (tdT.driver_id !== oMe.id && !opsAccess(oMe).admin) return oNo('denied');
+        var tdK = function (v) { return String(v || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(); };
+        if (tdK(args.p_confirm) !== tdK(oRef(tdT))) return oNo('confirm-required');
+        var tdS = OST.stops.filter(function (x) { return x.trip_id === tdT.id; });
+        var tdD = new Date(Date.parse(tdT.started_at) + 8 * 36e5);
+        DB.activity_log.unshift({ id: nid('al'), actor: oMe.name, action: 'ops.deleted', subject: tdT.ref,
+          detail: 'Outstation trip · ' + tdD.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][tdD.getUTCMonth()] + ' ' + tdD.getUTCFullYear() +
+            ' · ' + (oName(tdT.driver_id).name || 'a colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
+        var tdIds = tdS.map(function (x) { return x.id; });
+        OST.photos = OST.photos.filter(function (p) { return tdIds.indexOf(p.stop_id) < 0; });
+        OST.stops = OST.stops.filter(function (x) { return x.trip_id !== tdT.id; });
+        OST.trips = OST.trips.filter(function (t) { return t.id !== tdT.id; });
+        persist();
+        return oOk({ ok: true, deleted: true, ref: tdT.ref });
+      }
       if (!opsAllowed('ops', 'work') || !oMe) return oNo('denied');
       if (name === 'outstation_check_in') {
         if (OST.trips.some(function (t) { return t.driver_id === oMe.id && t.state === 'open'; })) return oNo('open-trip');
@@ -10403,6 +10432,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ciR = oReading(); if (ciR) return oNo(ciR.error, ciR);
         var ciT = { id: oUuid(), driver_id: oMe.id, companions: ciW, purpose: args.p_purpose, note: String(args.p_note || '').trim() || null, rating: null,
           started_at: new Date().toISOString(), ended_at: null, end_lat: null, end_lng: null, end_accuracy_m: null, end_note: null, km_back: null, km_total: null, state: 'open' };
+        oRef(ciT);
         OST.trips.push(ciT);
         OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
           lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
@@ -15668,6 +15698,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         'rpc:sm_report_version_delete': ['reports', 'p_version', 'Report version'],
         'rpc:supplier_delete': ['suppliers', 'p_id', 'Supplier', 'suppliers', 'id', 'name'],
         'rpc:video_script_delete': ['scripts', 'p_id', 'Video script', 'video_scripts', 'id', 'code'],
+        'rpc:outstation_trip_delete': ['ops', 'p_trip', 'Outstation trip'],
         'table:batches': ['review.sets', 'id', 'Content set', 'batches', 'id', 'title'],
         'table:posts': ['review.sets', 'id', 'Post', 'posts', 'id', 'title'],
         'table:campaigns': ['campaigns.campaigns', 'id', 'Campaign', 'campaigns', 'id', 'title'],
@@ -15713,6 +15744,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var row = (DB[k[3]] || []).filter(function (x) { return String(x[k[4]]) === rec; })[0];
             if (!row) return drNo('not-found');
             label = row[k[5]] == null ? '' : String(row[k[5]]);
+          } else if (args.p_kind === 'rpc:outstation_trip_delete') {
+
+            var drT = ((DB.__ost || {}).trips || []).filter(function (x) { return String(x.id) === rec; })[0];
+            if (!drT) return drNo('not-found');
+            label = drT.ref || '';
           } else if (args.p_kind === 'rpc:sm_report_version_delete') {
             var drV = (DB.sm_report_versions || []).filter(function (x) { return String(x.id) === rec; })[0];
             var drR = drV && (DB.sm_reports || []).filter(function (x) { return x.id === drV.report_id; })[0];
