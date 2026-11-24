@@ -222,7 +222,9 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
   a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
   by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
   trigger `team_members_system_guard` lets only the account itself change its
-  standing, access date, group, admin mark or email (`system-account`).
+  standing, access date, group, admin mark, email, removal or erasure
+  (`system-account`; removal and erasure since 2026-11-24, without which any
+  admin became super admin).
   Team shows it with a Super admin tag and no ⋯ for anyone else.
   - The team list is never derived from `auth.users`. The cutover sweep runs
     only while `team_members` is empty and skips client contacts.
