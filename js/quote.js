@@ -103,7 +103,7 @@
       decline: 'Decline', declineT: 'Decline this quotation', declineWhy: 'Reason', declineHint: 'Optional',
       declined: 'Declined', declinedT: 'You have declined this quotation',
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
-      monthSub: 'Monthly subtotal', commit: '{n}-month term discount ({p}%)', termAdj: '{n}-month term surcharge ({p}%)', monthExcl: 'Monthly excl. SST',
+      monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
@@ -220,7 +220,7 @@
       decline: '拒绝', declineT: '拒绝此报价', declineWhy: '原因', declineHint: '选填',
       declined: '已拒绝', declinedT: '您已拒绝此报价',
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
-      monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
+      monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
@@ -594,6 +594,10 @@
   function sstOn(tt) { return taxed(tt).on; }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function adsOf(tt) { return tt.layout === 2 && Array.isArray(tt.ads) ? tt.ads : []; }
+  function termWords(n, p) {
+    var line = window.ADspaceMoney.termLine(n, p, lang === 'zh');
+    return lang === 'zh' ? line : line.charAt(0).toUpperCase() + line.slice(1);
+  }
   function totalsRows(tt) {
     /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
     var w = t(), on = sstOn(tt);
@@ -607,9 +611,10 @@
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
     var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
-      /* a row a term percentage where the lines differ (2026-11-15) */
-      var tp = x[4] ? x[4].pct : tt.term_pct, tn = x[4] ? (x[4].months || tt.term) : tt.term;
-      var label = x[0] === 'term' ? f(tp < 0 ? w.commit : w.termAdj, { n: tn, p: Math.abs(tp) }) : WORD[x[0]];
+      /* a row a term percentage where the lines differ (2026-11-15), in
+         the PDF's words: a row whose lines run different months names
+         none (2026-11-24) */
+      var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
       return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
     });
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
