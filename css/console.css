@@ -6361,6 +6361,24 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    (`.ann-row`); a refusal says itself under its row. */
 .dr-msg { margin: 6px 0 0; }
 
+/* A client's Feedback (CLIENT FEEDBACK, 2026-11-24, js/crm.js): a request a
+   row, its answers opening under it read only; on a narrow pane the phone row. */
+.fbc-row { display: grid; grid-template-columns: minmax(0, 1.6fr) 110px 110px var(--state-w) 132px; gap: 12px; align-items: center;
+  padding: 10px 15px; border-top: 1px solid var(--line-soft); list-style: none; cursor: pointer; }
+.fbc-row::-webkit-details-marker { display: none; }
+.fbc-row.crm-head { cursor: default; border-top: 0; padding: 12px 15px 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.fbc-row .pr-main { display: grid; gap: 2px; min-width: 0; }
+.fbc-row .pr-main b { font-weight: 500; }
+.fbc-row .pr-main small { display: none; font-size: 13px; color: var(--ink-mute); }
+.fbc-row .pr-end { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fbc-score.is-late { color: var(--err); }
+.fbc-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+@media (hover: hover) { .fbc-item > .fbc-row:hover { background: var(--sunk); } }
+.fbc-read { padding: 4px 15px 16px; }
+.fbc-by { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.fbc-acts { display: flex; justify-content: flex-start; }
+.is-narrow .fbc-row .pr-main small { display: block; }
+
 /* THE PHONE ROW (2026-11-18, the user: every list's phone layout from one
    component, never written by hand again). On a narrow pane a list row that
    carries `.prow` is two columns, top aligned: its lead (a tick, a ring, a

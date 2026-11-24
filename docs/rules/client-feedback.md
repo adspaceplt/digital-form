@@ -16,6 +16,21 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   contact alone; never on a schedule, never by itself, never on WhatsApp
   (the user, 2026-11-24). A new request of the same form closes the open one
   (`replaced`); another form stands beside it.
+- Request feedback is the client record's ⋯ (Clients at Work, Send email
+  for this colleague, a client never a lead): it asks the form (a segment),
+  then `supplier-mail` `{ feedback: true }` makes the request
+  (`feedback_mail_begin`, refused `send-off` or `email-off` before anything
+  is made), emails its words in the primary contact's language with the link
+  as its one button, and closes it (`feedback_mail_done`); a failed send
+  withdraws the request. The WhatsApp feedback template is no longer offered
+  from the record.
+- The record's Feedback tab (after Brand) lists every request newest first:
+  Sent, Opened, Answered, Follow-up open (a low score whose task is not done),
+  Withdrawn or Closed; a row opens its answers read only, and a low one
+  offers Create follow-up task (My Work at Work), linked by
+  `feedback_followup`. Its rows are the phone row on a narrow pane.
+- Settings, Clients: Client feedback holds `feedback_quiet_months` (1 to
+  24), the months since a client was last asked before the Dashboard counts it.
 - One answer a request, whoever answers first (the link or a signed-in
   contact); the request then reads Already submitted to everyone. The link
   (`/feedback/?k=`, 16 characters) answers that one request alone and names
@@ -35,7 +50,7 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   sender) on the bell, `client.feedback`, opening the client; its follow-up
   is a My Work task linked by `feedback_followup`, the score open until that
   task is done.
-- `tests/feedbacksql.js` holds the database; the walk seeds Laman Citra's
+- `tests/feedbacksql.js` holds the database, `tests/feedbackui.js` the record's tab and Request feedback; the walk seeds Laman Citra's
   Service rating open (`fbwalkopen234567`), its Performance review answered
   and an earlier low Service rating.
 

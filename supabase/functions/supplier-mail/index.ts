@@ -33,6 +33,12 @@
  *                          page's drawing and must name the record's own
  *                          reference. From the clients' sender.
  *
+ *   POST { feedback: true, client, kind }
+ *                          a client's feedback request (2026-11-24, FEEDBACK
+ *                          SENT BY EMAIL): `feedback_mail_begin` makes the
+ *                          request and its words (the primary contact's
+ *                          language), the link /feedback/?k= on PORTAL_URL is
+ *                          the email's one button; from the clients' sender.
  *   POST { manual: true, audience, client, supplier, template, to, ccs,
  *          subject, body, key, file }
  *                          a New email from Messages, Email (2026-11-04,
@@ -63,7 +69,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { pdfFrom, namesRef } from '../_shared/pdfref.ts';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, sender } from '../_shared/mail.ts';
+import { layout, resend, sender, button } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 /* Who each email is from and where its replies go (EVERY EMAIL IN
@@ -136,6 +142,7 @@ Deno.serve(async (req) => {
   const uuid = /^[0-9a-f-]{36}$/i;
   if (body.manual === true) return manualMail(req, body, origin, uuid);
   if (body.client === true) return clientMail(req, body, origin, uuid);
+  if (body.feedback === true) return feedbackMail(req, body, origin, uuid);
   const supplier = String(body.supplier || ''), purpose = String(body.purpose || '');
   const document = body.document ? String(body.document) : null;
   if (!uuid.test(supplier) || (document && !uuid.test(document)) || !['approved', 'document'].includes(purpose)) {
@@ -296,4 +303,34 @@ async function manualMail(req: Request, body: Record<string, any>, origin: strin
   if (done.error) console.error('supplier-mail: new email not closed', done.error.message);
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}
+
+/* A client's feedback request (2026-11-24): the request made and its words
+   filed by the database, the email sent with its link as the one button,
+   then closed (a failed send withdraws the request). */
+const PORTAL = () => (Deno.env.get('PORTAL_URL') || 'https://digital.adspace.me').replace(/\/+$/, '');
+async function feedbackMail(req: Request, body: Record<string, any>, origin: string | null, uuid: RegExp): Promise<Response> {
+  const client = String(body.client || ''), kind = String(body.kind || '');
+  if (!uuid.test(client) || !['quick', 'review'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  const begun = await db.rpc('feedback_mail_begin', { p_client: client, p_kind: kind });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = (begun.data || {}) as Record<string, any>;
+  if (b.error) return json(b, 200, origin);
+  const url = PORTAL() + '/feedback/?k=' + encodeURIComponent(String(b.key || ''));
+  const heading = String(b.subject || '').replace(/\s*[·|-]\s*ADspace\s*$/i, '').trim();
+  const html = layout({ heading, body: String(b.body || '') + '\n\n{invoices}', block: button({ label: String(b.button || ''), url }),
+    preheader: String(b.subject || '') });
+  const who = await sender('clients');
+  const msg: Record<string, unknown> = {
+    from: who.from, to: [String(b.to_email || '')], reply_to: who.reply_to,
+    subject: String(b.subject || ''), html, text: String(b.body || '') + '\n\n' + url
+  };
+  const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
+  const done = await db.rpc('feedback_mail_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
+  if (done.error) console.error('supplier-mail: feedback email not closed', done.error.message);
+  if (status !== 'sent') console.error('supplier-mail:', status, error);
+  return json(status === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name }
+    : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
 }

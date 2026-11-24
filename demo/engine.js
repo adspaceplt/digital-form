@@ -277,7 +277,7 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
-    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
     portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
@@ -3517,7 +3517,7 @@ function cardSlugFree(name, self, email) {
 
     health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
 
-    hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
+    hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12, feedback_quiet_months: 6,
 
     hiring_decision_days: 7,
 
@@ -3533,7 +3533,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
     work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
@@ -4199,7 +4199,7 @@ function cardSlugFree(name, self, email) {
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_decision_days' && (v < 1 || v > 30 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
-          (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
+          (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'feedback_quiet_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
           ((k === 'work_start' || k === 'work_end') && (v < 0 || v > 2345 || v % 1 || [0, 15, 30, 45].indexOf(v % 100) < 0)) ||
@@ -12741,6 +12741,39 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return fbOk({ id: nr.id, key: nr.access_key, kind: nr.kind, to_name: nr.sent_to_name, to_email: nr.sent_to_email, lang: rk2.lang || 'en',
           manager: nr.manager_name, created_at: nr.created_at });
       }
+      if (name === 'feedback_mail_done') {
+        if (['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return fbNo('bad-status');
+        var md = DB.feedback_requests.filter(function (r) { return r.id === args.p_id && r.sent_by === fme.id && r.mail_status === 'sending'; })[0];
+        if (!md) return fbNo('not-found');
+        md.mail_status = args.p_status; md.mail_provider = args.p_provider || null; md.mailed_at = args.p_status === 'sent' ? fbNow : null;
+        if (args.p_status === 'failed' && !md.closed_at) { md.closed_at = fbNow; md.closed_reason = 'withdrawn'; }
+        var mdc = DB.clients.filter(function (c) { return c.id === md.client_id; })[0] || {};
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: mdc.name || 'Client',
+          detail: fbKword(md.kind) + ({ sent: ' emailed to ', unknown: ' emailed, not confirmed, to ', failed: ' not emailed to ' })[args.p_status] + md.sent_to_email, created_at: fbNow });
+        return fbOk();
+      }
+      if (name === 'feedback_mail_begin') {
+        if (!opsAllowed('clients', 'work')) return fbNo('denied');
+        if (typeof sendOk === 'function' && !sendOk('email')) return fbNo('send-off');
+        if (Number(appSet('client_email_on', fbNow.slice(0, 10)) || 0) !== 1) return fbNo('email-off');
+        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind }).then(function (rr) {
+          var r = rr.data || {};
+          if (r.error) return { data: r, error: null };
+          var q = DB.feedback_requests.filter(function (x) { return x.id === r.id; })[0];
+          var k = (DB.client_contacts || []).filter(function (x) { return x.id === q.contact_id; })[0] || {};
+          var cl = DB.clients.filter(function (c) { return c.id === q.client_id; })[0] || {};
+          var who = String((k.salutation ? k.salutation + ' ' : '') + (k.name || '')).trim(), zh = k.lang === 'zh';
+          q.mail_status = 'sending'; persist();
+          return { data: Object.assign({}, r, zh ? {
+            subject: (q.kind === 'quick' ? '服务评分' : '绩效评估') + ' · ADspace',
+            body: '尊敬的' + who + '：\n\nADspace诚邀您对其为' + cl.name + '提供的服务作出评价，填写约需' + (q.kind === 'quick' ? '一分钟' : '三分钟') + '。\n\n此链接仅供' + cl.name + '使用。',
+            button: '请评价您的体验', lang: 'zh' } : {
+            subject: (q.kind === 'quick' ? 'Service rating' : 'Performance review') + ' · ADspace',
+            body: 'Dear ' + who + ',\n\nADspace would be grateful for your feedback on the services provided to ' + cl.name + '. The form takes about ' +
+              (q.kind === 'quick' ? 'one minute' : 'three minutes') + ' to complete.\n\nThis link is intended for ' + cl.name + ' only.',
+            button: 'Rate your experience', lang: 'en' }), error: null };
+        });
+      }
       if (name === 'feedback_withdraw') {
         var wr = DB.feedback_requests.filter(function (r) { return r.id === args.p_id; })[0];
         if (!wr || !scopeSeen(wr.client_id, 'work')) return fbNo('not-found');
@@ -19823,6 +19856,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
+            });
+          });
+        }
+
+        if (name === 'supplier-mail' && opts && opts.body && opts.body.feedback === true) {
+          var fmb = opts.body;
+          window.__fbMailAsked = { client: fmb.client, kind: fmb.kind };
+          if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind }).then(function (r) {
+            var b = r.data || {};
+            if (b.error) return { data: b, error: null };
+            window.__fbMailSent = b;
+            var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
+            return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
+              return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
             });
           });
         }

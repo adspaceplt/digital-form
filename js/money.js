@@ -35,6 +35,8 @@
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30, hiring_invite_days: 3, hiring_reply_days: 3, hiring_decision_days: 7, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1,
     /* A creator's payment, working days after the post (2026-11-09). */
     creator_pay_days_myr: 10, creator_pay_days_other: 21,
+    /* Client feedback: months since a client was last asked (2026-11-24). */
+    feedback_quiet_months: 6,
     /* The month Analytics counts its history from, YYYYMM (2026-10-25). */
     analytics_from: 202609,
     /* When an Analytics figure reads better or worse, and when churn is an
