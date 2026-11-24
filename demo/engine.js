@@ -359,6 +359,7 @@
     ops_duplicate_task: 'p_idem p_task p_opts',
     ops_edit_checklist_item: 'p_item p_label',
     ops_edit_comment: 'p_body p_event',
+    client_engagement_items: 'p_client',
     ops_engagement_counts: 'p_engagements',
     ops_engagement_json: 'p_engagement',
     ops_engagement_log: 'p_detail p_engagement p_type',
@@ -1737,7 +1738,7 @@
 
             if (meEm && 'system' in pending && Boolean(pending.system) !== Boolean(r.system)) blocked = 'system-account';
             if (meEm && r.system && String(r.email || '').toLowerCase() !== meEm &&
-                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['email']].some(function (k) {
+                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['removed_at'], ['erased_at'], ['email']].some(function (k) {
                   k = k[0]; if (!(k in pending)) return false;
                   var a1 = pending[k] == null ? null : (k === 'email' ? String(pending[k]).toLowerCase() : k === 'access_until_time' ? t5(pending[k]) : pending[k]);
                   var a0 = r[k] == null ? null : (k === 'email' ? String(r[k]).toLowerCase() : k === 'access_until_time' ? t5(r[k]) : r[k]);
@@ -7747,6 +7748,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return opsEngJson(es.id);
     }
 
+    if (name === 'client_engagement_items') {
+      var ceMe = opsMe();
+      if (!ceMe || !args.p_client) return { error: 'denied' };
+      if (!opsAllowed('ops', 'view')) return { ok: true, tasks: null, visits: null };
+      var ceTasks = DB.ops_tasks.filter(function (t) { return t.client_id === args.p_client && !t.archived_at && scopeOk('ops_tasks', t, 'view'); })
+        .map(function (t) {
+          var st = opsStage(t.workflow_id, t.stage_key) || {};
+          var en = DB.ops_engagements.filter(function (e) { return e.id === t.engagement_id; })[0];
+          return { id: t.id, serial: opsSerial(t.task_no), title: opsTitle(t), stage: st.label || t.stage_key, stage_group: st.stage_group || null,
+            period: en ? en.period : null, made: new Date(Date.parse(t.created_at || now) + 8 * 36e5).toISOString().slice(0, 10),
+            done: !!t.completed_at, cancelled: !!t.cancelled_at, late: !t.completed_at && !t.cancelled_at && opsTaskLate(t),
+            _k: [(t.completed_at || t.cancelled_at) ? 1 : 0, t.current_final_due_at || '9999', t.task_no] };
+        }).sort(function (a, b) { return a._k[0] - b._k[0] || String(a._k[1]).localeCompare(String(b._k[1])) || a._k[2] - b._k[2]; })
+        .map(function (x) { delete x._k; return x; });
+      var ceCl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+      var OSTc = DB.__ost || { trips: [], stops: [] };
+      var ceVisits = ceCl && scopeOk('clients', ceCl, 'view') ? OSTc.stops.filter(function (x) { return x.client_id === args.p_client; }).map(function (x) {
+        var t = OSTc.trips.filter(function (y) { return y.id === x.trip_id; })[0] || {};
+        var dr = DB.team_members.filter(function (m) { return m.id === t.driver_id; })[0];
+        return { trip: t.id, ref: t.ref || null, day: new Date(Date.parse(x.arrived_at) + 8 * 36e5).toISOString().slice(0, 10), purpose: t.purpose,
+          driver: dr ? dr.name : null, open: !x.left_at, mine: t.driver_id === ceMe.id || (t.companions || []).indexOf(ceMe.id) > -1, _at: x.arrived_at };
+      }).sort(function (a, b) { return String(b._at).localeCompare(String(a._at)); }).map(function (x) { delete x._at; return x; }) : null;
+      return { ok: true, tasks: ceTasks, visits: ceVisits };
+    }
+
     if (name === 'ops_engagement_counts') {
       if (!opsAllowed('ops', 'view')) return [];
       var ecIds = args.p_engagements || [];
@@ -10323,10 +10349,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var oRef = function (t) {
         if (t.ref) return t.ref;
-        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(0, 7).replace('-', '');
+        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = 'OS/' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
         return t.ref;
       };
       var oJson = function (t) {
@@ -11221,7 +11247,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_engagement_items$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
