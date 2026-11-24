@@ -41,7 +41,7 @@
     /* What goes out by email from a screen: an invoice and a reminder
        (2026-11-04), a candidate's interview invitation and an email of
        one's own (2026-11-19, the user: Invite drawn as words alone). */
-    [/^(Send (invoice|reminders?|email)|Invite|Email (the )?candidate)$/, 'mail'],
+    [/^(Send (invoice|reminders?|email)|Invite|Email (the )?candidate|Request feedback)$/, 'mail'],
     /* A code sent by email (My records' lock, 2026-11-22), beside the
        field it fills, as Use passkey is. */
     [/^(Send code|Email a code)$/, 'mail', false, true],

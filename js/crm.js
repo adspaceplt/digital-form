@@ -1366,9 +1366,10 @@
        requested feedback (via email) to main pic"): a client, never a lead,
        at Clients Work, where this colleague may send email by hand; the
        database refuses the same (`feedback_mail_begin`). */
-    $('crmFeedback').hidden = !(bandKey(c.stage) !== 'clients.leads' && canWork && mayPart('clients', 'work') &&
-      (!bridge.may || bridge.may('send.email')));
-    if (!$('crmFeedback').hidden) $('crmClientMenuWrap').hidden = false;
+    state.fbMay = bandKey(c.stage) !== 'clients.leads' && canWork && mayPart('clients', 'work') &&
+      (!bridge.may || bridge.may('send.email'));
+    paintFbAct();
+    if (state.fbMay) $('crmClientMenuWrap').hidden = false;
     /* Introduce representative (2026-11-11): a lead whose Sales by is set is
        told on WhatsApp who of the business development team took their
        enquiry, where that template is on; wa_compose_prepare refuses it
@@ -1452,12 +1453,18 @@
      each part keeping its own heading and its own address: `tab=billing`
      opens Account on Billing, so every link written before still lands.
      The Activity record has no tab: it opens from the rail's Recent
-     activity (View all), and the strip then marks none. */
-  var TABS = { overview: ['overview'], calls: ['calls'], engagements: ['engagements', 'checklists'],
-    services: ['services', 'documents'], brand: ['brand'], feedback: ['feedback'], account: ['contacts', 'billing'], activity: ['activity'] };
+     activity (View all), and the strip then marks none. Client feedback
+     made a seventh; Interactions holds Calls and visits and Feedback, so
+     the strip stays at six (2026-11-24; `tab=calls` and `tab=feedback`
+     open it on their part). */
+  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], engagements: ['engagements', 'checklists'],
+    services: ['services', 'documents'], brand: ['brand'], account: ['contacts', 'billing'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
-  var PANES = Object.keys(GROUP_OF).concat(['account']);
+  /* Every part's address and every tab's own (`tab=account`, `tab=interactions`). */
+  var PANES = Object.keys(GROUP_OF).concat(Object.keys(TABS).filter(function (g) { return !GROUP_OF[g]; }));
+  /* The tab a pane stands in. */
+  function groupOf(k) { return TABS[k] ? k : GROUP_OF[k]; }
   var PART_OF = { calls: 'clients.calls', contacts: 'clients.contacts', billing: 'clients.billing',
     checklists: 'clients.checklists' };
   /* A pane holding several parts is drawn where any of them is readable
@@ -1504,7 +1511,7 @@
       return;
     }
     if (PANES.indexOf(key) < 0) key = 'overview';
-    var group = TABS[key] ? key : GROUP_OF[key];
+    var group = groupOf(key);
     var parts = TABS[group].filter(partOk);
     /* A part not readable falls to its tab's first readable part; a tab
        with none falls to Overview. Engagements' own part waits for its
@@ -1514,7 +1521,7 @@
     pane = key;
     /* On its own pane the act is the pane's head's: offered once on a screen. */
     var lc = $('crmLogCall');
-    if (lc) lc.classList.toggle('is-here', group === 'calls');
+    if (lc) lc.classList.toggle('is-here', parts.indexOf('calls') > -1);
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === group;
       b.classList.toggle('is-on', on);
@@ -1527,9 +1534,10 @@
     if (group === 'overview') paintSummary();
     if (group === 'engagements' && visit) loadEngage(true);
     /* A visit reads the calls again: a colleague may have logged one since. */
-    if (group === 'calls' && visit) loadTouches();
+    if (parts.indexOf('calls') > -1 && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
-    if (group === 'feedback') loadFeedback();
+    if (parts.indexOf('feedback') > -1) loadFeedback();
+    paintFbAct();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
     if (parts.indexOf('billing') > -1 && visit && state.client && !state.entLoading) { state.entFor = null; loadEntities(); }
@@ -2814,7 +2822,7 @@
         if (r.error) return FB_SAID['not-sent'];
         if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
         msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
-        if (pane === 'feedback') loadFeedback();
+        if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback();
         return '';
       }).catch(function () { return FB_SAID['not-sent']; });
     });
@@ -2839,6 +2847,14 @@
     return s.max === 10 && s.answers && s.answers[0] && s.answers[0].key === 'nps'
       ? (s.band === 'high' ? 'Promoter' : s.band === 'mid' ? 'Passive' : 'Detractor') + ' · ' + s.score
       : s.score + ' of ' + s.max;
+  }
+  /* Request feedback is the Feedback part's head act while that part is
+     shown (the user approved the mockup, 2026-11-24), else the record's ⋯:
+     offered once on a screen, as Log call is. */
+  function paintFbAct() {
+    var here = TABS[groupOf(pane)].indexOf('feedback') > -1;
+    if ($('crmFbAsk')) $('crmFbAsk').hidden = !state.fbMay;
+    if ($('crmFeedback')) $('crmFeedback').hidden = !state.fbMay || here;
   }
   function loadFeedback() {
     var c = state.client, box = $('crmFbBox');
@@ -6015,6 +6031,7 @@
   $('crmAddTouch').addEventListener('click', function () { openTouch(null); });
   /* The head's Log call opens the same sheet, the record staying on its pane. */
   $('crmLogCall').addEventListener('click', function () { openTouch(null); });
+  if ($('crmFbAsk')) $('crmFbAsk').addEventListener('click', function () { if (state.client) askFeedback(state.client); });
   $('tcCancel').addEventListener('click', shutTouch);
 
   $('tcSave').addEventListener('click', function () {
