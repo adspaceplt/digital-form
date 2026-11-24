@@ -346,10 +346,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   options (1 graphic and 3 reels, or 4 reels; sent as `mix`, a string; the
   user, 2026-10-27); the user, 2026-10-14), Customise (languages: each
   content piece is in one language, the month's content pieces divided
-  across those chosen at no charge, Make every content piece bilingual the
-  translation rate a content piece, each additional language; 2026-10-27; budget,
-  commitment; with a plan, Content production lists only the formats its
-  additional contents do not),
+  across those chosen at no charge; translation is the team's to add in
+  Build quote, never offered on /quote/, 2026-11-24; budget, commitment of
+  6, 12 or 24 months alone, a segment, 3 and 18 Build quote's
+  (`quote_web_terms`); with a plan, Content production lists only the
+  formats its additional contents do not; Choose your files, the card's
+  File Release add-ons (Working files, Raw footage) as steppers wherever
+  content is made, every other add-on and an outstation fee Build quote's;
+  verification for the platforms chosen),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
@@ -381,8 +385,26 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`contact.brand`, what the visitor reads back), five a contact a day
   counted under a lock on each, only the selection keys the price reads
   kept, the number read as `wa_number` reads it (`quote_website_number`;
-  `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). No rate is
-  shown before the quotation (`quote_catalogue`, anon, holds none). A
+  `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). The price
+  follows every choice (QUOTE WEBSITE LIVE PRICES, the user, 2026-11-24,
+  the boards QuotePhone and QuoteDesk): `quote_catalogue` (anon) carries the
+  live version's rates (each plan's fee and inclusions, each platform's,
+  content's, verification's with its platform, KOC package's, each
+  budget's cost `ad_costs`, the File Release add-ons, the website's terms
+  with their percentages, SST today), each choice reading its own (a plan
+  `Plan B · RM 2,830 per month` over `4 content pieces`, `1 graphic, 3 reels
+  or 4 reels`, its platforms, its ad budget or No advertising, and once
+  chosen its best_for and inclusions a tick each; a platform Included or
+  `+RM n per month` with its ink mark, `ADspaceIcons.mark`, Meta as
+  Facebook and Instagram, one platform; an extra content piece at the
+  plan's rate); the summary is `quote_website_preview(p_sel)` (anon, writes
+  nothing, covered with the page), priced as `quotation_make` prices a
+  website quotation, one request a selection: Per month and One-time lines,
+  ADspaceMoney's totals, the advertising budget Billed separately, beside
+  the steps at a desk (sticky) and under them on a phone, its monthly
+  figure in the foot. What a website selection may hold is
+  `quote_website_sel`, one copy for the preview and the create (`bad-term`,
+  `bad-once`). A
   quotation holds at least one priced line: items quoted on request alone
   (a KOL campaign, a custom creator list) are refused on the page before
   the details are asked and by `quotation_make` (`nothing-priced`, no lead

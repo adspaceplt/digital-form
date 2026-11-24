@@ -97,5 +97,25 @@
   var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
                     scheduled: 4, posted: 5, completed: 6 };
   function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
-  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; } };
+  /* A platform's own mark, single colour in ink (the user, 2026-11-24: no
+     brand colour fills), where a prospect chooses platforms (/quote/): the
+     mark in currentColor, what is cut out of it in the card's ground
+     (`.ic-cut`). Meta is Facebook and Instagram together, one platform on
+     the Rate Card. */
+  var MARK = {
+    facebook: '<circle cx="12" cy="12" r="11" fill="currentColor"/><path class="ic-cut" d="M13.4 23v-8.3h2.8l.4-3.3h-3.2V9.3c0-.9.3-1.6 1.6-1.6h1.7V4.8c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.2v3.3H10V23z"/>',
+    instagram: '<rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.6" cy="6.4" r="1.2" fill="currentColor"/>',
+    tiktok: '<path fill="currentColor" d="M16.6 2h-3.4v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.1a6.3 6.3 0 1 0 5.4 6.3V8.6a8 8 0 0 0 4.6 1.5V6.7a4.7 4.7 0 0 1-4.6-4.7z"/>',
+    rednote: '<rect x="1" y="1" width="22" height="22" rx="6" fill="currentColor"/><text class="ic-cut" x="12" y="14.6" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="6.4" font-weight="700" text-anchor="middle">小红书</text>',
+    linkedin: '<rect x="1" y="1" width="22" height="22" rx="4" fill="currentColor"/><path class="ic-cut" d="M5.5 9.5h2.8V18H5.5zM6.9 5.3a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zM10 9.5h2.7v1.2c.4-.7 1.3-1.4 2.7-1.4 2.9 0 3.4 1.9 3.4 4.3V18H16v-3.9c0-.9 0-2.2-1.3-2.2s-1.6 1-1.6 2.1v4H10z"/>'
+  };
+  var MARKS_OF = { meta: ['facebook', 'instagram'], facebook: ['facebook'], instagram: ['instagram'], tiktok: ['tiktok'],
+    rednote: ['rednote'], xhs: ['rednote'], linkedin: ['linkedin'] };
+  function mark(key) {
+    var k = String(key || '').toLowerCase().replace(/[^a-z]/g, '');
+    return (MARKS_OF[k] || []).map(function (m) {
+      return '<svg class="ic-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + MARK[m] + '</svg>';
+    }).join('');
+  }
+  window.ADspaceIcons = { svg: svg, platform: platform, mark: mark, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; } };
 })();
