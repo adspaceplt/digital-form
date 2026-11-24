@@ -60,11 +60,11 @@
      Where every line of more than a month runs the same term, those lines are
      priced per month, because that is how they are invoiced and how the client
      thinks about them: `each` is one month's invoice. A line of one month
-     beside them is a one-off item (`once`), with its own SST, never folding
+     beside them is a one-time item (`once`), with its own SST, never folding
      the monthly figures into one whole (the user, 2026-10-15). Lines of mixed
      terms have no monthly figure: every line is its whole amount, in `each`.
      The subtotal, SST and total are the whole commitment: the term's months
-     and the one-off items. */
+     and the one-time items. */
   function isMonthly(l, term) { return term > 0 && Math.max(1, Number(l.tenure || 1)) === term; }
   /* A letter whose every line came from one quotation is priced as that
      quotation was (audit F, 2026-10-17): the term percentage taken once on
@@ -78,7 +78,7 @@
     if (!lines.every(function (l) { return l.quotation_id === q && Number(l.quote_sst) === Number(sst); })) return null;
     /* A snapshot keeping the quotation's term (2026-10-17, the review's
        finding 7) is priced as quote_adjust totals it: a line with its term
-       ticked is monthly whatever its months, one with none one-off. One
+       ticked is monthly whatever its months, one with none one-time. One
        issued before keeps the reading it was issued on. */
     var term = lines[0].quote_term == null || lines[0].quote_term === '' ? null : Math.max(1, Number(lines[0].quote_term));
     if (term != null) {
@@ -100,7 +100,7 @@
   /* A quoted letter priced as quote_adjust totals it (2026-10-17): where
      every monthly line runs the quotation's term, by the month, its SST
      rounded once; else the whole span (each line's amount × its months)
-     with the percentage and SST taken once on it; one-off lines apart. */
+     with the percentage and SST taken once on it; one-time lines apart. */
   function quotePrice(lines, qm, taxOn) {
     var sst = taxOn === false ? 0 : qm.sst;
     /* Grouped as quote_totals groups them (2026-11-24): a line's tax code's
@@ -156,7 +156,7 @@
     /* Whole amounts: one subtotal, the term's rows on the span, one SST
        figure, the total incl. SST. The quotation's own month and term stay
        on the letter (2026-10-18): its Monthly incl. SST, as quote_totals
-       gives it, the one-off items in its first month (the user,
+       gives it, the one-time items in its first month (the user,
        2026-10-18), and its term for the commitment wording. */
     if (month) { out.plan = qm.term; out.planMonth = cents(msub + off + mtax + once + otax); out.planOnce = once > 0; }
     /* The term's total is its parts added (TERM TOTAL FROM ITS PARTS,
@@ -1231,7 +1231,7 @@
                       : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(shownRate, doc.market),
               cols.rate, y, 10);
         right(MON.money2(shownAmt, doc.market), cols.amt, y, 10);
-        var amtNote = isMonthly(l, price.term) ? 'per month' : price.term ? 'one-off' : (n > 1 ? n + ' months' : '');
+        var amtNote = isMonthly(l, price.term) ? 'per month' : price.term ? 'one-time' : (n > 1 ? n + ' months' : '');
         /* Where the lines are on more than one rate, each amount says its
            own under it, (+8% SST) or (0% SST) (the user, 2026-10-23: under
            the description it read as part of the item). */
@@ -1253,7 +1253,7 @@
          invoiced: a month at a time where the services run by the month.
          The whole commitment is a term below, in words, so it is disclosed
          without being the number in bold. */
-      /* The one-off summary is five rows and a rule, about 85pt: kept whole
+      /* The one-time summary is five rows and a rule, about 85pt: kept whole
          on its page (audit I11, 2026-10-15). */
       var qd = price.quote, qadj = termRows(qd).length;
       need((price.term && price.once > 0 ? 90 : 66) + qadj * 15 + (price.plan ? 15 : 0));
@@ -1271,7 +1271,7 @@
       /* One summary, one figure to pay first (the user, 2026-10-15: "just
          provide first month due total at the summary table part instead of
          spliting it"; "use Monthly incl. SST" as the quotation does). The
-         one-off items are billed with the first month, so their subtotal
+         one-time items are billed with the first month, so their subtotal
          sits beside the month's and one SST line covers both; the first
          month due is the figure in bold, then what each later month is. */
       var sst = Number(price.tax) > 0;
@@ -1298,7 +1298,7 @@
       if (oneOff) {
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
         termRow();
-        trow('One-off subtotal', MON.money2(price.once, doc.market));
+        trow('One-time subtotal', MON.money2(price.once, doc.market));
         trow(taxWord, MON.money2(cents(Number(price.eachTax) + Number(price.onceTax)), doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow('First month due', MON.money2(firstDue, doc.market), 'strong');
@@ -1326,14 +1326,14 @@
       if (price.term) {
         /* The term is stated once (the user, 2026-10-15). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months, a total of ' +
-                   MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ', one-off items included' : '') + '.');
+                   MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ', one-time items included' : '') + '.');
       } else if (price.plan) {
         /* A quoted letter whose lines run months of their own: the
            quotation's term, and the total over the months stated for each
            line, as the quotation says it (2026-10-18). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.plan + ' months, a total of ' +
                    MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
-                   (price.planOnce ? ', one-off items included' : '') + '.');
+                   (price.planOnce ? ', one-time items included' : '') + '.');
       }
       /* A letter whose terms carry its validity (`terms_own`) prints them
          as typed; one issued before prints the validity it was issued with. */

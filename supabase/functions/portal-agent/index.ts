@@ -160,7 +160,7 @@ const TOOLS = [
     { client_id: opt }),
   tool('client_billing', 'A client\'s billing: its registered company name, the currency it is billed in, whether SST applies, and whether its billing details are complete or which are missing. Never its numbers or addresses.',
     { client_id: str }),
-  tool('list_quotations', 'Quotations, newest first, of one client or all: reference, where each stands (Valid until, Awaiting review, Ready to proceed, Signed, In review, Accepted, Expired, Revised, Cancelled, Declined, Withdrawn), and the monthly and one-off totals incl. SST.',
+  tool('list_quotations', 'Quotations, newest first, of one client or all: reference, where each stands (Valid until, Awaiting review, Ready to proceed, Signed, In review, Accepted, Expired, Revised, Cancelled, Declined, Withdrawn), and the monthly and one-time totals incl. SST.',
     { client_id: opt }),
   tool('creator_payments', 'Creator Campaigns: Payments. Creators\' payment details to review, bookings ready to bill, bills in draft, bills awaiting payment (late where past their pay-by day) and bills paid since paid_from (YYYY-MM-DD, or null for the start of last month). Amounts only where the colleague may see them.',
     { paid_from: optDay }),

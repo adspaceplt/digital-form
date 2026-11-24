@@ -6333,7 +6333,7 @@
       then(catalog);
     }, function () { catalog = []; then(catalog); });
   }
-  /* qty × the billed rate × months. A one-off line has one month. The billed
+  /* qty × the billed rate × months. A one-time line has one month. The billed
      rate is the catalogue rate carrying its term adjustment, worked out once
      in money.js so this, the letter and the client's page cannot disagree. */
   function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust, l.term_pct); }
@@ -6769,7 +6769,7 @@
     }
     var adj = MON.termAdj(months, svPctValue());
     /* A term adjusts a monthly line alone: a line whose unit is not by the
-       month (One-off) takes none, as a quotation keeps it at 0% (2026-10-22,
+       month (One-time) takes none, as a quotation keeps it at 0% (2026-10-22,
        SL-7). A custom line with no unit keeps the choice. */
     var pk = pickById($('svPick').value);
     var unit = pk ? pk.unit : ($('svPick').value === 'custom' && editingService ? editingService.unit : '');
@@ -7537,7 +7537,7 @@
             '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
           /* A line of more than a month reads its month, as the letter's
              total does, never its whole term beside a monthly foot
-             (2026-10-27, CLI-14); a one-off item its amount. */
+             (2026-10-27, CLI-14); a one-time item its amount. */
           '<span class="lpickamt">' + esc(Number(l.tenure || 1) > 1
             ? MON.money2(MON.cents ? MON.cents(Number(l.qty || 0) * rateOf(l)) : Number(l.qty || 0) * rateOf(l), MON.curOf(c)) + ' / month'
             : MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
@@ -7760,7 +7760,7 @@
   }
 
   /* The letter's own summary rows for the lines ticked: the month's
-     subtotal, one-off items, SST, what is due first, each month and the
+     subtotal, one-time items, SST, what is due first, each month and the
      whole term, the term's total the one in weight. */
   function pickTotals(rows, price, quoted) {
     var box = $('pickTotals');
@@ -7773,7 +7773,7 @@
     var once = Number(price.once) > 0, out = [];
     if (price.term) {
       out.push(['Monthly subtotal', m(price.each)]);
-      if (once) out.push(['One-off subtotal', m(price.once)]);
+      if (once) out.push(['One-time subtotal', m(price.once)]);
       out.push([word, on ? m(Number(price.eachTax) + Number(price.onceTax || 0)) : '']);
       if (once) out.push(['First month due', m(Number(price.eachTotal) + Number(price.onceTotal || 0))]);
       out.push(['Monthly' + incl, m(price.eachTotal)]);

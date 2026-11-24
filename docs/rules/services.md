@@ -99,7 +99,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `issue_letter`'s quotation branch call too, never a copy of their own
   (2026-10-18), prices every quotation from the live
   version (`quote_card`), never the draft and never the page, on 3, 6,
-  12, 18 or 24 months (`bad-term`; 1 for one-off items alone; the user,
+  12, 18 or 24 months (`bad-term`; 1 for one-time items alone; the user,
   2026-10-14; the pages' one list `ADspaceMoney.QUOTE_TERMS`, held equal to
   `quote_price` by `tests/sql.js`; an extra content's line found by its
   `spec.kind`, never its slug), a plan included: a plan, its platforms (a dearer one inside the
@@ -109,7 +109,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   after the first), the advertising budget past the plan's cover (Meta
   advertising for the budget asked as one line, beside a plan Additional
   advertising budget coverage from its cover to the budget; past the largest,
-  on request), one-off items
+  on request), one-time items
   apart; each monthly line takes the term percentage of its own months'
   band on its own subtotal, never more months than the term (`over-term`;
   `quote_line_pcts`, `totals.term_rows` a row a percentage beside the
@@ -171,11 +171,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
-  languages, budget and term, one-off items as steppers two across (content,
+  languages, budget and term, one-time items as steppers two across (content,
   verifications, KOC packages, then every add-on with a rate under its
   card group: an outstation fee, a shoot, revisions, files; 2026-11-07; each
-  one-off line carrying its service's description, a point a line, from the
-  live version, `2026-11-07-one-off-lines-carry-their-description.sql`; a
+  one-time line carrying its service's description, a point a line, from the
+  live version, `2026-11-07-one-time-lines-carry-their-description.sql`; a
   line's Qty typed sets its stepper, never an edit beside it, an older typed
   count moved into the stepper as the sheet opens; Create and Preview PDF
   rest from the first change until it is priced), the
@@ -200,7 +200,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   puts it back; 2026-11-13), which the PDF and /quote/ print; its name likewise (Rename under it, the edit's `name`, 1 to 120, the card's kept as `list_label`, Use Rate Card putting both back), the quotation a title of its own (`#qbHeading`, `p_sel.title`, 120, kept as `totals.title`, printed under Quotation on the PDF and over /quote/'s reference) and its lines in the team's order (Move up and Move down, `p_sel.order` by the lines' keys, `quote_order`, the figures never moved); a line changed from the Rate Card (name, description or rate) reads Changed (2026-11-16, the user: "too tightly controlled"). A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
-  `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
+  `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-time,
   `2026-11-07-quotation-fixes.sql`; the user, 2026-11-06, option A): no row
   of its own on the PDF or /quote/, listed under the plan's inclusions
   (`ADspaceMoney.planFold`, its count always stated, one singular:
@@ -231,12 +231,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   inclusions under its name a point each as the service lists them (a
   bullet, the words hung under the first; 2026-11-04; /quote/'s lines and
   Build quote's alike, `ul.incl`), each
-  amount in its currency with per month, one-off or its months under it,
+  amount in its currency with per month, one-time or its months under it,
   the totals at the right ending at the one bold figure, TERMS: validity,
   SST, budget billed separately, the whole term's commitment, binding once
   accepted and signed with the Service Terms, the rate card line); and
   Acceptance of quotation on a page of its own (the figures agreed, every
-  bold total among them, the monthly and the one-off alike, Issued
+  bold total among them, the monthly and the one-time alike, Issued
   for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
   client's block to sign and stamp, Name, Designation, Date; unsigned and
   not a preview, the box a PDF signature field (draw, type or sign with a
@@ -267,7 +267,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   column in the order a quote is built, a numbered step each (`.qb-num`):
   1 Plan (Without ads / With ads, the plan cards, Content, Advertising
   budget managed per month), 2 Platforms and content (platforms, the extra
-  content steppers, languages), 3 Extras (Add one-off item and Add
+  content steppers, languages), 3 Extras (Add one-time item and Add
   advertising budget, each opening its rows only when used), 4 Term (Term,
   Date, Payment terms, Valid for); then one fold, More details (`#qbMore`:
   Title, Rate Card version, Make every content piece bilingual, Custom
@@ -487,13 +487,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   and a custom KOC list are quoted on request.
 - A quotation's sections (2026-11-12, `2026-11-12-quotation-sections.sql`,
   `2026-11-12-quotations-advanced.sql`): one made from then on (`totals.layout`
-  2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
+  2) prints Monthly Service Fee, One-time Items and Advertising Budget, each
   closing on its own total, the term's total a sentence in TERMS, the term
   row a discount or a surcharge (`ADspaceMoney.termLine`, in Chinese on
   /quote/'s 中文, a row whose lines run different months naming none); an older one redraws
   as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
   subject to ADspace's approval, `payLine`) and Include advertising budget (a
-  row a platform, Monthly or One-off; the client's money, kept in the totals,
+  row a platform, Monthly or One-time; the client's money, kept in the totals,
   never a service line or revenue; `quote_extras`; in an S$ quotation the
   Singapore ad account's own S$ figure, typed, never a ringgit tier turned
   over: its row opens empty and Create asks Enter each platform's budget in
@@ -503,15 +503,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   lines (a client's confirmed lines, each `renews` its line, confirmed for the
   new term on approval and never added twice); Bill to (a billing entity,
   held as printed, `quote_client_extras`, the cover's To); and the quotation's
-  own terms, ten at most. A Rate Card one-off item may be quoted Monthly (a
-  number in its Months bills it monthly, empty or 0 keeps it one-off, as a
+  own terms, ten at most. A Rate Card one-time item may be quoted Monthly (a
+  number in its Months bills it monthly, empty or 0 keeps it one-time, as a
   custom line's and an advertising row's Months read alike, no Frequency
   selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, its
   percentage its own months' band). Every
   Months runs 1 to 36 and no more than the term; a term's percentage is `quote_term_pct`'s alone; a
   renewal starts the day after its line's period ends and every period's
   last day is `ADspaceClock.periodEnd`. On /quote/ a sectioned quotation
-  keeps the monthly and one-off totals apart, lists the advertising budget a
+  keeps the monthly and one-time totals apart, lists the advertising budget a
   row a platform with its total, says its payment terms and own terms under
   it, and the signing page agrees every bold total; a Bill to quotation's
   signing opens on that company. The

@@ -295,7 +295,7 @@
       });
       var under = [];
       if (quiet) { if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) under.push(l.months + (Number(l.months) === 1 ? ' month' : ' months')); }
-      else if (l.basis === 'once') under.push('one-off');
+      else if (l.basis === 'once') under.push('one-time');
       else if (l.basis === 'month') under.push(l.months && Number(l.months) !== Number(t.term) ? l.months + (Number(l.months) === 1 ? ' month' : ' months') : 'per month');
       var tag = taxed.tag(l);
       if (tag) under.push(tag);
@@ -324,7 +324,7 @@
     };
     if (t.layout === 2) {
       /* Three sections, each closing on its own total (the user,
-         2026-11-12): the monthly service fee, one-off items and the
+         2026-11-12): the monthly service fee, one-time items and the
          advertising budget, never added into one figure; the term's total
          a sentence in TERMS. */
       var TW2 = 255, tx2 = R - TW2;
@@ -362,11 +362,11 @@
         y -= 20;
       }
       if (t.once && onceL.length) {
-        section('One-off Items');
+        section('One-time Items');
         headRow(); drawLines(onceL, true, 14 + 3 * 17 + 12 + 24);
         y -= 6; rule(y); y -= 8;
-        var oWord = sstOn ? 'One-off incl. SST' : 'One-off total';
-        sums([[sstOn ? 'One-off excl. SST' : 'Subtotal', amt(t.once.subtotal, q)], [taxed.word, amt(t.once.sst, q)], [oWord, amt(t.once.incl, q), 1]]);
+        var oWord = sstOn ? 'One-time incl. SST' : 'One-time total';
+        sums([[sstOn ? 'One-time excl. SST' : 'Subtotal', amt(t.once.subtotal, q)], [taxed.word, amt(t.once.sst, q)], [oWord, amt(t.once.incl, q), 1]]);
         nearOf(oWord, Number(t.once.incl), bolds > 1);
         agreed.push([oWord, amt(t.once.incl, q)]);
         y -= 20;
@@ -386,7 +386,7 @@
           if (room(24)) adHead();
           y -= 18;
           text(MONY.adWord(r.platform), M, y + 4, TB, reg);
-          text(r.freq === 'once' ? 'One-off' : 'Monthly', xs.f, y + 4, TB);
+          text(r.freq === 'once' ? 'One-time' : 'Monthly', xs.f, y + 4, TB);
           right(amt(r.budget, q), xs.b, y + 4, TB);
           right(r.freq === 'once' ? '—' : String(r.months), xs.m, y + 4, TB, book, r.freq === 'once' ? mute : ink);
           right(amt(r.amount, q), R, y + 4, TB);
@@ -457,10 +457,10 @@
 
     /* The totals: ADspaceMoney.quoteRows, one copy (QT-4), named as the
        Letter of Offer names them: where a monthly line runs months of its
-       own the month's figures are the first month's, the one-off items in
+       own the month's figures are the first month's, the one-time items in
        it (the user, 2026-10-18). */
-    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
-      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
+    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-time subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
+      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-time incl. SST' : 'One-time total',
       term: window.ADspaceMoney.termLine(t.term, t.term_pct) };
     var tot = window.ADspaceMoney.quoteRows(t, q.lines, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], amt(x[1], q), x[2]]; });
     var TW = 255, tx = R - TW;
@@ -473,8 +473,8 @@
     });
     /* A Singapore client billed in RM reads the figure in S$ under it, at
        the rate in force on the day of issue (2026-10-22). */
-    /* Every bold total is agreed, the monthly fee and the one-off total
-       alike (2026-11-07: a plan with an outstation fee signed on the one-off
+    /* Every bold total is agreed, the monthly fee and the one-time total
+       alike (2026-11-07: a plan with an outstation fee signed on the one-time
        figure alone), each with its S$ beside it where billed in RM. */
     var bold = tot.filter(function (r) { return r[2]; });
     bold.forEach(function (b) {
@@ -489,7 +489,7 @@
     var days = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
     var notes = ['This quotation is valid for ' + both(days) + ' days from its date of issue, until ' + longDay(q.valid_until) + '.'];
     var holds = [];
-    if (own && t.once) holds.push('the one-off items');
+    if (own && t.once) holds.push('the one-time items');
     if (sstOn) holds.push(/\d/.test(taxed.word) ? taxed.word.replace(/^SST /, 'SST at ') : 'SST');
     if (t.month && holds.length) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' includes ' + holds.join(' and ') + '.');
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
@@ -502,7 +502,7 @@
     }
     if (t.month) {
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
-        ' is ' + amt(t.commitment, q) + incl + (t.once ? ', one-off items included.' : '.'));
+        ' is ' + amt(t.commitment, q) + incl + (t.once ? ', one-time items included.' : '.'));
     }
     notes.push('This quotation becomes binding once accepted and signed on its acceptance page.' +
       (termsAt('') ? ' Together with the ' + termsAt('') + ', it forms the contract between the parties.' : ''));
