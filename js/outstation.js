@@ -268,11 +268,12 @@
   }
 
   /* The route, office to each stop and back, as screen 2 draws it. */
+  /* The client sites alone (the user, 2026-11-24: "Check in out only
+     needs to be on client site no need from Office"): each stop from its
+     check-in to its check-out. The office stands only behind the road
+     distance (Settings' pin), never as a stop. */
   function routeHtml(trip) {
-    var org = window.ADSPACE_ORG || {};
-    var office = String(org.address || '').split('\n').slice(0, 2).join(', ');
-    var rows = '<li class="ost-stop is-office"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><b>Office</b>' +
-      '<small>' + esc(office) + '</small></span><span class="ost-time">' + esc(C.clock(trip.started_at)) + '</span></li>';
+    var rows = '';
     (trip.stops || []).forEach(function (s) {
       var here = !s.left_at && trip.state === 'open';
       var facts = ['Within ' + Math.round(Number(s.accuracy_m)) + ' m', plural((s.photos || []).length, 'photo', 'photos'),
@@ -283,14 +284,9 @@
         (s.address ? '<small>' + esc(s.address) + (s.zone ? ' · ' + esc(ZONE[s.zone]) : '') + '</small>' : '') + '</span>' +
         '<span class="ost-time">' + esc(here ? 'On site' : span(s.arrived_at, s.left_at)) + '</span></li>';
     });
-    rows += trip.state === 'open'
-      ? '<li class="ost-stop is-back"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="muted">Back to office</span>' +
-        '<small>Calculated at check-out</small></span><span class="ost-time"></span></li>'
-      : '<li class="ost-stop is-office"><span class="ost-dot" aria-hidden="true"></span><span class="ost-place"><span class="ost-name"><b>Office</b>' +
-        (trip.km_back != null ? '<span class="ost-km"> · ' + esc(km(trip.km_back)) + '</span>' : '') + '</span></span>' +
-        '<span class="ost-time">' + esc(C.clock(trip.ended_at)) + '</span></li>';
+    var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
     return '<ol class="ost-route">' + rows + '</ol>' +
-      ((trip.stops || []).some(function (s) { return s.address; }) ? '<p class="ost-credit">Addresses © OpenStreetMap contributors</p>' : '');
+      (credited ? '<p class="ost-credit">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</p>' : '');
   }
   function legsSoFar(trip) {
     var legs = (trip.stops || []).map(function (s) { return s.km_from_prev; });
@@ -410,6 +406,12 @@
       state.innerHTML = '<span class="chip chip-state is-' + tone + '">' + esc(word) + '</span>';
       note.textContent = line || '';
     };
+    /* Where the phone says it is, as it says it (the user, 2026-11-24: "is
+       it possible to show the location name? Or coordinate instead of just
+       Reading your location"): the coordinates from the first reading, and
+       the place OpenStreetMap names for them once the reading is accepted.
+       The stop's own address is still looked up again when it is saved. */
+    var at = function (b) { return b.lat.toFixed(6) + ', ' + b.lng.toFixed(6); };
     o.stop = function () { if (o.ctl && o.ctl.cancel) o.ctl.cancel(); o.ctl = null; };
     o.read = function () {
       o.stop();
@@ -417,7 +419,7 @@
       o.spot = null;
       again.hidden = true;
       say('warn', 'Reading your location…', '');
-      return readSpot(function (b) { if (o.ctl === ctl) say('warn', 'Reading your location… within ' + Math.round(b.acc) + ' m', ''); }, limit, ctl).then(function (b) {
+      return readSpot(function (b) { if (o.ctl === ctl) say('warn', 'Reading your location… within ' + Math.round(b.acc) + ' m', at(b)); }, limit, ctl).then(function (b) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
         if (b.acc > limit) {
@@ -425,7 +427,11 @@
           return;
         }
         o.spot = b;
-        say('ok', 'Location within ' + Math.round(b.acc) + ' m', '');
+        say('ok', 'Location within ' + Math.round(b.acc) + ' m', at(b));
+        geo({ near: { lat: b.lat, lng: b.lng } }).then(function (d) {
+          if (o.ctl !== ctl || o.spot !== b || !d || !d.address) return;
+          note.textContent = d.address + ' · ' + at(b);
+        });
       }).catch(function (e) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
@@ -643,7 +649,7 @@
   }
 
   /* ---- Check out -------------------------------------------------------- */
-  var outSheet = null, outLoc = null;
+  var outSheet = null;
   function buildOutSheet() {
     if (outSheet) return outSheet;
     outSheet = document.createElement('div');
@@ -654,7 +660,9 @@
       '<div class="sheet-head"><h3 id="ostOutH">Check out</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<div class="row"><div><span class="field-label">Location</span><div id="ostOutLoc"></div></div></div>' +
+        /* No reading at check-out (the user, 2026-11-24: "checkout doesnt
+           need to read location again. Only on-site needs to check once"):
+           the way back is measured to the office pin. */
         '<div class="row"><div><label class="field-label" for="ostOutNote">Note</label>' +
           '<textarea class="input" id="ostOutNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
         '<div class="row"><div><span class="field-label" id="ostRateL">Rate your trip</span>' +
@@ -675,7 +683,6 @@
         paintStars();
       });
     });
-    outLoc = spotBlock($('ostOutLoc'));
     $('ostOutGo').addEventListener('click', sendOut);
     return outSheet;
   }
@@ -694,15 +701,13 @@
     paintStars();
     $('ostOutNote').value = '';
     outMsg('');
-    window.ADspaceSheet.show(outSheet, { opener: opener, onClose: function () { outLoc.stop(); } });
-    outLoc.read();
+    window.ADspaceSheet.show(outSheet, { opener: opener });
   }
   function sendOut() {
-    var trip = outSheet.trip, go = $('ostOutGo'), spot = outLoc.spot;
-    if (!spot) { outMsg('Read the location within ' + setting('outstation_accuracy_m', 50) + ' m first.', 'err'); return; }
+    var trip = outSheet.trip, go = $('ostOutGo');
     go.disabled = true;
     outMsg('');
-    db.rpc('outstation_check_out', { p_trip: trip.id, p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at,
+    db.rpc('outstation_check_out', { p_trip: trip.id, p_lat: null, p_lng: null, p_accuracy: null, p_read_at: null,
       p_note: $('ostOutNote').value.trim() || null, p_rating: outSheet.rating || null }).then(function (r) {
       go.disabled = false;
       if (r.error || !r.data || r.data.error) { outMsg(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || W.notSaved, 'err'); return; }
@@ -843,11 +848,14 @@
     window.ADspaceSheet.show(detail, { opener: opener });
     Array.prototype.forEach.call(detail.querySelectorAll('[data-photo]'), function (fig) {
       db.functions.invoke('sign-download', { body: { outstation: { photo: fig.getAttribute('data-photo') } } }).then(function (r) {
-        if (r.error || !(r.data instanceof Blob)) { gone(fig); return; }
-        var img = document.createElement('img');
-        img.alt = fig.querySelector('figcaption').textContent;
-        img.src = URL.createObjectURL(r.data);
-        fig.querySelector('.ost-photo-img').replaceWith(img);
+        if (r.error) { gone(fig); return; }
+        return window.ADspaceAPI.fileOf(r.data).then(function (b) {
+          if (!b || !/^image\//.test(b.type)) { gone(fig); return; }
+          var img = document.createElement('img');
+          img.alt = fig.querySelector('figcaption').textContent;
+          img.src = URL.createObjectURL(b);
+          fig.querySelector('.ost-photo-img').replaceWith(img);
+        });
       }).catch(function () { gone(fig); });
     });
   }

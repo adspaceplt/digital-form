@@ -113,6 +113,12 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   `ADSPACE_CONFIG.signCodeDigits` boxes (8, Supabase's Email OTP length), so
   a paste, the iPhone's code from Mail and a screen reader meet a plain
   field; a whole code arriving presses the field's Enter once until it changes, never while an input method composes, the page's one check (2026-11-22: /creator/'s own second check sent each code twice).
+- A function's file answer (a trip photo, an employee record file) comes
+  as `application/octet-stream` or a PDF, the only types supabase-js hands
+  over as a file (an image/jpeg answer arrives as text), and the page names
+  it by its first bytes through `ADspaceAPI.fileOf` (JPEG, PNG, PDF or
+  null), the one copy (2026-11-24). The stand-in answers as the library
+  does.
 - `ADspaceAPI.phoneWord` (`js/api.js`) is how every phone number reads,
   on every page (+60 12-345 6789, +60 7-123 4567, +65 8123 4567), whatever
   was typed (2026-11-18, the user: one portal showed 60167690532,
