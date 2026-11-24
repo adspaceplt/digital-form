@@ -1777,6 +1777,19 @@ Deno.serve(async (req) => {
 
     const kind = String(body.kind || ''), id = String(body.id || '');
     if (!['client', 'supplier', 'entity', 'creator', 'member'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
+    /* A name is a label a colleague may type on their own record, so a
+       contact matched by name alone is offered and reached only by one who
+       sees every client; the same registration no. or a bill holding the
+       creator's job ID is offered to all (review 2026-11-24: renaming a
+       record to a Bukku contact's name reached that contact). */
+    let seesAll: boolean | null = null;
+    const everyClient = async () => {
+      if (seesAll === null) {
+        const sc = await db.rpc('invoice_scope');
+        seesAll = !sc.error && !!sc.data && sc.data.all === true;
+      }
+      return seesAll;
+    };
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
     let p = prep.data as Prep;
@@ -1828,6 +1841,7 @@ Deno.serve(async (req) => {
       }
       for (const c of all) {
         const why = matchOf(p, c);
+        if (why && why !== 'brn' && !(await everyClient())) continue;
         if (why && !seen.has(c.id)) {
           seen.add(c.id);
           found.push({ id: c.id, code: c.contact_code, name: c.legal_name, reg_no: c.reg_no || null, types: c.types || [],
@@ -1858,9 +1872,8 @@ Deno.serve(async (req) => {
        colleague sees every client (security audit 2026-11-07): the id came
        from the page, and any other read the company's Bukku contacts
        whatever the colleague's own access. */
-    if (cur && !p.contact_id && !matchOf(p, cur) && !(jobs.length && (await jobContacts(jobs)).has(Number(cur.id)))) {
-      const sc = await db.rpc('invoice_scope');
-      if (sc.error || !sc.data || sc.data.all !== true) return json({ error: 'not-offered' }, 200, origin);
+    if (cur && !p.contact_id && matchOf(p, cur) !== 'brn' && !(jobs.length && (await jobContacts(jobs)).has(Number(cur.id)))) {
+      if (!(await everyClient())) return json({ error: 'not-offered' }, 200, origin);
     }
     /* Link only (2026-10-19): the contact as Bukku holds it, linked and
        nothing sent. */
@@ -1902,6 +1915,21 @@ Deno.serve(async (req) => {
       return json({ ok: true, code, rows: rowsOf(p, cur, next, terms) }, 200, origin);
     }
     if (action === 'send') {
+      /* A new contact is made once: a second press while the first is out
+         is refused, never a second contact (review 2026-11-24). */
+      if (!cur) {
+        const cl = await db.rpc('bukku_send_claim', { p_kind: kind, p_id: id });
+        if (cl.error) return json({ error: 'needs-update' }, 200, origin);
+        if (cl.data && cl.data.error) return json({ error: cl.data.error }, 200, origin);
+      }
+      try {
+        return await sendIt();
+      } finally {
+        if (!cur) await db.rpc('bukku_send_release', { p_kind: kind, p_id: id }).then(() => null, () => null);
+      }
+    }
+    return json({ error: 'bad-request' }, 400, origin);
+    async function sendIt() {
       const r = cur ? await bukku('PUT', `/contacts/${contact}`, keepAsHeld(next, cur, body.skip)) : await bukku('POST', '/contacts', next);
       const saved = r && r.contact;
       if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'Bukku did not return the contact. Please try again.' }, 200, origin);
@@ -1923,7 +1951,6 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, contact: saved.id, code: saved.contact_code || code, created: !cur }, 200, origin);
     }
-    return json({ error: 'bad-request' }, 400, origin);
   } catch (e) {
     if (e instanceof BukkuError) {
       console.error('bukku-sync:', e.code, e.status, e.message);
