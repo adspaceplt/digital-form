@@ -1297,8 +1297,10 @@
     if (!same) {
       /* White label and its wide logo (2026-10-07) are read with the record
          alone, never with the list: the logo is a picture. */
-      db.from('clients').select('white_label, report_logo, brief, restricted_platform, restricted_since, restricted_note').eq('id', c.id).maybeSingle().then(function (r) {
+      db.from('clients').select('white_label, report_logo, brief, restricted_platform, restricted_since, restricted_note, portal_kept_at').eq('id', c.id).maybeSingle().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
+        c.portal_kept_at = r.data.portal_kept_at || null;
+        paintPortalKept(c);
         c.white_label = Boolean(r.data.white_label); c.report_logo = r.data.report_logo || null;
         c.brief = r.data.brief || null;
         c.restricted_platform = r.data.restricted_platform || null; c.restricted_since = r.data.restricted_since || null;
@@ -1382,6 +1384,7 @@
     }
     paintRestrict(c);
     paintVic(c);
+    paintPortalKept(c);
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1995,6 +1998,55 @@
         }
       });
     });
+  }
+  /* PAST CLIENTS LEAVE THE CLIENT PORTAL (2026-11-24; the review's finding
+     3): a Past client's contacts are refused by the portal unless the team
+     keeps its access on, from the ⋯ (Enable access / Revoke access, at
+     Clients: Contacts Work, the Past band at Work). Moved back to Active,
+     the client is open again by itself; moved to Past again, an earlier keep
+     no longer stands (`portal_kept_at` against `stage_since`, as
+     `portal_client_open` reads it). Every change goes through
+     `client_portal_access_set`, filed there. */
+  function portalKept(c) {
+    return Boolean(c && c.portal_kept_at) && (!c.stage_since || String(c.portal_kept_at) >= String(c.stage_since));
+  }
+  function paintPortalKept(c) {
+    var on = $('crmPortalOn'), off = $('crmPortalOff');
+    if (!on || !off) return;
+    var may = Boolean(c) && c.stage === 'past' && mayPart('clients.contacts', 'work') && bandMay('past', 'work');
+    var kept = may && portalKept(c);
+    on.hidden = !may || kept;
+    off.hidden = !kept;
+    if (may) $('crmClientMenuWrap').hidden = false;
+  }
+  var KEPT_SAID = { denied: 'You do not have permission to change client portal access. Please ask an admin.',
+    'not-found': 'Not saved. This client no longer exists.', 'not-past': 'Access can be enabled for a Past client only.' };
+  function setPortalKept(c, on, then) {
+    return db.rpc('client_portal_access_set', { p_client: c.id, p_on: on }).then(function (r) {
+      if (r.error) return /client_portal_access_set/.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+      var d = r.data || {};
+      if (d.error) return KEPT_SAID[d.error] || 'Not saved. The database refused the request.';
+      c.portal_kept_at = d.on ? (d.at || new Date().toISOString()) : null;
+      if (state.client && state.client.id === c.id) paintPortalKept(c);
+      if (then) then(d);
+      return '';
+    }).catch(function () { return 'Not saved. Please try again.'; });
+  }
+  function askPortalKept(c) {
+    window.ADspaceConfirm.ask({
+      title: 'Enable access', go: 'Enable access', wait: true,
+      body: 'The contacts of ' + c.name + ' with portal access will be able to sign in to the client portal while it is Past.'
+    }, function () {
+      return setPortalKept(c, true, function () { msg('crmWorkMsg', 'Access enabled.', 'ok'); });
+    });
+  }
+  function portalKeptOff(c) {
+    setPortalKept(c, false, function () {
+      msg('crmWorkMsg', '', '');
+      undoBar('Access revoked.', function () {
+        setPortalKept(c, true).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
+      });
+    }).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
   }
   var RESTRICT = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote'], ['other', 'Other account']];
   function restrictWord(k) { var r = RESTRICT.filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : 'Account'; }
@@ -2715,6 +2767,8 @@
         if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'vic') { askVic(state.client); return; }
         if (a === 'vicoff') { vicOff(state.client); return; }
+        if (a === 'portalon') { askPortalKept(state.client); return; }
+        if (a === 'portaloff') { portalKeptOff(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);

@@ -206,12 +206,13 @@ Deno.serve(async (req) => {
          colleague's was answered above, and a former colleague's address is
          a contact's like any other (portal_clients() excludes only an
          active colleague; 2026-11-24). Each client they hold access at is a
-         folder. */
-      const { data: contact } = await admin.from('client_contacts')
-        .select('client_id').eq('portal_access', true).is('archived_at', null)
-        .ilike('email', exactEmail(user.email)).limit(MAX_FOLDERS);
-      if (!contact || !contact.length) return json({ error: 'not_allowed' }, 403, origin);
-      contact.forEach((r: { client_id: string }) => clientFolder(r.client_id));
+         folder. Asked of portal_clients() itself, as the caller, so a Past
+         client's contact is refused here as every portal function refuses
+         them (2026-11-24, the review's finding 3). */
+      const { data: mine, error: mineErr } = await supa.rpc('portal_clients');
+      const ids = Array.isArray(mine) ? mine.filter((x: unknown) => typeof x === 'string').slice(0, MAX_FOLDERS) : [];
+      if (mineErr || !ids.length) return json({ error: 'not_allowed' }, 403, origin);
+      ids.forEach((id: string) => clientFolder(id));
     } else {
       /* Active is not enough: a colleague held overseas, or whose access
          time has passed before the expiry run, is no colleague to the

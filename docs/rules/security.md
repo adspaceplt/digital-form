@@ -42,7 +42,8 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   (`gate()`, after 1.5s unless the session has come back).
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
-    `portal_access`, and answers `{ok: true}` to every address, each in the
+    `portal_access` at a client whose portal is open (`portal_login_name`,
+    never a Past client's unless kept on; 2026-11-24), and answers `{ok: true}` to every address, each in the
     same least time (`FLOOR_MS`, 1,500 ms, a slower run at the next whole
     step; a fault logged, never a 500), so
     the wait never says who is a client (2026-10-25, `tests/portalloginfn.js`).
