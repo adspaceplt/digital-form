@@ -93,7 +93,8 @@
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
-      reviewNote: 'Your quotation will appear on this page once it has been sent.',
+      rcvSent: 'Request sent', rcvReview: 'Review by ADspace', rcvNow: 'In progress', rcvSend: 'Quotation sent on WhatsApp',
+      rcvBy: 'By {d}', rcvSign: 'Accept and sign on this page', rcvYours: 'Your request',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
@@ -212,7 +213,8 @@
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
-      reviewNote: '报价发送后，此页面将显示报价详情。',
+      rcvSent: '已提交请求', rcvReview: 'ADspace 审核', rcvNow: '进行中', rcvSend: '通过 WhatsApp 发送报价',
+      rcvBy: '{d}前', rcvSign: '在此页面接受并签署', rcvYours: '您的请求',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
@@ -460,11 +462,21 @@
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
+  /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
+     2026-11-25): the services as tiles with their glyphs, What to expect as
+     cards, each its glyph in a white disc with its number on an ink badge,
+     then the time with the clock. Words unchanged. */
+  var NEED_GLYPH = { social: 'plancontent', ads: 'planads', content: 'picture', koc: 'people', verify: 'badge' };
+  var STEP_GLYPH = ['pieces', 'sliders', 'bubble', 'pen'];
   function paintIntro() {
+    var N = t().need;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
-      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
-        t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
-      '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
+      '<ul class="qs-svcs">' + ['social', 'ads', 'content', 'koc', 'verify'].map(function (k) {
+        return '<li><span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><span>' + esc(N[k][0]) + '</span></li>'; }).join('') + '</ul>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps qs-stepcards">' +
+        t().introSteps.map(function (x, i) {
+          return '<li><span class="qs-disc is-white">' + ic(STEP_GLYPH[i], 'qs-g') + '<b class="qs-badge" aria-hidden="true">' + (i + 1) + '</b></span><span>' + esc(x) + '</span></li>'; }).join('') + '</ol></section>' +
+      '<p class="qs-note qs-time">' + ic('clock', 'qs-g') + esc(t().introNote) + '</p></div>' +
       '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
@@ -748,16 +760,60 @@
      notice): Request received as the title, the day as the statement, then
      the note and the quotation's reference; the way on is Chat on WhatsApp,
      with the colleague who took the lead where one has (QTE-2). */
+  /* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk,
+     2026-11-25): the green tick, the title, the day as the statement and
+     the reference; where the request stands as a track; what was asked for,
+     a glyph each and never a price; who will be in touch. */
   function paintReview() {
     var q = Q, w = t(), first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
-    return '<section class="cover qs-wait" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="done">' +
-      '<h2>' + esc(w.reviewT) + '</h2>' +
-      (q.reply_due ? '<p>' + esc(f(w.reviewP, { d: day(q.reply_due, false, 'ahead') })) + '</p>' : '') +
-      '<p>' + esc(w.reviewNote) + '</p>' +
-      '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p>' +
-      '<div class="cover-acts"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK +
-        esc(q.rep ? f(w.repChat, { n: first }) : w.chat) + '</a></div>' +
-      '</div></div></section>';
+    var due = q.reply_due ? day(q.reply_due, false, 'ahead') : '';
+    var C = window.ADspaceClock, zh = lang === 'zh', sentAt = q.issued_at && C ? C.date(q.issued_at, { zh: zh }) + (zh ? '' : ', ') + C.clock(q.issued_at, { zh: zh }) : '';
+    var step = function (cls, g, title, sub) {
+      return '<li class="' + cls + '"><span class="qs-trk-dot">' + ic(g, 'qs-g') + '</span><span><b>' + esc(title) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></li>';
+    };
+    var rows = requestRows(q.selection || {});
+    return '<div class="qs-step qs-rcv" data-shown>' +
+      '<div class="qs-rcv-head"><span class="qs-rcv-tick">' + ic('check', 'qs-g') + '</span><h1 class="qs-title">' + esc(w.reviewT) + '</h1>' +
+        (due ? '<p class="qs-lead">' + esc(f(w.reviewP, { d: due })) + '</p>' : '') +
+        '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p></div>' +
+      '<ol class="qs-track-steps">' +
+        step('is-done', 'check', w.rcvSent, esc(sentAt)) +
+        step('is-now', 'search', w.rcvReview, '<i class="qs-amber" aria-hidden="true"></i>' + esc(w.rcvNow)) +
+        step('', 'doc', w.rcvSend, due ? esc(f(w.rcvBy, { d: due })) : '') +
+        step('', 'pen', w.rcvSign, '') + '</ol>' +
+      (rows.length ? '<section class="qs-card"><h2>' + esc(w.rcvYours) + '</h2><ul class="qs-asklist">' + rows.map(function (r) {
+        return '<li><span class="qs-disc is-sm">' + ic(r[0], 'qs-g') + '</span><span>' + esc(r[1]) + '</span></li>'; }).join('') + '</ul></section>' : '') +
+      (q.rep ? '<section class="qs-card qs-rcv-rep"><span class="qs-rep-who"><small>' + esc(w.repT) + '</small><b>' + esc(q.rep.name) + '</b>' +
+          (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span>' +
+          '<a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a></section>'
+        : '') + '</div>' +
+      (q.rep ? '' : '<div class="qs-foot"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a></div>');
+  }
+  /* What the prospect asked for, as the selection kept holds it: a row a
+     part, its glyph and its words, never a price. */
+  function requestRows(sel) {
+    var w = t(), out = [], plan = CAT && sel.plan ? CAT.plans.filter(function (p) { return p.slug === sel.plan; })[0] : null;
+    if (plan) {
+      out.push(['plancontent', w.need.social[0] + ' · ' + f(w.plan, { p: plan.plan })]);
+      var m = (plan.mix || [])[Number(sel.mix) || 0];
+      out.push(['picture', f(w.piecesN, { n: plan.contents }) + (m ? (lang === 'zh' ? '：' : '; ') + mixShort(m) : '')]);
+    }
+    if ((sel.platforms || []).length) out.push(['device', sel.platforms.map(function (k) { return w.plat[k] || k; }).join(lang === 'zh' ? '、' : ', ')]);
+    if (sel.budget != null && (!plan || Number(sel.budget) !== 0 || plan.ad_budget)) out.push(['planads', w.need.ads[0]]);
+    var named = function (slug) {
+      var all = CAT ? [].concat(CAT.contents || [], CAT.files || [], CAT.verify || [], CAT.koc || []) : [];
+      var x = all.filter(function (c) { return c.slug === slug; })[0];
+      if (!x) return slug === (CAT && CAT.kol) ? w.kol : null;
+      return x.kind ? contentName(x) : (lang === 'zh' && FILE_ZH[x.name]) || x.name;
+    };
+    (sel.once || []).forEach(function (o) {
+      var n = named(o.slug); if (!n) return;
+      var g = CAT && (CAT.verify || []).some(function (v) { return v.slug === o.slug; }) ? 'badge'
+        : CAT && ((CAT.koc || []).some(function (v) { return v.slug === o.slug; }) || o.slug === CAT.kol) ? 'people' : 'picture';
+      out.push([g, n + (Number(o.qty) > 1 ? ' × ' + Number(o.qty) : '')]);
+    });
+    if (Number(sel.term) > 1) out.push(['clock', f(w.months, { n: sel.term })]);
+    return out;
   }
   /* The advertising budget the quotation's fees manage each month: the
      budget chosen past the plan's cover, else the plan's own cover as the
