@@ -368,6 +368,18 @@
      PDF and /quote/. */
   function planFold(lines) {
     lines = (lines || []).map(function (l) { return Object.assign({}, l); });
+    /* Several brands on one quotation (2026-11-24): each brand's lines fold
+       into its own plan, the brands kept in their order. */
+    if (lines.some(function (l) { return l.brand != null; })) {
+      var seen = [];
+      lines.forEach(function (l) { if (seen.indexOf(l.brand) < 0) seen.push(l.brand); });
+      if (seen.length > 1) {
+        return seen.reduce(function (out, b) {
+          return out.concat(planFold(lines.filter(function (l) { return l.brand === b; }).map(function (l) { var c = Object.assign({}, l); delete c.brand; c._b = b; return c; }))
+            .map(function (l) { var c = Object.assign({}, l); c.brand = c._b; delete c._b; return c; }));
+        }, []);
+      }
+    }
     var plan = lines.filter(function (l) { return l.kind === 'plan'; })[0];
     if (!plan) return lines;
     var into = lines.filter(function (l) { return l.in_plan && l !== plan && l.basis !== 'once'; });
