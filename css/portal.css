@@ -8974,7 +8974,7 @@ body.is-maint { overflow: hidden; }
 .cx-standing-line b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .cx-standing-line span { font-size: 13.5px; color: var(--ink-mute); }
 .cx-track { display: flex; gap: 4px; height: 6px; }
-.cx-track i { flex: 1 1 0; border-radius: 4px; background: var(--line-soft); }
+.cx-track i { flex: 1 1 0; border-radius: 4px; corner-shape: round; background: var(--line-soft); }
 .cx-track i.is-ok { background: var(--dot-ok); }
 .cx-track i.is-wait { background: var(--dot-wait); }
 .cx-track i.is-late { background: var(--dot-late); }
