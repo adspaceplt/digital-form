@@ -185,7 +185,7 @@
       return PDF.PDFDocument.create().then(function (p) {
         pdf = p;
         /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
-        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf), D.codeOf ? D.codeOf('hiring', opts.draft ? null : doc.id) : '']);
+        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf), D.codeOf ? D.codeOf('hiring', opts.draft ? null : doc.id, opts.key) : '']);
       }).then(function (got) {
         fonts = got[0]; logo = got[1];
         var code = got[2] || '';

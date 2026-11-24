@@ -88,7 +88,7 @@
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
         /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
-        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf), docs.codeOf ? docs.codeOf('quotation', opts.draft ? null : q.id) : '']);
+        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf), docs.codeOf ? docs.codeOf('quotation', opts.draft ? null : q.id, opts.key) : '']);
       }).then(function (g) {
         got = g;
         opts.code = g[2] || '';

@@ -1327,7 +1327,7 @@
     /* Who prepared and reviewed it, and once accepted who signed for the
        company with the signing record (2026-10-31). */
     var sg = Q.signed, C = window.ADspaceClock;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market },
+    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market }, key: qKey(),
       preparedBy: Q.prepared ? { name: Q.prepared.name, designation: Q.prepared.title || '' } : null,
       reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
       signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
