@@ -4152,6 +4152,15 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-headtext .qb-for { margin: 0; }
 .qb-planhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .qb-planhead .fsec-h { margin: 0; }
+/* Several brands on one quotation (2026-11-24): the strip a brand over the
+   board, Add brand at its right edge; the brand shown named under it with
+   its Remove; each brand's lines under its name in the table. */
+.qb-brandbar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 12px; }
+.qb-brandtabs { flex: 1 1 auto; min-width: 0; }
+.qb-brandadd { flex: 0 0 auto; }
+.qb-brandrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-bottom: 16px; }
+.qb-brandh { padding: 12px 15px 4px; font-size: 13px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--line-soft); }
+.qb-table .crm-head + .qb-brandh { border-top: 0; }
 .qb-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .qb-plan {
   display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px 14px;

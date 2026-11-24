@@ -249,6 +249,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   address and country, the fingerprint; paper: the day). Every page's foot: the reference, PRIVATE &
   CONFIDENTIAL, Page n of 3 (`ADspaceDocs.letterFoot`); named `ADspace
   Quotation {ref}.pdf`.
+- Several brands on one quotation (`2026-11-24-quotation-brands.sql`; the
+  user, 2026-11-24: "1x plan F and 1x plan B for another brand under same
+  client entity", one quotation with a section a brand): `p_sel.brands`
+  (1 to 10, each a `name` with its own plan, mix, platforms, extra, langs,
+  translate, budget, once, edits, custom and order) is priced by
+  `quote_compose`, each brand as a quotation of its own, its lines marked
+  `brand` (its place), the whole totalled once by `quote_totals`, the names
+  in `totals.brands`; the term, date, Rate Card, payment terms, validity,
+  advertising budget, Bill to, terms and title stay the quotation's, since
+  one contract runs one term; no `brands` is priced as before, and a website
+  selection with them is refused (`bad-brands`). Build quote reads as before
+  for one brand, with Add brand over the board; with two or more a view
+  strip a brand (`#qbBrand`), its Brand name and Remove (Undo where it
+  happened; the last left makes the quotation one brand's again), the board
+  the brand shown, the lines table each brand's under its name (the others
+  read, never typed) and the foot the whole quotation. `ADspaceMoney.planFold`
+  folds each brand into its own plan; the PDF names the Brands in its facts
+  and each brand over its lines, /quote/ likewise, with no Change for the
+  client.
 - Quotation signing (`2026-10-31-quotation-signing.sql`; the user,
   2026-10-31: "Jane picks the reviewer, approve"): the client accepts on
   the quotation's link (a team's quotation takes one from
