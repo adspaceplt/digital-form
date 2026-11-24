@@ -676,7 +676,7 @@
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       /* Once sealed, the signed copy beside it is the one download. */
-      (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div><p class="msg" id="qsPdfMsg" role="status"></p>') +
+      (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
@@ -1262,7 +1262,7 @@
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
       read(d.key);
-    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsPdfMsg', t().pdfFail); });
+    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
   }
   function read(k, then) {
     db.rpc('quote_website_read', { p_key: k }).then(function (r) {
@@ -1317,7 +1317,7 @@
     }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
   }
   function pdf(btn) {
-    say('qsPdfMsg', '');
+    var said = $('qsPdfMsg'); if (said) said.remove();
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
     /* Who prepared and reviewed it, and once accepted who signed for the
@@ -1331,7 +1331,12 @@
       to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
-    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} say('qsPdfMsg', t().pdfFail); });
+    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {}
+      /* Said under its button, drawn only when there is something to say. */
+      var acts = btn.closest('.qs-acts'), m = document.createElement('p');
+      m.className = 'msg err'; m.id = 'qsPdfMsg'; m.setAttribute('role', 'status'); m.textContent = t().pdfFail;
+      if (acts) acts.insertAdjacentElement('afterend', m);
+    });
   }
 
   /* A colleague's preview (2026-10-30): the console's Preview opens the
