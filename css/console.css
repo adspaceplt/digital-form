@@ -4183,7 +4183,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-bwho small, .qb-bfig small { display: block; font-size: 12.5px; color: var(--ink-mute); }
 .qb-bfig { grid-area: fig; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .qb-bacts { grid-area: acts; display: flex; gap: 8px; justify-content: flex-end; }
-.qb-brandacts { margin: 0; }
+.qb-brandacts { margin: 8px 0 0; }
 .qb-table .qb-brandh { padding: 12px 15px 4px; font-size: 13px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--line-soft); }
 .qb-table .crm-head + .qb-brandh { border-top: 0; }
 /* The sheet in the order a quote is built (2026-11-24): a step a section,
@@ -4191,9 +4191,23 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    their rows; View lines turns the sheet to the priced lines. */
 .qb-stepsec > * + * { margin-top: 12px; }
 .qb-stepsec > .qb-plans { margin-bottom: 0; }
-.qb-num { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: -4px; border-radius: 50%; corner-shape: round;
+/* A heading led by its number reads from the left, the words beside the
+   disc: `.fsec-h` spreads its parts apart, so the disc and its words
+   landed at the two edges (2026-11-25, the phone). */
+.fsec-h:has(> .qb-num) { justify-content: flex-start; gap: 8px; }
+.qb-num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; corner-shape: round;
   background: var(--tonal); color: var(--ink-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; vertical-align: 1px; }
 .qb-adds { display: flex; flex-wrap: wrap; gap: 8px; }
+/* With no plan chosen, the row of extra content and languages holds
+   nothing and keeps no space. The foot's total is not drawn while empty,
+   so View lines keeps the row's left edge. */
+.qb-pc:has(> #qbExtras[hidden]):has(> #qbLangCol[hidden]) { display: none; }
+#qbSum:empty { display: none; }
+/* On a phone the two Add buttons stand one over the other at the column's
+   width, as Add to quotation under them does: side by side, Add
+   advertising budget broke onto two lines (DESIGN.md §5, never a label
+   broken). */
+@media (max-width: 640px) { .qb-adds > .btn { flex: 1 1 100%; } }
 .qb-stepsec .select, .qb-morebox .select { width: 100%; min-width: 0; }
 .qb-oncebox .qb-once { padding-top: 8px; }
 .qb-morebox { display: grid; gap: 16px; padding-top: 12px; }
@@ -5158,6 +5172,8 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .inv-mail-card .mt-pv-subj { font-weight: 600; }
 .inv-mail-card .mt-pv-fine { font-size: 12px; color: #767676; }
 .inv-mail-card .mt-pv-none { color: #515151; }
+/* A feedback request's one button, as the email draws it. */
+.inv-mail-card .mt-pv-btn span { display: inline-block; padding: 8px 16px; border-radius: var(--radius-ctl-sm); background: var(--action); color: var(--on-action); font-weight: 600; }
 .inv-mail-card .mt-f { background: #eef3fb; color: #1a1a1a; border-radius: 4px; padding: 0 2px; }
 .inv-mail-card .mt-f.is-bad { background: #fdeceb; color: #b3261e; text-decoration: underline wavy; }
 #mtEdSheet .sheet-card > .msg:empty, #mtSheet .msg:empty { display: none; }

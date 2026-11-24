@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261124lp">
-<link rel="stylesheet" href="/css/console.css?v=20261125bx">
+<link rel="stylesheet" href="/css/portal.css?v=20261125lp">
+<link rel="stylesheet" href="/css/console.css?v=20261125zev">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261125bx"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261125zeu"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -134,7 +134,7 @@
 <script src="/js/captcha.js?v=20261122zzs"></script>
 <script src="/js/words.js?v=20261124rsy"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
-<script src="/js/icons.js?v=20261124lp"></script>
+<script src="/js/icons.js?v=20261125lp"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
 <script src="/js/acts.js?v=20261124a"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
@@ -146,7 +146,7 @@
 <script src="/js/otp.js?v=20261122zzr"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261117zzzf"></script>
-<script src="/js/menu.js?v=20261122zzzzzp"></script>
+<script src="/js/menu.js?v=20261125zeu"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/cmdbar.js?v=20261117zzzf"></script>
 <script src="/js/records.js?v=20261117zzzf"></script>
@@ -155,11 +155,11 @@
 <script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261124x"></script>
 <script src="/js/delreq.js?v=20261124s"></script>
-<script src="/js/maintenance.js?v=20261124lp"></script>
+<script src="/js/maintenance.js?v=20261125lp"></script>
 <script src="/js/announce.js?v=20261124ts"></script>
 <script src="/js/notice.js?v=20261122zzzu"></script>
 <script src="/js/whatsapp.js?v=20261124a"></script>
-<script src="/js/mailtpl.js?v=20261124a"></script>
+<script src="/js/mailtpl.js?v=20261125zeu"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261124zzzfd"></script>
@@ -785,6 +785,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage" data-rare data-g="2">Select clients</button>
+              <button class="btn btn-sm" type="button" data-mailtpl="clients" data-rare data-g="2" hidden>Edit email templates</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -1686,7 +1687,7 @@
                 </div>
               </section>
               <div class="row acts qb-brandacts">
-                <button class="btn" id="qbBrandAdd" type="button">Add to quotation</button>
+                <button class="btn btn-sm" id="qbBrandAdd" type="button">Add to quotation</button>
                 <button class="btn btn-quiet" id="qbBrandCancel" type="button" hidden>Cancel</button>
               </div>
               <section class="fsec qb-stepsec">
@@ -2437,6 +2438,7 @@
               <span class="cmdbar-count" id="campCount"></span>
             </span>
             <span class="cmdbar-acts">
+              <button class="btn btn-sm" type="button" data-mailtpl="creators" data-rare data-g="2" hidden>Edit email templates</button>
               <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
             </span>
           </span>
@@ -4036,6 +4038,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="btn btn-sm" type="button" data-mailtpl="suppliers" data-rare data-g="2" hidden>Edit email templates</button>
               <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
             </span>
           </span>
@@ -4208,6 +4211,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="hirCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="btn btn-sm" type="button" data-mailtpl="candidates" data-rare data-g="2" hidden>Edit email templates</button>
               <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add candidate</button>
             </span>
           </span>
@@ -4730,6 +4734,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="emlCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="btn btn-sm" type="button" data-mailtpl="codes" data-rare data-g="2" hidden>Edit email templates</button>
               <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-gate="email" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New email</span></button>
             </span>
           </span>
@@ -4802,11 +4807,8 @@
           <button class="iconbtn" id="mtClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sheet-body">
-          <div class="mt-rec" id="mtRecRow" hidden>
-            <select class="select select-sm" id="mtRec" data-seg data-strip aria-label="Recipient"></select>
-          </div>
           <div class="msg" id="mtMsg" role="status"></div>
-          <div id="mtList" data-swipe="mtRecStrip"></div>
+          <div id="mtList"></div>
         </div>
         <div class="sheet-foot">
           <button class="btn btn-quiet" id="mtDone" type="button">Close</button>
@@ -6825,11 +6827,11 @@ raya-2026        https://example.com/raya"></textarea>
   "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261124zzzfex", "uses": ["documents", "crm", "sales"]},
   "outstation": {"src": "/js/outstation.js?v=20261125a"},
-  "settings": {"src": "/js/settings.js?v=20261125b", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "settings": {"src": "/js/settings.js?v=20261125zeu", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261125b"></script>
+<script src="/js/admin.js?v=20261125zeu"></script>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261124zqc"></script>

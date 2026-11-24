@@ -306,7 +306,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   English and Chinese, with the WhatsApp template `creator_changed` to the
   number on file (`creator_pay_changes`, the request's `changes`, read on
   the record and the review sheet; 2026-11-24, the code review); each
-  sent or not; Settings, Messages: Email templates under Creators, `team.settings`) and
+  sent or not; Creators' Email templates, `team.settings`) and
   sent by the `creator-mail` edge function (woken by `creator_mail_kick`
   with the wake secret, and by pg_cron `creator-mail-drain` every five
   minutes while one waits; `creator_mail_claim`, `creator_mail_done`, the
@@ -347,7 +347,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
   bills matching no booking read under Earlier payments
   (`creator_bills_list`, Creators List View, amounts at `campaigns.pay`
-  View). The three emails' words are Settings, Messages: Email templates under Creators,
+  View). The three emails' words are Creators' Email templates,
   Payment request to Details to review's finance address. Post recorded and Payment sent
   end in one button to the creator's own page (View booking, `#b=` the
   booking; View payment, `?tab=payments`; on their code, `PORTAL_URL`),

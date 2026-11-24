@@ -191,7 +191,7 @@ is empty and only shrinks (`--write` refuses to add).
   builds it, checked before the PR opens and named in its Test plan (the
   user, 2026-11-24: "you kept missing this and that"; a trip number missing
   from Settings' numbering, a feedback email missing from Email templates, a
-  seventh client tab): an email its Email templates row (`js/mailtpl.js`,
+  seventh client tab): an email its section's Email templates (`js/mailtpl.js`,
   English and 中文); a number or reference its Settings numbering
   (`id_formats`); a business figure its setting; a word two screens say
   `ADspaceWords.line`; a part of a client's record a place within the six
