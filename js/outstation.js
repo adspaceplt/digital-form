@@ -384,7 +384,7 @@
       id = geo.watchPosition(function (p) {
         var c = p.coords;
         var r = { lat: Math.round(c.latitude * 1e6) / 1e6, lng: Math.round(c.longitude * 1e6) / 1e6,
-          acc: Math.round(c.accuracy * 10) / 10, at: new Date(p.timestamp || Date.now()).toISOString() };
+          acc: Math.round(c.accuracy * 10) / 10, at: new Date().toISOString() };
         if (!best || r.acc < best.acc) { best = r; if (tick) tick(best); }
         if (best.acc <= 5 || (limit && best.acc <= limit && Date.now() - began >= 6000)) finish();
       }, function (e) {
@@ -415,6 +415,7 @@
       timer = setTimeout(end, 8000);
     });
   }
+  var STALE_MS = 9 * 60 * 1000;
   /* The location block of a sheet: read, refuse, read again. */
   function spotBlock(host) {
     var limit = setting('outstation_accuracy_m', 50);
@@ -627,6 +628,15 @@
     if (!cv) { stopMsg(SAID['no-place'], 'err'); $('ostClient').focus(); return; }
     if (cv === 'other' && !venue) { stopMsg('Enter the venue.', 'err'); $('ostVenue').focus(); return; }
     if (!spot) { stopMsg('The location must be accurate to within ' + setting('outstation_accuracy_m', 50) + ' m. Press Locate again.', 'err'); return; }
+    /* A reading is good for ten minutes in the database: one older than
+       nine is read again here, never sent to be refused (2026-11-24: a
+       reading left open while the driver did something else read "could not
+       be read"). */
+    if (Date.now() - Date.parse(spot.at) > STALE_MS) {
+      stopKit.loc.read();
+      stopMsg('The location was read more than 10 minutes ago and is being read again. Press ' + go.textContent + ' once it shows.', 'warn');
+      return;
+    }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }
     var args = { p_client: cv === 'other' ? null : cv, p_venue: cv === 'other' ? venue : null,
       p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at };
