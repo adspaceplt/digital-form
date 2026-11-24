@@ -958,6 +958,9 @@
   var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (Passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
+  /* A bill made whose list Bukku did not answer (bukku-sync `list-not-read`,
+     2026-11-24): the bill stands; the list is read again by hand. */
+  var UNREAD = ' The bills could not be read back from Bukku. Press Read from Bukku to show them.';
   var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved', changed: 'Details changed',
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
   /* A booking's payment (2026-11-09, Creator R3): its Bukku bill read back,
@@ -1396,7 +1399,7 @@
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
       check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
-      var m = $('cpayJobMsg'), done = [], refused = [];
+      var m = $('cpayJobMsg'), done = [], refused = [], unread = false;
       var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
       /* One booking: its amount kept as the creator fee first, then billed. */
       var first = Promise.resolve('');
@@ -1421,7 +1424,7 @@
               if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
               if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
               else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
-              else done.push(x.made || j.job);
+              else { done.push(x.made || j.job); if (x.note === 'list-not-read') unread = true; }
             }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
           });
         }, Promise.resolve()).then(function () {
@@ -1429,8 +1432,8 @@
           if (payFor !== c) return;
           delete crTotals[c.id]; paintCrRail(c);
           if (!done.length && one) readJobs(); else paintJobs();
-          if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
-          else say(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
+          if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' ') + (unread ? UNREAD : ''), 'err');
+          else say((one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.') + (unread ? UNREAD : ''), unread ? 'warn' : 'ok');
         });
         return '';
       });
@@ -1746,7 +1749,7 @@
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
       check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
-      var done = [], refused = [];
+      var done = [], refused = [], unread = false;
       var first = Promise.resolve('');
       if (one) {
         var amt = feeIn(v && v.fee);
@@ -1768,15 +1771,15 @@
             }).then(function (x) {
               if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
               else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
-              else done.push(x.made || j.job);
+              else { done.push(x.made || j.job); if (x.note === 'list-not-read') unread = true; }
             }).catch(function (e) { refused.push(j.job + ': ' + e.message); }).then(function () {
               if (!one) cpqSaid('Creating bills: ' + (done.length + refused.length) + ' of ' + list.length + '.', '');
             });
           });
         }, Promise.resolve()).then(function () {
           if (btn) btn.disabled = false;
-          if (refused.length) cpqSaid((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
-          else cpqSaid(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
+          if (refused.length) cpqSaid((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' ') + (unread ? UNREAD : ''), 'err');
+          else cpqSaid((one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.') + (unread ? UNREAD : ''), unread ? 'warn' : 'ok');
           loadQueue();
         });
         return '';
@@ -2233,7 +2236,7 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var list = team.slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, keep).slice().sort(F.byStaff);
     if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
       list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
@@ -2241,7 +2244,9 @@
   }
 
   function loadTeam(then) {
-    db.from('team_members').select('name, staff_code').eq('active', true).order('name').then(function (r) {
+    /* Who the owner picker offers: those who may work Creators (2026-11-24). */
+    window.ADspaceAdmin.pickable('campaigns').then(function (ids) { state.offerIds = ids; });
+    db.from('team_members').select('id, name, staff_code').eq('active', true).order('name').then(function (r) {
       /* A system account (2026-10-08) never runs a campaign. */
       var S = window.ADspaceAdmin;
       state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m.name)); });

@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
     purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string; quotationId?: string;
-    memberId?: string | null; kind?: string; tripId?: string;
+    memberId?: string | null; kind?: string; tripId?: string; sha256?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -144,6 +144,8 @@ Deno.serve(async (req) => {
   const optionId = String(body.optionId ?? '');
   let scope = '';
   let thumb = false;
+  /* A sealed copy (purpose `seal`): the quotation it is for. */
+  let sealFor = '';
   /* The service role, asked with the caller's address: every code-counted
      call goes through this client, never `admin`. */
   // deno-lint-ignore no-explicit-any
@@ -274,6 +276,7 @@ Deno.serve(async (req) => {
     if (rule.private === 'must' && body.private !== true) return json({ error: 'bad_private' }, 400, origin);
     scope = clientId;
     thumb = purpose === 'thumb';
+    if (purpose === 'seal') sealFor = parent;
   }
 
   // 2. Validate what they are asking to upload.
@@ -315,6 +318,22 @@ Deno.serve(async (req) => {
     : `${prefix}/${scope}/${crypto.randomUUID()}.${ext}`;
   const target = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
+  /* A sealed copy's hash is signed into its PUT (the review of 2026-11-24):
+     the page declares the SHA-256 of the file it drew, S3 refuses any other
+     body (`x-amz-checksum-sha256`), and the key and the hash are recorded
+     (`quotation_seal_intent`, the service role's), so `quotation_seal`
+     files only the hash of the file S3 holds. */
+  const signHeaders: Record<string, string> = { 'Content-Type': contentType, 'Content-Length': String(size) };
+  let checksum = '';
+  if (sealFor) {
+    const hex = String(body.sha256 ?? '').toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(hex)) return json({ error: 'bad_sha' }, 400, origin);
+    checksum = btoa(String.fromCharCode(...(hex.match(/../g) as string[]).map((h) => parseInt(h, 16))));
+    signHeaders['x-amz-checksum-sha256'] = checksum;
+    const { data: meant, error: meantErr } = await admin.rpc('quotation_seal_intent', { p_id: sealFor, p_key: key, p_sha: hex });
+    if (meantErr || !meant || meant.error) return json({ error: (meant && meant.error) || 'not_allowed' }, 403, origin);
+  }
+
   const aws = new AwsClient({
     accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
     secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
@@ -328,7 +347,7 @@ Deno.serve(async (req) => {
      exactly; the browser sets the length from the file itself. */
   const signed = await aws.sign(`${target}?X-Amz-Expires=${PUT_EXPIRES}`, {
     method: 'PUT',
-    headers: { 'Content-Type': contentType, 'Content-Length': String(size) },
+    headers: signHeaders,
     aws: { signQuery: true, allHeaders: true }
   });
 
@@ -336,6 +355,7 @@ Deno.serve(async (req) => {
     uploadUrl: signed.url,
     publicUrl: priv ? null : `${cdnBase}/${key}`,
     key,
-    contentType
+    contentType,
+    ...(checksum ? { checksum } : {})
   }, 200, origin);
 });
