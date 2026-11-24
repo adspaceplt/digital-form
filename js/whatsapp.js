@@ -39,7 +39,7 @@
     quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
     offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.'],
     representative: ['Representative to lead', 'Sent from a lead\'s ⋯ (Introduce representative), or chosen in New message, to a lead whose Sales by is set. Variables: the greeting (salutation and name), the brand, the Sales by colleague\'s name. Its link button (https://hi.adspace.me/{{1}}) opens their namecard.'],
-    creator_changed: ['Payment details changed', 'Sent by the portal when a creator\'s payment details are changed on the creator page, to the WhatsApp number held before the change. Variables: the creator\'s name, the day of the change.'],
+    creator_changed: ['Payment details changed', 'Sent by the portal when a creator\'s payment details are changed on the creator page, to the creator\'s previous WhatsApp number. Variables: the creator\'s name, the date of the change.'],
     quote_ready: ['Quotation ready', 'Sent by the portal when a colleague sends a website quotation (Send quotation), to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
   };
   /* A purpose whose message carries a record's PDF as its Document header. */
@@ -50,8 +50,8 @@
      from the page; the third audit, item 2). Only a purpose the portal
      sends by itself with nothing to put there refuses one (the user,
      2026-10-10: not a list of the purposes allowed). */
-  var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.',
-    creator_changed: 'Payment details changed is sent by the portal itself, which cannot fill a link button.' };
+  var NO_BUTTON = { reminder: 'The portal sends this message by itself and cannot fill a link button. Remove the link button from the template.',
+    creator_changed: 'The portal sends this message by itself and cannot fill a link button. Remove the link button from the template.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
     quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', representative: 'Representative introduction',
     creator_changed: 'Payment details changed', message: 'Message' };
