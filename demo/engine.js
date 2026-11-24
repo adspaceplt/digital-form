@@ -16995,6 +16995,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk({ updated_at: hNowIso });
       }
       if (name === 'hiring_sheets_of') {
+        if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
         if (!hr || !hc) return hNo('not-found');
         return hOk({ sheets: DB.hiring_sheets.filter(function (x) { return x.candidate_id === hc.id; }).map(function (x) {
           return JSON.parse(JSON.stringify({ id: x.team_member_id, name: hName(x.team_member_id), mine: x.team_member_id === hMe.id,
