@@ -75,10 +75,12 @@ async function placeOf(admin: ReturnType<typeof createClient>, key: string, lat:
     if (!r.ok) throw new Error('geocode ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
     const f = ((d.features || []) as Feature[])[0];
-    if (!f || !f.properties) return null;
+    if (!f || !f.properties) { console.error('outstation-geo: no place', lat, lng); return null; }
     return { address: addressOf(f.properties), zone: zoneOf(f.properties) };
   } catch (e) {
-    console.error('outstation-geo: reverse failed', String((e as Error)?.message || e).replace(key, '…'));
+    /* The key rides in the address, raw or encoded, in a fetch error's
+       words; neither form reaches the log. */
+    console.error('outstation-geo: reverse failed', String((e as Error)?.message || e).split(key).join('…').split(encodeURIComponent(key)).join('…'));
     return null;
   }
 }
