@@ -1592,7 +1592,7 @@
   }
   /* A brand that chooses nothing yet is not priced (a new board). */
   function chosen(b) {
-    return Boolean(b && (b.plan || (b.platforms || []).length || (b.once || []).length || (b.custom || []).length));
+    return Boolean(b && (b.plan || (b.platforms || []).length || (b.once || []).length || (b.custom || []).length || Number(b.budget) !== 0));
   }
   /* The selection as it is priced and kept: the board's alone for one
      brand; for several, the quotation's own choices with each brand that
@@ -1624,6 +1624,7 @@
     if (p) bits.push('Plan ' + p.spec.plan);
     if (pl.length) bits.push(pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0]);
     if (!p && !pl.length && (b.once || []).length) bits.push('One-off items');
+    if (!bits.length && (b.custom || []).length) bits.push('Custom lines');
     return bits.join(' · ');
   }
   function basket() {
@@ -1641,7 +1642,7 @@
         : f && f.once ? [CUR + ' ' + acct(f.once.incl), MON.sstOf(d.lines, d.totals.sst_pct).on ? 'One-off incl. SST' : 'One-off total'] : ['—', ''];
       var editing = x.i === B.bi;
       return '<div class="qb-brow" data-bi="' + x.i + '"><span class="qb-bwho"><span class="qb-bname"><b>' + esc(brandWord(x.b)) + '</b>' +
-        (editing ? '<span class="chip">Editing</span>' : '') + '</span><small>' + esc(brandMeta(x.b) + ' · ' + ($('qbTerm').value || 6) + ' months') + '</small></span>' +
+        (editing ? '<span class="chip">Editing</span>' : '') + '</span>' + (brandMeta(x.b) ? '<small>' + esc(brandMeta(x.b)) + '</small>' : '') + '</span>' +
         '<span class="qb-bfig">' + esc(fig[0]) + (fig[1] ? '<small>' + esc(fig[1]) + '</small>' : '') + '</span>' +
         '<span class="qb-bacts">' + (editing ? '' : '<button class="btn btn-sm" type="button" data-b="edit">Edit</button>') +
         '<button class="btn btn-sm" type="button" data-b="remove">Remove</button></span></div>';
@@ -1658,7 +1659,7 @@
     preview();
   }
   function brandWrong(b) {
-    if (!chosen(b)) return 'Choose a plan, a platform or a one-off item.';
+    if (!chosen(b)) return SAID.empty;
     if (!String(b.name || '').trim()) return SAID['bad-brands'];
     return '';
   }
@@ -2732,7 +2733,7 @@
           if (r.error || d.error) {
             go.disabled = false;
             if (!B) return;
-            $('qbMsg').textContent = (made.length ? made.join(', ') + ' made. ' : '') + brandWord(sel.brands[at]) + ': ' + said(r.error || d.error);
+            $('qbMsg').textContent = (made.length ? made.join(', ') + ' made. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
             $('qbMsg').className = 'msg err';
             return;
           }
