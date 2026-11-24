@@ -120,12 +120,35 @@
     return db.rpc('outstation_trips', { p_from: p.from, p_to: p.to, p_all: st.mode === 'all' }).then(function (r) {
       if (mine !== st.seq) return;
       if (r.error || !r.data || r.data.error) { st.err = (r.data && SAID[r.data.error]) || (r.error && r.error.message) || 'The trips could not be loaded.'; }
-      else st.d = r.data;
+      else { st.d = r.data; heal(st.d.trips || []); }
       paint();
     }).catch(function (e) {
       if (mine !== st.seq) return;
       st.err = (e && e.message) || 'The trips could not be loaded.'; paint();
     });
+  }
+  /* A trip whose place or distance was never filled (the lookup failed, or
+     the trip came before it worked: OS/20261101, 2026-11-24) is asked again
+     when its driver opens the list, once a visit: each stop missing its
+     address, then the trip's legs. Only the driver may ask
+     (`outstation_geo_may`), so a colleague who joined asks nothing. */
+  var healed = {};
+  function heal(trips) {
+    var m = me();
+    if (!m) return;
+    var asks = [];
+    trips.forEach(function (t) {
+      if (t.driver_id !== m.id || healed[t.id]) return;
+      var stops = t.stops || [];
+      var noPlace = stops.filter(function (s) { return !s.address; });
+      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null);
+      if (!noPlace.length && !noKm) return;
+      healed[t.id] = true;
+      noPlace.forEach(function (s) { asks.push({ stop: s.id }); });
+      if (noKm) asks.push({ trip: t.id });
+    });
+    if (!asks.length) return;
+    asks.reduce(function (p, b) { return p.then(function () { return geo(b); }); }, Promise.resolve()).then(reread);
   }
   function openTrip() {
     var m = me();
