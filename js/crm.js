@@ -794,8 +794,10 @@
         '</span>' +
         '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') +
           (isVic(c.id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') +
-          (state.late && state.late[c.id] ? '<span class="tone is-danger crm-late-tag">' + state.late[c.id] + ' late</span>' : '') +
-          (c.stage_next ? '<span class="chip crm-ahead-tag">' + esc(aheadWord(c, { year: false })) + '</span>' : '') + '</span>' +
+          (state.late && state.late[c.id] ? '<span class="tone is-danger crm-late-tag">' + state.late[c.id] + ' late</span>' : '') + '</span>' +
+          /* A stage set ahead: its own line under the name, the cell too
+             narrow to hold both (CLIENT STAGE AHEAD). */
+          (c.stage_next ? '<span class="chip crm-ahead-tag">' + esc(aheadWord(c, { year: false })) + '</span>' : '') +
           (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
         '</span>' +
       '</span>' +
@@ -1738,10 +1740,10 @@
     line.hidden = !(c && c.stage_next);
     if (line.hidden) { line.innerHTML = ''; return; }
     var may = bandMay(c.stage || 'lead', 'work') && bandMay(c.stage_next, 'work');
-    line.innerHTML = '<span class="rec-ahead-word">' + esc(aheadWord(c, { named: true })) + '</span>' +
-      (c.stage_next_reason ? '<span aria-hidden="true"> · </span>' + esc(leaveWord(c.stage_next_reason)) : '') +
-      (may ? '<button class="linkbtn rec-ahead-act" id="crmAheadEdit" type="button">Edit</button>' +
-             '<button class="linkbtn rec-ahead-act" id="crmAheadOff" type="button">Withdraw</button>' : '');
+    line.innerHTML = '<span class="rec-ahead-word">' + esc(aheadWord(c, { named: true })) +
+      (c.stage_next_reason ? '<span aria-hidden="true"> · </span>' + esc(leaveWord(c.stage_next_reason)) : '') + '</span>' +
+      (may ? '<span class="rec-ahead-acts"><button class="linkbtn" id="crmAheadEdit" type="button">Edit</button>' +
+             '<button class="linkbtn" id="crmAheadOff" type="button">Withdraw</button></span>' : '');
     if (!may) return;
     $('crmAheadEdit').setAttribute('aria-label', 'Edit ' + aheadWord(c));
     $('crmAheadOff').setAttribute('aria-label', 'Withdraw ' + aheadWord(c));
