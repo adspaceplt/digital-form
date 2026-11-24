@@ -8755,12 +8755,6 @@
       showList();
     },
     showList: function () { showList(); },
-    // What the other sections may offer work to. They ask here rather than
-    // keeping a list of their own.
-    active: function (then) {
-      readPages(function () { return db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name').order('id'); })
-        .then(function (r) { then(r.data || []); }).catch(function () { then([]); });
-    },
     // How long a stage may run before it reads Overdue (the Overview asks).
     staleH: staleH,
     isStale: isStale,

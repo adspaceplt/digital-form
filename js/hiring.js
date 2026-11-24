@@ -236,8 +236,9 @@
           if (state.open !== id) return;
           var o = pair[0], od = o.data || {}, sd = pair[1].data || {};
           state.outcome = o.error || od.error ? null : od;
-          /* The interview sheets; a read that fails leaves them out. */
-          state.sheets = pair[1].error || sd.error ? [] : (sd.sheets || []);
+          /* The interview sheets; a read that fails is said in its pane and
+             the sheet stays shut, since its save replaces the whole row. */
+          state.sheets = pair[1].error || sd.error ? null : (sd.sheets || []);
           if (state.role !== 'admin' && state.role !== 'owner') { state.docs = []; paintRec(); return; }
           return rpc('hiring_docs_of', { p_id: id }).then(function (x) {
             if (state.open !== id) return;
@@ -315,6 +316,7 @@
       }).join('') + '</div>';
     paintLog();
     if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', 'Please try again.', function () { openRec(c.id); });
+    if ($('hirShFail')) UI.failLine($('hirShFail'), 'the interview sheets', 'Please try again.', function () { openRec(c.id); });
     if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', 'Please try again.', function () { openRec(c.id); });
     if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', 'Please try again.', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
@@ -383,7 +385,9 @@
       var v = o.scores.map(function (x) { return Number((x.scores || {})[k]); }).filter(function (n) { return n > 0; });
       return [k, v.length ? Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10 : null];
     });
-    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>' +
+    var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>';
+    if (!state.sheets) return head + '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4></div><div id="hirShFail"></div></section>';
+    return head +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
         '<span class="readgroup-acts">' +
         (people.length && isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-h="ivpdf">Download</button>' : '') +
@@ -497,7 +501,7 @@
   }
   function score() {
     var c = state.rec, o = state.outcome, sh = $('hivSheet');
-    if (!sh || !o) return;
+    if (!sh || !o || !state.sheets) return;
     var mine = o.scores.filter(function (x) { return x.mine; })[0] || {};
     var ms = (state.sheets || []).filter(function (x) { return x.mine; })[0] || {}, ans = ms.answers || {};
     var crit = o.scorecard.criteria || [];

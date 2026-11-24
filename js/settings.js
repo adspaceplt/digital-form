@@ -1688,7 +1688,18 @@
           byArgs[k].p_pages.push(p.key);
         });
       }
-      return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve()).then(function () {
+      /* Every page's own window is checked before any is saved: a mixed
+         change saves a group at a time, and a later group refused would
+         leave the earlier ones changed unsaid (audit 2026-11-24). */
+      var late = [];
+      calls.forEach(function (a) {
+        if (a.p_kind === 'none' || !a.p_ends) return;
+        var from = Math.max(a.p_starts ? new Date(a.p_starts).getTime() : 0, Date.now());
+        if (new Date(a.p_ends).getTime() <= from) late = late.concat(a.p_pages.map(pgName));
+      });
+      if (late.length) return Promise.resolve('Choose an end after the start, and later than now, for ' + late.join(', ') + '.');
+      var saved = [];
+      return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a).then(function () { saved = saved.concat(a.p_pages); }); }); }, Promise.resolve()).then(function () {
         pg.picking = false; pg.picked = {};
         paintPg();
         /* The Undo bar says Saved. where it happened; the message line
@@ -1707,7 +1718,15 @@
             });
         }, $('pgMsg'));
         return '';
-      }).catch(function (e) { return e.message || String(e); });
+      }).catch(function (e) {
+        var why = e.message || String(e);
+        if (!saved.length) return why;
+        /* Some groups saved before one was refused: the list shows them, and
+           the line names which pages took the change and which did not. */
+        paintPg();
+        var left = keys.filter(function (k) { return saved.indexOf(k) < 0; });
+        return saved.map(pgName).join(', ') + ' saved. ' + left.map(pgName).join(', ') + ' not saved. ' + why;
+      });
     });
   }
   var pgWired = false;
