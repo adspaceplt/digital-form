@@ -86,7 +86,7 @@
     var m = Math.round(ms / 60000), h = Math.floor(m / 60);
     return h ? h + 'h ' + (m % 60) + 'm' : m + 'm';
   }
-  function placeName(s) { return s.client || s.venue || 'Client deleted'; }
+  function placeName(s) { return s.client || s.venue || 'Deleted client'; }
 
   /* ---- State and the address ------------------------------------------- */
   var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null };
@@ -286,7 +286,7 @@
     });
   }
   function stateChip(trip) {
-    return trip.state === 'open' ? '<span class="chip chip-state is-warn">On the road</span>'
+    return trip.state === 'open' ? '<span class="chip chip-state is-warn">In progress</span>'
       : '<span class="chip chip-state is-ok">Checked out</span>';
   }
 
@@ -329,12 +329,12 @@
     var w = withWord(trip);
     box.innerHTML =
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' + stateChip(trip) + menuHtml(trip) + '</div>' +
-        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'You drive'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
+        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'Driven by you'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
         (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Route</h2></div></div>' + routeHtml(trip) +
         '<div class="ost-acts">' +
-          '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Next stop</span></button>' +
+          '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Add stop</span></button>' +
           '<label class="btn btn-sm ost-shot">' + CAMERA + '<span class="btn-word">Add photo</span>' +
             '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label>' +
         '</div><p class="msg" id="ostTripMsg" role="status"></p></section>' +
@@ -458,7 +458,7 @@
       }).catch(function (e) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
-        say('danger', 'Location not read', e && e.code === 'denied'
+        say('danger', 'Location unavailable', e && e.code === 'denied'
           ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Locate again.'
           : 'The location could not be read. Move to an open spot, then press Locate again. ' + PRECISE);
       });
@@ -576,7 +576,7 @@
           '<option value="event">Event</option><option value="other">Other</option></select></div></div>' +
         '<div class="row ost-in"><div><label class="field-label" for="ostNote">Note</label>' +
           '<textarea class="input" id="ostNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
-        '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Going together</span>' +
+        '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Colleagues</span>' +
           '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div></div></div>' +
         '<p class="msg" id="ostStopMsg" role="status"></p>' +
       '</div>' +
@@ -597,7 +597,7 @@
   function openStopSheet(trip, opener) {
     buildStopSheet();
     stopSheet.trip = trip;
-    $('ostStopH').textContent = trip ? 'Next stop' : 'Check in';
+    $('ostStopH').textContent = trip ? 'Add stop' : 'Check in';
     $('ostStopGo').textContent = trip ? 'Add stop' : 'Check in';
     Array.prototype.forEach.call(stopSheet.querySelectorAll('.ost-in'), function (el) { el.hidden = !!trip; });
     $('ostVenue').value = ''; $('ostNote').value = ''; $('ostVenueRow').hidden = true;
@@ -611,7 +611,7 @@
     readPick().then(function () {
       $('ostClient').innerHTML = '<option value="">Choose a client</option>' + clients.map(function (c) {
         return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
-      }).join('') + '<option value="other">Other place</option>';
+      }).join('') + '<option value="other">Other venue</option>';
       $('ostPeople').innerHTML = people.map(function (p) {
         return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.id) + '"> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
       }).join('');
@@ -620,9 +620,9 @@
   function sendStop() {
     var trip = stopSheet.trip, go = $('ostStopGo');
     var cv = $('ostClient').value, venue = $('ostVenue').value.trim(), spot = stopKit.loc.spot;
-    if (!cv) { stopMsg('Choose the client, or Other place.', 'err'); $('ostClient').focus(); return; }
+    if (!cv) { stopMsg(SAID['no-place'], 'err'); $('ostClient').focus(); return; }
     if (cv === 'other' && !venue) { stopMsg('Enter the venue.', 'err'); $('ostVenue').focus(); return; }
-    if (!spot) { stopMsg('Read the location within ' + setting('outstation_accuracy_m', 50) + ' m first.', 'err'); return; }
+    if (!spot) { stopMsg('The location must be accurate to within ' + setting('outstation_accuracy_m', 50) + ' m. Press Locate again.', 'err'); return; }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }
     var args = { p_client: cv === 'other' ? null : cv, p_venue: cv === 'other' ? venue : null,
       p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at };
@@ -812,8 +812,8 @@
     var ref = trip.ref || '';
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: ref + ' · The trip on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
-        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it recorded on the clients\' Calls and visits are deleted with it.' : '') + ' This cannot be undone.',
+      body: (ref ? 'Trip ' + ref : 'The trip') + ' on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
+        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits this trip added to each client\'s Calls and visits will also be deleted.' : '') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [{ name: 'ref', label: 'Type the trip number to confirm', placeholder: ref, match: ref,
         need: 'Type the trip number to confirm.', mismatch: GONE['confirm-required'] }]
@@ -843,8 +843,8 @@
     }
     var w = withWord(trip), m = me();
     var facts = [['Purpose', PURPOSE[trip.purpose]], ['Driver', m && trip.driver_id === m.id ? 'You' : F.named(trip.driver_code, trip.driver)]]
-      .concat(w ? [['Going together', w]] : [])
-      .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'On the road'],
+      .concat(w ? [['Colleagues', w]] : [])
+      .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress'],
         ['Road distance', trip.km_total != null ? km(trip.km_total) : 'Not available']])
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
@@ -889,8 +889,8 @@
 
   /* ---- Download (All trips) --------------------------------------------- */
   function exportCsv(trips) {
-    var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Going together', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
-      'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous', 'Km back to office', 'Km total',
+    var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Colleagues', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
+      'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous stop', 'Km back to office', 'Km total',
       'Checked out', 'Rating', 'Note', 'Check-out note'];
     var rows = [head];
     trips.forEach(function (t) {

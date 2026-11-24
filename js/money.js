@@ -278,7 +278,7 @@
   }
   /* A Singapore client billed in RM reads the S$ it comes to beside a
      total, at the rate set in Tax and terms (`fx_sgd`, RM to S$1):
-     " (approx. S$ 952.38)". Nothing where the rate is unset, or for any
+     " (approximately S$ 952.38)". Nothing where the rate is unset, or for any
      other client. */
   /* `fx` is the rate a record kept (a letter's `bill_to.fx_sgd`), else
      the setting on `at`. `approxSgd` is the figure, null where none is
@@ -293,7 +293,7 @@
   }
   function approx(n, c, at, fx) {
     var v = approxSgd(n, c, at, fx);
-    return v == null ? '' : ' (approx. ' + money2(v, 'SG') + ')';
+    return v == null ? '' : ' (approximately ' + money2(v, 'SG') + ')';
   }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.

@@ -368,6 +368,9 @@
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
+    /* A notice's or a page's window (Page availability, Upgrade,
+       Announcements). */
+    badWindow: 'Choose an end date later than the start date and the current time.',
     /* A write refused because the record moved since it was read: the
        page repaints from the latest copy (every record's Edit). */
     stale: 'Not saved. This record was changed by someone else. The latest version is now shown.',

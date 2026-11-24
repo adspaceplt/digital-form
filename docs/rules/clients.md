@@ -247,7 +247,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     hold. `get_portal`, `get_campaign` and `sm_report_snapshot` send
     `bill_market`; `issue_letter` keeps it as the letter's `market`, and
     in `bill_to` the client's market and, billed in RM, `fx_sgd` then in
-    force, which the letter reads under its figure in bold (Approx.
+    force, which the letter reads under its figure in bold (Approximately
     S$ …); `bukku_prepare` sends its currency. The market stays the
     number's, the registration's and Meta's taxes'. A version published
     before reads its market as drawn.

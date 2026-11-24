@@ -5901,7 +5901,7 @@
       // an old entry edited never moves the lead (audit 2026-11-15).
       if (!was && (state.client.stage || 'lead') === 'lead') {
         writeClient(state.client.id, { stage: 'contacted' }).then(function (q) {
-          if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Logged. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
+          if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Saved. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
           var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
