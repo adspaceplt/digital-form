@@ -569,6 +569,7 @@
     review_revert_confirm: 'p_post',
     review_record_changes: 'p_note p_post',
     review_set_counts: 'p_sets',
+    review_sets_waiting: '',
     review_caption_undo: 'p_post p_round p_caption p_caption_zh',
     s3_keys_in_use: 'p_keys',
     save_selection: 'p_selected p_passcode p_backup p_token',
@@ -1975,6 +1976,9 @@
           else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' };
           else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'You do not have permission to change white label settings. Please ask an admin.', hint: 'white-label' };
         }
+
+        if (!err && x.id != null && (DB[table] || []).some(function (r) { return r.id === x.id; }))
+          err = { code: '23505', message: 'duplicate key value violates unique constraint "' + table + '_pkey"' };
         if (!err && table === 'campaigns' && (x.invoice_no != null || x.invoice_url != null || x.invoice_uploaded_at != null) && !opsAllowed('campaigns.finance', 'work'))
           err = { code: '42501', message: 'You do not have permission to change the campaign invoice. Please ask an admin.' };
         if (!err && table === 'campaign_deliverables' && (x.hidden_at != null || x.hidden_by != null))
@@ -10275,6 +10279,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       claNewest('client_documents', DB.client_documents || [], 'letter', function () { return true; });
       claNewest('documents', DB.documents || [], 'document', function (d) { return regMay(d.family, 'view'); });
       return Promise.resolve({ data: JSON.parse(JSON.stringify(cla)), error: null });
+    }
+
+    if (name === 'review_sets_waiting') {
+      var pub = (DB.batches || []).filter(function (b) { return b.published; }).map(function (b) { return b.id; });
+      return rpc('review_set_counts', { p_sets: pub }).then(function (r) {
+        return { data: (r.data || []).filter(function (c) { return c.n_posts > 0 && c.n_approved < c.n_posts; })
+          .map(function (c) { return { set_id: c.set_id, n_posts: c.n_posts, n_approved: c.n_approved, n_changes: c.n_changes }; }), error: null };
+      });
     }
     if (name === 'review_set_counts') {
       if (!opsMe() || !opsAllowed('review.sets', 'view')) return Promise.resolve({ data: [], error: null });

@@ -65,6 +65,7 @@
     'ai-refused': 'The Assistant cannot help with that. Ask about a client, a task or a report.',
     'too-many-steps': 'That question needed too many steps. Ask about one thing at a time.',
     'expired': 'This question has expired. Please ask it again.',
+    'too-long': 'This conversation is too long. Press Clear, then ask again.',
     denied: 'You do not have permission to use the Assistant. Please ask an admin.'
   };
   function saidOf(code) { return SAID[code] || 'The Assistant could not answer. Try again.'; }
@@ -775,6 +776,29 @@
 
   /* ---- The changes: drawn first, written only on Confirm --------------------- */
   function idem() { return 'ag-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8); }
+  /* A row a card makes carries an id the page chose, once for the card: a
+     second Confirm after a lost answer meets the row already made (23505)
+     and goes on as made, never inserting again (review 2026-11-24). */
+  function rowId(a) {
+    if (a._rowId) return a._rowId;
+    var c = window.crypto;
+    if (c && c.randomUUID) return (a._rowId = c.randomUUID());
+    var b = new Uint8Array(16);
+    if (c && c.getRandomValues) c.getRandomValues(b); else for (var i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var h = Array.prototype.map.call(b, function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('');
+    return (a._rowId = h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20));
+  }
+  /* Made, or made already by an earlier press of this card. */
+  function madeOnce(r) {
+    if (r.error && r.error.code === '23505') return true;
+    if (r.error) throw new Error(r.error.message);
+    if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
+    return false;
+  }
+  /* What follows a row made (a line filed, a stage moved) never fails the
+     act: the row stands, so Confirm is not offered again. */
+  function after(p) { return Promise.resolve().then(p).catch(function () {}); }
   function rpcOk(r) {
     if (r.error) throw new Error(r.error.message || 'The database refused the request.');
     var d = r.data;
@@ -883,22 +907,26 @@
         var row = { client_id: a.client_id, kind: a.kind, happened_at: a.happened_on, contact_name: a.with || null,
           summary: String(a.summary || '').slice(0, 4000), next_action: a.next_action || null, next_at: a.next_on || null,
           by_whom: (me() || {}).name || null };
+        row.id = rowId(a);
         return db.from('client_touches').insert(row).select('id').then(function (r) {
-          if (r.error) throw new Error(r.error.message);
-          if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
-          var id = r.data[0].id, c = a._client;
-          if (bridge.log) bridge.log('client.touch', c.name, (KIND[a.kind] || a.kind) + (a.next_action ? ' · next: ' + a.next_action : ''));
-          file('assistant.call', c.name, (KIND[a.kind] || a.kind) + ' logged');
+          var again = madeOnce(r);
+          var id = row.id, c = a._client;
+          if (!again) after(function () {
+            if (bridge.log) bridge.log('client.touch', c.name, (KIND[a.kind] || a.kind) + (a.next_action ? ' · next: ' + a.next_action : ''));
+            file('assistant.call', c.name, (KIND[a.kind] || a.kind) + ' logged');
+          });
           /* The first call or visit is what makes a lead contacted, as the
              Calls and visits pane does. */
           var moved = (c.stage || 'lead') === 'lead'
-            ? db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).select('id').then(function (q) {
+            ? after(function () {
+              return db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).eq('stage', 'lead').select('id').then(function (q) {
                 if (q.error || !(q.data || []).length || !bridge.log) return;
                 return fetched(['crm']).then(function () {
                   var CRM = window.ADspaceCRM;
                   bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
                 });
-              })
+              });
+            })
             : Promise.resolve();
           return moved.then(function () {
             return { said: 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
@@ -1056,17 +1084,18 @@
         });
       },
       run: function (a) {
+        var cid = rowId(a);
         return db.from('campaigns').insert({
-          client_id: a._client.id, title: a._title, purpose: null, slots: a._slots, deadline: null,
+          id: cid, client_id: a._client.id, title: a._title, purpose: null, slots: a._slots, deadline: null,
           push_format: FORMAT[a.format] ? a.format : 'site_visit', deliverable: a.deliverable === 'graphic' ? 'graphic' : 'video',
           owner: a._owner || null, backups_open: false, access_token: API.accessToken(), state: 'draft',
           created_by: (bridge.actor && bridge.actor()) || null
         }).select('id').then(function (r) {
-          if (r.error) throw new Error(r.error.message);
-          if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
-          if (bridge.log) bridge.log('campaign.created', a._title, a._slots + ' creators');
-          file('assistant.campaign', a._title, 'Campaign created for ' + a._client.name);
-          return { said: 'Created.', open: { kind: 'campaign', id: r.data[0].id, label: 'Open campaign' } };
+          if (!madeOnce(r)) after(function () {
+            if (bridge.log) bridge.log('campaign.created', a._title, a._slots + ' creators');
+            file('assistant.campaign', a._title, 'Campaign created for ' + a._client.name);
+          });
+          return { said: 'Created.', open: { kind: 'campaign', id: cid, label: 'Open campaign' } };
         });
       }
     },
@@ -1504,7 +1533,10 @@
     });
     yes.addEventListener('click', function () {
       yes.disabled = true; no.disabled = true;
-      def.run(a).then(function (out) {
+      /* An act done once answers as done: a press after its card was
+         drawn as done never runs it again. */
+      (a._done ? Promise.resolve(a._done) : def.run(a)).then(function (out) {
+        a._done = out;
         el.querySelector('.ag-acts').remove();
         el.classList.add('is-done');
         var line = document.createElement('div');
@@ -1573,13 +1605,37 @@
   /* The conversation sent is kept to its last turns (the function takes 80
      messages at most), cut where a question of the colleague's begins, so a
      tool's answer never arrives without its call. */
+  /* Kept by count and by size (review 2026-11-24: forty long steps passed
+     the function's 120,000 characters and every question after was
+     refused): the oldest whole questions go until the rest is under
+     TRIM_CHARS, the last question always kept. */
+  var TRIM_CHARS = 100000;
+  function sizeOfMsgs(list) {
+    var n = 0;
+    list.forEach(function (m) {
+      if (typeof m.content === 'string') { n += m.content.length; return; }
+      (m.content || []).forEach(function (b) {
+        ['text', 'thinking', 'data', 'content'].forEach(function (k) { if (typeof b[k] === 'string') n += b[k].length; });
+        if (b.input != null) n += JSON.stringify(b.input).length;
+      });
+    });
+    return n;
+  }
+  function isQuestion(m) {
+    return m.role === 'user' && m.content.some(function (b) { return b.type === 'text'; }) &&
+      !m.content.some(function (b) { return b.type === 'tool_result'; });
+  }
   function trim() {
-    if (state.messages.length <= 40) return;
-    var i = state.messages.length - 40;
-    while (i < state.messages.length && !(state.messages[i].role === 'user' &&
-           state.messages[i].content.some(function (b) { return b.type === 'text'; }) &&
-           !state.messages[i].content.some(function (b) { return b.type === 'tool_result'; }))) i++;
-    state.messages = state.messages.slice(i);
+    var i = Math.max(0, state.messages.length - 40);
+    while (i < state.messages.length && !isQuestion(state.messages[i])) i++;
+    var list = state.messages.slice(i);
+    while (list.length && sizeOfMsgs(list) > TRIM_CHARS) {
+      var j = 1;
+      while (j < list.length && !isQuestion(list[j])) j++;
+      if (j >= list.length) { list = []; break; }
+      list = list.slice(j);
+    }
+    state.messages = list;
   }
   function step(n) {
     busy(true);
@@ -1588,7 +1644,14 @@
       if (mine !== state.said) return;
       var d = res.data;
       if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
-      if (res.error || !d) return fail('The Assistant could not be reached. Try again.');
+      if (res.error || !d) {
+        /* Refused as too long (400): the conversation is cleared by its own
+           control, never sent again as it stands. */
+        return window.ADspaceAPI.fnRefusal(res).then(function (code) {
+          if (mine !== state.said) return;
+          fail(code === 'bad-request' ? SAID['too-long'] : 'The Assistant could not be reached. Try again.');
+        });
+      }
       if (d.error) { if (d.error === 'ai-limit') showLeft(0); return fail(saidOf(d.error)); }
       if (d.press) state.press = d.press;
       if (typeof d.left === 'number') showLeft(d.left);

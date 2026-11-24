@@ -54,6 +54,37 @@ import { cors, json } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
+/* The answer once ready, the connection held open by a space every few
+   seconds meanwhile (JSON allows leading whitespace), as checklist-draft
+   holds it (review 2026-11-24: a long draft outran the gateway's idle
+   limit and the page read a failure while the model still ran). */
+const AI_TIMEOUT = 130000;
+function held(work: Promise<Response>, origin: string | null) {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    start(ctl) {
+      const tick = setInterval(() => { try { ctl.enqueue(enc.encode(' ')); } catch { /* closed */ } }, 8000);
+      work.then((r) => r.text(), (e) => { console.error('report-draft: failed', String((e as Error)?.message || e)); return JSON.stringify({ error: 'ai-failed' }); })
+        .then((t) => { clearInterval(tick); ctl.enqueue(enc.encode(t)); ctl.close(); });
+    }
+  });
+  return new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
+}
+/* Our own timeout cut off a request the model was already running: it is
+   counted as incomplete, never failed, so a long run cannot be pressed
+   again without limit. One token marks it (ai_draft_tokens turns a failed
+   row with input into incomplete). */
+function timedOut(e: unknown): boolean {
+  const err = e as { status?: number; name?: string; message?: string; error?: { error?: { message?: string } } };
+  const msg = err.error?.error?.message || err.message || '';
+  return !err.status && (err.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(msg));
+}
+// deno-lint-ignore no-explicit-any
+function markSlow(db: any, id: string, spent: Anthropic.Message[]): Promise<null> {
+  if (spent.length || !id) return Promise.resolve(null);
+  return db.rpc('ai_draft_tokens', { p_id: id, p_in: 1, p_out: 0, p_model: secret('REPORT_DRAFT_MODEL') || null }).then(() => null, () => null);
+}
+
 /* The fields each kind of report holds, in the page's own keys. */
 const FIELDS: Record<string, [string, string][]> = {
   ads: [['intro', 'Summary: two or three sentences on the month'], ['worked', 'What worked: one point a line'],
@@ -331,7 +362,7 @@ async function askCheck(client: Anthropic, data: Record<string, unknown>, parts:
     output_config: { format: { type: 'json_schema', schema } },
     messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
       '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
-  } as Anthropic.MessageCreateParamsNonStreaming);
+  } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
   spent.push(res);
   if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') return null;
   const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
@@ -414,11 +445,13 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
     const said = err.error?.error?.message || err.message || '';
     console.error('report-draft check: Claude API refused', status, type, said);
     await done(false, null);
+    const slow = timedOut(e);
+    if (slow) await markSlow(db, pressId, spent);
     const code = status === 401 || status === 403 ? 'ai-key'
       : status === 429 || status === 529 ? 'ai-busy'
       : /credit balance/i.test(said) ? 'ai-credit'
       : status === 404 || type === 'not_found_error' ? 'ai-model'
-      : 'ai-failed';
+      : slow ? 'ai-slow' : 'ai-failed';
     return json({ error: code }, 200, origin);
   } finally {
     if (spent.length) await keepTokens(db, pressId, spent);
@@ -432,6 +465,14 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
 async function runNext(db: any, id: string, data: Record<string, unknown>, origin: string | null, forName: string, lang: string, auth: string) {
   const ads = (data.ads || []) as Record<string, unknown>[];
   const refs = ads.map((a) => String(a.ref));
+  /* The press is counted before Meta is asked (review 2026-11-24): a
+     refused or spent day never reads Meta for nothing. */
+  const claim = await db.rpc('ai_next_claim', { p_report: id });
+  if (claim.error) return json({ error: 'needs-update' }, 200, origin);
+  const got = (claim.data || {}) as Record<string, unknown>;
+  if (got.error) return json(got, 200, origin);
+  const pressId = String(got.id || '');
+  const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
   /* Meta's days (meta-import `daily`), asked as the caller: off, not
      linked or refused, the suggestions read the report alone, and the
      answer says why. */
@@ -453,12 +494,6 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
     source = { meta: false, ads: ads.length, why: 'meta-failed' };
   }
 
-  const claim = await db.rpc('ai_next_claim', { p_report: id });
-  if (claim.error) return json({ error: 'needs-update' }, 200, origin);
-  const got = (claim.data || {}) as Record<string, unknown>;
-  if (got.error) return json(got, 200, origin);
-  const pressId = String(got.id || '');
-  const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
 
   const str = (d: string) => ({ type: 'string', description: d });
   const schema = { type: 'object', additionalProperties: false, required: ['suggestions'], properties: {
@@ -477,7 +512,7 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
       system: NEXT + '\n\n' + AVOID + (lang === 'zh' ? ZH.replace(/every field/, 'every suggestion') : ''),
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: (lang === 'zh' ? ZH_ASK : '') + 'Suggest the next batch for this report. Its figures follow as JSON.\n\n' + JSON.stringify(data) }]
-    } as Anthropic.MessageCreateParamsNonStreaming);
+    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
     spent.push(res);
     const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
     let ans: Record<string, unknown> | null = null;
@@ -518,11 +553,13 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
     const said = err.error?.error?.message || err.message || '';
     console.error('report-draft next: Claude API refused', status, type, said);
     await done(false);
+    const slow = timedOut(e);
+    if (slow) await markSlow(db, pressId, spent);
     const code = status === 401 || status === 403 ? 'ai-key'
       : status === 429 || status === 529 ? 'ai-busy'
       : /credit balance/i.test(said) ? 'ai-credit'
       : status === 404 || type === 'not_found_error' ? 'ai-model'
-      : 'ai-failed';
+      : slow ? 'ai-slow' : 'ai-failed';
     return json({ error: code }, 200, origin);
   } finally {
     if (spent.length) await keepTokens(db, pressId, spent);
@@ -595,7 +632,10 @@ Deno.serve(async (req) => {
 
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
   const targets: { platforms: string[]; posts: string[] } = { platforms: [], posts: [] };
-  if (notes) data.team_notes = mask(notes);
+  /* The team's notes carry what a colleague typed, a number or an email
+     too, so they are hidden as every other typed word is (review
+     2026-11-24). */
+  if (notes) data.team_notes = hide(notes);
 
   /* The client's latest confirmed brand analysis (2026-10-10): its
      positioning, audiences and pillars, masked as the rest; none where no
@@ -784,10 +824,10 @@ Deno.serve(async (req) => {
     data.posts_to_remark = targets.posts;
   }
 
-  if (check) return runCheck(db, id, kind, r, data, mask, origin, forName);
+  if (check) return held(runCheck(db, id, kind, r, data, mask, origin, forName), origin);
   if (next) {
     if (kind !== 'ads') return json({ error: 'wrong-kind' }, 200, origin);
-    return runNext(db, id, data, origin, forName, lang, auth);
+    return held(runNext(db, id, data, origin, forName, lang, auth), origin);
   }
 
   const fields = kind === 'ads' ? FIELDS.ads : [FIELDS.social[0]];
@@ -819,7 +859,7 @@ Deno.serve(async (req) => {
 
   const started = Date.now();
   const spent: Anthropic.Message[] = [];
-  try {
+  return held((async () => { try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
     /* The answer is held to the schema by structured output, never a forced
        tool call: newer models refuse `tool_choice` of type tool. The model
@@ -830,7 +870,7 @@ Deno.serve(async (req) => {
       system: (lang === 'zh' ? ZH_ASK + '\n\n' : '') + (kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM) + SHARED + (lang === 'zh' ? ZH : ''),
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: (again ? 'The last answer was written in English. ' : '') + (lang === 'zh' ? ZH_ASK : '') + 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
-    } as Anthropic.MessageCreateParamsNonStreaming);
+    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
     let res = await ask(false);
     spent.push(res);
     /* A 中文 press that came back in English is asked once more, inside the
@@ -914,13 +954,15 @@ Deno.serve(async (req) => {
     const said = err.error?.error?.message || err.message || '';
     console.error('report-draft: Claude API refused', status, type, said);
     await done(false);
+    const slow = timedOut(e);
+    if (slow) await markSlow(db, pressId, spent);
     const code = status === 401 || status === 403 ? 'ai-key'
       : status === 429 || status === 529 ? 'ai-busy'
       : /credit balance/i.test(said) ? 'ai-credit'
       : status === 404 || type === 'not_found_error' ? 'ai-model'
-      : 'ai-failed';
+      : slow ? 'ai-slow' : 'ai-failed';
     return json({ error: code }, 200, origin);
   } finally {
     if (spent.length) await keepTokens(db, pressId, spent);
-  }
+  } })(), origin);
 });

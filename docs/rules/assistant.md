@@ -150,3 +150,13 @@ Moved from DESIGN.md §4 on 2026-11-22.
 | Need | Component |
 |---|---|
 | Asking the portal in words (the Assistant) | `#agentSheet` (`js/agent.js`): the task card's side sheet, 420px, at a desk; a card above the tab bar on a phone; a head (the AI mark in the action ink, Assistant at 600, Clear, the close mark), the conversation (`.ag-log`: the colleague's words right on the field's ground, the Assistant's left in ink, a list as a list, a word in weight, an Open button `.btn-sm` with the chevron), a change as `.ag-confirm` on `--raised` (its title 13/600, `.ag-facts` label beside value, from → to, Confirm the one blue at the right, Cancel quiet; then the green dot and its word with Open and Undo, the card on `--sunk`), a refusal led by the amber rule, the writing as three dots; the foot: three starting questions as tonal pills while empty, the box on the field's ground with the round blue send, the count left in 12px mute |
+- The conversation sent is kept to its last forty messages and to
+  `TRIM_CHARS` (100,000) characters, the oldest whole questions dropped
+  first; a 400 (`bad-request`) reads This conversation is too long. Press
+  Clear, then ask again. `portal-agent`'s scrub sets a date, a time, a
+  moment and an id aside before masking a phone number or an email, in a
+  question and in a tool's answer alike. A card that makes a row
+  (`propose_log_call`, `propose_campaign`) inserts it under an id the page
+  chose once (`rowId`), so a second Confirm after a lost answer meets
+  23505 and goes on as made; what follows the row never fails the act
+  (review 2026-11-24, `tests/agent.js`).
