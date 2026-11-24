@@ -882,7 +882,7 @@ async function billItem(p: any): Promise<any> {
    reference is matched whole in one field: the service cycle's is the start
    of the advertising budget's (`… · Ads`), so a match inside a longer one
    would take the budget's invoice for the service's (review, 2026-11-17). */
-async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string } | null> {
+async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string; amount: number | null } | null> {
   const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const k = key(ref);
   if (k.length < 6) return null;
@@ -890,7 +890,10 @@ async function invoiceHolding(contact: number, ref: string): Promise<{ id: numbe
   for (const x of ((r && r.transactions) || []) as any[]) {
     if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
     if ([x.number2, x.reference].some((f) => key(f) === k))
-      return { id: Number(x.id || 0), number: String(x.number || x.id) };
+      /* Bukku's own total (the review of 2026-11-24): an invoice found there
+         is filed at what Bukku holds, never the portal's sum. */
+      return { id: Number(x.id || 0), number: String(x.number || x.id),
+        amount: x.amount == null || x.amount === '' || !Number.isFinite(Number(x.amount)) ? null : cents(x.amount) };
   }
   return null;
 }
@@ -1617,8 +1620,20 @@ Deno.serve(async (req) => {
         else return json({ error: 'not-confirmed' }, 200, origin);
         throw e;
       }
-      await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
+      /* The bill stands in Bukku once made: a failed read of the bills back
+         never hides it (the review of 2026-11-24: it answered Bukku
+         unreachable and never filed the bill made). The bill is filed
+         either way, and the page told the list was not read. */
+      let readBack = true;
+      try {
+        await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
+      } catch (e) {
+        if (!made) throw e;
+        readBack = false;
+        console.error('bukku-sync: bill made, its list not read', e instanceof Error ? e.message : String(e));
+      }
       await db.rpc('creator_bill_done', { p_option: oid, p_number: made });
+      if (!readBack) return json({ made, note: 'list-not-read' }, 200, origin);
       const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
       if (list.error) return json({ error: 'needs-update' }, 200, origin);
       return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
@@ -1640,7 +1655,8 @@ Deno.serve(async (req) => {
       try {
         const had = await invoiceHolding(Number(p.contact_id), String(p.ref));
         if (had) {
-          await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: had.id, p_number: had.number, p_amount: total });
+          await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: had.id, p_number: had.number,
+            p_amount: had.amount ?? total });
           return json({ ok: true, error: 'in-bukku', number: had.number }, 200, origin);
         }
         let items: any[] | null = null, budgetAccount: number | null = null;

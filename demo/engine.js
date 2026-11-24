@@ -298,7 +298,7 @@
     hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
     hiring_sheet_save: 'p_id p_rating p_answers', hiring_sheets_of: 'p_id', hiring_sheet_remove: 'p_id p_member',
-    hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
+    hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_queue: 'p_id', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
     hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
     hiring_unlock: 'p_code', hiring_docs_of: 'p_id', hiring_doc_save: 'p_candidate p_doc p_kind p_terms p_expected',
     hiring_doc_pay_set: 'p_doc p_basic p_probation p_token', hiring_doc_pay_get: 'p_doc p_token', hiring_doc_send: 'p_doc',
@@ -16553,8 +16553,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return hOk({});
         }
         if (name === 'hiring_interview_meet_prepare') {
-          if (iv.state !== 'confirmed' || iv.mode !== 'online') return hNo('not-confirmed');
-          return Promise.resolve({ data: { id: iv.id, meeting_at: iv.slots[iv.picked - 1], meeting_minutes: iv.minutes, meeting_event_id: iv.meeting_event_id || null,
+
+          if (!(iv.state === 'confirmed' || (iv.state === 'cancelled' && iv.meeting_event_id)) || iv.mode !== 'online') return hNo('not-confirmed');
+          return Promise.resolve({ data: { id: iv.id, meeting_at: iv.state === 'confirmed' ? iv.slots[iv.picked - 1] : null, meeting_minutes: iv.minutes, meeting_event_id: iv.meeting_event_id || null,
             meeting_link: iv.meeting_link || null, position: icand.position }, error: null });
         }
         if (name === 'hiring_mail_prepare') {
@@ -16967,10 +16968,37 @@ function opsCodeRange(cid, period, ty, src, seq) {
           pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso,
           decide_by: null, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null });
         if (oc !== 'proceed') (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
+        var hMeets = [];
         DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'none'].indexOf(i.state) > -1 ||
-          (oc !== 'proceed' && (i.state === 'picked' || (i.state === 'confirmed' && !i.held_at))))) i.state = 'cancelled'; });
+          (oc !== 'proceed' && (i.state === 'picked' || (i.state === 'confirmed' && !i.held_at))))) { i.state = 'cancelled'; if (i.meeting_event_id) hMeets.push(i.id); } });
         hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Do not proceed');
-        return hOk({ was: was, email: oc !== 'proceed' });
+        return hOk({ was: was, email: oc !== 'proceed', meets: hMeets });
+      }
+
+      if (name === 'hiring_outcome_mail_queue') {
+        if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
+        if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
+        if (hc.outcome_mail === 'sent' || hc.outcome_mail === 'sending') return hOk({ same: true });
+        hc.outcome_mail = 'queued'; hc.outcome_mail_at = null; hc.outcome_mail_due = new Date(Date.now() + 30000).toISOString();
+        persist();
+        var hqId = hc.id;
+        setTimeout(function () {
+          var q = DB.hiring_candidates.filter(function (x) { return x.id === hqId; })[0];
+          if (!q || q.outcome_mail !== 'queued' || ['pool', 'not'].indexOf(q.outcome) < 0) return;
+          var qg = hiringGate([q.outcome]), qt = qg.tpl[q.outcome];
+          if (!qt || !qg.auto || !qt.on || window.__mail === false) {
+            q.outcome_mail = 'failed'; q.outcome_mail_at = new Date().toISOString();
+            window.__hireMailOff = (window.__hireMailOff || []).concat([{ kind: q.outcome, why: !qg.auto ? 'off: Automatic emails are off.' : 'off: This email is turned off in Email templates.' }]);
+          } else {
+            window.__hireMail = (window.__hireMail || []).concat([{ to: q.email, kind: q.outcome,
+              months: Number(appSet('hiring_pool_months', appToday())) || 12 }]);
+            q.outcome_mail = 'sent'; q.outcome_mail_at = new Date().toISOString();
+            hLog(q.id, 'candidate.email', 'Decision' + hMailSaid('sent'));
+          }
+          q.outcome_mail_due = null;
+          persist();
+        }, 30000);
+        return hOk({ due: hc.outcome_mail_due });
       }
       if (name === 'hiring_outcome_mail_prepare') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');

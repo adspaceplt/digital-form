@@ -311,6 +311,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   it. Invoices is offered at Clients: Quotations View as well as Billing
   View: `quotation_invoices_of` answers the amounts, the budget's contact
   and its account at Billing View alone (`billing`), `denied` below both.
+- A bill or invoice made stands in Bukku whatever is read after it
+  (2026-11-24, the review): Create bill files the bill made even where the
+  read of the bills back fails (`list-not-read`, the page saying Read from
+  Bukku shows them), and an invoice already found in Bukku is filed at
+  Bukku's own amount (`invoiceHolding` `amount`), never the portal's sum.
 - Bukku not connected (SWITCHED-OFF ACTS, 2026-11-21): every act that asks
   Bukku (Send to Bukku, Link to Bukku, Refresh, Use Bukku's, Create bill,
   Create n bills, Read from Bukku, Overdue invoices' Refresh) carries
