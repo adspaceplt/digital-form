@@ -3463,6 +3463,7 @@
     'team.changed':          ['Access changed', 'is-warn', 'team'],
     'team.edited':           ['Team member edited', '', 'team'],
     'team.invited':          ['Invitation sent', '', 'team'],
+    'team.revealed':         ['Personal detail shown', '', 'team'],
     'team.group_added':      ['User group added', 'is-ok', 'team'],
     'team.group_changed':    ['User group changed', 'is-warn', 'team'],
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],
@@ -6709,7 +6710,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true],
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true], reveal: [10, 600, true],
     clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true],
     caph: [1, 80, true], near: [50, 100, true], taskh: [0.5, 40, false, 1], hcrem: [0, 14, true], onoff: [0, 1, true],
     lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true] };
@@ -6864,6 +6865,9 @@
       ['outstation_accuracy_m', 'Location accuracy limit (metres)', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
       ['outstation_keep_months', 'Trips kept (months, 6 to 120)', 'keep', 'Trips', 'Kept', per('month')]] },
     idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
+    /* Hidden personal details (2026-11-25): how long a value shown on an
+       employee record stays shown (js/personnel.js). */
+    reveal: { title: 'Hidden personal details', keys: [['reveal_seconds', 'Hidden again after (seconds, 10 to 600)', 'reveal', '', 'Hidden again after', function (v) { return setPlural(v, 'second', 'seconds'); }]] },
     hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],
       ['hiring_decision_days', 'Decision time (working days after the interview, 1 to 30)', 'away', '', 'Decision time', per('working day')],

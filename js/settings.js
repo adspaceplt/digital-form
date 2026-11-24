@@ -338,6 +338,10 @@
         biz && { id: 'idle', name: 'Signed-in devices', kind: 'edit',
           meta: num('session_idle_days') == null ? '' : num('session_idle_days') === 0 ? 'Off'
             : 'Signed out after ' + plural(num('session_idle_days'), 'day', 'days') + ' unused' },
+        /* Hidden personal details (2026-11-25): a value shown on an
+           employee record is hidden again after this long. */
+        biz && { id: 'reveal', name: 'Hidden personal details', kind: 'edit',
+          meta: num('reveal_seconds') == null ? '' : 'Hidden again after ' + plural(num('reveal_seconds'), 'second', 'seconds') },
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
