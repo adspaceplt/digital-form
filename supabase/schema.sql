@@ -143664,7 +143664,8 @@ grant execute on function public.careers_doc_open(text, uuid, text, text) to ano
 --     (`creator_mail_queue('changed')`) and the WhatsApp template
 --     `creator_changed` to the WhatsApp on file (`wa_enqueue`, held by
 --     Automatic WhatsApp as a creator message is, sent once its template
---     is chosen in Settings).
+--     is chosen in Settings; its reference the creator, the message's
+--     recipient).
 --   * `creator_pay_json` answers `changes`; the review email fills
 --     {changes} (an edited template is left alone); Details changed fills
 --     {date} and {chinese date}; `template_fields('creator-details')` takes
@@ -143794,7 +143795,7 @@ begin
     perform public.creator_mail_queue('changed', v_new.id);
     perform public.wa_enqueue('creator_changed', public.wa_number(coalesce(nullif(v_was.whatsapp, ''), cr.whatsapp), 'MY'), cr.name,
       jsonb_build_array(cr.name, public.register_day((v_new.created_at at time zone 'Asia/Kuala_Lumpur')::date)),
-      'creator_pay', v_new.id, null, null);
+      'creator', cr.id, null, null);
   end if;
   return jsonb_build_object('ok', true, 'ref', v_new.ref);
 end $$;
@@ -143864,7 +143865,7 @@ begin
           case p_purpose when 'reminder' then 'colleague' when 'creator' then 'creator' when 'creator_changed' then 'creator' else 'contact' end,
           case when p_purpose = 'reminder' then (select n.team_member_id from public.ops_notifications n where n.id = p_ref_id)
                when p_purpose = 'creator' then (select o.creator_id from public.campaign_options o where o.id = p_ref_id)
-               when p_purpose = 'creator_changed' then (select r.creator_id from public.creator_pay_requests r where r.id = p_ref_id) end,
+               when p_purpose = 'creator_changed' then p_ref_id end,
           nullif(t.category, ''));
   perform public.wa_kick();
 end $$;
