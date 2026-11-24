@@ -17,15 +17,15 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261124">
+<link rel="stylesheet" href="/css/portal.css?v=20261124zzfb">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124dg"><\/script>');}}catch(e){}</script>
-<script src="/js/config.js?v=20261124q"></script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261124dh"><\/script>');}}catch(e){}</script>
+<script src="/js/config.js?v=20261124zzfb"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261124s"></script>
+<script src="/js/words.js?v=20261124ts"></script>
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
@@ -37,11 +37,12 @@
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261124"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/maintenance.js?v=20261123f"></script>
-<script src="/js/announce.js?v=20261120t"></script>
-<script src="/js/money.js?v=20261124q"></script>
-<script src="/js/documents.js?v=20261124dg"></script>
-<script src="/js/smreport.js?v=20261124df"></script>
+<script src="/js/maintenance.js?v=20261124zzfb"></script>
+<script src="/js/announce.js?v=20261124ts"></script>
+<script src="/js/money.js?v=20261124zqc"></script>
+<script src="/js/documents.js?v=20261124dh"></script>
+<script src="/js/smreport.js?v=20261124dh"></script>
+<script src="/js/fbform.js?v=20261124"></script>
 </head>
 <body>
 
@@ -113,6 +114,7 @@
       <button class="tab" data-pane="letters" type="button" role="tab" aria-selected="false" id="tabLetters">Letters</button>
       <button class="tab" data-pane="reports" type="button" role="tab" aria-selected="false" id="tabReports" hidden>Reports</button>
       <button class="tab" data-pane="meetings" type="button" role="tab" aria-selected="false" id="tabMeetings" hidden>Meetings</button>
+      <button class="tab" data-pane="feedback" type="button" role="tab" aria-selected="false" id="tabFeedback" hidden>Feedback</button>
       <button class="tab" data-pane="account" type="button" role="tab" aria-selected="false" id="tabAccount">Account</button>
     </nav>
 
@@ -122,6 +124,12 @@
            who to reach and the company beside it. -->
       <div class="cp-pane cp-overview" data-pane="overview" role="tabpanel" aria-labelledby="tabOverview">
         <div class="cp-col">
+          <!-- A feedback request ADspace sent, open until it is answered
+               (CLIENT FEEDBACK, 2026-11-24, js/fbform.js). -->
+          <section class="panel cp-card fb-ask" id="ovFb" hidden>
+            <div class="cp-card-head"><h3 id="ovFbHead">Rate your experience</h3></div>
+            <div id="ovFbBox"></div>
+          </section>
           <section class="panel cp-card" id="ovSvc">
             <div class="cp-card-head"><h3 id="ovSvcHead">Services</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="services" id="ovSvcGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
             <div id="ovSvcBox"></div>
@@ -215,6 +223,14 @@
         </section>
       </div>
 
+      <!-- Past feedback, read only, drawn once there is one. -->
+      <div class="cp-pane" data-pane="feedback" role="tabpanel" aria-labelledby="tabFeedback" hidden>
+        <section class="panel cp-card" id="fbWrap">
+          <div class="cp-card-head"><h3 id="fbHead">Feedback</h3></div>
+          <div id="fbBox"></div>
+        </section>
+      </div>
+
       <div class="cp-pane" data-pane="account" role="tabpanel" aria-labelledby="tabAccount" hidden>
         <section class="panel cp-card">
           <div class="cp-card-head"><h3 id="ctHead">Contacts</h3></div>
@@ -266,6 +282,6 @@
 <script src="/js/sheet.js?v=20261124s"></script>
 <script src="/js/confirm.js?v=20261124s"></script>
 <script src="/js/icons.js?v=20261122zzq"></script>
-<script src="/js/portal.js?v=20261122zzr"></script>
+<script src="/js/portal.js?v=20261124zzfb"></script>
 </body>
 </html>

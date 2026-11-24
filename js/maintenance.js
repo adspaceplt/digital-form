@@ -37,7 +37,7 @@
     var m = /^\/([a-z-]+)/.exec(location.pathname), k = m ? m[1] : '';
     if (!k && /^\/(index\.html)?$/.test(location.pathname)) return 'home';
     return k === 'supplier-details' ? 'supplier'
-      : ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify', 'careers', 'card'].indexOf(k) >= 0 ? k : null;
+      : ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify', 'careers', 'card', 'feedback'].indexOf(k) >= 0 ? k : null;
   })();
   /* A page with no database library (the front door, the 404) asks the one
      read itself, with the public key, as the front door asks its holidays. */

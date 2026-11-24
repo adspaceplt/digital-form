@@ -1285,7 +1285,7 @@
       var nearRow = function (v) {
         var sgd = nearSgd(v);
         if (sgd == null) return;
-        right('Approx. ' + MON.money2(sgd, 'SG'), R, y + 2, 9, font, mute);
+        right('Approximately ' + MON.money2(sgd, 'SG'), R, y + 2, 9, font, mute);
         y -= 13;
       };
       /* A row a term percentage, as the quotation's totals read them. */

@@ -717,7 +717,7 @@ declare
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
-    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline', 'verify_details', 'doc_code_of', 'verify_details_name', 'doc_code_of_key'];
+    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline', 'verify_details', 'doc_code_of', 'verify_details_name', 'doc_code_of_key', 'feedback_read', 'feedback_submit'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -146942,6 +146942,625 @@ grant execute on function public.outstation_route_set(uuid, numeric[], numeric) 
 
 -- END OF PRESSES HELD AND FIGURES KEPT ---------------------------------------
 
+-- ===========================================================================
+-- CLIENT FEEDBACK — the portal's own Service rating and Performance review,
+-- asked of a client only when a colleague requests one (2026-11-24)
+-- ===========================================================================
+-- WHY (the user, 2026-11-24): the agency's external surveys move into the
+-- portal, "comprises of both Quick Feedback and Performance Review",
+-- answered signed in to /client/ or on a client-specific link; then "dont
+-- make it monthly recurring, only do it when our internal send a request",
+-- "please allow to rate the account manager too"; mockups approved as
+-- version 3 ("go feedback").
+--
+-- WHAT IT ADDS
+--   * `feedback_questions`: the two forms' questions, fixed (kind `quick`,
+--     the client's Service rating; kind `review`, the Performance review),
+--     English and Chinese, each scale with its two ends; `{name}` stands for
+--     the account manager. Seeded into an empty table alone.
+--   * `feedback_requests`: one a request (the client, the form, its link key,
+--     who sent it and to whom, the account manager at sending, opened,
+--     answered, closed and why). A new request of the same form closes the
+--     open one (`replaced`); an answer closes it (`answered`).
+--   * `feedback_responses`: one a request (the answers, the lead score and
+--     its band, the account manager's score, the contact where signed in,
+--     a follow-up task).
+--   * `feedback_hits`: one row a caller's address, the public path's count
+--     for the hour (120 calls, 20 unknown keys).
+--   All four: RLS on, no policy, no grant; functions alone read and write.
+--   * `feedback_request(p_client, p_kind)` (Clients at Work, the client in
+--     scope): to the client's primary contact with an email; answers the key.
+--   * `feedback_withdraw(p_id)` (Clients at Work): closes an open request.
+--   * `feedback_read(p_key)` (anon): the form for that request alone, else
+--     `not_found`, `answered` (with its day) or `closed`.
+--   * `feedback_submit(p_key, p_answers)` (anon): once a request, every
+--     scale required, a note held to 2,000 characters; a signed-in contact of
+--     the client is recorded; the account manager told (a low score said so).
+--   * `portal_feedback(p_client)` (a signed-in contact): the open request's
+--     key and the client's past answers, read only.
+--   * `feedback_client(p_client)` (Clients at View, in scope): every request
+--     and answer; the account manager's own score only to who may see it.
+--   * `feedback_followup(p_response, p_task)` (My Work at Work): a low
+--     score's follow-up task linked.
+--   * `feedback_figures(p_from, p_to)` (Clients at View): the Service rating,
+--     NPS, low scores open, by Person in charge, and clients not asked lately.
+--   * `feedback_sees_manager(p_member)` (helper): the colleague, the group
+--     their group reports to, Clients at Manage, an admin.
+--
+-- ORDER: 2026-10-07-function-hygiene.sql again (its `open_to_anon` now
+-- names `feedback_read` and `feedback_submit`), then this file. No page calls
+-- these yet, so an open tab meets nothing new. Safe to run twice. Rollback: drop the nine functions and
+-- the four tables (`feedback_hits`, `feedback_responses`, `feedback_requests`,
+-- `feedback_questions`), in that order.
+-- ===========================================================================
+
+create table if not exists public.feedback_questions (
+  kind          text not null check (kind in ('quick', 'review')),
+  key           text not null,
+  n             int  not null,
+  type          text not null check (type in ('scale', 'text')),
+  scale_min     int,
+  scale_max     int,
+  band          text check (band in ('low', 'mid', 'high')),
+  band_low_max  int,
+  band_mid_max  int,
+  lead          boolean not null default false,
+  about_manager boolean not null default false,
+  required      boolean not null default true,
+  text_en       text not null,
+  text_zh       text not null,
+  low_en        text,
+  low_zh        text,
+  high_en       text,
+  high_zh       text,
+  primary key (kind, key)
+);
+alter table public.feedback_questions enable row level security;
+revoke all on public.feedback_questions from anon, authenticated;
+
+insert into public.feedback_questions
+  (kind, key, n, type, scale_min, scale_max, band, band_low_max, band_mid_max, lead, about_manager, required,
+   text_en, text_zh, low_en, low_zh, high_en, high_zh)
+select * from (values
+  ('quick', 'quality', 1, 'scale', 1, 10, null, 4, 7, true, false, true,
+   'How would you rate the quality of ADspace''s services?', '您如何评价ADspace的服务质量？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('quick', 'manager', 2, 'scale', 1, 5, null, null, null, false, true, true,
+   'How satisfied are you with {name}, your account manager?', '您对客户经理{name}满意吗？',
+   'Not satisfied', '不满意', 'Very satisfied', '非常满意'),
+  ('quick', 'liked', 3, 'text', null, null, 'high', null, null, false, false, false,
+   'Please describe what you liked most.', '请说明您最满意的地方。', null, null, null, null),
+  ('quick', 'better', 3, 'text', null, null, 'mid', null, null, false, false, false,
+   'Please describe where ADspace could do better.', '请说明ADspace可改进之处。', null, null, null, null),
+  ('quick', 'short', 3, 'text', null, null, 'low', null, null, false, false, false,
+   'Please describe what fell short, so that ADspace can put it right.', '请说明未达期望之处，以便ADspace及时改进。', null, null, null, null),
+  ('review', 'nps', 1, 'scale', 0, 10, null, 6, 8, true, false, true,
+   'How likely are you to recommend ADspace to a business associate?', '您向业务伙伴推荐ADspace的可能性有多大？',
+   'Not at all likely', '完全不可能', 'Extremely likely', '极有可能'),
+  ('review', 'creative', 2, 'scale', 1, 10, null, null, null, false, false, true,
+   'How satisfied are you with the creativity and effectiveness of ADspace''s work?', '您对ADspace作品的创意与成效满意吗？',
+   'Not satisfied', '不满意', 'Very satisfied', '非常满意'),
+  ('review', 'content', 3, 'scale', 1, 10, null, null, null, false, false, true,
+   'How would you rate the quality and relevance of the content produced?', '您如何评价所制作内容的质量与相关性？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('review', 'design', 4, 'scale', 1, 10, null, null, null, false, false, true,
+   'How would you rate the design quality of the materials produced?', '您如何评价所制作物料的设计质量？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('review', 'brand', 5, 'scale', 1, 10, null, null, null, false, false, true,
+   'How well does the ADspace team understand your brand and audience?', 'ADspace团队对您的品牌与受众了解程度如何？',
+   'Not at all well', '完全不了解', 'Extremely well', '非常了解'),
+  ('review', 'collab', 6, 'scale', 1, 10, null, null, null, false, false, true,
+   'How would you rate communication and collaboration with the ADspace team?', '您如何评价与ADspace团队的沟通与协作？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('review', 'respond', 7, 'scale', 1, 10, null, null, null, false, false, true,
+   'How would you rate the team''s responsiveness and initiative?', '您如何评价团队的响应速度与主动性？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('review', 'sales', 8, 'scale', 1, 10, null, null, null, false, false, true,
+   'How much has ADspace''s work contributed to your sales performance?', 'ADspace的工作对您的销售业绩贡献有多大？',
+   'No contribution', '没有贡献', 'Significant contribution', '贡献显著'),
+  ('review', 'manager', 9, 'scale', 1, 10, null, null, null, false, true, true,
+   'How would you rate {name} as your account manager?', '您如何评价客户经理{name}？',
+   'Very poor', '极差', 'Excellent', '极好'),
+  ('review', 'manager_note', 10, 'text', null, null, null, null, null, false, true, false,
+   'Comments about {name}', '关于{name}的意见', null, null, null, null),
+  ('review', 'comments', 11, 'text', null, null, null, null, null, false, false, false,
+   'Additional comments or suggestions', '其他意见或建议', null, null, null, null)
+) as v(kind, key, n, type, scale_min, scale_max, band, band_low_max, band_mid_max, lead, about_manager, required,
+       text_en, text_zh, low_en, low_zh, high_en, high_zh)
+where not exists (select 1 from public.feedback_questions);
+
+create table if not exists public.feedback_requests (
+  id            uuid primary key default gen_random_uuid(),
+  client_id     uuid not null references public.clients(id) on delete cascade,
+  kind          text not null check (kind in ('quick', 'review')),
+  access_key    text not null unique,
+  sent_by       uuid references public.team_members(id) on delete set null,
+  sent_by_name  text,
+  contact_id    uuid references public.client_contacts(id) on delete set null,
+  sent_to_name  text,
+  sent_to_email text,
+  manager_id    uuid references public.team_members(id) on delete set null,
+  manager_name  text,
+  created_at    timestamptz not null default now(),
+  opened_at     timestamptz,
+  answered_at   timestamptz,
+  closed_at     timestamptz,
+  closed_reason text check (closed_reason in ('answered', 'replaced', 'withdrawn'))
+);
+create index if not exists feedback_requests_client_idx on public.feedback_requests (client_id, created_at desc);
+create unique index if not exists feedback_requests_one_open on public.feedback_requests (client_id, kind) where closed_at is null;
+alter table public.feedback_requests enable row level security;
+revoke all on public.feedback_requests from anon, authenticated;
+
+create table if not exists public.feedback_responses (
+  id               uuid primary key default gen_random_uuid(),
+  request_id       uuid not null unique references public.feedback_requests(id) on delete cascade,
+  client_id        uuid not null references public.clients(id) on delete cascade,
+  kind             text not null check (kind in ('quick', 'review')),
+  answers          jsonb not null default '{}'::jsonb,
+  score            int not null,
+  band             text not null check (band in ('low', 'mid', 'high')),
+  manager_id       uuid references public.team_members(id) on delete set null,
+  manager_score    int,
+  contact_id       uuid references public.client_contacts(id) on delete set null,
+  contact_name     text,
+  submitted_at     timestamptz not null default now(),
+  followup_task_id uuid references public.ops_tasks(id) on delete set null
+);
+create index if not exists feedback_responses_client_idx on public.feedback_responses (client_id, submitted_at desc);
+create index if not exists feedback_responses_manager_idx on public.feedback_responses (manager_id, submitted_at desc);
+alter table public.feedback_responses enable row level security;
+revoke all on public.feedback_responses from anon, authenticated;
+
+create table if not exists public.feedback_hits (
+  ip    text primary key,
+  hour  timestamp not null,
+  n     int not null default 0,
+  bad   int not null default 0
+);
+alter table public.feedback_hits enable row level security;
+revoke all on public.feedback_hits from anon, authenticated;
+
+/* The public path's count: a caller's calls in the hour, and its unknown
+   keys. One row an address, started again each hour, so nothing grows. */
+create or replace function public.feedback_throttle(p_bad boolean default false)
+returns boolean
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_ip   text := coalesce(nullif(public.request_ip(), ''), 'none');
+  v_hour timestamp := date_trunc('hour', now() at time zone 'Asia/Kuala_Lumpur');
+  v_row  public.feedback_hits;
+begin
+  insert into public.feedback_hits as h (ip, hour, n, bad)
+  values (v_ip, v_hour, 1, case when p_bad then 1 else 0 end)
+  on conflict (ip) do update
+     set n    = case when h.hour < v_hour then 1 else h.n + 1 end,
+         bad  = case when h.hour < v_hour then (case when p_bad then 1 else 0 end)
+                     else h.bad + (case when p_bad then 1 else 0 end) end,
+         hour = v_hour
+  returning * into v_row;
+  return v_row.n <= 120 and v_row.bad <= 20;
+end $$;
+revoke all on function public.feedback_throttle(boolean) from public, anon, authenticated;
+
+/* May the caller read a colleague's own score as account manager: the
+   colleague, a colleague of the group theirs reports to, Clients at Manage,
+   an admin. */
+create or replace function public.feedback_sees_manager(p_member uuid)
+returns boolean
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text;
+begin
+  if me.id is null or p_member is null then return false; end if;
+  if me.id = p_member or me.is_admin or public.allowed('clients', 'manage') then return true; end if;
+  select m.role into v_role from public.team_members m where m.id = p_member;
+  return exists (select 1 from public.team_roles r where r.slug = v_role and r.reports_to = me.role);
+end $$;
+revoke all on function public.feedback_sees_manager(uuid) from public, anon, authenticated;
+
+/* A request's questions, the account manager's name put in, theirs left
+   out where none was named. */
+create or replace function public.feedback_questions_of(p_kind text, p_manager text)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'key', q.key, 'n', q.n, 'type', q.type, 'min', q.scale_min, 'max', q.scale_max,
+           'band', q.band, 'band_low_max', q.band_low_max, 'band_mid_max', q.band_mid_max,
+           'lead', q.lead, 'manager', q.about_manager, 'required', q.required,
+           'en', replace(q.text_en, '{name}', coalesce(p_manager, '')),
+           'zh', replace(q.text_zh, '{name}', coalesce(p_manager, '')),
+           'low_en', q.low_en, 'low_zh', q.low_zh, 'high_en', q.high_en, 'high_zh', q.high_zh)
+         order by q.n, q.band nulls first), '[]'::jsonb)
+    from public.feedback_questions q
+   where q.kind = p_kind
+     and (not q.about_manager or nullif(btrim(coalesce(p_manager, '')), '') is not null)
+$$;
+revoke all on function public.feedback_questions_of(text, text) from public, anon, authenticated;
+
+/* A request: to the client's primary contact, the open one of the same form
+   closed first. The page sends the email; the key is answered to it. */
+create or replace function public.feedback_request(p_client uuid, p_kind text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_cl   public.clients;
+  v_ct   public.client_contacts;
+  v_mgr  public.team_members;
+  v_key  text;
+  v_req  public.feedback_requests;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('quick', 'review') then return jsonb_build_object('error', 'bad-kind'); end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  if v_cl.id is null or not public.client_seen(v_cl.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_cl.stage in ('lead', 'contacted', 'proposal', 'past') then return jsonb_build_object('error', 'not-active'); end if;
+  select * into v_ct from public.client_contacts k
+   where k.client_id = p_client and k.is_primary and k.archived_at is null
+     and nullif(btrim(coalesce(k.email, '')), '') is not null
+   limit 1;
+  if v_ct.id is null then return jsonb_build_object('error', 'no-contact'); end if;
+  perform pg_advisory_xact_lock(hashtext('feedback_request:' || p_client::text || ':' || p_kind));
+  select * into v_mgr from public.team_members m
+   where m.active and lower(btrim(m.name)) = lower(btrim(coalesce(v_cl.owner, '')))
+   order by m.created_at limit 1;
+  update public.feedback_requests r set closed_at = now(), closed_reason = 'replaced'
+   where r.client_id = p_client and r.kind = p_kind and r.closed_at is null;
+  loop
+    v_key := public.new_link_key() || public.new_link_key();
+    exit when not exists (select 1 from public.feedback_requests r where r.access_key = v_key);
+  end loop;
+  insert into public.feedback_requests (client_id, kind, access_key, sent_by, sent_by_name, contact_id,
+    sent_to_name, sent_to_email, manager_id, manager_name)
+  values (p_client, p_kind, v_key, me.id, me.name, v_ct.id, v_ct.name, lower(btrim(v_ct.email)),
+    v_mgr.id, coalesce(v_mgr.name, nullif(btrim(coalesce(v_cl.owner, '')), '')))
+  returning * into v_req;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.edited', v_cl.name,
+          (case p_kind when 'quick' then 'Service rating' else 'Performance review' end)
+          || ' requested from ' || v_ct.name);
+  return jsonb_build_object('ok', true, 'id', v_req.id, 'key', v_req.access_key, 'kind', v_req.kind,
+    'to_name', v_req.sent_to_name, 'to_email', v_req.sent_to_email, 'lang', coalesce(v_ct.lang, 'en'),
+    'manager', v_req.manager_name, 'created_at', v_req.created_at);
+end $$;
+revoke all on function public.feedback_request(uuid, text) from public, anon;
+grant execute on function public.feedback_request(uuid, text) to authenticated;
+
+create or replace function public.feedback_withdraw(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  v_req public.feedback_requests;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_req from public.feedback_requests r where r.id = p_id for update;
+  if v_req.id is null or not public.client_seen(v_req.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_req.closed_at is not null then return jsonb_build_object('error', 'closed'); end if;
+  update public.feedback_requests r set closed_at = now(), closed_reason = 'withdrawn' where r.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  select me.name, 'client.edited', c.name,
+         (case v_req.kind when 'quick' then 'Service rating' else 'Performance review' end) || ' request withdrawn'
+    from public.clients c where c.id = v_req.client_id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.feedback_withdraw(uuid) from public, anon;
+grant execute on function public.feedback_withdraw(uuid) to authenticated;
+
+/* The public read: the form for this request alone. */
+create or replace function public.feedback_read(p_key text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_req  public.feedback_requests;
+  v_cl   public.clients;
+  v_lang text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{16}$' then
+    perform public.feedback_throttle(true);
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  select * into v_req from public.feedback_requests r where r.access_key = p_key;
+  if not public.feedback_throttle(v_req.id is null) then return jsonb_build_object('error', 'busy'); end if;
+  if v_req.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_cl from public.clients c where c.id = v_req.client_id;
+  if v_req.closed_reason = 'answered' then
+    return jsonb_build_object('error', 'answered', 'answered_at', v_req.answered_at, 'kind', v_req.kind, 'client', v_cl.name);
+  end if;
+  if v_req.closed_at is not null or v_cl.stage = 'past' then
+    return jsonb_build_object('error', 'closed', 'client', v_cl.name);
+  end if;
+  if v_req.opened_at is null then
+    update public.feedback_requests r set opened_at = now() where r.id = v_req.id;
+  end if;
+  select k.lang into v_lang from public.client_contacts k where k.id = v_req.contact_id;
+  return jsonb_build_object('ok', true, 'kind', v_req.kind, 'client', v_cl.name,
+    'requested_at', v_req.created_at, 'manager', v_req.manager_name, 'lang', coalesce(v_lang, 'en'),
+    'questions', public.feedback_questions_of(v_req.kind, v_req.manager_name));
+end $$;
+revoke all on function public.feedback_read(text) from public;
+grant execute on function public.feedback_read(text) to anon, authenticated;
+
+/* The answer: once a request, whoever opens its link first. */
+create or replace function public.feedback_submit(p_key text, p_answers jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_req   public.feedback_requests;
+  v_cl    public.clients;
+  a       jsonb := coalesce(p_answers, '{}'::jsonb);
+  q       record;
+  v_out   jsonb := '{}'::jsonb;
+  v_val   text;
+  v_int   int;
+  v_lead  int;
+  v_band  text;
+  v_mgr   int;
+  v_ct    public.client_contacts;
+  v_resp  uuid;
+  v_kword text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{16}$' then
+    perform public.feedback_throttle(true);
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  if jsonb_typeof(a) <> 'object' then return jsonb_build_object('error', 'bad-answers'); end if;
+  select * into v_req from public.feedback_requests r where r.access_key = p_key for update;
+  if not public.feedback_throttle(v_req.id is null) then return jsonb_build_object('error', 'busy'); end if;
+  if v_req.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_cl from public.clients c where c.id = v_req.client_id;
+  if v_req.closed_reason = 'answered' then return jsonb_build_object('error', 'answered', 'answered_at', v_req.answered_at); end if;
+  if v_req.closed_at is not null or v_cl.stage = 'past' then return jsonb_build_object('error', 'closed'); end if;
+
+  -- The lead question first: its band chooses which note is asked.
+  for q in select * from public.feedback_questions x
+            where x.kind = v_req.kind and x.lead loop
+    v_val := a ->> q.key;
+    if v_val is null or v_val !~ '^[0-9]{1,2}$' then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+    v_lead := v_val::int;
+    if v_lead < q.scale_min or v_lead > q.scale_max then return jsonb_build_object('error', 'bad-score', 'key', q.key); end if;
+    v_band := case when v_lead <= q.band_low_max then 'low' when v_lead <= q.band_mid_max then 'mid' else 'high' end;
+  end loop;
+  if v_lead is null then return jsonb_build_object('error', 'bad-kind'); end if;
+
+  for q in select * from public.feedback_questions x
+            where x.kind = v_req.kind
+              and (not x.about_manager or v_req.manager_name is not null)
+              and (x.band is null or x.band = v_band)
+            order by x.n loop
+    v_val := a ->> q.key;
+    if q.type = 'scale' then
+      if v_val is null or v_val !~ '^[0-9]{1,2}$' then
+        if q.required then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+        continue;
+      end if;
+      v_int := v_val::int;
+      if v_int < q.scale_min or v_int > q.scale_max then return jsonb_build_object('error', 'bad-score', 'key', q.key); end if;
+      v_out := v_out || jsonb_build_object(q.key, v_int);
+      if q.about_manager then v_mgr := v_int; end if;
+    else
+      v_val := nullif(btrim(coalesce(v_val, '')), '');
+      if v_val is null then
+        if q.required then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+        continue;
+      end if;
+      if length(v_val) > 2000 then return jsonb_build_object('error', 'too-long', 'key', q.key); end if;
+      v_out := v_out || jsonb_build_object(q.key, v_val);
+    end if;
+  end loop;
+
+  -- A signed-in contact of this client is named; anyone else is the link.
+  if public.portal_contact_name(v_req.client_id) is not null then
+    select * into v_ct from public.client_contacts k
+     where k.client_id = v_req.client_id and k.portal_access and k.archived_at is null
+       and lower(k.email) = lower(auth.jwt() ->> 'email')
+     order by k.is_primary desc limit 1;
+  end if;
+
+  insert into public.feedback_responses (request_id, client_id, kind, answers, score, band,
+    manager_id, manager_score, contact_id, contact_name)
+  values (v_req.id, v_req.client_id, v_req.kind, v_out, v_lead, v_band,
+    v_req.manager_id, v_mgr, v_ct.id, v_ct.name)
+  returning id into v_resp;
+  update public.feedback_requests r set answered_at = now(), closed_at = now(), closed_reason = 'answered',
+         opened_at = coalesce(r.opened_at, now())
+   where r.id = v_req.id;
+
+  v_kword := case v_req.kind when 'quick' then 'Service rating' else 'Performance review' end;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_ct.name, 'Feedback form'), 'client.edited', v_cl.name,
+          v_kword || ' answered: ' || v_lead || ' of ' ||
+          (select x.scale_max from public.feedback_questions x where x.kind = v_req.kind and x.lead));
+  -- The account manager told, else whoever sent it; a low score says so.
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, 'client.feedback',
+         case when v_band = 'low' then 'Low score · ' else 'Feedback received · ' end || v_cl.name,
+         v_kword || ': ' || v_lead || ' of ' ||
+         (select x.scale_max from public.feedback_questions x where x.kind = v_req.kind and x.lead) ||
+         case when v_band = 'low' then '. Open the client''s Feedback to follow up.' else '.' end,
+         v_cl.id, 'client.feedback:' || v_resp || ':' || m.id
+    from public.team_members m
+   where m.active and m.id = coalesce(v_req.manager_id, v_req.sent_by)
+  on conflict (dedupe_key) do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.feedback_submit(text, jsonb) from public;
+grant execute on function public.feedback_submit(text, jsonb) to anon, authenticated;
+
+/* A response as a reader sees it: each question with its answer. */
+create or replace function public.feedback_answers_of(p_resp public.feedback_responses, p_manager text, p_with_manager boolean)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'key', q.key, 'type', q.type, 'max', q.scale_max, 'band', q.band, 'manager', q.about_manager,
+           'en', replace(q.text_en, '{name}', coalesce(p_manager, '')),
+           'zh', replace(q.text_zh, '{name}', coalesce(p_manager, '')),
+           'high_en', q.high_en, 'high_zh', q.high_zh, 'low_en', q.low_en, 'low_zh', q.low_zh,
+           'value', p_resp.answers -> q.key)
+         order by q.n), '[]'::jsonb)
+    from public.feedback_questions q
+   where q.kind = p_resp.kind and p_resp.answers ? q.key
+     and (p_with_manager or not q.about_manager)
+$$;
+revoke all on function public.feedback_answers_of(public.feedback_responses, text, boolean) from public, anon, authenticated;
+
+/* The client portal: the open request's key, and past answers read only. */
+create or replace function public.portal_feedback(p_client uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_open public.feedback_requests;
+begin
+  if public.portal_contact_name(p_client) is null then return jsonb_build_object('error', 'no-access'); end if;
+  select * into v_open from public.feedback_requests r
+   where r.client_id = p_client and r.closed_at is null
+   order by r.created_at desc limit 1;
+  return jsonb_build_object('ok', true,
+    'open', case when v_open.id is null then null else jsonb_build_object(
+      'key', v_open.access_key, 'kind', v_open.kind, 'requested_at', v_open.created_at,
+      'manager', v_open.manager_name,
+      'questions', public.feedback_questions_of(v_open.kind, v_open.manager_name)) end,
+    'history', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', s.id, 'kind', s.kind, 'requested_at', r.created_at, 'submitted_at', s.submitted_at,
+               'by', s.contact_name, 'score', s.score,
+               'max', (select x.scale_max from public.feedback_questions x where x.kind = s.kind and x.lead),
+               'answers', public.feedback_answers_of(s, r.manager_name, true))
+             order by s.submitted_at desc)
+        from public.feedback_responses s
+        join public.feedback_requests r on r.id = s.request_id
+       where s.client_id = p_client), '[]'::jsonb));
+end $$;
+revoke all on function public.portal_feedback(uuid) from public, anon;
+grant execute on function public.portal_feedback(uuid) to authenticated;
+
+/* The client record's Feedback part. */
+create or replace function public.feedback_client(p_client uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+begin
+  if me.id is null or not public.allowed('clients', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.client_seen(p_client, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('ok', true, 'requests', coalesce((
+    select jsonb_agg(jsonb_build_object(
+             'id', r.id, 'kind', r.kind, 'created_at', r.created_at, 'sent_by', r.sent_by_name,
+             'to_name', r.sent_to_name, 'to_email', r.sent_to_email, 'manager', r.manager_name,
+             'opened_at', r.opened_at, 'answered_at', r.answered_at, 'closed_at', r.closed_at,
+             'closed_reason', r.closed_reason,
+             'response', case when s.id is null then null else jsonb_build_object(
+               'id', s.id, 'score', s.score, 'band', s.band, 'submitted_at', s.submitted_at, 'by', s.contact_name,
+               'max', (select x.scale_max from public.feedback_questions x where x.kind = s.kind and x.lead),
+               'manager_score', case when public.feedback_sees_manager(s.manager_id) then s.manager_score end,
+               'answers', public.feedback_answers_of(s, r.manager_name, public.feedback_sees_manager(s.manager_id)),
+               'task_id', s.followup_task_id,
+               'task_done', (select t.completed_at is not null from public.ops_tasks t where t.id = s.followup_task_id)) end)
+           order by r.created_at desc)
+      from public.feedback_requests r
+      left join public.feedback_responses s on s.request_id = r.id
+     where r.client_id = p_client), '[]'::jsonb));
+end $$;
+revoke all on function public.feedback_client(uuid) from public, anon;
+grant execute on function public.feedback_client(uuid) to authenticated;
+
+/* A low score's follow-up task, made by the page as the colleague, linked. */
+create or replace function public.feedback_followup(p_response uuid, p_task uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_resp public.feedback_responses;
+begin
+  if me.id is null or not public.allowed('ops', 'work') or not public.allowed('clients', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into v_resp from public.feedback_responses s where s.id = p_response for update;
+  if v_resp.id is null or not public.client_seen(v_resp.client_id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_resp.band <> 'low' then return jsonb_build_object('error', 'not-low'); end if;
+  if not exists (select 1 from public.ops_tasks t where t.id = p_task and t.client_id = v_resp.client_id) then
+    return jsonb_build_object('error', 'bad-task');
+  end if;
+  update public.feedback_responses s set followup_task_id = p_task where s.id = p_response;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.feedback_followup(uuid, uuid) from public, anon;
+grant execute on function public.feedback_followup(uuid, uuid) to authenticated;
+
+/* The figures: a period's Service rating, NPS over the reviews in it, low
+   scores still open, by Person in charge (their own score as account
+   manager only to who may see it), and active clients not asked lately. */
+create or replace function public.feedback_figures(p_from date, p_to date)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me      public.team_members := public.ops_me();
+  v_from  timestamptz;
+  v_to    timestamptz;
+  v_prev  timestamptz;
+  v_quiet int;
+begin
+  if me.id is null or not public.allowed('clients', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if p_from is null or p_to is null or p_to < p_from or p_to - p_from > 800 then return jsonb_build_object('error', 'bad-period'); end if;
+  v_from := p_from::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_to   := (p_to + 1)::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_prev := (p_from - (p_to - p_from + 1))::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_quiet := coalesce(public.app_setting('feedback_quiet_months', (now() at time zone 'Asia/Kuala_Lumpur')::date), 6)::int;
+  return jsonb_build_object('ok', true,
+    'rating', (select round(avg(s.score)::numeric, 1) from public.feedback_responses s
+                where s.kind = 'quick' and s.submitted_at >= v_from and s.submitted_at < v_to and public.client_seen(s.client_id, 'view')),
+    'rating_n', (select count(*) from public.feedback_responses s
+                  where s.kind = 'quick' and s.submitted_at >= v_from and s.submitted_at < v_to and public.client_seen(s.client_id, 'view')),
+    'nps', (select round(100.0 * (count(*) filter (where s.band = 'high') - count(*) filter (where s.band = 'low')) / nullif(count(*), 0))
+              from public.feedback_responses s
+             where s.kind = 'review' and s.submitted_at >= v_from and s.submitted_at < v_to and public.client_seen(s.client_id, 'view')),
+    'nps_n', (select count(*) from public.feedback_responses s
+               where s.kind = 'review' and s.submitted_at >= v_from and s.submitted_at < v_to and public.client_seen(s.client_id, 'view')),
+    'low_open', (select count(*) from public.feedback_responses s
+                  left join public.ops_tasks t on t.id = s.followup_task_id
+                  where s.band = 'low' and t.completed_at is null and public.client_seen(s.client_id, 'view')),
+    'low_oldest', (select min(s.submitted_at) from public.feedback_responses s
+                    left join public.ops_tasks t on t.id = s.followup_task_id
+                    where s.band = 'low' and t.completed_at is null and public.client_seen(s.client_id, 'view')),
+    'quiet_months', v_quiet,
+    'quiet', (select count(*) from public.clients c
+               where c.stage = 'active' and public.client_seen(c.id, 'view')
+                 and not exists (select 1 from public.feedback_requests r where r.client_id = c.id
+                                  and r.created_at >= (now() - make_interval(months => v_quiet)))),
+    'people', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', p.manager_id, 'name', p.manager_name,
+               'requested', p.requested, 'answered', p.answered, 'rating', p.rating, 'nps', p.nps,
+               'manager_score', case when public.feedback_sees_manager(p.manager_id) then p.mgr end,
+               'manager_max', case when public.feedback_sees_manager(p.manager_id) then
+                 (select x.scale_max from public.feedback_questions x where x.kind = 'quick' and x.key = 'manager') end,
+               'manager_before', case when public.feedback_sees_manager(p.manager_id) then p.mgr_before end)
+             order by p.manager_name)
+        from (
+          select r.manager_id, max(r.manager_name) as manager_name,
+                 count(*) filter (where r.created_at >= v_from and r.created_at < v_to) as requested,
+                 count(s.id) filter (where s.submitted_at >= v_from and s.submitted_at < v_to) as answered,
+                 round(avg(s.score) filter (where s.kind = 'quick' and s.submitted_at >= v_from and s.submitted_at < v_to)::numeric, 1) as rating,
+                 round(100.0 * (count(*) filter (where s.kind = 'review' and s.band = 'high' and s.submitted_at >= v_from and s.submitted_at < v_to)
+                              - count(*) filter (where s.kind = 'review' and s.band = 'low' and s.submitted_at >= v_from and s.submitted_at < v_to))
+                       / nullif(count(*) filter (where s.kind = 'review' and s.submitted_at >= v_from and s.submitted_at < v_to), 0)) as nps,
+                 round(avg(s.manager_score) filter (where s.kind = 'quick' and s.submitted_at >= v_from and s.submitted_at < v_to)::numeric, 1) as mgr,
+                 round(avg(s.manager_score) filter (where s.kind = 'quick' and s.submitted_at >= v_prev and s.submitted_at < v_from)::numeric, 1) as mgr_before
+            from public.feedback_requests r
+            left join public.feedback_responses s on s.request_id = r.id
+           where r.manager_id is not null and public.client_seen(r.client_id, 'view')
+             and r.created_at >= v_prev and r.created_at < v_to
+           group by r.manager_id
+        ) p
+       where p.requested > 0 or p.answered > 0), '[]'::jsonb));
+end $$;
+revoke all on function public.feedback_figures(date, date) from public, anon;
+grant execute on function public.feedback_figures(date, date) to authenticated;
+
+-- END OF CLIENT FEEDBACK ------------------------------------------------------
+
 select public.functions_tidy();
 
 -- QUOTATION BRANDS ------------------------------------------------------------
@@ -147226,6 +147845,606 @@ end $$;
 revoke all on function public.quotation_edit(uuid, jsonb) from public, anon;
 
 -- END OF QUOTATION BRANDS -----------------------------------------------------
+
+-- ===========================================================================
+-- TONE SWEEP 7 (2026-11-24)
+-- ===========================================================================
+-- WHY: two readers went through every word merged since tone sweep 6 (493
+-- lines; the user, 2026-11-24: "do tone sweeps since last 7 days built
+-- too"), a third confirmed each finding. The database's own words follow
+-- the pages' in the same release.
+--
+-- WHAT IT CHANGES (words only; no stored key, refusal or rule moves)
+--   * `creator_pay_changes`: a creator's changed details read as sentences
+--     (Bank account changed from the account ending 1234 to the account
+--     ending 5678.), never an arrow.
+--   * `careers_none`: New times requested, as Hiring names the step.
+--   * `app_settings_set`: Office latitude and Office longitude, as Settings
+--     names them.
+--   * `outstation_trip_delete`: a driver no longer on the team reads Former
+--     colleague.
+--   * Details changed (a creator's email): If you did not make this change,
+--     where the team has not edited the words.
+--
+-- ORDER: the pages first, then this file. A line already filed or sent
+-- keeps its words.
+-- Rollback: run the bands each function was last restated in again
+-- (CREATOR DETAILS CHANGED, CAREERS DECIDED AND OFFER CODES, OUTSTATION
+-- RECORD, A DELETED TRIP TAKES ITS VISITS) and the update below in reverse.
+-- Safe to run twice.
+-- ===========================================================================
+
+create or replace function public.creator_pay_changes(p_was public.creator_pay_requests, p_now public.creator_pay_requests)
+returns text[] language sql immutable set search_path = public as $$
+  select case when p_was.id is null or p_now.id is null then '{}'::text[] else array_remove(array[
+    case when (p_was.method, coalesce(p_was.bank, ''), p_was.currency, p_was.account)
+              is distinct from (p_now.method, coalesce(p_now.bank, ''), p_now.currency, p_now.account)
+         then 'Bank account changed from the account ending ' || right(p_was.account, 4) || ' to the account ending ' || right(p_now.account, 4) || '.' end,
+    case when btrim(p_was.payee) is distinct from btrim(p_now.payee)
+         then 'Account holder changed from ' || p_was.payee || ' to ' || p_now.payee || '.' end,
+    case when lower(btrim(p_was.email)) is distinct from lower(btrim(p_now.email))
+           or regexp_replace(coalesce(p_was.whatsapp, ''), '\D', '', 'g') is distinct from regexp_replace(coalesce(p_now.whatsapp, ''), '\D', '', 'g')
+         then 'Contact details changed.' end], null) end
+$$;
+revoke all on function public.creator_pay_changes(public.creator_pay_requests, public.creator_pay_requests) from public, anon, authenticated;
+
+create or replace function public.careers_none(p_key text, p_note text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  if char_length(coalesce(p_note, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null for update;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  -- A decision taken closes the choice (review 2026-11-24).
+  if c.stage not in ('new', 'invited', 'interview') then return jsonb_build_object('error', 'not-open'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state = 'invited'
+   order by invited_at desc limit 1 for update;
+  if i.id is null then return jsonb_build_object('error', 'not-open'); end if;
+  if i.reply_by <= now() then return jsonb_build_object('error', 'reply-passed'); end if;
+  update public.hiring_interviews set state = 'none', candidate_note = nullif(btrim(coalesce(p_note, '')), ''), updated_at = now() where id = i.id;
+  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (c.id, 'Candidate page', 'candidate.interview', 'New times requested');
+  perform public.hiring_tell(c.id, 'hiring.none', 'A candidate requested new interview times',
+    c.position || '. Send new times from the candidate''s Interview tab.');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.careers_none(text, text) from public;
+grant execute on function public.careers_none(text, text) to anon, authenticated;
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links',
+    'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days', 'hiring_pool_months', 'hiring_keep_months', 'plan_db_mb', 'plan_db_alert_pct',
+    'timely_pct', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'hiring_decision_days', 'verify_code_from',
+    'work_start', 'work_end', 'work_lunch_min', 'work_weekend',
+    'health_cap_default', 'health_near_pct', 'health_task_hours', 'health_remind_days', 'health_alert',
+    'outstation_office_lat', 'outstation_office_lng', 'outstation_accuracy_m', 'outstation_keep_months'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 when v_k in ('outstation_office_lat', 'outstation_office_lng') then 6 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert') and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'task_past_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_invite_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_link_days' and (v_v < 7 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_pool_months' and (v_v < 1 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_keep_months' and (v_v < 1 or v_v > 36 or v_v <> trunc(v_v)))
+       or (v_k = 'plan_db_mb' and (v_v < 100 or v_v > 1000000 or v_v <> trunc(v_v)))
+       or (v_k = 'plan_db_alert_pct' and (v_v < 10 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'timely_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'timely_late_days' and (v_v < 0 or v_v > 30 or round(v_v, 1) <> v_v))
+       or (v_k = 'stage_back_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_reply_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'session_idle_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_decision_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k in ('creator_pay_days_myr', 'creator_pay_days_other') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'health_cap_default' and (v_v < 1 or v_v > 80 or v_v <> trunc(v_v)))
+       or (v_k = 'health_near_pct' and (v_v < 50 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'health_task_hours' and (v_v < 0.5 or v_v > 40 or v_v * 2 <> trunc(v_v * 2)))
+       or (v_k = 'health_remind_days' and (v_v < 0 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_office_lat' and (v_v < -90 or v_v > 90))
+       or (v_k = 'outstation_office_lng' and (v_v < -180 or v_v > 180))
+       or (v_k = 'outstation_accuracy_m' and (v_v < 5 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'verify_code_from' and (v_v < 20230814 or v_v > 20991231 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 31 or mod(trunc(v_v / 100), 100) not between 1 and 12))
+       or (v_k in ('work_start', 'work_end') and (v_v < 0 or v_v > 2345 or v_v <> trunc(v_v) or mod(v_v, 100) not in (0, 15, 30, 45)))
+       or (v_k = 'work_lunch_min' and (v_v < 0 or v_v > 180 or v_v <> trunc(v_v) or mod(v_v, 15) <> 0))
+       or (v_k = 'work_weekend' and v_v not in (0, 1, 2))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  /* A working day ends after it starts, as the two stand on the From day. */
+  if (p_values ? 'work_start' or p_values ? 'work_end')
+     and coalesce((p_values ->> 'work_end')::numeric, public.app_setting('work_end', p_from))
+      <= coalesce((p_values ->> 'work_start')::numeric, public.app_setting('work_start', p_from)) then
+    return jsonb_build_object('error', 'bad-hours');
+  end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'Lead follow-up limit' when 'proposal_followup_days' then 'Proposal follow-up limit'
+        when 'vic_lead_followup_hours' then 'VIC lead follow-up limit' when 'vic_proposal_followup_days' then 'VIC proposal follow-up limit'
+        when 'sst_pct' then 'SST' when 'term_1_3' then 'Under 3 months' when 'term_4_5' then '3-month commitment'
+        when 'term_6_11' then '6-month commitment' when 'term_12_23' then '12-month commitment' when 'term_18_23' then '18-month commitment' when 'term_24' then '24-month commitment'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'ai_price_image' then 'AI price per scene picture' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email' when 'report_post_links' then 'Posts linked to tasks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
+        when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
+        when 'stage_back_days' then 'Past dates on stage moves'
+        when 'hiring_reply_days' then 'Interview reply time'
+        when 'session_idle_days' then 'Signed-in devices'
+        when 'hiring_decision_days' then 'Decision time'
+        when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'quote_wa_day' then 'Website quotations on WhatsApp'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Yearly rise in cost per lead' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend share of the budget' when 'bench_adset_daily' then 'Minimum daily budget per ad set'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
+        when 'health_cap_default' then 'Health default weekly capacity' when 'health_near_pct' then 'Health near capacity'
+        when 'health_task_hours' then 'Health default hours per task' when 'health_remind_days' then 'Health check-in reminder'
+        when 'health_alert' then 'Health heavy workload notice'
+        when 'outstation_office_lat' then 'Office latitude' when 'outstation_office_lng' then 'Office longitude'
+        when 'outstation_accuracy_m' then 'Location accuracy limit' when 'outstation_keep_months' then 'Outstation trips kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'verify_code_from' then 'Document IDs printed from'
+        when 'work_start' then 'Working hours start' when 'work_end' then 'Working hours end'
+        when 'work_lunch_min' then 'Lunch' when 'work_weekend' then 'Saturday and Sunday'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours', 'health_cap_default', 'health_task_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days') then ' days'
+        when v_k in ('quote_reply_days', 'creator_pay_days_myr', 'creator_pay_days_other', 'hiring_decision_days') then ' working days'
+        when v_k = 'quote_wa_day' then ' per day'
+        when v_k = 'plan_db_mb' then ' MB'
+        when v_k = 'work_lunch_min' then ' minutes'
+        when v_k = 'outstation_accuracy_m' then ' m'
+        when v_k in ('outstation_office_lat', 'outstation_office_lng') then ''
+        when v_k in ('health_keep_months', 'hiring_pool_months', 'hiring_keep_months', 'health_leaver_months', 'outstation_keep_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert') then case when v_was = 1 then 'On' else 'Off' end
+              when v_k like 'work\_%' and v_k <> 'work_lunch_min' then coalesce(public.work_hours_word(v_k, v_was), 'not set')
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set')
+              when v_k = 'verify_code_from' then coalesce(public.register_day(to_date(v_was::bigint::text, 'YYYYMMDD')), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert') then case when v_v = 1 then 'On' else 'Off' end
+              when v_k like 'work\_%' and v_k <> 'work_lunch_min' then public.work_hours_word(v_k, v_v)
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3)
+              when v_k = 'verify_code_from' then public.register_day(to_date(v_v::bigint::text, 'YYYYMMDD')) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k in ('analytics_from', 'verify_code_from') or (v_k like 'work\_%' and v_k <> 'work_lunch_min') then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert') then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert') then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+
+create or replace function public.outstation_trip_delete(p_trip uuid, p_confirm text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_me public.team_members; v_t public.outstation_trips; v_driver text; v_stops integer;
+begin
+  v_me := public.ops_me();
+  if v_me.id is null or not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_t from public.outstation_trips t where t.id = p_trip for update;
+  if v_t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_t.driver_id <> v_me.id and not (v_me.is_admin or v_me.role = 'admin') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if upper(regexp_replace(coalesce(p_confirm, ''), '[^A-Za-z0-9]', '', 'g'))
+     <> upper(regexp_replace(v_t.ref, '[^A-Za-z0-9]', '', 'g')) then
+    return jsonb_build_object('error', 'confirm-required');
+  end if;
+  select m.name into v_driver from public.team_members m where m.id = v_t.driver_id;
+  select count(*) into v_stops from public.outstation_stops s where s.trip_id = v_t.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, v_me.email), 'ops.deleted', v_t.ref,
+          'Outstation trip · ' || public.register_day((v_t.started_at at time zone 'Asia/Kuala_Lumpur')::date)
+          || ' · ' || coalesce(v_driver, 'Former colleague') || ' · ' || v_stops || case when v_stops = 1 then ' stop' else ' stops' end);
+  /* The visits it filed go with it: a trip deleted did not happen (the
+     user, 2026-11-24). */
+  delete from public.client_touches
+   where id in (select s.touch_id from public.outstation_stops s where s.trip_id = v_t.id and s.touch_id is not null);
+  delete from public.outstation_trips where id = v_t.id;
+  return jsonb_build_object('ok', true, 'deleted', true, 'ref', v_t.ref);
+end $$;
+revoke all on function public.outstation_trip_delete(uuid, text) from public, anon;
+grant execute on function public.outstation_trip_delete(uuid, text) to authenticated;
+
+update public.creator_email_templates
+   set body = replace(body, 'If this was not you, please contact', 'If you did not make this change, please contact')
+ where purpose = 'changed' and position('If this was not you, please contact' in body) > 0;
+
+-- END OF TONE SWEEP 7 --------------------------------------------------------
+-- FEEDBACK PAGE AVAILABLE (2026-11-24)
+-- ===========================================================================
+-- WHY: every new page joins Page availability in the push that builds it
+-- (the user, 2026-11-21). /feedback/, a client's feedback on its link
+-- (CLIENT FEEDBACK), is that page.
+--
+-- WHAT IT CHANGES
+--   * `page_keys()` (restated from EVERY PAGE AVAILABLE) adds `feedback`.
+--   * `page_name(p)` (restated) names it Feedback form.
+--   `page_states_all`, `page_set` and `page_pulse` read both, so the page
+--   can be set Upgrade in progress or Temporarily unavailable as any other.
+--
+-- ORDER: this file, then the pages. An old Settings sheet lists the pages it
+-- knows and ignores the rest. Safe to run twice.
+--
+-- ROLLBACK: restore `page_keys` and `page_name` from EVERY PAGE AVAILABLE;
+-- then remove the `page:feedback` row from app_flags (SQL Editor).
+
+create or replace function public.page_keys()
+returns text[]
+language sql immutable set search_path = public as $$
+  select array['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify',
+               'careers', 'feedback', 'home', 'notfound', 'card']
+$$;
+revoke all on function public.page_keys() from public, anon, authenticated;
+
+create or replace function public.page_name(p text)
+returns text
+language sql immutable set search_path = public as $$
+  select case p when 'admin' then 'Console' when 'client' then 'Client portal' when 'review' then 'Content Review'
+    when 'script' then 'Video Scripts' when 'details' then 'Details form' when 'creators' then 'Creator selection'
+    when 'creator' then 'Creator page' when 'quote' then 'Quotation website' when 'supplier' then 'Supplier form'
+    when 'verify' then 'Verify a document' when 'careers' then 'Candidate page' when 'feedback' then 'Feedback form'
+    when 'home' then 'Front page' when 'notfound' then 'Page not found' when 'card' then 'Namecards' end
+$$;
+revoke all on function public.page_name(text) from public, anon, authenticated;
+
+-- END OF FEEDBACK PAGE AVAILABLE ---------------------------------------------
+
+select public.functions_tidy();
+
+-- QUOTATION BRANDS ON SERVICE LINES AND INVOICES -----------------------------
+
+/* A quotation line's name where it leaves the quotation (a service line
+   made on approval, an invoice line to Bukku): on a quotation for several
+   brands (QUOTATION BRANDS, 2026-11-24) its brand's name before it, so two
+   brands' Plan lines are told apart; else the line's own name. */
+create or replace function public.quote_line_label(p_totals jsonb, p_line jsonb)
+returns text
+language sql immutable set search_path = public as $$
+  select case when jsonb_typeof(p_totals->'brands') = 'array' and jsonb_array_length(p_totals->'brands') > 1
+                   and coalesce(p_line->>'brand', '') ~ '^[0-9]{1,2}$'
+                   and nullif(btrim(p_totals->'brands'->((p_line->>'brand')::int)->>'name'), '') is not null
+              then btrim(p_totals->'brands'->((p_line->>'brand')::int)->>'name') || ' · ' || coalesce(nullif(btrim(p_line->>'label'), ''), 'Service')
+              else coalesce(nullif(btrim(p_line->>'label'), ''), 'Service') end
+$$;
+revoke all on function public.quote_line_label(jsonb, jsonb) from public, anon, authenticated;
+
+create or replace function public.quotation_review(p_id uuid, p_ok boolean, p_note text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  c  public.clients;
+  co jsonb;
+  v_note text := btrim(coalesce(p_note, ''));
+  v_billing text := 'kept';
+  v_lines int := 0;
+  v_l jsonb;
+  v_admin boolean;
+  v_renewed int := 0;
+  v_sid uuid;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.signed_at is null then return jsonb_build_object('error', 'not-signed'); end if;
+  if q.reviewed_at is not null then return jsonb_build_object('error', 'reviewed'); end if;
+  if q.submitted_at is null or q.returned_at is not null then return jsonb_build_object('error', 'not-submitted'); end if;
+  -- A colleague with no role is no admin: a null here would let anyone through.
+  v_admin := coalesce(me.is_admin, false) or coalesce(me.role, '') = 'admin';
+  if q.reviewer_id is distinct from me.id and not v_admin then return jsonb_build_object('error', 'not-reviewer'); end if;
+
+  if not coalesce(p_ok, false) then
+    if length(v_note) < 2 or length(v_note) > 1000 then return jsonb_build_object('error', 'note-required'); end if;
+    update public.quotations set returned_at = now(), return_note = v_note, returned_by = me.name where id = q.id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'client.quotation', q.brand, q.ref || ' · sent back by ' || me.name || ': ' || v_note);
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.submitted_by)], 'quote.returned',
+      'Quotation sent back · ' || q.brand, q.ref || ' · ' || v_note, q.client_id, q.id::text || ':' || now()::text);
+    return jsonb_build_object('ok', true, 'returned', true);
+  end if;
+
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if exists (select 1 from public.quotations x where x.replaces = q.id and x.removed_at is null) then
+    return jsonb_build_object('error', 'revised');
+  end if;
+  select * into c from public.clients where id = q.client_id for update;
+  v_lines := 0;
+  co := q.signed->'company';
+  if exists (select 1 from public.bukku_links b where b.kind = 'client' and b.record_id = c.id and b.held_at is not null) then
+    v_billing := 'held';
+  elsif q.totals ? 'bill_to' then
+    v_billing := 'kept';
+  elsif coalesce(btrim(c.legal_name), '') = '' and coalesce(btrim(c.company_no), '') = '' and coalesce(btrim(c.billing_address), '') = '' then
+    if not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'billing-access'); end if;
+    update public.clients
+       set legal_name = co->>'legal_name', company_no = co->>'company_no',
+           company_no_old = coalesce(co->>'company_no_old', company_no_old), tin = coalesce(co->>'tin', tin),
+           sst_no = coalesce(co->>'sst_no', sst_no), billing_address = co->>'billing_address',
+           finance_email = coalesce(co->>'finance_email', finance_email)
+     where id = c.id;
+    v_billing := 'filled';
+  end if;
+
+  update public.client_services set state = 'confirmed'
+   where quotation_id = q.id and archived_at is null and state <> 'confirmed';
+  select count(*) into v_lines from public.client_services where quotation_id = q.id and archived_at is null;
+  /* A renewal (2026-11-12) confirms the client's own line for its new
+     term, rate and start, never a second line beside it. */
+  for v_l in select * from jsonb_array_elements(q.lines) loop
+    if coalesce(v_l->>'renews', '') <> '' then
+      update public.client_services
+         set qty = (v_l->>'qty')::numeric, rate = (v_l->>'rate')::numeric, state = 'confirmed',
+             tenure = case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (q.totals->>'term')::int) else 1 end,
+             term_adjust = v_l->>'basis' = 'month', term_pct = case when v_l->>'basis' = 'month' then coalesce((v_l->>'pct')::numeric, (q.totals->>'term_pct')::numeric) else 0 end,
+             start_on = coalesce(nullif(v_l->>'start', '')::date, start_on), quotation_id = q.id, note = 'Renewed by quotation ' || q.ref,
+             detail = coalesce(nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))), E'\n'), ''), detail)
+       where id = (v_l->>'renews')::uuid and client_id = q.client_id and archived_at is null;
+      if found then v_renewed := v_renewed + 1; end if;
+    end if;
+  end loop;
+  if v_lines = 0 then
+    for v_l in select * from jsonb_array_elements(q.lines) loop
+      if coalesce(v_l->>'renews', '') <> '' then continue; end if;
+      insert into public.client_services (client_id, service_slug, label, qty, rate, unit, state, note,
+                                          tenure, term_adjust, term_pct, detail, quotation_id, tax_code)
+      values (q.client_id,
+              case when exists (select 1 from public.services s where s.slug = v_l->>'slug') then v_l->>'slug' end,
+              public.quote_line_label(q.totals, v_l), (v_l->>'qty')::numeric, (v_l->>'rate')::numeric,
+              case when v_l->>'basis' = 'month' then 'Per month' else 'One-off' end, 'confirmed',
+              'Quotation ' || q.ref,
+              case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (q.totals->>'term')::int) else 1 end,
+              v_l->>'basis' = 'month', case when v_l->>'basis' = 'month' then coalesce((v_l->>'pct')::numeric, (q.totals->>'term_pct')::numeric) else 0 end,
+              nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))), E'\n'), ''),
+              q.id, nullif(v_l->>'tax_code', ''))
+      returning id into v_sid;
+      if coalesce(v_l->>'start', '') <> '' then
+        update public.client_services set start_on = (v_l->>'start')::date where id = v_sid;
+      end if;
+      v_lines := v_lines + 1;
+    end loop;
+  end if;
+
+  update public.quotations set reviewed_at = now(), reviewed_by = me.name, reviewed_role = nullif(btrim(coalesce(me.designation, '')), '')
+   where id = q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand,
+          q.ref || ' · reviewed and approved by ' || me.name ||
+          case when q.reviewer_id is distinct from me.id then ' in place of ' || coalesce(q.reviewer_name, 'the reviewer') else '' end ||
+          ' · ' || (v_lines + v_renewed) || case when v_lines + v_renewed = 1 then ' service line confirmed · ' else ' service lines confirmed · ' end ||
+          case v_renewed when 0 then '' when 1 then '1 renewed · ' else v_renewed || ' renewed · ' end ||
+          case v_billing when 'filled' then 'Billing filled from the signed quotation' when 'held' then 'Billing not changed, as Bukku keeps this client''s billing details'
+               else 'Billing not changed' end);
+  perform public.quote_sign_tell(array_remove(array[public.quote_sign_member(q.submitted_by), public.quote_sign_member(c.owner)], me.id),
+    'quote.reviewed', 'Quotation approved · ' || q.brand, q.ref || ' · by ' || me.name, q.client_id, q.id::text);
+  return jsonb_build_object('ok', true, 'billing', v_billing, 'lines', v_lines + v_renewed);
+end $$;
+revoke all on function public.quotation_review(uuid, boolean, text) from public, anon;
+
+create or replace function public.quotation_cycle_lines(p_id uuid, p_cycle int, p_kind text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  v_out jsonb := '[]'::jsonb;
+  e jsonb;
+  v_months int; v_month boolean; v_pct numeric; v_rate numeric; v_unit numeric;
+  v_sst numeric; v_tax text; v_sku text;
+  g record; v_last int; v_amt numeric; v_q numeric;
+begin
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null then return v_out; end if;
+  if p_kind = 'budget' then
+    for e in select x from jsonb_array_elements(coalesce(q.totals->'ads', '[]'::jsonb)) x loop
+      v_month := coalesce(e->>'freq', 'monthly') = 'monthly';
+      v_months := greatest(1, coalesce((e->>'months')::int, 1));
+      if (v_month and p_cycle <= v_months) or (not v_month and p_cycle = 1) then
+        v_unit := round(coalesce((e->>'budget')::numeric, (e->>'amount')::numeric, 0), 2);
+        if v_unit > 0 then
+          v_out := v_out || jsonb_build_object('label', 'Advertising budget · ' ||
+            case lower(coalesce(e->>'platform', '')) when 'meta' then 'Meta' when 'tiktok' then 'TikTok' when 'google' then 'Google'
+              when 'xhs' then 'rednote' when 'rednote' then 'rednote' else initcap(coalesce(e->>'platform', 'Other')) end,
+            'qty', 1, 'unit', v_unit, 'sst', 0);
+        end if;
+      end if;
+    end loop;
+    return v_out;
+  end if;
+  for e in select x from jsonb_array_elements(coalesce(q.lines, '[]'::jsonb)) x loop
+    if coalesce((e->>'in_plan')::boolean, false) then continue; end if;
+    v_month := e->>'basis' = 'month';
+    v_months := greatest(1, coalesce((e->>'months')::int, (q.totals->>'term')::int, 1));
+    if not ((v_month and p_cycle <= v_months) or (not v_month and p_cycle = 1)) then continue; end if;
+    v_rate := coalesce((e->>'rate')::numeric, 0);
+    v_pct := case when v_month then coalesce((e->>'pct')::numeric, (q.totals->>'term_pct')::numeric, 0) else 0 end;
+    v_unit := round(v_rate * (1 + v_pct / 100), 2);
+    v_sst := coalesce((e->>'tax_pct')::numeric, (e->>'sst')::numeric, (q.totals->>'sst_pct')::numeric, 0);
+    v_tax := null;
+    if coalesce(e->>'tax', '') <> '' then
+      select t.bukku_id into v_tax from public.tax_codes t where t.code = e->>'tax';
+    end if;
+    if v_tax is null and v_sst > 0 then
+      select t.bukku_id into v_tax from public.tax_codes t
+       where t.active and t.rate = v_sst and t.bukku_id is not null
+       order by (t.code ilike 'SV%') desc, t.code limit 1;
+    end if;
+    v_sku := null;
+    if coalesce(e->>'slug', '') <> '' then
+      select nullif(btrim(s.sku), '') into v_sku from public.services s where s.slug = e->>'slug';
+    end if;
+    v_out := v_out || jsonb_strip_nulls(jsonb_build_object('label', public.quote_line_label(q.totals, e),
+      'qty', coalesce((e->>'qty')::numeric, 1), 'unit', v_unit, 'sst', v_sst, 'tax', v_tax, 'sku', v_sku,
+      'pct', case when v_pct <> 0 then v_pct end, 'month', v_month,
+      '_g', case when v_month and v_pct <> 0 then v_sst::text || '|' || v_pct::text end,
+      '_v', coalesce((e->>'qty')::numeric, 1) * v_rate));
+  end loop;
+  for g in
+    select x->>'_g' as k, max((x->>'pct')::numeric) as p, sum((x->>'_v')::numeric) as gsub,
+           sum((x->>'qty')::numeric * (x->>'unit')::numeric) as billed, max(i) as last
+      from jsonb_array_elements(v_out) with ordinality t(x, i)
+     where x ? '_g' group by x->>'_g'
+  loop
+    v_amt := g.gsub + round(g.gsub * g.p / 100, 2) - g.billed;
+    if v_amt <> 0 then
+      v_last := g.last::int - 1;
+      v_q := (v_out->v_last->>'qty')::numeric;
+      v_amt := round(v_q * (v_out->v_last->>'unit')::numeric + v_amt, 2);
+      v_out := jsonb_set(v_out, array[v_last::text], (v_out->v_last) || jsonb_build_object('qty', 1, 'unit', v_amt,
+        'label', case when v_q <> 1 then trim(to_char(v_q, 'FM999990.##')) || ' × ' else '' end || (v_out->v_last->>'label')));
+    end if;
+  end loop;
+  select coalesce(jsonb_agg((x - '_g') - '_v' order by i), '[]'::jsonb) into v_out
+    from jsonb_array_elements(v_out) with ordinality t(x, i);
+  return v_out;
+end $$;
+revoke all on function public.quotation_cycle_lines(uuid, integer, text) from public, anon, authenticated;
+
+create or replace function public.quotation_offer(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_q public.quotations;
+  v_l jsonb;
+  v_ids uuid[] := '{}';
+  v_id uuid;
+begin
+  if me.id is null or not (public.allowed('clients.quotes', 'work') and public.allowed('clients.services', 'work')
+                           and public.allowed('clients.documents', 'work')) then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_q from public.quotations where id = p_id for update;
+  if v_q.id is null or v_q.removed_at is not null or not public.client_scope_ok('client', v_q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if v_q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  select coalesce(array_agg(s.id order by s.created_at), '{}') into v_ids
+    from public.client_services s where s.quotation_id = v_q.id and s.archived_at is null;
+  if array_length(v_ids, 1) is not null then return jsonb_build_object('ok', true, 'ids', to_jsonb(v_ids), 'again', true); end if;
+  if v_q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  for v_l in select * from jsonb_array_elements(v_q.lines) loop
+    insert into public.client_services (client_id, service_slug, label, qty, rate, unit, state, note,
+                                        tenure, term_adjust, term_pct, detail, quotation_id, tax_code)
+    values (v_q.client_id,
+            case when exists (select 1 from public.services s where s.slug = v_l->>'slug') then v_l->>'slug' end,
+            public.quote_line_label(v_q.totals, v_l), (v_l->>'qty')::numeric, (v_l->>'rate')::numeric,
+            case when v_l->>'basis' = 'month' then 'Per month' else 'One-off' end, 'quoted',
+            'Quotation ' || v_q.ref,
+            case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (v_q.totals->>'term')::int) else 1 end,
+            v_l->>'basis' = 'month', case when v_l->>'basis' = 'month' then (v_q.totals->>'term_pct')::numeric else 0 end,
+            nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))), E'\n'), ''),
+            v_q.id, nullif(v_l->>'tax_code', ''))
+    returning id into v_id;
+    v_ids := v_ids || v_id;
+  end loop;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', v_q.brand, v_q.ref || ' · ' || array_length(v_ids, 1) || ' lines To quote for the Letter of Offer');
+  return jsonb_build_object('ok', true, 'ids', to_jsonb(v_ids));
+end $$;
+revoke all on function public.quotation_offer(uuid) from public, anon;
+grant execute on function public.quotation_offer(uuid) to authenticated;
+
+-- END OF QUOTATION BRANDS ON SERVICE LINES AND INVOICES ----------------------
 
 -- DOCUMENT ID ON EVERY FOOT ---------------------------------------------------
 

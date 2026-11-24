@@ -498,7 +498,7 @@
       var d = r.data || {};
       if (r.error || d.error) {
         done(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
-                     : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
+                     : d.error === 'bad-window' ? window.ADspaceWords.line.badWindow
                      : d.error === 'denied' ? 'You do not have permission to change page availability. Please ask an admin.' : 'Not saved. The database refused the request.');
         return;
       }
@@ -524,7 +524,7 @@
     var starts = myMoment(v.sday || (v.stime ? today : ''), v.stime, '00:00');
     var ends = myMoment(v.eday || (v.etime ? today : ''), v.etime, '23:59');
     var bad = ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date());
-    return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
+    return { starts: starts, ends: ends, bad: bad ? window.ADspaceWords.line.badWindow : '' };
   }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
   /* The media pass and what this browser kept of the colleague's work
