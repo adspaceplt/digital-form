@@ -12,7 +12,8 @@
 --     with its own plan, mix, platforms, extra, langs, translate, budget,
 --     once, edits, custom and order) prices each brand so, marks its lines
 --     with the brand's place (`brand`), and totals the whole once
---     (`quote_totals`), the names kept in `totals.brands`; a brand refused
+--     (`quote_totals`), the names kept in `totals.brands` and each brand's
+--     own figures answered in `brands`; a brand refused
 --     names its place (`brand`, `brand_name`); a website selection with
 --     `brands` is refused (`bad-brands`).
 --   * `quote_preview`, `quotation_make` and `quotation_edit` price through it.
@@ -70,7 +71,9 @@ begin
                                       from jsonb_array_elements(v_p->'lines') with ordinality x(l, n)), '[]'::jsonb);
     v_req := v_req || coalesce(v_p->'on_request', '[]'::jsonb);
     v_names := v_names || jsonb_build_array(jsonb_build_object('name', v_name));
-    v_rates := v_rates || jsonb_build_array(jsonb_build_object('name', v_name, 'extra_rates', coalesce(v_p->'extra_rates', '{}'::jsonb)));
+    -- each brand's own figures, for the builder's list
+    v_rates := v_rates || jsonb_build_array(jsonb_build_object('name', v_name, 'extra_rates', coalesce(v_p->'extra_rates', '{}'::jsonb),
+      'month', v_t->'month', 'once', v_t->'once', 'term_pct', v_t->'term_pct', 'term_rows', v_t->'term_rows'));
     v_adj := v_adj + coalesce((v_p->>'adjusted')::int, 0);
     v_i := v_i + 1;
   end loop;
