@@ -650,7 +650,7 @@
        be read"). */
     if (Date.now() - Date.parse(spot.at) > STALE_MS) {
       stopKit.loc.read();
-      stopMsg('The location was read more than 10 minutes ago and is being read again. Press ' + go.textContent + ' once it shows.', 'warn');
+      stopMsg('The location is more than 10 minutes old and will be updated. Press ' + go.textContent + ' once the new location appears.', 'warn');
       return;
     }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }

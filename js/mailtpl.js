@@ -38,7 +38,7 @@
     'not-found': 'This template no longer exists.',
     'foot-long': 'Keep the fine print to 1,000 characters.',
     'no-code': 'Keep {code} in the message, where the code goes.',
-    'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its lock screen.',
+    'code-in-subject': 'Remove {code} from the subject. The subject is shown on a phone\'s lock screen.',
     'bad-button': 'Enter a button label of 2 to 40 characters.'
   };
   /* The candidate emails (CANDIDATE EMAILS, 2026-11-21): each an automatic

@@ -2955,7 +2955,7 @@
     if (!c || !me) return;
     btn.disabled = true;
     var tom = ADspaceClock.addDays ? ADspaceClock.addDays(today(), 1) : today();
-    var payload = { title: 'Follow up low feedback score · ' + c.name, workflow_key: 'task', scope: 'client', client_id: c.id,
+    var payload = { title: 'Follow up on a low feedback score · ' + c.name, workflow_key: 'task', scope: 'client', client_id: c.id,
       task_type: 'adhoc', owner_id: me.id, final_due_at: tom + 'T00:00:00Z', priority_level: 2, checklist: [] };
     db.rpc('ops_create_task', { p_payload: payload, p_idem: 'fb-' + respId }).then(function (r) {
       var t = r.data || {};
