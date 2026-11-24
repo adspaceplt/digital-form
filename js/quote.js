@@ -467,7 +467,7 @@
      cards, each its glyph in a white disc with its number on an ink badge,
      then the time with the clock. Words unchanged. */
   var NEED_GLYPH = { 'social': 'plancontent', 'ads': 'planads', 'content': 'picture', 'koc': 'people', 'verify': 'verified' };
-  var STEP_GLYPH = ['pieces', 'sliders', 'bubble', 'pen'];
+  var STEP_GLYPH = ['grid', 'sliders', 'bubble', 'pen'];
   function paintIntro() {
     var N = t().need;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
@@ -509,7 +509,7 @@
     return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="plan" value="' + esc(p.slug) + '"' + (on ? ' checked' : '') + '>' +
       (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
       '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
-      '<span class="qs-pl">' + ic('pieces') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
+      '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
       '<span class="qs-pl">' + ic('device') + esc(p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms })) + '</span>' +
       (p.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(p.ad_budget) })) + '</span>' : '') + '</label>';
   }

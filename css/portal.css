@@ -8974,7 +8974,7 @@ body.is-maint { overflow: hidden; }
 .cx-standing-line b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .cx-standing-line span { font-size: 13.5px; color: var(--ink-mute); }
 .cx-track { display: flex; gap: 4px; height: 6px; }
-.cx-track i { flex: 1 1 0; border-radius: 4px; background: var(--line-soft); }
+.cx-track i { flex: 1 1 0; border-radius: 4px; corner-shape: round; background: var(--line-soft); }
 .cx-track i.is-ok { background: var(--dot-ok); }
 .cx-track i.is-wait { background: var(--dot-wait); }
 .cx-track i.is-late { background: var(--dot-late); }
@@ -10059,3 +10059,81 @@ body.qs-page { background: var(--card); }
 .fbread-a b { font-weight: 500; font-variant-numeric: tabular-nums; }
 .fbread-a span { font-size: 13px; color: var(--ink-mute); }
 .fbread-t { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* ===== The client portal as the approved boards (2026-11-25) =====
+   Each section at a glance as a tile, a glyph tile before every row's name,
+   and each piece of work as it stands: a track of its parts (.cx-track,
+   ADspaceIcons.track) with its words under it. */
+.cp-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.cp-tiles[data-n="1"] { grid-template-columns: minmax(0, 1fr); }
+.cp-tiles[data-n="2"], .cp-tiles[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cp-tiles[hidden] { display: none; }
+.cp-tile {
+  display: grid; align-content: start; gap: 2px; min-width: 0; text-align: left; font: inherit; color: var(--ink);
+  background: var(--card); border: 0; border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.cp-tile:active { transform: scale(.97); }
+.cp-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+@media (hover: hover) { .cp-tile:hover { background: var(--sunk); } }
+.cp-tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cp-tile-top > .ic { width: 15px; height: 15px; color: var(--ink-mute); }
+.cp-tile-label { font-size: 12.5px; color: var(--ink-mute); }
+.cp-tile-head { display: inline-flex; align-items: baseline; gap: 6px; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.cp-tile-head .cx-dot { position: relative; top: -1px; }
+.cp-tile-sub { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .cp-tiles, .cp-tiles[data-n] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-tiles[data-n="1"] { grid-template-columns: minmax(0, 1fr); }
+  .cp-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+/* On a phone the Overview is one column read in the order a client checks
+   it: what to rate, the tiles, services, the next meeting, the latest
+   report, the work, then who to reach and the company. */
+@media (max-width: 900px) {
+  .cp-overview > .cp-col { display: contents; }
+  #ovFb { order: 1; } #ovTiles { order: 2; } #ovSvc { order: 3; } #ovMeet { order: 4; }
+  #ovRep { order: 5; } #engWrap { order: 6; } #ovMgr { order: 7; } #cpSide > section:last-child { order: 8; }
+}
+
+/* A glyph tile: 40px before a piece of work, 36 before a table row's name,
+   round before a person. */
+.cx-tile.is-sm { width: 36px; height: 36px; border-radius: var(--radius-sm); flex: 0 0 auto; }
+.cx-tile.is-sm .ic { width: 17px; height: 17px; }
+.cx-tile.is-round { border-radius: 50%; corner-shape: round; flex: 0 0 auto; }
+.svc-name.cp-led { flex-direction: row; align-items: center; gap: 12px; }
+.cp-led-words { display: flex; flex-direction: column; min-width: 0; }
+.cp-led-words small { font-size: 12px; color: var(--ink-mute); }
+.cp-who { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+.cp-who .cp-person { margin: 0; }
+.cp-who small { font-size: 13px; }
+.fbh-row { grid-template-columns: 36px minmax(0, 1fr) auto 15px; gap: 4px 12px; }
+
+/* A piece of work as it stands. */
+.svc-row.cp-prog, .is-narrow .svc-row.cp-prog {
+  grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "tile body"; align-items: start; row-gap: 0; padding-block: 14px;
+}
+.svc-row.cp-prog.is-bare, .is-narrow .svc-row.cp-prog.is-bare { grid-template-columns: minmax(0, 1fr); grid-template-areas: "body"; }
+.svc-row.cp-prog > .cx-tile { grid-area: tile; }
+.cp-prog-body { grid-area: body; display: grid; gap: 10px; min-width: 0; }
+.cp-prog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 12px; min-width: 0; }
+.cp-prog-top > .svc-state { flex: 0 0 auto; }
+.cp-prog-body .cx-legend { margin: 0; }
+.cx-legend b { font-weight: 600; color: var(--ink); }
+.cp-prog-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.cp-prog-foot > .cp-open { margin-left: auto; }
+.cp-prog-note { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.cp-prog-note .ic { width: 15px; height: 15px; }
+/* A content month over its sets (Content Review's tab). */
+.cp-group-head { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; }
+.cp-group-head:first-child { margin-top: 0; }
+.cp-group-head h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.cp-group-head .tab-n { margin-left: 0; }
+/* A confirmed line's term: its glyph, the line over where it is, and a
+   month a part, on a shaded box. */
+.cx-term { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center;
+  background: var(--sunk); border-radius: var(--radius-sm); padding: 12px 14px; }
+.cx-term .cx-tile { background: var(--card); }
+.cx-term-words { min-width: 0; }
+.cx-term-words .cx-track { margin-top: 8px; }
+.cx-terms { border-top: 0; padding-top: 0; }
