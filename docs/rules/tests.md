@@ -94,6 +94,10 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     reports: the stand-in keeps no sign-in across a load. `report()` fails a
     console screen measured on the Sign in page (2026-11-24: My Work's
     Outstation passed twice on the sign-in form, then the walk crashed).
+  - Every browser suite that waits with `settle` or `ready` tracks its
+    browser (`track(await chromium.launch(...))`): without the probe
+    `settle` sees no request or timer and returns at once (2026-11-24:
+    `sendswitch` read Settings before `settings.js` arrived under load).
   - A suite follows a record by its id, never by being the first card: a
     list's order moves when the order rules do (2026-11-04: `prod` read
     another booking once a posted one sank to the end).

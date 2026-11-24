@@ -911,6 +911,16 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    desk, and beside it on the phone's second line (2026-11-22, screen (f)). */
 .bookreg .kcard-tags > .kcard-pay { flex-basis: 100%; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags > .kcard-pay { flex-basis: auto; }
+/* Where the second line holds more than the state (its payment, Goodwill,
+   Replacement), the date takes a line of its own under it, read whole, and
+   the chips wrap between themselves: beside four chips the date had 23px
+   at 390 (2026-11-24, the day's gate). The state alone keeps it beside. */
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) {
+  grid-template-areas: "lead name name" "lead tags tags" "lead sum sum";
+}
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-tags { flex-wrap: wrap; min-width: 0; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-sum { text-align: left; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(> .kcard-tags > :nth-child(2)) > .kcard-sum:empty { display: none; }
 /* A stated track outlives the cell in it, so the row that draws no ⋯ gives
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
