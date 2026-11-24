@@ -7063,6 +7063,25 @@
     }).catch(function () {});
   }
 
+  /* Who a section's pickers offer (2026-11-24): the ids of the colleagues
+     who may work it (`team_pickable`), asked once a visit; null where the
+     answer is missing, and then every colleague is offered. */
+  var pickAsked = {};
+  function pickable(section) {
+    if (!pickAsked[section]) {
+      pickAsked[section] = db.rpc('team_pickable', { p_section: section }).then(function (r) {
+        return r && !r.error && Array.isArray(r.data) ? r.data : null;
+      }).catch(function () { return null; });
+    }
+    return pickAsked[section];
+  }
+  /* The colleagues a picker offers: those who may work, and the one already
+     chosen whatever their access. */
+  function pickFrom(team, ids, keep) {
+    if (!ids) return team;
+    return team.filter(function (m) { return ids.indexOf(m.id) > -1 || (keep && (m.id === keep || m.name === keep)); });
+  }
+
   /* Creator Campaigns lives in its own file, because this one is long enough.
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
@@ -7226,6 +7245,7 @@
        names, after writing the address the section reads on entry. */
     show: function (name) { visitSection(name); },
     /* ON DEMAND (2026-11-22): a section's scripts, fetched on first ask. */
+    pickable: pickable, pickFrom: pickFrom,
     need: need, needThen: needThen, needSection: needSection, whenSection: whenSection,
     settingsAllowed: settingsAllowed,
     clientKey: clientKey, clientByKey: clientByKey, analyticsTab: analyticsTab,
