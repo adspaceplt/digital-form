@@ -666,14 +666,18 @@
      kind document (Documents, HR letters among them), letter (a Letter of
      Offer), quotation, hiring (an offer or contract) or perf. A preview, a
      page with no database and a refused or failed ask answer '', so a
-     drawing never waits on it or fails for it. One ask a document a page. */
+     drawing never waits on it or fails for it. One ask a document a page.
+     A page outside the team names its own key (a quotation's link, a
+     candidate's; `doc_code_of_key`, 2026-11-24): the database answers no
+     code to anybody else. */
   var codes = {};
-  function codeOf(kind, id) {
+  function codeOf(kind, id, key) {
     var api = window.ADspaceAPI, db = api && api.client;
     if (!id || !db) return Promise.resolve('');
     var k = kind + ':' + id;
     if (codes[k]) return Promise.resolve(codes[k]);
-    return Promise.resolve(db.rpc('doc_code_of', { p_kind: kind, p_id: id })).then(function (r) {
+    var ask = key ? db.rpc('doc_code_of_key', { p_kind: kind, p_id: id, p_key: key }) : db.rpc('doc_code_of', { p_kind: kind, p_id: id });
+    return Promise.resolve(ask).then(function (r) {
       var c = r && !r.error && typeof r.data === 'string' && /^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(r.data) ? r.data : '';
       if (c) codes[k] = c;
       return c;

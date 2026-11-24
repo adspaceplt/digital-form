@@ -249,15 +249,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   approved mockups A1 to A6) answers in two steps, in English and Chinese,
   with `?s=` prefilled, light and white to the edge, every cover's 440
   column. `verify_find` (no caller's) is the one lookup and the one state:
-  an exact reference first, one typed with dashes for slashes (the file
-  name's form) the same reference; the standing version first; never the
-  recipient, a term or a figure.
+  a reference compared in one form (upper case, a slash as a dash, held by
+  an index on each table it reads: `*_verify_idx`), an exact match first;
+  the standing version first; never the recipient, a term or a figure. It
+  holds each document's names (`names`, compared, never answered): a
+  Document's recipient, client, colleague and supplier; a Letter of
+  Offer's billed company, name and contact and its client; a quotation's
+  brand, contact, billed company and client; an offer's or contract's
+  candidate; a performance record's colleague.
   - The first answer (`verify_serial`, anon): found, the reference, the kind
     (HR is "HR Letter"), the state (Valid, Void, Replaced for a superseded
     Letter of Offer or a revised quotation, Expired for an unsigned
-    quotation or an offer past its validity, Withdrawn, Declined), the month
-    of issue (`issued_month`, drawn Nov 2026), `sealed`, `more` and `by_day`;
-    no day and no Document ID. The page reads it as a shaded card
+    quotation or an offer past its validity, Withdrawn, Declined), `sealed`,
+    `more`, `by_name` and, only where the name may not stand for the
+    Document ID, the month of issue (`issued_month`, drawn Nov 2026; a
+    reference may carry its day, 2026-11-24); no day and no Document ID. The page reads it as a shaded card
     (Reference, Issued by from `ADSPACE_ORG`, Document, Issued, Status) over
     "This result confirms that ADSPACE PLT issued a document under this
     reference. It does not confirm the copy you hold.", then More details
@@ -273,8 +279,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     ` · Document ID XXXX-XXXX`, centred, clear of the page count; an AL
     quotation's stands at the bottom margin's left at `G.refAt`; a
     performance record's in its reference line); the page asks it by the id
-    it holds (`ADspaceDocs.codeOf`, `doc_code_of`, anon too), never a
-    preview's or a draft's. A copy sealed from 2026-11-20 prints it on its
+    it holds (`ADspaceDocs.codeOf`), never a preview's or a draft's:
+    `doc_code_of` answers a colleague, and a client's portal login its own
+    Letter of Offer's; a page outside the team names its own key
+    (`doc_code_of_key`: /quote/ its quotation's link, /careers/ its
+    candidate's for an offer or contract sent); anybody else no code
+    (2026-11-24). A copy sealed from 2026-11-20 prints it on its
     Record page; one sealed before printed its uuid, which still opens the
     details of a sealed quotation or offer.
   - The details (`verify_details(p_serial, p_code, p_day)`, anon) answer
@@ -284,12 +294,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     expired; drawn with the status's dot, no weekday) only for the Document
     ID (any case, with or without its dash) or, for a document issued before
     `verify_code_from` (a Business setting, YYYYMMDD, seeded 20261120) or
-    holding none, its day of issue (the fold "No Document ID on your
-    copy?"). A wrong code, a wrong day and an unknown reference read the
+    holding none, the name it is addressed to (`verify_details_name`, case
+    and spaces set aside; the fold "No Document ID on your copy?", Recipient
+    name; the user, 2026-11-24: the day of issue, which a reference may
+    carry, proves nothing and is read no more). Five wrong names a
+    reference, from any connection, lock its name for 24 hours
+    (`verify_name_tries`, closed to every page; `locked`, `reference`: Too
+    many checks were made for this reference. Please try again in {wait},
+    or contact ADspace at {contact}.); a Document ID still answers it. A
+    wrong code, a wrong name and an unknown reference read the
     same (`no_match`): "No document matches these details. Please check the
     details entered, or contact ADspace at {contact}.", `contact` the Legal and
     compliance mailbox (`mail_boxes` `legal`).
-  - Checks counted (VERIFY CHECKS COUNTED, `2026-11-21-verify-checks-counted.sql`; the user, 2026-11-21, no "since"): a `verify_serial` lookup that finds a document is kept once an address a Malaysian day a document (`verify_check_note`: `verify_checks`, the address only as the SHA-256 of `app_secrets` `verify_check_salt`, the day and `request_ip()`; a miss, a repeat, a colleague and a session with no request never), raising `verify_check_totals`, which never drops; `privacy_retention` lets go of a row 30 days after its day. `verify_details` answers `checks` (one at least), drawn as one 12px mute line under History (Checked once, Checked 5 times; 已查验5次), never in the first answer or a PDF; the team reads it on the opened record (`verify_checks_of`, `ADspaceSeal.open` `checks`): a quotation's and an HR document's Record (under Verify), a portal letter's ⋯ Record, a performance record's head line; never on a list row; none at 0.
+  - Checks counted (VERIFY CHECKS COUNTED, `2026-11-21-verify-checks-counted.sql`; the user, 2026-11-21, no "since"): a `verify_serial` lookup that finds a document is kept once an address a Malaysian day a document (`verify_check_note`: `verify_checks`, the address only as the SHA-256 of `app_secrets` `verify_check_salt`, the day and `request_ip()`; a miss, a repeat, a colleague and a session with no request never), raising `verify_check_totals`, which never drops; `privacy_retention` lets go of a row 30 days after its day. `verify_details` answers `checks` (one at least) to a colleague alone, never the public answer (the user, 2026-11-24), drawn as one 12px mute line under History (Checked once, Checked 5 times; 已查验5次), never in the first answer or a PDF; the team reads it on the opened record (`verify_checks_of`, `ADspaceSeal.open` `checks`): a quotation's and an HR document's Record (under Verify), a portal letter's ⋯ Record, a performance record's head line; never on a list row; none at 0.
   - A QR code's pass (VERIFY QR PASS; the user, 2026-11-21): the code holds
     `/verify/?s={ref}#d={Document ID}` (`ADspaceSeal.scanUrl`; a copy with no
     Document ID the address alone, the printed line never the ID); the page
