@@ -1478,7 +1478,11 @@
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
+    /* A build started again, or cancelled, meanwhile: this answer is not
+       its (audit 2026-11-24). */
+    var mine = B;
     card(ctx, function (c, err) {
+      if (B !== mine) return;
       if (!c) { ctx.msg('qtMsg', said(err) || 'No Rate Card version is live.', 'err'); B = null; return; }
       B.card = c;
       /* The version priced on (2026-11-15): the one chosen, else the one

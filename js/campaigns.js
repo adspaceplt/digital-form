@@ -1156,7 +1156,7 @@
       payJobs = Object.assign({ creator: c.id }, d);
       if (fresh) { delete crTotals[c.id]; paintCrRail(c); }
       paintJobs();
-    }).catch(function (e) { if (btn) btn.disabled = false; UI.failLine(host, 'The payments', e.message, function () { readJobs(fresh); }); });
+    }).catch(function (e) { if (btn) btn.disabled = false; if (payFor !== c) return; UI.failLine(host, 'The payments', e.message, function () { readJobs(fresh); }); });
   }
   /* A bill's amount in its own currency (named apart from money(n), the
      campaign's, which a second declaration of the same name replaced). */
@@ -1801,6 +1801,8 @@
     $('cpqApprove').hidden = !work; $('cpqDecline').hidden = !work;
     window.ADspaceSheet.show($('cpqSheet'), { opener: btn });
     db.rpc('creator_pay_list', { p_creator: r.creator }).then(function (x) {
+      /* Another request opened meanwhile: this answer is not its. */
+      if (!cpqReq || cpqReq.id !== reqId) return;
       var d = x.data || {};
       if (x.error || d.error) { UI.failLine($('cpqSheetBody'), 'The payment details', (x.error && x.error.message) || PAY_SAID[d.error] || d.error, function () { cpqReview(reqId); }); return; }
       var rows = (d.rows || []).filter(function (y) { return y.status !== 'withdrawn'; });
