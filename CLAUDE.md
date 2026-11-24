@@ -194,7 +194,7 @@ is empty and only shrinks (`--write` refuses to add).
   builds it, checked before the PR opens and named in its Test plan (the
   user, 2026-11-24: "you kept missing this and that"; a trip number missing
   from Settings' numbering, a feedback email missing from Email templates, a
-  seventh client tab): an email its row in Settings › Templates (`js/mailtpl.js`,
+  seventh client tab): an email its row in Settings › Messages (`js/mailtpl.js`,
   English and 中文); a number or reference its Settings numbering
   (`id_formats`); a business figure its setting; a word two screens say
   `ADspaceWords.line`; a part of a client's record a place within the six
@@ -867,7 +867,7 @@ Every sign-in and security rule: `docs/rules/security.md`.
 - A place the user names by a word two areas share (a console section, a
   Settings group) is checked against where the thing already lives before
   anything moves (2026-11-25: #1419 moved the email templates out of
-  Settings into each section's ⋯; the user meant Settings' own Templates).
+  Settings into each section's ⋯; the user meant Settings' own Messages).
 - Every change adds value the portal keeps (the user, 2026-11-18: "every
   changes, every fixes must add new values … else … waste of usage, waste
   of limits, waste of time"): a fix goes to its cause in the shared

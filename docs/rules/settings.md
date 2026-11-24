@@ -24,21 +24,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
   and emails; Email: Send by email at `team.settings`,
-  Reply-to mailboxes; WhatsApp: Send on WhatsApp, Website quotations:
-  how many a day are told on WhatsApp),
+  Reply-to mailboxes; Email templates (the user, 2026-11-25: "Sorry
+  inside Messages": every email's wording, one place): Client, Supplier,
+  Creator and Candidate email templates, Sign-in and codes, each drawn
+  where `ADspaceMailTpl.may` lets its reader open it and opening that
+  family alone, `docs/rules/messages.md`; WhatsApp: Send on WhatsApp,
+  WhatsApp templates at WhatsApp Full Access, Meeting message, Website
+  quotations: how many a day are told on WhatsApp),
   Partners (the user, 2026-11-22: "Clients tab redesign to Partners …
   inside includes Clients, Creators and Suppliers"; `tab=partners`, an
   old `tab=clients` landing on it; Details forms first: one figure for a
   client's and a supplier's link alike; Clients: Industries, Follow-up
   limits, Analytics; Creators: Creator and campaign IDs,
   Creator payments, Creator payments sheet), Templates
-  (every template, one place; the user, 2026-11-25: "Business settings
-  have the Template part right": Email: Client, Supplier, Creator and
-  Candidate email templates, Sign-in and codes, each drawn where
-  `ADspaceMailTpl.may` lets its reader open it and opening that family
-  alone, `docs/rules/messages.md`; WhatsApp: WhatsApp templates at WhatsApp
-  Full Access, Meeting message; Documents and tasks: Document types, Task
-  templates at `ops.workflows`, Rate card wording at Services Full Access), Accounting (Tax and terms, Tax codes, Bukku),
+  (Document types, Task templates at `ops.workflows`, Rate card wording at
+  Services Full Access), Accounting (Tax and terms, Tax codes, Bukku),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Hiring
   (Candidates: Time limits at `team.settings`, Interview scorecards at

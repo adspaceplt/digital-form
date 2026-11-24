@@ -133,7 +133,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   back); an email still Sending ten minutes after it was filed (its
   function stopped) reads Not confirmed (`mail_sweep`, pg_cron
   `mail-sweep` every fifteen minutes; overdue reminders alike). The two templates (`{contact name}` … `{sender name}`) are
-  Settings, Templates: Supplier email templates (`ADspaceMailTpl`,
+  Settings, Messages: Supplier email templates (`ADspaceMailTpl`,
   Suppliers Full Access or `team.settings`, `email_template_may`). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.

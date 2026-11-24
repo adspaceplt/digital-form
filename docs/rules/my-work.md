@@ -765,7 +765,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - Not connected is not a failure of the save.
   - `clientMessage()` fills the one bilingual template, the team's words
     (`meeting_message_template`, `2026-10-29-meeting-message.sql`; Settings,
-    Templates, Meeting message at `team.settings`; `meeting_message_save`
+    Messages, Meeting message at `team.settings`; `meeting_message_save`
     refuses words without {date}, `no-date`, filed under Meeting message;
     the sheet refuses a field it cannot fill, naming it, 2026-10-29):
     {meeting}, {date}, {time}, {month}, {channel}, {link}, a line whose

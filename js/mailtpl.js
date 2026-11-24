@@ -1,10 +1,10 @@
 /* Email templates (2026-11-10; the overnight Settings review): every email
  * wording the portal sends, one editor for all of them, opened from one
- * place: Settings, Templates, a row a family (Client, Supplier, Creator
- * and Candidate email templates, Sign-in and codes; the user,
- * 2026-11-25: "inside business settings in the console"), each opening
- * that family's templates alone. #1419 had put them in each section's ⋯,
- * a misread of the ask.
+ * place: Settings, Messages, Email templates, a row a family (Client,
+ * Supplier, Creator and Candidate email templates, Sign-in and codes; the
+ * user, 2026-11-25: "Sorry inside Messages"), each opening that family's
+ * templates alone. #1419 had put them in each section's ⋯, a misread of
+ * the ask.
  *
  *   ADspaceMailTpl.open(btn, say, rec)   one recipient's templates
  *   ADspaceMailTpl.may(rec)              whether the reader may open them

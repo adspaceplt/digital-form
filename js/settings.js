@@ -4,9 +4,9 @@
    One page at the rail's foot, above the Activity record, holds what changes
    the portal for everybody: upgrade mode, announcements and notices; the
    business figures; Meta checks; AI usage and limits; task numbering; and,
-   every template (emails, WhatsApp, the meeting message, document types,
-   task templates, the rate card's wording) in one Templates group (the
-   user, 2026-11-25: "Business settings have the Template part right"). Each row is drawn only for a colleague holding its granted
+   since 2026-10-29, the wording of documents and tasks in one Templates
+   group, and every message's (emails, WhatsApp, the meeting message) in
+   Messages (the user, 2026-11-25: "Sorry inside Messages"). Each row is drawn only for a colleague holding its granted
    part, and each opens the one sheet that already edits it (one copy of
    every mechanism). The account menu keeps what is the person's own.
    Since 2026-10-11: eight groups, each a card under its heading on one
@@ -413,6 +413,7 @@
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
     /* The portal's own switches over the Messages ones (SEND SWITCHES). */
     var mailOn = autoOn('email_on'), waOn = autoOn('whatsapp_on'), L = window.ADspaceWords.line;
+    var MT = W.ADspaceMailTpl;
     add('messages', 'Messages', 'whatsapp', [
       /* What governs the whole group heads it, above its parts (the user,
          2026-11-22: "if a button is applied throughout all parts then be
@@ -439,12 +440,27 @@
            colleague's own address. */
         biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, HR, Accounts payable, Finance, e-Invoice, Legal and compliance',
           open: function () { openMailboxes(); } }]],
+      /* Every email's wording, one place (the user, 2026-11-25: "Sorry
+         inside Messages"): a row a family, drawn where its reader may open
+         it (js/mailtpl.js), opening that family alone. No section's bar or
+         ⋯ offers them. */
+      ['Email templates', MT ? MT.RECS.map(function (rec) {
+        var id = 'mail-' + rec;
+        return MT.may(rec) && { id: id, name: MT.NAME[rec], kind: 'open', meta: line(id),
+          open: function (btn) { MT.open(btn, rowSay(id), rec); } };
+      }) : []],
       ['WhatsApp', [
         /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
            colleague sends by hand. */
         biz && { id: 'clientwaon', name: 'Send on WhatsApp', kind: 'switch', on: autoOn('client_wa_on'), off: !waOn,
           meta: !waOn ? L.portalOffRow : autoOn('client_wa_on') ? 'On · WhatsApp sent by colleagues' : 'Off',
           open: function (sw) { flipOwn(sw, 'clientwaon', 'manual_send_set', 'Send on WhatsApp', { p_channel: 'whatsapp' }); } },
+        W.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp'),
+          open: function (btn) { W.ADspaceWhatsApp.manage(btn); } },
+        /* The content meeting's message to the client, copied from a month's
+           card (2026-10-29). */
+        biz && W.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg'),
+          open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } },
         /* Website quotations (2026-10-29): how many a day are sent on
            WhatsApp, each a message ADspace pays for. */
         biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
@@ -502,26 +518,9 @@
       ['New colleagues', [
         biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
           open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
-    /* Templates: every template the portal holds, in one group (the user,
-       2026-11-25: "I mean inside business settings in the console"):
-       each email family a row opening its templates alone (js/mailtpl.js,
-       drawn where its reader may open them), then WhatsApp's, then the
-       wording of documents and tasks. Messages keeps the send switches. */
-    var MT = W.ADspaceMailTpl;
-    add('templates', 'Templates', 'register', [
-      ['Email', MT ? MT.RECS.map(function (rec) {
-        var id = 'mail-' + rec;
-        return MT.may(rec) && { id: id, name: MT.NAME[rec], kind: 'open', meta: line(id),
-          open: function (btn) { MT.open(btn, rowSay(id), rec); } };
-      }) : []],
-      ['WhatsApp', [
-        W.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp'),
-          open: function (btn) { W.ADspaceWhatsApp.manage(btn); } },
-        /* The content meeting's message to the client, copied from a month's
-           card (2026-10-29). */
-        biz && W.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg'),
-          open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } }]],
-      ['Documents and tasks', [
+    /* Templates: the wording that is no message (the overnight review,
+       2026-11-10: the emails and WhatsApp went to Messages). */
+    add('templates', 'Templates', 'register', [['', [
       may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types'),
         open: function (btn) { if (W.ADspaceRegister && W.ADspaceRegister.openTypes) W.ADspaceRegister.openTypes(btn); } },
       W.ADspaceOps && may('ops.workflows') && { id: 'tasktpl', name: 'Task templates', kind: 'open', meta: line('tasktpl'),
