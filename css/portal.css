@@ -6653,6 +6653,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    2026-11-03: the strips stood at two heights); one sharing a desk's bar
    line keeps the bar's small height. */
 .actstrip > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
+/* A bar left holding its views alone (My Work's Outstation and Months,
+   whose search, filters and acts step away) is that strip on a row of its
+   own, and takes the same height (the user, 2026-11-24: "is it correct
+   that tabs have different heights"). */
+.cmdbar:not(:has(> :not(.cmdbar-views):not([hidden]))) > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
 @media (max-width: 640px) {
   .cmdbar > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
   /* and the bar's row under it stands the block gap below, where every
