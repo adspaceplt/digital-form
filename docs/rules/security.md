@@ -1,4 +1,4 @@
-<!-- triggers: supabase/functions/ client/ admin/index.html js/passkey.js js/portal.js workers/ -->
+<!-- triggers: supabase/functions/ client/ admin/index.html js/passkey.js js/portal.js workers/ js/trace.js -->
 # Sign-in, security, secrets
 
 Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets and the rule that nothing deletes from S3 stay loaded in `CLAUDE.md`.
@@ -200,3 +200,17 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   asked of MediaConvert's probe, else fitted inside 1920 × 1920
   (`FIT_NO_UPSCALE`); MediaConvert's role writes `content/*.web.mp4` alone
   (2026-11-15, phase 2 audit).
+- The viewer's trace (`js/trace.js`, 2026-11-24; the user: option B, "but
+  not to overlay the texts"): on a screen of a colleague's personal data
+  (a colleague's Personnel pane and the employee record form, the salary
+  question, an NRIC copy or photograph, Team's Performance once unlocked,
+  a review sheet, My records' Reviews and Personnel) the reader's name,
+  sign-in email and the time it was drawn (Malaysia's clock) are tiled
+  faintly at -24° over the screen, so a photograph of it names who opened
+  it. It deters and traces; it is not access control. A screen asks for
+  it with `data-trace` (a question with `trace: true`, a file with
+  `ADspaceDocs.previewTab(zh, { trace: true })`, read in the panel over
+  the page, never a tab); the canvas over it is cleared under every run of
+  words and every control, so no word stands on the mark, presses
+  nothing, is hidden from a screen reader and never printed, and moves
+  nothing. A work screen carries none (`tests/trace.js`).

@@ -276,6 +276,9 @@
     lastFocus = document.activeElement;
 
     elTitle.textContent = o.title || 'Confirm';
+    /* `trace`: a question showing personal data (a salary) carries the
+       reader's trace (js/trace.js). */
+    if (o.trace) card.setAttribute('data-trace', ''); else card.removeAttribute('data-trace');
     elBody.textContent = o.body || '';
     elBody.hidden = !o.body;
     say('');

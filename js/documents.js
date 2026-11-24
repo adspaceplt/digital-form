@@ -1648,12 +1648,16 @@
     try { return window.open('', '_blank'); } catch (e) { return null; }
   }
   /* A Preview's tab, opened at the press, saying what it waits on. */
-  function previewTab(zh) {
+  function previewTab(zh, o) {
     /* In the installed app a Preview is read in the panel over the page,
        never the share sheet (the user, 2026-11-07: "not request download but
        pull from browser preview instead"); Download keeps the share sheet.
-       A stand-in tab carries that choice to save(). */
-    if (installed()) return { viewer: true, closed: false, close: function () { this.closed = true; } };
+       A stand-in tab carries that choice to save(). A file of personal data
+       (`trace`: an NRIC copy, a photograph) is read in that panel
+       everywhere, under the reader's trace (js/trace.js), which a tab
+       holding the bare file cannot carry (2026-11-24). */
+    var traced = Boolean(o && o.trace);
+    if (traced || installed()) return { viewer: true, trace: traced, closed: false, close: function () { this.closed = true; } };
     var tab = null;
     try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
     if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Generating the PDF…'; } catch (e) { /* still blank */ } }
@@ -1662,12 +1666,12 @@
   /* The installed app's Preview, and its Download where there is no share
      sheet for files: the PDF in a sheet over the page, with Close and
      Download in its foot, so the person always has a way back. */
-  function viewer(file, name, zh) {
+  function viewer(file, name, zh, trace) {
     var url = URL.createObjectURL(file);
     var box = document.createElement('div');
     box.className = 'sheet'; box.id = 'pdfViewSheet'; box.hidden = true;
     var e = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
-    box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle">' +
+    box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle"' + (trace ? ' data-trace' : '') + '>' +
       '<div class="sheet-head"><h3 id="pdfViewTitle">' + e(name) + '</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="' + (zh ? '关闭' : 'Close') + '">' +
       '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
@@ -1796,7 +1800,8 @@
   }
   function save(blob, name, tab, zh) {
     var file = fileOf(blob, name);
-    if (tab && tab.viewer) { if (!tab.closed) viewer(file, name, zh); return Promise.resolve(); }
+    /* `trace` (a personnel file) draws the reader's trace over it (js/trace.js). */
+    if (tab && tab.viewer) { if (!tab.closed) viewer(file, name, zh, tab.trace); return Promise.resolve(); }
     if (tab && !tab.closed) {
       return named(file, name).then(function (url) { tab.location.href = url || blobUrl(file); });
     }
