@@ -68,7 +68,17 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   /* What each block is called where its read is refused. */
   var BLOCK = { content: 'Content', reports: 'Reports', sets: 'Content Review sets',
-                camps: 'Campaigns', scripts: 'Video Scripts', invoice: 'Invoices' };
+                camps: 'Campaigns', scripts: 'Video Scripts', invoice: 'Invoices', items: 'Tasks and visits' };
+  /* A task's stage toned by its stage group, as My Work tones it. */
+  var STAGE_TONE = {
+    active: 'is-warn', revision: 'is-warn', internal_review: 'is-warn', client_review: 'is-warn',
+    waiting: 'is-warn', performance: 'is-warn',
+    approved: 'is-ok', delivered: 'is-ok', done: 'is-ok', scheduled: 'is-ok', live: 'is-ok',
+    blocked: 'is-danger'
+  };
+  var PURPOSE = { meeting: 'Meeting', shooting: 'Shooting', event: 'Event', other: 'Other' };
+  /* A month shows this many tasks; the rest open from Show more. */
+  var TASKS_SHOWN = 8;
   var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="out"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   // ---- Reading -----------------------------------------------------------------
@@ -133,6 +143,17 @@
     /* Clients: Billing View: each month's invoice as the nightly check
        found it in Bukku (`ops_month_invoices_of`, the copy My Work's month
        reads; 2026-11-22). Nothing is asked of Bukku here. */
+    /* Every task and outstation visit of the client, a row each in its
+       month (2026-11-24); a database without the function answers none. */
+    items: function (c, out) {
+      return db.rpc('client_engagement_items', { p_client: c.id }).then(function (r) {
+        var code = r && r.error && r.error.code;
+        if (code === 'PGRST202' || code === '42883') { out.tasks = []; out.visits = []; return; }
+        if (failed(r)) throw new Error(why(r));
+        out.tasks = r.data.tasks || [];
+        out.visits = r.data.visits || [];
+      });
+    },
     invoice: function (c, out) {
       return db.rpc('ops_month_invoices_of', { p_client: c.id }).then(function (r) {
         if (failed(r)) throw new Error(why(r));
@@ -145,7 +166,7 @@
   /* Which blocks this reader is given, each behind its own permission. */
   function blocks() {
     var out = [];
-    if (may('ops')) out.push('content');
+    if (may('ops')) out.push('content', 'items');
     out.push(may('reports') ? 'reports' : 'finished');
     if (may('review.sets')) out.push('sets');
     if (may('campaigns.campaigns')) out.push('camps');
@@ -229,7 +250,7 @@
   function monthsOf(c, d) {
     var spans = spansOf(d), byKey = {};
     var month = function (k) {
-      if (!byKey[k]) byKey[k] = { period: k, content: null, sets: [], scripts: [], camps: [], reports: [], files: [] };
+      if (!byKey[k]) byKey[k] = { period: k, content: null, sets: [], scripts: [], camps: [], reports: [], files: [], visits: [], tasks: [] };
       return byKey[k];
     };
     (d.eng && !d.fail.content ? d.eng : []).forEach(function (e) { month(e.period).content = e; });
@@ -240,6 +261,10 @@
     (d.camps || []).forEach(function (k0) { var k = monthOf(dayMy(k0.created_at), spans); if (k) month(k).camps.push(k0); });
     (d.reports || []).forEach(function (r) { var k = monthOf(r.period_end, spans); if (k) month(k).reports.push(r); });
     (d.finished || []).forEach(function (r) { var k = monthOf(r.period_end, spans); if (k) month(k).files.push(r); });
+    /* A task by its content month, else the day it was made; a visit by
+       its day. */
+    (d.tasks || []).forEach(function (t) { var k = /^\d{4}-\d{2}$/.test(t.period || '') ? t.period : monthOf(t.made, spans); if (k) month(k).tasks.push(t); });
+    (d.visits || []).forEach(function (v) { var k = monthOf(v.day, spans); if (k) month(k).visits.push(v); });
     return Object.keys(byKey).sort().reverse().map(function (k) {
       var m = byKey[k];
       /* The span the card states: its month in My Work, else the report
@@ -320,6 +345,22 @@
         state: live ? state('Published', 'is-ok') : state('Confirmed', 'is-warn') });
     });
     invoiceRows(d, m).forEach(function (r) { rows.push(r); });
+    m.visits.forEach(function (v) {
+      var month = String(v.day || '').slice(0, 7);
+      var reach = v.mine || may('ops.outstation');
+      rows.push({ kind: 'visit', glyph: 'work', name: 'Outstation visit',
+        meta: parts([esc(v.ref || ''), esc(dayLong(v.day)), esc(PURPOSE[v.purpose] || ''), esc(v.driver || '')]),
+        state: v.open ? state('On the road', 'is-warn') : state('Checked out', 'is-ok'),
+        url: reach ? '/admin/?s=work&view=outstation' + (v.mine ? '' : '&ov=all') + '&om=' + encodeURIComponent(month) + '&trip=' + encodeURIComponent(v.trip) : '',
+        section: 'work' });
+    });
+    /* Tasks last, open first: the month shows TASKS_SHOWN of them. */
+    m.tasks.forEach(function (t) {
+      rows.push({ kind: 'task', glyph: 'work', name: named(t.title, t.serial),
+        meta: parts([esc(t.serial || ''), 'My Work']),
+        state: t.cancelled ? state('Cancelled', 'is-off') : state(t.stage || '', t.late ? 'is-danger' : (STAGE_TONE[t.stage_group] || 'is-off')),
+        url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' });
+    });
     return rows;
   }
   function invMoney(n, cur) {
@@ -356,10 +397,10 @@
   }
   function rowEl(row, c, msgEl) {
     if (row.kind === 'invoice') return invoiceEl(row);
-    var file = row.kind === 'file';
-    var el = document.createElement(file ? 'div' : 'button');
-    if (!file) el.type = 'button';
-    el.className = 'crm-row cmonth-row' + (file ? ' is-file' : '');
+    var file = row.kind === 'file', still = !file && !row.url;
+    var el = document.createElement(file || still ? 'div' : 'button');
+    if (!file && !still) el.type = 'button';
+    el.className = 'crm-row cmonth-row' + (file || still ? ' is-file' : '');
     el.setAttribute('data-kind', row.kind);
     el.innerHTML =
       '<span class="cmonth-tile" aria-hidden="true">' + glyph(row.glyph) + '</span>' +
@@ -369,7 +410,8 @@
       '<span class="cmonth-state">' + row.state + '</span>' +
       '<span class="cmonth-end">' + (file
         ? '<button class="btn btn-sm" type="button" data-a="dl">' + FILE + 'Download</button>'
-        : CHEV) + '</span>';
+        : still ? '' : CHEV) + '</span>';
+    if (still) return el;
     if (!file) {
       el.addEventListener('click', function () { go(row.url, row.section); });
       return el;
@@ -455,7 +497,9 @@
         table: function () {
           var t = document.createElement('div');
           t.className = 'crm-table softpanel cmonth-table' + (hasFile ? ' has-file' : '') + (hasInv ? ' has-inv' : '');
-          GRP.more(t, m.rows, 30, '', function (row) { return rowEl(row, c, msgEl); });
+          var nTask = m.tasks.length, many = nTask > TASKS_SHOWN;
+          GRP.more(t, m.rows, many ? m.rows.length - nTask + TASKS_SHOWN : Math.max(30, m.rows.length - nTask),
+            many ? (nTask - TASKS_SHOWN === 1 ? 'task' : 'tasks') : '', function (row) { return rowEl(row, c, msgEl); });
           return t;
         }
       }));
@@ -468,7 +512,7 @@
     var d = kept.client === clientId ? kept.data : null;
     if (!d) return false;
     if (Object.keys(d.fail).length) return true;
-    return ['eng', 'reports', 'finished', 'sets', 'camps', 'scripts'].some(function (k) { return (d[k] || []).length; });
+    return ['eng', 'reports', 'finished', 'sets', 'camps', 'scripts', 'tasks', 'visits'].some(function (k) { return (d[k] || []).length; });
   }
 
   /* Read the client's blocks again and hand the answer to `then`; a read
