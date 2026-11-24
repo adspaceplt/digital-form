@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -119,6 +119,7 @@
     client_code_next: '',
     client_last_activity: '',
     client_vic_set: 'p_client p_on p_note p_since',
+    client_portal_access_set: 'p_client p_on',
     vic_clients: '',
     team_rows: '',
     team_task_takers: '',
@@ -330,6 +331,7 @@
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
     code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
+    feedback_email_templates_get: '', feedback_email_template_save: 'p_kind p_lang p_subject p_body p_button',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     payment_analysis: 'p_currency', bukku_docs_take: 'p_kind p_rows p_back_to', supplier_bills: 'p_supplier p_paid_from p_doc',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -1525,6 +1527,9 @@
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
           rows = []; api.__err = { code: 'P0001', message: 'vic-function' }; return api;
         }
+        if (table === 'clients' && pending && ['portal_kept_at', 'portal_kept_by'].some(function (k) { return k in pending; })) {
+          rows = []; api.__err = { code: 'P0001', message: 'portal-kept-function' }; return api;
+        }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
             (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)) ||
@@ -1655,6 +1660,9 @@
         }
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
           rows = []; api.__err = { code: 'P0001', message: 'vic-function' }; return api;
+        }
+        if (table === 'clients' && pending && ['portal_kept_at', 'portal_kept_by'].some(function (k) { return k in pending; })) {
+          rows = []; api.__err = { code: 'P0001', message: 'portal-kept-function' }; return api;
         }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
@@ -5817,9 +5825,23 @@ function cardSlugFree(name, self, email) {
     'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
     meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
     code: ['name', 'code', 'minutes', 'purpose'],
+    feedback: ['contact name', 'client name', 'link'],
     candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'previous time', 'new time', 'place', 'google meet notice',
       'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
+
+  function fbTpls() {
+    if (!DB.feedback_email_templates) {
+      var en = function (m) { return 'Dear {contact name},\n\nADspace would be grateful for your feedback on the services provided to {client name}. The form takes about ' + m + ' to complete.\n\nThis link is intended for {client name} only.'; };
+      var zh = function (m) { return '尊敬的{contact name}：\n\nADspace诚邀您对其为{client name}提供的服务作出评价，填写约需' + m + '。\n\n此链接仅供{client name}使用。'; };
+      DB.feedback_email_templates = [
+        { kind: 'quick', lang: 'en', subject: 'Service rating · ADspace', body: en('one minute'), button: 'Rate your experience' },
+        { kind: 'quick', lang: 'zh', subject: '服务评分 · ADspace', body: zh('一分钟'), button: '请评价您的体验' },
+        { kind: 'review', lang: 'en', subject: 'Performance review · ADspace', body: en('three minutes'), button: 'Rate your experience' },
+        { kind: 'review', lang: 'zh', subject: '绩效评估 · ADspace', body: zh('三分钟'), button: '请评价您的体验' }];
+    }
+    return DB.feedback_email_templates;
+  }
 
   function hMailSaid(s) {
     return s === 'sent' ? ' emailed to the candidate.' : s === 'unknown' ? ' sent to the candidate, but its delivery could not be verified.'
@@ -7150,6 +7172,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
       logAct('client.edited', vc.name, vdet);
       persist();
       return { ok: true, since: vc.vic_at, by_name: vname(vc.vic_by), note: vc.vic_note };
+    }
+
+    if (name === 'client_portal_access_set') {
+      var pkm = opsMe();
+      if (!pkm || !opsAllowed('clients.contacts', 'work')) return { error: 'denied' };
+      var pkc = scopeOne('clients', args.p_client);
+      if (!pkc || !scopeSeen(args.p_client, 'work')) return { error: 'not-found' };
+      var pkOn = Boolean(args.p_on);
+      var pkKept = Boolean(pkc.portal_kept_at) && (!pkc.stage_since || String(pkc.portal_kept_at) >= String(pkc.stage_since));
+      if (pkOn && pkc.stage !== 'past') return { error: 'not-past' };
+      var pkName = function (id) { var t = DB.team_members.filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; };
+      if (pkKept === pkOn && (pkKept || !pkc.portal_kept_at)) return { ok: true, on: pkKept, at: pkc.portal_kept_at || null, by_name: pkName(pkc.portal_kept_by) };
+      pkc.portal_kept_at = pkOn ? new Date().toISOString() : null;
+      pkc.portal_kept_by = pkOn ? pkm.id : null;
+      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off');
+      persist();
+      return { ok: true, on: pkOn, at: pkc.portal_kept_at, by_name: pkOn ? pkm.name : null };
     }
 
     if (name === 'team_rows') {
@@ -10273,8 +10312,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (DB.sm_report_versions.some(function (x) { return x.report_id === v.report_id && !x.withdrawn_at && x.version_no > v.version_no; })) return { error: 'not-found' };
     return { snapshot: v.snapshot, kept: !!(v.file_key && v.file_at >= v.published_at) };
   }
+
+  function portalOpen(cid) {
+    var c = (DB.clients || []).filter(function (x) { return x.id === cid; })[0];
+    if (!c || c.active === false) return false;
+    if (c.stage !== 'past') return true;
+    return Boolean(c.portal_kept_at) && (!c.stage_since || String(c.portal_kept_at) >= String(c.stage_since));
+  }
   function portalClientIds() {
-    return (DB.client_contacts || []).filter(function (k) { return k.portal_access && !k.archived_at && String(k.email || '').toLowerCase() === whoNow(); })
+    return (DB.client_contacts || []).filter(function (k) { return k.portal_access && !k.archived_at && String(k.email || '').toLowerCase() === whoNow() &&
+      portalOpen(k.client_id); })
       .map(function (k) { return k.client_id; });
   }
 
@@ -11383,7 +11430,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^client_portal_access_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
@@ -12411,6 +12458,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     function portalNameOf(cid) {
       var e = String(session && session.user && session.user.email || '').toLowerCase();
       if (!e || !cid) return null;
+      if (!portalOpen(cid)) return null;
       var k = (DB.client_contacts || []).filter(function (c) { return c.client_id === cid && c.portal_access && !c.archived_at &&
         String(c.email || '').toLowerCase() === e; }).sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0); })[0];
       return k ? k.name : null;
@@ -12761,6 +12809,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!opsAllowed('clients', 'work')) return fbNo('denied');
         if (typeof sendOk === 'function' && !sendOk('email')) return fbNo('send-off');
         if (Number(appSet('client_email_on', fbNow.slice(0, 10)) || 0) !== 1) return fbNo('email-off');
+        if (/^(quick|review)$/.test(args.p_kind) && fbTpls().filter(function (x) { return x.kind === args.p_kind; }).length < 2) return fbNo('not-found');
         return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind }).then(function (rr) {
           var r = rr.data || {};
           if (r.error) return { data: r, error: null };
@@ -12768,15 +12817,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var k = (DB.client_contacts || []).filter(function (x) { return x.id === q.contact_id; })[0] || {};
           var cl = DB.clients.filter(function (c) { return c.id === q.client_id; })[0] || {};
           var who = String((k.salutation ? k.salutation + ' ' : '') + (k.name || '')).trim(), zh = k.lang === 'zh';
+          var ft = fbTpls().filter(function (x) { return x.kind === q.kind && x.lang === (zh ? 'zh' : 'en'); })[0];
+          var fill = function (t) {
+            return String(t).replace(/\{\s*contact name\s*\}/gi, who).replace(/\{\s*client name\s*\}/gi, cl.name || '')
+              .replace(/\{\s*link\s*\}/gi, 'https://digital.adspace.me/feedback/?k=' + r.key);
+          };
           q.mail_status = 'sending'; persist();
-          return { data: Object.assign({}, r, zh ? {
-            subject: (q.kind === 'quick' ? '服务评分' : '绩效评估') + ' · ADspace',
-            body: '尊敬的' + who + '：\n\nADspace诚邀您对其为' + cl.name + '提供的服务作出评价，填写约需' + (q.kind === 'quick' ? '一分钟' : '三分钟') + '。\n\n此链接仅供' + cl.name + '使用。',
-            button: '请评价您的体验', lang: 'zh' } : {
-            subject: (q.kind === 'quick' ? 'Service rating' : 'Performance review') + ' · ADspace',
-            body: 'Dear ' + who + ',\n\nADspace would be grateful for your feedback on the services provided to ' + cl.name + '. The form takes about ' +
-              (q.kind === 'quick' ? 'one minute' : 'three minutes') + ' to complete.\n\nThis link is intended for ' + cl.name + ' only.',
-            button: 'Rate your experience', lang: 'en' }), error: null };
+          return { data: Object.assign({}, r, { subject: fill(ft.subject).slice(0, 200), body: fill(ft.body), button: fill(ft.button), lang: zh ? 'zh' : 'en' }), error: null };
         });
       }
       if (name === 'feedback_withdraw') {
@@ -12836,7 +12883,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var portalClients = function () {
       var e = who();
       return (DB.client_contacts || []).filter(function (c) {
-        return c.portal_access && !c.archived_at && c.email && String(c.email).toLowerCase() === e;
+        return c.portal_access && !c.archived_at && c.email && String(c.email).toLowerCase() === e && portalOpen(c.client_id);
       }).map(function (c) { return c.client_id; });
     };
     if (name === 'get_portal') {
@@ -15443,6 +15490,33 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(heOut)), error: null });
+    }
+
+    if (name === 'feedback_email_templates_get' || name === 'feedback_email_template_save') {
+      var feNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return feNo(window.__refuseRpc[name]);
+      if (!opsMe() || !opsGranted('team.settings', 'work')) return feNo('denied');
+      var feRows = fbTpls();
+      if (name === 'feedback_email_templates_get') return Promise.resolve({ data: { ok: true, rows: JSON.parse(JSON.stringify(feRows)) }, error: null });
+      var feS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), feB = String(args.p_body || '').replace(/\r/g, '').trim(),
+        feN = String(args.p_button || '').replace(/\s+/g, ' ').trim();
+      if (feS.length < 2 || feS.length > 200) return feNo('bad-subject');
+      if (feB.length < 2 || feB.length > 5000) return feNo('bad-body');
+      if (feN.length < 2 || feN.length > 40) return feNo('bad-button');
+      var feBad = tplCheck(feS + '\n' + feB + '\n' + feN, 'feedback');
+      if (feBad) return tplNo(feBad);
+      var fe = feRows.filter(function (x) { return x.kind === args.p_kind && x.lang === args.p_lang; })[0];
+      if (!fe) return feNo('not-found');
+      var feMv = [];
+      if (fe.subject !== feS) feMv.push('Subject: ' + fe.subject + ' → ' + feS);
+      if (fe.body !== feB) feMv.push('Message');
+      if (fe.button !== feN) feMv.push('Button: ' + fe.button + ' → ' + feN);
+      if (feMv.length) {
+        fe.subject = feS; fe.body = feB; fe.button = feN; fe.updated_at = new Date().toISOString(); fe.updated_by = opsMe().name;
+        logAct('team.changed', 'Email templates', (fe.kind === 'quick' ? 'Service rating' : 'Performance review') + ' (' + (fe.lang === 'zh' ? '中文' : 'English') + ') · ' + feMv.join(' · '));
+        persist();
+      }
+      return Promise.resolve({ data: { ok: true }, error: null });
     }
 
     if (name === 'code_email_template_get' || name === 'code_email_template_save') {
@@ -19067,7 +19141,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             });
             else if (opsMe()) folders = null;
             else (DB.client_contacts || []).forEach(function (c) {
-              if (c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === whoNow()) cf(c.client_id);
+              if (c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === whoNow() && portalOpen(c.client_id)) cf(c.client_id);
             });
 
             if (window.__mediaOldShape) return { data: { policy: 'POLICY' + exp, signature: 'SIG-_~', keyPairId: 'KTEST', expires: exp }, error: null };
@@ -19105,7 +19179,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           var e = String((opts && opts.body && opts.body.email) || '').toLowerCase();
           var ok = (DB.client_contacts || []).some(function (c) {
-            return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e;
+            return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e && portalOpen(c.client_id);
           }) || (DB.team_members || []).some(function (m) {
             return m.active && !m.removed_at && !m.erased_at && String(m.email || '').toLowerCase() === e;
           });
