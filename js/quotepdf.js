@@ -256,8 +256,11 @@
     var taxed = window.ADspaceMoney.sstOf(q.lines, t.sst_pct);
     var sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
     var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
-    var drawLines = function (list, quiet) {
-    list.forEach(function (l) {
+    /* `tail`: the height of the totals under the list. The last line
+       carries it, so the totals never stand on a page alone; where both do
+       not fit, the line moves over with them (the user, 2026-11-24). */
+    var drawLines = function (list, quiet, tail) {
+    list.forEach(function (l, li) {
       var name = wrap(l.label, wD, TB, reg);
       /* Each inclusion a point of its own, as the service lists it, its
          words hung under its first (the user, 2026-11-04: one run of
@@ -281,7 +284,7 @@
       var tag = taxed.tag(l);
       if (tag) under.push(tag);
       var h = 7 + Math.max(name.length * 13 + sub.length * 11, 13 + under.length * 11);
-      if (room(h + 4)) headRow();
+      if (room(h + 4 + (li === list.length - 1 ? (tail || 0) : 0))) headRow();
       var top = y - 7;
       name.forEach(function (s, k) { text(s, M, top - 10 - k * 13, TB, reg); });
       sub.forEach(function (s, k) {
@@ -328,7 +331,8 @@
       var mWord = own ? 'First month' + incl : sstOn ? 'Monthly incl. SST' : 'Monthly total';
       if (t.month && monthly.length) {
         section('Monthly Service Fee');
-        headRow(); drawLines(monthly, true);
+        var mTerms = Array.isArray(t.term_rows) ? t.term_rows.filter(function (x) { return Number(x.amount); }).length : (Number(t.term_pct) ? 1 : 0);
+        headRow(); drawLines(monthly, true, 14 + (3 + mTerms) * 17 + 12 + 24);
         y -= 6; rule(y); y -= 8;
         var mr = [[sstOn ? 'Subtotal excl. SST' : 'Subtotal', amt(t.month.subtotal, q)]];
         /* A row a term percentage where the lines differ (2026-11-15). */
@@ -343,7 +347,7 @@
       }
       if (t.once && onceL.length) {
         section('One-off Items');
-        headRow(); drawLines(onceL, true);
+        headRow(); drawLines(onceL, true, 14 + 3 * 17 + 12 + 24);
         y -= 6; rule(y); y -= 8;
         var oWord = sstOn ? 'One-off incl. SST' : 'One-off total';
         sums([[sstOn ? 'One-off excl. SST' : 'Subtotal', amt(t.once.subtotal, q)], [taxed.word, amt(t.once.sst, q)], [oWord, amt(t.once.incl, q), 1]]);
@@ -429,7 +433,8 @@
       });
     } else {
     headRow();
-    drawLines(window.ADspaceMoney.planFold(q.lines), false);
+    var tot0 = window.ADspaceMoney.quoteRows(t, q.lines, sstOn);
+    drawLines(window.ADspaceMoney.planFold(q.lines), false, 14 + tot0.length * 17 + 12 + tot0.filter(function (x) { return x[2]; }).length * 24);
     y -= 6;
     rule(y);
     y -= 8;

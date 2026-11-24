@@ -221,7 +221,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     wordmark and the monogram; the foot the verify line centred in Slate
     Book 6pt (This is a computer-generated document. [No signature
     required. ]Verify document authenticity: go.adspace.me/verify) and Page
-    n of N in 7.5pt from 493.75pt; the body PRIVATE & CONFIDENTIAL (Slate
+    n of N in 7.5pt at the right margin; the body PRIVATE & CONFIDENTIAL (Slate
     Medium) at 155.1pt, Our Ref and Date a blank line under it, the
     recipient's name (Slate Regular) over its lines, the title (Slate
     Medium), the salutation and the message a blank line apart, single
@@ -254,6 +254,17 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     two lines of 32 characters, all 6pt; inks as above (the words
     `#515151`, a step's word, the title and the code `#1a1a1a`, never
     `#a1a1a1`); a long record runs on under the same head;
+  - a lettered foot is one row on one baseline (794.5pt; the user,
+    2026-11-24: "the serial id or document id and the computer generated
+    document and the page x of x should be same in line same row"): the
+    reference, then the verify line with its Document ID, from the left
+    margin, and Page n of N at the right margin (the reference gives way
+    first where the row would reach the page count); Client initials is a
+    box (112 by 36pt) at the right over the row, and the body stops 14pt
+    above it;
+  - a summary of totals never stands on a page alone: the last line carries
+    the summary's height, and moves over with it where both do not fit
+    (letters and quotations alike, 2026-11-24);
   - nothing else in the head or the foot; a mark a document needs on every
     page (the Letter of Offer's Client initials, the performance record's
     reference line, the Rate Card's version) stands in the bottom margin
