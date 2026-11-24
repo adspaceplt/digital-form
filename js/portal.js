@@ -906,7 +906,7 @@
           '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(v.amount, cur)) + '</b></span>' +
           '<span class="svc-state">' + chip(w.invState[v.state] || v.state, v.state === 'paid' ? 'is-ok' : v.state === 'overdue' ? 'is-danger' : 'is-warn') + '</span>' +
           '<span class="doc-dl">' + (v.link && window.ADspaceWords.absUrl(v.link) ? '<a class="btn btn-sm" href="' + esc(window.ADspaceWords.absUrl(v.link)) +
-            '" target="_blank" rel="noopener">' + FILE + '<span>' + esc(w.downloadPdf) + '</span></a>' : '') + '</span>';
+            '" target="_blank" rel="noopener"><span>' + esc(w.downloadPdf) + '</span> ' + EXT + '</a>' : '') + '</span>';
         tb.appendChild(row);
       });
       box.innerHTML = ''; box.appendChild(tb);
