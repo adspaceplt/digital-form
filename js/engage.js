@@ -68,7 +68,7 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   /* What each block is called where its read is refused. */
   var BLOCK = { content: 'Content', reports: 'Reports', sets: 'Content Review sets',
-                camps: 'Campaigns', scripts: 'Video Scripts', invoice: 'Invoices', items: 'Tasks and visits' };
+                camps: 'Campaigns', scripts: 'Video Scripts', invoice: 'Invoices', items: 'Tasks and trips' };
   /* A task's stage toned by its stage group, as My Work tones it. */
   var STAGE_TONE = {
     active: 'is-warn', revision: 'is-warn', internal_review: 'is-warn', client_review: 'is-warn',
@@ -347,7 +347,7 @@
     m.visits.forEach(function (v) {
       var month = String(v.day || '').slice(0, 7);
       var reach = v.mine || may('ops.outstation');
-      rows.push({ kind: 'visit', glyph: 'work', name: 'Outstation visit',
+      rows.push({ kind: 'visit', glyph: 'work', name: 'Outstation trip',
         meta: parts([esc(v.ref || ''), esc(dayLong(v.day)), esc(PURPOSE[v.purpose] || ''), esc(v.driver || '')]),
         state: v.open ? state('On the road', 'is-warn') : state('Checked out', 'is-ok'),
         url: reach ? '/admin/?s=work&view=outstation' + (v.mine ? '' : '&ov=all') + '&om=' + encodeURIComponent(month) + '&trip=' + encodeURIComponent(v.trip) : '',
