@@ -170,7 +170,7 @@ revoke all on public.feedback_responses from anon, authenticated;
 
 create table if not exists public.feedback_hits (
   ip    text primary key,
-  hour  timestamptz not null,
+  hour  timestamp not null,
   n     int not null default 0,
   bad   int not null default 0
 );
@@ -184,7 +184,7 @@ returns boolean
 language plpgsql volatile security definer set search_path = public as $$
 declare
   v_ip   text := coalesce(nullif(public.request_ip(), ''), 'none');
-  v_hour timestamptz := date_trunc('hour', now());
+  v_hour timestamp := date_trunc('hour', now() at time zone 'Asia/Kuala_Lumpur');
   v_row  public.feedback_hits;
 begin
   insert into public.feedback_hits as h (ip, hour, n, bad)

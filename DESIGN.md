@@ -408,6 +408,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | What the client owes (client page) | `docs/rules/creator-campaigns.md`, Components |
 | Asking the portal in words (the Assistant) | `docs/rules/assistant.md`, Components |
 | A document checked on /verify/ (2026-11-20) | `docs/rules/documents.md`, Components |
+| A score asked of a client (a rating scale) | `docs/rules/client-feedback.md`, Components |
 | Finding a record in any section | `docs/rules/search.md`, Components |
 
 ## 5. Laws (each broke once; the reasons are in the archive)

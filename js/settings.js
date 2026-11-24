@@ -1498,7 +1498,7 @@
      reaches; their own tick under it chooses them ("split under another
      select all"). */
   var pg = { rows: null, err: null, picking: false, picked: {} };
-  var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
+  var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details', 'feedback']],
     ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
   var PG_SYS = { home: '/', notfound: 'Page not found', card: '/card/' };
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }

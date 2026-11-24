@@ -9891,3 +9891,61 @@ body.qs-page { background: var(--card); }
 .cr-doc-h { margin: 0; font-size: 15px; font-weight: 600; }
 .cr-doc .qs-foot { margin: 0; max-width: none; }
 .cr-code { max-width: 200px; letter-spacing: 4px; font-variant-numeric: tabular-nums; }
+
+/* Client feedback (2026-11-24, CLIENT FEEDBACK; js/fbform.js): a request's
+   questions one after another, a hairline between, the number of each in the
+   mute ink. A scale is a row of numbered options (`.rate`, a radio group):
+   tonal, a finger's height, the chosen the ink fill, as a wrapped segment's
+   chosen pill is; ten across at a desk, two rows of five (six for 0 to 10)
+   on a phone, its two ends named under it. */
+.fb-form { display: grid; }
+.fbq { display: grid; gap: 12px; padding: 24px 0; border-top: 1px solid var(--line-soft); min-width: 0; }
+.fbq:first-child { border-top: 0; padding-top: 8px; }
+.fbq-h { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.4; overflow-wrap: anywhere; }
+.fbq-n { margin-right: 6px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.fbq-opt { margin-left: 6px; font-size: 13px; font-weight: 400; color: var(--ink-mute); }
+.fbq > .msg { margin: 0; }
+.fbq > .msg:empty { display: none; }
+.rate { display: grid; grid-template-columns: repeat(var(--rate-n, 10), minmax(0, 1fr)); gap: 6px; }
+.rate-opt { height: var(--tap); min-width: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: var(--tonal);
+  color: var(--ink); font: inherit; font-size: 15px; font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: background-color var(--t-fast), transform var(--t-fast); }
+.rate-opt:active { transform: scale(.97); }
+.rate-opt.is-on { background: var(--fill); color: var(--on-fill); }
+.rate-opt:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 1px; }
+@media (hover: hover) { .rate-opt:not(.is-on):hover { background: var(--tonal-hover); } }
+.rate-ends { display: flex; justify-content: space-between; gap: 12px; margin-top: -4px; font-size: 12.5px; color: var(--ink-mute); }
+@media (max-width: 640px) {
+  .rate { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .rate[style*="--rate-n: 11"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .rate[style*="--rate-n: 5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+.fb-social { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* On the client portal: the open request's card (its form under its meta
+   line) and the Feedback tab's past answers, each a row opening its answers,
+   read only. */
+.fb-ask-meta { margin: -4px 0 4px; }
+.fb-ask .fbq { padding: 16px 0; }
+.fb-ask .fbq:first-child { padding-top: 4px; }
+.fb-ask-acts { display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .fb-ask-acts > .btn { flex: 1 1 auto; } }
+.fbh-list { display: grid; }
+.fbh { border-top: 1px solid var(--line-soft); }
+.fbh:first-child { border-top: 0; }
+.fbh-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 15px; gap: 4px 16px; align-items: center; padding: 12px 0;
+  list-style: none; cursor: pointer; }
+.fbh:first-child .fbh-row { padding-top: 0; }
+.fbh-row::-webkit-details-marker { display: none; }
+.fbh-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-ctl-sm); }
+.fbh-name { display: grid; gap: 2px; min-width: 0; }
+.fbh-name b { font-weight: 500; }
+.fbh-name small { font-size: 13px; color: var(--ink-mute); }
+.fbh-score { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fbh-chev { width: 15px; height: 15px; color: var(--ink-mute); transition: transform var(--t); }
+.fbh[open] .fbh-chev { transform: rotate(90deg); }
+.fbread { display: grid; gap: 14px; padding: 4px 0 16px; }
+.fbread-q { margin: 0 0 2px; font-size: 13px; color: var(--ink-mute); }
+.fbread-a { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.fbread-a b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.fbread-a span { font-size: 13px; color: var(--ink-mute); }
+.fbread-t { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
