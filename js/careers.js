@@ -353,8 +353,8 @@
       if (!window.ADspaceHrDocs) return;
       btn.disabled = true;
       var d = openDoc.data;
-      window.ADspaceHrDocs.bytes({ kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory },
-        d.pay).then(function (b) {
+      window.ADspaceHrDocs.bytes({ id: openDoc.id, kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory },
+        d.pay, { key: key }).then(function (b) {
         btn.disabled = false;
         return window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), window.ADspaceDocs.tabFor && window.ADspaceDocs.tabFor());
       }).catch(function () { btn.disabled = false; docSay('The document could not be generated. Please try again.'); });
