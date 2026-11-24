@@ -198,6 +198,7 @@
     erased: 'This colleague\'s details were erased.',
     inactive: 'An employee record can be requested only from an active colleague.',
     own: 'Fill in your own record from My records.',
+    'own-salary': 'Your own salary is set by an admin.',
     'bad-status': 'Choose an employee status.', 'bad-type': 'Choose an employee type.',
     'bad-probation': 'Enter a probation of 0 to 12 months.', 'bad-date': 'Choose a join date from 14 Aug 2023.',
     'bad-end': 'The end of contract must be after the join date.', 'bad-superior': 'A colleague cannot report to themselves. Choose another colleague.',
