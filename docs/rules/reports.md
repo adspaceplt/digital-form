@@ -990,3 +990,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   answered `not-connected` within the hour); Add pictures from Meta (a
   creative's picture, read whatever Meta checks) and Edit Meta accounts
   carry `data-gate="meta"`; each drawn disabled with its reason.
+- `report-draft` holds the connection open (`held`) while Claude runs,
+  each call under a 130-second timeout; a timeout marks the press
+  incomplete (one token through `ai_draft_tokens`) and reads `ai-slow`.
+  The Next batch counts its press (`ai_next_claim`) before Meta is read,
+  and the team's notes are hidden (`hide`: the brand masked, a number and
+  an email scrubbed) as every other typed word (review 2026-11-24).

@@ -284,27 +284,29 @@
        back no longer stands). */
     sets: function () {
       return once('sets', function () {
-        /* Every published set, paged, never the newest few: an older set
-           still waiting on its client stays on the list (2026-10-20). */
-        return API.readPages(function () {
-          return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug, owner)')
-            .eq('published', true).order('created_at', { ascending: false }).order('id');
-        }).then(rows).then(function (sets) {
-            sets = sets || [];
-            if (!sets.length) return [];
-            /* Counted by the database for every set in one request
-               (`review_set_counts`): a read of every post and decision passed
-               a thousand ids in the address and stopped at a thousand rows. */
-            /* A thousand rows at a time (the audit of 2026-10-26, finding 4). */
-            return API.readPages(function () { return db.rpc('review_set_counts', { p_sets: sets.map(function (s) { return s.id; }) }).order('set_id'); }).then(rows).then(function (counts) {
-              var by = {};
-              (counts || []).forEach(function (c) { by[c.set_id] = c; });
-              return sets.map(function (s) {
+        /* The sets still waiting on the client alone, counted by the
+           database (`review_sets_waiting`, review 2026-11-24: every
+           published set ever made was read to keep the few waiting), then
+           those sets read by id, two hundred an address. */
+        return API.readPages(function () { return db.rpc('review_sets_waiting').order('set_id'); }).then(rows).then(function (counts) {
+          counts = counts || [];
+          if (!counts.length) return [];
+          var ids = counts.map(function (c) { return c.set_id; }), parts = [];
+          for (var i = 0; i < ids.length; i += 200) parts.push(ids.slice(i, i + 200));
+          return Promise.all(parts.map(function (part) {
+            return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug, owner)')
+              .eq('published', true).in('id', part).then(rows);
+          })).then(function (got) {
+            var by = {};
+            counts.forEach(function (c) { by[c.set_id] = c; });
+            return [].concat.apply([], got.map(function (l) { return l || []; }))
+              .sort(function (x, y) { return String(y.created_at).localeCompare(String(x.created_at)); })
+              .map(function (s) {
                 var c = by[s.id] || {};
                 return { s: s, n: c.n_posts || 0, ok: c.n_approved || 0, ch: c.n_changes || 0 };
               }).filter(function (x) { return x.n && x.ok < x.n; });
-            });
           });
+        });
       });
     },
     noSet: function () {

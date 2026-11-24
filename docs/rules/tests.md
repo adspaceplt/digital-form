@@ -217,3 +217,8 @@ to E), and merges each section into `tests/ux-audit/results.json`, which the
 board mod reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
 `.claude-plugin/marketplace.json`). A section added to one of the three is
 added to all three in the same push.
+- A worktree of the suites links `pdfx/node_modules` to the main clone's
+  folder; the path is ignored whatever it is (`pdfx/node_modules`, no
+  slash), since a link committed once broke every clone's pull
+  (2026-11-24, tests #229 and #230). `demo-build.js` builds the engine of
+  the portal it is run in.
