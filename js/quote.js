@@ -22,7 +22,10 @@
  *                           of Offer is the sales team's.
  *
  * No rate is shown before the quotation: the catalogue (`quote_catalogue`)
- * holds none. What the person picked is kept in this tab
+ * holds none (the user, 2026-11-25: "Prices after we send"). The steps are
+ * the boards QuotePhone and QuoteDesk: the plans as cards (Without ads /
+ * With ads, the middle one Recommended), the chosen plan's content and
+ * inclusions, platforms with their ink marks, files, 6, 12 or 24 months. What the person picked is kept in this tab
  * (`adspace-quote`), so Back and a refresh keep it.
  */
 (function () {
@@ -52,18 +55,20 @@
       needNone: 'Select at least one service.',
       reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
-      plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
-      contents: '{n} content pieces per month', mixOr: ' or ', mixAnd: ' and ',
-      kindN: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel of up to 60 seconds', '{n} reels of up to 60 seconds'] },
-      budgetUpTo: 'Includes management of an advertising budget of up to RM\u00a0{b} per month',
+      plan: 'Plan {p}', platOne: '1 platform',
       ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
+      recommended: 'Recommended', piecesN: '{n} content pieces', platsN: '{n} platforms', adUpTo: 'Advertising budget up to RM\u00a0{b}',
+      piecesHead: '{n} content pieces per month', piecesPick: '{n} content pieces per month. Please choose one combination.',
+      kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
+      platHead1: 'Plan {p} includes 1 platform. Each additional platform is charged per month.',
+      platHeadN: 'Plan {p} includes {n} platforms. Each additional platform is charged per month.',
+      files: 'Choose your files', termMin: 'The minimum commitment is 6 months.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
-      extra: 'Add content pieces per month to the plan', mixH: 'Choose your content pieces per month', fewer: 'One fewer', more: 'One more',
+      extra: 'Add content pieces per month to the plan', fewer: 'One fewer', more: 'One more',
       langs: 'Choose your languages', langsNote: 'Each content piece is published in one language. The monthly content pieces may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no additional charge.',
-      translate: 'Make every content piece bilingual', translateNote: 'Each additional language is charged at the translation rate per content piece.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
-      budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
+      budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Choose your commitment', months: '{n} months',
       once: 'Choose the content to produce', onceNote: 'One-off, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Choose accounts to verify',
@@ -86,7 +91,8 @@
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
-      reviewNote: 'Your quotation will appear on this page once it has been sent.',
+      rcvSent: 'Request sent', rcvReview: 'Review by ADspace', rcvNow: 'In progress', rcvSend: 'Quotation sent on WhatsApp',
+      rcvBy: 'By {d}', rcvSign: 'Accept and sign on this page', rcvYours: 'Your request',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
@@ -147,7 +153,7 @@
       },
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
       offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
-      plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
+      plat: { meta: 'Facebook and Instagram', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: 'Bahasa Melayu' }
     },
     zh: {
@@ -167,18 +173,20 @@
       needNone: '请至少选择一项服务。',
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
-      plan: '方案 {p}', platOne: '1个平台', platUpTo: '最多{n}个平台',
-      contents: '每月{n}条内容', mixOr: '，或', mixAnd: '、',
-      kindN: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频（60秒内）', '{n}条短视频（60秒内）'] },
-      budgetUpTo: '代为管理每月最高 RM\u00a0{b} 的广告预算',
+      plan: '方案 {p}', platOne: '1个平台',
       ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
+      recommended: '推荐', piecesN: '{n}条内容', platsN: '{n}个平台', adUpTo: '广告预算最高 RM\u00a0{b}',
+      piecesHead: '每月{n}条内容', piecesPick: '每月{n}条内容，请选择一种组合',
+      kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
+      platHead1: '方案 {p} 包含1个平台，每增加一个平台按月收费。',
+      platHeadN: '方案 {p} 包含{n}个平台，每增加一个平台按月收费。',
+      files: '选择所需文件', termMin: '最低合约期为6个月。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
-      extra: '为方案增加每月内容', mixH: '选择每月内容', fewer: '减少一条', more: '增加一条',
+      extra: '为方案增加每月内容', fewer: '减少一条', more: '增加一条',
       langs: '选择语言', langsNote: '每条内容使用一种语言。每月内容可分配至所选语言，例如2条英文、4条中文，不另收费。',
-      translate: '每条内容均制作为双语', translateNote: '每条内容每增加一种语言，按翻译费另行收费。',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
-      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n}个月',
+      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '选择合约期', months: '{n}个月',
       once: '选择制作内容', onceNote: '一次性，按件收费',
       koc: 'KOC 创作者', kocNone: '不需要', kocN: '{n}位创作者', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '选择需认证的账号',
@@ -201,7 +209,8 @@
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
-      reviewNote: '报价发送后，此页面将显示报价详情。',
+      rcvSent: '已提交请求', rcvReview: 'ADspace 审核', rcvNow: '进行中', rcvSend: '通过 WhatsApp 发送报价',
+      rcvBy: '{d}前', rcvSign: '在此页面接受并签署', rcvYours: '您的请求',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
@@ -261,7 +270,7 @@
       },
       lostT: '找不到报价', lostP: '请检查链接，或申请新的报价。',
       offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
-      plat: { meta: 'Meta', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
+      plat: { meta: 'Facebook 与 Instagram', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: '马来文' }
     }
   };  /* A form in steps says its step, Back, Continue, Start and What to expect
@@ -293,7 +302,9 @@
      is optional. */
   var INDUSTRIES = [];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
-  var TERMS = window.ADspaceMoney.QUOTE_TERMS;
+  /* The commitments /quote/ offers (6, 12 and 24 months, the user,
+     2026-11-24; 3 and 18 are Build quote's), as the catalogue names them. */
+  var TERMS = [6, 12, 24];
 
   var lang = 'en';
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
@@ -339,11 +350,12 @@
      nothing chosen or typed carried over (the user, 2026-10-14). */
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
-      plan: null, mix: 0, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
+      plan: null, mix: 0, extra: {}, langs: ['en'], budget: null, term: 12, once: {}, files: {}, koc: '', kol: false, verify: [],
       contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', commence_on: '', consent: false }, step: 'intro', idem: null };
   }
   var S = blank();
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
+  if (!S.files) S.files = {};
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
   var CAT = null, Q = null;
@@ -379,6 +391,15 @@
     return CAT.contents.filter(function (c) { return monthlyOnes.indexOf(c.slug) < 0; }).sort(byKind);
   }
 
+  /* The files a content piece is released with (Working files, Raw
+     footage; the user, 2026-11-24): asked wherever content is made. */
+  function filesAsked() { return Boolean((S.need.social || S.need.content) && CAT && (CAT.files || []).length); }
+  /* A verification for the platforms chosen, where platforms are chosen;
+     every one where verification alone is asked. */
+  function verifyList() {
+    var picked = S.need.social ? S.platforms : null;
+    return (CAT.verify || []).filter(function (v) { return !picked || !v.platform || picked.indexOf(v.platform) >= 0; });
+  }
   function selection() {
     var p = S.need.social ? planOf() : null, once = [];
     var sel = { term: monthly() ? S.term : 1 };
@@ -392,13 +413,13 @@
       Object.keys(S.extra).forEach(function (k) { if (S.extra[k] > 0) ex[k] = S.extra[k]; });
       sel.extra = ex;
       sel.langs = S.langs.slice();
-      sel.translate = S.translate && S.langs.length > 1;
     }
     if (adsAsked()) sel.budget = S.budget == null ? (p && p.ad_budget ? 0 : (CAT.budgets[0] || 0)) : S.budget;
     if (S.need.content) onceList().forEach(function (c) { if (S.once[c.slug] > 0) once.push({ slug: c.slug, qty: S.once[c.slug] }); });
     if (S.need.koc && S.koc) once.push({ slug: S.koc, qty: 1 });
     if (S.need.koc && S.kol && CAT.kol) once.push({ slug: CAT.kol, qty: 1 });
-    if (S.need.verify) S.verify.forEach(function (k) { once.push({ slug: k, qty: 1 }); });
+    if (S.need.verify) verifyList().forEach(function (v) { if (S.verify.indexOf(v.slug) >= 0) once.push({ slug: v.slug, qty: 1 }); });
+    if (filesAsked()) (CAT.files || []).forEach(function (x) { if (S.files[x.slug] > 0) once.push({ slug: x.slug, qty: S.files[x.slug] }); });
     if (once.length) sel.once = once;
     return sel;
   }
@@ -420,9 +441,9 @@
     return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
       (on ? ' checked' : '') + '><span class="qs-text"><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + MARK + '</label>';
   }
-  function chip(name, value, on, label) {
+  function chip(name, value, on, label, lead) {
     return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
-      (on ? ' checked' : '') + '><span class="qs-text">' + esc(label) + '</span>' + MARK + '</label>';
+      (on ? ' checked' : '') + '><span class="qs-text">' + (lead ? '<span class="qs-lead-mark">' + lead + '</span>' : '') + esc(label) + '</span>' + MARK + '</label>';
   }
   function stepper(group, slug, label, n, sub) {
     return '<div class="qs-stepper"><span>' + esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="qs-count">' +
@@ -442,33 +463,21 @@
       (forId ? '</label>' : '</h2>') + body + '</section>';
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
-  /* What a plan's contents are, so a visitor knows what the count covers
-     (the user, 2026-10-14): "4 contents per month: 2 graphics and 2 reels". */
-  function mixWords(m) {
-    var K = t().kindN;
-    return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
-      .filter(function (k) { return m[k]; }).map(function (k) {
-        var w = K[k] || ['{n} ' + k, '{n} ' + k];
-        return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
-      }).join(t().mixAnd);
-  }
-  function mixLine(p) {
-    return (p.mix || []).map(mixWords).join(t().mixOr);
-  }
-
-  function planLine(p) {
-    var mix = mixLine(p);
-    var parts = [f(t().contents, { n: p.contents }) + (mix ? (lang === 'zh' ? '：' : ': ') + mix : '')];
-    if (p.ad_budget) parts.push(f(t().budgetUpTo, { b: n0(p.ad_budget) }));
-    return parts.join('\n');   // a line each: the contents, then the budget
-  }
-
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
+  /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
+     2026-11-25): the services as tiles with their glyphs, What to expect as
+     cards, each its glyph in a white disc with its number on an ink badge,
+     then the time with the clock. Words unchanged. */
+  var NEED_GLYPH = { 'social': 'plancontent', 'ads': 'planads', 'content': 'picture', 'koc': 'people', 'verify': 'verified' };
+  var STEP_GLYPH = ['grid', 'sliders', 'bubble', 'pen'];
   function paintIntro() {
+    var N = t().need;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
-      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
-        t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
-      '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
+      '<ul class="qs-svcs">' + ['social', 'ads', 'content', 'koc', 'verify'].map(function (k) {
+        return '<li><span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><span>' + esc(N[k][0]) + '</span></li>'; }).join('') + '</ul>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2>' +
+        window.ADspaceIcons.stepCards(t().introSteps.map(function (x, i) { return { glyph: STEP_GLYPH[i], line: x }; })) + '</section>' +
+      '<p class="qs-note qs-time">' + ic('clock', 'qs-g') + esc(t().introNote) + '</p></div>' +
       '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
@@ -483,28 +492,69 @@
       }).join('') + '</div>', navFoot());
   }
 
+  function ic(name, cls) { return window.ADspaceIcons ? window.ADspaceIcons.svg(name, cls) : ''; }
+  /* A plan's content as the boards write it: "3 graphics, 4 reels". */
+  function mixShort(m) {
+    var K = t().kindS;
+    return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
+      .filter(function (k) { return m[k]; }).map(function (k) {
+        var w = K[k] || ['{n} ' + k, '{n} ' + k];
+        return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
+      }).join(t().mixSep);
+  }
+  /* The plans as cards (the boards, 2026-11-25): its mark on top, the name,
+     then a line a fact with its glyph; the middle of the three is
+     Recommended and wider (1.4 to 1), first and the row's width on a phone. */
+  function planCard(p, i, n) {
+    var w = t(), on = S.plan === p.slug, feat = n === 3 && i === 1;
+    return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="plan" value="' + esc(p.slug) + '"' + (on ? ' checked' : '') + '>' +
+      (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
+      '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
+      '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
+      '<span class="qs-pl">' + ic('device') + esc(p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms })) + '</span>' +
+      (p.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(p.ad_budget) })) + '</span>' : '') + '</label>';
+  }
+  function platsHtml() {
+    var I = window.ADspaceIcons;
+    return '<div class="qs-chips qs-two qs-plats">' + CAT.platforms.map(function (k) {
+      return chip('plat', k, S.platforms.indexOf(k) >= 0, t().plat[k] || k, I && I.mark ? I.mark(k) : '');
+    }).join('') + '</div>';
+  }
   function paintPlan() {
-    var plans = CAT.plans.filter(function (p) { return Boolean(p.ads) === Boolean(S.withAds); });
+    var plans = CAT.plans.filter(function (p) { return Boolean(p.ads) === Boolean(S.withAds); }), p = planOf();
     return frame('<h1 class="qs-title">' + esc(t().planT) + '</h1><div class="qs-secs">' +
-      sec(t().platsH, '<div class="qs-chips qs-two">' + CAT.platforms.map(function (p) { return chip('plat', p, S.platforms.indexOf(p) >= 0, t().plat[p] || p); }).join('') + '</div>') +
       sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
-        '<div class="qs-list">' + plans.map(function (p) {
-          return pick('radio', 'plan', p.slug, S.plan === p.slug,
-            f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
-        }).join('') + '</div><p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
-      '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div></div>', navFoot());
+        '<div class="qs-plans">' + plans.map(function (x, i) { return planCard(x, i, plans.length); }).join('') + '</div>' +
+        '<div class="qs-xbox" id="qsPlanBox">' + planBox() + '</div>' +
+        '<p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
+      '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div>' +
+      sec(t().platsH, (p ? '<p class="qs-note">' + esc(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
+      '</div>', navFoot());
+  }
+  // A tick before each of the chosen plan's inclusions (the boards).
+  var INCL_TICK = '<svg class="qs-incl-tick" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  /* The plan chosen, under the cards: what it is best for, its content
+     each month (a segment where it holds two options, else the one), then
+     what it includes, a tick each. */
+  function planBox() {
+    var p = planOf(), w = t();
+    if (!p) return '';
+    var mixes = p.mix || [], cur = S.mix < mixes.length ? S.mix : 0;
+    return '<div class="qs-plansel">' + '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
+      (p.best_for ? '<p class="qs-best">' + esc(p.best_for) + '</p>' : '') +
+      '<div class="qs-mixrow"><span class="qs-mixh" id="qsMixL">' + esc(f(mixes.length > 1 ? w.piecesPick : w.piecesHead, { n: p.contents })) + '</span>' +
+      (mixes.length > 1 ? '<select class="select" id="qsMix" data-seg data-seg-value aria-labelledby="qsMixL">' + mixes.map(function (m, i) {
+          return '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + esc(mixShort(m)) + '</option>'; }).join('') + '</select>'
+        : '<span class="qs-mixone">' + esc(mixes[0] ? mixShort(mixes[0]) : '') + '</span>') + '</div>' +
+      ((p.included || []).length ? '<ul class="qs-incl">' + p.included.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '') +
+      '</div>';
   }
   /* Additional contents sit under the plan they add to (the user,
      2026-10-14: on the next page they read as choosing the plan's own). */
   function extrasHtml() {
     var p = planOf();
     if (!p) return '';
-    /* A plan holding two content options asks which (2026-10-27, the user:
-       the website showed both and asked neither). */
-    var mixes = p.mix || [], cur = S.mix < mixes.length ? S.mix : 0;
-    return (mixes.length > 1 ? sec(t().mixH, '<div class="qs-list">' + mixes.map(function (m, i) {
-      return pick('radio', 'mix', String(i), i === cur, mixWords(m));
-    }).join('') + '</div>') : '') + sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
+    return sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
   }
 
   function budgetOptions() {
@@ -521,8 +571,7 @@
     if (p) {
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
-        '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
-        (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : ''));
+        '<p class="qs-note">' + esc(t().langsNote) + '</p>');
     }
     if (adsAsked()) {
       var opts = budgetOptions(), cur = S.budget == null ? opts[0][0] : S.budget;
@@ -532,12 +581,20 @@
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
         '<p class="qs-note">' + esc(t().budgetSep) + '</p>', 'qsBudget');
     }
-    // Five terms: a select, as the budget is (a segment holds four at most).
-    if (monthly()) h += sec(t().term, '<select class="select" id="qsTerm">' + TERMS.map(function (m) {
-      return '<option value="' + m + '"' + (m === S.term ? ' selected' : '') + '>' + esc(f(t().months, { n: m })) + '</option>'; }).join('') + '</select>', 'qsTerm');
+    // 6, 12 or 24 months: a segment of three (DESIGN.md §4, a choice of two to four).
+    if (monthly()) {
+      if (TERMS.indexOf(S.term) < 0) S.term = TERMS.indexOf(12) >= 0 ? 12 : TERMS[0];
+      h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true) +
+        '<p class="qs-note">' + esc(t().termMin) + '</p>');
+    }
     if (S.need.content && onceList().length) {
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
+    }
+    if (filesAsked()) {
+      h += sec(t().files, CAT.files.map(function (x) {
+        return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0);
+      }).join(''));
     }
     if (S.need.koc) {
       var cr = '';
@@ -550,13 +607,14 @@
       if (CAT.kol) cr += pick('checkbox', 'kol', '1', S.kol, t().kol, '');
       if (cr) h += sec(t().need.koc[0], cr);
     }
-    if (S.need.verify) {
+    if (S.need.verify && verifyList().length) {
       h += sec(t().verify, '<div class="qs-list">' +
-        CAT.verify.map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div>');
+        verifyList().map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div>');
     }
     return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1><div class="qs-secs">' + h + '</div>', navFoot());
   }
 
+  var FILE_ZH = { 'Working files': '工作文件', 'Raw footage': '原始素材' };
   function todayMY() { return window.ADspaceClock.today(); }
   function field(id, label, req, html, hint) {
     return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
@@ -703,16 +761,60 @@
      notice): Request received as the title, the day as the statement, then
      the note and the quotation's reference; the way on is Chat on WhatsApp,
      with the colleague who took the lead where one has (QTE-2). */
+  /* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk,
+     2026-11-25): the green tick, the title, the day as the statement and
+     the reference; where the request stands as a track; what was asked for,
+     a glyph each and never a price; who will be in touch. */
   function paintReview() {
     var q = Q, w = t(), first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
-    return '<section class="cover qs-wait" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="done">' +
-      '<h2>' + esc(w.reviewT) + '</h2>' +
-      (q.reply_due ? '<p>' + esc(f(w.reviewP, { d: day(q.reply_due, false, 'ahead') })) + '</p>' : '') +
-      '<p>' + esc(w.reviewNote) + '</p>' +
-      '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p>' +
-      '<div class="cover-acts"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK +
-        esc(q.rep ? f(w.repChat, { n: first }) : w.chat) + '</a></div>' +
-      '</div></div></section>';
+    var due = q.reply_due ? day(q.reply_due, false, 'ahead') : '';
+    var C = window.ADspaceClock, zh = lang === 'zh', sentAt = q.issued_at && C ? C.date(q.issued_at, { zh: zh }) + (zh ? '' : ', ') + C.clock(q.issued_at, { zh: zh }) : '';
+    var step = function (cls, g, title, sub) {
+      return '<li class="' + cls + '"><span class="qs-trk-dot">' + ic(g, 'qs-g') + '</span><span><b>' + esc(title) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></li>';
+    };
+    var rows = requestRows(q.selection || {});
+    return '<div class="qs-step qs-rcv" data-shown>' +
+      '<div class="qs-rcv-head"><span class="qs-rcv-tick">' + ic('check', 'qs-g') + '</span><h1 class="qs-title">' + esc(w.reviewT) + '</h1>' +
+        (due ? '<p class="qs-lead">' + esc(f(w.reviewP, { d: due })) + '</p>' : '') +
+        '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p></div>' +
+      '<ol class="qs-track-steps">' +
+        step('is-done', 'check', w.rcvSent, esc(sentAt)) +
+        step('is-now', 'search', w.rcvReview, '<i class="qs-amber" aria-hidden="true"></i>' + esc(w.rcvNow)) +
+        step('', 'doc', w.rcvSend, due ? esc(f(w.rcvBy, { d: due })) : '') +
+        step('', 'pen', w.rcvSign, '') + '</ol>' +
+      (rows.length ? '<section class="qs-card"><h2>' + esc(w.rcvYours) + '</h2><ul class="qs-asklist">' + rows.map(function (r) {
+        return '<li><span class="qs-disc is-sm">' + ic(r[0], 'qs-g') + '</span><span>' + esc(r[1]) + '</span></li>'; }).join('') + '</ul></section>' : '') +
+      (q.rep ? '<section class="qs-card qs-rcv-rep"><span class="qs-rep-who"><small>' + esc(w.repT) + '</small><b>' + esc(q.rep.name) + '</b>' +
+          (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span>' +
+          '<a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a></section>'
+        : '') + '</div>' +
+      (q.rep ? '' : '<div class="qs-foot"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a></div>');
+  }
+  /* What the prospect asked for, as the selection kept holds it: a row a
+     part, its glyph and its words, never a price. */
+  function requestRows(sel) {
+    var w = t(), out = [], plan = CAT && sel.plan ? CAT.plans.filter(function (p) { return p.slug === sel.plan; })[0] : null;
+    if (plan) {
+      out.push(['plancontent', w.need.social[0] + ' · ' + f(w.plan, { p: plan.plan })]);
+      var m = (plan.mix || [])[Number(sel.mix) || 0];
+      out.push(['picture', f(w.piecesN, { n: plan.contents }) + (m ? (lang === 'zh' ? '：' : '; ') + mixShort(m) : '')]);
+    }
+    if ((sel.platforms || []).length) out.push(['device', sel.platforms.map(function (k) { return w.plat[k] || k; }).join(lang === 'zh' ? '、' : ', ')]);
+    if (sel.budget != null && (!plan || Number(sel.budget) !== 0 || plan.ad_budget)) out.push(['planads', w.need.ads[0]]);
+    var named = function (slug) {
+      var all = CAT ? [].concat(CAT.contents || [], CAT.files || [], CAT.verify || [], CAT.koc || []) : [];
+      var x = all.filter(function (c) { return c.slug === slug; })[0];
+      if (!x) return slug === (CAT && CAT.kol) ? w.kol : null;
+      return x.kind ? contentName(x) : (lang === 'zh' && FILE_ZH[x.name]) || x.name;
+    };
+    (sel.once || []).forEach(function (o) {
+      var n = named(o.slug); if (!n) return;
+      var g = CAT && (CAT.verify || []).some(function (v) { return v.slug === o.slug; }) ? 'verified'
+        : CAT && ((CAT.koc || []).some(function (v) { return v.slug === o.slug; }) || o.slug === CAT.kol) ? 'people' : 'picture';
+      out.push([g, n + (Number(o.qty) > 1 ? ' × ' + Number(o.qty) : '')]);
+    });
+    if (Number(sel.term) > 1) out.push(['clock', f(w.months, { n: sel.term })]);
+    return out;
   }
   /* The advertising budget the quotation's fees manage each month: the
      budget chosen past the plan's cover, else the plan's own cover as the
@@ -1443,8 +1545,9 @@
       // Extras the new plan does not offer leave with the old one.
       var ok = extrasOf(planOf()).map(function (c) { return c.slug; });
       Object.keys(S.extra).forEach(function (k) { if (ok.indexOf(k) < 0) delete S.extra[k]; });
-      var xb = document.getElementById('qsExtraBox');
-      if (xb) xb.innerHTML = extrasHtml();
+      keep(); paint();
+      var pc = root().querySelector('input[name=plan][value="' + el.value + '"]'); if (pc) pc.focus({ preventScroll: true });
+      return;
     }
     else if (nm === 'lang') {
       S.langs = S.langs.filter(function (l) { return l !== el.value; });
@@ -1452,8 +1555,7 @@
       if (!S.langs.length) { S.langs = [el.value]; el.checked = true; }
       keep(); paint(); return;
     }
-    else if (nm === 'mix') { S.mix = Number(el.value) || 0; }
-    else if (nm === 'translate') { S.translate = el.checked; }
+    else if (id === 'qsMix') { S.mix = Number(el.value) || 0; }
     else if (nm === 'kol') { S.kol = el.checked; }
     else if (nm === 'verify') {
       S.verify = S.verify.filter(function (v) { return v !== el.value; });
@@ -1534,11 +1636,12 @@
   function adopt(sel) {
     S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
-    S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate); S.budget = sel.budget == null ? null : Number(sel.budget);
-    S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.koc = ''; S.kol = false; S.verify = [];
+    S.langs = (sel.langs || ['en']).slice(); S.budget = sel.budget == null ? null : Number(sel.budget);
+    S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.files = {}; S.koc = ''; S.kol = false; S.verify = [];
     (sel.once || []).forEach(function (o) {
       var c = CAT && CAT.contents.some(function (x) { return x.slug === o.slug; });
       if (c) { S.need.content = true; S.once[o.slug] = o.qty; }
+      else if (CAT && (CAT.files || []).some(function (x) { return x.slug === o.slug; })) { S.files[o.slug] = o.qty; if (!S.need.social) S.need.content = true; }
       else if (CAT && CAT.koc.some(function (x) { return x.slug === o.slug; })) { S.need.koc = true; S.koc = o.slug; }
       else if (CAT && o.slug === CAT.kol) { S.need.koc = true; S.kol = true; }
       else { S.need.verify = true; S.verify.push(o.slug); }
@@ -1558,6 +1661,7 @@
       var d = r && r.data;
       if (r.error || !d || d.error) { paint.off = true; CAT = null; paint(); return; }
       CAT = d;
+      if (Array.isArray(d.terms) && d.terms.length) TERMS = d.terms.map(Number).filter(function (n) { return n > 0; });
       if (S.plan && !planOf()) S.plan = null;
       if (done) done(); else paint();
     }).catch(function () { paint.off = true; paint(); });

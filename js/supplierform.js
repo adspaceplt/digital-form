@@ -102,7 +102,7 @@
       '<p class="qs-lead">' + lead() + '</p><p class="qs-intro-p">' +
         (update ? 'Review and update your details as a supplier to ADspace.' : 'Provide your details as a supplier to ADspace.') + '</p></div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(W.stepExpect) + '</h2>' + I.stepCards(STEPS) + '</section>' +
-      '<p class="qs-when">' + I.svg('clock') + '<span>' + esc(W.formEnds.replace('{d}', day(info.expires_at, true))) + '</span></p></div>' +
+      '<p class="qs-note qs-time">' + I.svg('clock') + '<span>' + esc(W.formEnds.replace('{d}', day(info.expires_at, true))) + '</span></p></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfStart">' + esc(W.stepStart) + '</button></div>';
   }
   function stepBody(n) {

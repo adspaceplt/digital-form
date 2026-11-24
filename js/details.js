@@ -108,7 +108,7 @@
       '<p class="qs-lead">' + lead() + '</p><p class="qs-intro-p">' + esc(w.introP) + '</p></div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.stepExpect) + '</h2>' +
         I.stepCards(STEPS.map(function (x) { return { glyph: x.glyph, name: w[x.name], line: w[x.line] }; })) + '</section>' +
-      '<p class="qs-when">' + I.svg('clock') + '<span>' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</span></p></div>' +
+      '<p class="qs-note qs-time">' + I.svg('clock') + '<span>' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</span></p></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfStart">' + esc(w.stepStart) + '</button></div>';
   }
   function stepBody(n) {

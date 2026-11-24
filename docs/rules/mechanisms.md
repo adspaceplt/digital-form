@@ -140,6 +140,10 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   in `js/words.js` (Booked, Shoot visit or Delivery, Draft due, Client
   review, Post date, Results; never a bare verb or a word that could read
   as one, the user, 2026-10-15), each breaking at its space, never cut.
+  `mark(key)` is a platform's own mark beside the platform's name where a
+  prospect chooses platforms (/quote/): single colour in ink, never a brand
+  colour fill, the cut-outs in the card's ground (`.ic-cut`), Meta drawn as
+  Facebook and Instagram together (the user, 2026-11-24).
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
   English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept`.
   - Pages merge with `ADspaceWords.of({en, zh})`; `/review/` takes
