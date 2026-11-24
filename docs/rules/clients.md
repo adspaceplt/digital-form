@@ -185,12 +185,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     else amber); it opens the client's Months view. It is read from the
     Engagements pane's answer, never a read of its own.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
-  six tabs (the user, 2026-10-15: the strip "gradually increasing"), each
+  six tabs, never more (the user, 2026-10-15: the strip "gradually
+  increasing"; again 2026-11-24: a new part joins a tab, never the strip;
+  `tests/engage.js` counts them), each
   showing its parts one under the other (`#crmPanes`, 24px apart), each
   part keeping its heading and its own address (`tab=billing` opens
   Account on Billing, so every older link lands):
-  - Overview; Calls and visits (`tab=calls`, Clients: Calls, never behind
-    the Activity record's access; 2026-10-11); Engagements (the months,
+  - Overview; Interactions (2026-11-24): Calls and visits (`tab=calls`,
+    Clients: Calls, never behind the Activity record's access; 2026-10-11)
+    then Feedback (`tab=feedback`), each its own card with its count and
+    its act on its head (Log call; Request feedback, then out of the
+    record's ⋯); Engagements (the months,
     drawn for a client engaged now or before or holding anything, then
     Checklists; the tab stays for a lead's checklists); Services
     (Quotations and Service lines, with Requests once a contact has portal

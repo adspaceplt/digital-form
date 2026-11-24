@@ -57,7 +57,7 @@
     'no-trip': 'This trip no longer exists.',
     closed: 'This trip has been checked out. Refresh the page.',
     'bad-purpose': 'Choose the purpose.',
-    'no-place': 'Choose the client, or enter the venue.',
+    'no-place': 'Choose the client, or choose No client and enter the venue.',
     'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
     'bad-location': 'The location could not be read. Press Locate again.',
@@ -86,7 +86,9 @@
     var m = Math.round(ms / 60000), h = Math.floor(m / 60);
     return h ? h + 'h ' + (m % 60) + 'm' : m + 'm';
   }
-  function placeName(s) { return s.client || s.venue || 'Deleted client'; }
+  /* A stop's client and, where the work was away from its site, the venue
+     (2026-11-24). */
+  function placeName(s) { return s.client ? s.client + (s.venue ? ' · ' + s.venue : '') : (s.venue || 'Deleted client'); }
 
   /* ---- State and the address ------------------------------------------- */
   var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null };
@@ -570,6 +572,11 @@
       '<div class="sheet-body">' +
         '<div class="row"><div><label class="field-label" for="ostClient">Client</label>' +
           '<select class="select" id="ostClient" aria-required="true"></select></div></div>' +
+        /* The client and the place apart (2026-11-24): work for a client
+           away from its own site still reaches its Calls and visits. */
+        '<div class="row" id="ostWhereRow" hidden><div><label class="field-label" for="ostWhere">Place</label>' +
+          '<select class="select" id="ostWhere" data-seg data-seg-value><option value="site">Client\'s site</option>' +
+          '<option value="venue">Another venue</option></select></div></div>' +
         '<div class="row" id="ostVenueRow" hidden><div><label class="field-label" for="ostVenue">Venue</label>' +
           '<textarea class="input" id="ostVenue" data-oneline rows="1" maxlength="200" placeholder="ADspace Advertising"></textarea></div></div>' +
         /* What Check in waits for comes first, under the place: a long list
@@ -590,10 +597,16 @@
         '<button class="btn btn-quiet" type="button" id="ostStopCancel">Cancel</button>' +
       '</div></div>';
     document.body.appendChild(stopSheet);
-    if (F && F.segment) F.segment($('ostPurpose'));
+    if (F && F.segment) { F.segment($('ostPurpose')); F.segment($('ostWhere')); }
     stopSheet.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('ostStopCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    $('ostClient').addEventListener('change', function () { $('ostVenueRow').hidden = $('ostClient').value !== 'other'; });
+    var placeRows = function () {
+      var cv = $('ostClient').value;
+      $('ostWhereRow').hidden = !cv || cv === 'other';
+      $('ostVenueRow').hidden = !(cv === 'other' || (cv && $('ostWhere').value === 'venue'));
+    };
+    $('ostClient').addEventListener('change', placeRows);
+    $('ostWhere').addEventListener('change', placeRows);
     stopKit = { loc: spotBlock($('ostLoc')), shots: shotsBlock($('ostShots')) };
     $('ostStopGo').addEventListener('click', sendStop);
     return stopSheet;
@@ -605,7 +618,9 @@
     $('ostStopH').textContent = trip ? 'Add stop' : 'Check in';
     $('ostStopGo').textContent = trip ? 'Add stop' : 'Check in';
     Array.prototype.forEach.call(stopSheet.querySelectorAll('.ost-in'), function (el) { el.hidden = !!trip; });
-    $('ostVenue').value = ''; $('ostNote').value = ''; $('ostVenueRow').hidden = true;
+    $('ostVenue').value = ''; $('ostNote').value = ''; $('ostVenueRow').hidden = true; $('ostWhereRow').hidden = true;
+    $('ostWhere').value = 'site';
+    if (F && F.paint) F.paint($('ostWhere'));
     $('ostPurpose').value = 'meeting';
     if (F && F.paint) F.paint($('ostPurpose'));
     stopMsg('');
@@ -616,7 +631,7 @@
     readPick().then(function () {
       $('ostClient').innerHTML = '<option value="">Choose a client</option>' + clients.map(function (c) {
         return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
-      }).join('') + '<option value="other">Other venue</option>';
+      }).join('') + '<option value="other">No client</option>';
       $('ostPeople').innerHTML = people.map(function (p) {
         return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.id) + '"> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
       }).join('');
@@ -626,7 +641,8 @@
     var trip = stopSheet.trip, go = $('ostStopGo');
     var cv = $('ostClient').value, venue = $('ostVenue').value.trim(), spot = stopKit.loc.spot;
     if (!cv) { stopMsg(SAID['no-place'], 'err'); $('ostClient').focus(); return; }
-    if (cv === 'other' && !venue) { stopMsg('Enter the venue.', 'err'); $('ostVenue').focus(); return; }
+    var atVenue = cv === 'other' || $('ostWhere').value === 'venue';
+    if (atVenue && !venue) { stopMsg('Enter the venue.', 'err'); $('ostVenue').focus(); return; }
     if (!spot) { stopMsg('The location must be accurate to within ' + setting('outstation_accuracy_m', 50) + ' m. Press Locate again.', 'err'); return; }
     /* A reading is good for ten minutes in the database: one older than
        nine is read again here, never sent to be refused (2026-11-24: a
@@ -638,7 +654,7 @@
       return;
     }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }
-    var args = { p_client: cv === 'other' ? null : cv, p_venue: cv === 'other' ? venue : null,
+    var args = { p_client: cv === 'other' ? null : cv, p_venue: atVenue ? venue : null,
       p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at };
     var call;
     if (trip) {
