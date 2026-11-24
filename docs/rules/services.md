@@ -399,7 +399,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   payload for any rate key or Rate Card fee. What a website selection may
   hold is `quote_website_sel`, read by the create (6, 12 or 24 months, else
   `bad-term`; no translation; of the add-ons the File Release group alone,
-  else `bad-once`; `2026-11-24-quote-website-choices.sql`). A
+  else `bad-once`; `2026-11-24-quote-website-choices.sql`). Prices are
+  shown on the quotation the team sent alone, where the prospect may
+  change the plan, content option, platforms, additional content, files
+  and commitment and see the price follow on the quotation's own Rate
+  Card, every line the team added kept (`quote_website_preview` by the
+  link's key, anon, writing nothing); a changed selection is never signed:
+  Request these changes keeps it on the quotation (`change_request`,
+  `change_requested_at`, a minute apart, `unchanged` refused, the reply due
+  by `quote_reply_by`, the team told `quote.changes`), Accept and sign
+  waits (`quote_sign_open` refuses `changes`) and Withdraw request clears
+  it; the console row reads Changes requested, Reply by its day, and Adjust
+  and send opens Build quote on the prospect's changes, its revision the
+  link's next quotation (`2026-11-25-quotation-changes-requested.sql`). A
   quotation holds at least one priced line: items quoted on request alone
   (a KOL campaign, a custom creator list) are refused on the page before
   the details are asked and by `quotation_make` (`nothing-priced`, no lead

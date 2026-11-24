@@ -9701,6 +9701,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-plan > b { font-size: 15px; font-weight: 600; }
 .qs-pl { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
 .qs-pl .ic { color: var(--ink-soft); }
+/* The sent quotation's change editor (QUOTATION CHANGES REQUESTED, 2026-11-25): each choice's price beside it. */
+.qs-planprice { font-size: 13.5px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.qs-chip .qs-text:has(> .qs-price) { flex-wrap: wrap; }
+.qs-chip-w { flex: 1 1 auto; min-width: 0; }
+.qs-price { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qs-chfig[aria-busy="true"], #qsChFig[aria-busy="true"] { opacity: .6; transition: opacity var(--t); }
 @media (max-width: 640px) {
   .qs-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .qs-plan.is-feat { grid-column: 1 / -1; order: -1; }
@@ -9912,6 +9918,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .qs-sfoot { display: flex; gap: 8px; padding-top: 4px; }
 .qs-sfoot > .btn { flex: 1 1 50%; min-width: 0; }
+/* A label that would break in a half takes the row, the primary under Cancel, nearest the thumb (the change request). */
+@media (max-width: 560px) { .qs-sfoot.is-stack { flex-direction: column; } .qs-sfoot.is-stack > .btn { flex: 0 0 auto; } }
 .qs-side .btn-quiet.btn-sm { width: auto; }
 .qs-side .qs-tot { width: 100%; background: var(--card); }
 .qs-sig-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--ctl-h-sm); margin-bottom: 4px; }
