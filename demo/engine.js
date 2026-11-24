@@ -13810,6 +13810,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return ['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0 && (DB.client_contacts || []).some(function (k) {
             return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
         })[0];
+
+        var wknown = false;
+        if (!wcl) {
+          var whits = DB.clients.filter(function (c) {
+            return ['lead', 'contacted', 'proposal'].indexOf(c.stage) < 0 && (DB.client_contacts || []).some(function (k) {
+              return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
+          });
+          if (whits.length === 1) { wcl = whits[0]; wknown = true; }
+        }
         var wnew = false;
         if (!wcl) {
           var wbase = wb.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'client', wslug = wbase, wk = 1;
@@ -13821,7 +13830,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
             is_primary: true, created_at: new Date().toISOString(), archived_at: null });
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
-        } else if (wstart && wcl.commence !== wstart) {
+        } else if (!wknown && wstart && wcl.commence !== wstart) {
           var wsw = { '1_3': 'Within 3 months', '3_6': '3 to 6 months', '6_plus': 'More than 6 months' };
           DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.edited', subject: wcl.name,
             detail: 'Planned commencement: ' + (wsw[wcl.commence] || 'not set') + ' → ' + wsw[wstart], created_at: new Date().toISOString() });
@@ -13843,10 +13852,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.quotations.push(wrow);
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: wcl.name,
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
-        qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
+        var wbody =
           wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-off') + ' · ' + wn +
           (won ? ' · Preferred start date ' + wonWord(won)
-            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by', wrow.id);
+            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by';
+        if (wknown) {
+
+          var wpic = (DB.team_members || []).filter(function (m) {
+            return m.active && !m.system && !m.removed_at && (wcl.owner_id ? m.id === wcl.owner_id : !!String(wcl.owner || '').trim() && m.name === String(wcl.owner).trim()); })[0];
+          (DB.team_members || []).filter(function (m) {
+            if (!m.active || m.system) return false;
+            if (wpic) return m.id === wpic.id;
+            var a = m.access || {}, lv = a['clients.leads'] || a.clients;
+            return m.is_admin || m.role === 'admin' || lv === 'manage';
+          }).forEach(function (m) {
+            var dk = 'quote.website:' + wrow.id + ':' + m.id;
+            if (DB.ops_notifications.some(function (x) { return x.dedupe_key === dk; })) return;
+            notePush({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: 'quote.website', title: 'Quotation to review · ' + wcl.name, body: wbody,
+              read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: wcl.id });
+          });
+        } else qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name, wbody, wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
@@ -14286,6 +14311,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return m.active && !m.system && !m.removed_at && m.id === wqc.sales_by; })[0];
 
           var wUnsent = wsh.source === 'website' && !wsh.released_at;
+
+          var wOwn = wq.source === 'website' && wqc && new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
+            !DB.quotations.some(function (o) { return o.client_id === wq.client_id && o.id !== wq.id && o.issued_at < wq.issued_at; });
+          var wHeld = wUnsent && !wOwn && !!wqc && ['lead', 'contacted', 'proposal'].indexOf(wqc.stage) < 0;
+          if (wHeld) wrep = null;
           var wlines = DB.client_services.filter(function (l) { return l.quotation_id === wsh.id; }).map(function (l) { return l.id; });
           var wdoc = (DB.client_documents || []).filter(function (d) {
             return d.kind === 'offer' && !d.voided_at && !d.superseded_by && (d.lines || []).some(function (x) { return wlines.indexOf(x.service_id) >= 0; });
@@ -14316,7 +14346,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           } else if (wbilled && wq.proceed_at) wstage = 'billing_sent';
           if (!wstage) wstage = wq.proceed_at ? 'ready' : 'quote';
           return qtOk(JSON.parse(JSON.stringify({ ref: wsh.ref, first_ref: wq.ref, revised: wsh.id !== wq.id,
-            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wqc && wqc.market === 'SG' ? 'SG' : 'MY',
+            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wHeld ? (/^\+65/.test(String((wq.contact || {}).whatsapp || '')) ? 'SG' : 'MY') : wqc && wqc.market === 'SG' ? 'SG' : 'MY',
             version: wUnsent ? null : wsh.version, issued_at: wsh.issued_at,
             valid_until: wUnsent ? null : wsh.valid_until, lines: wUnsent ? null : wsh.lines,
             totals: wUnsent ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
@@ -14327,7 +14357,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             today: qtToday,
             signed: wsh.signed_at ? { at: wsh.signed_at, via: wsh.signed.via, signer: wsh.signed.signer, signature: wsh.signed.signature,
               company: wsh.signed.company, contact: wsh.signed.contact, record: wsh.signed.via === 'online' ? wsh.signed.record : null } : null,
-            prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm ? { name: pm.name, title: pm.designation || null } : (wsh.made_by ? { name: wsh.made_by, title: null } : null); })(),
+            prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm && !wHeld ? { name: pm.name, title: pm.designation || null } : (wsh.made_by && !wHeld ? { name: wsh.made_by, title: null } : null); })(),
             reviewed: wsh.reviewed_at ? { name: wsh.reviewed_by, title: wsh.reviewed_role || null, at: wsh.reviewed_at } : null,
 
             prefill: !wsh.signed_at && wqc && !wUnsent && wstage !== 'closed' && wstage !== 'expired' ? (function () {

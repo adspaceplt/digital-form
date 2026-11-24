@@ -380,7 +380,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   while the secret `TURNSTILE_SECRET` is unset; Verify JWT off), which calls
   `quote_website_create` (the server's alone): a lead one of whose contacts
   holds both the email and the number is used again while Lead, Contacted
-  or Proposal sent, else a lead made (Source Website, nobody's), the
+  or Proposal sent; else a client at any other stage (Active, Paused, Past)
+  one of whose contacts holds both takes the quotation on its own record
+  (Services, needing the team; no lead made, the record left as kept, no
+  Planned commencement written), its person in charge told (`owner_id`,
+  an active colleague; kind `quote.website`), else the leads managers at
+  Full Access or an admin; two clients holding the same email and number
+  pick neither, and a company or brand name alone never matches
+  (`2026-11-25-website-quotation-finds-its-client.sql`); else a lead made
+  (Source Website, nobody's), the
   quotation kept with `source` website, its key (`?q=`) and the brand typed
   (`contact.brand`, what the visitor reads back), five a contact a day
   counted under a lock on each, only the selection keys the price reads
@@ -439,7 +447,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   on the quotation's lines, never lines made with no letter, signed,
   welcome once verified and Active, expired, closed once Cancelled;
   billing only on the website quotation that made the lead, never one
-  that matched an existing lead; `quote_proceed` judged on the revision
+  that matched an existing lead or client; unsent, one kept on a client
+  already served names no representative or preparer and reads its market
+  from the number typed (`quotematchsql`); `quote_proceed` judged on the revision
   shown; a name or brand holding a web address refused, `bad-name`,
   `bad-brand`, `quote_link_like`) and the panel beside the
   quotation follows it, the representative under each step; Welcome
