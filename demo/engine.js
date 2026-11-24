@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -119,6 +119,7 @@
     client_code_next: '',
     client_last_activity: '',
     client_vic_set: 'p_client p_on p_note p_since',
+    client_portal_access_set: 'p_client p_on',
     vic_clients: '',
     team_rows: '',
     team_task_takers: '',
@@ -1525,6 +1526,9 @@
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
           rows = []; api.__err = { code: 'P0001', message: 'vic-function' }; return api;
         }
+        if (table === 'clients' && pending && ['portal_kept_at', 'portal_kept_by'].some(function (k) { return k in pending; })) {
+          rows = []; api.__err = { code: 'P0001', message: 'portal-kept-function' }; return api;
+        }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
             (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)) ||
@@ -1655,6 +1659,9 @@
         }
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
           rows = []; api.__err = { code: 'P0001', message: 'vic-function' }; return api;
+        }
+        if (table === 'clients' && pending && ['portal_kept_at', 'portal_kept_by'].some(function (k) { return k in pending; })) {
+          rows = []; api.__err = { code: 'P0001', message: 'portal-kept-function' }; return api;
         }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
@@ -5796,8 +5803,8 @@ function cardSlugFree(name, self, email) {
   }
 
   function idFormats() {
-    if (DB.id_formats) return DB.id_formats;
-    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' } };
+    if (DB.id_formats) { if (!DB.id_formats.trip) DB.id_formats.trip = { prefix: 'OS', width: 2, next_no: 1 }; return DB.id_formats; }
+    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' }, trip: { prefix: 'OS', width: 2, next_no: 1 } };
     idBackfill();
     return DB.id_formats;
   }
@@ -7150,6 +7157,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
       logAct('client.edited', vc.name, vdet);
       persist();
       return { ok: true, since: vc.vic_at, by_name: vname(vc.vic_by), note: vc.vic_note };
+    }
+
+    if (name === 'client_portal_access_set') {
+      var pkm = opsMe();
+      if (!pkm || !opsAllowed('clients.contacts', 'work')) return { error: 'denied' };
+      var pkc = scopeOne('clients', args.p_client);
+      if (!pkc || !scopeSeen(args.p_client, 'work')) return { error: 'not-found' };
+      var pkOn = Boolean(args.p_on);
+      var pkKept = Boolean(pkc.portal_kept_at) && (!pkc.stage_since || String(pkc.portal_kept_at) >= String(pkc.stage_since));
+      if (pkOn && pkc.stage !== 'past') return { error: 'not-past' };
+      var pkName = function (id) { var t = DB.team_members.filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; };
+      if (pkKept === pkOn && (pkKept || !pkc.portal_kept_at)) return { ok: true, on: pkKept, at: pkc.portal_kept_at || null, by_name: pkName(pkc.portal_kept_by) };
+      pkc.portal_kept_at = pkOn ? new Date().toISOString() : null;
+      pkc.portal_kept_by = pkOn ? pkm.id : null;
+      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off');
+      persist();
+      return { ok: true, on: pkOn, at: pkc.portal_kept_at, by_name: pkOn ? pkm.name : null };
     }
 
     if (name === 'team_rows') {
@@ -10273,8 +10297,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (DB.sm_report_versions.some(function (x) { return x.report_id === v.report_id && !x.withdrawn_at && x.version_no > v.version_no; })) return { error: 'not-found' };
     return { snapshot: v.snapshot, kept: !!(v.file_key && v.file_at >= v.published_at) };
   }
+
+  function portalOpen(cid) {
+    var c = (DB.clients || []).filter(function (x) { return x.id === cid; })[0];
+    if (!c || c.active === false) return false;
+    if (c.stage !== 'past') return true;
+    return Boolean(c.portal_kept_at) && (!c.stage_since || String(c.portal_kept_at) >= String(c.stage_since));
+  }
   function portalClientIds() {
-    return (DB.client_contacts || []).filter(function (k) { return k.portal_access && !k.archived_at && String(k.email || '').toLowerCase() === whoNow(); })
+    return (DB.client_contacts || []).filter(function (k) { return k.portal_access && !k.archived_at && String(k.email || '').toLowerCase() === whoNow() &&
+      portalOpen(k.client_id); })
       .map(function (k) { return k.client_id; });
   }
 
@@ -10485,7 +10517,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+
+        var tf = (idFormats().trip) || { prefix: 'OS', width: 2 }, tn = String(refs[m]);
+        while (tn.length < (tf.width || 2)) tn = '0' + tn;
+        t.ref = '#' + (tf.prefix || 'OS') + m + tn;
         return t.ref;
       };
       var oJson = function (t) {
@@ -10519,16 +10554,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return null;
       };
       var oFile = function (st) {
-        if (!st.client_id || st.touch_id || !st.left_at) return;
+        if (!st.client_id) return;
         var t = OST.trips.filter(function (x) { return x.id === st.trip_id; })[0];
         if (!scopeSeen(st.client_id, 'work')) return;
         var clk = function (iso) { var d = new Date(Date.parse(iso) + 8 * 36e5), h = d.getUTCHours();
           return (h % 12 || 12) + ':' + String(d.getUTCMinutes()).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
         var w = t.companions.map(function (id) { return oName(id).name; }).filter(Boolean).sort().join(', ');
+
+        var line = 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + (st.venue ? ', at ' + st.venue : '') + ', ' +
+          (st.left_at ? clk(st.arrived_at) + ' to ' + clk(st.left_at) : 'from ' + clk(st.arrived_at) + ' (in progress)') +
+          (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : '');
+        var had = st.touch_id && (DB.client_touches || []).filter(function (x) { return x.id === st.touch_id; })[0];
+        if (had) { had.summary = line; return; }
         var tid = nid('touch');
         DB.client_touches.push({ id: tid, client_id: st.client_id, kind: 'visit', happened_at: new Date(Date.parse(st.arrived_at) + 8 * 36e5).toISOString().slice(0, 10),
-          by_whom: oName(t.driver_id).name, summary: 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + ', ' + clk(st.arrived_at) + ' to ' + clk(st.left_at) +
-            (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : ''), created_at: new Date().toISOString(), archived_at: null, done_at: null });
+          by_whom: oName(t.driver_id).name, summary: line, created_at: new Date().toISOString(), archived_at: null, done_at: null });
         st.touch_id = tid;
       };
       var oLast = function (t) { return OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return b.seq - a.seq; })[0]; };
@@ -10597,9 +10637,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           started_at: new Date().toISOString(), ended_at: null, end_lat: null, end_lng: null, end_accuracy_m: null, end_note: null, km_back: null, km_total: null, state: 'open' };
         oRef(ciT);
         OST.trips.push(ciT);
-        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
           lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
           arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+        oFile(oLast(ciT));
         return oOk({ ok: true, trip: oJson(ciT) });
       }
       if (name === 'outstation_stop_add' || name === 'outstation_check_out') {
@@ -10621,9 +10662,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         saL.left_at = new Date().toISOString();
         oFile(saL);
         if (name === 'outstation_stop_add') {
-          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
             lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
             arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+          oFile(oLast(saT));
         } else {
           saT.state = 'closed'; saT.ended_at = new Date().toISOString(); saT.end_lat = args.p_lat; saT.end_lng = args.p_lng;
           saT.end_accuracy_m = args.p_accuracy; saT.end_note = String(args.p_note || '').trim() || null; saT.rating = args.p_rating == null ? null : args.p_rating;
@@ -11022,7 +11064,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (dfr) return Promise.resolve({ data: null, error: { message: dfr } });
       var da = args || {}, dOut;
       idFormats();
-      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job'].map(function (k) { var f = DB.id_formats[k];
+      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
         return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
@@ -11031,7 +11073,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = dO && opsMe() ? DB.id_formats.job.pattern.replace('{creator}', (dC && dC.creator_code) || '').replace('{campaign}', (dM && dM.campaign_code) || '') : null;
       } else if (!opsGranted('team.settings', 'work')) dOut = { error: 'denied' };
       else {
-        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference' })[da.p_kind];
+        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number' })[da.p_kind];
         if (!dF) dOut = { error: 'not-found' };
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
@@ -11040,6 +11082,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           var dP = String(da.p_prefix || '').trim().toUpperCase(), dWd = Number(da.p_width), dN = Number(da.p_next);
           var dRows = da.p_kind === 'creator' ? (DB.creators || []).map(function (c) { return c.creator_code; }) : (DB.campaigns || []).map(function (m) { return m.campaign_code; });
+          if (da.p_kind === 'trip') { dRows = []; dN = dF.next_no; }
           var dTop = dRows.filter(function (c) { return c && new RegExp('^' + dP + '[0-9]+$').test(c); }).map(function (c) { return Number(c.slice(dP.length)); })
             .reduce(function (a, b) { return Math.max(a, b); }, 0);
           if (!/^[A-Z]{1,6}$/.test(dP)) dOut = { error: 'bad-prefix' };
@@ -11054,7 +11097,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (dN !== dF.next_no) dMv.push('next ' + dF.next_no + ' → ' + dN);
             var dRp = da.p_kind === 'creator' ? String(da.p_pattern || '').trim() : '';
             if (dRp && dRp !== dF.pattern) { dMv.push('payment details reference ' + (dF.pattern || 'not set') + ' → ' + dRp); }
-            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
+            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', da.p_kind === 'trip' ? 'Outstation trip numbers' : 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
             dOut = { ok: true };
           }
         }
@@ -11383,7 +11426,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^client_portal_access_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
@@ -12411,6 +12454,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     function portalNameOf(cid) {
       var e = String(session && session.user && session.user.email || '').toLowerCase();
       if (!e || !cid) return null;
+      if (!portalOpen(cid)) return null;
       var k = (DB.client_contacts || []).filter(function (c) { return c.client_id === cid && c.portal_access && !c.archived_at &&
         String(c.email || '').toLowerCase() === e; }).sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0); })[0];
       return k ? k.name : null;
@@ -12836,7 +12880,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var portalClients = function () {
       var e = who();
       return (DB.client_contacts || []).filter(function (c) {
-        return c.portal_access && !c.archived_at && c.email && String(c.email).toLowerCase() === e;
+        return c.portal_access && !c.archived_at && c.email && String(c.email).toLowerCase() === e && portalOpen(c.client_id);
       }).map(function (c) { return c.client_id; });
     };
     if (name === 'get_portal') {
@@ -19067,7 +19111,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             });
             else if (opsMe()) folders = null;
             else (DB.client_contacts || []).forEach(function (c) {
-              if (c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === whoNow()) cf(c.client_id);
+              if (c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === whoNow() && portalOpen(c.client_id)) cf(c.client_id);
             });
 
             if (window.__mediaOldShape) return { data: { policy: 'POLICY' + exp, signature: 'SIG-_~', keyPairId: 'KTEST', expires: exp }, error: null };
@@ -19105,7 +19149,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           var e = String((opts && opts.body && opts.body.email) || '').toLowerCase();
           var ok = (DB.client_contacts || []).some(function (c) {
-            return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e;
+            return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e && portalOpen(c.client_id);
           }) || (DB.team_members || []).some(function (m) {
             return m.active && !m.removed_at && !m.erased_at && String(m.email || '').toLowerCase() === e;
           });
