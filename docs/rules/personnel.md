@@ -9,6 +9,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   kept to its kind, length and AutoCount's own lists (Gender, Marital
   Status, Race, Religion, State; no Other; no previous salary). Every list
   opens on Choose: an answer nobody gave is never saved.
+- The form starts from the Overview (the user, 2026-11-24): an empty Email
+  and Mobile or WhatsApp take the colleague's sign-in email and namecard
+  mobile from `personnel_json`'s `prefill` (that colleague's alone, written
+  nowhere until a save); a saved value always wins; Full Name as per NRIC is
+  never prefilled from the portal name.
 - `team.personnel` is a granted part (an admin tool, Manage alone) under
   Team: a colleague's record draws a Personnel tab only there; the
   colleague fills their own in My records, behind `perf_mine_gate()`,

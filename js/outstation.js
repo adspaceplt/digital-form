@@ -548,10 +548,14 @@
     if (people && clients) return Promise.resolve();
     return Promise.all([
       db.from('team_members').select('id, name, staff_code, active').eq('active', true).order('name'),
-      db.from('clients').select('id, name, stage, client_code').order('name')
+      db.from('clients').select('id, name, stage, client_code').order('name'),
+      /* Only a colleague who may work My Work joins a trip, as only one may
+         drive it: never one kept for the namecard alone (2026-11-24). */
+      bridge.pickable ? bridge.pickable('ops') : null
     ]).then(function (r) {
       var m = me();
       people = ((r[0] && r[0].data) || []).filter(function (p) { return (!m || p.id !== m.id) && !(bridge.isSystem && bridge.isSystem(p)); }).sort(F.byStaff);
+      if (bridge.pickFrom) people = bridge.pickFrom(people, r[2]);
       clients = ((r[1] && r[1].data) || []).filter(function (c) { return c.stage !== 'past'; }).sort(F.byClient);
     });
   }

@@ -149114,4 +149114,132 @@ grant execute on function public.doc_code_of_key(text, uuid, text) to anon, auth
 
 -- END OF DOCUMENT ID ON EVERY FOOT --------------------------------------------
 
+
+-- ===========================================================================
+-- COMPANIONS WHO MAY WORK (2026-11-24)
+-- ===========================================================================
+-- WHY: the user, 2026-11-24: a colleague whose group holds the namecard
+-- alone was still offered under Check in's Colleagues. The pickers of
+-- PICKERS OFFER WHO MAY WORK THE SECTION reached Person in charge, Sales by
+-- and a campaign's owner, never Outstation's own list.
+--
+-- WHAT IT CHANGES
+--   * `outstation_check_in` refuses a companion who may not work My Work
+--     (an admin, or `ops` at Edit or Full control, as `team_pickable('ops')`
+--     answers) with `bad-companion`, as it refuses an inactive one. Every
+--     other check of CHECK IN ONCE stands. A trip already made keeps its
+--     companions.
+--
+-- ORDER: this file, then the page (Colleagues reads `team_pickable('ops')`).
+-- An old tab offering such a colleague meets `bad-companion` and is told to
+-- untick them. Safe to run twice.
+-- ROLLBACK: run CHECK IN ONCE's `outstation_check_in` again.
+-- ===========================================================================
+
+create or replace function public.outstation_check_in(
+  p_client uuid, p_venue text, p_purpose text, p_note text, p_companions uuid[],
+  p_lat numeric, p_lng numeric, p_accuracy numeric, p_read_at timestamptz)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_me public.team_members; v_err jsonb; v_trip uuid; v_with uuid[];
+begin
+  v_me := public.ops_me();
+  if v_me.id is null or not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if exists (select 1 from public.outstation_trips t where t.driver_id = v_me.id and t.state = 'open') then
+    return jsonb_build_object('error', 'open-trip');
+  end if;
+  if p_purpose is null or p_purpose not in ('meeting', 'shooting', 'event', 'other') then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if length(coalesce(p_note, '')) > 2000 or length(coalesce(p_venue, '')) > 200 then return jsonb_build_object('error', 'too-long'); end if;
+  if p_client is null and nullif(btrim(coalesce(p_venue, '')), '') is null then return jsonb_build_object('error', 'no-place'); end if;
+  if p_client is not null and (not exists (select 1 from public.clients c where c.id = p_client)
+                               or not public.allowed('clients', 'view')
+                               or not public.client_scope_ok('client', p_client, 'view')) then
+    return jsonb_build_object('error', 'bad-client');
+  end if;
+  select coalesce(array_agg(distinct x), '{}') into v_with from unnest(coalesce(p_companions, '{}'::uuid[])) x;
+  if array_length(v_with, 1) > 10 or v_me.id = any(v_with)
+     or exists (select 1 from unnest(v_with) x where not exists (
+          select 1 from public.team_members m where m.id = x and m.active and m.removed_at is null and not coalesce(m.system, false)
+             /* A companion may work My Work, as the driver must: a colleague
+                kept for the namecard alone is never one (2026-11-24). */
+             and (coalesce(m.is_admin, false) or coalesce(m.role, '') = 'admin' or public.level_rank(m.access ->> 'ops') >= 2))) then
+    return jsonb_build_object('error', 'bad-companion');
+  end if;
+  v_err := public.outstation_reading_error(p_lat, p_lng, p_accuracy, p_read_at);
+  if v_err is not null then return v_err; end if;
+  -- two presses at once both pass the check above; the one open trip a
+  -- driver may hold (outstation_trips_one_open) refuses the second
+  begin
+    insert into public.outstation_trips (driver_id, companions, purpose, note)
+    values (v_me.id, v_with, p_purpose, nullif(btrim(coalesce(p_note, '')), ''))
+    returning id into v_trip;
+  exception when unique_violation then
+    return jsonb_build_object('error', 'open-trip');
+  end;
+  insert into public.outstation_stops (trip_id, seq, client_id, venue, lat, lng, accuracy_m, read_at)
+  values (v_trip, 1, p_client, case when p_client is null then btrim(p_venue) end, p_lat, p_lng, p_accuracy, p_read_at);
+  return jsonb_build_object('ok', true, 'trip', public.outstation_trip_json(v_trip));
+end $$;
+revoke all on function public.outstation_check_in(uuid, text, text, text, uuid[], numeric, numeric, numeric, timestamptz) from public, anon;
+grant execute on function public.outstation_check_in(uuid, text, text, text, uuid[], numeric, numeric, numeric, timestamptz) to authenticated;
+
+-- END OF COMPANIONS WHO MAY WORK ------------------------------------------
+
+-- ===========================================================================
+-- PERSONNEL PREFILLED FROM THE OVERVIEW (2026-11-24)
+-- ===========================================================================
+-- WHY: the user, 2026-11-24: the employee record asked again for what a
+-- colleague's Overview already holds. Its Email and Mobile or WhatsApp now
+-- start filled in from the colleague's sign-in email and namecard mobile;
+-- the person may change either, and a value saved in the record wins.
+-- Full Name as per NRIC is never prefilled from the portal name.
+--
+-- WHAT IT CHANGES
+--   * `personnel_json` answers `prefill`: the record's own colleague's
+--     `team_members.email` and `team_members.mobile`, nothing else, each
+--     left out where it is not held. `personnel_get` (the team, behind
+--     `team.personnel`) and `personnel_mine` (the colleague's own, behind
+--     the fresh proof) read it as before; every refusal of theirs stands.
+--     Nothing is written: the record's data is unchanged until a save.
+--
+-- ORDER: this file after the page's deploy or before it alike: the page
+-- reads `prefill` only where it is answered, and an old page ignores it.
+-- Safe to run twice.
+-- ROLLBACK: run PERSONNEL RECORDS' `personnel_json` again.
+-- ===========================================================================
+
+-- PERSONNEL PREFILLED FROM THE OVERVIEW -------------------------------------
+
+/* One record as the reader may read it: never a salary, never a file's key;
+   with what the colleague's Overview already holds for the form to start
+   from (prefilled, never saved by this read). */
+create or replace function public.personnel_json(p_member uuid, p_team boolean)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare r public.personnel_records; t public.team_members; s public.personnel_salaries;
+begin
+  select * into t from public.team_members where id = p_member;
+  select * into r from public.personnel_records where team_member_id = p_member;
+  select * into s from public.personnel_salaries where team_member_id = p_member;
+  return jsonb_build_object('ok', true, 'member', p_member, 'name', t.name,
+    'data', coalesce(r.data, '{}'::jsonb),
+    'prefill', jsonb_strip_nulls(jsonb_build_object(
+      'email', nullif(btrim(coalesce(t.email, '')), ''),
+      'mobile', nullif(btrim(coalesce(t.mobile, '')), ''))),
+    'files', coalesce((select jsonb_object_agg(k, jsonb_build_object('at', v ->> 'at', 'type', v ->> 'type'))
+                         from jsonb_each(coalesce(r.files, '{}'::jsonb)) x(k, v)), '{}'::jsonb),
+    'consent_at', r.consent_at, 'declared_name', r.declared_name, 'declared_at', r.declared_at,
+    'requested_at', r.requested_at, 'updated_at', r.updated_at,
+    'updated_by', (select u.name from public.team_members u where u.id = r.updated_by),
+    'join_date', r.join_date, 'employee_status', r.employee_status, 'employee_type', r.employee_type,
+    'probation_months', r.probation_months, 'contract_end', r.contract_end,
+    'confirm_date', public.personnel_confirm_date(r.join_date, r.probation_months),
+    'superior_id', case when p_team then r.superior_id end,
+    'salary_set', case when p_team then (s.probation is not null or s.confirmed is not null) end,
+    'missing', to_jsonb(public.personnel_missing(coalesce(r.data, '{}'::jsonb))));
+end $$;
+revoke all on function public.personnel_json(uuid, boolean) from public, anon, authenticated;
+
+-- END OF PERSONNEL PREFILLED FROM THE OVERVIEW ------------------------------
+
 select public.functions_tidy();

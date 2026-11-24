@@ -573,8 +573,15 @@ section holds only what is true of the project as a whole.
   pinned to 1.10.0 and deployed (2026-11-21); `tests/fnpins.js` fails any
   `npm:`, `jsr:` or esm.sh import without an exact version. A creator's signed uploads are counted a
   booking a day since 2026-11-09; an AWS Budgets alarm is set (the owner,
-  2026-11-21); the S3 lifecycle rule's storage-class half stays held. Not yet hunted: the client portal's one sign-in (`portal_work`,
-  `portal_link_pass`, its sign-out), new since run 1.
+  2026-11-21); the S3 lifecycle rule's storage-class half stays held. The client portal's sign-in, hunted
+  2026-11-24 (`portal-login`, `portal_clients`, `get_portal`,
+  `portal_work`, `portal_link_pass`, the stamp, sign-out, media-pass and
+  sign-download for a contact, every function `authenticated` may run):
+  nothing a client can reach crosses to another client; checked live,
+  sign-ups are off and Auth's captcha refuses an emailed sign-in without
+  a token. Left with the owner: GoTrue answers an unknown address
+  differently from a known one (captcha per probe), and the email code's
+  length and expiry are dashboard settings.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
   unescaped in the console), 3 (a post link holding a quote) and 4
