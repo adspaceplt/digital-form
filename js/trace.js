@@ -21,14 +21,31 @@
   var SOLID = 'button,input,select,textarea,label,a,[role="button"],[role="switch"],[role="tab"],svg,.chip,.tab-n,.otp-cell,.plink';
   var PAD = 4;
   var hosts = [];
-  var stamp = '';
 
-  function viewer() {
+  /* Who reads, and when (Malaysia's clock). */
+  function reader() {
     var A = window.ADspaceAdmin, m = A && A.me ? A.me() : null;
-    if (!m || !m.email) return '';
+    if (!m || !m.email) return null;
     var C = window.ADspaceClock, now = new Date().toISOString();
-    var when = C ? (C.date(C.today()) + ', ' + C.clock(now)) : '';
-    return [m.name, m.email, when].filter(Boolean).join('  ·  ');
+    return { name: m.name || m.email, email: m.email, when: C ? (C.date(C.today()) + ', ' + C.clock(now)) : '' };
+  }
+  function viewer() {
+    var r = reader();
+    return r ? [r.name, r.email, r.when].filter(Boolean).join('  ·  ') : '';
+  }
+
+  /* The foot line (option C, 2026-11-24, the user: "How bout B+C"): in the
+     layout at the foot of the card, its scrolling body's end where it has
+     one, above a hairline: Viewed by {name} · {date, time} · Confidential.
+     Written only when its words change, so it never redraws itself. */
+  function footLine(h, r) {
+    var slot = h.el.querySelector(':scope > .sheet-body') || h.el;
+    var f = h.foot;
+    if (!f) { f = h.foot = document.createElement('p'); f.className = 'trace-foot'; }
+    var words = 'Viewed by ' + r.name + ' · ' + r.when + ' · Confidential';
+    if (f.textContent !== words) f.textContent = words;
+    var before = slot === h.el ? h.canvas : null;
+    if (f.parentNode !== slot || f.nextSibling !== before) slot.insertBefore(f, before);
   }
 
   function visible(el) {
@@ -71,8 +88,10 @@
     /* A host still arriving (a sheet fading in) is drawn all the same. */
     var none = function () { cv.width = 0; cv.height = 0; cv.style.width = '0'; cv.style.height = '0'; };
     if (!w || !ht || !el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') { none(); return; }
+    var r = reader();
+    if (!r) { none(); return; }
     var line = h.line || (h.line = viewer());
-    if (!line) { none(); return; }
+    footLine(h, r);
     cv.setAttribute('data-trace-line', line);
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     ht = Math.min(ht, 12000);
@@ -150,6 +169,7 @@
     h.el.removeEventListener('animationend', h.scroll, true);
     h.el.removeEventListener('load', h.scroll, true);
     if (h.canvas.parentNode) h.canvas.parentNode.removeChild(h.canvas);
+    if (h.foot && h.foot.parentNode) h.foot.parentNode.removeChild(h.foot);
     h.el.classList.remove('trace-host');
   }
 

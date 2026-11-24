@@ -6478,4 +6478,11 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
   font: 500 12px var(--font);
 }
 @media (max-width: 640px) { .trace-ink { font-size: 11px; } }
+/* Its foot line (option C): in the layout, the card's last line, at the
+   right over a hairline. */
+.trace-foot {
+  margin: 16px 0 0; padding-top: 8px; border-top: 1px solid var(--line-soft);
+  font-size: 12px; line-height: 16px; color: var(--ink-mute); text-align: right;
+  overflow-wrap: anywhere;
+}
 @media print { .trace-ink { display: none !important; } }

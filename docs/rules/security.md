@@ -207,7 +207,10 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   a review sheet, My records' Reviews and Personnel) the reader's name,
   sign-in email and the time it was drawn (Malaysia's clock) are tiled
   faintly at -24° over the screen, so a photograph of it names who opened
-  it. It deters and traces; it is not access control. A screen asks for
+  it, and its card ends with one line in its layout, above a hairline, at
+  the right in 12px mute ink: Viewed by {name} · {date, time} ·
+  Confidential (the user, 2026-11-24: "How bout B+C"; its scrolling
+  body's end in a sheet). It deters and traces; it is not access control. A screen asks for
   it with `data-trace` (a question with `trace: true`, a file with
   `ADspaceDocs.previewTab(zh, { trace: true })`, read in the panel over
   the page, never a tab); the canvas over it is cleared under every run of
