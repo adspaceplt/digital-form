@@ -5776,7 +5776,11 @@ svg.sec {
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }
-.crm-late-tag { margin-left: 8px; vertical-align: 1px; }
+.crm-late-tag, .crm-ahead-tag { margin-left: 8px; vertical-align: 1px; }
+/* A client's stage set ahead, under the record head's meta (CLIENT STAGE
+   AHEAD): its words, then Edit and Withdraw in the line. */
+.rec-ahead { margin-top: 4px; }
+.rec-id-meta.rec-ahead > .rec-ahead-act { margin-inline: 4px 0; }
 .crm-c-own .tav, .crm-c-sales .tav { margin-right: 8px; vertical-align: middle; }
 .is-narrow .crm-c-own .tav, .is-narrow .crm-c-sales .tav { display: none; }
 /* Content Review (v3, phase 4): a card a client, three across (two under
