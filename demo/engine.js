@@ -10589,7 +10589,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (String(args.p_note || '').length > 2000 || String(args.p_venue || '').length > 200) return oNo('too-long');
         var ciC = oClient(); if (ciC) return oNo(ciC);
         var ciW = (args.p_companions || []).filter(function (x, i, all) { return all.indexOf(x) === i; });
-        if (ciW.length > 10 || ciW.indexOf(oMe.id) > -1 || ciW.some(function (id) { var m = oName(id); return !m.id || !m.active || m.removed_at || m.system; }))
+        if (ciW.length > 10 || ciW.indexOf(oMe.id) > -1 || ciW.some(function (id) { var m = oName(id); if (!m.id || !m.active || m.removed_at || m.system) return true;
+          var mA = opsAccess(m); return !(mA.admin || RANK[mA.map.ops || 'none'] >= RANK.work); }))
           return oNo('bad-companion');
         var ciR = oReading(); if (ciR) return oNo(ciR.error, ciR);
         var ciT = { id: oUuid(), driver_id: oMe.id, companions: ciW, purpose: args.p_purpose, note: String(args.p_note || '').trim() || null, rating: null,
