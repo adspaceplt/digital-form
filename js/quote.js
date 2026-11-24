@@ -484,14 +484,25 @@
   /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
      2026-11-25): the services as tiles with their glyphs, What to expect as
      cards, each its glyph in a white disc with its number on an ink badge,
-     then the time with the clock. Words unchanged. */
+     then the time with the clock. Words unchanged. Each tile is the Need
+     step's own choice (S.need), pressed in place and carried by Start to
+     that step with the same ticks (2026-11-25: the tiles read as choices
+     and pressed as nothing). */
   var NEED_GLYPH = { 'social': 'plancontent', 'ads': 'planads', 'content': 'picture', 'koc': 'people', 'verify': 'verified' };
   var STEP_GLYPH = ['grid', 'sliders', 'bubble', 'pen'];
+  /* The services offered, one list for the opening page's tiles and the
+     Need step's cards: what the catalogue cannot quote is not offered. */
+  function needKeys() {
+    return ['social', 'ads', 'content', 'koc', 'verify'].filter(function (k) {
+      return (k !== 'koc' || CAT.koc.length || CAT.kol) && (k !== 'verify' || CAT.verify.length);
+    });
+  }
   function paintIntro() {
     var N = t().need;
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
-      '<ul class="qs-svcs">' + ['social', 'ads', 'content', 'koc', 'verify'].map(function (k) {
-        return '<li><span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><span>' + esc(N[k][0]) + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="qs-svcs" role="group" aria-label="' + esc(t().needT) + '">' + needKeys().map(function (k) {
+        return '<button class="qs-svc' + (S.need[k] ? ' is-on' : '') + '" type="button" data-a="svc" data-k="' + k + '" aria-pressed="' + Boolean(S.need[k]) + '">' +
+          '<span class="qs-disc">' + ic(NEED_GLYPH[k], 'qs-g') + '</span><span>' + esc(N[k][0]) + '</span>' + MARK + '</button>'; }).join('') + '</div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2>' +
         window.ADspaceIcons.stepCards(t().introSteps.map(function (x, i) { return { glyph: STEP_GLYPH[i], line: x }; })) + '</section>' +
       '<p class="qs-note qs-time">' + ic('clock', 'qs-g') + esc(t().introNote) + '</p></div>' +
@@ -502,9 +513,7 @@
   function paintNeed() {
     var N = t().need;
     return frame('<h1 class="qs-title">' + esc(t().needT) + '</h1><div class="qs-list">' +
-      ['social', 'ads', 'content', 'koc', 'verify'].filter(function (k) {
-        return k !== 'koc' || (CAT.koc.length || CAT.kol);
-      }).filter(function (k) { return k !== 'verify' || CAT.verify.length; }).map(function (k) {
+      needKeys().map(function (k) {
         return pick('checkbox', 'need', k, S.need[k], N[k][0], N[k][1]);
       }).join('') + '</div>', navFoot());
   }
@@ -1476,7 +1485,9 @@
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
-      S = blank();
+      /* Afresh on arrival; a language switch on the page keeps its tiles. */
+      var held = root() && root().querySelector('.qs-intro') ? S.need : null;
+      S = blank(); if (held) S.need = held;
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       root().innerHTML = paintIntro(); decorate(); return;
     }
@@ -1729,6 +1740,11 @@
       row.querySelector('b').textContent = bag[slug];
       row.querySelector('[data-step="-1"]').disabled = !bag[slug];
       if (CH && (g === 'chx' || g === 'chf')) chPrice();
+      return;
+    }
+    if (a === 'svc') {
+      var k = b.getAttribute('data-k'), on = !S.need[k];
+      S.need[k] = on; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on));
       return;
     }
     if (a === 'next') next();

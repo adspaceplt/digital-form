@@ -9739,9 +9739,24 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
    2026-11-25): the services as tiles, five in a row at a desk, three over
    two on a phone; What to expect as shaded cards; the time with its clock. */
-.qs-svcs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.qs-svcs li { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; text-align: center;
-  border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line-soft); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.qs-svcs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+/* Each tile is the Need step's choice (2026-11-25): a shaded card as .qs-pick,
+   on its own white ground and ringed in ink once chosen, the several-of mark
+   (the rounded square filled in ink with its tick) at its corner. */
+.qs-svc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; min-height: var(--tap);
+  margin: 0; padding: 14px 8px; border: 0; border-radius: var(--radius); background: var(--sunk); color: var(--ink); font: inherit;
+  font-size: 12.5px; line-height: 1.35; text-align: center; overflow-wrap: anywhere; cursor: pointer; -webkit-appearance: none; appearance: none;
+  transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.qs-svc:active { transform: scale(.97); }
+.qs-svc:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+.qs-svc .qs-disc { background: var(--card); }
+.qs-svc.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.qs-svc.is-on:focus-visible { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
+.qs-svc.is-on .qs-disc { background: var(--field); }
+.qs-svc .qs-mark { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 6px; corner-shape: squircle; }
+.qs-svc.is-on .qs-mark { background: var(--fill); box-shadow: none; }
+.qs-svc.is-on .qs-mark svg { opacity: 1; }
+@media (hover: hover) { .qs-svc:not(.is-on):hover { background: var(--line-soft); } }
 @media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
 .qs-time .ic { color: var(--ink-soft); }
