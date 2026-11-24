@@ -10554,16 +10554,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return null;
       };
       var oFile = function (st) {
-        if (!st.client_id || st.touch_id || !st.left_at) return;
+        if (!st.client_id) return;
         var t = OST.trips.filter(function (x) { return x.id === st.trip_id; })[0];
         if (!scopeSeen(st.client_id, 'work')) return;
         var clk = function (iso) { var d = new Date(Date.parse(iso) + 8 * 36e5), h = d.getUTCHours();
           return (h % 12 || 12) + ':' + String(d.getUTCMinutes()).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
         var w = t.companions.map(function (id) { return oName(id).name; }).filter(Boolean).sort().join(', ');
+
+        var line = 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + (st.venue ? ', at ' + st.venue : '') + ', ' +
+          (st.left_at ? clk(st.arrived_at) + ' to ' + clk(st.left_at) : 'from ' + clk(st.arrived_at) + ' (in progress)') +
+          (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : '');
+        var had = st.touch_id && (DB.client_touches || []).filter(function (x) { return x.id === st.touch_id; })[0];
+        if (had) { had.summary = line; return; }
         var tid = nid('touch');
         DB.client_touches.push({ id: tid, client_id: st.client_id, kind: 'visit', happened_at: new Date(Date.parse(st.arrived_at) + 8 * 36e5).toISOString().slice(0, 10),
-          by_whom: oName(t.driver_id).name, summary: 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + ', ' + clk(st.arrived_at) + ' to ' + clk(st.left_at) +
-            (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : ''), created_at: new Date().toISOString(), archived_at: null, done_at: null });
+          by_whom: oName(t.driver_id).name, summary: line, created_at: new Date().toISOString(), archived_at: null, done_at: null });
         st.touch_id = tid;
       };
       var oLast = function (t) { return OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return b.seq - a.seq; })[0]; };
@@ -10632,9 +10637,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           started_at: new Date().toISOString(), ended_at: null, end_lat: null, end_lng: null, end_accuracy_m: null, end_note: null, km_back: null, km_total: null, state: 'open' };
         oRef(ciT);
         OST.trips.push(ciT);
-        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
           lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
           arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+        oFile(oLast(ciT));
         return oOk({ ok: true, trip: oJson(ciT) });
       }
       if (name === 'outstation_stop_add' || name === 'outstation_check_out') {
@@ -10656,9 +10662,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         saL.left_at = new Date().toISOString();
         oFile(saL);
         if (name === 'outstation_stop_add') {
-          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
             lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
             arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+          oFile(oLast(saT));
         } else {
           saT.state = 'closed'; saT.ended_at = new Date().toISOString(); saT.end_lat = args.p_lat; saT.end_lng = args.p_lng;
           saT.end_accuracy_m = args.p_accuracy; saT.end_note = String(args.p_note || '').trim() || null; saT.rating = args.p_rating == null ? null : args.p_rating;
