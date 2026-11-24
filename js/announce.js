@@ -198,7 +198,7 @@
     denied: 'You do not have permission to manage announcements. Please ask an admin.',
     'bad-text': 'Enter an announcement of up to 300 characters.',
     'bad-link': 'Enter a web address starting with https://.',
-    'bad-window': 'Choose an end after the start, and later than now.',
+    'bad-window': window.ADspaceWords.line.badWindow,
     'bad-tone': 'Choose Info or Important.',
     over: 'Its end has passed. Choose a new end, then post it again.',
     live: 'Stop this announcement before deleting it.',
