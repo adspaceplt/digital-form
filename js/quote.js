@@ -466,7 +466,7 @@
      2026-11-25): the services as tiles with their glyphs, What to expect as
      cards, each its glyph in a white disc with its number on an ink badge,
      then the time with the clock. Words unchanged. */
-  var NEED_GLYPH = { social: 'plancontent', ads: 'planads', content: 'picture', koc: 'people', verify: 'badge' };
+  var NEED_GLYPH = { 'social': 'plancontent', 'ads': 'planads', 'content': 'picture', 'koc': 'people', 'verify': 'verified' };
   var STEP_GLYPH = ['pieces', 'sliders', 'bubble', 'pen'];
   function paintIntro() {
     var N = t().need;
@@ -808,7 +808,7 @@
     };
     (sel.once || []).forEach(function (o) {
       var n = named(o.slug); if (!n) return;
-      var g = CAT && (CAT.verify || []).some(function (v) { return v.slug === o.slug; }) ? 'badge'
+      var g = CAT && (CAT.verify || []).some(function (v) { return v.slug === o.slug; }) ? 'verified'
         : CAT && ((CAT.koc || []).some(function (v) { return v.slug === o.slug; }) || o.slug === CAT.kol) ? 'people' : 'picture';
       out.push([g, n + (Number(o.qty) > 1 ? ' × ' + Number(o.qty) : '')]);
     });
