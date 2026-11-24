@@ -1504,7 +1504,7 @@
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
   function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
   var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
-  var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': 'Choose an end after the start, and later than now.',
+  var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': window.ADspaceWords.line.badWindow,
     'bad-page': 'Choose a page.', 'bad-kind': 'Choose the availability.' };
   function pgMsg(text, tone) { var m = $('pgMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function readPg() {
@@ -1697,7 +1697,7 @@
         var from = Math.max(a.p_starts ? new Date(a.p_starts).getTime() : 0, Date.now());
         if (new Date(a.p_ends).getTime() <= from) late = late.concat(a.p_pages.map(pgName));
       });
-      if (late.length) return Promise.resolve('Choose an end after the start, and later than now, for ' + late.join(', ') + '.');
+      if (late.length) return Promise.resolve(window.ADspaceWords.line.badWindow.replace(/\.$/, ' for ' + late.join(', ') + '.'));
       var saved = [];
       return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a).then(function () { saved = saved.concat(a.p_pages); }); }); }, Promise.resolve()).then(function () {
         pg.picking = false; pg.picked = {};
