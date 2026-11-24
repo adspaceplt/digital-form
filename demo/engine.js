@@ -12982,7 +12982,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .map(function (r) { return pick(r, ['id', 'kind', 'service_label', 'note', 'state', 'fee', 'reply', 'created_at', 'withdrawn_at']); }),
         review: (!pc.review_hidden && (DB.batches || []).some(function (b) { return b.client_id === cid && b.published; })) ? { token: pc.access_token } : null,
         campaigns: (DB.campaigns || []).filter(function (m) { return m.client_id === cid && m.state !== 'draft'; })
-          .map(function (m) { return { id: m.id, title: m.title, title_zh: m.title_zh || null, state: m.state, deadline: m.deadline || null, token: m.access_token }; }),
+          .map(function (m) { var BK = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
+            var ops = (DB.campaign_options || []).filter(function (o) { return o.campaign_id === m.id; })
+              .sort(function (a, b) { return (a.position || 0) - (b.position || 0) || String(a.added_at || '').localeCompare(String(b.added_at || '')); });
+            var tdy = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+            var shoots = ops.filter(function (o) { return (o.state === 'confirmed' || o.state === 'pending_visit') && o.visit_date && o.visit_date >= tdy; })
+              .map(function (o) { return o.visit_date; }).sort();
+            return { id: m.id, title: m.title, title_zh: m.title_zh || null, state: m.state, deadline: m.deadline || null, token: m.access_token,
+              push_format: m.push_format || 'site_visit',
+              booked: ops.filter(function (o) { return BK.indexOf(o.state) > -1; }).map(function (o) { return o.state; }),
+              next_shoot: shoots[0] || null }; }),
         access: mine.filter(function (c) { return c.portal_access; }).map(function (c) { return { name: c.name, email: c.email }; })
       }, error: null });
     }
