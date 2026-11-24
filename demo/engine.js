@@ -2579,7 +2579,8 @@ function cardSlugFree(name, self, email) {
     verifyCheckNote(f);
 
     var byName = verifyByDay(f);
-    var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName, by_code: !!f.by_code };
+    var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName };
+    if (f.by_code) out.by_code = true;
     if (!byName) out.issued_month = f.issued ? f.issued.slice(0, 7) : null;
     return out;
   }

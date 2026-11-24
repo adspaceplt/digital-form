@@ -683,8 +683,7 @@
       return c;
     }).catch(function () { return ''; });
   }
-  /* A stored Document ID as printed (XXXX-XXXX), '' for anything else: a
-     report's snapshot and a script's row carry it as stored. */
+  /* A stored Document ID as printed (XXXX-XXXX), else ''. */
   function codeWord(raw) {
     var c = String(raw || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
     return /^[2-9A-Z]{8}$/.test(c) ? c.slice(0, 4) + '-' + c.slice(4) : '';
@@ -805,9 +804,8 @@
       return y0;
     };
     p.plainHead = function () { return p.head(); };
-    /* The foot, at the template's place on every page. `code` is this
-       page's own Document ID where one PDF holds several documents (a month
-       of performance records, a month of video scripts); else the pen's. */
+    /* The foot. `code`: the page's own Document ID where one PDF holds
+       several documents. */
     p.foot = function (i, n, code) {
       var count = 'Page ' + (i + 1) + ' of ' + n;
       var id = code === undefined ? p.code : (code || '');
@@ -826,13 +824,7 @@
         p.text(lead + ver, M, at(G.aclCountAt), G.verify, font, faint);
         return;
       }
-      /* A document /verify/ answers on the AL template (a quotation, a
-         report as published, a script as shared, a performance record) is
-         one row on the page count's baseline (the user, 2026-11-24:
-         "Document ID | Verify document | Page x of x"): the Document ID and
-         where to check it from the left margin, the page count at the right
-         margin. An internal form (ALP), a draft and a white-label report
-         keep the template's foot alone. */
+      /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
       if (tpl !== 'ALP' && id) {
         p.right(count, R, at(G.countAt), G.count, font, faint);
         p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);

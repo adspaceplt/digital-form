@@ -318,8 +318,8 @@ begin
   perform public.verify_check_note(f);
   v_name := public.verify_by_day(f);
   return jsonb_build_object('found', true, 'serial', f ->> 'serial', 'kind', f ->> 'kind', 'state', f ->> 'state',
-    'sealed', coalesce((f ->> 'sealed')::boolean, false), 'more', true, 'by_name', v_name,
-    'by_code', coalesce((f ->> 'by_code')::boolean, false)) ||
+    'sealed', coalesce((f ->> 'sealed')::boolean, false), 'more', true, 'by_name', v_name) ||
+    case when coalesce((f ->> 'by_code')::boolean, false) then jsonb_build_object('by_code', true) else '{}'::jsonb end ||
     case when v_name then '{}'::jsonb else jsonb_build_object('issued_month', to_char((f ->> 'issued')::date, 'YYYY-MM')) end;
 end $$;
 revoke all on function public.verify_serial(text) from public;
