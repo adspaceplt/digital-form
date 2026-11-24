@@ -10,7 +10,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29), or Suppliers at Full Access (Supplier emails, 2026-11-25); its address falls back for anyone else. Ten groups
+  Full Access (2026-10-22, SET2-11; 2026-10-29), or Suppliers at Full Access (Supplier email templates, 2026-11-25); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings, in the
@@ -33,8 +33,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   limits, Analytics; Creators: Creator and campaign IDs,
   Creator payments, Creator payments sheet), Templates
   (every template, one place; the user, 2026-11-25: "Business settings
-  have the Template part right": Email: Client emails, Supplier emails,
-  Creator emails, Candidate emails, Sign-in and codes, each drawn where
+  have the Template part right": Email: Client, Supplier, Creator and
+  Candidate email templates, Sign-in and codes, each drawn where
   `ADspaceMailTpl.may` lets its reader open it and opening that family
   alone, `docs/rules/messages.md`; WhatsApp: WhatsApp templates at WhatsApp
   Full Access, Meeting message; Documents and tasks: Document types, Task

@@ -81,7 +81,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Email templates, New email under Clients' or Suppliers' own
-  (Settings, Templates: Client emails or Supplier emails; `ADspaceMailTpl`, `team.settings`, a supplier's at Suppliers
+  (Settings, Templates: Client email templates or Supplier email templates; `ADspaceMailTpl`, `team.settings`, a supplier's at Suppliers
   Full Access too, `email_template_may`; `email_template_save` with
   `taken`, `email_template_delete` in the row's ⋯, filed under Email
   templates). A client's audience asks Clients: Contacts at View too
@@ -124,12 +124,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Email, a row a family (`mail-{rec}`, its line counting its templates and
   how many are on, `ADspaceMailTpl.count`), each opening that family's
   alone; no section's bar or ⋯ offers them (#1419's Edit email templates
-  removed): Client emails
+  removed): Client email templates
   (Quotation, Letter of Offer, Client letter; Overdue reminder, Invoice
   email; Feedback: Service rating and Performance review, each in English
   and 中文, `docs/rules/client-feedback.md`; New email's own), Supplier
-  emails (Supplier approved, Document, New email's own), Creator emails
-  (the seven creator emails), Candidate emails (the twelve candidate
+  email templates (Supplier approved, Document, New email's own), Creator email templates
+  (the seven creator emails), Candidate email templates (the twelve candidate
   emails, each with its own switch, `hiring_email_templates`, 2026-11-21)
   and Sign-in and codes (Verification code, the one
   email every code the portal sends goes out in, `code_email_template`,
