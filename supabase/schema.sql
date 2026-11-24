@@ -145527,4 +145527,897 @@ end $$;
 
 -- END OF DECISION EMAILS QUEUED ---------------------------------------------
 
+-- ===========================================================================
+-- VERIFY NAMES HELD TO THE ADDRESSEE (2026-11-24)
+-- ===========================================================================
+-- WHY: the audit of 2026-11-24 (the user: "fix all except 2"). /verify/'s
+-- name check took a client's brand (`clients.name`, a quotation's `brand`)
+-- and a supplier's trading name, which anybody can read off a post, and
+-- the name's answer carried the Document ID, which opens `verify_details`
+-- with no name lock. Five wrong names a reference from anywhere locked the
+-- real addressee out for 24 hours.
+--
+-- WHAT IT CHANGES
+--   * `verify_find`: a document's names are the registered company name
+--     (a supplier's own name where it holds none, a letter's addressee as
+--     printed), the person it names and its contact; never a brand.
+--   * `verify_details_name` answers without `document_id`.
+--   * `verify_name_wrong` / `verify_name_wait`: five wrong names lock one
+--     connection (`verify_name_caller_tries`); fifty from all connections
+--     lock the reference (`verify_name_tries`); five where no connection is
+--     read, as before.
+--
+-- ORDER: this file alone; /verify/ reads `document_id` only where it is
+-- answered, so no page changes. Safe to run twice.
+-- ROLLBACK: run the four functions from VERIFY BY THE NAME ADDRESSED TO
+-- again; the new table may stay.
+-- ===========================================================================
+
+-- VERIFY NAMES HELD TO THE ADDRESSEE ----------------------------------------
+
+/* The names a document is addressed to: the registered company name, the
+   person it names and its contact; never a brand or trading name, which
+   is public. */
+create or replace function public.verify_find(p_serial text)
+returns jsonb
+language plpgsql stable set search_path = public as $$
+declare
+  s text := upper(btrim(coalesce(p_serial, '')));
+  sd text;
+  d public.documents%rowtype;
+  l public.client_documents%rowtype;
+  q public.quotations%rowtype;
+  h public.hiring_docs%rowtype;
+  rv public.perf_reviews%rowtype;
+  dl public.perf_deleted%rowtype;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_state text;
+  v_rep date;
+begin
+  if length(s) < 3 or length(s) > 40 then return null; end if;
+  sd := replace(s, '/', '-');
+  select * into d from public.documents x
+   where upper(replace(x.serial, '/', '-')) = sd
+   order by (upper(x.serial) = s) desc, (x.voided_at is null) desc, x.created_at desc limit 1;
+  if d.id is not null then
+    return jsonb_build_object('src', 'document', 'id', d.id, 'serial', d.serial,
+      'kind', case when d.family = 'hr' then 'HR Letter' else d.kind end,
+      'issued', d.issued_at, 'code', d.doc_code, 'sealed', false,
+      'names', public.verify_names(array[d.recipient ->> 'name',
+        (select c.legal_name from public.clients c where c.id = d.client_id),
+        (select m.name from public.team_members m where m.id = d.member_id),
+        (select coalesce(nullif(to_jsonb(u) ->> 'legal_name', ''), to_jsonb(u) ->> 'name') from public.suppliers u where u.id = d.supplier_id)]),
+      'state', case when d.voided_at is null then 'valid' else 'voided' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', d.issued_at),
+        jsonb_build_object('step', 'voided', 'day', (d.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into l from public.client_documents x
+   where upper(replace(x.number, '/', '-')) = sd
+   order by (upper(x.number) = s) desc limit 1;
+  if l.id is not null then
+    select x.issued_at into v_rep
+      from public.client_documents x where x.id = l.superseded_by;
+    return jsonb_build_object('src', 'letter', 'id', l.id, 'serial', l.number, 'kind', 'Letter of Offer',
+      'issued', l.issued_at, 'code', l.doc_code, 'sealed', false,
+      'names', public.verify_names(array[coalesce(nullif(l.bill_to ->> 'legal_name', ''), l.bill_to ->> 'name'), l.bill_to ->> 'contact',
+        (select c.legal_name from public.clients c where c.id = l.client_id)]),
+      'state', case when l.voided_at is not null then 'voided'
+                    when l.superseded_by is not null then 'replaced'
+                    else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', l.issued_at),
+        jsonb_build_object('step', 'signed', 'day', (l.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (l.verified_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'voided', 'day', (l.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into q from public.quotations x
+   where (upper(replace(x.ref, '/', '-')) = sd)
+     and (x.sent_out_at is not null or x.signed_at is not null)
+   order by (upper(x.ref) = s) desc, x.issued_at desc limit 1;
+  if q.id is not null then
+    select (min(r.issued_at) at time zone 'Asia/Kuala_Lumpur')::date into v_rep
+      from public.quotations r where r.replaces = q.id and r.removed_at is null;
+    v_state := case when q.withdrawn_at is not null then 'withdrawn'
+                    when q.status = 'not_proceeding' or q.removed_at is not null then 'voided'
+                    when v_rep is not null then 'replaced'
+                    when q.signed_at is null and q.valid_until is not null and q.valid_until < v_today then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'quotation', 'id', q.id, 'serial', q.ref, 'kind', 'Quotation',
+      'issued', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', q.doc_code, 'sealed', q.seal_key is not null,
+      'names', public.verify_names(array[q.contact ->> 'name', to_jsonb(q) #>> '{bill_to,legal_name}',
+        (select c.legal_name from public.clients c where c.id = q.client_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sent', 'day', (q.sent_out_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (q.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (q.reviewed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (q.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', (q.declined_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'withdrawn', 'day', q.withdrawn_on),
+        jsonb_build_object('step', 'voided', 'day', (q.removed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then q.valid_until + 1 end))));
+  end if;
+  /* An offer or a contract once sent: the version standing first (a
+     replacement keeps the reference, the one it replaced void). */
+  select * into h from public.hiring_docs x
+   where (upper(replace(x.serial, '/', '-')) = sd)
+     and x.sent_at is not null and x.state <> 'draft'
+   order by (upper(x.serial) = s) desc, (x.state <> 'void') desc, x.sent_at desc limit 1;
+  if h.id is not null then
+    v_state := case when h.state = 'void' then 'voided'
+                    when h.state = 'withdrawn' then 'withdrawn'
+                    when h.state = 'declined' then 'declined'
+                    when h.state = 'sent' and h.reply_by is not null and h.reply_by < now() then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'hiring', 'id', h.id, 'serial', h.serial, 'kind', 'HR Letter',
+      'issued', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', h.doc_code, 'sealed', h.seal_sha is not null,
+      'names', public.verify_names(array[(select k.name from public.hiring_candidates k where k.id = h.candidate_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (h.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (h.confirmed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (h.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', case when h.state = 'declined' then (coalesce(h.answered_at, h.updated_at) at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'withdrawn', 'day', case when h.state = 'withdrawn' then (h.updated_at at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'voided', 'day', (h.voided_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then (h.reply_by at time zone 'Asia/Kuala_Lumpur')::date end))));
+  end if;
+  select * into rv from public.perf_reviews pr
+   where (upper(replace(pr.serial, '/', '-')) = sd)
+     and exists (select 1 from public.perf_events pe where pe.review_id = pr.id and pe.kind = 'printed')
+   limit 1;
+  if rv.id is not null then
+    return jsonb_build_object('src', 'perf', 'id', rv.id, 'serial', rv.serial, 'kind', 'HR Letter',
+      'issued', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', rv.doc_code, 'sealed', false,
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = rv.team_member_id)]),
+      'state', case when rv.status = 'draft' then 'replaced' else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'acknowledged', 'day', (rv.acknowledged_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'finalised', 'day', (rv.finalised_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into dl from public.perf_deleted pd
+   where pd.printed and (upper(replace(pd.serial, '/', '-')) = sd)
+   order by pd.deleted_at desc limit 1;
+  if dl.id is not null then
+    return jsonb_build_object('src', 'perf_deleted', 'id', dl.id, 'serial', dl.serial, 'kind', 'HR Letter',
+      'issued', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', null, 'sealed', false, 'state', 'voided',
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = dl.team_member_id)]),
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'voided', 'day', (dl.deleted_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  return null;
+end $$;
+revoke all on function public.verify_find(text) from public, anon, authenticated;
+
+/* Wrong names a reference from one connection: five in 24 hours lock that
+   connection out of the name for that reference; fifty from all of them
+   together lock it for everybody (`verify_name_tries`), so nobody can lock
+   the real addressee out alone. */
+create table if not exists public.verify_name_caller_tries (
+  serial       text not null,
+  ip           text not null,
+  n            integer not null default 0,
+  since        timestamptz not null default now(),
+  locked_until timestamptz,
+  primary key (serial, ip)
+);
+alter table public.verify_name_caller_tries enable row level security;
+revoke all on public.verify_name_caller_tries from public, anon, authenticated;
+
+/* The minutes a reference's name stays locked to this caller, 0 where it
+   is open. */
+create or replace function public.verify_name_wait(p_key text)
+returns integer
+language sql stable set search_path = public as $$
+  select coalesce((select greatest(1, ceil(extract(epoch from (max(x.u) - now())) / 60)::integer)
+                     from (select t.locked_until as u from public.verify_name_tries t
+                            where t.serial = p_key and t.locked_until > now()
+                           union all
+                           select c.locked_until from public.verify_name_caller_tries c
+                            where c.serial = p_key and c.ip = public.request_ip() and c.locked_until > now()) x
+                   having max(x.u) is not null), 0)
+$$;
+revoke all on function public.verify_name_wait(text) from public, anon, authenticated;
+
+create or replace function public.verify_name_wrong(p_key text)
+returns void
+language plpgsql volatile set search_path = public as $$
+declare
+  v_ip text := public.request_ip();
+begin
+  if v_ip <> '' then
+    insert into public.verify_name_caller_tries as t (serial, ip, n, since) values (p_key, v_ip, 1, now())
+    on conflict (serial, ip) do update
+      set n = case when t.since < now() - interval '24 hours' then 1 else t.n + 1 end,
+          since = case when t.since < now() - interval '24 hours' then now() else t.since end;
+    update public.verify_name_caller_tries t set locked_until = now() + interval '24 hours'
+     where t.serial = p_key and t.ip = v_ip and t.n >= 5 and (t.locked_until is null or t.locked_until <= now());
+  end if;
+  insert into public.verify_name_tries as t (serial, n, since) values (p_key, 1, now())
+  on conflict (serial) do update
+    set n = case when t.since < now() - interval '24 hours' then 1 else t.n + 1 end,
+        since = case when t.since < now() - interval '24 hours' then now() else t.since end;
+  update public.verify_name_tries t set locked_until = now() + interval '24 hours'
+   where t.serial = p_key and t.n >= case when v_ip <> '' then 50 else 5 end
+     and (t.locked_until is null or t.locked_until <= now());
+end $$;
+revoke all on function public.verify_name_wrong(text) from public, anon, authenticated;
+
+create or replace function public.verify_details_name(p_serial text, p_name text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  f jsonb;
+  k text := public.verify_name_key(left(coalesce(p_name, ''), 200));
+  v_contact text := (select b.address from public.mail_boxes b where b.key = 'legal');
+  v_wait integer := public.verify_detail_count();
+  v_team boolean := public.is_team();
+  v_key text;
+  v_lock integer;
+begin
+  if v_wait > 0 then
+    return jsonb_build_object('locked', true, 'minutes', v_wait, 'contact', v_contact);
+  end if;
+  f := public.verify_find(p_serial);
+  if f is null or not public.verify_by_day(f) or length(k) < 2 then
+    return jsonb_build_object('no_match', true, 'contact', v_contact);
+  end if;
+  v_key := upper(replace(f ->> 'serial', '/', '-'));
+  v_lock := case when v_team then 0 else public.verify_name_wait(v_key) end;
+  if v_lock > 0 then
+    return jsonb_build_object('locked', true, 'reference', true, 'minutes', v_lock, 'contact', v_contact);
+  end if;
+  if not coalesce((f -> 'names') ? k, false) then
+    if not v_team then perform public.verify_name_wrong(v_key); end if;
+    return jsonb_build_object('no_match', true, 'contact', v_contact);
+  end if;
+  -- a name never answers the Document ID: it would open verify_details,
+  -- which holds no name lock
+  return public.verify_answer(f, v_contact) - 'document_id';
+end $$;
+revoke all on function public.verify_details_name(text, text) from public;
+grant execute on function public.verify_details_name(text, text) to anon, authenticated;
+
+-- END OF VERIFY NAMES HELD TO THE ADDRESSEE ---------------------------------
+
+-- ===========================================================================
+-- LETTER STORES ITS OWN FIGURES (2026-11-24)
+-- ===========================================================================
+-- WHY: the audit of 2026-11-24 (the user: "fix all except 2"). issue_letter
+-- allowed the page's figures a sen either side of its own (the stale
+-- check) and then stored the page's, so a page could file a letter a sen
+-- off what the database priced, on each of three figures.
+--
+-- WHAT IT CHANGES
+--   * `issue_letter` stores its own subtotal, SST and total, rounded to the
+--     sen; the page's figures are read for the stale check alone.
+--
+-- ORDER: this file alone; the page sends what it did. Safe to run twice.
+-- ROLLBACK: run issue_letter from LETTER PRICED BY RATE AND PERCENTAGE
+-- again.
+-- ===========================================================================
+
+-- LETTER STORES ITS OWN FIGURES ---------------------------------------------
+
+create or replace function public.issue_letter(
+  p_client    uuid,
+  p_services  uuid[],
+  p_idem      text,
+  p_subtotal  numeric,
+  p_tax       numeric,
+  p_total     numeric,
+  p_deal      jsonb   default '{}'::jsonb,
+  p_replaces  uuid    default null,
+  p_renewal   boolean default false,
+  /* A reference somebody typed. Blank is the ordinary case and the counter
+     below makes the number; where one is typed it is checked against every
+     document that stands and the counter is not advanced, so filling a gap
+     by hand never costs the next letter its place in the sequence. */
+  p_serial    text    default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who    text := lower(auth.jwt() ->> 'email');
+  cl     public.clients%rowtype;
+  ct     public.client_contacts%rowtype;
+  me     public.team_members%rowtype;
+  v_ym   text;
+  v_seq  int;
+  v_try  int;
+  v_no   text;
+  v_id   uuid;
+  v_lines jsonb;
+  v_n    int;
+  v_bad  int;
+  v_old  public.client_documents%rowtype;
+  v_term int;
+  v_each numeric;
+  v_etax numeric;
+  v_once numeric;
+  v_otax numeric;
+  v_sub  numeric;
+  v_tax  numeric;
+  v_tot  numeric;
+  v_pct  numeric;
+  v_qid  uuid;
+  v_q    public.quotations%rowtype;
+  v_tp   numeric;
+  v_tadj boolean;
+  v_qterm int;
+  v_msub numeric;
+  v_span numeric;
+  v_even boolean;
+  v_qt   jsonb;
+  v_month boolean;
+  v_terms jsonb;
+  v_ent  public.billing_entities%rowtype;
+  v_ect  public.client_contacts%rowtype;
+  v_on   date := public.doc_day_of(p_deal ->> 'date');
+begin
+  if not public.allowed('clients.documents') then
+    return jsonb_build_object('error', 'not-allowed');
+  end if;
+  /* The letter's own date (2026-11-12, the user: a letter may be
+     backdated): its reference's month, the SST and the rate in force, and
+     the quotation still standing on that day; today where none is chosen. */
+  if v_on is not null and not public.doc_day_ok(v_on) then return jsonb_build_object('error', 'bad-date'); end if;
+  v_on := coalesce(v_on, (timezone('Asia/Kuala_Lumpur', now()))::date);
+  if p_client is null or p_services is null or array_length(p_services, 1) is null then
+    return jsonb_build_object('error', 'no-lines');
+  end if;
+
+  select * into cl from public.clients where id = p_client;
+  if cl.id is null then return jsonb_build_object('error', 'no-client'); end if;
+
+  -- Bill to (2026-10-29): a billing entity of this client other than its
+  -- main, named in the deal, is the one the letter bills: its registered
+  -- name, numbers, address and finance email stand in for the client's in
+  -- the snapshot, and its billing contact is the letter's Attn where one is
+  -- set and live. None named is the main entity, the client's own billing.
+  if nullif(btrim(coalesce(p_deal ->> 'entity', '')), '') is not null then
+    if (p_deal ->> 'entity') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      return jsonb_build_object('error', 'bad-entity');
+    end if;
+    select e.* into v_ent from public.billing_entities e
+      join public.client_entities ce on ce.entity_id = e.id and ce.client_id = p_client
+     where e.id = (p_deal ->> 'entity')::uuid;
+    if v_ent.id is null then return jsonb_build_object('error', 'bad-entity'); end if;
+    if coalesce(btrim(v_ent.legal_name), '') = '' or coalesce(btrim(v_ent.company_no), '') = ''
+       or coalesce(btrim(v_ent.billing_address), '') = '' then
+      return jsonb_build_object('error', 'entity-incomplete');
+    end if;
+    cl.legal_name := v_ent.legal_name; cl.company_no := v_ent.company_no;
+    cl.company_no_old := v_ent.company_no_old; cl.tin := v_ent.tin; cl.sst_no := v_ent.sst_no;
+    cl.finance_email := v_ent.finance_email; cl.billing_address := v_ent.billing_address;
+  end if;
+
+  -- The letter's own terms, one point a line, kept with what it was issued
+  -- with and printed under TERMS after the term and the validity
+  -- (2026-10-23): ten at most, each 1 to 400 characters.
+  v_terms := coalesce((select jsonb_agg(btrim(t)) from jsonb_array_elements_text(
+               case when jsonb_typeof(p_deal -> 'terms') = 'array' then p_deal -> 'terms' else '[]'::jsonb end) t
+             where btrim(t) <> ''), '[]'::jsonb);
+  if jsonb_array_length(v_terms) > 10
+     or exists (select 1 from jsonb_array_elements_text(v_terms) t where length(t) > 400) then
+    return jsonb_build_object('error', 'bad-terms');
+  end if;
+
+  -- The Client ID is what the serial is built from, so there is no letter
+  -- without one. Staff enter it on the record; nothing invents it. A typed
+  -- reference needs no code, because nothing is being built.
+  v_no := nullif(btrim(coalesce(p_serial, '')), '');
+  if v_no is null and coalesce(btrim(cl.client_code), '') = '' then
+    return jsonb_build_object('error', 'no-client-code');
+  end if;
+
+  -- The same submission, pressed twice, is one letter. Answered before any
+  -- number is reserved, so a double click cannot spend a serial either.
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.client_documents
+      where client_id = p_client and idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
+    end if;
+  end if;
+
+  -- A typed reference is checked before anything is written: the same shape
+  -- the Register accepts, and refused where a document still holds it.
+  if v_no is not null then
+    if v_no !~ '^[A-Za-z0-9/._-]{3,40}$' then
+      return jsonb_build_object('error', 'serial-shape');
+    end if;
+    if public.serial_taken(v_no) then
+      return jsonb_build_object('error', 'serial-taken');
+    end if;
+  end if;
+
+  -- Every id must be this client's own live line, and in a state this letter
+  -- may carry: To quote always, Confirmed only on a deliberate renewal.
+  select count(*) into v_bad from unnest(p_services) s(id)
+    left join public.client_services cs
+      on cs.id = s.id and cs.client_id = p_client and cs.archived_at is null
+    where cs.id is null
+       or (cs.state = 'confirmed' and not p_renewal)
+       or cs.state not in ('quoted', 'confirmed');
+  if v_bad > 0 then return jsonb_build_object('error', 'bad-lines'); end if;
+
+  -- The lines are held while this letter is made (2026-11-07): two
+  -- presses on the same lines take them in turn, so the second reads the
+  -- first one's letter below and is refused, never a second live letter.
+  perform 1 from public.client_services where id = any(p_services) order by id for update;
+
+  -- A line already on a live letter is not offered again by accident. The way
+  -- through is to void that letter, or to name it as the one being replaced.
+  select count(*) into v_bad
+    from public.client_document_services m
+    join public.client_documents d on d.id = m.document_id
+   where m.service_id = any(p_services)
+     and d.voided_at is null
+     and d.superseded_by is null
+     and d.verified_at is null
+     and (p_replaces is null or d.id <> p_replaces);
+  if v_bad > 0 then return jsonb_build_object('error', 'already-quoted'); end if;
+
+  if p_replaces is not null then
+    -- The letter replaced is held while it is read (2026-11-08, audit 5):
+    -- two Replace presses at once on one letter, ticking different lines,
+    -- each read it live and both issued. The second now waits and reads it
+    -- replaced.
+    select * into v_old from public.client_documents
+      where id = p_replaces and client_id = p_client
+      for update;
+    if v_old.id is null then return jsonb_build_object('error', 'no-replaces'); end if;
+    if v_old.verified_at is not null then return jsonb_build_object('error', 'replaces-verified'); end if;
+    -- A letter already replaced, or void, is no longer the live one: a
+    -- second Replace would leave two letters on its lines (2026-11-07).
+    if v_old.superseded_by is not null then return jsonb_build_object('error', 'superseded'); end if;
+    if v_old.voided_at is not null then return jsonb_build_object('error', 'voided'); end if;
+  end if;
+
+  select * into ct from public.client_contacts
+    where client_id = p_client and archived_at is null
+    order by (id = cl.bill_contact_id) desc, is_primary desc, name limit 1;
+  -- The brand's billing contact for the entity billed (the one named, else
+  -- its primary): its own choice, else the entity's shared one, else its
+  -- live main contact (2026-10-31).
+  v_ect := public.entity_contact(coalesce(v_ent.id, public.client_main_entity(p_client)), p_client);
+  if v_ect.id is not null then ct := v_ect; end if;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  -- A letter is signed by a person. issued_by is this row's name, so a team
+  -- row named "Superadmin" printed that word under ADSPACE PLT on a client's
+  -- letterhead. Refuse rather than draw a permission as a signatory.
+  if not public.issuer_name_ok(me.name) then
+    return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));
+  end if;
+
+  -- The snapshot is built from the stored rows, never from what the browser
+  -- sent: the words on a letter are the words the record held at that moment.
+  select jsonb_agg(jsonb_build_object(
+           'label', cs.label, 'unit', coalesce(cs.unit, ''), 'note', coalesce(cs.note, ''),
+           'detail', coalesce(cs.detail, ''), 'state', cs.state,
+           'qty', cs.qty, 'rate', cs.rate,
+           'tenure', greatest(1, coalesce(cs.tenure, 1)),
+           'start_on', coalesce(cs.start_on, ''),
+           -- The line's own answer to whether its term prices it. Written into
+           -- the snapshot because the letter is redrawn from it, and a letter
+           -- must print the same figure every time it is drawn. A snapshot
+           -- taken before this key existed carries none, which money.js reads
+           -- as on, so those letters redraw as they were issued.
+           'term_adjust', coalesce(cs.term_adjust, false),
+           -- And the percentage that tick applies, so a later rate card can
+           -- never move a figure this letter printed. Null on a line quoted
+           -- before the column existed, which money.js reads as that card.
+           'term_pct', cs.term_pct,
+           'tax', cl.sst_applies is not false,
+           -- The line's own tax code and its rate as issued (2026-10-22);
+           -- none is the client's SST, as before.
+           'tax_code', cs.tax_code,
+           'tax_pct', (select t.rate from public.tax_codes t where t.code = cs.tax_code),
+           'service_id', cs.id)
+           order by cs.created_at)
+    into v_lines
+    from public.client_services cs
+   where cs.id = any(p_services);
+  if v_lines is null then return jsonb_build_object('error', 'no-lines'); end if;
+  /* A line's tax code is one the team holds and offers (2026-10-22). */
+  if exists (select 1 from public.client_services cs
+              where cs.id = any(p_services) and cs.tax_code is not null
+                and not exists (select 1 from public.tax_codes t where t.code = cs.tax_code and t.active)) then
+    return jsonb_build_object('error', 'bad-tax');
+  end if;
+
+  /* The price is the database's (audit S4, 2026-10-10), worked as the
+     letter draws it (js/documents.js priceOf, js/money.js rateFor): each
+     line's rate with its term on it, rounded to the cent. Where every line
+     of more than a month shares one term, those lines are priced by the
+     month and times the term, and a line of one month is a one-off item
+     with its own SST (2026-10-15: a one-off item beside them no longer
+     turns the letter into one whole total); otherwise every line is its
+     whole amount. SST at the rate in force today unless the client is
+     exempt. The page's figures are kept only where they agree to the sen,
+     so a line changed since the sheet opened, or a figure typed in a
+     browser, is refused (`stale`) and the sheet reads the lines again. */
+  select case when count(distinct greatest(1, coalesce(cs.tenure, 1)))
+                     filter (where greatest(1, coalesce(cs.tenure, 1)) > 1) = 1
+              then max(greatest(1, coalesce(cs.tenure, 1))) else 0 end
+    into v_term
+    from public.client_services cs where cs.id = any(p_services);
+  /* A letter whose every line came from one quotation is priced as that
+     quotation was (audit F, 2026-10-17), exactly as `quote_price` and
+     `quote_adjust` total it (2026-10-17, the review's finding 7): a line
+     the quotation bills by the month (`quotation_offer` ticks its term) is
+     a monthly line whatever months Build quote gave it, its percentage
+     taken once on their subtotal; a line with no term is one-off; SST at
+     the quotation's rate. The page's figures are held to the same price
+     (js/documents.js priceOf). */
+  select case when count(*) filter (where cs.quotation_id is null) = 0
+                   and count(distinct cs.quotation_id) = 1 then min(cs.quotation_id::text)::uuid end,
+         coalesce(bool_and(greatest(1, coalesce(cs.tenure, 1)) = 1) filter (where not coalesce(cs.term_adjust, false)), true),
+         coalesce(max(cs.term_pct) filter (where coalesce(cs.term_adjust, false)), 0)
+    into v_qid, v_tadj, v_tp
+    from public.client_services cs where cs.id = any(p_services);
+  /* Only while the quotation still stands (2026-10-17, the review's
+     finding 2): unexpired by Malaysia's day and not removed. A renewal, or a
+     letter replacing one after the quotation lapsed, is priced on today's
+     rates, as any other letter. */
+  if v_qid is not null and v_tadj and not coalesce(p_renewal, false) then
+    select * into v_q from public.quotations q
+     where q.id = v_qid and q.removed_at is null
+       and q.valid_until >= v_on;
+  end if;
+  if v_q.id is not null then
+    /* As quote_adjust totals it: the monthly lines' subtotal of quantity ×
+       rate, the percentage once on it; where every one runs the quotation's
+       term, a month's excl. SST, its SST rounded once, times the term; where
+       Build quote gave a line months of its own, the whole span (each line's
+       amount × its months) with the percentage and SST taken once on it.
+       One-off lines and their SST apart. */
+    v_qterm := greatest(1, coalesce((v_q.totals->>'term')::int, 1));
+    v_pct := case when cl.sst_applies is false then 0
+                  else coalesce((v_q.totals->>'sst_pct')::numeric, 0) end;
+    /* The lines as the quotation reads them (a line with its term ticked is
+       monthly, on its own months), totalled by the one calculation every
+       quotation shares (2026-10-18). */
+    v_qt := public.quote_totals(
+      (select coalesce(jsonb_agg(jsonb_build_object(
+                'basis', case when coalesce(cs.term_adjust, false) then 'month' else 'once' end,
+                'qty', coalesce(cs.qty, 0), 'rate', coalesce(cs.rate, 0),
+                'months', greatest(1, coalesce(cs.tenure, 1)),
+                /* each line its own percentage, as the quotation priced it
+                   (2026-11-24); one with none takes the largest held */
+                'pct', case when coalesce(cs.term_adjust, false) then cs.term_pct end,
+                'sst', (select t.rate from public.tax_codes t where t.code = cs.tax_code))), '[]'::jsonb)
+         from public.client_services cs where cs.id = any(p_services)),
+      v_qterm, v_tp, v_pct);
+    v_month := jsonb_typeof(v_qt->'month') = 'object';
+    v_once := coalesce((v_qt->'once'->>'subtotal')::numeric, 0);
+    v_otax := coalesce((v_qt->'once'->>'sst')::numeric, 0);
+    if not v_month then
+      v_sub := round(v_once, 2);
+      v_tax := v_otax;
+    elsif (v_qt->>'even')::boolean then
+      v_each := (v_qt->'month'->>'excl')::numeric;
+      v_etax := (v_qt->'month'->>'sst')::numeric;
+      /* As the page totals it (js/documents.js quotePrice): a month incl.
+         SST rounded, times the term, beside the one-off items incl. SST
+         (2026-11-07: 1.5 × 333.33 for 12 months is 6,480.00, never
+         6,479.94). */
+      v_sub := round(round(v_each * v_qterm, 2) + v_once, 2);
+      v_tax := v_etax * v_qterm + v_otax;
+      v_tot := round(round(v_each + v_etax, 2) * v_qterm, 2) + round(v_once + v_otax, 2);
+    else
+      v_sub := (v_qt->>'span_excl')::numeric + round(v_once, 2);
+      v_tax := (v_qt->>'span_incl')::numeric + round(v_once, 2) + v_otax - v_sub;
+    end if;
+    if not (v_month and (v_qt->>'even')::boolean) then v_tot := v_sub + v_tax; end if;
+    /* The letter keeps what it was priced on, so a redraw prints the same:
+       the quotation, its SST and its term (a snapshot with no `quote_term`
+       was priced before this, and redraws as it was). */
+    select jsonb_agg(l.e || jsonb_build_object('quotation_id', v_qid, 'quote_sst', v_pct, 'quote_term', v_qterm) order by l.n)
+      into v_lines from jsonb_array_elements(v_lines) with ordinality l(e, n);
+  else
+    v_pct := case when cl.sst_applies is false then 0
+                  else coalesce(public.app_setting('sst_pct', v_on), 0) end;
+    /* Each line at its own SST rate (2026-10-22): its tax code's, else the
+       client's. The SST is worked a rate at a time, rounded once each, so
+       a letter on one rate prices as it always did. */
+    with x as (
+      select greatest(1, coalesce(cs.tenure, 1)) as n,
+             coalesce(cs.qty, 0) *
+             round(coalesce(cs.rate, 0) *
+               case when cs.term_adjust is false then 1
+                    when cs.term_pct is not null then 1 + cs.term_pct / 100
+                    else case greatest(1, coalesce(cs.tenure, 1))
+                           when 3 then 1 / 0.9 when 12 then 0.95 when 24 then 0.9 else 1 end
+               end, 2) as v,
+             coalesce((select t.rate from public.tax_codes t where t.code = cs.tax_code), v_pct) as r
+        from public.client_services cs where cs.id = any(p_services)
+    ), y as (
+      select r,
+             coalesce(sum(v) filter (where v_term > 0 and n = v_term), 0) as e,
+             coalesce(sum(v * n) filter (where v_term = 0 or n <> v_term), 0) as o
+        from x group by r
+    )
+    select coalesce(sum(e), 0), coalesce(sum(o), 0),
+           coalesce(sum(round(e * r) / 100), 0), coalesce(sum(round(o * r) / 100), 0)
+      into v_each, v_once, v_etax, v_otax
+      from y;
+    v_sub := round(v_each * greatest(v_term, 1), 2) + round(v_once, 2);
+    v_tax := round(v_etax * greatest(v_term, 1), 2) + v_otax;
+    v_tot := round(round(v_each + v_etax, 2) * greatest(v_term, 1), 2) + round(v_once + v_otax, 2);
+  end if;
+  if abs(coalesce(p_subtotal, -1) - v_sub) > 0.01 or abs(coalesce(p_tax, -1) - v_tax) > 0.01
+     or abs(coalesce(p_total, -1) - v_tot) > 0.01 then
+    return jsonb_build_object('error', 'stale', 'subtotal', v_sub, 'tax', v_tax, 'total', v_tot);
+  end if;
+
+  -- A typed reference spends no sequence number: the counter is the office's
+  -- record of how many letters it has issued this month, and a person filling
+  -- a gap by hand has not issued one more.
+  if v_no is null then
+    -- The month is Malaysian, because the office that numbers the letter is.
+    v_ym := to_char(v_on, 'YYMM');
+
+    -- The counter still advances on every automatic issue, and the upsert's
+    -- row lock is what makes the scan below safe: a second issuer blocks here
+    -- until the first has committed its letter, so the two never read the same
+    -- gap as free. What the counter gives is a bound to scan within, not the
+    -- number itself.
+    insert into public.client_document_seq (client_id, ym, next_val)
+         values (p_client, v_ym, 2)
+    on conflict (client_id, ym)
+      do update set next_val = public.client_document_seq.next_val + 1
+      returning next_val - 1 into v_seq;
+
+    -- The lowest free slot, not the counter's own value. A letter removed
+    -- releases its reference (serial_taken stopped counting removed letters on
+    -- 2026-09-20), and without this the automatic path still counted upward
+    -- past the gap: a client whose first two letters were issued in testing
+    -- and removed started at 03 for ever. The counter is at least the number
+    -- of letters issued this month, so a free slot exists at or below it
+    -- unless somebody has typed references over the same range by hand; the
+    -- cap covers that and refuses rather than looping.
+    --
+    -- Two digits is the floor, not the ceiling: the hundredth letter of a month
+    -- widens to three rather than wrapping. Not lpad(): Postgres pads AND
+    -- truncates to the width it is given, so lpad('100', 2, '0') is '10' and the
+    -- hundredth letter would collide with the tenth.
+    v_try := 1;
+    loop
+      v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
+              case when v_try < 100 then lpad(v_try::text, 2, '0') else v_try::text end;
+      exit when not public.serial_taken(v_no);
+      v_try := v_try + 1;
+      if v_try > greatest(v_seq, 1) + 200 then
+        return jsonb_build_object('error', 'no-serial');
+      end if;
+    end loop;
+  end if;
+
+  insert into public.client_documents
+    (client_id, kind, number, issued_at, market, subtotal, tax, total,
+     bill_to, lines, issued_by, client_code, idem_key)
+  values
+    (p_client, 'offer', v_no, v_on,
+     public.client_bill_market(cl.market, cl.bill_sgd),
+     -- the database's own figures, never the page's: the sen allowed
+     -- above is for the stale check alone (2026-11-24)
+     round(v_sub, 2), round(v_tax, 2), round(v_tot, 2),
+     jsonb_build_object(
+       'name', coalesce(cl.name, ''), 'legal_name', coalesce(cl.legal_name, ''),
+       'address', coalesce(cl.billing_address, ''), 'regno', coalesce(cl.company_no, ''),
+       'regno_old', coalesce(cl.company_no_old, ''), 'tin', coalesce(cl.tin, ''),
+       'sst_no', coalesce(cl.sst_no, ''), 'sst_applies', cl.sst_applies is not false,
+       'contact', coalesce(ct.name, ''), 'contact_role', coalesce(ct.role, ''),
+       'contact_salutation', coalesce(ct.salutation, ''),
+       -- A Singapore client billed in RM: its market and the rate in force,
+       -- so the letter reads its figure in S$ beside it, as issued.
+       'market', coalesce(cl.market, 'MY'),
+       'fx_sgd', case when cl.market = 'SG' and not cl.bill_sgd then public.app_setting('fx_sgd', v_on) end,
+       'phone', coalesce(ct.phone, ''), 'email', coalesce(ct.email, ''),
+       'finance_email', coalesce(cl.finance_email, ''),
+       'client_code', cl.client_code,
+       'entity_id', v_ent.id,
+       'owner', coalesce(p_deal ->> 'owner', ''), 'source', coalesce(p_deal ->> 'source', ''),
+       'industry', coalesce(p_deal ->> 'industry', ''), 'stage', coalesce(p_deal ->> 'stage', ''),
+       'enquiry', coalesce(p_deal ->> 'enquiry', ''),
+       'terms', v_terms,
+       -- The validity is one of the points typed (2026-10-23): a letter
+       -- sent with it in its terms prints none of its own.
+       'terms_own', coalesce(p_deal ->> 'terms_own', '') = 'true'),
+     v_lines, coalesce(me.name, who), cl.client_code, nullif(btrim(p_idem), ''))
+  returning id into v_id;
+
+  insert into public.client_document_services (document_id, service_id)
+    select v_id, s.id from unnest(p_services) s(id)
+    on conflict do nothing;
+
+  if p_replaces is not null then
+    update public.client_documents set superseded_by = v_id where id = p_replaces;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.superseded', cl.name, v_old.number || ' replaced by ' || v_no);
+  end if;
+
+  select count(*) into v_n from public.client_document_services where document_id = v_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.issued', cl.name, v_no || ' · ' || v_n || ' line' || case when v_n = 1 then '' else 's' end);
+
+  return jsonb_build_object('ok', true, 'id', v_id, 'number', v_no);
+exception
+  when unique_violation then
+    -- Two presses that raced past the idempotency read: the loser reads the
+    -- winner's letter back rather than making a second one.
+    if coalesce(btrim(p_idem), '') <> '' then
+      select * into v_old from public.client_documents
+        where client_id = p_client and idem_key = btrim(p_idem) limit 1;
+      if v_old.id is not null then
+        return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
+      end if;
+    end if;
+    -- A typed reference two people sent at once: the loser is told the
+    -- reference is spent rather than that "two letters were issued at once",
+    -- which names a cause they cannot act on.
+    if nullif(btrim(coalesce(p_serial, '')), '') is not null then
+      return jsonb_build_object('error', 'serial-taken');
+    end if;
+    return jsonb_build_object('error', 'clash');
+end $$;
+revoke all on function public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean, text) from public, anon;
+grant execute on function public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean, text) to authenticated;
+
+-- END OF LETTER STORES ITS OWN FIGURES --------------------------------------
+
+-- ===========================================================================
+-- OFFER CODE TRIES BY THE DAY TYPED (2026-11-24)
+-- ===========================================================================
+-- WHY: the audit of 2026-11-24 (the user: "fix all except 2").
+-- `hiring_doc_wrong_today` summed the tries of codes made today, so the
+-- wrong tries typed after midnight on a code made before it were not
+-- counted: a code asked for at 11:59pm gave five tries that counted
+-- against no day.
+--
+-- WHAT IT CHANGES
+--   * `hiring_doc_wrong_days` (doc, Malaysian day, n; closed to every
+--     page): each wrong code is counted on the day it was typed.
+--   * `careers_doc_open` counts there; `hiring_doc_wrong_today` reads it.
+--     Wrong codes typed today before this file runs are not counted.
+--
+-- ORDER: this file alone. Safe to run twice.
+-- ROLLBACK: run `hiring_doc_wrong_today` and `careers_doc_open` from
+-- CAREERS DECIDED AND OFFER CODES again; the table may stay.
+-- ===========================================================================
+
+-- OFFER CODE TRIES BY THE DAY TYPED -----------------------------------------
+
+create table if not exists public.hiring_doc_wrong_days (
+  doc_id uuid not null references public.hiring_docs(id) on delete cascade,
+  day    date not null,
+  n      integer not null default 0,
+  primary key (doc_id, day)
+);
+alter table public.hiring_doc_wrong_days enable row level security;
+revoke all on public.hiring_doc_wrong_days from public, anon, authenticated;
+
+/* The wrong codes typed for one document this Malaysian day. Internal. */
+create or replace function public.hiring_doc_wrong_today(p_doc uuid)
+returns integer language sql stable security definer set search_path = public as $$
+  select coalesce((select w.n from public.hiring_doc_wrong_days w
+                    where w.doc_id = p_doc and w.day = (now() at time zone 'Asia/Kuala_Lumpur')::date), 0)
+$$;
+revoke all on function public.hiring_doc_wrong_today(uuid) from public, anon, authenticated;
+
+create or replace function public.careers_doc_open(p_key text, p_doc uuid, p_code text, p_device text)
+returns jsonb language plpgsql volatile security definer set search_path = public, extensions as $$
+declare
+  d public.hiring_docs := public.careers_doc_of(p_key, p_doc);
+  s public.hiring_doc_codes;
+  v_tok text;
+begin
+  if d.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  perform 1 from public.hiring_docs where id = d.id for update;
+  -- Ten wrong codes a document a Malaysian day, whatever code they were
+  -- typed against (review 2026-11-24: a new code every hour gave five more).
+  if public.hiring_doc_wrong_today(d.id) >= 10 then return jsonb_build_object('error', 'locked-today'); end if;
+  select * into s from public.hiring_doc_codes x where x.doc_id = d.id and x.used_at is null
+   order by x.created_at desc limit 1 for update;
+  if s.id is null then return jsonb_build_object('error', 'no-code'); end if;
+  if s.expires_at <= now() then return jsonb_build_object('error', 'code-expired'); end if;
+  if s.tries >= 5 then return jsonb_build_object('error', 'locked'); end if;
+  if regexp_replace(coalesce(p_code, ''), '\s+', '', 'g') !~ '^[0-9]{6}$'
+     or crypt(regexp_replace(p_code, '\s+', '', 'g'), s.code_hash) <> s.code_hash then
+    update public.hiring_doc_codes set tries = tries + 1 where id = s.id;
+    -- counted on the Malaysian day it was typed, whenever its code was made
+    insert into public.hiring_doc_wrong_days as w (doc_id, day, n)
+    values (d.id, (now() at time zone 'Asia/Kuala_Lumpur')::date, 1)
+    on conflict (doc_id, day) do update set n = w.n + 1;
+    return jsonb_build_object('error', 'wrong', 'left', greatest(0, 4 - s.tries));
+  end if;
+  v_tok := encode(gen_random_bytes(24), 'hex');
+  update public.hiring_doc_codes set used_at = now(), view_hash = encode(digest(v_tok, 'sha256'), 'hex'),
+    view_until = now() + interval '30 minutes' where id = s.id;
+  insert into public.signing_steps (doc_kind, doc_id, step, email, ip, country, device)
+  values ('hiring_doc', d.id, 'opened', s.email, nullif(public.request_ip(), ''), nullif(public.request_country(), ''), public.seal_device(p_device));
+  return public.careers_doc_json(d) || jsonb_build_object('view', v_tok);
+end $$;
+revoke all on function public.careers_doc_open(text, uuid, text, text) from public;
+grant execute on function public.careers_doc_open(text, uuid, text, text) to anon, authenticated;
+
+-- END OF OFFER CODE TRIES BY THE DAY TYPED ----------------------------------
+
+-- ===========================================================================
+-- CHECK IN ONCE (2026-11-24)
+-- ===========================================================================
+-- WHY: the audit of 2026-11-24 (the user: "fix all except 2"). Two presses
+-- of Check in at once both passed `outstation_check_in`'s open-trip check;
+-- the second met `outstation_trips_one_open` and the page read the
+-- database's unique_violation.
+--
+-- WHAT IT CHANGES
+--   * `outstation_check_in` answers the second press `open-trip`, as it
+--     answers a press with a trip already open.
+--
+-- ORDER: this file alone. Safe to run twice.
+-- ROLLBACK: run outstation_check_in from OUTSTATION RECORD again.
+-- ===========================================================================
+
+-- CHECK IN ONCE -------------------------------------------------------------
+
+create or replace function public.outstation_check_in(
+  p_client uuid, p_venue text, p_purpose text, p_note text, p_companions uuid[],
+  p_lat numeric, p_lng numeric, p_accuracy numeric, p_read_at timestamptz)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_me public.team_members; v_err jsonb; v_trip uuid; v_with uuid[];
+begin
+  v_me := public.ops_me();
+  if v_me.id is null or not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if exists (select 1 from public.outstation_trips t where t.driver_id = v_me.id and t.state = 'open') then
+    return jsonb_build_object('error', 'open-trip');
+  end if;
+  if p_purpose is null or p_purpose not in ('meeting', 'shooting', 'event', 'other') then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if length(coalesce(p_note, '')) > 2000 or length(coalesce(p_venue, '')) > 200 then return jsonb_build_object('error', 'too-long'); end if;
+  if p_client is null and nullif(btrim(coalesce(p_venue, '')), '') is null then return jsonb_build_object('error', 'no-place'); end if;
+  if p_client is not null and (not exists (select 1 from public.clients c where c.id = p_client)
+                               or not public.allowed('clients', 'view')
+                               or not public.client_scope_ok('client', p_client, 'view')) then
+    return jsonb_build_object('error', 'bad-client');
+  end if;
+  select coalesce(array_agg(distinct x), '{}') into v_with from unnest(coalesce(p_companions, '{}'::uuid[])) x;
+  if array_length(v_with, 1) > 10 or v_me.id = any(v_with)
+     or exists (select 1 from unnest(v_with) x where not exists (
+          select 1 from public.team_members m where m.id = x and m.active and m.removed_at is null and not coalesce(m.system, false))) then
+    return jsonb_build_object('error', 'bad-companion');
+  end if;
+  v_err := public.outstation_reading_error(p_lat, p_lng, p_accuracy, p_read_at);
+  if v_err is not null then return v_err; end if;
+  -- two presses at once both pass the check above; the one open trip a
+  -- driver may hold (outstation_trips_one_open) refuses the second
+  begin
+    insert into public.outstation_trips (driver_id, companions, purpose, note)
+    values (v_me.id, v_with, p_purpose, nullif(btrim(coalesce(p_note, '')), ''))
+    returning id into v_trip;
+  exception when unique_violation then
+    return jsonb_build_object('error', 'open-trip');
+  end;
+  insert into public.outstation_stops (trip_id, seq, client_id, venue, lat, lng, accuracy_m, read_at)
+  values (v_trip, 1, p_client, case when p_client is null then btrim(p_venue) end, p_lat, p_lng, p_accuracy, p_read_at);
+  return jsonb_build_object('ok', true, 'trip', public.outstation_trip_json(v_trip));
+end $$;
+revoke all on function public.outstation_check_in(uuid, text, text, text, uuid[], numeric, numeric, numeric, timestamptz) from public, anon;
+grant execute on function public.outstation_check_in(uuid, text, text, text, uuid[], numeric, numeric, numeric, timestamptz) to authenticated;
+
+-- END OF CHECK IN ONCE ------------------------------------------------------
+
 select public.functions_tidy();
