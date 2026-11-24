@@ -34,6 +34,7 @@
       noId: 'No Document ID on your copy?', nameLabel: 'Recipient name', nameHint: 'COMPANY NAME SDN BHD',
       enterCode: 'Enter the Document ID.', enterName: 'Enter the Document ID or the recipient name.',
       lockedRef: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace at {contact}.',
+      lockedRefBare: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace.',
       noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
       noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
       history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
@@ -58,6 +59,7 @@
       noId: '副本上没有文件识别码？', nameLabel: '收件方名称', nameHint: 'COMPANY NAME SDN BHD',
       enterCode: '请输入文件识别码。', enterName: '请输入文件识别码或收件方名称。',
       lockedRef: '此编号的核验次数过多。请于{wait}后重试，或通过 {contact} 联系 ADspace。',
+      lockedRefBare: '此编号的核验次数过多。请于{wait}后重试，或联系 ADspace。',
       noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
       noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
@@ -260,7 +262,7 @@
       if (last !== a) return;
       if (r.error || !d || d.error) { no(t().failed + '. ' + t().failedText); return; }
       /* Five wrong names lock the reference's name for a day. */
-      if (d.locked) { no(d.reference ? lockedLine(d.minutes, t().lockedRef.replace('{contact}', d.contact || '')) : lockedLine(d.minutes)); return; }
+      if (d.locked) { no(d.reference ? lockedLine(d.minutes, d.contact ? t().lockedRef.replace('{contact}', d.contact) : t().lockedRefBare) : lockedLine(d.minutes)); return; }
       if (!d.ok) {
         no(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode') || { id: 'vCode' }, true);
         return;
