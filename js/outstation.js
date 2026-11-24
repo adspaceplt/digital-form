@@ -42,6 +42,7 @@
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
 
   var PURPOSE = { meeting: 'Meeting', shooting: 'Shooting', event: 'Event', other: 'Other' };
@@ -182,13 +183,20 @@
       var ci = head.querySelector('#ostCheckIn');
       if (ci) ci.addEventListener('click', function () { openStopSheet(null, ci); });
     }
-    if (st.msg) { var m = document.createElement('p'); m.className = 'msg ' + (st.msg.tone || ''); m.id = 'ostMsg'; m.setAttribute('role', 'status'); m.textContent = st.msg.text; body.appendChild(m); }
+    answered(body);
     var past = (st.d.trips || []).filter(function (t) { return t !== open; });
     if (!past.length) {
       if (!open) { var none = document.createElement('div'); body.appendChild(none); UI.emptyLine(none, 'No trips.'); }
       return;
     }
     body.appendChild(tripList(past, 'mine', open ? 'Recent trips' : 'Last three months'));
+  }
+  /* What a write answered, under the bar it was made from (both views). */
+  function answered(body) {
+    if (!st.msg) return;
+    var m = document.createElement('p');
+    m.className = 'msg ' + (st.msg.tone || ''); m.id = 'ostMsg'; m.setAttribute('role', 'status'); m.textContent = st.msg.text;
+    body.appendChild(m);
   }
   function paintAll(body) {
     var bar = document.createElement('div');
@@ -202,6 +210,7 @@
       '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="ostCount"></span></span>' +
       '<span class="cmdbar-acts"><button class="btn btn-sm" type="button" id="ostExport">Download</button></span></span>';
     body.appendChild(bar);
+    answered(body);
     var ms = bar.querySelector('#ostMonth');
     if (!ms.querySelector('option[value="' + st.month + '"]')) ms.insertAdjacentHTML('beforeend', '<option value="' + esc(st.month) + '">' + esc(C.month(st.month)) + '</option>');
     ms.value = st.month;
@@ -236,8 +245,9 @@
           var who = m && trip.driver_id === m.id ? 'You' : trip.driver || '—';
           var hours = trip.ended_at ? span(trip.started_at, trip.ended_at) : '';
           var dist = trip.km_total != null ? km(trip.km_total) : '';
-          row.setAttribute('aria-label', C.date(trip.started_at) + ', ' + route.join(', ') + ', open trip');
+          row.setAttribute('aria-label', (trip.ref ? trip.ref + ', ' : '') + C.date(trip.started_at) + ', ' + route.join(', ') + ', open trip');
           row.innerHTML = '<span class="pr-main ost-what"><b>' + esc(C.date(trip.started_at)) + '</b><small>' +
+              (trip.ref ? '<span class="inv-part ost-ref">' + esc(trip.ref) + '</span> · ' : '') +
               route.map(function (r) { return '<span class="inv-part">' + esc(r) + '</span>'; }).join(' · ') +
               '<span class="inv-part"> · ' + esc(PURPOSE[trip.purpose] || '') + '</span>' +
               '<span class="ost-m"> · ' + esc(who) + '</span></small></span>' +
@@ -299,8 +309,8 @@
     var so = legsSoFar(trip);
     var w = withWord(trip);
     box.innerHTML =
-      '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' + stateChip(trip) + '</div>' +
-        '<p class="ost-line">' + esc([PURPOSE[trip.purpose], 'You drive'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
+      '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' + stateChip(trip) + menuHtml(trip) + '</div>' +
+        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'You drive'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
         (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Route</h2></div></div>' + routeHtml(trip) +
@@ -319,6 +329,7 @@
     box.querySelector('[data-a="next"]').addEventListener('click', function (e) { openStopSheet(trip, e.currentTarget); });
     box.querySelector('[data-a="out"]').addEventListener('click', function (e) { openOutSheet(trip, e.currentTarget); });
     box.querySelector('[data-a="claim"]').addEventListener('click', function (e) { e.preventDefault(); });
+    wire(box, trip);
     var file = box.querySelector('[data-a="photo"]');
     file.addEventListener('change', function () {
       var f = file.files && file.files[0];
@@ -717,6 +728,84 @@
     });
   }
 
+  /* ---- The trip number and Delete (2026-11-24) --------------------------- */
+  /* The number copies on a press, as a serial does on the Register; on a
+     list row, itself a button, it is words. */
+  function refHtml(trip, alone) {
+    if (!trip.ref) return '';
+    return '<button class="serial-copy" type="button" data-a="ref" aria-label="Copy ' + esc(trip.ref) + '">' + esc(trip.ref) + '</button>' + (alone ? '' : ' · ');
+  }
+  /* The driver deletes their own trip, an admin any; at Edit the Delete is
+     a request an admin decides (js/delreq.js turns it into Request delete). */
+  function mayDelete(trip) {
+    var m = me();
+    var own = Boolean(m && trip.driver_id === m.id);
+    return (own || Boolean(bridge.isAdmin && bridge.isAdmin())) && may('ops', 'work');
+  }
+  function menuHtml(trip) {
+    if (!mayDelete(trip)) return '';
+    return '<span class="team-act ost-menu"' + (may('ops', 'manage') ? '' : ' hidden') + '><button class="kmenu-btn" type="button" data-a="menu" aria-expanded="false" ' +
+      'aria-label="More actions for ' + esc(trip.ref || 'this trip') + '">' + DOTS + '</button>' +
+      '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [], [], [], [], [{ a: 'delete', label: 'Delete', need: 'ops:manage' }]], 'data-o') + '</div></span>';
+  }
+  function wire(host, trip) {
+    var cp = host.querySelector('[data-a="ref"]');
+    if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(cp, trip.ref); });
+    var wrap = host.querySelector('.ost-menu');
+    if (!wrap) return;
+    var mb = wrap.querySelector('.kmenu-btn'), menu = wrap.querySelector('.kmenu'), del = menu.querySelector('[data-o="delete"]');
+    /* At Edit the ⋯ shows once the request is known to be open to it. */
+    if (wrap.hidden && window.ADspaceDelReq) {
+      window.ADspaceDelReq.load().then(function () {
+        if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu);
+        if (window.ADspaceDelReq.liveItem(del) || del.getAttribute('data-req')) wrap.hidden = false;
+      });
+    }
+    mb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      if (bridge.shutMenus) bridge.shutMenus();
+      menu.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+      if (open) { if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu); window.ADspaceMenu.place(mb, menu); }
+    });
+    del.addEventListener('click', function () {
+      menu.hidden = true; mb.setAttribute('aria-expanded', 'false');
+      askDelete(trip);
+    });
+  }
+  var GONE = {
+    denied: 'You do not have permission to delete this trip. Please ask an admin.',
+    'not-found': 'This trip no longer exists.',
+    'confirm-required': 'That is not this trip\'s number.'
+  };
+  function askDelete(trip) {
+    var stops = (trip.stops || []).length, photos = 0;
+    (trip.stops || []).forEach(function (s) { photos += (s.photos || []).length; });
+    var filed = (trip.stops || []).some(function (s) { return s.filed; });
+    var ref = trip.ref || '';
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: ref + ' · The trip on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
+        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it filed stay on the clients\' Calls and visits.' : '') + ' This cannot be undone.',
+      go: 'Delete', tone: 'danger', wait: true,
+      fields: [{ name: 'ref', label: 'Type the trip number to confirm', placeholder: ref, match: ref,
+        need: 'Type the trip number to confirm.', mismatch: GONE['confirm-required'] }]
+    }, function (v) {
+      return db.rpc('outstation_trip_delete', { p_trip: trip.id, p_confirm: String(v.ref || '').trim().toUpperCase() }).then(function (r) {
+        var d = r && r.data;
+        if (r && r.error) {
+          return /PGRST202|42883|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
+            ? window.ADspaceWords.line.notYet : 'Not deleted. Please try again.';
+        }
+        if (!d || d.error || !d.deleted) return GONE[d && d.error] || 'Not deleted. The database refused the request.';
+        if (window.ADspaceSheet.isOpen()) window.ADspaceSheet.close();
+        st.msg = { text: 'Deleted.', tone: 'ok' };
+        Promise.resolve(load()).then(function () { st.msg = null; });
+        return '';
+      }, function () { return 'Not deleted. Please try again.'; });
+    });
+  }
+
   /* ---- A trip read whole ------------------------------------------------ */
   var detail = null;
   function openDetail(trip, opener) {
@@ -736,10 +825,11 @@
     var photos = [];
     (trip.stops || []).forEach(function (s) { (s.photos || []).forEach(function (p) { photos.push({ p: p, s: s }); }); });
     detail.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostTripH" data-narrow="560">' +
-      '<div class="sheet-head"><h3 id="ostTripH">Trip · ' + esc(C.date(trip.started_at)) + '</h3>' +
+      '<div class="sheet-head"><h3 id="ostTripH">Trip · ' + esc(C.date(trip.started_at)) + '</h3>' + menuHtml(trip) +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<section class="fsec"><dl class="ovfacts">' + facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl></section>' +
+        '<section class="fsec"><dl class="ovfacts">' + (trip.ref ? '<div><dt>Trip number</dt><dd>' + refHtml(trip, true) + '</dd></div>' : '') +
+          facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl></section>' +
         '<section class="fsec"><h4 class="fsec-h">Route</h4>' + routeHtml(trip) + '</section>' +
         (photos.length ? '<section class="fsec"><h4 class="fsec-h">Photos</h4><div class="ost-gallery">' + photos.map(function (x) {
           return '<figure class="ost-photo" data-photo="' + esc(x.p.id) + '"><span class="ost-photo-img" aria-hidden="true"></span>' +
@@ -747,6 +837,7 @@
         }).join('') + '</div></section>' : '') +
       '</div></div>';
     detail.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    wire(detail, trip);
     window.ADspaceSheet.show(detail, { opener: opener });
     Array.prototype.forEach.call(detail.querySelectorAll('[data-photo]'), function (fig) {
       db.functions.invoke('sign-download', { body: { outstation: { photo: fig.getAttribute('data-photo') } } }).then(function (r) {
@@ -768,14 +859,14 @@
 
   /* ---- Download (All trips) --------------------------------------------- */
   function exportCsv(trips) {
-    var head = ['Date', 'Driver', 'Driver code', 'Going together', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
+    var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Going together', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
       'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous', 'Km back to office', 'Km total',
       'Checked out', 'Rating', 'Note', 'Check-out note'];
     var rows = [head];
     trips.forEach(function (t) {
       (t.stops || []).forEach(function (s, i) {
         var last = i === t.stops.length - 1;
-        rows.push([C.day(t.started_at), t.driver || '', t.driver_code || '', withWord(t), PURPOSE[t.purpose] || '', s.seq, s.client_code || '',
+        rows.push([t.ref || '', C.day(t.started_at), t.driver || '', t.driver_code || '', withWord(t), PURPOSE[t.purpose] || '', s.seq, s.client_code || '',
           placeName(s), s.address || '', ZONE[s.zone] || '', C.clock(s.arrived_at), s.left_at ? C.clock(s.left_at) : '',
           s.left_at ? (Math.round((Date.parse(s.left_at) - Date.parse(s.arrived_at)) / 36e4) / 10).toFixed(1) : '',
           s.accuracy_m, s.lat, s.lng, (s.photos || []).length, s.km_from_prev == null ? '' : s.km_from_prev,
