@@ -150133,7 +150133,7 @@ create table if not exists public.bukku_send_claims (
   kind       text not null,
   record_id  uuid not null,
   claimed_at timestamptz,
-  claimed_by uuid references public.team_members(id) on delete set null,
+  claimed_by uuid,
   primary key (kind, record_id)
 );
 alter table public.bukku_send_claims enable row level security;
