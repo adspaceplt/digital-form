@@ -697,6 +697,8 @@
       if (!r.data || r.data.error) throw new Error(r.data && r.data.error === 'denied' ? 'You do not have permission to read payments. Please ask an admin.' : 'The payment figures could not be loaded. Refresh the page.');
       return r.data;
     });
+    /* A failed read is not kept: Try again asks again. */
+    memo.pay.catch(function () { delete memo.pay; });
     return memo.pay;
   }
   function curMoney(n, cur) {

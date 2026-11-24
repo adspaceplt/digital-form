@@ -326,6 +326,8 @@
         .order('created_at', { ascending: false }).limit(12).then(rows).then(function (list) {
           if (!list.length) return { sets: [] };
           return db.rpc('review_set_counts', { p_sets: list.map(function (b) { return b.id; }) }).then(function (r) {
+            /* A count that failed is never read as no posts. */
+            if (r.error) throw new Error(r.error.message);
             var n = {};
             (r.data || []).forEach(function (x) { n[x.set_id] = x; });
             return { sets: list.map(function (b) {
@@ -920,7 +922,10 @@
           var moved = (c.stage || 'lead') === 'lead'
             ? after(function () {
               return db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).eq('stage', 'lead').select('id').then(function (q) {
-                if (q.error || !(q.data || []).length || !bridge.log) return;
+                /* An empty answer is a client already past Lead; an error is
+                   a stage left unmoved, said with Logged. */
+                if (q.error) return 'stuck';
+                if (!(q.data || []).length || !bridge.log) return;
                 return fetched(['crm']).then(function () {
                   var CRM = window.ADspaceCRM;
                   bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
@@ -928,8 +933,8 @@
               });
             })
             : Promise.resolve();
-          return moved.then(function () {
-            return { said: 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
+          return moved.then(function (left) {
+            return { said: left === 'stuck' ? 'Logged. The stage was not moved to Contacted.' : 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
               undo: function () {
                 return db.from('client_touches').update({ archived_at: new Date().toISOString() }).eq('id', id).select('id').then(function (q) {
                   if (q.error || !(q.data || []).length) throw new Error('Not undone. The database refused the request.');
@@ -1173,6 +1178,7 @@
           if (!b) throw new Error('That set could not be found.');
           if (Boolean(b.published) === on) throw new Error(on ? 'That set is already published.' : 'That set is not published.');
           return db.rpc('review_set_counts', { p_sets: [b.id] }).then(function (q) {
+            if (q.error) throw new Error('That set could not be read. Try again.');
             var n = ((q.data || [])[0] || {}).n_posts || 0;
             if (on && !n) throw new Error('That set has no posts. Add assets before publishing.');
             a._set = b;

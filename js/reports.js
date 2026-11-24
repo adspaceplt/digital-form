@@ -950,6 +950,10 @@
     }
     if (r.first_month) return { issues: out, pending: false };
     var src = st.prevSrc && st.prevSrc.id === r.id && st.prevSrc.key === prevKey(r) ? st.prevSrc : null;
+    if (src && src.failed) {
+      put('The published report for the previous period could not be read, so its figures were not compared. Refresh the page to check again.');
+      return { issues: out, pending: false };
+    }
     var take = src && src.pv ? Object.assign({}, t, src.pv, { prev_from: src.from, tiktok: src.pv.tiktok || t.tiktok ? Object.assign({}, t.tiktok || {}, src.pv.tiktok || {}) : undefined }) : null;
     if (take && !take.tiktok) delete take.tiktok;
     var gs = 0, gn = 0;
@@ -1013,12 +1017,18 @@
       var q = db.from('sm_reports').select('id').eq('client_id', r.client_id).eq('kind', 'ads')
         .eq('period_start', String(t.prev_start).slice(0, 10)).eq('period_end', String(t.prev_end).slice(0, 10)).limit(1);
       q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
-      return q.then(function (res) { return ((res.data || [])[0] || {}).id || null; });
+      return q.then(function (res) { if (res.error) throw res.error; return ((res.data || [])[0] || {}).id || null; });
     }());
+    /* A read that failed is never taken for no report: the check says so
+       and Submit stays held (audit 2026-11-24). */
     found.then(function (id) {
       if (!id) { fin(null, null); return; }
-      return prevOfReport(id).then(function (pv) { fin(id, pv); });
-    }).catch(function () { fin(null, null); });
+      return prevOfReport(id, true).then(function (pv) { fin(id, pv); });
+    }).catch(function () {
+      st.prevSrcAsk = null;
+      st.prevSrc = { id: r.id, key: key, failed: true };
+      if (st.open && st.open.id === r.id && done) done();
+    });
   }
   function slipWords(slips) {
     var by = {};
@@ -4521,7 +4531,9 @@
      report past its draft, is found by its title among the tasks made
      after the report's period ended, never an earlier month's. */
   function nbTaskOf(it) {
-    var m = st.nbTasks || {};
+    /* Only the open report's tasks: a title met on another report is
+       never this one's (audit 2026-11-24). */
+    var m = st.nbTasksOf === (st.open && st.open.id) ? st.nbTasks || {} : {};
     return it && it.task_id ? m['id:' + it.task_id] || null : m[nbKey(it && it.title)] || null;
   }
   function nbReadTasks(items) {
@@ -4530,6 +4542,7 @@
     var key = (st.open && st.open.id) + '|' + ids.join('|') + '|' + titles.join('|');
     if ((!titles.length && !ids.length) || st.nbTasksFor === key || !(bridge.may && bridge.may('ops', 'view'))) return;
     st.nbTasksFor = key;
+    if (st.nbTasksOf !== (st.open && st.open.id)) { st.nbTasks = {}; st.nbTasksOf = st.open && st.open.id; }
     var after = String((st.open && st.open.period_end) || '');
     var base = function () { return db.from('ops_tasks').select('id, task_no, title, created_at').eq('client_id', st.client.id).is('cancelled_at', null); };
     var none = Promise.resolve({ data: [] });
@@ -4839,15 +4852,17 @@
     }
     return out;
   }
-  function prevOfReport(id) {
+  /* `strict`: a read that failed rejects rather than answering none. */
+  function prevOfReport(id, strict) {
     st.prevSnaps = st.prevSnaps || {};
     if (st.prevSnaps[id]) return Promise.resolve(st.prevSnaps[id]);
     return db.from('sm_report_versions').select('snapshot').eq('report_id', id).is('withdrawn_at', null)
       .order('version_no', { ascending: false }).limit(1).then(function (res) {
+        if (res.error && strict) throw res.error;
         var row = (res.data || [])[0];
         if (res.error || !row || !row.snapshot) return null;
         return (st.prevSnaps[id] = prevOfSnap(row.snapshot));
-      }).catch(function () { return null; });
+      }).catch(function (e) { if (strict) throw e; return null; });
   }
   /* The published Advertising Reports of the client (and brand) that end
      before this one starts, newest first. */
@@ -4856,16 +4871,19 @@
     var q = db.from('sm_reports').select('id, period_start, period_end, on_request').eq('client_id', r.client_id).eq('kind', 'ads')
       .lt('period_end', r.period_start).order('period_end', { ascending: false }).limit(60);
     q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
+    /* A read that failed is not kept, and never offers Typed figures alone
+       as if nothing were published (audit 2026-11-24). */
     q.then(function (res) {
+      if (res.error) throw res.error;
       var reps = res.data || [];
-      if (res.error || !reps.length) return { reps: [], live: [] };
+      if (!reps.length) return { reps: [], live: [] };
       return db.from('sm_report_versions').select('report_id').in('report_id', reps.map(function (x) { return x.id; })).is('withdrawn_at', null)
-        .then(function (v) { return { reps: reps, live: (v.data || []).map(function (x) { return x.report_id; }) }; });
+        .then(function (v) { if (v.error) throw v.error; return { reps: reps, live: (v.data || []).map(function (x) { return x.report_id; }) }; });
     }).then(function (got) {
       var list = got.reps.filter(function (x) { return got.live.indexOf(x.id) > -1; });
       st.prevChoices = { id: r.id, list: list, all: got.reps };
       if (st.open && st.open.id === r.id) done(list);
-    }).catch(function () { st.prevChoices = { id: r.id, list: [], all: [] }; });
+    }).catch(function () { if (st.open && st.open.id === r.id) done(null); });
   }
   function prevWordOf(id) {
     var x = ((st.prevChoices || {}).all || []).filter(function (y) { return y.id === id; })[0];
@@ -4994,7 +5012,7 @@
       return fmt(a.reach) + ' reach · ' + fmt(a.impressions) + ' impressions · ' + money2(a.spend);
     };
     var fromWord = t.prev_from ? prevWordOf(t.prev_from) : '';
-    if (t.prev_from && !(st.prevChoices && st.prevChoices.id === r.id) && !editable()) loadPrevChoices(r, function () { paintTotals(); });
+    if (t.prev_from && !(st.prevChoices && st.prevChoices.id === r.id) && !editable()) loadPrevChoices(r, function (list) { if (list) paintTotals(); });
     if (!editable()) {
       var now = multiAcct ? [['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
         ['Amount spent', t.spend != null ? money2(t.spend) : money2(sumSpend) + ' (from the ads)']] : [['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
@@ -5117,7 +5135,7 @@
        figures it was shown with, filled in; typing over one makes them
        typed figures. */
     var from = t.prev_from || null, fromGroups = t.prev_groups || null, filling = false, typed = !!t.prev_typed;
-    var pick = $('rpPFrom');
+    var pick = $('rpPFrom'), m = st.host && st.host.querySelector('[data-m="totals"]');
     pick.value = from || '';
     /* Chosen from a published report, its figures stand as read; typed
        figures are the fields. */
@@ -5139,6 +5157,7 @@
     };
     loadPrevChoices(r, function (list) {
       if (!pick.isConnected) return;
+      if (!list) { say(m, 'The published reports could not be read. Refresh the page to choose one.', 'err'); return; }
       /* Typed figures only where no published report ends before this one
          (or the report already holds typed ones, kept until changed). */
       pick.innerHTML = (list.length && !typed ? '' : '<option value="">Typed figures</option>') + list.map(function (x) {
