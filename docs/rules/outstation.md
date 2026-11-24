@@ -14,8 +14,10 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   together are named at Check in and read it as their own; every trip, read
   only, with Download (a CSV, a row a stop), is the granted part
   `ops.outstation` (an admin's by itself, View alone).
-- Flow: Check in at the first stop (a client from the Clients picker, else
-  Other venue with its name; the purpose a segment of Meeting, Shooting,
+- Flow: Check in at the first stop (a client from the Clients picker, then
+  its Place: Client's site or Another venue with its name; else No client
+  with the venue's name; the user, 2026-11-24: a client's work away from
+  its site is still the client's; the purpose a segment of Meeting, Shooting,
   Event, Other; a note; Colleagues; the location; at least one photo),
   then Add stop (the place, the location, a photo) as often as needed, Add
   photo at any time, and Check out (a note, Rate your trip, 1 to 5 stars,
@@ -98,3 +100,6 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   the user, 2026-11-24); a visit written by hand stays, and the photo files
   stay in storage. Filed `ops.deleted` under the
   number. A deleted open trip frees its driver to check in again.
+- A client's stop is filed on its Calls and visits as it begins ("from
+  2:00pm (in progress)", the venue named) and completed with its end time
+  once left (`outstation_file_visit`; OUTSTATION VISITS FOR THE CLIENT).
