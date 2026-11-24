@@ -257,7 +257,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     parsed. It is hidden while it precedes an open console.
   - A client page's bar reads left to right bell, sign out, 中文 (the page's
     own controls go in just before `#langToggle`), all one tonal family of
-    one height and corner. On a phone the name the page is for takes two
+    one height and corner; the client portal's bar is sign out, 中文: no
+    bell and no notifications there (the user, 2026-11-25). On a phone the name the page is for takes two
     lines, its label over it (`.brand-for-label`).
 - Nothing moves after first paint.
   - The mark's ratio is kept in `localStorage` `adspace-logo-ratio` and drawn at

@@ -26,7 +26,7 @@
 -- ORDER: this file alone (no page or edge function changes). An open
 -- /quote/ tab reads Request received as before at every step.
 -- Safe to run twice. Holds no drop or delete.
--- ROLLBACK: run `quote_website_create` from TONE SWEEP 6 and
+-- ROLLBACK: run `quote_website_create` from QUOTE WEBSITE CHOICES and
 -- `quote_website_read` from TAKE LEAD AS SALES BY again; a quotation
 -- already kept on a client stays there.
 -- ===========================================================================
@@ -104,30 +104,9 @@ begin
     end if;
   end if;
   if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
-  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
-  if jsonb_typeof(p_sel->'once') = 'array' and jsonb_array_length(p_sel->'once') > 20
-     or jsonb_typeof(p_sel->'extra') = 'object' and (select count(*) from jsonb_object_keys(p_sel->'extra')) > 10 then
-    return jsonb_build_object('error', 'bad-selection');
-  end if;
-
-  -- What the price reads, and nothing else.
-  v_sel := jsonb_strip_nulls(jsonb_build_object(
-    'mix', case when jsonb_typeof(p_sel->'mix') = 'string' and length(p_sel->>'mix') <= 20 then p_sel->'mix' end,
-    'plan', case when jsonb_typeof(p_sel->'plan') = 'string' and length(p_sel->>'plan') <= 80 then p_sel->'plan' end,
-    'term', case when jsonb_typeof(p_sel->'term') in ('number', 'string') and length(p_sel->>'term') <= 4 then p_sel->'term' end,
-    'budget', case when jsonb_typeof(p_sel->'budget') in ('number', 'string') and length(p_sel->>'budget') <= 12 then p_sel->'budget' end,
-    'translate', case when jsonb_typeof(p_sel->'translate') = 'boolean' then p_sel->'translate' end,
-    'platforms', (select jsonb_agg(distinct v) from jsonb_array_elements_text(
-                    case when jsonb_typeof(p_sel->'platforms') = 'array' then p_sel->'platforms' else '[]'::jsonb end) v
-                   where v in ('meta', 'tiktok', 'rednote', 'linkedin')),
-    'langs', (select jsonb_agg(distinct l) from jsonb_array_elements_text(
-                case when jsonb_typeof(p_sel->'langs') = 'array' then p_sel->'langs' else '[]'::jsonb end) l
-               where l in ('en', 'zh', 'ms')),
-    'extra', case when jsonb_typeof(p_sel->'extra') = 'object' then
-               (select jsonb_object_agg(left(k, 80), p_sel->'extra'->k) from jsonb_object_keys(p_sel->'extra') k) end,
-    'once', case when jsonb_typeof(p_sel->'once') = 'array' then
-              (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('slug', left(o->>'slug', 80), 'qty', o->'qty')))
-                 from jsonb_array_elements(p_sel->'once') o where jsonb_typeof(o) = 'object') end));
+  -- What the price reads, and nothing else (QUOTE WEBSITE CHOICES, 2026-11-24).
+  v_sel := public.quote_website_sel(p_sel, coalesce(public.quote_card()->'snapshot', '{}'::jsonb));
+  if v_sel ? 'error' then return v_sel; end if;
 
   -- Two posts at once are counted one after the other.
   perform pg_advisory_xact_lock(hashtextextended('quote-web:' || least(v_email, v_wa), 0));

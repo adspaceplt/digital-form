@@ -151316,6 +151316,380 @@ grant execute on function public.feedback_mail_begin(uuid, text) to authenticate
 
 -- END OF FEEDBACK EMAIL TEMPLATES --------------------------------------------
 
+-- A CLIENT'S CAMPAIGNS AS THEY STAND ---------------------------------------
+-- The client portal draws each campaign as a track of its booked creators
+-- (2026-11-25): `get_portal` sends each campaign's push format, its booked
+-- creators' steps in order (states alone, no creator) and its next shoot.
+-- Everything else is as before, every refusal kept.
+create or replace function public.get_portal(p_client uuid default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  cid uuid;
+  cl  public.clients%rowtype;
+  me  public.client_contacts%rowtype;
+begin
+  if who is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  select p into cid from public.portal_clients() p
+    order by (p = p_client) desc nulls last limit 1;
+  if cid is null then return jsonb_build_object('error', 'no-access'); end if;
+  select * into cl from public.clients where id = cid;
+  select * into me from public.client_contacts
+    where client_id = cid and portal_access and archived_at is null and lower(email) = who
+    order by is_primary desc limit 1;
+
+  return jsonb_build_object(
+    'clients', coalesce((
+      select jsonb_agg(jsonb_build_object('id', c.id, 'name', c.name) order by c.name)
+      from public.clients c where c.id in (select public.portal_clients())), '[]'::jsonb),
+    'client', jsonb_build_object(
+      'id', cl.id, 'name', cl.name, 'legal_name', cl.legal_name, 'company_no', cl.company_no,
+      'billing_address', cl.billing_address, 'market', coalesce(cl.market, 'MY'),
+      'bill_market', public.client_bill_market(cl.market, cl.bill_sgd),
+      'sst_applies', coalesce(cl.sst_applies, true), 'stage', cl.stage, 'owner', cl.owner,
+      'industry', cl.industry, 'website', cl.website, 'logo_url', cl.logo_url),
+    'me', jsonb_build_object('id', me.id, 'name', me.name, 'email', me.email,
+      'lang', case when me.lang = 'zh' then 'zh' else 'en' end),
+    'contacts', coalesce((
+      select jsonb_agg(jsonb_build_object('id', k.id, 'name', k.name, 'role', k.role, 'phone', k.phone,
+        'email', k.email, 'is_primary', k.is_primary, 'portal_access', k.portal_access)
+        order by k.is_primary desc, k.name)
+      from public.client_contacts k where k.client_id = cid and k.archived_at is null), '[]'::jsonb),
+    'services', coalesce((
+      -- `term_adjust` travels with the line, because the client's page works
+      -- the figure out the same way the console and the letter do and must
+      -- never print a different one.
+      select jsonb_agg(jsonb_build_object('id', s.id, 'label', s.label, 'unit', s.unit, 'qty', s.qty,
+        'rate', s.rate, 'tenure', s.tenure, 'start_on', s.start_on, 'state', s.state, 'note', s.note,
+        'term_adjust', coalesce(s.term_adjust, false), 'term_pct', s.term_pct)
+        order by s.created_at)
+      from public.client_services s
+      where s.client_id = cid and s.archived_at is null and s.state in ('quoted', 'confirmed')), '[]'::jsonb),
+    'documents', coalesce((
+      select jsonb_agg(jsonb_build_object('id', d.id, 'kind', d.kind, 'number', d.number,
+        'issued_at', d.issued_at, 'market', d.market, 'subtotal', d.subtotal, 'tax', d.tax,
+        'total', d.total, 'bill_to', d.bill_to, 'lines', d.lines, 'issued_by', d.issued_by)
+        order by d.created_at desc)
+      from public.client_documents d where d.client_id = cid and d.voided_at is null), '[]'::jsonb),
+    'requests', coalesce((
+      select jsonb_agg(jsonb_build_object('id', r.id, 'kind', r.kind, 'service_label', r.service_label,
+        'note', r.note, 'state', r.state, 'fee', r.fee, 'reply', r.reply,
+        'created_at', r.created_at, 'withdrawn_at', r.withdrawn_at)
+        order by r.created_at desc)
+      from public.client_requests r where r.client_id = cid), '[]'::jsonb),
+    'review', case
+      when cl.review_hidden is not true
+       and exists (select 1 from public.batches b where b.client_id = cid and b.published)
+      then jsonb_build_object('token', cl.access_token) end,
+    'campaigns', coalesce((
+      -- Where each campaign stands (2026-11-25): its booked creators'
+      -- steps, never who they are, and the next shoot ahead.
+      select jsonb_agg(jsonb_build_object('id', m.id, 'title', m.title, 'title_zh', m.title_zh,
+        'state', m.state, 'deadline', m.deadline, 'token', m.access_token,
+        'push_format', m.push_format,
+        'booked', coalesce((select jsonb_agg(o.state order by o.position, o.added_at)
+          from public.campaign_options o where o.campaign_id = m.id
+           and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'reviewing',
+                           'changes', 'scheduled', 'posted', 'completed')), '[]'::jsonb),
+        'next_shoot', (select min(o.visit_date) from public.campaign_options o
+          where o.campaign_id = m.id and o.state in ('confirmed', 'pending_visit')
+            and o.visit_date >= (now() at time zone 'Asia/Kuala_Lumpur')::date))
+        order by m.created_at desc)
+      from public.campaigns m where m.client_id = cid and m.state <> 'draft'), '[]'::jsonb),
+    'access', coalesce((
+      select jsonb_agg(jsonb_build_object('name', k.name, 'email', k.email) order by k.is_primary desc, k.name)
+      from public.client_contacts k
+      where k.client_id = cid and k.archived_at is null and k.portal_access), '[]'::jsonb)
+  );
+end $$;
+revoke all on function public.get_portal(uuid) from public, anon;
+grant execute on function public.get_portal(uuid) to authenticated;
+
+-- END OF A CLIENT'S CAMPAIGNS AS THEY STAND ----------------------------------
+
+-- QUOTE WEBSITE CHOICES ---------------------------------------------------
+
+/* The commitments a prospect may choose on /quote/ (the user, 2026-11-24:
+   6, 12 and 24 months, the minimum 6). */
+create or replace function public.quote_web_terms()
+returns int[]
+language sql immutable set search_path = public as $$
+  select array[6, 12, 24]
+$$;
+revoke all on function public.quote_web_terms() from public, anon, authenticated;
+
+/* A one-off item a prospect may add on /quote/: a content, a verification,
+   a creator package, and of the add-ons the card's File Release group
+   alone; every other add-on is added by the team in Build quote. */
+create or replace function public.quote_web_once_ok(p_svc jsonb)
+returns boolean
+language sql immutable set search_path = public as $$
+  select coalesce(p_svc->'spec'->>'role', '') in ('content', 'verify', 'koc', 'kol')
+      or (p_svc->'spec'->>'role' = 'addon' and lower(coalesce(p_svc->'spec'->>'group', '')) = 'file release')
+$$;
+revoke all on function public.quote_web_once_ok(jsonb) from public, anon, authenticated;
+
+/* What a website selection may hold, and nothing else. */
+create or replace function public.quote_website_sel(p_sel jsonb, p_snap jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v_sel jsonb;
+  v_o jsonb;
+begin
+  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
+  if jsonb_typeof(p_sel->'once') = 'array' and jsonb_array_length(p_sel->'once') > 20
+     or jsonb_typeof(p_sel->'extra') = 'object' and (select count(*) from jsonb_object_keys(p_sel->'extra')) > 10 then
+    return jsonb_build_object('error', 'bad-selection');
+  end if;
+  v_sel := jsonb_strip_nulls(jsonb_build_object(
+    'mix', case when jsonb_typeof(p_sel->'mix') = 'string' and length(p_sel->>'mix') <= 20 then p_sel->'mix' end,
+    'plan', case when jsonb_typeof(p_sel->'plan') = 'string' and length(p_sel->>'plan') <= 80 then p_sel->'plan' end,
+    'term', case when jsonb_typeof(p_sel->'term') in ('number', 'string') and length(p_sel->>'term') <= 4 then p_sel->'term' end,
+    'budget', case when jsonb_typeof(p_sel->'budget') in ('number', 'string') and length(p_sel->>'budget') <= 12 then p_sel->'budget' end,
+    'platforms', (select jsonb_agg(distinct v) from jsonb_array_elements_text(
+                    case when jsonb_typeof(p_sel->'platforms') = 'array' then p_sel->'platforms' else '[]'::jsonb end) v
+                   where v in ('meta', 'tiktok', 'rednote', 'linkedin')),
+    'langs', (select jsonb_agg(distinct l) from jsonb_array_elements_text(
+                case when jsonb_typeof(p_sel->'langs') = 'array' then p_sel->'langs' else '[]'::jsonb end) l
+               where l in ('en', 'zh', 'ms')),
+    'extra', case when jsonb_typeof(p_sel->'extra') = 'object' then
+               (select jsonb_object_agg(left(k, 80), p_sel->'extra'->k) from jsonb_object_keys(p_sel->'extra') k) end,
+    'once', case when jsonb_typeof(p_sel->'once') = 'array' then
+              (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('slug', left(o->>'slug', 80), 'qty', o->'qty')))
+                 from jsonb_array_elements(p_sel->'once') o where jsonb_typeof(o) = 'object') end));
+  -- The website's commitments; 1 is one-off items alone (quote_price refuses it beside a monthly line).
+  if coalesce(v_sel->>'term', '') !~ '^[0-9]{1,2}$'
+     or not ((v_sel->>'term')::int = 1 or (v_sel->>'term')::int = any (public.quote_web_terms())) then
+    return jsonb_build_object('error', 'bad-term');
+  end if;
+  for v_o in select * from jsonb_array_elements(coalesce(v_sel->'once', '[]'::jsonb)) loop
+    if not coalesce(public.quote_web_once_ok(public.quote_svc(p_snap, v_o->>'slug')), false) then
+      return jsonb_build_object('error', 'bad-once');
+    end if;
+  end loop;
+  return v_sel;
+end $$;
+revoke all on function public.quote_website_sel(jsonb, jsonb) from public, anon, authenticated;
+
+/* What the website offers from the live card, never a rate (the user,
+   2026-11-25: "Prices after we send"). */
+create or replace function public.quote_catalogue()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_card jsonb := public.quote_card();
+  v_svc jsonb;
+  v_text jsonb;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_names constant jsonb := '{"meta":"Meta","tiktok":"TikTok","rednote":"rednote","linkedin":"LinkedIn"}';
+begin
+  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_svc := coalesce(v_card->'snapshot'->'services', '[]'::jsonb);
+  v_text := coalesce(v_card->'snapshot'->'text', '{}'::jsonb);
+  return jsonb_build_object(
+    'version', v_card->>'version',
+    'valid_days', coalesce(public.app_setting('quote_valid_days', v_today), 30)::int,
+    'terms', to_jsonb(public.quote_web_terms()),
+    'plans', coalesce((select jsonb_agg(jsonb_build_object(
+        'slug', s->>'slug', 'plan', s->'spec'->>'plan', 'ads', coalesce((s->'spec'->>'ads')::boolean, false),
+        'platforms', (s->'spec'->>'platforms')::int, 'contents', (s->'spec'->>'contents')::int,
+        'mix', s->'spec'->'mix', 'ad_budget', (s->'spec'->>'ad_budget')::numeric, 'best_for', s->'spec'->>'best_for',
+        'included', coalesce((select jsonb_agg(btrim(d)) from unnest(string_to_array(coalesce(v_text->>
+            case when coalesce((s->'spec'->>'ad_budget')::numeric, 0) > 0 then 'plans_ads_included' else 'plans_included' end, ''), E'\n')) d
+           where btrim(d) <> ''), '[]'::jsonb))
+        order by s->'spec'->>'plan')
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'plan' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'platforms', coalesce((select jsonb_agg(s->'spec'->>'platform'
+        order by array_position(array['meta', 'tiktok', 'rednote', 'linkedin'], s->'spec'->>'platform'))
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'platform' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'contents', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name', 'kind', s->'spec'->>'kind')
+        order by (s->>'rate')::numeric)
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'content' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'budgets', coalesce((select jsonb_agg(b order by b) from (
+        select distinct (s->'spec'->>'budget')::numeric b from jsonb_array_elements(v_svc) s
+         where s->'spec'->>'role' in ('ads', 'booster') and s->>'rate' is not null
+           and coalesce((s->>'active')::boolean, true)) z), '[]'::jsonb),
+    'verify', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name',
+        -- the platform it verifies: its own, else the platform its name names
+        'platform', coalesce(s->'spec'->>'platform', (select k from jsonb_each_text(v_names) n(k, w)
+                                                        where s->>'name' ~* ('\m' || w || '\M') limit 1))))
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'verify' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'koc', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name',
+        'creators', (s->'spec'->>'creators')::int) order by (s->'spec'->>'creators')::int nulls last)
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'koc' and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'kol', (select s->>'slug' from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'kol' and coalesce((s->>'active')::boolean, true) limit 1),
+    'files', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name') order by (s->>'rate')::numeric)
+      from jsonb_array_elements(v_svc) s
+     where s->'spec'->>'role' = 'addon' and public.quote_web_once_ok(s) and s->>'rate' is not null
+       and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
+    'translation', false);
+end $$;
+revoke all on function public.quote_catalogue() from public;
+grant execute on function public.quote_catalogue() to anon, authenticated;
+
+
+/* The website's create, its selection read through quote_website_sel. */
+create or replace function public.quote_website_create(p_sel jsonb, p_contact jsonb, p_idem text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_name  text := btrim(regexp_replace(coalesce(p_contact->>'name', ''), '\s+', ' ', 'g'));
+  v_email text := lower(btrim(coalesce(p_contact->>'email', '')));
+  v_wa    text := public.quote_website_number(p_contact->>'whatsapp');
+  v_brand text := btrim(regexp_replace(coalesce(p_contact->>'brand', ''), '\s+', ' ', 'g'));
+  v_ind   text := nullif(btrim(coalesce(p_contact->>'industry', '')), '');
+  v_lang  text := case when p_contact->>'lang' = 'zh' then 'zh' else 'en' end;
+  v_sal   text := nullif(btrim(coalesce(p_contact->>'salutation', '')), '');
+  v_start text := nullif(btrim(coalesce(p_contact->>'commence', '')), '');
+  v_on_t  text := nullif(btrim(coalesce(p_contact->>'commence_on', '')), '');
+  v_on    date;
+  v_idem  text := nullif(btrim(coalesce(p_idem, '')), '');
+  v_sel   jsonb;
+  v_q     public.quotations;
+  v_c     public.clients;
+  v_base  text;
+  v_slug  text;
+  v_n     int := 1;
+  v_r     jsonb;
+  v_new   boolean := false;
+begin
+  if v_idem is null or length(v_idem) > 80 then return jsonb_build_object('error', 'bad-request'); end if;
+  -- The quotation website covered (Page availability) makes nothing.
+  if public.page_covered('quote') then return jsonb_build_object('error', 'unavailable'); end if;
+  select * into v_q from public.quotations q
+   where q.idem = v_idem and q.source = 'website' and lower(q.contact->>'email') = v_email;
+  if v_q.id is not null then
+    return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key, 'again', true);
+  end if;
+  if length(v_name) < 2 or length(v_name) > 80 then return jsonb_build_object('error', 'bad-name'); end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_email) > 160 then return jsonb_build_object('error', 'bad-email'); end if;
+  if v_wa !~ '^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$' then return jsonb_build_object('error', 'bad-whatsapp'); end if;
+  if length(v_brand) < 2 or length(v_brand) > 120 then return jsonb_build_object('error', 'bad-brand'); end if;
+  -- A name or brand is never a web address: both go into the WhatsApp the
+  -- prospect is sent from ADspace's number (2026-10-26, audit).
+  if v_name ~* public.quote_link_like() then return jsonb_build_object('error', 'bad-name'); end if;
+  if v_brand ~* public.quote_link_like() then return jsonb_build_object('error', 'bad-brand'); end if;
+  -- An industry on the list kept in Settings (INDUSTRIES, 2026-11-04).
+  if v_ind is not null and not exists (select 1 from public.industries i where i.name = v_ind) then
+    return jsonb_build_object('error', 'bad-industry');
+  end if;
+  if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
+      'Dato'' Sri', 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik') then
+    return jsonb_build_object('error', 'bad-salutation');
+  end if;
+  -- When they plan to start: the console's Urgency to commence, for the
+  -- team's planning; it changes no price. Left out by a page served before.
+  if v_start is not null and v_start not in ('1_3', '3_6', '6_plus') then
+    return jsonb_build_object('error', 'bad-commence');
+  end if;
+  -- A preferred start date, optional (PREFERRED START DATE, 2026-11-21):
+  -- a day from today in Malaysia to the date ceiling, kept on the quotation
+  -- it was asked on (START DATE ON THE QUOTATION, 2026-11-21).
+  if v_on_t is not null then
+    if v_on_t !~ '^\d{4}-\d{2}-\d{2}$' then return jsonb_build_object('error', 'bad-start-date'); end if;
+    begin
+      v_on := v_on_t::date;
+    exception when others then
+      return jsonb_build_object('error', 'bad-start-date');
+    end;
+    if v_on < (now() at time zone 'Asia/Kuala_Lumpur')::date or v_on > date '2099-12-31' then
+      return jsonb_build_object('error', 'bad-start-date');
+    end if;
+  end if;
+  if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
+  -- What the price reads, and nothing else (QUOTE WEBSITE CHOICES, 2026-11-24).
+  v_sel := public.quote_website_sel(p_sel, coalesce(public.quote_card()->'snapshot', '{}'::jsonb));
+  if v_sel ? 'error' then return v_sel; end if;
+
+  -- Two posts at once are counted one after the other.
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || least(v_email, v_wa), 0));
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || greatest(v_email, v_wa), 0));
+  if (select count(*) from public.quotations q
+       where q.source = 'website' and q.issued_at > now() - interval '1 day'
+         and (lower(q.contact->>'email') = v_email or q.contact->>'whatsapp' = '+' || v_wa)) >= 5 then
+    return jsonb_build_object('error', 'limit');
+  end if;
+
+  -- A lead this person already is (the same contact holds both the email
+  -- and the number), else a new one.
+  select c.* into v_c from public.clients c
+    join public.client_contacts k on k.client_id = c.id
+   where c.stage in ('lead', 'contacted', 'proposal')
+     and k.archived_at is null
+     and lower(k.email) = v_email
+     and public.quote_website_number(k.whatsapp) = v_wa
+   order by c.created_at desc limit 1;
+  if v_c.id is null then
+    v_base := btrim(regexp_replace(lower(v_brand), '[^a-z0-9]+', '-', 'g'), '-');
+    if v_base = '' then v_base := 'client'; end if;
+    v_slug := v_base;
+    while exists (select 1 from public.clients c where lower(c.slug) = v_slug) loop
+      v_n := v_n + 1; v_slug := v_base || '-' || v_n;
+    end loop;
+    insert into public.clients (name, access_token, stage, industry, source, market, slug, deal_note, commence)
+    values (v_brand, public.new_link_key(), 'lead', v_ind, 'website',
+            case when v_wa like '65%' then 'SG' else 'MY' end, v_slug,
+            'Quotation requested on the website.', v_start)
+    returning * into v_c;
+    insert into public.client_contacts (client_id, salutation, name, email, whatsapp, lang, is_primary)
+    values (v_c.id, v_sal, v_name, v_email, '+' || v_wa, v_lang, true);
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Quotation website', 'client.added', v_c.name, 'Website · ' || coalesce(v_sal || ' ', '') || v_name);
+    v_new := true;
+  end if;
+
+  v_r := public.quotation_make(v_c.id, v_sel, v_idem, 'website', null,
+    jsonb_strip_nulls(jsonb_build_object('salutation', v_sal, 'name', v_name, 'email', v_email,
+      'whatsapp', '+' || v_wa, 'lang', v_lang, 'brand', v_brand)));
+  if v_r ? 'error' then
+    if v_new then raise exception using message = 'quote:' || (v_r->>'error'); end if;
+    return v_r;
+  end if;
+  select * into v_q from public.quotations where id = (v_r->>'id')::uuid;
+  -- A lead asking again says when it plans to start now, once its
+  -- quotation is made (a refused one changes nothing).
+  if not v_new and v_start is not null and v_c.commence is distinct from v_start then
+    update public.clients set commence = v_start where id = v_c.id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Quotation website', 'client.edited', v_c.name, 'Planned commencement: ' ||
+      coalesce(public.quote_commence_word(v_c.commence), 'not set') || ' → ' || public.quote_commence_word(v_start));
+  end if;
+  -- The price waits for the team (the user, 2026-10-29: "the price
+  -- shouldnt send out straight"): the quotation is owed a reply by working
+  -- days, the team is told to review it, and the prospect is sent nothing
+  -- until a colleague sends it (`quotation_send`).
+  update public.quotations set reply_due = public.quote_reply_by(now()), commence_on = v_on where id = v_q.id
+   returning * into v_q;
+  perform public.quote_tell(v_c.id, 'quote.website', 'Quotation to review · ' || v_c.name,
+    v_q.ref || ' · ' || coalesce('RM ' ||
+      to_char((v_q.totals->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', 'one-off') || ' · ' || v_name
+      || coalesce(' · Preferred start date ' || public.register_day(v_on),
+                  ' · Starts ' || lower(public.quote_commence_word(v_start)), '')
+      || ' · Send by ' || public.register_day((v_q.reply_due at time zone 'Asia/Kuala_Lumpur')::date)
+      || ' (' || trim(to_char(v_q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMDay')) || '), ' ||
+      lower(to_char(v_q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam')),
+    v_q.id::text);
+  return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key);
+exception when raise_exception then
+  if sqlerrm like 'quote:%' then return jsonb_build_object('error', substr(sqlerrm, 7)); end if;
+  raise;
+end $$;
+revoke all on function public.quote_website_create(jsonb, jsonb, text) from public, anon, authenticated;
+grant execute on function public.quote_website_create(jsonb, jsonb, text) to service_role;
+
+-- END OF QUOTE WEBSITE CHOICES ---------------------------------------------
+
 select public.functions_tidy();
 
 -- ===========================================================================
@@ -151346,7 +151720,7 @@ select public.functions_tidy();
 -- ORDER: this file alone (no page or edge function changes). An open
 -- /quote/ tab reads Request received as before at every step.
 -- Safe to run twice. Holds no drop or delete.
--- ROLLBACK: run `quote_website_create` from TONE SWEEP 6 and
+-- ROLLBACK: run `quote_website_create` from QUOTE WEBSITE CHOICES and
 -- `quote_website_read` from TAKE LEAD AS SALES BY again; a quotation
 -- already kept on a client stays there.
 -- ===========================================================================
@@ -151424,30 +151798,9 @@ begin
     end if;
   end if;
   if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
-  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
-  if jsonb_typeof(p_sel->'once') = 'array' and jsonb_array_length(p_sel->'once') > 20
-     or jsonb_typeof(p_sel->'extra') = 'object' and (select count(*) from jsonb_object_keys(p_sel->'extra')) > 10 then
-    return jsonb_build_object('error', 'bad-selection');
-  end if;
-
-  -- What the price reads, and nothing else.
-  v_sel := jsonb_strip_nulls(jsonb_build_object(
-    'mix', case when jsonb_typeof(p_sel->'mix') = 'string' and length(p_sel->>'mix') <= 20 then p_sel->'mix' end,
-    'plan', case when jsonb_typeof(p_sel->'plan') = 'string' and length(p_sel->>'plan') <= 80 then p_sel->'plan' end,
-    'term', case when jsonb_typeof(p_sel->'term') in ('number', 'string') and length(p_sel->>'term') <= 4 then p_sel->'term' end,
-    'budget', case when jsonb_typeof(p_sel->'budget') in ('number', 'string') and length(p_sel->>'budget') <= 12 then p_sel->'budget' end,
-    'translate', case when jsonb_typeof(p_sel->'translate') = 'boolean' then p_sel->'translate' end,
-    'platforms', (select jsonb_agg(distinct v) from jsonb_array_elements_text(
-                    case when jsonb_typeof(p_sel->'platforms') = 'array' then p_sel->'platforms' else '[]'::jsonb end) v
-                   where v in ('meta', 'tiktok', 'rednote', 'linkedin')),
-    'langs', (select jsonb_agg(distinct l) from jsonb_array_elements_text(
-                case when jsonb_typeof(p_sel->'langs') = 'array' then p_sel->'langs' else '[]'::jsonb end) l
-               where l in ('en', 'zh', 'ms')),
-    'extra', case when jsonb_typeof(p_sel->'extra') = 'object' then
-               (select jsonb_object_agg(left(k, 80), p_sel->'extra'->k) from jsonb_object_keys(p_sel->'extra') k) end,
-    'once', case when jsonb_typeof(p_sel->'once') = 'array' then
-              (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('slug', left(o->>'slug', 80), 'qty', o->'qty')))
-                 from jsonb_array_elements(p_sel->'once') o where jsonb_typeof(o) = 'object') end));
+  -- What the price reads, and nothing else (QUOTE WEBSITE CHOICES, 2026-11-24).
+  v_sel := public.quote_website_sel(p_sel, coalesce(public.quote_card()->'snapshot', '{}'::jsonb));
+  if v_sel ? 'error' then return v_sel; end if;
 
   -- Two posts at once are counted one after the other.
   perform pg_advisory_xact_lock(hashtextextended('quote-web:' || least(v_email, v_wa), 0));

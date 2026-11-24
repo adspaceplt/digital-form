@@ -8974,7 +8974,7 @@ body.is-maint { overflow: hidden; }
 .cx-standing-line b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .cx-standing-line span { font-size: 13.5px; color: var(--ink-mute); }
 .cx-track { display: flex; gap: 4px; height: 6px; }
-.cx-track i { flex: 1 1 0; border-radius: 4px; background: var(--line-soft); }
+.cx-track i { flex: 1 1 0; border-radius: 4px; corner-shape: round; background: var(--line-soft); }
 .cx-track i.is-ok { background: var(--dot-ok); }
 .cx-track i.is-wait { background: var(--dot-wait); }
 .cx-track i.is-late { background: var(--dot-late); }
@@ -9570,7 +9570,7 @@ body.is-maint { overflow: hidden; }
    24px step and the hairline (2026-10-28: the hairline stood under the last
    option with no step, and none stood above the first). */
 .qs-xbox { display: contents; }
-.qs-sec + .qs-sec, .qs-sec + .qs-xbox > .qs-sec:first-child { border-top: 1px solid var(--line-soft); padding-top: 24px; }
+.qs-sec + .qs-sec, .qs-sec + .qs-xbox > .qs-sec:first-child, .qs-xbox + .qs-sec { border-top: 1px solid var(--line-soft); padding-top: 24px; }
 .qs-sec-h { display: block; margin: 0 0 4px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; color: var(--ink); }
 .qs-sec > .qs-note, .qs-sec > .field { margin: 0; }
 .qs-note { margin: 0; font-size: 13px; color: var(--ink-mute); }
@@ -9648,6 +9648,108 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* A forward move is a button at its own width: a lone Submit stands at the
    column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
+
+/* The plans as cards (the boards QuotePhone and QuoteDesk, 2026-11-25): its
+   mark on top, the name, a line a fact with its glyph; the middle one
+   Recommended and wider (1.4 to 1), first and the row's width on a phone.
+   Chosen, it takes the ink ring the choice cards take. */
+.qs-plans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
+.qs-plan { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 14px 12px;
+  border-radius: var(--radius); background: var(--sunk); cursor: pointer; transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.qs-plan > input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.qs-plan.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.qs-plan:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
+.qs-plan.is-feat { padding: 18px 16px; }
+.qs-rec { margin-bottom: 4px; padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 600; background: var(--fill); color: var(--on-fill); }
+.qs-plan-ic { width: 28px; height: 28px; stroke-width: 1.6; margin-bottom: 2px; color: var(--ink); }
+.qs-plan > b { font-size: 15px; font-weight: 600; }
+.qs-pl { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.qs-pl .ic { color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .qs-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qs-plan.is-feat { grid-column: 1 / -1; order: -1; }
+}
+/* The plan chosen: what it is best for, its content each month, then its
+   inclusions a tick each, on one shaded card under the cards. */
+.qs-plansel { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.qs-plansel > b { font-size: 15px; font-weight: 600; }
+.qs-best { margin: -6px 0 0; font-size: 13px; color: var(--ink-mute); }
+.qs-mixrow { display: grid; gap: 6px; }
+.qs-mixh { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.qs-mixone { justify-self: start; padding: 7px 14px; border-radius: 999px; corner-shape: round; background: var(--card); font-size: var(--ctl-text); }
+.qs-incl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+.qs-incl li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 8px; align-items: start; }
+.qs-incl-tick { margin-top: 2px; color: var(--ink); }
+/* A platform's own mark before its name, in ink (ADspaceIcons.mark), what is
+   cut out of it in the card's ground. */
+.qs-chip .qs-text:has(> .qs-lead-mark) { display: flex; align-items: center; gap: 10px; }
+.qs-lead-mark { display: inline-flex; gap: 4px; color: var(--ink); }
+.ic-mark { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
+.ic-cut { fill: var(--sunk); }
+/* The quotation's glyphs (js/icons.js) at the boards' weight. */
+.qs .qs-g { stroke-width: 1.7; }
+/* A glyph in a round disc: shaded on white, white on a shaded card. */
+.qs-disc { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 40px; height: 40px;
+  border-radius: 50%; corner-shape: round; background: var(--field); color: var(--ink); }
+.qs-disc .ic { width: 20px; height: 20px; }
+.qs-disc.is-white { background: var(--card); }
+.qs-disc.is-sm { width: 30px; height: 30px; }
+.qs-disc.is-sm .ic { width: 15px; height: 15px; }
+.qs-badge { position: absolute; top: -4px; right: -4px; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
+  border-radius: 50%; corner-shape: round; background: var(--fill); color: var(--on-fill); font-size: 11px; font-weight: 600; }
+/* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
+   2026-11-25): the services as tiles, five in a row at a desk, three over
+   two on a phone; What to expect as shaded cards; the time with its clock. */
+.qs-svcs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.qs-svcs li { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; text-align: center;
+  border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line-soft); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.qs-stepcards { gap: 10px; }
+.qs-stepcards li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); }
+.qs-stepcards li::before { content: none; }
+.qs-stepcards li > span:last-child { padding-top: 9px; font-size: 14.5px; line-height: 1.5; }
+.qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
+.qs-time .ic { color: var(--ink-soft); }
+/* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk):
+   the tick disc over the title, the statement and the reference; the track
+   on a shaded card; what was asked for and the representative as hairline
+   cards. */
+.qs-rcv { gap: 24px; }
+.qs-rcv-head { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.qs-rcv-head .qs-lead { max-width: 420px; font-size: 17px; }
+.qs-rcv-tick { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; corner-shape: round;
+  background: var(--ok-bg); color: var(--ok); }
+.qs-rcv-tick .ic { width: 30px; height: 30px; stroke-width: 2.2; }
+.qs-rcv .qs-wait-ref { margin: 0; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.qs-track-steps { list-style: none; margin: 0; padding: 20px; display: grid; border-radius: var(--radius-lg); background: var(--sunk); }
+.qs-track-steps li { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
+.qs-track-steps li:last-child { padding-bottom: 0; }
+.qs-track-steps li:not(:last-child)::after { content: ""; position: absolute; left: 15.5px; top: 34px; bottom: 2px; width: 1px; background: var(--line); }
+.qs-track-steps li.is-done:not(:last-child)::after { background: var(--ok); }
+.qs-trk-dot { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  corner-shape: round; background: var(--field); color: var(--ink-mute); }
+.qs-trk-dot .ic { width: 16px; height: 16px; }
+.is-done > .qs-trk-dot { background: var(--ok-solid); color: var(--on-ok); }
+.is-done > .qs-trk-dot .ic { stroke-width: 2.2; }
+.is-now > .qs-trk-dot { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.qs-track-steps li > span:last-child { display: grid; gap: 2px; padding-top: 6px; }
+.qs-track-steps b { font-size: 14.5px; font-weight: 400; color: var(--ink-soft); }
+.qs-track-steps .is-done b, .qs-track-steps .is-now b { font-weight: 600; color: var(--ink); }
+.qs-track-steps small { font-size: 13px; color: var(--ink-mute); }
+.qs-amber { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); }
+.qs-card { display: grid; gap: 12px; padding: 18px 20px; border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--line-soft); }
+.qs-card > h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.qs-asklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; }
+.qs-asklist li { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.qs-rcv-rep { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.qs-rcv-rep .qs-rep-who { display: grid; gap: 2px; }
+.qs-rcv-rep .qs-rep-who small { font-size: 13px; color: var(--ink-soft); }
+.qs-rcv-rep .qs-rep-who small:first-child { font-size: 12px; color: var(--ink-mute); }
+.qs-rcv-rep .qs-rep-who b { font-size: 15px; font-weight: 600; }
+@media (max-width: 640px) { .qs-rcv-rep { grid-template-columns: minmax(0, 1fr); } }
+/* A platform's name with its marks needs the column's width on a phone. */
+@media (max-width: 560px) { .qs-plats { grid-template-columns: minmax(0, 1fr); } }
+.qs-chip.is-on .ic-cut { fill: var(--card); }
 
 .qs-quote { display: grid; gap: 24px; }
 /* A quotation is read as a document of figures, not page copy: its lines,
@@ -9957,3 +10059,81 @@ body.qs-page { background: var(--card); }
 .fbread-a b { font-weight: 500; font-variant-numeric: tabular-nums; }
 .fbread-a span { font-size: 13px; color: var(--ink-mute); }
 .fbread-t { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+
+/* ===== The client portal as the approved boards (2026-11-25) =====
+   Each section at a glance as a tile, a glyph tile before every row's name,
+   and each piece of work as it stands: a track of its parts (.cx-track,
+   ADspaceIcons.track) with its words under it. */
+.cp-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.cp-tiles[data-n="1"] { grid-template-columns: minmax(0, 1fr); }
+.cp-tiles[data-n="2"], .cp-tiles[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cp-tiles[hidden] { display: none; }
+.cp-tile {
+  display: grid; align-content: start; gap: 2px; min-width: 0; text-align: left; font: inherit; color: var(--ink);
+  background: var(--card); border: 0; border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.cp-tile:active { transform: scale(.97); }
+.cp-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+@media (hover: hover) { .cp-tile:hover { background: var(--sunk); } }
+.cp-tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cp-tile-top > .ic { width: 15px; height: 15px; color: var(--ink-mute); }
+.cp-tile-label { font-size: 12.5px; color: var(--ink-mute); }
+.cp-tile-head { display: inline-flex; align-items: baseline; gap: 6px; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.cp-tile-head .cx-dot { position: relative; top: -1px; }
+.cp-tile-sub { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .cp-tiles, .cp-tiles[data-n] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-tiles[data-n="1"] { grid-template-columns: minmax(0, 1fr); }
+  .cp-tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+/* On a phone the Overview is one column read in the order a client checks
+   it: what to rate, the tiles, services, the next meeting, the latest
+   report, the work, then who to reach and the company. */
+@media (max-width: 900px) {
+  .cp-overview > .cp-col { display: contents; }
+  #ovFb { order: 1; } #ovTiles { order: 2; } #ovSvc { order: 3; } #ovMeet { order: 4; }
+  #ovRep { order: 5; } #engWrap { order: 6; } #ovMgr { order: 7; } #cpSide > section:last-child { order: 8; }
+}
+
+/* A glyph tile: 40px before a piece of work, 36 before a table row's name,
+   round before a person. */
+.cx-tile.is-sm { width: 36px; height: 36px; border-radius: var(--radius-sm); flex: 0 0 auto; }
+.cx-tile.is-sm .ic { width: 17px; height: 17px; }
+.cx-tile.is-round { border-radius: 50%; corner-shape: round; flex: 0 0 auto; }
+.svc-name.cp-led { flex-direction: row; align-items: center; gap: 12px; }
+.cp-led-words { display: flex; flex-direction: column; min-width: 0; }
+.cp-led-words small { font-size: 12px; color: var(--ink-mute); }
+.cp-who { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+.cp-who .cp-person { margin: 0; }
+.cp-who small { font-size: 13px; }
+.fbh-row { grid-template-columns: 36px minmax(0, 1fr) auto 15px; gap: 4px 12px; }
+
+/* A piece of work as it stands. */
+.svc-row.cp-prog, .is-narrow .svc-row.cp-prog {
+  grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "tile body"; align-items: start; row-gap: 0; padding-block: 14px;
+}
+.svc-row.cp-prog.is-bare, .is-narrow .svc-row.cp-prog.is-bare { grid-template-columns: minmax(0, 1fr); grid-template-areas: "body"; }
+.svc-row.cp-prog > .cx-tile { grid-area: tile; }
+.cp-prog-body { grid-area: body; display: grid; gap: 10px; min-width: 0; }
+.cp-prog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 12px; min-width: 0; }
+.cp-prog-top > .svc-state { flex: 0 0 auto; }
+.cp-prog-body .cx-legend { margin: 0; }
+.cx-legend b { font-weight: 600; color: var(--ink); }
+.cp-prog-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.cp-prog-foot > .cp-open { margin-left: auto; }
+.cp-prog-note { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.cp-prog-note .ic { width: 15px; height: 15px; }
+/* A content month over its sets (Content Review's tab). */
+.cp-group-head { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; }
+.cp-group-head:first-child { margin-top: 0; }
+.cp-group-head h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.cp-group-head .tab-n { margin-left: 0; }
+/* A confirmed line's term: its glyph, the line over where it is, and a
+   month a part, on a shaded box. */
+.cx-term { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center;
+  background: var(--sunk); border-radius: var(--radius-sm); padding: 12px 14px; }
+.cx-term .cx-tile { background: var(--card); }
+.cx-term-words { min-width: 0; }
+.cx-term-words .cx-track { margin-top: 8px; }
+.cx-terms { border-top: 0; padding-top: 0; }
