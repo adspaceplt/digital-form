@@ -257,6 +257,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   client, else as Bukku holds it), the most owed first, a linked one
   opening the client's Billing (`tests/payan.js`, `payanfn.js`,
   `payansql.js`).
+- A client's invoices on its portal (`bukku-sync` `portal`,
+  `2026-11-25-client-invoices-on-the-portal.sql`): the one Bukku read a
+  client contact may ask; its rules are `docs/rules/client-portal.md`'s.
 - Send invoice (`2026-11-04-invoices-sent-by-email.sql`; the user,
   2026-11-04: "send invoice (pulled data and pdf from bukku) send to
   clients email", approved "attach link for now"): each unpaid invoice on

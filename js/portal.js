@@ -104,7 +104,9 @@
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
       scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
-      lines: function (n) { return n === 1 ? '1 service' : n + ' services'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
+      lines: function (n) { return n === 1 ? '1 service' : n + ' services'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp',
+      invoices: 'Invoices', invoice: 'Invoice', dueOn: function (d) { return 'Due ' + d; }, balanceOf: function (v) { return 'Balance ' + v; },
+      invState: { paid: 'Paid', outstanding: 'Outstanding', overdue: 'Overdue' }, downloadPdf: 'Download PDF'
     },
     zh: {
       kicker: '客户门户', lang: 'EN', signOut: '退出登录',
@@ -151,7 +153,9 @@
       noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
       scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
-      lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
+      lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp',
+      invoices: '发票', invoice: '发票', dueOn: function (d) { return '到期日：' + d; }, balanceOf: function (v) { return '余额：' + v; },
+      invState: { paid: '已付款', outstanding: '未付款', overdue: '已逾期' }, downloadPdf: '下载PDF'
     }
   });
   var lang = 'en';
@@ -866,6 +870,54 @@
     if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg', dl); });
   }
 
+  // ---- Invoices -------------------------------------------------------------
+  /* The client's own invoices (2026-11-25), read from Bukku through
+     `bukku-sync` as the signed-in contact: the database answers which
+     Bukku contacts are this client's, and nothing else is read. Overdue
+     first, then outstanding by its due date, then paid, newest first; the
+     card is drawn once one is held, and a failed read says so in the card,
+     never an empty list. Download PDF opens Bukku's own copy. */
+  var INV_ORDER = { overdue: 0, outstanding: 1, paid: 2 };
+  function paintInvoices(w, c) {
+    var wrap = $('invWrap'), box = $('invBox');
+    if (!wrap || !box || !c.id) return;
+    API.invokeFn('bukku-sync', { action: 'portal', client: c.id }).then(function (r) {
+      if (stale(c)) return;
+      var d = r.data || {};
+      /* Bukku not set up, or the function not yet deployed: nothing to show. */
+      if (r.error && (!d.error || /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error)))) { wrap.hidden = true; return; }
+      var list = (d.invoices || []).slice();
+      wrap.hidden = !list.length;
+      if (!list.length) { box.innerHTML = ''; return; }
+      list.sort(function (a, b) {
+        var o = INV_ORDER[a.state] - INV_ORDER[b.state];
+        if (o) return o;
+        return a.state === 'paid' ? String(b.date).localeCompare(String(a.date)) : String(a.due).localeCompare(String(b.due));
+      });
+      var tb = table('<div class="crm-head svc-row doc-row is-file"><span>' + esc(w.invoice) + '</span><span class="svc-rate">' + esc(w.amount) +
+        '</span><span>' + esc(w.state) + '</span><span></span></div>');
+      list.forEach(function (v) {
+        var cur = v.currency === 'SGD' ? 'SG' : 'MY';
+        var part = v.state !== 'paid' && Number(v.balance) < Number(v.amount) ? w.balanceOf(MON.money2(v.balance, cur)) : '';
+        var row = document.createElement('div');
+        row.className = 'svc-row doc-row is-file';
+        row.innerHTML = led('file', '<b>' + esc(v.number) + '</b><small>' +
+            parts([niceDate(v.date), v.state === 'paid' ? '' : w.dueOn(niceDate(v.due, v.state === 'overdue' ? '' : 'ahead')), part]) + '</small>') +
+          '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(v.amount, cur)) + '</b></span>' +
+          '<span class="svc-state">' + chip(w.invState[v.state] || v.state, v.state === 'paid' ? 'is-ok' : v.state === 'overdue' ? 'is-danger' : 'is-warn') + '</span>' +
+          '<span class="doc-dl">' + (v.link && window.ADspaceWords.absUrl(v.link) ? '<a class="btn btn-sm" href="' + esc(window.ADspaceWords.absUrl(v.link)) +
+            '" target="_blank" rel="noopener"><span>' + esc(w.downloadPdf) + '</span> ' + EXT + '</a>' : '') + '</span>';
+        tb.appendChild(row);
+      });
+      box.innerHTML = ''; box.appendChild(tb);
+      msg('invMsg', '');
+    }).catch(function () {
+      if (stale(c)) return;
+      wrap.hidden = false;
+      box.innerHTML = '<p class="cp-line"><b>' + esc(t().failTitle) + '</b></p><p class="cp-sub">' + esc(t().failText) + '</p>';
+    });
+  }
+
   // ---- Content meetings -----------------------------------------------------
   /* When we meet about each month's content: the date, the time, how it is
      held, and the link while the meeting is still ahead. Read from
@@ -1133,7 +1185,7 @@
     if ($('langToggle')) $('langToggle').textContent = w.lang;
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
 
-    ['ovHead:company', 'ctHead:contacts', 'svcHead:services', 'ovSvcHead:services', 'rqHead:requests',
+    ['ovHead:company', 'ctHead:contacts', 'invHead:invoices', 'svcHead:services', 'ovSvcHead:services', 'rqHead:requests',
      'docHead:letters', 'meetHead:meetings', 'repHead:reports', 'engHead:engagements',
      'payHead:payment', 'accHead:account', 'ovMeetHead:nextMeeting', 'ovRepHead:latestReport',
      'ovMgrHead:yourManager', 'ovFbHead:rateTitle'].forEach(function (p) {
@@ -1359,6 +1411,7 @@
     }
 
     paintMeetings(w, c);
+    paintInvoices(w, c);
     paintFeedback(w, c);
     paintReports(w, c);
     paintWork(w, c, feed);
