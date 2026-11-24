@@ -768,7 +768,7 @@
     if (st === 'expired' || st === 'closed') {
       return '<h2>' + esc(st === 'closed' ? (q.declined ? w.declinedT : w.closedT) : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
-        '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
+        '<a class="btn" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
     if (st === 'welcome') {
       return (q.reviewed ? confirmedHtml(q, true) : '') + '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
