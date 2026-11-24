@@ -715,7 +715,7 @@ declare
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state', 'page_states',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'quote_catalogue', 'quote_website_preview', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
+    'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
     'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline', 'verify_details', 'doc_code_of', 'verify_details_name', 'doc_code_of_key', 'feedback_read', 'feedback_submit'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
@@ -151113,7 +151113,7 @@ end $$;
 
 -- END OF CLIENT STAGE AHEAD ---------------------------------------------------
 
--- QUOTE WEBSITE LIVE PRICES ---------------------------------------------------
+-- QUOTE WEBSITE CHOICES ---------------------------------------------------
 
 /* The commitments a prospect may choose on /quote/ (the user, 2026-11-24:
    6, 12 and 24 months, the minimum 6). */
@@ -151135,8 +151135,7 @@ language sql immutable set search_path = public as $$
 $$;
 revoke all on function public.quote_web_once_ok(jsonb) from public, anon, authenticated;
 
-/* What a website selection may hold, and nothing else: one copy for the
-   preview and the create. */
+/* What a website selection may hold, and nothing else. */
 create or replace function public.quote_website_sel(p_sel jsonb, p_snap jsonb)
 returns jsonb
 language plpgsql immutable set search_path = public as $$
@@ -151179,6 +151178,8 @@ begin
 end $$;
 revoke all on function public.quote_website_sel(jsonb, jsonb) from public, anon, authenticated;
 
+/* What the website offers from the live card, never a rate (the user,
+   2026-11-25: "Prices after we send"). */
 create or replace function public.quote_catalogue()
 returns jsonb
 language plpgsql stable security definer set search_path = public as $$
@@ -151186,26 +151187,20 @@ declare
   v_card jsonb := public.quote_card();
   v_svc jsonb;
   v_text jsonb;
-  v_set jsonb;
   v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
   v_names constant jsonb := '{"meta":"Meta","tiktok":"TikTok","rednote":"rednote","linkedin":"LinkedIn"}';
 begin
   if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
   v_svc := coalesce(v_card->'snapshot'->'services', '[]'::jsonb);
   v_text := coalesce(v_card->'snapshot'->'text', '{}'::jsonb);
-  -- SST and the term percentages in force today, as the preview prices them.
-  v_set := coalesce(public.quote_tax_snap(v_card->'snapshot', null, v_today)->'settings', '{}'::jsonb);
   return jsonb_build_object(
     'version', v_card->>'version',
     'valid_days', coalesce(public.app_setting('quote_valid_days', v_today), 30)::int,
-    'sst_pct', coalesce((v_set->>'sst_pct')::numeric, 0),
-    'terms', (select jsonb_agg(jsonb_build_object('months', m, 'pct', public.quote_term_pct(v_set, m)) order by m)
-                from unnest(public.quote_web_terms()) m),
+    'terms', to_jsonb(public.quote_web_terms()),
     'plans', coalesce((select jsonb_agg(jsonb_build_object(
         'slug', s->>'slug', 'plan', s->'spec'->>'plan', 'ads', coalesce((s->'spec'->>'ads')::boolean, false),
         'platforms', (s->'spec'->>'platforms')::int, 'contents', (s->'spec'->>'contents')::int,
         'mix', s->'spec'->'mix', 'ad_budget', (s->'spec'->>'ad_budget')::numeric, 'best_for', s->'spec'->>'best_for',
-        'rate', (s->>'rate')::numeric,
         'included', coalesce((select jsonb_agg(btrim(d)) from unnest(string_to_array(coalesce(v_text->>
             case when coalesce((s->'spec'->>'ad_budget')::numeric, 0) > 0 then 'plans_ads_included' else 'plans_included' end, ''), E'\n')) d
            where btrim(d) <> ''), '[]'::jsonb))
@@ -151216,37 +151211,27 @@ begin
         order by array_position(array['meta', 'tiktok', 'rednote', 'linkedin'], s->'spec'->>'platform'))
       from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'platform' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
-    'platform_rates', coalesce((select jsonb_object_agg(s->'spec'->>'platform', (s->>'rate')::numeric)
-      from jsonb_array_elements(v_svc) s
-     where s->'spec'->>'role' = 'platform' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '{}'::jsonb),
-    'contents', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name', 'kind', s->'spec'->>'kind',
-        'rate', (s->>'rate')::numeric) order by (s->>'rate')::numeric)
+    'contents', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name', 'kind', s->'spec'->>'kind')
+        order by (s->>'rate')::numeric)
       from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'content' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
     'budgets', coalesce((select jsonb_agg(b order by b) from (
         select distinct (s->'spec'->>'budget')::numeric b from jsonb_array_elements(v_svc) s
          where s->'spec'->>'role' in ('ads', 'booster') and s->>'rate' is not null
            and coalesce((s->>'active')::boolean, true)) z), '[]'::jsonb),
-    -- what managing each budget costs a month, as quote_price charges it
-    -- (beside a plan, the cost of the budget less the cost of its cover)
-    'ad_costs', coalesce((select jsonb_agg(jsonb_build_object('budget', b, 'cost', public.quote_ads_cost(v_card->'snapshot', b)) order by b)
-      from (select distinct (s->'spec'->>'budget')::numeric b from jsonb_array_elements(v_svc) s
-             where s->'spec'->>'role' in ('ads', 'booster') and s->>'rate' is not null
-               and coalesce((s->>'active')::boolean, true)) z), '[]'::jsonb),
-    'verify', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name', 'rate', (s->>'rate')::numeric,
+    'verify', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name',
         -- the platform it verifies: its own, else the platform its name names
         'platform', coalesce(s->'spec'->>'platform', (select k from jsonb_each_text(v_names) n(k, w)
                                                         where s->>'name' ~* ('\m' || w || '\M') limit 1))))
       from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'verify' and s->>'rate' is not null and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
     'koc', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name',
-        'creators', (s->'spec'->>'creators')::int, 'rate', (s->>'rate')::numeric) order by (s->'spec'->>'creators')::int nulls last)
+        'creators', (s->'spec'->>'creators')::int) order by (s->'spec'->>'creators')::int nulls last)
       from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'koc' and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
     'kol', (select s->>'slug' from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'kol' and coalesce((s->>'active')::boolean, true) limit 1),
-    'files', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name', 'rate', (s->>'rate')::numeric)
-        order by (s->>'rate')::numeric)
+    'files', coalesce((select jsonb_agg(jsonb_build_object('slug', s->>'slug', 'name', s->>'name') order by (s->>'rate')::numeric)
       from jsonb_array_elements(v_svc) s
      where s->'spec'->>'role' = 'addon' and public.quote_web_once_ok(s) and s->>'rate' is not null
        and coalesce((s->>'active')::boolean, true)), '[]'::jsonb),
@@ -151255,40 +151240,6 @@ end $$;
 revoke all on function public.quote_catalogue() from public;
 grant execute on function public.quote_catalogue() to anon, authenticated;
 
-/* The price as the prospect chooses (the user, 2026-11-24): the selection
-   priced as quotation_make prices a website quotation, on the live
-   version, SST of today, in RM. Nothing is kept. */
-create or replace function public.quote_website_preview(p_sel jsonb)
-returns jsonb
-language plpgsql stable security definer set search_path = public as $$
-declare
-  v_card jsonb := public.quote_card();
-  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
-  v_snap jsonb;
-  v_sel jsonb;
-  v_p jsonb;
-begin
-  if public.page_covered('quote') then return jsonb_build_object('error', 'unavailable'); end if;
-  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
-  v_snap := public.quote_tax_snap(v_card->'snapshot', null, v_today);
-  v_sel := public.quote_website_sel(p_sel, v_snap);
-  if v_sel ? 'error' then return v_sel; end if;
-  v_p := public.quote_compose(v_snap, v_sel, false);
-  if v_p ? 'error' then return jsonb_build_object('error', v_p->>'error'); end if;
-  return jsonb_build_object(
-    'lines', coalesce((select jsonb_agg(jsonb_build_object('slug', l->>'slug', 'kind', l->>'kind', 'basis', l->>'basis',
-        'label', l->>'label', 'qty', (l->>'qty')::numeric, 'rate', (l->>'rate')::numeric,
-        'amount', coalesce((l->>'amount')::numeric, round((l->>'qty')::numeric * (l->>'rate')::numeric, 2))) order by n)
-      from jsonb_array_elements(v_p->'lines') with ordinality x(l, n)), '[]'::jsonb),
-    'on_request', coalesce(v_p->'on_request', '[]'::jsonb),
-    'extra_rates', coalesce(v_p->'extra_rates', '{}'::jsonb),
-    'totals', jsonb_build_object('term', v_p->'totals'->'term', 'term_pct', v_p->'totals'->'term_pct',
-      'sst_pct', v_p->'totals'->'sst_pct', 'budget', v_p->'totals'->'budget', 'month', v_p->'totals'->'month',
-      'once', v_p->'totals'->'once', 'term_rows', v_p->'totals'->'term_rows'),
-    'version', v_card->>'version');
-end $$;
-revoke all on function public.quote_website_preview(jsonb) from public;
-grant execute on function public.quote_website_preview(jsonb) to anon, authenticated;
 
 /* The website's create, its selection read through quote_website_sel. */
 create or replace function public.quote_website_create(p_sel jsonb, p_contact jsonb, p_idem text)
@@ -151359,8 +151310,7 @@ begin
     end if;
   end if;
   if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
-  -- What the price reads, and nothing else: one copy with the preview
-  -- (QUOTE WEBSITE LIVE PRICES, 2026-11-24).
+  -- What the price reads, and nothing else (QUOTE WEBSITE CHOICES, 2026-11-24).
   v_sel := public.quote_website_sel(p_sel, coalesce(public.quote_card()->'snapshot', '{}'::jsonb));
   if v_sel ? 'error' then return v_sel; end if;
 
@@ -151440,6 +151390,6 @@ end $$;
 revoke all on function public.quote_website_create(jsonb, jsonb, text) from public, anon, authenticated;
 grant execute on function public.quote_website_create(jsonb, jsonb, text) to service_role;
 
--- END OF QUOTE WEBSITE LIVE PRICES ---------------------------------------------
+-- END OF QUOTE WEBSITE CHOICES ---------------------------------------------
 
 select public.functions_tidy();

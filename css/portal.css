@@ -9649,55 +9649,46 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
    column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
 
-/* The price as the prospect chooses (QUOTE WEBSITE LIVE PRICES, the user,
-   2026-11-24, the boards QuoteDesk and QuotePhone): the steps' column with
-   the summary beside it at a desk, sticky under the bar; on a phone the
-   summary under the steps and the monthly figure kept in the foot, which
-   stays at the screen's foot. */
-.qs-live { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "step" "sum" "foot"; gap: 24px; max-width: 560px; margin: 0 auto; }
-.qs-live > .qs-step { grid-area: step; max-width: none; margin: 0; }
-.qs-live > .qs-sum { grid-area: sum; }
-.qs-live > .qs-foot { grid-area: foot; max-width: none; margin: 0; flex-wrap: wrap; }
-.qs-footsum { flex: 1 0 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0; font-size: 14px; color: var(--ink-soft); }
-.qs-footsum:empty { display: none; }
-.qs-footsum b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
-@media (min-width: 960px) {
-  .qs-live { max-width: 912px; grid-template-columns: 560px minmax(0, 1fr); grid-template-areas: "step sum" "foot sum"; column-gap: 32px; row-gap: 0; align-items: start; }
-  .qs-live > .qs-sum { position: sticky; top: calc(var(--head-h) + 24px); }
-  .qs-footsum { display: none; }
+/* The plans as cards (the boards QuotePhone and QuoteDesk, 2026-11-25): its
+   mark on top, the name, a line a fact with its glyph; the middle one
+   Recommended and wider (1.4 to 1), first and the row's width on a phone.
+   Chosen, it takes the ink ring the choice cards take. */
+.qs-plans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
+.qs-plan { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 14px 12px;
+  border-radius: var(--radius); background: var(--sunk); cursor: pointer; transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.qs-plan > input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.qs-plan.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.qs-plan:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
+.qs-plan.is-feat { padding: 18px 16px; }
+.qs-rec { margin-bottom: 4px; padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 600; background: var(--fill); color: var(--on-fill); }
+.qs-plan-ic { width: 28px; height: 28px; stroke-width: 1.6; margin-bottom: 2px; color: var(--ink); }
+.qs-plan > b { font-size: 15px; font-weight: 600; }
+.qs-pl { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.qs-pl .ic { color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .qs-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qs-plan.is-feat { grid-column: 1 / -1; order: -1; }
 }
-@media (max-width: 959px) {
-  .qs-live > .qs-foot { position: sticky; bottom: 0; z-index: var(--z-sticky); background: var(--card); border-top: 1px solid var(--line-soft);
-    padding: 12px 0 max(12px, env(safe-area-inset-bottom)); }
-}
-.qs-sum { display: grid; gap: 12px; align-content: start; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); font-size: 14px; min-width: 0; }
-.qs-sum .qs-sec-h { margin: 0; }
-.qs-sum .msg { margin: 0; }
-.qs-sum[aria-busy="true"] .qs-tot, .qs-sum[aria-busy="true"] .qs-sum-part { opacity: .55; transition: opacity var(--t) var(--ease); }
-.qs-sum-part { display: grid; gap: 4px; }
-.qs-sum-part h3 { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
-.qs-sum-row, .qs-sum-sep { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; color: var(--ink-soft); }
-.qs-sum-row > span:first-child { overflow-wrap: anywhere; }
-.qs-sum-row > span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
-.qs-sum .qs-tot { width: 100%; background: var(--card); }
-.qs-sum-sep { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-.qs-sum-sep > span:first-child { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
-/* A choice's price at the right of its name (a plan), or under it (a platform). */
-.qs-pick b:has(> .qs-price) { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.qs-pick b > .qs-price { font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.qs-chip.has-lead .qs-text { display: flex; align-items: center; gap: 10px; }
-.qs-chip .qs-chip-w { flex: 1 1 auto; min-width: 0; }
-.qs-chip small.qs-price { flex: 0 0 auto; font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+/* The plan chosen: what it is best for, its content each month, then its
+   inclusions a tick each, on one shaded card under the cards. */
+.qs-plansel { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.qs-plansel > b { font-size: 15px; font-weight: 600; }
+.qs-best { margin: -6px 0 0; font-size: 13px; color: var(--ink-mute); }
+.qs-mixrow { display: grid; gap: 6px; }
+.qs-mixh { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.qs-mixone { justify-self: start; padding: 7px 14px; border-radius: 999px; corner-shape: round; background: var(--card); font-size: var(--ctl-text); }
+.qs-incl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+.qs-incl li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 8px; align-items: start; }
+.qs-incl-tick { margin-top: 2px; color: var(--ink); }
+/* A platform's own mark before its name, in ink (ADspaceIcons.mark), what is
+   cut out of it in the card's ground. */
+.qs-chip .qs-text:has(> .qs-lead-mark) { display: flex; align-items: center; gap: 10px; }
 .qs-lead-mark { display: inline-flex; gap: 4px; color: var(--ink); }
 .ic-mark { width: 18px; height: 18px; flex: 0 0 auto; display: block; }
-.ic-cut { fill: var(--card); }
+.ic-cut { fill: var(--sunk); }
+/* A platform's name with its marks needs the column's width on a phone. */
+@media (max-width: 560px) { .qs-plats { grid-template-columns: minmax(0, 1fr); } }
 .qs-chip.is-on .ic-cut { fill: var(--card); }
-.qs-chip:not(.is-on) .ic-cut { fill: var(--sunk); }
-/* The chosen plan: what it is best for, then its inclusions a tick each. */
-.qs-best { margin: 0; color: var(--ink-soft); font-size: 14px; }
-.qs-incl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; color: var(--ink-soft); }
-.qs-incl li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 8px; align-items: start; }
-.qs-incl-tick { margin-top: 3px; color: var(--ink); }
 
 .qs-quote { display: grid; gap: 24px; }
 /* A quotation is read as a document of figures, not page copy: its lines,

@@ -347,13 +347,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   user, 2026-10-27); the user, 2026-10-14), Customise (languages: each
   content piece is in one language, the month's content pieces divided
   across those chosen at no charge; translation is the team's to add in
-  Build quote, never offered on /quote/, 2026-11-24; budget, commitment of
-  6, 12 or 24 months alone, a segment, 3 and 18 Build quote's
-  (`quote_web_terms`); with a plan, Content production lists only the
-  formats its additional contents do not; Choose your files, the card's
-  File Release add-ons (Working files, Raw footage) as steppers wherever
-  content is made, every other add-on and an outstation fee Build quote's;
-  verification for the platforms chosen),
+  Build quote, never offered on /quote/ (the user, 2026-11-24); budget;
+  Choose your commitment of 6, 12 or 24 months alone, a segment, 3 and 18
+  Build quote's (`quote_web_terms`); with a plan, Content production lists
+  only the formats its additional contents do not; Choose your files, the
+  card's File Release add-ons (Working files, Raw footage) as steppers
+  wherever content is made, every other add-on and an outstation fee Build
+  quote's; verification only for the platforms chosen),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
@@ -385,26 +385,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`contact.brand`, what the visitor reads back), five a contact a day
   counted under a lock on each, only the selection keys the price reads
   kept, the number read as `wa_number` reads it (`quote_website_number`;
-  `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). The price
-  follows every choice (QUOTE WEBSITE LIVE PRICES, the user, 2026-11-24,
-  the boards QuotePhone and QuoteDesk): `quote_catalogue` (anon) carries the
-  live version's rates (each plan's fee and inclusions, each platform's,
-  content's, verification's with its platform, KOC package's, each
-  budget's cost `ad_costs`, the File Release add-ons, the website's terms
-  with their percentages, SST today), each choice reading its own (a plan
-  `Plan B · RM 2,830 per month` over `4 content pieces`, `1 graphic, 3 reels
-  or 4 reels`, its platforms, its ad budget or No advertising, and once
-  chosen its best_for and inclusions a tick each; a platform Included or
-  `+RM n per month` with its ink mark, `ADspaceIcons.mark`, Meta as
-  Facebook and Instagram, one platform; an extra content piece at the
-  plan's rate); the summary is `quote_website_preview(p_sel)` (anon, writes
-  nothing, covered with the page), priced as `quotation_make` prices a
-  website quotation, one request a selection: Per month and One-time lines,
-  ADspaceMoney's totals, the advertising budget Billed separately, beside
-  the steps at a desk (sticky) and under them on a phone, its monthly
-  figure in the foot. What a website selection may hold is
-  `quote_website_sel`, one copy for the preview and the create (`bad-term`,
-  `bad-once`). A
+  `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). No rate is
+  shown before the quotation (the user, 2026-11-25: "Prices after we
+  send"): `quote_catalogue` (anon) holds none, `tests/sql.js` reading its
+  payload for any rate key or Rate Card fee. What a website selection may
+  hold is `quote_website_sel`, read by the create (6, 12 or 24 months, else
+  `bad-term`; no translation; of the add-ons the File Release group alone,
+  else `bad-once`; `2026-11-24-quote-website-choices.sql`). A
   quotation holds at least one priced line: items quoted on request alone
   (a KOL campaign, a custom creator list) are refused on the page before
   the details are asked and by `quotation_make` (`nothing-priced`, no lead
@@ -566,5 +553,5 @@ Moved from DESIGN.md §4 on 2026-11-22.
 
 | Need | Component |
 |---|---|
-| A prospect's own quotation (`/quote/`) | `.qs`, white to the edge: an opening page first (`.qs-intro`: the title, one line of what the page gives, What to expect as numbered steps `.qs-steps`, one mute line of time, validity and commitment, then Chat on WhatsApp and Start as equal halves; no step count), written to the client or lead using it, never to a colleague; then one 560px column a step (`.qs-progress`: Step n of m over a 4px track in `--fill`; the title; choices as `--sunk` cards, `.qs-pick` and `.qs-chip`, ringed in ink once chosen, never a browser tick box: a 22px mark at the card's right edge (`.qs-mark`), where several may be chosen a rounded square (6px) filled in ink with its tick, where one of a set a ring holding an ink dot; the consent tick the same square; a step's categories each under a 16/600 heading (`.qs-sec`), items 8 apart, the next category set off by a `--line-soft` hairline and a 24px step; steppers `.qs-stepper`; Back and Continue as equal halves; every choice of one line (a chip, a card with no line under its name), field, select, segment, stepper and button one height, `--ctl-h` (34 at a desk, 36 under a finger), a stepper's − and + the small control (`.btn-sm`, never `--ctl-h` set to the small figure); every control's words the portal's control text and a field's its field text, never a page's own; the title 26px, the lead's 16 times φ, its lead 8px under it); the quotation on the record's proportion at a desk (`.qs-quote`: the lines as rows with hairlines, the totals right aligned on `--sunk`, Ready to proceed beside it in a `--sunk` card, `.qs-side`: its two questions as `fieldset.qs-ask` of `.qs-pick` cards on `--card`, the one blue Proceed with this quotation at the card's width), on a phone under it; a step done beside the quotation is the green tick (`.qs-asked`); a quotation the team has not sent is the cover (Request received, the day it will be sent as the statement, the note and the reference under it, Chat on WhatsApp, with the colleague's name where one took the lead); a colleague who took the lead is a person card under the line about them (`.qs-rep`: a `--card` card, the name 15/600 over the position, Chat on WhatsApp tonal inside it; never an initials disc, 2026-11-07) |
+| A prospect's own quotation (`/quote/`) | The plans (the boards QuotePhone and QuoteDesk, 2026-11-25): Without ads / With ads over three `.qs-plan` cards (its mark on top, `plancontent` or `planads`, the name, a line a fact with its glyph: content pieces, platforms, an ad plan's advertising budget), the middle one Recommended (`.qs-rec`, ink) at 1.4 to 1, first and the row's width on a phone; under them the chosen plan (`.qs-plansel`, shaded): its name, best_for, its content each month (a segment `#qsMix` where two, else the one as a pill) and its inclusions a tick each; platforms with their ink marks (`ADspaceIcons.mark`, Facebook and Instagram one choice); never a figure. `.qs`, white to the edge: an opening page first (`.qs-intro`: the title, one line of what the page gives, What to expect as numbered steps `.qs-steps`, one mute line of time, validity and commitment, then Chat on WhatsApp and Start as equal halves; no step count), written to the client or lead using it, never to a colleague; then one 560px column a step (`.qs-progress`: Step n of m over a 4px track in `--fill`; the title; choices as `--sunk` cards, `.qs-pick` and `.qs-chip`, ringed in ink once chosen, never a browser tick box: a 22px mark at the card's right edge (`.qs-mark`), where several may be chosen a rounded square (6px) filled in ink with its tick, where one of a set a ring holding an ink dot; the consent tick the same square; a step's categories each under a 16/600 heading (`.qs-sec`), items 8 apart, the next category set off by a `--line-soft` hairline and a 24px step; steppers `.qs-stepper`; Back and Continue as equal halves; every choice of one line (a chip, a card with no line under its name), field, select, segment, stepper and button one height, `--ctl-h` (34 at a desk, 36 under a finger), a stepper's − and + the small control (`.btn-sm`, never `--ctl-h` set to the small figure); every control's words the portal's control text and a field's its field text, never a page's own; the title 26px, the lead's 16 times φ, its lead 8px under it); the quotation on the record's proportion at a desk (`.qs-quote`: the lines as rows with hairlines, the totals right aligned on `--sunk`, Ready to proceed beside it in a `--sunk` card, `.qs-side`: its two questions as `fieldset.qs-ask` of `.qs-pick` cards on `--card`, the one blue Proceed with this quotation at the card's width), on a phone under it; a step done beside the quotation is the green tick (`.qs-asked`); a quotation the team has not sent is the cover (Request received, the day it will be sent as the statement, the note and the reference under it, Chat on WhatsApp, with the colleague's name where one took the lead); a colleague who took the lead is a person card under the line about them (`.qs-rep`: a `--card` card, the name 15/600 over the position, Chat on WhatsApp tonal inside it; never an initials disc, 2026-11-07) |
 | A client's quotations and Build quote | `#crmQuotes` (`js/quotes.js`) above the Services pane's lines: `.svc-row.qt-row`s (the reference over what it is, the monthly figure over its label, the state as `.chip-state`, a ⋯), two columns on a narrow pane. `#qbBox`, a 780px `.formsheet`: the plans as cards (`.qb-plan`: a radio mark, the letter and fee over platforms and contents; `--sunk`, the chosen `--line-soft`) under a Without ads / With ads segment at the heading's right; content and platforms (what each adds, `.qb-rate`) side by side; extra contents as steppers, languages, budget and term in three columns (one on a phone); the lines as a table and the totals right aligned, Monthly incl. SST the one bold figure; on a phone a line is its name over qty × rate and its subtotal; a line's inclusions run under its name a point each (`ul.incl`: 12.5 mute, the bullet hung), the figures on the name's line, on the phone the row's width |

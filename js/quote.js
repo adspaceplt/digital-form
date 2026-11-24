@@ -21,13 +21,12 @@
  *                           team made of it. No billing is asked: the Letter
  *                           of Offer is the sales team's.
  *
- * The price follows every choice (QUOTE WEBSITE LIVE PRICES, the user,
- * 2026-11-24, the boards QuotePhone and QuoteDesk): each plan, platform and
- * item reads its rate from the live Rate Card (`quote_catalogue`), and the
- * summary beside the steps (under them on a phone, its monthly figure in
- * the foot) is `quote_website_preview`, priced as the quotation will be.
- * The quotation itself still waits for the team. What the person picked is
- * kept in this tab (`adspace-quote`), so Back and a refresh keep it.
+ * No rate is shown before the quotation: the catalogue (`quote_catalogue`)
+ * holds none (the user, 2026-11-25: "Prices after we send"). The steps are
+ * the boards QuotePhone and QuoteDesk: the plans as cards (Without ads /
+ * With ads, the middle one Recommended), the chosen plan's content and
+ * inclusions, platforms with their ink marks, files, 6, 12 or 24 months. What the person picked is kept in this tab
+ * (`adspace-quote`), so Back and a refresh keep it.
  */
 (function () {
   'use strict';
@@ -45,7 +44,6 @@
       introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
         'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ADspace will then confirm your start date.'],
-      introRates: 'The price is shown as you choose.',
       introNote: 'This takes approximately three minutes.',
       start: 'Start',
       needT: 'What do you need?',
@@ -59,27 +57,17 @@
       needNone: 'Select at least one service.',
       reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
-      plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
-      contents: '{n} content pieces per month', mixOr: ' or ', mixAnd: ' and ',
-      kindN: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel of up to 60 seconds', '{n} reels of up to 60 seconds'] },
-      budgetUpTo: 'Includes management of an advertising budget of up to RM\u00a0{b} per month',
-      budgetSep: 'The advertising budget is billed separately.',
-      perMonth: '{a} per month', plusMonth: '+{a} per month', incl: 'Included', each: '{a} each', eachMonth: '{a} each per month',
-      perAcct: '{a} per account', perCamp: '{a} per campaign', piecesN: '{n} content pieces', platsN: 'Up to {n} platforms',
-      noAdvertising: 'No advertising', adUpTo: 'Ad budget up to RM\u00a0{b}',
+      plan: 'Plan {p}', platOne: '1 platform',
+      ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
+      recommended: 'Recommended', piecesN: '{n} content pieces', platsN: 'Up to {n} platforms', adUpTo: 'Advertising budget up to RM\u00a0{b}',
+      piecesHead: '{n} content pieces each month', piecesPick: '{n} content pieces each month, choose one',
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
-      platHead1: 'Plan {p} includes 1 platform. Each further platform is charged per month.',
-      platHeadN: 'Plan {p} includes {n} platforms. Each further platform is charged per month.',
-      adsNone: 'No advertising', adsMeta: 'Meta advertising, ad budget up to RM\u00a0{b}', adsPlan: 'Plan budget, up to RM\u00a0{b}',
-      adsBoost: 'Ads Booster, ad budget up to RM\u00a0{b}', files: 'Choose your files',
-      termMin: 'The minimum commitment is 6 months.', termOff: 'A {n}-month commitment reduces every monthly charge by {p}%.',
-      sumH: 'Summary', sumMonth: 'Per month', sumOnce: 'One-time', sumSep: 'Billed separately',
-      sumBudget: 'Advertising budget of up to RM\u00a0{b} per month, paid to the advertising platforms',
-      sumNote: 'Prices are in Malaysian Ringgit, based on the ADspace Rate Card v.{v}.',
-      sumEmpty: 'Choose a plan or a service to see the price.', sumFail: 'The price could not be shown. Please refresh the page.',
+      platHead1: 'Plan {p} includes 1 platform. Each additional platform is charged per month.',
+      platHeadN: 'Plan {p} includes {n} platforms. Each additional platform is charged per month.',
+      files: 'Choose your files', termMin: 'The minimum commitment is 6 months.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
-      extra: 'Add content pieces per month to the plan', mixH: 'Choose your content pieces per month', fewer: 'One fewer', more: 'One more',
+      extra: 'Add content pieces per month to the plan', fewer: 'One fewer', more: 'One more',
       langs: 'Choose your languages', langsNote: 'Each content piece is published in one language. The monthly content pieces may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no additional charge.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Choose your commitment', months: '{n} months',
@@ -175,7 +163,6 @@
       introP: '选择品牌所需的服务，即可申请报价。',
       introH: '流程说明',
       introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
-      introRates: '价格随您的选择即时显示。',
       introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
@@ -189,27 +176,17 @@
       needNone: '请至少选择一项服务。',
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
-      plan: '方案 {p}', platOne: '1个平台', platUpTo: '最多{n}个平台',
-      contents: '每月{n}条内容', mixOr: '，或', mixAnd: '、',
-      kindN: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频（60秒内）', '{n}条短视频（60秒内）'] },
-      budgetUpTo: '代为管理每月最高 RM\u00a0{b} 的广告预算',
-      budgetSep: '广告预算另行收费。',
-      perMonth: '每月 {a}', plusMonth: '每月另加 {a}', incl: '已包含', each: '每项 {a}', eachMonth: '每项每月 {a}',
-      perAcct: '每个账号 {a}', perCamp: '每次活动 {a}', piecesN: '{n}条内容', platsN: '最多{n}个平台',
-      noAdvertising: '不含广告', adUpTo: '广告预算最高 RM\u00a0{b}',
+      plan: '方案 {p}', platOne: '1个平台',
+      ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
+      recommended: '推荐', piecesN: '{n}条内容', platsN: '最多{n}个平台', adUpTo: '广告预算最高 RM\u00a0{b}',
+      piecesHead: '每月{n}条内容', piecesPick: '每月{n}条内容，请选择一种组合',
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
       platHead1: '方案 {p} 包含1个平台，每增加一个平台按月收费。',
       platHeadN: '方案 {p} 包含{n}个平台，每增加一个平台按月收费。',
-      adsNone: '不含广告', adsMeta: 'Meta 广告，广告预算最高 RM\u00a0{b}', adsPlan: '方案内广告预算，最高 RM\u00a0{b}',
-      adsBoost: '广告加量（Ads Booster），广告预算最高 RM\u00a0{b}', files: '选择所需文件',
-      termMin: '最低合约期为6个月。', termOff: '签订{n}个月合约，每月费用减免{p}%。',
-      sumH: '报价摘要', sumMonth: '每月', sumOnce: '一次性', sumSep: '另行收费',
-      sumBudget: '每月最高 RM\u00a0{b} 的广告预算，直接支付予广告平台',
-      sumNote: '价格以马来西亚令吉计，依据 ADspace 价目表 v.{v}。',
-      sumEmpty: '选择方案或服务后即可查看价格。', sumFail: '暂时无法显示价格，请刷新页面。',
+      files: '选择所需文件', termMin: '最低合约期为6个月。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
-      extra: '为方案增加每月内容', mixH: '选择每月内容', fewer: '减少一条', more: '增加一条',
+      extra: '为方案增加每月内容', fewer: '减少一条', more: '增加一条',
       langs: '选择语言', langsNote: '每条内容使用一种语言。每月内容可分配至所选语言，例如2条英文、4条中文，不另收费。',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '选择合约期', months: '{n}个月',
@@ -321,8 +298,7 @@
   var INDUSTRIES = [];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
   /* The commitments /quote/ offers (6, 12 and 24 months, the user,
-     2026-11-24; 3 and 18 are Build quote's), as the catalogue answers them;
-     a catalogue from before names none. */
+     2026-11-24; 3 and 18 are Build quote's), as the catalogue names them. */
   var TERMS = [6, 12, 24];
 
   var lang = 'en';
@@ -378,11 +354,6 @@
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
   var CAT = null, Q = null;
-  /* The live price (quote_website_preview) of the selection as it stands:
-     `P` the answer drawn, `PK` the selection it answers, one request a
-     selection however often it is drawn. */
-  var P = null, PK = null, PFAIL = false, PRICED = {};
-  function live() { return Boolean(CAT && CAT.plans && CAT.plans.length && CAT.plans[0].rate != null); }
   /* Held in this page alone, never kept in the tab: the contact for Change
      selection, once the quotation is made (the user, 2026-10-14: "dont
      cache my record"). */
@@ -416,7 +387,7 @@
   }
 
   /* The files a content piece is released with (Working files, Raw
-     footage): asked wherever content is made. */
+     footage; the user, 2026-11-24): asked wherever content is made. */
   function filesAsked() { return Boolean((S.need.social || S.need.content) && CAT && (CAT.files || []).length); }
   /* A verification for the platforms chosen, where platforms are chosen;
      every one where verification alone is asked. */
@@ -451,17 +422,10 @@
   // ---- Drawing ----------------------------------------------------------------
   function frame(body, foot) {
     var a = steps(), i = a.indexOf(S.step) + 1;
-    var step = '<div class="qs-step" data-shown><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
+    return '<div class="qs-step" data-shown><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
       '<div class="qs-track"><i style="width:' + Math.round(i / (a.length + 1) * 100) + '%"></i></div></div>' + body +
-      '<p class="msg" id="qsMsg" role="status"></p></div>';
-    /* Once a plan or a service can be priced, the summary stands beside the
-       steps at a desk and under them on a phone, its monthly figure kept in
-       the foot (the boards QuoteDesk and QuotePhone). */
-    if (live() && S.step !== 'need') {
-      return '<div class="qs-live">' + step + '<aside class="qs-sum" id="qsSum" aria-label="' + esc(t().sumH) + '">' + sumHtml() + '</aside>' +
-        '<div class="qs-foot"><p class="qs-footsum" id="qsFootSum">' + footSum() + '</p>' + foot + '</div></div>';
-    }
-    return step + '<div class="qs-foot">' + foot + '</div>';
+      '<p class="msg" id="qsMsg" role="status"></p></div>' +
+      '<div class="qs-foot">' + foot + '</div>';
   }
   function navFoot(first) {
     return (first ? '' : '<button class="btn qs-back" type="button" data-a="back">' + esc(t().back) + '</button>') +
@@ -473,16 +437,9 @@
     return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
       (on ? ' checked' : '') + '><span class="qs-text"><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + MARK + '</label>';
   }
-  function chip(name, value, on, label, lead, note) {
-    return '<label class="qs-chip' + (on ? ' is-on' : '') + (lead ? ' has-lead' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
-      (on ? ' checked' : '') + '><span class="qs-text">' + (lead ? '<span class="qs-lead-mark">' + lead + '</span>' : '') + '<span class="qs-chip-w">' + esc(label) + '</span>' +
-      (note ? '<small class="qs-price" data-note="' + esc(value) + '">' + esc(note) + '</small>' : '') + '</span>' + MARK + '</label>';
-  }
-  /* A choice card whose title carries its price at the right of its name. */
-  function priced(type, name, value, on, title, price, sub) {
-    return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
-      (on ? ' checked' : '') + '><span class="qs-text"><b><span>' + esc(title) + '</span>' + (price ? '<span class="qs-price">' + esc(price) + '</span>' : '') + '</b>' +
-      (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + MARK + '</label>';
+  function chip(name, value, on, label, lead) {
+    return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
+      (on ? ' checked' : '') + '><span class="qs-text">' + (lead ? '<span class="qs-lead-mark">' + lead + '</span>' : '') + esc(label) + '</span>' + MARK + '</label>';
   }
   function stepper(group, slug, label, n, sub) {
     return '<div class="qs-stepper"><span>' + esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="qs-count">' +
@@ -502,26 +459,12 @@
       (forId ? '</label>' : '</h2>') + body + '</section>';
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
-  /* What a plan's contents are, so a visitor knows what the count covers
-     (the user, 2026-10-14): "4 contents per month: 2 graphics and 2 reels". */
-  function mixWords(m) {
-    var K = t().kindN;
-    return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
-      .filter(function (k) { return m[k]; }).map(function (k) {
-        var w = K[k] || ['{n} ' + k, '{n} ' + k];
-        return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
-      }).join(t().mixAnd);
-  }
-  function mixLine(p) {
-    return (p.mix || []).map(mixWords).join(t().mixOr);
-  }
-
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
   function paintIntro() {
     return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
         t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
-      '<p class="qs-note">' + esc((live() ? t().introRates + ' ' : '') + t().introNote) + '</p></div>' +
+      '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
       '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
@@ -536,10 +479,8 @@
       }).join('') + '</div>', navFoot());
   }
 
-  function money0(v) { return 'RM ' + n0(v); }
-  function rateOf(list, slug) { var x = (list || []).filter(function (c) { return c.slug === slug; })[0]; return x && x.rate != null ? Number(x.rate) : null; }
-  /* A plan's content as the boards write it (the user, 2026-11-24): "3
-     graphics, 4 reels or 8 reels". */
+  function ic(name, cls) { return window.ADspaceIcons ? window.ADspaceIcons.svg(name, cls) : ''; }
+  /* A plan's content as the boards write it: "3 graphics, 4 reels". */
   function mixShort(m) {
     var K = t().kindS;
     return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
@@ -548,104 +489,72 @@
         return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
       }).join(t().mixSep);
   }
-  function planSub(p) {
-    var w = t();
-    return [f(w.piecesN, { n: p.contents }), (p.mix || []).map(mixShort).join(w.mixOr),
-      p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms }),
-      p.ad_budget ? f(w.adUpTo, { b: n0(p.ad_budget) }) : w.noAdvertising].join('\n');
-  }
-  /* What each platform adds, as quote_price prices it: the plan's places go
-     to the cheapest chosen, a dearer one inside the plan adding the
-     difference from Meta's fee; one past the places its own fee. */
-  function platNotes() {
-    var R = CAT.platform_rates || {}, p = planOf(), out = {};
-    if (!live()) return out;
-    var order = CAT.platforms, fee = function (k) { return Number(R[k] || 0); }, base = fee('meta');
-    var picked = S.platforms.filter(function (k) { return order.indexOf(k) >= 0; })
-      .sort(function (a, b) { return fee(a) - fee(b) || order.indexOf(a) - order.indexOf(b); });
-    var slots = p ? p.platforms : 0;
-    order.forEach(function (k) {
-      if (!p) { out[k] = f(t().perMonth, { a: money0(fee(k)) }); return; }
-      var i = picked.indexOf(k), inPlan = i >= 0 ? i < slots : picked.length < slots;
-      out[k] = inPlan ? (fee(k) > base ? f(t().plusMonth, { a: money0(fee(k) - base) }) : t().incl) : f(t().plusMonth, { a: money0(fee(k)) });
-    });
-    return out;
+  /* The plans as cards (the boards, 2026-11-25): its mark on top, the name,
+     then a line a fact with its glyph; the middle of the three is
+     Recommended and wider (1.4 to 1), first and the row's width on a phone. */
+  function planCard(p, i, n) {
+    var w = t(), on = S.plan === p.slug, feat = n === 3 && i === 1;
+    return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="plan" value="' + esc(p.slug) + '"' + (on ? ' checked' : '') + '>' +
+      (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
+      '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
+      '<span class="qs-pl">' + ic('pieces') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
+      '<span class="qs-pl">' + ic('device') + esc(p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms })) + '</span>' +
+      (p.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(p.ad_budget) })) + '</span>' : '') + '</label>';
   }
   function platsHtml() {
-    var I = window.ADspaceIcons, notes = platNotes();
-    return '<div class="qs-list">' + CAT.platforms.map(function (k) {
-      return chip('plat', k, S.platforms.indexOf(k) >= 0, t().plat[k] || k, I && I.mark ? I.mark(k) : '', notes[k] || '');
+    var I = window.ADspaceIcons;
+    return '<div class="qs-chips qs-two qs-plats">' + CAT.platforms.map(function (k) {
+      return chip('plat', k, S.platforms.indexOf(k) >= 0, t().plat[k] || k, I && I.mark ? I.mark(k) : '');
     }).join('') + '</div>';
   }
   function paintPlan() {
     var plans = CAT.plans.filter(function (p) { return Boolean(p.ads) === Boolean(S.withAds); }), p = planOf();
-    var head = p && live() ? '<p class="qs-note">' + esc(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '';
     return frame('<h1 class="qs-title">' + esc(t().planT) + '</h1><div class="qs-secs">' +
       sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
-        '<div class="qs-list">' + plans.map(function (p) {
-          if (!live()) {
-            return pick('radio', 'plan', p.slug, S.plan === p.slug,
-              f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
-          }
-          return priced('radio', 'plan', p.slug, S.plan === p.slug, f(t().plan, { p: p.plan }), f(t().perMonth, { a: money0(p.rate) }), planSub(p));
-        }).join('') + '</div>' + (S.withAds ? '<p class="qs-note">' + esc(t().budgetSep) + '</p>' : '')) +
+        '<div class="qs-plans">' + plans.map(function (x, i) { return planCard(x, i, plans.length); }).join('') + '</div>' +
+        '<div class="qs-xbox" id="qsPlanBox">' + planBox() + '</div>' +
+        '<p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
       '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div>' +
-      sec(t().platsH, '<div id="qsPlatBox">' + head + platsHtml() + '</div>') + '</div>', navFoot());
-  }
-  function planLine(p) {
-    var mix = mixLine(p);
-    var parts = [f(t().contents, { n: p.contents }) + (mix ? (lang === 'zh' ? '：' : ': ') + mix : '')];
-    if (p.ad_budget) parts.push(f(t().budgetUpTo, { b: n0(p.ad_budget) }));
-    return parts.join('\n');   // a line each: the contents, then the budget
+      sec(t().platsH, (p ? '<p class="qs-note">' + esc(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
+      '</div>', navFoot());
   }
   // A tick before each of the chosen plan's inclusions (the boards).
   var INCL_TICK = '<svg class="qs-incl-tick" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  /* Under the plan chosen: what it is best for and what it includes, then
-     its content option and its additional content pieces, each at the
-     plan's own rate (the user, 2026-10-14: asked under the plan). */
+  /* The plan chosen, under the cards: what it is best for, its content
+     each month (a segment where it holds two options, else the one), then
+     what it includes, a tick each. */
+  function planBox() {
+    var p = planOf(), w = t();
+    if (!p) return '';
+    var mixes = p.mix || [], cur = S.mix < mixes.length ? S.mix : 0;
+    return '<div class="qs-plansel">' + '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
+      (p.best_for ? '<p class="qs-best">' + esc(p.best_for) + '</p>' : '') +
+      '<div class="qs-mixrow"><span class="qs-mixh" id="qsMixL">' + esc(f(mixes.length > 1 ? w.piecesPick : w.piecesHead, { n: p.contents })) + '</span>' +
+      (mixes.length > 1 ? '<select class="select" id="qsMix" data-seg data-seg-value aria-labelledby="qsMixL">' + mixes.map(function (m, i) {
+          return '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + esc(mixShort(m)) + '</option>'; }).join('') + '</select>'
+        : '<span class="qs-mixone">' + esc(mixes[0] ? mixShort(mixes[0]) : '') + '</span>') + '</div>' +
+      ((p.included || []).length ? '<ul class="qs-incl">' + p.included.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '') +
+      '</div>';
+  }
+  /* Additional contents sit under the plan they add to (the user,
+     2026-10-14: on the next page they read as choosing the plan's own). */
   function extrasHtml() {
     var p = planOf();
     if (!p) return '';
-    var mixes = p.mix || [], cur = S.mix < mixes.length ? S.mix : 0, xr = (P && P.extra_rates) || {};
-    var about = live() && (p.best_for || (p.included || []).length) ? sec(f(t().plan, { p: p.plan }),
-      (p.best_for ? '<p class="qs-best">' + esc(p.best_for) + '</p>' : '') +
-      ((p.included || []).length ? '<ul class="qs-incl">' + p.included.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '')) : '';
-    return about + (mixes.length > 1 ? sec(t().mixH, '<div class="qs-list">' + mixes.map(function (m, i) {
-      return pick('radio', 'mix', String(i), i === cur, live() ? mixShort(m) : mixWords(m));
-    }).join('') + '</div>') : '') + sec(t().extra, extrasOf(p).map(function (c) {
-      return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0, xr[c.slug] != null ? f(t().eachMonth, { a: money0(xr[c.slug]) }) : '');
-    }).join(''));
+    return sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
   }
 
-  /* What managing a budget costs a month (`ad_costs`), as quote_price
-     charges it: beside a plan, the cost of the budget less its cover's. */
-  function adCost(b) {
-    var x = (CAT.ad_costs || []).filter(function (c) { return Number(c.budget) === Number(b); })[0];
-    return x && x.cost != null ? Number(x.cost) : null;
-  }
   function budgetOptions() {
-    var p = S.need.social ? planOf() : null, cover = p && p.ad_budget ? Number(p.ad_budget) : 0, out = [], L = live();
-    var base = cover ? adCost(cover) || 0 : 0;
-    if (cover) out.push([0, L ? f(t().adsPlan, { b: n0(cover) }) + ' · ' + t().incl : f(t().budgetIn, { b: n0(cover) })]);
-    CAT.budgets.forEach(function (b) {
-      if (b <= cover) return;
-      var c = adCost(b);
-      if (!L || c == null) { out.push([b, f(t().budgetUp, { b: n0(b) })]); return; }
-      out.push([b, cover ? f(t().adsBoost, { b: n0(b) }) + ' · ' + f(t().plusMonth, { a: money0(c - base) })
-        : f(t().adsMeta, { b: n0(b) }) + ' · ' + f(t().perMonth, { a: money0(c) })]);
-    });
+    var p = S.need.social ? planOf() : null, cover = p && p.ad_budget ? Number(p.ad_budget) : 0, out = [];
+    if (cover) out.push([0, f(t().budgetIn, { b: n0(cover) })]);
+    CAT.budgets.forEach(function (b) { if (b > cover) out.push([b, f(t().budgetUp, { b: n0(b) })]); });
     var top = CAT.budgets[CAT.budgets.length - 1];
-    if (top) out.push([-1, f(t().budgetAbove, { b: n0(top) }) + (L ? ' · ' + t().onReq : '')]);
+    if (top) out.push([-1, f(t().budgetAbove, { b: n0(top) })]);
     return out;
-  }
-  function termNote() {
-    var off = (CAT.terms || []).filter(function (x) { return Number(x.pct) < 0; })
-      .map(function (x) { return f(t().termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
-    return [t().termMin].concat(off).join(' ');
   }
 
   function paintCustom() {
-    var p = S.need.social ? planOf() : null, h = '', L = live();
+    var p = S.need.social ? planOf() : null, h = '';
     if (p) {
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
@@ -663,23 +572,22 @@
     if (monthly()) {
       if (TERMS.indexOf(S.term) < 0) S.term = TERMS.indexOf(12) >= 0 ? 12 : TERMS[0];
       h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true) +
-        '<p class="qs-note">' + esc(termNote()) + '</p>');
+        '<p class="qs-note">' + esc(t().termMin) + '</p>');
     }
     if (S.need.content && onceList().length) {
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
-        onceList().map(function (c) { var r = L ? rateOf(CAT.contents, c.slug) : null; return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0, r != null ? f(t().each, { a: money0(r) }) : ''); }).join(''));
+        onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
-    if (filesAsked() && L) {
+    if (filesAsked()) {
       h += sec(t().files, CAT.files.map(function (x) {
-        return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0, f(t().each, { a: money0(x.rate) }));
+        return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0);
       }).join(''));
     }
     if (S.need.koc) {
       var cr = '';
       if (CAT.koc.length) {
         cr += '<div class="field"><label class="field-label" for="qsKoc">' + esc(t().koc) + '</label><select class="select" id="qsKoc">' +
-          [['', t().kocNone]].concat(CAT.koc.map(function (k) {
-            return [k.slug, k.creators ? f(t().kocN, { n: k.creators }) + (L && k.rate != null ? ' · ' + f(t().perCamp, { a: money0(k.rate) }) : '') : t().kocCustom]; }))
+          [['', t().kocNone]].concat(CAT.koc.map(function (k) { return [k.slug, k.creators ? f(t().kocN, { n: k.creators }) : t().kocCustom]; }))
             .map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === S.koc ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
           '</select></div>';
       }
@@ -688,83 +596,12 @@
     }
     if (S.need.verify && verifyList().length) {
       h += sec(t().verify, '<div class="qs-list">' +
-        verifyList().map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, L && v.rate != null ? f(t().perAcct, { a: money0(v.rate) }) : ''); }).join('') + '</div>');
+        verifyList().map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div>');
     }
     return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1><div class="qs-secs">' + h + '</div>', navFoot());
   }
+
   var FILE_ZH = { 'Working files': '工作文件', 'Raw footage': '原始素材' };
-
-  /* The summary (the boards): what is charged per month and once, each
-     line as the quotation will price it, the totals in ADspaceMoney's rows,
-     the advertising budget billed separately. */
-  function sumHtml() {
-    var w = t();
-    if (PFAIL) return '<h2 class="qs-sec-h">' + esc(w.sumH) + '</h2><p class="msg err">' + esc(w.sumFail) + '</p>';
-    if (!P) return '<h2 class="qs-sec-h">' + esc(w.sumH) + '</h2><p class="qs-note">' + esc(w.sumEmpty) + '</p>';
-    var part = function (head, basis) {
-      var ls = P.lines.filter(function (l) { return l.basis === basis; });
-      return ls.length ? '<div class="qs-sum-part"><h3>' + esc(head) + '</h3>' + ls.map(function (l) {
-        return '<div class="qs-sum-row"><span>' + esc(l.label) + (Number(l.qty) > 1 ? ' × ' + Number(l.qty) : '') + '</span><span>' + esc(n2(l.amount)) + '</span></div>';
-      }).join('') + '</div>' : '';
-    };
-    var tt = P.totals || {};
-    return '<h2 class="qs-sec-h">' + esc(w.sumH) + '</h2>' + part(w.sumMonth, 'month') + part(w.sumOnce, 'once') +
-      '<dl class="qs-tot">' + totalsRows(tt, P).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
-      (Number(tt.budget) > 0 ? '<div class="qs-sum-sep"><span>' + esc(w.sumSep) + '</span><span>' + esc(f(w.sumBudget, { b: n0(tt.budget) })) + '</span></div>' : '') +
-      ((P.on_request || []).length ? '<p class="qs-note">' + esc(P.on_request.join(', ') + ': ' + w.onReq) + '</p>' : '') +
-      '<p class="qs-note">' + esc(f(w.sumNote, { v: P.version || CAT.version })) + '</p>';
-  }
-  function footSum() {
-    var tt = P && P.totals;
-    if (!tt) return '';
-    var x = tt.month ? [word(tt, 'monthly', P), tt.month.incl] : tt.once ? [word(tt, 'oneOff', P), tt.once.incl] : null;
-    return x ? '<span>' + esc(x[0]) + '</span><b>RM ' + esc(n2(x[1])) + '</b>' : '';
-  }
-  /* The selection priced, once a plan or a service can be: one request a
-     selection, answered from the page's own store after (`PRICED`); a
-     later answer never draws over a newer selection's. */
-  function priceable(sel) {
-    return Boolean(sel.plan || (sel.budget != null && Number(sel.budget) !== 0) || (sel.once || []).length);
-  }
-  var priceTimer = null;
-  function price() {
-    if (!live() || Q || S.step === 'need' || S.step === 'intro') return;
-    var sel = selection(), k = JSON.stringify(sel);
-    if (!priceable(sel)) { P = null; PK = k; PFAIL = false; drawSum(); return; }
-    if (PRICED[k]) { P = PRICED[k]; PK = k; PFAIL = false; drawSum(); return; }
-    clearTimeout(priceTimer);
-    priceTimer = setTimeout(function () {
-      var box = $('qsSum'); if (box) box.setAttribute('aria-busy', 'true');
-      db.rpc('quote_website_preview', { p_sel: sel }).then(function (r) {
-        var d = r && r.data;
-        if (k !== JSON.stringify(selection())) return;
-        if (r.error || !d || d.error) {
-          /* A choice the price refuses (on request alone, say) is said on
-             Continue; the summary keeps none. */
-          P = null; PFAIL = !(d && d.error && ['empty', 'nothing-priced', 'no-platform'].indexOf(d.error) >= 0); PK = k; drawSum(); return;
-        }
-        PRICED[k] = d; P = d; PK = k; PFAIL = false; drawSum();
-      }).catch(function () { if (k === JSON.stringify(selection())) { P = null; PFAIL = true; drawSum(); } });
-    }, 180);
-  }
-  function drawSum() {
-    var box = $('qsSum'), foot = $('qsFootSum');
-    if (box) { box.innerHTML = sumHtml(); box.removeAttribute('aria-busy'); }
-    if (foot) foot.innerHTML = footSum();
-    /* the extra content rates under the plan come with the price */
-    var xr = (P && P.extra_rates) || {};
-    Array.prototype.forEach.call(root().querySelectorAll('[data-group="extra"][data-step="1"]'), function (b) {
-      var row = b.closest('.qs-stepper'), lab = row && row.querySelector('span'), sm = lab && lab.querySelector('small'), r = xr[b.getAttribute('data-slug')];
-      if (!lab || r == null) return;
-      if (!sm) { sm = document.createElement('small'); lab.appendChild(sm); }
-      sm.textContent = f(t().eachMonth, { a: money0(r) });
-    });
-  }
-  function drawPlats() {
-    var box = $('qsPlatBox');
-    if (box) { var p = planOf(); box.innerHTML = (p && live() ? '<p class="qs-note">' + esc(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml(); }
-  }
-
   function todayMY() { return window.ADspaceClock.today(); }
   function field(id, label, req, html, hint) {
     return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
@@ -800,35 +637,32 @@
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */
-  /* `q`: the quotation the totals are of, the one shown unless the live
-     price is meant (QUOTE WEBSITE LIVE PRICES). */
-  function taxed(tt, q) { q = q || Q; return window.ADspaceMoney.sstOf(q && q.lines, tt.sst_pct); }
-  function sstOn(tt, q) { return taxed(tt, q).on; }
-  function word(tt, key, q) { return sstOn(tt, q) ? t()[key] : t()[key + 'None']; }
+  function taxed(tt) { return window.ADspaceMoney.sstOf(Q && Q.lines, tt.sst_pct); }
+  function sstOn(tt) { return taxed(tt).on; }
+  function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function adsOf(tt) { return tt.layout === 2 && Array.isArray(tt.ads) ? tt.ads : []; }
   function termWords(n, p) {
     var line = window.ADspaceMoney.termLine(n, p, lang === 'zh');
     return lang === 'zh' ? line : line.charAt(0).toUpperCase() + line.slice(1);
   }
-  function totalsRows(tt, q) {
+  function totalsRows(tt) {
     /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
-    q = q || Q;
-    var w = t(), on = sstOn(tt, q);
+    var w = t(), on = sstOn(tt);
     /* The rate the lines carry (a revision may hold a line's own code; the
        audit of 2026-10-26, finding 9), else SST where they differ. */
-    var rt = /([\d.]+)%/.exec(taxed(tt, q).word);
+    var rt = /([\d.]+)%/.exec(taxed(tt).word);
     var sst = on ? (rt ? f(w.sst, { p: rt[1] }) : 'SST') : w.sstNone;
     var WORD = { monthSub: w.monthSub, onceSub: w.onceSub, firstExcl: w.firstExcl, monthExcl: w.monthExcl, sst: sst,
-      first: word(tt, 'first', q), monthly: word(tt, 'monthly', q), oneOff: word(tt, 'oneOff', q) };
+      first: word(tt, 'first'), monthly: word(tt, 'monthly'), oneOff: word(tt, 'oneOff') };
     /* A quotation in sections (layout 2, 2026-11-12) never adds the one-off
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
-    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : q && q.lines, on).map(function (x) {
+    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
       /* a row a term percentage where the lines differ (2026-11-15), in
          the PDF's words: a row whose lines run different months names
          none (2026-11-24) */
       var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
-      return x[2] ? [label, (q === Q ? qc() : 'RM') + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
+      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
     });
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
     return r;
@@ -1369,7 +1203,6 @@
     if (steps().indexOf(S.step) < 0) S.step = 'need';
     root().innerHTML = { need: paintNeed, plan: paintPlan, custom: paintCustom, details: paintDetails }[S.step]();
     decorate();
-    price();
   }
   function decorate() {
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
@@ -1610,7 +1443,6 @@
       var row = b.closest('.qs-stepper');
       row.querySelector('b').textContent = S[g][slug];
       row.querySelector('[data-step="-1"]').disabled = !S[g][slug];
-      price();
       return;
     }
     if (a === 'next') next();
@@ -1650,17 +1482,15 @@
     else if (nm === 'plat') {
       S.platforms = S.platforms.filter(function (p) { return p !== el.value; });
       if (el.checked) S.platforms.push(el.value);
-      var notes = platNotes();
-      Array.prototype.forEach.call(root().querySelectorAll('[data-note]'), function (n) { n.textContent = notes[n.getAttribute('data-note')] || ''; });
     }
     else if (nm === 'plan') {
       S.plan = el.value; S.mix = 0;
       // Extras the new plan does not offer leave with the old one.
       var ok = extrasOf(planOf()).map(function (c) { return c.slug; });
       Object.keys(S.extra).forEach(function (k) { if (ok.indexOf(k) < 0) delete S.extra[k]; });
-      var xb = document.getElementById('qsExtraBox');
-      if (xb) xb.innerHTML = extrasHtml();
-      drawPlats();
+      keep(); paint();
+      var pc = root().querySelector('input[name=plan][value="' + el.value + '"]'); if (pc) pc.focus({ preventScroll: true });
+      return;
     }
     else if (nm === 'lang') {
       S.langs = S.langs.filter(function (l) { return l !== el.value; });
@@ -1668,7 +1498,7 @@
       if (!S.langs.length) { S.langs = [el.value]; el.checked = true; }
       keep(); paint(); return;
     }
-    else if (nm === 'mix') { S.mix = Number(el.value) || 0; }
+    else if (id === 'qsMix') { S.mix = Number(el.value) || 0; }
     else if (nm === 'kol') { S.kol = el.checked; }
     else if (nm === 'verify') {
       S.verify = S.verify.filter(function (v) { return v !== el.value; });
@@ -1700,7 +1530,6 @@
       else lab.classList.toggle('is-on', el.checked);
     }
     keep();
-    price();
   });
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
@@ -1775,7 +1604,7 @@
       var d = r && r.data;
       if (r.error || !d || d.error) { paint.off = true; CAT = null; paint(); return; }
       CAT = d;
-      if (Array.isArray(d.terms) && d.terms.length) TERMS = d.terms.map(function (x) { return Number(x.months); });
+      if (Array.isArray(d.terms) && d.terms.length) TERMS = d.terms.map(Number).filter(function (n) { return n > 0; });
       if (S.plan && !planOf()) S.plan = null;
       if (done) done(); else paint();
     }).catch(function () { paint.off = true; paint(); });
