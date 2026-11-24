@@ -1045,6 +1045,13 @@
       return Promise.resolve(db.rpc('team_member_purge', { p_member: m.id, p_name: typeof v === 'string' ? v : m.name })).then(function (r) {
         if (r.error) return PURGE_SAID[r.error.message] || teamSaid(r.error);
         var a = r.data || {};
+        /* A trip another colleague joined, or a record not the colleague's
+           own, holds the delete (review 2026-11-24). */
+        if (a.error === 'in-use') {
+          return (a.held || []).indexOf('trips') >= 0
+            ? 'This colleague cannot be deleted because other colleagues joined outstation trips they drove. They remain removed.'
+            : 'This colleague cannot be deleted because other records still name them. They remain removed.';
+        }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
         closeRec();
         msg('teamMsg', m.name + ' deleted.', 'ok');
