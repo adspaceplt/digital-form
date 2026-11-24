@@ -13232,6 +13232,35 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
         return qtOrder(Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) }));
       };
+
+      var qtCompose = function (snap, sel, console) {
+        sel = sel || {};
+        if (sel.brands == null) return qtCustom(qtPrice(snap, sel, sel.edits), console ? sel : {});
+        if (!console || !Array.isArray(sel.brands) || sel.brands.length < 1 || sel.brands.length > 10) return { error: 'bad-brands' };
+        var KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order'];
+        var lines = [], req = [], names = [], rates = [], first = null, pct = 0, budget = 0, adj = 0;
+        for (var i = 0; i < sel.brands.length; i++) {
+          var b = sel.brands[i], nm = b && typeof b === 'object' && typeof b.name === 'string' ? b.name.trim() : '';
+          if (!nm || nm.length > 120) return { error: 'bad-brands', brand: i };
+          var bs = { term: sel.term };
+          KEYS.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(b, k)) bs[k] = b[k]; });
+          var p = qtCustom(qtPrice(snap, bs, bs.edits), bs);
+          if (p.error) return Object.assign({}, p, { brand: i, brand_name: nm });
+          var t = p.totals || {};
+          if (!first) first = t;
+          if (Number(t.term_pct || 0)) pct = Number(t.term_pct);
+          budget += Number(t.budget || 0);
+          (p.lines || []).forEach(function (l) { lines.push(Object.assign({}, l, { brand: i })); });
+          req = req.concat(p.on_request || []);
+          names.push({ name: nm });
+          rates.push({ name: nm, extra_rates: p.extra_rates || {}, month: t.month, once: t.once, term_pct: t.term_pct, term_rows: t.term_rows });
+          adj += Number(p.adjusted || 0);
+        }
+        if (!lines.length && !req.length) return { error: 'empty' };
+        var tt = qtTotals(lines, Number(first.term || 1), pct, Number(first.sst_pct || 0));
+        return { lines: lines, on_request: req, adjusted: adj, extra_rates: rates[0].extra_rates, brands: rates,
+          totals: Object.assign({}, first, { term_pct: pct, budget: budget, brands: names, month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) };
+      };
       var qtClientExtras = function (cid, lines, sel) {
         for (var i = 0; i < lines.length; i++) {
           var l = lines[i];
@@ -13912,7 +13941,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpc = args.p_sel && args.p_sel.client && DB.clients.filter(function (c) { return c.id === args.p_sel.client; })[0];
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, qpc.owner_id, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
-        var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
+        var qp = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), true), qpFx);
         if (!qp.error) { qp.version = qtCard.version; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
@@ -13960,7 +13989,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         args.p_sel = qtNoClient(args.p_sel);
         var qcFx = qtFx(qc.id);
         if (qcFx === 0) return qtOk({ error: 'no-fx' });
-        var qpr = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), args.p_sel), qcFx);
+        var qpr = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, true), qcFx);
         if (qpr.error) return qtOk(qpr);
         var qcx = qtExtras(args.p_sel);
         if (qcx.error) return qtOk(qcx);
@@ -14003,7 +14032,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
-        var qe = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qq.source === 'console' ? qeSel : {}), qeFx);
+        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qq.source === 'console' ? qeSel : Object.assign({}, qeSel, { edits: undefined }), qq.source === 'console'), qeFx);
         if (qe.error) return qtOk(qe);
         var qex = qtExtras(qq.source === 'console' ? qeSel : {});
         if (qex.error) return qtOk(qex);
