@@ -4790,11 +4790,7 @@ function cardSlugFree(name, self, email) {
     var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
     var files = {};
     Object.keys(r.files || {}).forEach(function (k) { files[k] = { at: r.files[k].at, type: r.files[k].type }; });
-
-    var prefill = {};
-    if (String(t.email || '').trim()) prefill.email = String(t.email).trim();
-    if (String(t.mobile || '').trim()) prefill.mobile = String(t.mobile).trim();
-    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), prefill: prefill, files: files,
+    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), files: files,
       consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
       requested_at: r.requested_at || null, updated_at: r.updated_at || null,
       updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,
@@ -5796,8 +5792,8 @@ function cardSlugFree(name, self, email) {
   }
 
   function idFormats() {
-    if (DB.id_formats) return DB.id_formats;
-    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' } };
+    if (DB.id_formats) { if (!DB.id_formats.trip) DB.id_formats.trip = { prefix: 'OS', width: 2, next_no: 1 }; return DB.id_formats; }
+    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' }, trip: { prefix: 'OS', width: 2, next_no: 1 } };
     idBackfill();
     return DB.id_formats;
   }
@@ -10485,7 +10481,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+
+        var tf = (idFormats().trip) || { prefix: 'OS', width: 2 }, tn = String(refs[m]);
+        while (tn.length < (tf.width || 2)) tn = '0' + tn;
+        t.ref = '#' + (tf.prefix || 'OS') + m + tn;
         return t.ref;
       };
       var oJson = function (t) {
@@ -11022,7 +11021,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (dfr) return Promise.resolve({ data: null, error: { message: dfr } });
       var da = args || {}, dOut;
       idFormats();
-      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job'].map(function (k) { var f = DB.id_formats[k];
+      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
         return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
@@ -11031,7 +11030,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = dO && opsMe() ? DB.id_formats.job.pattern.replace('{creator}', (dC && dC.creator_code) || '').replace('{campaign}', (dM && dM.campaign_code) || '') : null;
       } else if (!opsGranted('team.settings', 'work')) dOut = { error: 'denied' };
       else {
-        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference' })[da.p_kind];
+        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number' })[da.p_kind];
         if (!dF) dOut = { error: 'not-found' };
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
@@ -11040,6 +11039,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           var dP = String(da.p_prefix || '').trim().toUpperCase(), dWd = Number(da.p_width), dN = Number(da.p_next);
           var dRows = da.p_kind === 'creator' ? (DB.creators || []).map(function (c) { return c.creator_code; }) : (DB.campaigns || []).map(function (m) { return m.campaign_code; });
+          if (da.p_kind === 'trip') { dRows = []; dN = dF.next_no; }
           var dTop = dRows.filter(function (c) { return c && new RegExp('^' + dP + '[0-9]+$').test(c); }).map(function (c) { return Number(c.slice(dP.length)); })
             .reduce(function (a, b) { return Math.max(a, b); }, 0);
           if (!/^[A-Z]{1,6}$/.test(dP)) dOut = { error: 'bad-prefix' };
@@ -11054,7 +11054,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (dN !== dF.next_no) dMv.push('next ' + dF.next_no + ' → ' + dN);
             var dRp = da.p_kind === 'creator' ? String(da.p_pattern || '').trim() : '';
             if (dRp && dRp !== dF.pattern) { dMv.push('payment details reference ' + (dF.pattern || 'not set') + ' → ' + dRp); }
-            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
+            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', da.p_kind === 'trip' ? 'Outstation trip numbers' : 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
             dOut = { ok: true };
           }
         }
