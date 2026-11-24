@@ -1360,17 +1360,13 @@
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
        WhatsApp Manage and its Feedback request part, the client read. */
-    $('crmFeedback').hidden = true;
-    /* Feedback is asked of a client, never a lead (MENU-1, 2026-10-22);
-       wa_compose_prepare refuses it there too (`not-client`). */
-    if (bandKey(c.stage) !== 'clients.leads' && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
-      var fbFor = c.id;
-      window.ADspaceWhatsApp.on('feedback').then(function (yes) {
-        if (!state.client || state.client.id !== fbFor || !yes) return;
-        $('crmFeedback').hidden = false;
-        $('crmClientMenuWrap').hidden = false;
-      });
-    }
+    /* Request feedback (CLIENT FEEDBACK, 2026-11-24; the user: "only
+       requested feedback (via email) to main pic"): a client, never a lead,
+       at Clients Work, where this colleague may send email by hand; the
+       database refuses the same (`feedback_mail_begin`). */
+    $('crmFeedback').hidden = !(bandKey(c.stage) !== 'clients.leads' && canWork && mayPart('clients', 'work') &&
+      (!bridge.may || bridge.may('send.email')));
+    if (!$('crmFeedback').hidden) $('crmClientMenuWrap').hidden = false;
     /* Introduce representative (2026-11-11): a lead whose Sales by is set is
        told on WhatsApp who of the business development team took their
        enquiry, where that template is on; wa_compose_prepare refuses it
@@ -1455,7 +1451,7 @@
      The Activity record has no tab: it opens from the rail's Recent
      activity (View all), and the strip then marks none. */
   var TABS = { overview: ['overview'], calls: ['calls'], engagements: ['engagements', 'checklists'],
-    services: ['services', 'documents'], brand: ['brand'], account: ['contacts', 'billing'], activity: ['activity'] };
+    services: ['services', 'documents'], brand: ['brand'], feedback: ['feedback'], account: ['contacts', 'billing'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
   var PANES = Object.keys(GROUP_OF).concat(['account']);
@@ -1483,6 +1479,8 @@
   /* A part is drawn where its reader may open it. */
   function partOk(k) {
     if (k === 'activity') return maySeeActivity();
+    /* Feedback is asked of a client, never a lead (CLIENT FEEDBACK, 2026-11-24). */
+    if (k === 'feedback') return !!state.client && bandKey(state.client.stage) !== 'clients.leads' && mayPart('clients', 'view');
     if (k === 'engagements') {
       var c = state.client, ENG = window.ADspaceEngage;
       return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
@@ -1528,6 +1526,7 @@
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (group === 'calls' && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
+    if (group === 'feedback') loadFeedback();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
     if (parts.indexOf('billing') > -1 && visit && state.client && !state.entLoading) { state.entFor = null; loadEntities(); }
@@ -2737,11 +2736,118 @@
 
   /* Take a lead nobody is in charge of: Person in charge becomes the person
      pressing, filed as any other edit of it. */
-  /* The feedback template to the client's main contact, in the composer
-     every record shares; it asks before it sends. */
+  /* Request feedback (CLIENT FEEDBACK, 2026-11-24): the form chosen, then
+     emailed to the client's primary contact by supplier-mail; a request of
+     the same form still open is closed by the new one. */
+  var FB_SAID = { denied: 'You do not have permission to request feedback. Please ask an admin.',
+    'send-off': 'Sending email is switched off for you. Please ask an admin.',
+    'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
+    'not-active': 'Feedback can be requested of an active client only.',
+    'no-contact': 'The primary contact holds no email. Add one under Account first.',
+    'not-found': 'This client no longer exists.', 'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
+    'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.' };
   function askFeedback(c) {
-    window.ADspaceWhatsApp.compose({ purpose: 'feedback', clientId: c.id, opener: $('crmClientMenuBtn'),
-      onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
+    var primary = (state.contacts || []).filter(function (k) { return k.client_id === c.id && k.is_primary && !k.archived_at; })[0];
+    window.ADspaceConfirm.ask({
+      title: 'Request feedback', go: 'Send', wait: true,
+      body: primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
+      fields: [{ name: 'k', label: 'Form', seg: true, choices: [['quick', 'Service rating'], ['review', 'Performance review']], value: 'quick' }]
+    }, function (v) {
+      var kind = (v && v.k) || 'quick';
+      return db.functions.invoke('supplier-mail', { body: { feedback: true, client: c.id, kind: kind } }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return FB_SAID['not-sent'];
+        if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
+        msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
+        if (pane === 'feedback') loadFeedback();
+        return '';
+      }).catch(function () { return FB_SAID['not-sent']; });
+    });
+  }
+
+  /* The record's Feedback pane: every request, newest first, its answer
+     read where it was given, and a low score's follow-up task. An account
+     manager's own score is the database's to withhold. */
+  var fbRows = null;
+  var FB_KIND = { quick: 'Service rating', review: 'Performance review' };
+  function fbState(r) {
+    var s = r.response;
+    if (s && s.band === 'low' && !s.task_done) return ['Follow-up open', 'is-danger'];
+    if (s) return ['Answered', 'is-ok'];
+    if (r.closed_reason === 'withdrawn' || r.mail_status === 'failed') return ['Withdrawn', 'is-off'];
+    if (r.closed_reason === 'replaced') return ['Closed', 'is-off'];
+    return [r.opened_at ? 'Opened' : 'Sent', 'is-warn'];
+  }
+  function fbScore(s) {
+    if (!s) return '';
+    return s.max === 10 && s.answers && s.answers[0] && s.answers[0].key === 'nps'
+      ? (s.band === 'high' ? 'Promoter' : s.band === 'mid' ? 'Passive' : 'Detractor') + ' · ' + s.score
+      : s.score + ' of ' + s.max;
+  }
+  function loadFeedback() {
+    var c = state.client, box = $('crmFbBox');
+    if (!c || !box) return;
+    var forId = c.id;
+    if (window.ADspaceState) ADspaceState.skeleton(box, 3);
+    db.rpc('feedback_client', { p_client: c.id }).then(function (r) {
+      if (!state.client || state.client.id !== forId) return;
+      if (r.error || (r.data || {}).error) throw r.error || new Error((r.data || {}).error);
+      fbRows = r.data.requests || [];
+      paintFeedback();
+    }).catch(function (e) {
+      if (state.client && state.client.id === forId) ADspaceState.failLine(box, 'Feedback', e && e.message, loadFeedback);
+    });
+  }
+  function paintFeedback() {
+    var box = $('crmFbBox'), rows = fbRows || [];
+    var n = $('crmFbN');
+    if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
+    if (!rows.length) { ADspaceState.emptyLine(box, 'No feedback requested.'); return; }
+    box.innerHTML = '<div class="crm-table fbc-table"><div class="fbc-row crm-head prow"><span class="pr-main">Request</span><span>Sent</span><span>Answered</span>' +
+      '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
+        var st = fbState(q), s = q.response;
+        return '<details class="fbc-item" data-id="' + esc(q.id) + '"><summary class="fbc-row prow">' +
+          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc('Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
+          '<span>' + esc(niceDate(q.created_at)) + '</span><span>' + (s ? esc(niceDate(s.submitted_at)) : '<span class="mute">\u2014</span>') + '</span>' +
+          '<span class="pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
+          '<span class="pr-end fbc-score' + (s && s.band === 'low' ? ' is-late' : '') + '">' + (s ? esc(fbScore(s)) : '<span class="mute">\u2014</span>') + '</span>' +
+          '</summary>' + (s ? fbAnswers(q, s) : '') + '</details>';
+      }).join('') + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-fb="task"]'), function (b) {
+      b.addEventListener('click', function () { followUp(b.getAttribute('data-r'), b); });
+    });
+  }
+  function fbAnswers(q, s) {
+    var body = (s.answers || []).map(function (a) {
+      var head = '<p class="fbread-q">' + esc(a.en) + '</p>';
+      if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
+      return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
+    }).join('');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : 'Submitted on the link', q.manager ? 'Account manager at sending: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
+      ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
+    return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';
+  }
+  function followUp(respId, btn) {
+    var c = state.client, me = bridge.me && bridge.me();
+    if (!c || !me) return;
+    btn.disabled = true;
+    var tom = ADspaceClock.addDays ? ADspaceClock.addDays(today(), 1) : today();
+    var payload = { title: 'Follow up low feedback score · ' + c.name, workflow_key: 'task', scope: 'client', client_id: c.id,
+      task_type: 'adhoc', owner_id: me.id, final_due_at: tom + 'T00:00:00Z', priority_level: 2, checklist: [] };
+    db.rpc('ops_create_task', { p_payload: payload, p_idem: 'fb-' + respId }).then(function (r) {
+      var t = r.data || {};
+      if (r.error || t.error || !t.id) throw new Error((t && t.error) || 'not-made');
+      return db.rpc('feedback_followup', { p_response: respId, p_task: t.id });
+    }).then(function (r) {
+      if (r.error || (r.data || {}).error) throw new Error('not-linked');
+      msg('crmFbMsg', 'Task created.', 'ok');
+      loadFeedback();
+    }).catch(function () {
+      btn.disabled = false;
+      msg('crmFbMsg', 'The task could not be created. Please try again.', 'err');
+    });
   }
   function takeLead(c) {
     var me = bridge.me && bridge.me();

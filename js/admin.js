@@ -6801,6 +6801,8 @@
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SETTING_SHEETS = {
     details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
+    /* Client feedback (2026-11-24): how long since a client was last asked before the Dashboard counts it. */
+    feedback: { title: 'Client feedback', keys: [['feedback_quiet_months', 'Not asked for feedback within (months)', 'months', '', 'Not asked within', per('month')]] },
     followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'Lead follow-up limit (hours)', 'hours', 'Every client', 'Lead', per('hour')],
       ['proposal_followup_days', 'Proposal follow-up limit (days)', 'days', 'Every client', 'Proposal', per('day')],
       /* A VIC's own, shorter (2026-10-15). */

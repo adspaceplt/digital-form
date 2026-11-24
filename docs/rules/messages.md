@@ -223,7 +223,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   report attached is `report`; else the record's (`feedback`, `creator`),
   else `message`. The record buttons stay where they were and open it
   prefilled: Send on WhatsApp beside Mark as sent (then marked as sent
-  today), Request feedback in a client's ⋯, Resend booking in a
+  today), Resend booking in a
   booked creator's ⋯ at Confirmed and Pending visit alone (the booking goes
   out by itself on confirming; the user, 2026-10-11).
 - A quotation and a Letter of Offer (`quotation`, `offer`,

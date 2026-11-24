@@ -457,6 +457,9 @@
           meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') }]],
       ['Clients', [
         biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
+        /* Client feedback (2026-11-24): the Dashboard counts active clients not asked within it. */
+        biz && { id: 'feedback', name: 'Client feedback', kind: 'edit',
+          meta: num('feedback_quiet_months') == null ? '' : 'Not asked within ' + plural(num('feedback_quiet_months'), 'month', 'months') },
         biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
           meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
             num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
