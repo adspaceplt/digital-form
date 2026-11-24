@@ -9679,7 +9679,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-step > .msg { margin: 0; }
 .qs-step .msg:empty, .qs-cf:empty { display: none; }
 .qs-foot { display: flex; gap: 8px; padding: 20px 0 8px; }
-.qs-foot > .btn { flex: 1 1 0; }
+/* Equal halves grow from a half's basis (DESIGN.md §5). */
+.qs-foot > .btn { flex: 1 1 50%; }
 /* A forward move is a button at its own width: a lone Submit stands at the
    column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
@@ -9727,11 +9728,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-disc { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 40px; height: 40px;
   border-radius: 50%; corner-shape: round; background: var(--field); color: var(--ink); }
 .qs-disc .ic { width: 20px; height: 20px; }
-.qs-disc.is-white { background: var(--card); }
 .qs-disc.is-sm { width: 30px; height: 30px; }
 .qs-disc.is-sm .ic { width: 15px; height: 15px; }
-.qs-badge { position: absolute; top: -4px; right: -4px; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px;
-  border-radius: 50%; corner-shape: round; background: var(--fill); color: var(--on-fill); font-size: 11px; font-weight: 600; }
 /* The opening page (the boards QuoteIntroPhone and QuoteIntroDesk,
    2026-11-25): the services as tiles, five in a row at a desk, three over
    two on a phone; What to expect as shaded cards; the time with its clock. */
@@ -9739,10 +9737,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-svcs li { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px; text-align: center;
   border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--line-soft); font-size: 12.5px; line-height: 1.35; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.qs-stepcards { gap: 10px; }
-.qs-stepcards li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); }
-.qs-stepcards li::before { content: none; }
-.qs-stepcards li > span:last-child { padding-top: 9px; font-size: 14.5px; line-height: 1.5; }
 .qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
 .qs-time .ic { color: var(--ink-soft); }
 /* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk):
@@ -9785,6 +9779,52 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* A platform's name with its marks needs the column's width on a phone. */
 @media (max-width: 560px) { .qs-plats { grid-template-columns: minmax(0, 1fr); } }
 .qs-chip.is-on .ic-cut { fill: var(--card); }
+/* A form in steps (2026-11-25; js/icons.js, DESIGN.md §4). */
+.qs-intro-p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-soft); }
+.stepcards { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.stepcard {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; align-items: start;
+  padding: 14px 16px; border-radius: var(--radius); background: var(--sunk);
+}
+.stepcard-mark {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  border-radius: 50%; corner-shape: round; background: var(--card); color: var(--ink);
+}
+.stepcard-mark .ic { width: 20px; height: 20px; }
+.stepcard-n {
+  position: absolute; top: -4px; right: -4px; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; border-radius: 50%; corner-shape: round; background: var(--fill); color: var(--on-fill);
+  font-size: 11px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.stepcard-text { display: grid; gap: 2px; min-width: 0; padding-top: 2px; }
+.stepcard-text b { font-size: 15px; font-weight: 600; color: var(--ink); }
+.stepcard-text span { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
+/* A step said in one sentence (the quotation's opening page) stands on the disc's middle. */
+.stepcard-text.is-one { padding-top: 9px; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.stephead { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; align-items: center; }
+.stephead-mark {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border-radius: 50%; corner-shape: round; background: var(--line-soft); color: var(--ink);
+}
+.stephead-mark .ic { width: 22px; height: 22px; }
+.stephead .qs-top { gap: 2px; min-width: 0; }
+.stephead .qs-title { overflow-wrap: anywhere; }
+.sumcard { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); min-width: 0; }
+.sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.sumcard-head .btn { flex: 0 0 auto; }
+.sumcard-group { display: grid; gap: 10px; min-width: 0; }
+.sumcard-group + .sumcard-group { border-top: 1px solid var(--line); padding-top: 14px; }
+.sumcard-group h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.sumcard-group dl { display: grid; gap: 10px; margin: 0; }
+.sumcard-group dl > div { display: grid; gap: 2px; min-width: 0; }
+.sumcard-group dt { font-size: 12.5px; color: var(--ink-mute); }
+.sumcard-group dd { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; white-space: pre-line; }
+@media (min-width: 641px) {
+  .sumcard-group dl { gap: 8px; }
+  .sumcard-group dl > div { grid-template-columns: 196px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
+  .sumcard-group dt { font-size: 13px; }
+}
 
 .qs-quote { display: grid; gap: 24px; }
 /* A quotation is read as a document of figures, not page copy: its lines,
@@ -9930,7 +9970,9 @@ body.qs-page { background: var(--card); }
 
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */
-.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; gap: 4px; color: var(--ink-soft); }
+/* The authorisation a supplier agrees to, its own step, read on its shaded box (2026-11-25). */
+.sf-auth { margin: 0; padding: 16px 18px 16px 38px; border-radius: var(--radius); background: var(--sunk); list-style: lower-alpha; gap: 8px; font-size: 14px; line-height: 1.55; color: var(--ink); }
+.sf-auth li { padding-left: 4px; }
 
 /* Buttons sharing a row share one width under a finger wider than a phone
    too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a
