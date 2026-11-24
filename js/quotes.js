@@ -26,8 +26,8 @@
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
     'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
-    'bad-once': 'Enter whole numbers for one-off items.', 'not-found': 'This quotation no longer exists.',
+    empty: 'Choose a plan, an advertising budget or a one-time item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
+    'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
@@ -152,7 +152,7 @@
   function ownMonths(lines, t) {
     return (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number((t || {}).term); });
   }
-  /* The first month holds the one-off items too (the user, 2026-10-18). */
+  /* The first month holds the one-time items too (the user, 2026-10-18). */
   function sum2(a, b) { return MON.cents(Number(a || 0) + Number(b || 0)); }
   function firstIncl(t) { return sum2(t.month.incl, t.once && t.once.incl); }
   function headline(q) {
@@ -161,7 +161,7 @@
     if (m != null) return ownMonths(q.lines, q.totals) ? [curOf(q) + ' ' + rm(firstIncl(q.totals)), 'First month' + incl]
       : [curOf(q) + ' ' + rm(m), 'Monthly' + incl];
     var o = q.totals && q.totals.once;
-    return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-off' + incl : 'One-off total'] : ['—', ''];
+    return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-time' + incl : 'One-time total'] : ['—', ''];
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
@@ -177,7 +177,7 @@
     if (Array.isArray(t.brands) && t.brands.length > 1) bits.push(t.brands.length + ' brands');
     if (plans.length) bits.push(plans.map(function (p) { return p.label.replace(/^Social Media Services · /, '').replace(/ \(.*\)$/, ''); }).join(', '));
     if (t.month) bits.push(t.term + ' months');
-    if (!bits.length) bits.push('One-off');
+    if (!bits.length) bits.push('One-time');
     return bits.join(' · ');
   }
   function fromOf(q) {
@@ -1519,7 +1519,7 @@
       $('qbFor').textContent += ' · priced from v.' + c.version;
       termOptions();
       $('qbTerm').value = String(sel.term || 6);
-      /* Add-ons (an outstation fee, a shoot, a revision, files) are one-off
+      /* Add-ons (an outstation fee, a shoot, a revision, files) are one-time
          items too, each under its group on the card (the user, 2026-11-07:
          "couldnt add the outstation fees and add ons"). */
       var addonGroups = [];
@@ -1532,7 +1532,7 @@
         var list = add ? svcs(c, 'addon').filter(function (s) { return ((s.spec && s.spec.group) || 'Add-ons') === grp; }) : svcs(c, role);
         list = list.filter(function (s) { return s.rate != null; });
         return (head && list.length ? '<p class="qb-once-h">' + esc(head) + '</p>' : '') + list.map(function (s) {
-          /* A stepper a line, as the extra contents are: a count of one-off
+          /* A stepper a line, as the extra contents are: a count of one-time
              work is pressed up, never typed into a tall box. */
           var id = 'qbO-' + esc(s.slug), nm = esc(s.name);
           return '<div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="' + id + '" aria-label="One fewer ' + nm + '">' + MINUS + '</button>' +
@@ -1550,7 +1550,7 @@
   }
 
   /* One brand's choices drawn on the board: its plan, content, platforms,
-     extra contents, languages, budget, one-off items, line edits, order
+     extra contents, languages, budget, one-time items, line edits, order
      and custom lines (the sheet opening, or another brand chosen). */
   function fill(s) {
     B.plan = s.plan || null;
@@ -1630,7 +1630,7 @@
     var bits = [];
     if (p) bits.push('Plan ' + p.spec.plan);
     if (pl.length) bits.push(pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0]);
-    if (!p && !pl.length && (b.once || []).length) bits.push('One-off items');
+    if (!p && !pl.length && (b.once || []).length) bits.push('One-time items');
     if (!bits.length && (b.custom || []).length) bits.push('Custom lines');
     return bits.join(' · ');
   }
@@ -1646,7 +1646,7 @@
     $('qbBrandList').innerHTML = list.map(function (x) {
       var k = B.sent ? B.sent.indexOf(x.i) : -1, f = d && d.brands && k > -1 ? d.brands[k] : null;
       var fig = f && f.month ? [CUR + ' ' + acct(f.month.incl), MON.sstOf(d.lines, d.totals.sst_pct).on ? 'Monthly incl. SST' : 'Monthly']
-        : f && f.once ? [CUR + ' ' + acct(f.once.incl), MON.sstOf(d.lines, d.totals.sst_pct).on ? 'One-off incl. SST' : 'One-off total'] : ['—', ''];
+        : f && f.once ? [CUR + ' ' + acct(f.once.incl), MON.sstOf(d.lines, d.totals.sst_pct).on ? 'One-time incl. SST' : 'One-time total'] : ['—', ''];
       var editing = x.i === B.bi;
       return '<div class="qb-brow" data-bi="' + x.i + '"><span class="qb-bwho"><span class="qb-bname"><b>' + esc(brandWord(x.b)) + '</b>' +
         (editing ? '<span class="chip">Editing</span>' : '') + '</span>' + (brandMeta(x.b) ? '<small>' + esc(brandMeta(x.b)) + '</small>' : '') + '</span>' +
@@ -1741,7 +1741,7 @@
 
   /* The plans of the chosen kind as cards: the letter and its fee over its
      platforms and contents; the one chosen pressed again leaves no plan
-     (advertising or one-off items alone). */
+     (advertising or one-time items alone). */
   var MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   function paintPlans() {
@@ -1883,7 +1883,7 @@
     if (was) $('qbTerm').value = was;
   }
   /* The advertising budget (2026-11-12, the user): a tick, then a row a
-     platform, each Monthly or One-off with its budget and, for Monthly,
+     platform, each Monthly or One-time with its budget and, for Monthly,
      its months; prefilled from the budget chosen above and the term, every
      figure editable. Kept with the quotation, never a service line. */
   var X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -1896,9 +1896,9 @@
     return '<div class="qb-adrow" data-ad' + (r.auto ? ' data-auto' : '') + '>' +
       '<select class="select qb-adplat" data-nofind aria-label="Platform">' + opt(MON.AD_PLATFORMS, r.platform || 'meta') + '</select>' +
       '<input class="input qb-adbud" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Budget (' + CUR + ')" placeholder="Budget (' + CUR + ')" value="' + esc(r.budget ? rm(r.budget) : '') + '">' +
-      /* Months empty or 0 is One-off (2026-11-12, the user: no extra
+      /* Months empty or 0 is One-time (2026-11-12, the user: no extra
          selection for a simple action). */
-      '<input class="input qb-admo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-off" placeholder="One-off" value="' + esc(once ? '' : String(r.months || '')) + '">' +
+      '<input class="input qb-admo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-time" placeholder="One-time" value="' + esc(once ? '' : String(r.months || '')) + '">' +
       '<span class="qb-adamt"></span>' +
       '<button class="iconbtn qb-adx" type="button" aria-label="Remove platform">' + X_ICON + '</button></div>';
   }
@@ -1974,7 +1974,7 @@
       '<input class="input qb-cusname" type="text" data-noenter data-nodraft aria-label="Line" placeholder="Line" maxlength="120" value="' + esc(r.label || '') + '">' +
       '<input class="input qb-cusqty" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Quantity" placeholder="Qty" value="' + esc(String(r.qty || 1)) + '">' +
       '<input class="input qb-cusrate" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Rate (' + CUR + ')" placeholder="Rate (' + CUR + ')" value="' + esc(r.rate != null && r.rate !== '' ? rm(r.rate) : '') + '">' +
-      '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-off" placeholder="One-off" value="' + esc(once ? '' : String(r.months || '')) + '">' +
+      '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-time" placeholder="One-time" value="' + esc(once ? '' : String(r.months || '')) + '">' +
       '<input class="input qb-cusstart" type="date" aria-label="Start date" value="' + esc(r.start || '') + '">' +
       '<button class="iconbtn qb-cusx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>' +
       '<textarea class="textarea qb-cusdesc" rows="2" data-nodraft aria-label="Description" placeholder="Description, one point per line">' + esc((r.detail || []).join('\n')) + '</textarea>' +
@@ -2013,7 +2013,7 @@
       ((sel.brands || []).some(function (b) { return (b.custom || []).length || b.translate; })));
     billTo();
   }
-  /* Extras: one-off items and the advertising budget open their rows when
+  /* Extras: one-time items and the advertising budget open their rows when
      added, their Add buttons standing until then. */
   function onceShow(on) {
     $('qbOnceMore').hidden = !on;
@@ -2226,7 +2226,7 @@
     var t = (d && d.totals) || {}, out = [];
     var own = t.month && ownMonths(d && d.lines, t);
     if (t.month) out.push(CUR + ' ' + acct(own ? firstIncl(t) : t.month.incl) + (own ? ' first month' : ' monthly'));
-    if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
+    if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-time');
     return out.length ? out.join(' · ') + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') : '';
   }
   var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
@@ -2272,8 +2272,8 @@
           '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
-        /* A Rate Card one-off item takes Months too (2026-11-12, the user):
-           a number bills it monthly, empty or 0 keeps it one-off. */
+        /* A Rate Card one-time item takes Months too (2026-11-12, the user):
+           a number bills it monthly, empty or 0 keeps it one-time. */
         var flex = l.kind !== 'custom' && (l.basis === 'once' || l.was_once);
         var box = function (what, v, cls, mode, label) {
           /* A custom line is changed in Advanced, where it is typed. */
@@ -2327,7 +2327,7 @@
         if (l.list_label != null) sub.unshift('Rate Card: ' + l.list_label);
         return bhead + '<div class="svc-row qb-row' + (ro ? ' is-other' : '') + '"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           desc +
-          /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
+          /* A Rate Card one-time item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
              Months cell. */
           (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
@@ -2335,15 +2335,15 @@
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' || flex ? 'Months' : '&nbsp;') + '</span>' +
             (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval' + (flex ? ' qb-flex' : ''), 'numeric', 'Months') :
-              flex ? box('months', '', 'qb-moval qb-flex', 'numeric', 'Months, empty for one-off').replace('value=""', 'value="" placeholder="One-off"') :
-              '<span class="qb-once">One-off</span>') + '</span>' +
+              flex ? box('months', '', 'qb-moval qb-flex', 'numeric', 'Months, empty for one-time').replace('value=""', 'value="" placeholder="One-time"') :
+              '<span class="qb-once">One-time</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
        the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
     var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
-    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
-      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
+    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-time subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
+      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-time incl. SST' : 'One-time total',
       term: MON.termLine(t.term, t.term_pct) };
     var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
     out += '<dl class="qb-tot">' + tot.map(function (x) {
@@ -2602,7 +2602,7 @@
       var ok = what === 'rate' ? /^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(raw) :
         what === 'qty' ? /^[0-9]{1,4}$/.test(raw) && Number(raw) >= 1 : /^[0-9]{1,2}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 36;
       /* A quantity a stepper above holds (an additional content piece, a
-         one-off item, an add-on) is that stepper's: typed here it moves the
+         one-time item, an add-on) is that stepper's: typed here it moves the
          stepper, never an override beside it, so the two never disagree
          (the user, 2026-11-07: Qty 3 below, the stepper 2 above). */
       var step = what === 'qty' && ok && stepperOf(k);
@@ -2620,8 +2620,8 @@
         return;
       }
       var e1 = B.edits[k] || {};
-      /* A one-off Rate Card item: a number of months bills it monthly,
-         empty or 0 keeps it one-off (2026-11-12). */
+      /* A one-time Rate Card item: a number of months bills it monthly,
+         empty or 0 keeps it one-time (2026-11-12). */
       if (what === 'months' && i.classList.contains('qb-flex')) {
         if (raw === '' || /^0+$/.test(raw)) { delete e1.basis; delete e1.months; }
         else if (ok) { e1.basis = 'month'; e1.months = raw; }

@@ -988,6 +988,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   Let us know) where a client, creator, prospect or supplier reads (the
   user, 2026-10-27). In Chinese a creator is 创作者 on every page, never
   博主 or 达人.
+- What is billed once is one-time, never one-off (One-time subtotal, One-time incl. SST; the user, 2026-11-25), in every word a person reads; the stored keys (`once`, `basis`) stay.
 - Count creators, not slots. rednote is lower case; never Xiaohongshu or
   RedNote. Say Post, never Note.
 - Placeholders: a value a person would type, from one generic set: John Doe

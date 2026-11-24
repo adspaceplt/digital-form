@@ -199,7 +199,7 @@
 
   /* Committed monthly value: a month of each confirmed monthly line
      (quantity × the billed rate) that has started, by market, never added
-     across currencies. A one-month line is a one-off item, never a month's
+     across currencies. A one-month line is a one-time item, never a month's
      income, and a line starting later is not yet committed (2026-10-20, the
      Dashboard audit: RM 12,168.06 held a past creator list and a November
      start). A line with no term or start from before is counted. */

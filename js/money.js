@@ -332,7 +332,7 @@
      quotation's PDF and the quotation website (2026-10-22, QT-4): each row
      [key, figure, is the total], the words each page's own. Where a monthly
      line runs months of its own the month's figures are the first month's,
-     holding the one-off items too (2026-10-18); `on` says whether SST
+     holding the one-time items too (2026-10-18); `on` says whether SST
      applies, so the excl. SST row is left out where it does not. Keys:
      monthSub, term, onceSub, firstExcl, monthExcl, sst, first, monthly,
      oneOff. */
@@ -396,7 +396,7 @@
       if (n === 1) name = name.replace(/^(Additional )([a-z]+[^s])s\b/i, '$1$2');
       return n + ' × ' + name;
     }));
-    /* Only the lines listed above leave the table: a one-off line a
+    /* Only the lines listed above leave the table: a one-time line a
        quotation of 6 or 7 Nov marked in_plan keeps its own row (audit
        2026-11-08, 2). */
     return lines.filter(function (l) { return into.indexOf(l) < 0; });

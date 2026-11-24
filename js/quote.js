@@ -8,7 +8,7 @@
  *   2 Platforms and plan    the platforms, Without ads / With ads, the plan
  *                           (only where social media is asked for)
  *   3 Customise             extra contents, languages, the advertising
- *                           budget, the commitment, the one-off items
+ *                           budget, the commitment, the one-time items
  *   4 Your details          name, work email, WhatsApp, brand, industry,
  *                           Planned commencement (a period, or On a
  *                           specific date and the day), consent; View
@@ -69,7 +69,7 @@
       langs: 'Choose your languages', langsNote: 'Each content piece is published in one language. The monthly content pieces may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no additional charge.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Choose your commitment', months: '{n} months',
-      once: 'Choose the content to produce', onceNote: 'One-off, charged per item',
+      once: 'Choose the content to produce', onceNote: 'One-time, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Choose accounts to verify',
       detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
@@ -108,9 +108,9 @@
       declined: 'Declined', declinedT: 'You have declined this quotation',
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
       monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
-      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
-      monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
-      monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
+      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time',
+      monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-time total',
+      monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-time incl. SST',
       newQuote: 'New quotation',
       chgT: 'Change your selection', chgReq: 'Request these changes', chgCancel: 'Cancel', chgTotal: 'Your quotation with these changes',
       chgNone: 'Change a choice to see the revised price.', chgPendT: 'Changes requested',
@@ -400,7 +400,7 @@
       return kinds.indexOf(c.kind) >= 0 || (GRAPHICS.indexOf(c.kind) >= 0 && kinds.indexOf('graphic') >= 0);
     }).sort(byKind);
   }
-  /* One-off contents: with a plan, only those its additional contents do not
+  /* One-time contents: with a plan, only those its additional contents do not
      already offer, so a format is never asked twice (the user, 2026-10-14). */
   function onceList() {
     var p = S.need.social ? planOf() : null;
@@ -687,7 +687,7 @@
     var sst = on ? (rt ? f(w.sst, { p: rt[1] }) : 'SST') : w.sstNone;
     var WORD = { monthSub: w.monthSub, onceSub: w.onceSub, firstExcl: w.firstExcl, monthExcl: w.monthExcl, sst: sst,
       first: word(tt, 'first'), monthly: word(tt, 'monthly'), oneOff: word(tt, 'oneOff') };
-    /* A quotation in sections (layout 2, 2026-11-12) never adds the one-off
+    /* A quotation in sections (layout 2, 2026-11-12) never adds the one-time
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
     var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : curLines(), on).map(function (x) {
@@ -1165,7 +1165,7 @@
       '<button class="btn btn-primary" type="button" data-a="' + go + '">' + esc(label || t().cont) + '</button></div>';
   }
   /* The figures agreed to: every bold total the quotation closes on (the
-     monthly, the one-off and the advertising budget), the minimum term
+     monthly, the one-time and the advertising budget), the minimum term
      after the monthly, and on a quotation before sections the whole term,
      as its acceptance page prints them (2026-11-12, review finding 1). */
   function agreedRows(q) {
@@ -1511,7 +1511,7 @@
       if (S.need.ads && S.need.social && !S.plan) S.withAds = true;
     }
     if (S.step === 'plan' && (!planOf() || !S.platforms.length)) { say('qsMsg', t().planNone); return; }
-    /* Only one-off items asked for (verification alone, say): one of them
+    /* Only one-time items asked for (verification alone, say): one of them
        is picked before the details are asked. */
     if (S.step === 'custom') {
       var sel = selection();

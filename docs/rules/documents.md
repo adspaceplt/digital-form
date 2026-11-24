@@ -112,14 +112,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `2026-10-23-letter-validity-in-terms.sql`).
   - Priced by the month when every line of more than a month shares a term
     (the amount reading per month; the summary ending Monthly incl. SST in
-    bold, as a quotation's does); a one-month line beside them is a one-off
-    item (reading one-off) billed with the first month: one summary of
-    Monthly subtotal, One-off subtotal, one SST line, First month due in
+    bold, as a quotation's does); a one-month line beside them is a one-time
+    item (reading one-time) billed with the first month: one summary of
+    Monthly subtotal, One-time subtotal, one SST line, First month due in
     bold, then Monthly incl. SST (the user, 2026-10-15: "just provide first
-    month due total"; `2026-10-15-letter-one-off-items.sql` prices it).
+    month due total"; `2026-10-15-letter-one-time-items.sql` prices it).
     TERMS states the term once, with the whole term's total incl. SST; the
     acceptance lists Monthly incl. SST, Minimum term, First month due (with
-    a one-off item) and Total for the term incl. SST, under no Item / Value
+    a one-time item) and Total for the term incl. SST, under no Item / Value
     head and never "including SST" after a figure. Lines on two terms of
     more than a month: Total incl. SST; a quoted letter so keeps its
     quotation's term (2026-10-18): the row `12-month commitment (5%)`,
@@ -128,15 +128,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     the acceptance's First month incl. SST, Minimum term and Total for the
     term. Wherever a monthly line runs months other than the term, the
     month's figures are the first month's, named First month (excl. SST,
-    incl. SST; 首月 on `/quote/`), and the first month holds the one-off
-    items (the one-off subtotal before SST, one First month incl. SST, no
-    One-off incl. SST of its own), on the letter, the quotation's PDF,
+    incl. SST; 首月 on `/quote/`), and the first month holds the one-time
+    items (the one-time subtotal before SST, one First month incl. SST, no
+    One-time incl. SST of its own), on the letter, the quotation's PDF,
     `/quote/` and Build quote alike; Monthly where every line runs the term
     (the user, 2026-10-18). Where SST does not apply (an exempt client,
     0%), all four read SST not applicable on its row, name no SST on a
-    total (Monthly, First month, One-off total) and leave out the excl. SST
+    total (Monthly, First month, One-time total) and leave out the excl. SST
     row; the quotation's remarks say once what the amount includes (the
-    one-off items, SST at 8%), naming no SST at 0% (`ADspaceMoney.sstApplies`,
+    one-time items, SST at 8%), naming no SST at 0% (`ADspaceMoney.sstApplies`,
     `SST_NONE`; review item 17).
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
@@ -144,7 +144,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`quote_sst` on each snapshot line; 2026-10-17), exactly as
     `quote_adjust` totals it: a line the quotation bills by the month is
     monthly whatever months Build quote gave it, and where they differ the
-    whole span takes the percentage and SST once, the one-off apart
+    whole span takes the percentage and SST once, the one-time apart
     (`quote_term` on each snapshot line; one without it redraws as
     issued), and prints each line
     at its rate before the term with the term as a summary row a
@@ -157,7 +157,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `issue_letter` works
     the same price from the stored lines (the term's rate rounded to the
     cent, by the month where every line of more than a month shares a
-    term with a one-month line its own one-off subtotal, SST at today's rate
+    term with a one-month line its own one-time subtotal, SST at today's rate
     unless exempt) and keeps the page's figures only within a sen, else
     refuses `stale` with its own (audit S4, 2026-10-10). A colleague at
     Clients: Letters who cannot list quotations reads the quotation's rate

@@ -207,7 +207,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   report not published, as the tile does (2026-10-22, OVW-3, OVW-4).
 - Committed monthly value is its one money figure (the user, 2026-10-12):
   for whoever may open a client's Services (`clients.services` at View),
-  a month of each confirmed monthly line started by today (never a one-off
+  a month of each confirmed monthly line started by today (never a one-time
   item) by market, read from `client_services`
   under that part's own policy; anyone else reads Active clients in that
   tile, and the lines are not read. No other value, revenue or fee.
