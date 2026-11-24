@@ -185,6 +185,9 @@ is empty and only shrinks (`--write` refuses to add).
   carries one, never inside `.claude/` (agents' worktrees live there).
   `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
   it where a notice wants a glyph on a page holding no icon set (2026-11-22).
+  A restamp or a merge's resolution keeps every script tag a page holds:
+  `tests/pagescripts.js` fails a page missing a script its own scripts call
+  (2026-11-25: #1427 dropped `js/icons.js` from /details/ and /supplier/).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new thing joins every shared list of its kind in the same push that
