@@ -148268,7 +148268,7 @@ begin
     v_b := 'Dear ' || public.contact_named(v_ct.salutation, v_ct.name) || ',' || E'\n\n' ||
            'ADspace would be grateful for your feedback on the services provided to ' || v_cl.name || '. ' ||
            'The form takes about ' || case p_kind when 'quick' then 'one minute' else 'three minutes' end || ' to complete.' || E'\n\n' ||
-           'This link is for ' || v_cl.name || ' alone.';
+           'This link is intended for ' || v_cl.name || ' only.';
     v_btn := 'Rate your experience';
   end if;
   update public.feedback_requests q set mail_status = 'sending' where q.id = (r->>'id')::uuid;

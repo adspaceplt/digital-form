@@ -12737,7 +12737,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             button: '请评价您的体验', lang: 'zh' } : {
             subject: (q.kind === 'quick' ? 'Service rating' : 'Performance review') + ' · ADspace',
             body: 'Dear ' + who + ',\n\nADspace would be grateful for your feedback on the services provided to ' + cl.name + '. The form takes about ' +
-              (q.kind === 'quick' ? 'one minute' : 'three minutes') + ' to complete.\n\nThis link is for ' + cl.name + ' alone.',
+              (q.kind === 'quick' ? 'one minute' : 'three minutes') + ' to complete.\n\nThis link is intended for ' + cl.name + ' only.',
             button: 'Rate your experience', lang: 'en' }), error: null };
         });
       }

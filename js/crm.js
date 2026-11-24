@@ -2742,8 +2742,8 @@
   var FB_SAID = { denied: 'You do not have permission to request feedback. Please ask an admin.',
     'send-off': 'Sending email is switched off for you. Please ask an admin.',
     'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
-    'not-active': 'Feedback can be requested of an active client only.',
-    'no-contact': 'The primary contact holds no email. Add one under Account first.',
+    'not-active': 'Feedback can be requested of an active client only. Set the client to Active first.',
+    'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
     'needs-update': 'This feature is not available yet. Please contact an admin.' };
@@ -2775,7 +2775,8 @@
     var s = r.response;
     if (s && s.band === 'low' && !s.task_done) return ['Follow-up open', 'is-danger'];
     if (s) return ['Answered', 'is-ok'];
-    if (r.closed_reason === 'withdrawn' || r.mail_status === 'failed') return ['Withdrawn', 'is-off'];
+    if (r.mail_status === 'failed') return ['Not sent', 'is-off'];
+    if (r.closed_reason === 'withdrawn') return ['Withdrawn', 'is-off'];
     if (r.closed_reason === 'replaced') return ['Closed', 'is-off'];
     return [r.opened_at ? 'Opened' : 'Sent', 'is-warn'];
   }
@@ -2824,7 +2825,7 @@
       if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
       return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
     }).join('');
-    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : 'Submitted on the link', q.manager ? 'Account manager at sending: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
     var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
       ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
     return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';
