@@ -187,6 +187,16 @@ is empty and only shrinks (`--write` refuses to add).
   it where a notice wants a glyph on a page holding no icon set (2026-11-22).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
+- A new thing joins every shared list of its kind in the same push that
+  builds it, checked before the PR opens and named in its Test plan (the
+  user, 2026-11-24: "you kept missing this and that"; a trip number missing
+  from Settings' numbering, a feedback email missing from Email templates, a
+  seventh client tab): an email its Email templates row (`js/mailtpl.js`,
+  English and 中文); a number or reference its Settings numbering
+  (`id_formats`); a business figure its setting; a word two screens say
+  `ADspaceWords.line`; a part of a client's record a place within the six
+  tabs (`docs/rules/clients.md`), never a seventh; a route the walks; a page
+  Page availability (below).
 - A new portal page joins Page availability in the same push that builds it
   (the user, 2026-11-21: "Every new pages added should also go into the
   availability section"): its key taken by `page_set`, the page loading
