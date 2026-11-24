@@ -440,6 +440,7 @@ edit of its script; no page keeps a copy of its own.
 - `js/form.js` owns forms, segments, the one save check, the finder and every date field: `docs/rules/form.md`.
 - `js/words.js` holds every word two pages share, in English and Chinese: `docs/rules/mechanisms.md`.
 - `js/captcha.js` is Turnstile: `docs/rules/mechanisms.md`.
+- `js/trace.js` is the viewer's trace over a screen of personal data: `docs/rules/security.md`.
 - A short month is `Sept`, never the browser's `Sep`: `docs/rules/mechanisms.md`.
 
 ### Writes, refusals, reversibility
@@ -645,7 +646,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Forms and dates | `docs/rules/form.md` | `js/form.js` |
 | Tests, the stand-in, the walks | `docs/rules/tests.md` | `tests/` |
 | Access | `docs/rules/access.md` | `js/team.js`, `js/delreq.js`, `js/admin.js`, `supabase/` |
-| Sign-in, security, secrets | `docs/rules/security.md` | `supabase/functions/`, `client/`, `admin/index.html`, `js/passkey.js`, `js/portal.js`, `workers/` |
+| Sign-in, security, secrets | `docs/rules/security.md` | `supabase/functions/`, `client/`, `admin/index.html`, `js/passkey.js`, `js/portal.js`, `workers/`, `js/trace.js` |
 | Database | `docs/rules/database.md` | `supabase/` |
 
 ### Sign-in, security, secrets
