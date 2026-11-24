@@ -91,7 +91,7 @@
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
-      rcvSent: 'Request sent', rcvReview: 'Review by ADspace', rcvNow: 'In progress', rcvSend: 'Quotation sent on WhatsApp',
+      rcvSent: 'Request sent', rcvSend: 'Quotation sent on WhatsApp',
       rcvBy: 'By {d}', rcvSign: 'Accept and sign on this page', rcvYours: 'Your request',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
@@ -209,7 +209,7 @@
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
-      rcvSent: '已提交请求', rcvReview: 'ADspace 审核', rcvNow: '进行中', rcvSend: '通过 WhatsApp 发送报价',
+      rcvSent: '已提交请求', rcvSend: '通过 WhatsApp 发送报价',
       rcvBy: '{d}前', rcvSign: '在此页面接受并签署', rcvYours: '您的请求',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
@@ -279,6 +279,7 @@
     var sh = window.ADspaceWords[l];
     WORDS[l].step = sh.stepOf; WORDS[l].cont = sh.stepNext; WORDS[l].back = sh.stepBack;
     WORDS[l].start = sh.stepStart; WORDS[l].introH = sh.stepExpect;
+    WORDS[l].rcvReview = sh.rcvByAdspace; WORDS[l].rcvNow = sh.rcvNow;
   });
 
   // A graphic is named by its kind (the user, 2026-10-14: a plan's graphic is a static post, a carousel or a GIF).
@@ -766,29 +767,28 @@
      the reference; where the request stands as a track; what was asked for,
      a glyph each and never a price; who will be in touch. */
   function paintReview() {
-    var q = Q, w = t(), first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
+    var q = Q, w = t(), I = window.ADspaceIcons, first = q.rep ? String(q.rep.name || '').trim().split(' ')[0] : '';
     var due = q.reply_due ? day(q.reply_due, false, 'ahead') : '';
     var C = window.ADspaceClock, zh = lang === 'zh', sentAt = q.issued_at && C ? C.date(q.issued_at, { zh: zh }) + (zh ? '' : ', ') + C.clock(q.issued_at, { zh: zh }) : '';
-    var step = function (cls, g, title, sub) {
-      return '<li class="' + cls + '"><span class="qs-trk-dot">' + ic(g, 'qs-g') + '</span><span><b>' + esc(title) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></li>';
-    };
     var rows = requestRows(q.selection || {});
-    return '<div class="qs-step qs-rcv" data-shown>' +
-      '<div class="qs-rcv-head"><span class="qs-rcv-tick">' + ic('check', 'qs-g') + '</span><h1 class="qs-title">' + esc(w.reviewT) + '</h1>' +
-        (due ? '<p class="qs-lead">' + esc(f(w.reviewP, { d: due })) + '</p>' : '') +
-        '<p class="qs-wait-ref">' + esc(q.ref + ' · ' + q.brand) + '</p></div>' +
-      '<ol class="qs-track-steps">' +
-        step('is-done', 'check', w.rcvSent, esc(sentAt)) +
-        step('is-now', 'search', w.rcvReview, '<i class="qs-amber" aria-hidden="true"></i>' + esc(w.rcvNow)) +
-        step('', 'doc', w.rcvSend, due ? esc(f(w.rcvBy, { d: due })) : '') +
-        step('', 'pen', w.rcvSign, '') + '</ol>' +
-      (rows.length ? '<section class="qs-card"><h2>' + esc(w.rcvYours) + '</h2><ul class="qs-asklist">' + rows.map(function (r) {
-        return '<li><span class="qs-disc is-sm">' + ic(r[0], 'qs-g') + '</span><span>' + esc(r[1]) + '</span></li>'; }).join('') + '</ul></section>' : '') +
-      (q.rep ? '<section class="qs-card qs-rcv-rep"><span class="qs-rep-who"><small>' + esc(w.repT) + '</small><b>' + esc(q.rep.name) + '</b>' +
-          (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span>' +
-          '<a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a></section>'
-        : '') + '</div>' +
-      (q.rep ? '' : '<div class="qs-foot"><a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a></div>');
+    var chat = function (words) {
+      return '<a class="btn btn-primary" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(words) + '</a>';
+    };
+    return I.received({
+      title: w.reviewT, line: due ? f(w.reviewP, { d: due }) : '', ref: q.ref + ' · ' + q.brand,
+      steps: [
+        { state: 'done', title: w.rcvSent, sub: esc(sentAt) },
+        { state: 'now', glyph: 'search', title: w.rcvReview, now: w.rcvNow },
+        { glyph: 'doc', title: w.rcvSend, sub: due ? esc(f(w.rcvBy, { d: due })) : '' },
+        { glyph: 'pen', title: w.rcvSign }
+      ],
+      cards: [
+        rows.length ? I.card(w.rcvYours, '<ul class="qs-asklist">' + rows.map(function (r) {
+          return '<li><span class="qs-disc is-sm">' + ic(r[0], 'qs-g') + '</span><span>' + esc(r[1]) + '</span></li>'; }).join('') + '</ul>') : '',
+        q.rep ? I.contactCard(w.repT, q.rep.name, q.rep.title, chat(f(w.repChat, { n: first }))) : ''
+      ],
+      foot: q.rep ? '' : chat(w.chat)
+    });
   }
   /* What the prospect asked for, as the selection kept holds it: a row a
      part, its glyph and its words, never a price. */

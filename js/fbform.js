@@ -19,9 +19,9 @@
   var W = window.ADspaceWords;
   var esc = W.esc;
   var WORDS = W.of({
-    en: { quick: 'Service rating', review: 'Performance review', optional: 'Optional',
+    en: { quick: 'Service rating', review: 'Performance review', optional: 'Optional', scoreOf: '{v} of {m}',
       required: 'Please choose a score.', tooLong: 'Please shorten this to 2,000 characters or fewer.' },
-    zh: { quick: '服务评分', review: '绩效评估', optional: '选填',
+    zh: { quick: '服务评分', review: '绩效评估', optional: '选填', scoreOf: '{v}分（满分{m}分）',
       required: '请选择分数。', tooLong: '请缩减至2,000字以内。' }
   });
   var t = function (lang) { return WORDS[lang === 'zh' ? 'zh' : 'en']; };
@@ -153,6 +153,15 @@
     });
     return out;
   }
-  window.ADspaceFeedback = { form: form, wire: wire, check: check, payload: payload, bandOf: bandOf, say: say,
+  /* What was answered, read back: [question, answer] a question answered,
+     a score as "9 of 10" (the received page, 2026-11-25). */
+  function read(qs, answers, lang) {
+    var zh = lang === 'zh', w = t(lang);
+    return shown(qs, answers).filter(function (q) { var v = answers[q.key]; return v != null && String(v).trim() !== ''; }).map(function (q) {
+      var v = answers[q.key];
+      return [zh ? q.zh : q.en, q.type === 'scale' ? w.scoreOf.replace('{v}', v).replace('{m}', q.max) : String(v).trim()];
+    });
+  }
+  window.ADspaceFeedback = { form: form, wire: wire, check: check, payload: payload, read: read, bandOf: bandOf, say: say,
     title: function (kind, lang) { return t(lang)[kind === 'review' ? 'review' : 'quick']; } };
 })();

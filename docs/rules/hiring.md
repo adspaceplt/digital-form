@@ -46,7 +46,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Remove (the part) hides a candidate from everyone else and its page, Undo
   where it happened, Restore in its ⋯; Delete once removed, the name typed
   back, takes its people, history and CV file.
-- `/careers/?k=` (`careers_read`, anon): Your application, the candidate
+- `/careers/?k=` (`careers_read`, anon): at Received, with no interview,
+  document or decision, the shared received page (DESIGN.md §4, 2026-11-25:
+  Application received, the track to Interview and Decision, Your
+  application, Contact ADspace with the careers mailbox and Chat on
+  WhatsApp); after it, Your application, the candidate
   greeted by their whole name, the position, the day received and Application
   received; never a colleague, a note or an email; English alone. The link
   ends `hiring_link_days` (30, 7 to 90) after the last step.

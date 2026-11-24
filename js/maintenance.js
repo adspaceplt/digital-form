@@ -296,7 +296,7 @@
   /* A page that holds no icon set fetches it the first time a notice wants
      a glyph, never on load (the namecard and /quote/ hold their weight
      budgets). Its stamp is the icon set's own, bumped with it. */
-  var ICONS = '/js/icons.js?v=20261125fsb', iconsAsked = false;
+  var ICONS = '/js/icons.js?v=20261125rcv', iconsAsked = false;
   function marks() {
     var I = window.ADspaceIcons, W = window.ADspaceWords;
     var want = [].filter.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {

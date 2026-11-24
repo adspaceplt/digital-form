@@ -84,6 +84,8 @@
     pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 8l3 3"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    /* A decision on an application (the received page's track, 2026-11-25). */
+    scale: '<path d="M12 3v18M5 7h14"/><path d="M5 7l-2.5 6a3 3 0 0 0 5 0zM19 7l-2.5 6a3 3 0 0 0 5 0z"/>',
     /* A form in steps (2026-11-25): a bank's payment details. */
     bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 21h16M5 18h14M6.5 10v8M10.5 10v8M13.5 10v8M17.5 10v8"/>'
   };
@@ -162,7 +164,7 @@
       var rows = g.rows.filter(function (r) { return r[1] != null && String(r[1]).trim() !== ''; });
       if (!rows.length) return '';
       return '<div class="sumcard-group">' + (g.name ? '<h3>' + esc(g.name) + '</h3>' : '') + '<dl>' + rows.map(function (r) {
-        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + (r[2] ? r[1] : esc(r[1])) + '</dd></div>';
       }).join('') + '</dl></div>';
     }).join('');
     return '<section class="sumcard"><div class="sumcard-head"><h2>' + esc(title) + '</h2>' +
@@ -189,6 +191,46 @@
       return '<svg class="ic-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + MARK[m] + '</svg>';
     }).join('');
   }
+  /* The page a client, supplier, candidate or prospect lands on once a form
+     is sent (2026-11-25, the boards Received* and QuoteReceived): one copy
+     for /details/, /supplier/, /careers/, /feedback/ and /quote/.
+     received({ title, line, note, ref, steps, cards, foot }): the green tick
+     over the title, the statement (`line`), a second line (`note`) and a
+     mute reference (`ref`, or `refHtml` where its parts must hold); where it stands as a track (`steps`: { state 'done' |
+     'now' | '', glyph, title, sub } with `sub` markup, `now` a line led by
+     the amber dot); then its cards (markup: `summary`, `contactCard`) and
+     an optional foot (markup). */
+  function received(o) {
+    var esc = window.ADspaceWords.esc;
+    var steps = (o.steps || []).filter(Boolean);
+    return '<div class="qs-step rcv" data-shown><div class="rcv-head"><span class="rcv-tick">' + svg('check') + '</span>' +
+        '<h1 class="qs-title">' + esc(o.title) + '</h1>' +
+        (o.line ? '<p class="rcv-line">' + esc(o.line) + '</p>' : '') +
+        (o.note ? '<p class="rcv-note">' + esc(o.note) + '</p>' : '') +
+        (o.ref || o.refHtml ? '<p class="rcv-ref">' + (o.refHtml || esc(o.ref)) + '</p>' : '') + '</div>' +
+      (steps.length ? '<ol class="rcv-track">' + steps.map(function (x) {
+        var cls = x.state === 'done' ? 'is-done' : x.state === 'now' ? 'is-now' : '';
+        return '<li' + (cls ? ' class="' + cls + '"' : '') + (x.state === 'now' ? ' aria-current="step"' : '') + '>' +
+          '<span class="rcv-dot">' + svg(x.state === 'done' ? 'check' : x.glyph) + '</span>' +
+          '<span><b>' + esc(x.title) + '</b>' + (x.now ? '<small><i class="rcv-amber" aria-hidden="true"></i>' + esc(x.now) + '</small>' : x.sub ? '<small>' + x.sub + '</small>' : '') + '</span></li>';
+      }).join('') + '</ol>' : '') +
+      (o.cards || []).filter(Boolean).join('') + '</div>' +
+      (o.foot ? '<div class="qs-foot">' + o.foot + '</div>' : '');
+  }
+  /* A shaded card under its heading, holding any markup (Contact ADspace,
+     Follow ADspace, Your request). */
+  function card(title, body) {
+    var esc = window.ADspaceWords.esc;
+    return '<section class="sumcard"><div class="sumcard-head"><h2>' + esc(title) + '</h2></div>' + body + '</section>';
+  }
+  /* Who to reach once it is sent: a label over a name and its title, then
+     its acts (markup). */
+  function contactCard(label, name, title, acts) {
+    var esc = window.ADspaceWords.esc;
+    return '<section class="sumcard rcv-contact"><span class="rcv-who"><small>' + esc(label) + '</small>' +
+      (name ? '<b>' + esc(name) + '</b>' : '') + (title ? '<small>' + esc(title) + '</small>' : '') + '</span>' +
+      (acts ? '<div class="rcv-acts">' + acts + '</div>' : '') + '</section>';
+  }
   window.ADspaceIcons = { svg: svg, platform: platform, mark: mark, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!P[n]; },
-    stepCards: stepCards, stepTrack: stepTrack, stepHead: stepHead, summary: summary };
+    stepCards: stepCards, stepTrack: stepTrack, stepHead: stepHead, summary: summary, received: received, card: card, contactCard: contactCard };
 })();
