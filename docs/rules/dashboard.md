@@ -113,9 +113,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`#ovwAttention`, `.ovw-pair`; Work by stage left with phase 2,
     2026-11-13): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
-    review, cold leads, restricted accounts, clients leaving soon (Leaving:
-    a client whose Paused or Past set ahead takes effect this month or next,
-    soonest first, its stage, day and reason, From {day} in grey; CLIENT
+    review, cold leads, restricted accounts, scheduled stage changes (Stage
+    changes: a client whose Paused or Past set ahead takes effect this month
+    or next, soonest first, its reason under the name, Past from {day} in
+    grey; CLIENT
     STAGE AHEAD, 2026-11-24), requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
     letters, last month's reviews, overdue invoices at Clients: Billing

@@ -93,8 +93,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - A client's move set ahead (CLIENT STAGE AHEAD, 2026-11-24) counts in
   the month it takes effect, once the database's morning job has made it;
   until then Clients lost (Sales) and Clients left (Clients) end their line
-  with how many Active clients are set to leave and from the soonest day
-  (`1 set to leave from 15 Dec`, `aheadOf`).
+  with how many Active clients are scheduled to leave and from the soonest
+  day (`1 client scheduled to leave from 15 Dec`, `aheadOf`).
 - Write with AI (`analytics-read`, `2026-10-25-analytics-read-with-ai.sql`;
   the user, 2026-10-25: "use AI to do analytics deep analysis and
   reporting"): the AI analysis card opens Sales' and Clients' Monthly

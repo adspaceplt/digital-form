@@ -2872,7 +2872,7 @@
     var ask = function (n) {
       window.ADspaceConfirm.ask({
         title: edit ? 'Edit' : 'Move to ' + word + '?',
-        body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It shows' : 'They show') + ' as urgent delivery in My Work.' : '',
+        body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It will show' : 'They will show') + ' as urgent delivery in My Work from the effective date.' : '',
         go: edit ? 'Save' : 'Move', wait: true,
         fields: [
           { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(leaveFor(to, logOf(c).concat([{ stage: c.stage }]), edit ? c.stage_next_reason : null)),
@@ -2897,8 +2897,7 @@
      the question still open on a refusal, '' once saved. */
   var AHEAD_SAID = {
     'stage-next-day': 'Choose a date after today.',
-    'stage-next-same': 'The client is already in this stage.',
-    'stage-next-reason': 'Completed is for a client that has been Active.'
+    'stage-next-reason': 'Completed applies only to a client that has been Active. Choose another reason.'
   };
   function aheadLine(c) {
     return aheadWord(c) + (c.stage_next_reason ? ' · ' + leaveWord(c.stage_next_reason) + (c.stage_next_note ? ': ' + c.stage_next_note : '') : '');
@@ -2910,6 +2909,7 @@
     return db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
       if (r.error) {
         var em = r.error.message || '';
+        if (em.indexOf('stage-next-same') > -1) return 'The client is already ' + stageWord(to)[1] + '. Choose another stage.';
         var k = Object.keys(AHEAD_SAID).filter(function (x) { return em.indexOf(x) > -1; })[0];
         return k ? AHEAD_SAID[k] : saveWord(em);
       }
@@ -2937,7 +2937,7 @@
         openClient(c);
         var host = $('crmWorkMsg');
         /* Undo where it happened, while the day is still ahead. */
-        if (host && String(keep.stage_next_on).slice(0, 10) > todayDay()) window.ADspaceAdmin.undoHere(aheadWord(keep) + ' withdrawn.', function () {
+        if (host && String(keep.stage_next_on).slice(0, 10) > todayDay()) window.ADspaceAdmin.undoHere('Scheduled change withdrawn.', function () {
           var bad = setAhead(c, keep.stage_next, { on: String(keep.stage_next_on).slice(0, 10), reason: keep.stage_next_reason, note: keep.stage_next_note });
           if (bad && bad.then) bad.then(function (w) { if (w) msg('crmWorkMsg', w, 'err'); });
         }, host);

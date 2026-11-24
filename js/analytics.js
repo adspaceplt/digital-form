@@ -528,7 +528,7 @@
   function aheadOf(cl) {
     var list = (cl || []).filter(function (c) { return c.stage_next && c.stage_next_on && c.stage === 'active'; })
       .map(function (c) { return String(c.stage_next_on).slice(0, 10); }).sort();
-    return list.length ? plain(list.length) + ' set to leave from ' + CK.date(list[0], { year: false }) : '';
+    return list.length ? plain(list.length) + (list.length === 1 ? ' client' : ' clients') + ' scheduled to leave from ' + CK.date(list[0], { year: false }) : '';
   }
   function lostTile(f, fp, ch, keys, per, cl) {
     var ahead = aheadOf(cl);

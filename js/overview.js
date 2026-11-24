@@ -484,7 +484,7 @@
        user: "mark it first and analytics and dashboard would catch it"):
        each client whose Paused or Past takes effect this month or next,
        soonest first, until its day moves it. */
-    { key: 'leaving', word: 'Leaving', title: 'Clients leaving soon', can: canClients, load: function () {
+    { key: 'leaving', word: 'Stage changes', title: 'Scheduled stage changes', can: canClients, load: function () {
       var t0 = CK.today(), m = Number(t0.slice(5, 7)), y = Number(t0.slice(0, 4));
       var to = m === 12 ? (y + 1) + '-02' : m === 11 ? (y + 1) + '-01' : y + '-' + String(m + 2).padStart(2, '0');
       var end = to + '-01';
@@ -494,9 +494,9 @@
           .sort(function (a, b) { return String(a.stage_next_on).localeCompare(String(b.stage_next_on)); })
           .map(function (c) {
             var on = String(c.stage_next_on).slice(0, 10);
-            return { name: c.name, meta: [window.ADspaceWords.line.stageFrom((W.stage || {})[c.stage_next] || c.stage_next, dateWord(on)),
-                       S && S.reasonWord ? S.reasonWord(c.stage_next_reason) : ''].filter(Boolean).join(' · '),
-                     tag: 'Client', who: c.owner || '', client: c.id, days: 0, since: 'From ' + CK.date(on, { year: false }), tone: 'off',
+            return { name: c.name, meta: S && S.reasonWord ? S.reasonWord(c.stage_next_reason) : '',
+                     tag: 'Client', who: c.owner || '', client: c.id, days: 0,
+                     since: window.ADspaceWords.line.stageFrom((W.stage || {})[c.stage_next] || c.stage_next, CK.date(on, { year: false })), tone: 'off',
                      url: clientUrl(c), section: 'clients' };
           });
       });
