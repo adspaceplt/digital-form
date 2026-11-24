@@ -717,7 +717,7 @@ declare
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
-    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline', 'verify_details', 'doc_code_of'];
+    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline', 'verify_details', 'doc_code_of', 'verify_details_name', 'doc_code_of_key'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -144033,6 +144033,1082 @@ alter table public.outstation_trips enable trigger outstation_trips_ref;
 
 -- END OF OUTSTATION TRIP NUMBER #OS -----------------------------------------
 
+
+-- ===========================================================================
+-- CAREERS DECIDED AND OFFER CODES (2026-11-24)
+-- ===========================================================================
+-- WHY: the code review of 2026-11-24 (release A1). A candidate told to
+-- proceed kept an open interview invitation, and the careers page let a
+-- time be chosen (or other times asked for) after any decision. An
+-- Employment Offer's code allowed five new codes an hour, each with five
+-- tries: about 18,000 guesses over the link's 30 days.
+--
+-- WHAT CHANGED
+--   * `hiring_decide` cancels an invited or other-times interview on
+--     Proceed too (a picked or confirmed one stays for the team, as
+--     before); every other outcome cancels as before.
+--   * `careers_pick` and `careers_none` refuse (`not-open`) once the
+--     candidate is past New, Invited or Interview.
+--   * `hiring_doc_wrong_today(doc)` (internal): the wrong codes typed for a
+--     document this Malaysian day, whatever code they were typed against;
+--     at ten, `careers_doc_open` and `hiring_doc_code` answer
+--     `locked-today` until the next day.
+--
+-- ORDER: this file (connector), then hiring-mail (passes `locked-today` on),
+-- then the pages. An old careers page reads `locked-today` as a code not
+-- recognised. Safe to run twice.
+-- ROLLBACK: restate `hiring_decide`, `careers_pick`, `careers_none`,
+-- `hiring_doc_code` and `careers_doc_open` from their last definitions
+-- before this banner; drop `hiring_doc_wrong_today(uuid)`.
+-- ===========================================================================
+
+/* The wrong codes typed for one document this Malaysian day. Internal. */
+create or replace function public.hiring_doc_wrong_today(p_doc uuid)
+returns integer language sql stable security definer set search_path = public as $$
+  select coalesce(sum(s.tries), 0)::integer from public.hiring_doc_codes s
+   where s.doc_id = p_doc
+     and s.created_at >= ((now() at time zone 'Asia/Kuala_Lumpur')::date)::timestamp at time zone 'Asia/Kuala_Lumpur'
+$$;
+revoke all on function public.hiring_doc_wrong_today(uuid) from public, anon, authenticated;
+
+create or replace function public.hiring_decide(p_id uuid, p_outcome text, p_note text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text := public.hiring_role(p_id);
+  c public.hiring_candidates;
+  v_back text;
+begin
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_outcome, '') not in ('proceed', 'pool', 'not', 'reopen') then return jsonb_build_object('error', 'bad-outcome'); end if;
+  if char_length(coalesce(p_note, '')) > 1000 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.stage = 'hired' then return jsonb_build_object('error', 'closed'); end if;
+  if p_outcome = 'reopen' then
+    if c.outcome is null then return jsonb_build_object('ok', true, 'same', true); end if;
+    v_back := case when exists (select 1 from public.hiring_interviews i where i.candidate_id = c.id and i.state = 'confirmed') then 'interview'
+      when exists (select 1 from public.hiring_interviews i where i.candidate_id = c.id and i.state in ('invited', 'picked', 'none')) then 'invited'
+      else 'new' end;
+    update public.hiring_candidates set stage = v_back, outcome = null, outcome_note = null, outcome_by = null, outcome_at = null,
+      pool_consent = null, pool_until = null, outcome_mail = null, outcome_mail_at = null,
+      decide_by = null, decide_note = null, decide_soon_at = null, decide_due_at = null, decide_moved_at = null, last_step_at = now(), updated_at = now()
+     where id = c.id;
+    update public.hiring_docs set state = 'withdrawn', updated_at = now() where candidate_id = c.id and state = 'sent';
+    perform public.hiring_log(c.id, 'candidate.decided', 'Reopened');
+    return jsonb_build_object('ok', true, 'was', c.outcome, 'note', c.outcome_note);
+  end if;
+  if c.outcome = p_outcome then return jsonb_build_object('ok', true, 'same', true); end if;
+  update public.hiring_candidates set
+    stage = case p_outcome when 'proceed' then 'offer' when 'pool' then 'pool' else 'closed' end,
+    outcome = p_outcome, outcome_note = nullif(btrim(coalesce(p_note, '')), ''), outcome_by = me.id, outcome_at = now(),
+    pool_consent = case when p_outcome = 'pool' then 'asked' end, pool_until = null, outcome_mail = null, outcome_mail_at = null,
+    decide_by = null, decide_note = null, decide_soon_at = null, decide_due_at = null, decide_moved_at = null,
+    last_step_at = now(), updated_at = now()
+   where id = c.id;
+  update public.hiring_interviews set state = 'cancelled', updated_at = now()
+   where candidate_id = c.id
+     and (state in ('invited', 'none')
+          or (p_outcome <> 'proceed' and (state = 'picked' or (state = 'confirmed' and held_at is null))));
+  update public.hiring_docs set state = 'withdrawn', updated_at = now()
+   where candidate_id = c.id and p_outcome <> 'proceed' and state = 'sent';
+  perform public.hiring_log(c.id, 'candidate.decided',
+    case p_outcome when 'proceed' then 'Proceed' when 'pool' then 'Keep in talent pool' else 'Do not proceed' end);
+  return jsonb_build_object('ok', true, 'was', c.outcome, 'email', p_outcome in ('pool', 'not'));
+end $$;
+grant execute on function public.hiring_decide(uuid, text, text) to authenticated;
+
+create or replace function public.careers_pick(p_key text, p_slot int)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null for update;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  -- A decision taken closes the choice (review 2026-11-24).
+  if c.stage not in ('new', 'invited', 'interview') then return jsonb_build_object('error', 'not-open'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state = 'invited'
+   order by invited_at desc limit 1 for update;
+  if i.id is null then return jsonb_build_object('error', 'not-open'); end if;
+  if i.reply_by <= now() then return jsonb_build_object('error', 'reply-passed'); end if;
+  if p_slot is null or p_slot < 1 or p_slot > cardinality(i.slots) then return jsonb_build_object('error', 'bad-slot'); end if;
+  if i.slots[p_slot] < now() then return jsonb_build_object('error', 'slot-past'); end if;
+  update public.hiring_interviews set state = 'picked', picked = p_slot, picked_at = now(), updated_at = now() where id = i.id;
+  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (c.id, 'Candidate page', 'candidate.interview', 'Time chosen: ' || public.hiring_when(i.slots[p_slot]));
+  perform public.hiring_tell(c.id, 'hiring.picked', 'A candidate chose an interview time',
+    c.position || ' · ' || public.hiring_when(i.slots[p_slot]) || '. Approve it to send the confirmation.');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.careers_pick(text, int) from public;
+grant execute on function public.careers_pick(text, int) to anon, authenticated;
+
+create or replace function public.careers_none(p_key text, p_note text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  if char_length(coalesce(p_note, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null for update;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  -- A decision taken closes the choice (review 2026-11-24).
+  if c.stage not in ('new', 'invited', 'interview') then return jsonb_build_object('error', 'not-open'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state = 'invited'
+   order by invited_at desc limit 1 for update;
+  if i.id is null then return jsonb_build_object('error', 'not-open'); end if;
+  if i.reply_by <= now() then return jsonb_build_object('error', 'reply-passed'); end if;
+  update public.hiring_interviews set state = 'none', candidate_note = nullif(btrim(coalesce(p_note, '')), ''), updated_at = now() where id = i.id;
+  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (c.id, 'Candidate page', 'candidate.interview', 'Other times asked for');
+  perform public.hiring_tell(c.id, 'hiring.none', 'A candidate asked for other interview times',
+    c.position || '. Send new times from the candidate''s Interview tab.');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.careers_none(text, text) from public;
+grant execute on function public.careers_none(text, text) to anon, authenticated;
+
+create or replace function public.hiring_doc_code(p_key text, p_doc uuid, p_device text, p_ip text)
+returns jsonb language plpgsql volatile security definer set search_path = public, extensions as $$
+declare
+  d public.hiring_docs := public.careers_doc_of(p_key, p_doc);
+  c public.hiring_candidates;
+  v_code text;
+begin
+  if d.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  perform 1 from public.hiring_docs where id = d.id for update;
+  select * into c from public.hiring_candidates where id = d.candidate_id;
+  if public.hiring_doc_wrong_today(d.id) >= 10 then return jsonb_build_object('error', 'locked-today'); end if;
+  if (select count(*) from public.hiring_doc_codes s where s.doc_id = d.id and s.created_at > now() - interval '1 hour') >= 5 then
+    return jsonb_build_object('error', 'too-many');
+  end if;
+  v_code := lpad(((('x' || encode(gen_random_bytes(4), 'hex'))::bit(32)::bigint) % 1000000)::text, 6, '0');
+  insert into public.hiring_doc_codes (doc_id, code_hash, email, expires_at)
+  values (d.id, crypt(v_code, gen_salt('bf', 6)), c.email, now() + interval '15 minutes');
+  insert into public.signing_steps (doc_kind, doc_id, step, email, ip, country, device)
+  values ('hiring_doc', d.id, 'code', c.email, nullif(left(coalesce(p_ip, ''), 64), ''), nullif(public.request_country(), ''), public.seal_device(p_device));
+  return jsonb_build_object('ok', true, 'code', v_code, 'email', c.email, 'name', c.name, 'ref', d.serial,
+    'doc', d.kind);
+end $$;
+revoke all on function public.hiring_doc_code(text, uuid, text, text) from public, anon, authenticated;
+grant execute on function public.hiring_doc_code(text, uuid, text, text) to service_role;
+
+create or replace function public.careers_doc_open(p_key text, p_doc uuid, p_code text, p_device text)
+returns jsonb language plpgsql volatile security definer set search_path = public, extensions as $$
+declare
+  d public.hiring_docs := public.careers_doc_of(p_key, p_doc);
+  s public.hiring_doc_codes;
+  v_tok text;
+begin
+  if d.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  perform 1 from public.hiring_docs where id = d.id for update;
+  -- Ten wrong codes a document a Malaysian day, whatever code they were
+  -- typed against (review 2026-11-24: a new code every hour gave five more).
+  if public.hiring_doc_wrong_today(d.id) >= 10 then return jsonb_build_object('error', 'locked-today'); end if;
+  select * into s from public.hiring_doc_codes x where x.doc_id = d.id and x.used_at is null
+   order by x.created_at desc limit 1 for update;
+  if s.id is null then return jsonb_build_object('error', 'no-code'); end if;
+  if s.expires_at <= now() then return jsonb_build_object('error', 'code-expired'); end if;
+  if s.tries >= 5 then return jsonb_build_object('error', 'locked'); end if;
+  if regexp_replace(coalesce(p_code, ''), '\s+', '', 'g') !~ '^[0-9]{6}$'
+     or crypt(regexp_replace(p_code, '\s+', '', 'g'), s.code_hash) <> s.code_hash then
+    update public.hiring_doc_codes set tries = tries + 1 where id = s.id;
+    return jsonb_build_object('error', 'wrong', 'left', greatest(0, 4 - s.tries));
+  end if;
+  v_tok := encode(gen_random_bytes(24), 'hex');
+  update public.hiring_doc_codes set used_at = now(), view_hash = encode(digest(v_tok, 'sha256'), 'hex'),
+    view_until = now() + interval '30 minutes' where id = s.id;
+  insert into public.signing_steps (doc_kind, doc_id, step, email, ip, country, device)
+  values ('hiring_doc', d.id, 'opened', s.email, nullif(public.request_ip(), ''), nullif(public.request_country(), ''), public.seal_device(p_device));
+  return public.careers_doc_json(d) || jsonb_build_object('view', v_tok);
+end $$;
+revoke all on function public.careers_doc_open(text, uuid, text, text) from public;
+grant execute on function public.careers_doc_open(text, uuid, text, text) to anon, authenticated;
+
+-- END OF CAREERS DECIDED AND OFFER CODES ------------------------------------
+
+-- ===========================================================================
+-- CREATOR DETAILS CHANGED (2026-11-24)
+-- ===========================================================================
+-- WHY: the code review of 2026-11-24 (release A1). A creator's payment
+-- details changed on the creator page were told only to the new email: a
+-- change somebody else made with the creator's code went unseen.
+--
+-- WHAT CHANGED
+--   * `creator_pay_requests.changes` (the words) and `prior_id` (the set on
+--     file it was compared with): `creator_pay_changes(was, now)` names a
+--     changed bank account (Bank account changed: ending 1234 → 5678), a
+--     changed account holder, and changed contact details (email or
+--     WhatsApp).
+--   * `creator_pay_submit` writes them and, where details were on file and
+--     something changed, queues Details changed to the email on file
+--     (`creator_mail_queue('changed')`) and the WhatsApp template
+--     `creator_changed` to the WhatsApp on file (`wa_enqueue`, held by
+--     Automatic WhatsApp as a creator message is, sent once its template
+--     is chosen in Settings; its reference the creator, the message's
+--     recipient).
+--   * `creator_pay_json` answers `changes`; the review email fills
+--     {changes} (an edited template is left alone); Details changed fills
+--     {date} and {chinese date}; `template_fields('creator-details')` takes
+--     the three; the Settings lists order and name Details changed.
+--
+-- ORDER: this file (connector), then CREATOR DETAILS CHANGED, THE SQL
+-- EDITOR PART (it widens the purpose checks and seeds the template and the
+-- WhatsApp row; until it runs nothing is queued, since `creator_mail_queue`
+-- finds no template and `wa_enqueue` no row), then the pages. Safe to run
+-- twice.
+-- ROLLBACK: restate `creator_pay_submit`, `creator_mail_queue`,
+-- `wa_enqueue`, `creator_pay_json`, `creator_email_templates_get`,
+-- `creator_email_templates_save` and `template_fields` from their last
+-- definitions before this banner; drop `creator_pay_changes`; the columns
+-- may stay.
+-- ===========================================================================
+
+alter table public.creator_pay_requests add column if not exists changes text[] not null default '{}';
+alter table public.creator_pay_requests add column if not exists prior_id uuid;
+
+/* What moved between the details on file and the ones sent: the words the
+   review and the email read. */
+create or replace function public.creator_pay_changes(p_was public.creator_pay_requests, p_now public.creator_pay_requests)
+returns text[] language sql immutable set search_path = public as $$
+  select case when p_was.id is null or p_now.id is null then '{}'::text[] else array_remove(array[
+    case when (p_was.method, coalesce(p_was.bank, ''), p_was.currency, p_was.account)
+              is distinct from (p_now.method, coalesce(p_now.bank, ''), p_now.currency, p_now.account)
+         then 'Bank account changed: ending ' || right(p_was.account, 4) || ' → ' || right(p_now.account, 4) end,
+    case when btrim(p_was.payee) is distinct from btrim(p_now.payee)
+         then 'Account holder changed: ' || p_was.payee || ' → ' || p_now.payee end,
+    case when lower(btrim(p_was.email)) is distinct from lower(btrim(p_now.email))
+           or regexp_replace(coalesce(p_was.whatsapp, ''), '\D', '', 'g') is distinct from regexp_replace(coalesce(p_now.whatsapp, ''), '\D', '', 'g')
+         then 'Contact details changed' end], null) end
+$$;
+revoke all on function public.creator_pay_changes(public.creator_pay_requests, public.creator_pay_requests) from public, anon, authenticated;
+
+/* A set as the creator's page reads it: the numbers as their last four. */
+create or replace function public.creator_pay_json(r public.creator_pay_requests, p_whole boolean)
+returns jsonb language sql stable set search_path = public as $$
+  select case when r.id is null then null else jsonb_build_object(
+    'id', r.id, 'ref', r.ref, 'status', r.status, 'created_at', r.created_at, 'decided_at', r.decided_at,
+    'note', r.note, 'bill_kind', r.bill_kind, 'source', r.source,
+    'id_no', case when p_whole then r.id_no end, 'id_end', right(regexp_replace(r.id_no, '\W', '', 'g'), 4),
+    'legal_name', r.legal_name, 'tin', r.tin, 'address', r.address, 'currency', r.currency,
+    'method', r.method, 'method_word', public.creator_pay_method(r.method, r.bank), 'bank', r.bank,
+    'account', case when p_whole then r.account end, 'account_end', right(r.account, 4),
+    'payee', r.payee, 'email', r.email, 'whatsapp', r.whatsapp, 'changes', to_jsonb(coalesce(r.changes, '{}'))) end
+$$;
+revoke all on function public.creator_pay_json(public.creator_pay_requests, boolean) from public, anon, authenticated;
+
+-- The review email names what changed (an edited template is left alone).
+update public.creator_email_templates
+   set body = replace(body, E'Account ending: {account ending}\n', E'Account ending: {account ending}\n\n{changes}\n')
+ where purpose = 'review' and updated_by is null and body not like '%{changes}%';
+
+create or replace function public.creator_pay_submit(p_code text, p_values jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_id   uuid;
+  v_lock integer;
+  cr     public.creators;
+  v_held public.creator_pay_requests;
+  v_in   jsonb := coalesce(p_values, '{}'::jsonb);
+  v_chk  jsonb;
+  v      jsonb;
+  v_seq  int;
+  v_new  public.creator_pay_requests;
+  v_was  public.creator_pay_requests;
+  v_chg  text[];
+begin
+  select t.o_creator, t.o_locked into v_id, v_lock from public.creator_code_try(p_code) t;
+  if v_lock is not null then return jsonb_build_object('error', 'locked', 'minutes', v_lock); end if;
+  select * into cr from public.creators x where x.id = v_id for update;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not cr.active then return jsonb_build_object('error', 'inactive'); end if;
+  if not public.creator_pay_due(cr.id) then return jsonb_build_object('error', 'not-due'); end if;
+  if (select count(*) from public.creator_pay_requests x where x.creator_id = cr.id
+       and x.created_at > now() - interval '1 day') >= 5 then
+    return jsonb_build_object('error', 'too-many');
+  end if;
+  -- A number left blank keeps the one held, where nothing it belongs to moved;
+  -- a detail the page shows masked, left blank, keeps the one held.
+  select * into v_held from public.creator_pay_requests x where x.creator_id = cr.id and x.status in ('approved', 'pending')
+   order by x.seq desc limit 1;
+  if v_held.id is not null then
+    if btrim(coalesce(v_in->>'id_no', '')) = '' and v_in->>'bill_kind' = v_held.bill_kind then
+      v_in := v_in || jsonb_build_object('id_no', v_held.id_no);
+    end if;
+    if btrim(coalesce(v_in->>'account', '')) = '' and v_in->>'method' = v_held.method
+       and upper(coalesce(v_in->>'currency', '')) = v_held.currency and coalesce(v_in->>'bank', '') = coalesce(v_held.bank, '') then
+      v_in := v_in || jsonb_build_object('account', v_held.account);
+    end if;
+    if btrim(coalesce(v_in->>'legal_name', '')) = '' then v_in := v_in || jsonb_build_object('legal_name', v_held.legal_name); end if;
+    if btrim(coalesce(v_in->>'tin', '')) = '' and v_held.tin is not null then v_in := v_in || jsonb_build_object('tin', v_held.tin); end if;
+    if btrim(coalesce(v_in->>'address', '')) = '' then v_in := v_in || jsonb_build_object('address', v_held.address); end if;
+    if btrim(coalesce(v_in->>'payee', '')) = '' then v_in := v_in || jsonb_build_object('payee', v_held.payee); end if;
+    if btrim(coalesce(v_in->>'email', '')) = '' then v_in := v_in || jsonb_build_object('email', v_held.email); end if;
+    if btrim(coalesce(v_in->>'whatsapp', '')) = '' then v_in := v_in || jsonb_build_object('whatsapp', v_held.whatsapp); end if;
+  end if;
+  -- What is on file: the details approved last, the ones the bills go to.
+  select * into v_was from public.creator_pay_requests x where x.creator_id = cr.id and x.status = 'approved'
+   order by x.seq desc limit 1;
+  v_chk := public.creator_pay_check(v_in);
+  if v_chk ? 'field' then return jsonb_build_object('error', 'bad', 'field', v_chk->>'field'); end if;
+  v := v_chk->'values';
+  update public.creator_pay_requests x set status = 'withdrawn' where x.creator_id = cr.id and x.status = 'pending';
+  select coalesce(max(x.seq), 0) + 1 into v_seq from public.creator_pay_requests x where x.creator_id = cr.id;
+  insert into public.creator_pay_requests (creator_id, seq, ref, bill_kind, id_no, legal_name, tin, address, currency,
+    method, bank, account, payee, email, whatsapp)
+  values (cr.id, v_seq, public.creator_pay_ref(cr.creator_code, v_seq), v->>'bill_kind', v->>'id_no', v->>'legal_name',
+    v->>'tin', v->>'address', v->>'currency', v->>'method', v->>'bank', v->>'account', v->>'payee', v->>'email', v->>'whatsapp')
+  returning * into v_new;
+  v_chg := public.creator_pay_changes(v_was, v_new);
+  update public.creator_pay_requests x set changes = v_chg, prior_id = v_was.id where x.id = v_new.id
+  returning * into v_new;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Creator page', 'creator.updated', cr.name,
+          coalesce(cr.creator_code || ' · ', '') || 'Payment details submitted · ' || v_new.ref || ' · ' ||
+          public.creator_pay_method(v_new.method, v_new.bank) || ' ending ' || right(v_new.account, 4) ||
+          coalesce(' · ' || nullif(array_to_string(v_chg, ' · '), ''), ''));
+  perform public.creator_mail_queue('received', v_new.id);
+  perform public.creator_mail_queue('review', v_new.id);
+  -- Details on file changed: the email and WhatsApp on file are told too,
+  -- so a change the creator did not make is seen (review 2026-11-24).
+  if v_was.id is not null and cardinality(v_chg) > 0 then
+    perform public.creator_mail_queue('changed', v_new.id);
+    perform public.wa_enqueue('creator_changed', public.wa_number(coalesce(nullif(v_was.whatsapp, ''), cr.whatsapp), 'MY'), cr.name,
+      jsonb_build_array(cr.name, public.register_day((v_new.created_at at time zone 'Asia/Kuala_Lumpur')::date)),
+      'creator', cr.id, null, null);
+  end if;
+  return jsonb_build_object('ok', true, 'ref', v_new.ref);
+end $$;
+grant execute on function public.creator_pay_submit(text, jsonb) to anon, authenticated;
+
+create or replace function public.creator_mail_queue(p_purpose text, p_req uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  t   public.creator_email_templates;
+  r   public.creator_pay_requests;
+  c   public.creators;
+  v_to text;
+  v_sub text;
+  v_body text;
+  v_vals jsonb;
+  w   public.creator_pay_requests;
+  v_day date;
+begin
+  select * into t from public.creator_email_templates x where x.purpose = p_purpose;
+  if t.purpose is null or not t.on_send then return; end if;
+  select * into r from public.creator_pay_requests x where x.id = p_req;
+  select * into c from public.creators x where x.id = r.creator_id;
+  -- Details changed goes to the email on file, the set it replaced.
+  select * into w from public.creator_pay_requests x where x.id = r.prior_id;
+  v_to := lower(btrim(coalesce(case when p_purpose = 'review' then t.to_email
+                                    when p_purpose = 'changed' then w.email else r.email end, '')));
+  v_day := (r.created_at at time zone 'Asia/Kuala_Lumpur')::date;
+  if v_to !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then return; end if;
+  v_sub := t.subject;
+  v_body := t.body;
+  v_vals := jsonb_build_object(
+    'creator name', c.name, 'creator id', coalesce(c.creator_code, ''), 'reference', r.ref, 'payee', r.payee,
+    'method', public.creator_pay_method(r.method, r.bank), 'account ending', right(r.account, 4),
+    'review link', 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' || c.id,
+    'date', public.register_day(v_day),
+    'chinese date', to_char(v_day, 'YYYY') || '年' || to_char(v_day, 'FMMM') || '月' || to_char(v_day, 'FMDD') || '日',
+    'changes', array_to_string(coalesce(r.changes, '{}'), E'\n'));
+  v_sub := public.creator_mail_fill(v_sub, v_vals);
+  -- A field filled empty (no changes) leaves no blank lines behind it.
+  v_body := regexp_replace(public.creator_mail_fill(v_body, v_vals), E'\n{3,}', E'\n\n', 'g');
+  -- Off, the email is kept as Not sent and never sent later (2026-11-10).
+  insert into public.creator_emails (purpose, creator_id, request_id, to_email, subject, body, status, error)
+  values (p_purpose, c.id, r.id, v_to, left(v_sub, 200), v_body,
+          case when public.auto_send_on('email') then 'queued' else 'failed' end,
+          case when public.auto_send_on('email') then null else 'off: Automatic emails are off.' end);
+  perform public.creator_mail_kick();
+end $$;
+revoke all on function public.creator_mail_queue(text, uuid) from public, anon, authenticated;
+
+create or replace function public.wa_enqueue(p_purpose text, p_number text, p_name text, p_params jsonb,
+                                             p_ref_kind text, p_ref_id uuid, p_client uuid, p_button text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare t public.wa_templates;
+begin
+  select * into t from public.wa_templates x where x.purpose = p_purpose and x.active and x.name <> '';
+  if t.purpose is null or p_number is null then return; end if;
+  -- What the portal sends by itself waits on its switch (2026-11-10).
+  if p_purpose in ('reminder', 'creator', 'creator_changed') and not public.auto_send_on('whatsapp') then return; end if;
+  insert into public.wa_outbox (purpose, to_number, to_name, template, lang, params, ref_kind, ref_id, client_id, created_by, button,
+                                to_kind, to_id, category)
+  values (p_purpose, p_number, p_name, t.name, t.lang,
+          coalesce((select jsonb_agg(e.value) from (select value from jsonb_array_elements(coalesce(p_params, '[]'::jsonb)) with ordinality e(value, n)
+                     where n <= t.params order by n) e), '[]'::jsonb),
+          p_ref_kind, p_ref_id, p_client, 'system', nullif(btrim(coalesce(p_button, '')), ''),
+          case p_purpose when 'reminder' then 'colleague' when 'creator' then 'creator' when 'creator_changed' then 'creator' else 'contact' end,
+          case when p_purpose = 'reminder' then (select n.team_member_id from public.ops_notifications n where n.id = p_ref_id)
+               when p_purpose = 'creator' then (select o.creator_id from public.campaign_options o where o.id = p_ref_id)
+               when p_purpose = 'creator_changed' then p_ref_id end,
+          nullif(t.category, ''));
+  perform public.wa_kick();
+end $$;
+
+revoke all on function public.wa_enqueue(text, text, text, jsonb, text, uuid, uuid, text) from public, anon, authenticated;
+
+create or replace function public.creator_email_templates_get()
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when not public.ops_granted('team.settings', 'work') then jsonb_build_object('error', 'denied')
+    else jsonb_build_object('ok', true, 'rows', coalesce((select jsonb_agg(jsonb_build_object(
+      'purpose', t.purpose, 'on', t.on_send, 'subject', t.subject, 'body', t.body, 'to_email', t.to_email,
+      'updated_at', t.updated_at, 'updated_by', m.name)
+      order by array_position(array['received', 'review', 'approved', 'changed', 'request', 'posted', 'paid'], t.purpose))
+      from public.creator_email_templates t left join public.team_members m on m.id = t.updated_by), '[]'::jsonb)) end
+$$;
+revoke all on function public.creator_email_templates_get() from public, anon;
+grant execute on function public.creator_email_templates_get() to authenticated;
+
+create or replace function public.creator_email_templates_save(p_rows jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  x     jsonb;
+  t     public.creator_email_templates;
+  v_to  text;
+  v_moved text[] := '{}';
+  v_word text;
+  v_bad jsonb;
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  for x in select * from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) loop
+    select * into t from public.creator_email_templates y where y.purpose = x->>'purpose' for update;
+    if t.purpose is null then return jsonb_build_object('error', 'bad-request'); end if;
+    if length(btrim(coalesce(x->>'subject', ''))) < 3 or length(x->>'subject') > 200 then
+      return jsonb_build_object('error', 'bad-subject', 'purpose', t.purpose);
+    end if;
+    if length(btrim(coalesce(x->>'body', ''))) < 10 or length(x->>'body') > 5000 then
+      return jsonb_build_object('error', 'bad-body', 'purpose', t.purpose);
+    end if;
+    v_bad := public.template_check(coalesce(x->>'subject', '') || E'\n' || coalesce(x->>'body', ''),
+      case when t.purpose in ('request', 'posted', 'paid') then 'creator-booking' else 'creator-details' end);
+    if v_bad is not null then return v_bad || jsonb_build_object('purpose', t.purpose); end if;
+    v_to := nullif(lower(btrim(coalesce(x->>'to_email', ''))), '');
+    -- The finance address is held on Details to review; Payment request goes to it too.
+    if t.purpose = 'review' and (v_to is null or v_to !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_to) > 160) then
+      return jsonb_build_object('error', 'bad-email');
+    end if;
+    if t.purpose <> 'review' then v_to := null; end if;
+    if (t.on_send, t.subject, t.body, t.to_email) is distinct from
+       (coalesce((x->>'on')::boolean, true), btrim(x->>'subject'), btrim(x->>'body'), v_to) then
+      v_word := case t.purpose when 'received' then 'Details received' when 'review' then 'Details to review'
+        when 'approved' then 'Details approved' when 'changed' then 'Details changed' when 'request' then 'Payment request' when 'posted' then 'Post recorded'
+        else 'Payment sent' end;
+      v_moved := v_moved || (v_word ||
+        case when t.on_send is distinct from coalesce((x->>'on')::boolean, true)
+             then ': ' || case when t.on_send then 'Sent → Not sent' else 'Not sent → Sent' end
+             when t.to_email is distinct from v_to then ': finance email changed'
+             else ': wording changed' end);
+      update public.creator_email_templates y set on_send = coalesce((x->>'on')::boolean, true), subject = btrim(x->>'subject'),
+        body = btrim(x->>'body'), to_email = v_to, updated_at = now(), updated_by = me.id where y.purpose = t.purpose;
+    end if;
+  end loop;
+  if cardinality(v_moved) > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'team.changed', 'Creator emails', array_to_string(v_moved, ' · '));
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.template_fields(p_kind text) returns text[]
+language sql immutable set search_path = public as $$
+  select case p_kind
+    when 'supplier' then array['contact name', 'supplier name', 'supplier id', 'payment term', 'currency',
+      'document title', 'document reference', 'document date', 'sender name']
+    when 'client' then array['contact name', 'client name', 'company name', 'document title', 'document reference',
+      'document date', 'valid until', 'sender name']
+    when 'free' then array['contact name', 'company name', 'client name', 'supplier name', 'sender name']
+    when 'invoice' then array['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices']
+    when 'creator-details' then array['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending',
+      'review link', 'date', 'chinese date', 'changes']
+    when 'creator-booking' then array['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by',
+      'payee', 'method', 'account ending', 'amount', 'bill number', 'review link']
+    when 'meeting' then array['meeting', 'date', 'time', 'month', 'channel', 'link']
+    when 'code' then array['name', 'code', 'minutes', 'purpose']
+    when 'candidate' then array['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note',
+      'time', 'previous time', 'new time', 'place', 'google meet notice', 'decision date', 'months', 'document', 'reference',
+      'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
+  end $$;
+revoke all on function public.template_fields(text) from public, anon, authenticated;
+
+-- END OF CREATOR DETAILS CHANGED -------------------------------------------
+
+-- ===========================================================================
+-- CREATOR DETAILS CHANGED, THE SQL EDITOR PART (2026-11-24) — run in the SQL
+-- Editor after CREATOR DETAILS CHANGED: it widens the creator emails' and
+-- the WhatsApp templates' purposes (a constraint is replaced by dropping
+-- it, which the connector holds) and seeds Details changed (Settings,
+-- Templates: Creator emails) and the WhatsApp row Payment details changed
+-- (Settings, Messages: WhatsApp templates; off until a template approved by
+-- Meta is chosen). Running it turns the notice on. Safe to run twice.
+-- ROLLBACK: delete the `changed` template, its emails and the
+-- `creator_changed` WhatsApp row, then put the checks back as before.
+-- ===========================================================================
+
+alter table public.creator_email_templates drop constraint if exists creator_email_templates_purpose_check;
+alter table public.creator_email_templates add constraint creator_email_templates_purpose_check
+  check (purpose in ('received', 'review', 'approved', 'changed', 'request', 'posted', 'paid'));
+alter table public.creator_emails drop constraint if exists creator_emails_purpose_check;
+alter table public.creator_emails add constraint creator_emails_purpose_check
+  check (purpose in ('received', 'review', 'approved', 'changed', 'request', 'posted', 'paid'));
+insert into public.creator_email_templates (purpose, subject, body, to_email) values
+  ('changed', 'Payment details changed: {reference}',
+   E'Dear {creator name},\n\nYour payment details were changed on {date}. If this was not you, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', null)
+on conflict (purpose) do nothing;
+
+alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
+alter table public.wa_templates add constraint wa_templates_purpose_check
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready', 'representative',
+                     'creator_changed'));
+insert into public.wa_templates (purpose) values ('creator_changed') on conflict (purpose) do nothing;
+
+-- END OF CREATOR DETAILS CHANGED, THE SQL EDITOR PART ----------------------
+
+-- ===========================================================================
+-- A SUPPLIER'S EDIT HOLDS TO ITS COPY (2026-11-24)
+-- ===========================================================================
+-- WHY: the review of 2026-11-24 (C1): `supplier_save` wrote every field the
+-- sheet held, bank details included, with no version check, so an Edit left
+-- open on a phone could put back an old bank account a colleague had since
+-- corrected.
+--
+-- WHAT IT CHANGES
+--   * `supplier_save(p_id, p_values, p_form)` keeps its signature (no drop:
+--     an open tab keeps working). `p_values` may now carry `expected`, the
+--     supplier's `updated_at` as the sheet read it: a supplier changed since
+--     is refused `stale`, answered with the supplier as it now stands, and
+--     the page repaints from it.
+--   * Only the fields sent move: the rest keep what is stored (the stored
+--     row is laid under what was sent before the one check), so the page
+--     sends only what changed. A page from before, sending every field and
+--     no `expected`, is answered as before.
+--
+-- ORDER: this migration first, then the pages (a page from this release
+-- sends only the fields that moved, which the function before this one
+-- would have written as blanks).
+--
+-- ROLLBACK: run `supplier_save` as OFFICIAL TERMS CAPITALISED stated it
+-- (its previous last definition in schema.sql). The pages then send every
+-- field again only after their own rollback, so roll the pages back first.
+-- ===========================================================================
+
+create or replace function public.supplier_save(p_id uuid, p_values jsonb, p_form uuid default null)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  s     public.suppliers;
+  pay   boolean := public.ops_granted('suppliers.pay', 'work');
+  v     jsonb;
+  v_code text;
+  moved text[] := '{}';
+  k     text;
+  word  constant jsonb := '{"code":"Supplier ID","name":"Name","kind":"Type","brn":"BRN","tin":"TIN","sst_no":"SST Registration No.",
+    "phone":"Office / mobile","address":"Billing address","contact_name":"Legal name","designation":"Designation",
+    "email":"Email","mobile":"Mobile / WhatsApp","payment_term":"Payment term","currency":"Currency",
+    "finance_email":"Finance email","nric":"NRIC","payee_name":"Payee name","bank_name":"Bank",
+    "bank_account":"Account number","swift":"SWIFT code","bank_address":"Bank address"}';
+  secret constant text[] := array['nric', 'payee_name', 'bank_name', 'bank_account', 'swift', 'bank_address'];
+  was   jsonb;
+  repend boolean := false;
+begin
+  if me.id is null or not public.allowed('suppliers', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into s from public.suppliers x where x.id = p_id for update;
+  if s.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  /* The copy the sheet opened on: a write over a newer one is refused,
+     and the page repaints from the supplier answered with it. */
+  if (p_values ? 'expected') and s.updated_at is distinct from (p_values->>'expected')::timestamptz then
+    return jsonb_build_object('error', 'stale', 'supplier', public.supplier_json(s, public.ops_granted('suppliers.pay', 'view')));
+  end if;
+  /* Only the fields sent move; the rest keep what is stored, so a phone
+     edit never writes back an older bank account. */
+  p_values := (to_jsonb(s) - 'id' - 'status' - 'created_at' - 'updated_at') || (coalesce(p_values, '{}'::jsonb) - 'expected');
+  v_code := upper(regexp_replace(coalesce(p_values->>'code', ''), '\s+', '', 'g'));
+  if v_code !~ '^[A-Z0-9]{2,12}$' then return jsonb_build_object('error', 'bad-code'); end if;
+  if exists (select 1 from public.suppliers x where upper(x.code) = v_code and x.id <> p_id) then
+    return jsonb_build_object('error', 'code-taken', 'name', (select x.name from public.suppliers x where upper(x.code) = v_code));
+  end if;
+  v := public.supplier_values_check(coalesce(p_values, '{}'::jsonb), pay);
+  if v ? 'error' then return v; end if;
+  v := v || jsonb_build_object('code', v_code);
+  was := to_jsonb(s);
+  for k in select jsonb_object_keys(v) loop
+    if (was->>k) is distinct from (v->>k) then
+      moved := moved || case when k = any (secret) then (word->>k)
+        else (word->>k) || ': ' || coalesce(was->>k, 'not set') || ' → ' || coalesce(v->>k, 'not set') end;
+    end if;
+  end loop;
+  /* A bank account changed on an approved supplier is approved again. */
+  repend := pay and s.status = 'active' and s.bank_account is not null and (
+    (v->>'payee_name') is distinct from s.payee_name or (v->>'bank_name') is distinct from s.bank_name
+    or (v->>'bank_account') is distinct from s.bank_account);
+  update public.suppliers x set
+    code = v_code, name = v->>'name', kind = v->>'kind', brn = v->>'brn', tin = v->>'tin', sst_no = v->>'sst_no',
+    phone = v->>'phone', address = v->>'address', contact_name = v->>'contact_name', designation = v->>'designation',
+    email = v->>'email', mobile = v->>'mobile', payment_term = v->>'payment_term', currency = v->>'currency',
+    finance_email = v->>'finance_email',
+    nric = case when pay then v->>'nric' else x.nric end,
+    payee_name = case when pay then v->>'payee_name' else x.payee_name end,
+    bank_name = case when pay then v->>'bank_name' else x.bank_name end,
+    bank_account = case when pay then v->>'bank_account' else x.bank_account end,
+    swift = case when pay then v->>'swift' else x.swift end,
+    bank_address = case when pay then v->>'bank_address' else x.bank_address end,
+    status = case when repend then 'pending' else x.status end,
+    updated_at = now()
+   where x.id = p_id;
+  if p_form is not null then
+    update public.supplier_forms f set used_at = coalesce(f.used_at, now()), used_by = coalesce(f.used_by, me.id)
+     where f.id = p_form and f.supplier_id = p_id and f.submitted_at is not null;
+  end if;
+  if array_length(moved, 1) is not null then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'supplier.edited', v->>'name', v_code || ' · ' || array_to_string(moved, ' · ') ||
+            case when p_form is not null then ' · from the details form' else '' end ||
+            case when repend then ' · Active → Pending until approved again' else '' end);
+  end if;
+  return jsonb_build_object('ok', true, 'repending', repend, 'supplier',
+    public.supplier_json((select x from public.suppliers x where x.id = p_id), public.ops_granted('suppliers.pay', 'view')));
+end $$;
+revoke all on function public.supplier_save(uuid, jsonb, uuid) from public, anon;
+grant execute on function public.supplier_save(uuid, jsonb, uuid) to authenticated;
+
+-- END OF A SUPPLIER'S EDIT HOLDS TO ITS COPY -------------------------------
+
+-- ===========================================================================
+-- VERIFY BY THE NAME ADDRESSED TO (2026-11-24)
+-- ===========================================================================
+-- WHY: the review of everything merged since 2026-11-09, release B2 (the
+-- user, 2026-11-24: "Fix all together"). /verify/ let the day of issue stand
+-- for the Document ID on a copy issued before every copy carried one
+-- (`verify_code_from`, 20 Nov 2026), and the first answer gave its month;
+-- a client's or supplier's reference (ACL/, ASL/ `{YYMMDD}NN`) carries the
+-- day itself, so anybody holding a reference read the details. The user
+-- chose the name the document is addressed to in its place.
+-- `doc_code_of` answered any document's code to anon for any id, and
+-- `verify_find` scanned five tables on a form no index held.
+--
+-- WHAT IT CHANGES
+--   * `verify_find`: one form of a reference (upper case, a slash as a
+--     dash), held by an index on each table it reads; each document's
+--     names (`names`, never answered): a Document's recipient, client,
+--     colleague and supplier; a Letter of Offer's billed company, name and
+--     contact and its client; a quotation's brand, contact, billed company
+--     and client; an offer or contract's candidate; a performance record's
+--     colleague.
+--   * `verify_serial` answers `by_name` (where the name may stand for the
+--     Document ID) and the month only where it may not.
+--   * `verify_details` answers a Document ID alone; a day a page from before
+--     sends is read no more.
+--   * `verify_details_name(p_serial, p_name)` (anon): the name compared
+--     with case and spaces set aside; the ten checks an hour a connection,
+--     and five wrong names a reference lock it for 24 hours
+--     (`verify_name_tries`, closed to every page; `locked`, `reference`).
+--   * `verify_answer`: one shape for both; `checks` (how many times it was
+--     checked) to a colleague alone, never the public answer.
+--   * `doc_code_of` answers a colleague, and a client's portal login for
+--     its own Letter of Offer; `doc_code_of_key(p_kind, p_id, p_key)`
+--     (anon) a quotation for its link's key and an offer or contract sent
+--     for its candidate's.
+--
+-- ORDER: 2026-10-07-function-hygiene.sql again (its `open_to_anon` now
+-- names `verify_details_name` and `doc_code_of_key`), then this file, then
+-- the pages. An old open page meets `by_name` it does not read and offers
+-- the Document ID alone; a day it sends is refused as no match; /quote/ and
+-- /careers/ from before draw their PDF without its Document ID until
+-- reloaded. Safe to run twice.
+-- ROLLBACK: run `verify_find`, `verify_serial`, `verify_details` and
+-- `doc_code_of` from VERIFY CHECKS COUNTED and VERIFY DETAILS again; the
+-- indexes, the table and the new functions may stay.
+-- ===========================================================================
+
+-- VERIFY BY THE NAME ADDRESSED TO --------------------------------------------
+
+/* One form of a reference, the one every lookup compares and every index
+   holds: upper case, a slash read as a dash. */
+create index if not exists documents_serial_verify_idx on public.documents (upper(replace(serial, '/', '-')));
+create index if not exists client_documents_number_verify_idx on public.client_documents (upper(replace(number, '/', '-')));
+create index if not exists quotations_ref_verify_idx on public.quotations (upper(replace(ref, '/', '-')));
+create index if not exists hiring_docs_serial_verify_idx on public.hiring_docs (upper(replace(serial, '/', '-')));
+create index if not exists perf_reviews_serial_verify_idx on public.perf_reviews (upper(replace(serial, '/', '-')));
+create index if not exists perf_deleted_serial_verify_idx on public.perf_deleted (upper(replace(serial, '/', '-')));
+
+/* A name as compared: case and spaces set aside. */
+create or replace function public.verify_name_key(p text)
+returns text
+language sql immutable set search_path = public as $$
+  select lower(regexp_replace(coalesce(p, ''), '[[:space:]]+', '', 'g'))
+$$;
+revoke all on function public.verify_name_key(text) from public, anon, authenticated;
+
+/* The names a document is addressed to, as compared; never answered. */
+create or replace function public.verify_names(p text[])
+returns jsonb
+language sql immutable set search_path = public as $$
+  select coalesce(jsonb_agg(distinct y.k), '[]'::jsonb)
+    from (select public.verify_name_key(x) as k from unnest(p) x) y
+   where length(y.k) >= 2
+$$;
+revoke all on function public.verify_names(text[]) from public, anon, authenticated;
+
+create or replace function public.verify_find(p_serial text)
+returns jsonb
+language plpgsql stable set search_path = public as $$
+declare
+  s text := upper(btrim(coalesce(p_serial, '')));
+  sd text;
+  d public.documents%rowtype;
+  l public.client_documents%rowtype;
+  q public.quotations%rowtype;
+  h public.hiring_docs%rowtype;
+  rv public.perf_reviews%rowtype;
+  dl public.perf_deleted%rowtype;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_state text;
+  v_rep date;
+begin
+  if length(s) < 3 or length(s) > 40 then return null; end if;
+  sd := replace(s, '/', '-');
+  select * into d from public.documents x
+   where upper(replace(x.serial, '/', '-')) = sd
+   order by (upper(x.serial) = s) desc, (x.voided_at is null) desc, x.created_at desc limit 1;
+  if d.id is not null then
+    return jsonb_build_object('src', 'document', 'id', d.id, 'serial', d.serial,
+      'kind', case when d.family = 'hr' then 'HR Letter' else d.kind end,
+      'issued', d.issued_at, 'code', d.doc_code, 'sealed', false,
+      'names', public.verify_names(array[d.recipient ->> 'name',
+        (select c.legal_name from public.clients c where c.id = d.client_id),
+        (select c.name from public.clients c where c.id = d.client_id),
+        (select m.name from public.team_members m where m.id = d.member_id),
+        (select to_jsonb(u) ->> 'legal_name' from public.suppliers u where u.id = d.supplier_id),
+        (select to_jsonb(u) ->> 'name' from public.suppliers u where u.id = d.supplier_id)]),
+      'state', case when d.voided_at is null then 'valid' else 'voided' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', d.issued_at),
+        jsonb_build_object('step', 'voided', 'day', (d.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into l from public.client_documents x
+   where upper(replace(x.number, '/', '-')) = sd
+   order by (upper(x.number) = s) desc limit 1;
+  if l.id is not null then
+    select x.issued_at into v_rep
+      from public.client_documents x where x.id = l.superseded_by;
+    return jsonb_build_object('src', 'letter', 'id', l.id, 'serial', l.number, 'kind', 'Letter of Offer',
+      'issued', l.issued_at, 'code', l.doc_code, 'sealed', false,
+      'names', public.verify_names(array[l.bill_to ->> 'legal_name', l.bill_to ->> 'name', l.bill_to ->> 'contact',
+        (select c.legal_name from public.clients c where c.id = l.client_id),
+        (select c.name from public.clients c where c.id = l.client_id)]),
+      'state', case when l.voided_at is not null then 'voided'
+                    when l.superseded_by is not null then 'replaced'
+                    else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', l.issued_at),
+        jsonb_build_object('step', 'signed', 'day', (l.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (l.verified_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'voided', 'day', (l.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into q from public.quotations x
+   where (upper(replace(x.ref, '/', '-')) = sd)
+     and (x.sent_out_at is not null or x.signed_at is not null)
+   order by (upper(x.ref) = s) desc, x.issued_at desc limit 1;
+  if q.id is not null then
+    select (min(r.issued_at) at time zone 'Asia/Kuala_Lumpur')::date into v_rep
+      from public.quotations r where r.replaces = q.id and r.removed_at is null;
+    v_state := case when q.withdrawn_at is not null then 'withdrawn'
+                    when q.status = 'not_proceeding' or q.removed_at is not null then 'voided'
+                    when v_rep is not null then 'replaced'
+                    when q.signed_at is null and q.valid_until is not null and q.valid_until < v_today then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'quotation', 'id', q.id, 'serial', q.ref, 'kind', 'Quotation',
+      'issued', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', q.doc_code, 'sealed', q.seal_key is not null,
+      'names', public.verify_names(array[q.brand, q.contact ->> 'name', to_jsonb(q) #>> '{bill_to,legal_name}',
+        (select c.legal_name from public.clients c where c.id = q.client_id),
+        (select c.name from public.clients c where c.id = q.client_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sent', 'day', (q.sent_out_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (q.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (q.reviewed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (q.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', (q.declined_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'withdrawn', 'day', q.withdrawn_on),
+        jsonb_build_object('step', 'voided', 'day', (q.removed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then q.valid_until + 1 end))));
+  end if;
+  /* An offer or a contract once sent: the version standing first (a
+     replacement keeps the reference, the one it replaced void). */
+  select * into h from public.hiring_docs x
+   where (upper(replace(x.serial, '/', '-')) = sd)
+     and x.sent_at is not null and x.state <> 'draft'
+   order by (upper(x.serial) = s) desc, (x.state <> 'void') desc, x.sent_at desc limit 1;
+  if h.id is not null then
+    v_state := case when h.state = 'void' then 'voided'
+                    when h.state = 'withdrawn' then 'withdrawn'
+                    when h.state = 'declined' then 'declined'
+                    when h.state = 'sent' and h.reply_by is not null and h.reply_by < now() then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'hiring', 'id', h.id, 'serial', h.serial, 'kind', 'HR Letter',
+      'issued', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', h.doc_code, 'sealed', h.seal_sha is not null,
+      'names', public.verify_names(array[(select k.name from public.hiring_candidates k where k.id = h.candidate_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (h.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (h.confirmed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (h.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', case when h.state = 'declined' then (coalesce(h.answered_at, h.updated_at) at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'withdrawn', 'day', case when h.state = 'withdrawn' then (h.updated_at at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'voided', 'day', (h.voided_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then (h.reply_by at time zone 'Asia/Kuala_Lumpur')::date end))));
+  end if;
+  select * into rv from public.perf_reviews pr
+   where (upper(replace(pr.serial, '/', '-')) = sd)
+     and exists (select 1 from public.perf_events pe where pe.review_id = pr.id and pe.kind = 'printed')
+   limit 1;
+  if rv.id is not null then
+    return jsonb_build_object('src', 'perf', 'id', rv.id, 'serial', rv.serial, 'kind', 'HR Letter',
+      'issued', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', rv.doc_code, 'sealed', false,
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = rv.team_member_id)]),
+      'state', case when rv.status = 'draft' then 'replaced' else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'acknowledged', 'day', (rv.acknowledged_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'finalised', 'day', (rv.finalised_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into dl from public.perf_deleted pd
+   where pd.printed and (upper(replace(pd.serial, '/', '-')) = sd)
+   order by pd.deleted_at desc limit 1;
+  if dl.id is not null then
+    return jsonb_build_object('src', 'perf_deleted', 'id', dl.id, 'serial', dl.serial, 'kind', 'HR Letter',
+      'issued', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', null, 'sealed', false, 'state', 'voided',
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = dl.team_member_id)]),
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'voided', 'day', (dl.deleted_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  return null;
+end $$;
+revoke all on function public.verify_find(text) from public, anon, authenticated;
+
+/* Wrong names a reference, wherever they come from: five in a day lock
+   the name for that reference for 24 hours (a name can be guessed, a
+   Document ID cannot). */
+create table if not exists public.verify_name_tries (
+  serial       text primary key,
+  n            integer not null default 0,
+  since        timestamptz not null default now(),
+  locked_until timestamptz
+);
+alter table public.verify_name_tries enable row level security;
+revoke all on public.verify_name_tries from public, anon, authenticated;
+
+/* The minutes a reference's name stays locked, 0 where it is open. */
+create or replace function public.verify_name_wait(p_key text)
+returns integer
+language sql stable set search_path = public as $$
+  select coalesce((select greatest(1, ceil(extract(epoch from (t.locked_until - now())) / 60)::integer)
+                     from public.verify_name_tries t where t.serial = p_key and t.locked_until > now()), 0)
+$$;
+revoke all on function public.verify_name_wait(text) from public, anon, authenticated;
+
+create or replace function public.verify_name_wrong(p_key text)
+returns void
+language plpgsql volatile set search_path = public as $$
+begin
+  insert into public.verify_name_tries as t (serial, n, since) values (p_key, 1, now())
+  on conflict (serial) do update
+    set n = case when t.since < now() - interval '24 hours' then 1 else t.n + 1 end,
+        since = case when t.since < now() - interval '24 hours' then now() else t.since end;
+  update public.verify_name_tries t set locked_until = now() + interval '24 hours'
+   where t.serial = p_key and t.n >= 5 and (t.locked_until is null or t.locked_until <= now());
+end $$;
+revoke all on function public.verify_name_wrong(text) from public, anon, authenticated;
+
+/* The details, one shape for a Document ID and a name: never a name, a
+   term or a figure; the check count to a colleague alone. */
+create or replace function public.verify_answer(f jsonb, p_contact text)
+returns jsonb
+language sql stable set search_path = public as $$
+  select jsonb_build_object('ok', true, 'serial', f ->> 'serial', 'kind', f ->> 'kind', 'state', f ->> 'state',
+    'issued_on', f ->> 'issued',
+    'document_id', case when f ->> 'code' is not null then substr(f ->> 'code', 1, 4) || '-' || substr(f ->> 'code', 5, 4) end,
+    'sealed', coalesce((f ->> 'sealed')::boolean, false),
+    'history', f -> 'steps', 'contact', p_contact) ||
+    -- how many times it was checked: a colleague's to read, never the
+    -- public answer's (the user, 2026-11-24)
+    case when public.is_team() then jsonb_build_object('checks', greatest(1, public.verify_check_count(f ->> 'src', (f ->> 'id')::uuid)))
+         else '{}'::jsonb end
+$$;
+revoke all on function public.verify_answer(jsonb, text) from public, anon, authenticated;
+
+/* The first answer: that ADSPACE PLT issued a document with this reference,
+   its kind and its standing; its month only where its name cannot stand
+   for the Document ID (a reference may carry its day). A lookup that finds
+   one is counted. */
+create or replace function public.verify_serial(p_serial text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  f jsonb;
+  v_wait integer := public.verify_count();
+  v_name boolean;
+begin
+  if v_wait > 0 then
+    return jsonb_build_object('found', false, 'locked', true, 'minutes', v_wait);
+  end if;
+  f := public.verify_find(p_serial);
+  if f is null then return jsonb_build_object('found', false); end if;
+  perform public.verify_check_note(f);
+  v_name := public.verify_by_day(f);
+  return jsonb_build_object('found', true, 'serial', f ->> 'serial', 'kind', f ->> 'kind', 'state', f ->> 'state',
+    'sealed', coalesce((f ->> 'sealed')::boolean, false), 'more', true, 'by_name', v_name) ||
+    case when v_name then '{}'::jsonb else jsonb_build_object('issued_month', to_char((f ->> 'issued')::date, 'YYYY-MM')) end;
+end $$;
+revoke all on function public.verify_serial(text) from public;
+grant execute on function public.verify_serial(text) to anon, authenticated;
+
+/* The details for the Document ID printed on the copy (a sealed one's
+   earlier ID too). `p_day`, which a page from before sends, is read no
+   more: the name the document is addressed to stands for a missing ID
+   (`verify_details_name`). One answer for a wrong code and an unknown
+   reference. */
+create or replace function public.verify_details(p_serial text, p_code text, p_day date)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  f jsonb;
+  c text := upper(regexp_replace(left(coalesce(p_code, ''), 80), '[^0-9A-Za-z]', '', 'g'));
+  v_contact text := (select b.address from public.mail_boxes b where b.key = 'legal');
+  v_wait integer := public.verify_detail_count();
+  v_ok boolean := false;
+begin
+  if v_wait > 0 then
+    return jsonb_build_object('locked', true, 'minutes', v_wait, 'contact', v_contact);
+  end if;
+  f := public.verify_find(p_serial);
+  if f is not null and c <> '' then
+    if f ->> 'code' is not null and c = f ->> 'code' then
+      v_ok := true;
+    elsif c ~ '^[0-9A-F]{32}$' and (f ->> 'sealed')::boolean and f ->> 'src' in ('quotation', 'hiring')
+          and c = upper(replace(f ->> 'id', '-', '')) then
+      v_ok := true;
+    end if;
+  end if;
+  if not v_ok then return jsonb_build_object('no_match', true, 'contact', v_contact); end if;
+  return public.verify_answer(f, v_contact);
+end $$;
+revoke all on function public.verify_details(text, text, date) from public;
+grant execute on function public.verify_details(text, text, date) to anon, authenticated;
+
+/* The details for a document issued before every copy carried its
+   Document ID: the name it is addressed to (the registered company name
+   or the person's), case and spaces set aside. Ten checks an hour a
+   connection, as a Document ID's, and five wrong names a reference lock
+   it for 24 hours. One answer for a wrong name and an unknown reference. */
+create or replace function public.verify_details_name(p_serial text, p_name text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  f jsonb;
+  k text := public.verify_name_key(left(coalesce(p_name, ''), 200));
+  v_contact text := (select b.address from public.mail_boxes b where b.key = 'legal');
+  v_wait integer := public.verify_detail_count();
+  v_team boolean := public.is_team();
+  v_key text;
+  v_lock integer;
+begin
+  if v_wait > 0 then
+    return jsonb_build_object('locked', true, 'minutes', v_wait, 'contact', v_contact);
+  end if;
+  f := public.verify_find(p_serial);
+  if f is null or not public.verify_by_day(f) or length(k) < 2 then
+    return jsonb_build_object('no_match', true, 'contact', v_contact);
+  end if;
+  v_key := upper(replace(f ->> 'serial', '/', '-'));
+  v_lock := case when v_team then 0 else public.verify_name_wait(v_key) end;
+  if v_lock > 0 then
+    return jsonb_build_object('locked', true, 'reference', true, 'minutes', v_lock, 'contact', v_contact);
+  end if;
+  if not coalesce((f -> 'names') ? k, false) then
+    if not v_team then perform public.verify_name_wrong(v_key); end if;
+    return jsonb_build_object('no_match', true, 'contact', v_contact);
+  end if;
+  return public.verify_answer(f, v_contact);
+end $$;
+revoke all on function public.verify_details_name(text, text) from public;
+grant execute on function public.verify_details_name(text, text) to anon, authenticated;
+
+/* The code of a document, as printed: any for a colleague, a client's own
+   Letter of Offer for its portal login, else none. A page outside the
+   team asks `doc_code_of_key` with its own key. */
+create or replace function public.doc_code_of(p_kind text, p_id uuid)
+returns text
+language plpgsql stable security definer set search_path = public as $$
+declare v text;
+begin
+  if p_id is null then return null; end if;
+  if public.is_team() then
+    v := case p_kind
+      when 'document'  then (select x.doc_code from public.documents x where x.id = p_id)
+      when 'letter'    then (select x.doc_code from public.client_documents x where x.id = p_id)
+      when 'quotation' then (select x.doc_code from public.quotations x where x.id = p_id)
+      when 'hiring'    then (select x.doc_code from public.hiring_docs x where x.id = p_id)
+      when 'perf'      then (select x.doc_code from public.perf_reviews x where x.id = p_id)
+    end;
+  elsif p_kind = 'letter' then
+    v := (select x.doc_code from public.client_documents x
+           where x.id = p_id and x.client_id in (select public.portal_clients()));
+  end if;
+  if v is null then return null; end if;
+  return substr(v, 1, 4) || '-' || substr(v, 5, 4);
+end $$;
+revoke all on function public.doc_code_of(text, uuid) from public;
+grant execute on function public.doc_code_of(text, uuid) to anon, authenticated;
+
+/* The code for the page holding the document's own key: a quotation's
+   link (/quote/), a candidate's (/careers/, an offer or contract sent). */
+create or replace function public.doc_code_of_key(p_kind text, p_id uuid, p_key text)
+returns text
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v text;
+  k text := btrim(coalesce(p_key, ''));
+begin
+  if p_id is null then return null; end if;
+  if k = '' or public.is_team() then return public.doc_code_of(p_kind, p_id); end if;
+  v := case p_kind
+    when 'quotation' then (select x.doc_code from public.quotations x
+                            where x.id = p_id and x.access_key = k and x.removed_at is null)
+    when 'hiring'    then (select x.doc_code from public.hiring_docs x join public.hiring_candidates c on c.id = x.candidate_id
+                            where x.id = p_id and c.link_key = lower(k) and x.sent_at is not null and x.state <> 'draft')
+  end;
+  if v is null then return null; end if;
+  return substr(v, 1, 4) || '-' || substr(v, 5, 4);
+end $$;
+revoke all on function public.doc_code_of_key(text, uuid, text) from public;
+grant execute on function public.doc_code_of_key(text, uuid, text) to anon, authenticated;
+
+-- END OF VERIFY BY THE NAME ADDRESSED TO -------------------------------------
 
 -- ===========================================================================
 -- A CLIENT'S TASKS AND VISITS BY MONTH (2026-11-24)

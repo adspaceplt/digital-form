@@ -708,7 +708,7 @@
     team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', verify_checks_of: 'p_kind p_id', hiring_register: ''
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', verify_details_name: 'p_serial p_name', doc_code_of: 'p_kind p_id', doc_code_of_key: 'p_kind p_id p_key', verify_checks_of: 'p_kind p_id', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -1830,6 +1830,8 @@
               })) pending.content_version = (r.content_version || 1) + 1;
 
           if (table === 'clients') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
+
+          if (table === 'campaigns') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
           if (table === 'client_requests') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
 
           if (table === 'team_members' || table === 'team_roles') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
@@ -2440,10 +2442,15 @@ function cardSlugFree(name, self, email) {
     }
     return row.doc_code;
   }
-  function docCodeOf(a) {
+
+  function docCodeOf(a, keyed) {
     var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[a.p_kind];
     var row = T && (DB[T] || []).filter(function (x) { return x.id === a.p_id; })[0];
     if (!row) return null;
+    var k = String(a.p_key || '').trim();
+    if (!opsMe() && !(keyed && k && (a.p_kind === 'quotation' ? row.access_key === k && !row.removed_at
+        : a.p_kind === 'hiring' ? row.sent_at && row.state !== 'draft' && (DB.hiring_candidates || []).some(function (c) { return c.id === row.candidate_id && c.link_key === k.toLowerCase(); })
+        : false)) && !(a.p_kind === 'letter' && portalClientIds().indexOf(row.client_id) > -1)) return null;
     var c = docCode(row, DB[T]);
     return c.slice(0, 4) + '-' + c.slice(4);
   }
@@ -2462,14 +2469,19 @@ function cardSlugFree(name, self, email) {
     var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : appToday();
     var d = (DB.documents || []).filter(function (x) { return same(x.serial); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
+    var cn = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0] || {}; return [c.legal_name, c.name]; };
+    var mn = function (id) { return [((DB.team_members || []).filter(function (x) { return x.id === id; })[0] || {}).name]; };
     if (d) return { src: 'document', id: d.id, serial: d.serial, kind: d.family === 'hr' ? 'HR Letter' : d.kind, issued: mday(d.issued_at),
+      names: verifyNames([(d.recipient || {}).name].concat(cn(d.client_id), mn(d.member_id))),
       code: docCode(d, DB.documents), sealed: false, state: d.voided_at ? 'voided' : 'valid',
       steps: steps([['issued', mday(d.issued_at)], ['voided', mday(d.voided_at)]]) };
     var o = (DB.client_documents || []).filter(function (x) { return same(x.number); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
     if (o) {
       var by = o.superseded_by && (DB.client_documents || []).filter(function (x) { return x.id === o.superseded_by; })[0];
+      var bt = o.bill_to || {};
       return { src: 'letter', id: o.id, serial: o.number, kind: 'Letter of Offer', issued: mday(o.issued_at), code: docCode(o, DB.client_documents), sealed: false,
+        names: verifyNames([bt.legal_name, bt.name, bt.contact].concat(cn(o.client_id))),
         state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid'),
         steps: steps([['issued', mday(o.issued_at)], ['signed', mday(o.signed_at)], ['confirmed', mday(o.verified_at)],
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
@@ -2484,6 +2496,7 @@ function cardSlugFree(name, self, email) {
         : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid';
       var after = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
       return { src: 'quotation', id: qt.id, serial: qt.ref, kind: 'Quotation', issued: mday(qt.issued_at), code: docCode(qt, DB.quotations), sealed: !!qt.seal_key,
+        names: verifyNames([qt.brand, (qt.contact || {}).name, (qt.bill_to || {}).legal_name].concat(cn(qt.client_id))),
         state: qs, steps: steps([['issued', mday(qt.issued_at)], ['sent', mday(qt.sent_out_at)], ['signed', mday(qt.signed_at)],
           ['confirmed', mday(qt.reviewed_at)], ['sealed', mday(qt.sealed_at)], ['declined', mday(qt.declined_at)], ['withdrawn', qt.withdrawn_on || null],
           ['voided', mday(qt.removed_at)], ['replaced', rev], ['expired', qs === 'expired' ? after(String(qt.valid_until).slice(0, 10)) : null]]) };
@@ -2495,6 +2508,7 @@ function cardSlugFree(name, self, email) {
       var hs = hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
         : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid';
       return { src: 'hiring', id: hd.id, serial: hd.serial, kind: 'HR Letter', issued: mday(hd.sent_at), code: docCode(hd, DB.hiring_docs), sealed: !!hd.seal_sha,
+        names: verifyNames([((DB.hiring_candidates || []).filter(function (c) { return c.id === hd.candidate_id; })[0] || {}).name]),
         state: hs, steps: steps([['issued', mday(hd.sent_at)], ['signed', mday(hd.signed_at)], ['confirmed', mday(hd.confirmed_at)], ['sealed', mday(hd.sealed_at)],
           ['declined', hd.state === 'declined' ? mday(hd.answered_at || hd.updated_at) : null], ['withdrawn', hd.state === 'withdrawn' ? mday(hd.updated_at) : null],
           ['voided', mday(hd.voided_at)], ['expired', hs === 'expired' ? mday(hd.reply_by) : null]]) };
@@ -2503,13 +2517,20 @@ function cardSlugFree(name, self, email) {
       return x.serial && same(x.serial) && (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
     })[0];
     if (pr) return { src: 'perf', id: pr.id, serial: pr.serial, kind: 'HR Letter', issued: mday(pr.released_at), code: docCode(pr, DB.perf_reviews), sealed: false,
+      names: verifyNames(mn(pr.team_member_id)),
       state: pr.status === 'draft' ? 'replaced' : 'valid',
       steps: steps([['issued', mday(pr.released_at)], ['acknowledged', mday(pr.acknowledged_at)], ['finalised', mday(pr.finalised_at)]]) };
 
     var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
     if (pd) return { src: 'perf_deleted', id: pd.id, serial: pd.serial, kind: 'HR Letter', issued: mday(pd.released_at), code: null, sealed: false, state: 'voided',
+      names: verifyNames(mn(pd.team_member_id)),
       steps: steps([['issued', mday(pd.released_at)], ['voided', mday(pd.deleted_at)]]) };
     return null;
+  }
+
+  function verifyNameKey(x) { return String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase(); }
+  function verifyNames(list) {
+    return list.map(verifyNameKey).filter(function (k, i, all) { return k.length >= 2 && all.indexOf(k) === i; });
   }
 
   function verifyByDay(f) {
@@ -2528,8 +2549,11 @@ function cardSlugFree(name, self, email) {
     var f = verifyFind(a.p_serial);
     if (!f) return { found: false };
     verifyCheckNote(f);
-    return { found: true, serial: f.serial, kind: f.kind, state: f.state, issued_month: f.issued ? f.issued.slice(0, 7) : null,
-      sealed: !!f.sealed, more: true, by_day: verifyByDay(f) };
+
+    var byName = verifyByDay(f);
+    var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName };
+    if (!byName) out.issued_month = f.issued ? f.issued.slice(0, 7) : null;
+    return out;
   }
 
   function verifyCheckNote(f) {
@@ -2552,8 +2576,7 @@ function cardSlugFree(name, self, email) {
     return b ? b.address : null;
   }
 
-  function verifyDetails(a) {
-    var contact = legalBox();
+  function verifyDetailCount(contact) {
     if (window.__verifyDetailLocked) return { locked: true, minutes: window.__verifyDetailLocked, contact: contact };
     if (!opsMe()) {
       var t = DB.verify_detail_tries = DB.verify_detail_tries || { n: 0, since: Date.now() };
@@ -2561,17 +2584,47 @@ function cardSlugFree(name, self, email) {
       t.n++;
       if (t.n > 10) return { locked: true, minutes: Math.max(1, Math.ceil((t.since + 36e5 - Date.now()) / 6e4)), contact: contact };
     }
+    return null;
+  }
+
+  function verifyAnswer(f, contact) {
+    var o = { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
+      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed, history: f.steps, contact: contact };
+    if (opsMe()) o.checks = Math.max(1, verifyCheckCount(f.src, f.id));
+    return o;
+  }
+
+  function verifyDetailsName(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
+    var f = verifyFind(a.p_serial), k = verifyNameKey(String(a.p_name || '').slice(0, 200));
+    if (!f || !verifyByDay(f) || k.length < 2) return { no_match: true, contact: contact };
+    var key = String(f.serial).toUpperCase().replace(/\//g, '-');
+    var rows = DB.verify_name_tries = DB.verify_name_tries || {};
+    var r = rows[key];
+    if (!opsMe() && r && r.locked_until && r.locked_until > Date.now())
+      return { locked: true, reference: true, minutes: Math.max(1, Math.ceil((r.locked_until - Date.now()) / 6e4)), contact: contact };
+    if ((f.names || []).indexOf(k) < 0) {
+      if (!opsMe()) {
+        if (!r || Date.now() - r.since > 864e5) r = rows[key] = { n: 0, since: Date.now(), locked_until: null };
+        r.n++;
+        if (r.n >= 5 && !(r.locked_until > Date.now())) r.locked_until = Date.now() + 864e5;
+      }
+      return { no_match: true, contact: contact };
+    }
+    return verifyAnswer(f, contact);
+  }
+  function verifyDetails(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
     var f = verifyFind(a.p_serial);
     var c = String(a.p_code || '').slice(0, 80).replace(/[^0-9A-Za-z]/g, '').toUpperCase(), ok = false;
     if (f) {
       if (c && f.code && c === f.code) ok = true;
       else if (/^[0-9A-F]{32}$/.test(c) && f.sealed && (f.src === 'quotation' || f.src === 'hiring') && c === String(f.id).replace(/-/g, '').toUpperCase()) ok = true;
-      else if (!c && a.p_day && verifyByDay(f) && String(a.p_day) === f.issued) ok = true;
     }
     if (!ok) return { no_match: true, contact: contact };
-    return { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
-      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed,
-      checks: Math.max(1, verifyCheckCount(f.src, f.id)), history: f.steps, contact: contact };
+    return verifyAnswer(f, contact);
   }
 
   function issueLetter(a) {
@@ -11428,6 +11481,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
     if (name === 'verify_details')     return Promise.resolve({ data: verifyDetails(args), error: null });
     if (name === 'doc_code_of')        return Promise.resolve({ data: docCodeOf(args), error: null });
+    if (name === 'doc_code_of_key')    return Promise.resolve({ data: docCodeOf(args, true), error: null });
+    if (name === 'verify_details_name') return Promise.resolve({ data: verifyDetailsName(args), error: null });
 
     if (name === 'verify_checks_of') {
       if (!opsMe()) return Promise.resolve({ data: null, error: null });
@@ -11597,8 +11652,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
     function cpTpl() {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
         { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
-        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
+        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\n{changes}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
         { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+
+        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If this was not you, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
         { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
@@ -11610,7 +11667,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { id: r.id, ref: r.ref, status: r.status, created_at: r.created_at, decided_at: r.decided_at || null, note: r.note || null,
         bill_kind: r.bill_kind, id_no: whole ? r.id_no : null, id_end: r.id_no.replace(/\W/g, '').slice(-4), legal_name: r.legal_name,
         tin: r.tin || null, address: r.address, currency: r.currency, method: r.method, method_word: cpMethod(r.method, r.bank), bank: r.bank || null,
-        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator' };
+        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator', changes: (r.changes || []).slice() };
     }
     var CP_BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank', 'Alliance Bank',
       'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB', '[SG] Maybank', '[SG] Bank of China'];
@@ -11649,14 +11706,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var t = cpTpl().filter(function (x) { return x.purpose === purpose; })[0];
       if (!t || !t.on_send) return;
       var c = DB.creators.filter(function (x) { return x.id === r.creator_id; })[0] || {};
-      var to = String((purpose === 'review' ? t.to_email : r.email) || '').toLowerCase().trim();
+      var was = purpose === 'changed' ? (DB.creator_pay_requests || []).filter(function (x) { return x.id === r.prior_id; })[0] : null;
+      var to = String((purpose === 'review' ? t.to_email : purpose === 'changed' ? (was && was.email) : r.email) || '').toLowerCase().trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return;
       var vals = { 'creator name': c.name, 'creator id': c.creator_code || '', reference: r.ref, payee: r.payee, method: cpMethod(r.method, r.bank),
-        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id };
+        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id,
+        date: (function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); })(String(r.created_at).slice(0, 10)), 'chinese date': String(r.created_at).slice(0, 10).replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日'),
+        changes: (r.changes || []).join('\n') };
       var fill = function (x) { Object.keys(vals).forEach(function (k) { x = x.replace(new RegExp('\\{\\s*' + k + '\\s*\\}', 'gi'), vals[k]); }); return x; };
       DB.creator_emails = DB.creator_emails || [];
       DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
-        body: fill(t.body), status: 'queued', created_at: new Date().toISOString() }));
+        body: fill(t.body).replace(/\n{3,}/g, '\n\n'), status: 'queued', created_at: new Date().toISOString() }));
     }
 
     if (/^creator_sheet_/.test(name)) {
@@ -11933,11 +11993,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var cpRef = cpPat.replace('{creator}', cpC.creator_code || '');
             cpRef = cpRun ? cpRef.replace('{' + cpRun + '}', (new Array(cpRun.length + 1).join('0') + cpSeq).slice(-Math.max(cpRun.length, String(cpSeq).length))) : cpRef + cpSeq;
             var cpNew = Object.assign({ id: nid('cp'), creator_id: cpC.id, seq: cpSeq, ref: cpRef, status: 'pending', created_at: new Date().toISOString() }, cpK.values);
+
+            var cpWas = cpReqs.filter(function (r) { return r.creator_id === cpC.id && r.status === 'approved'; }).sort(function (a, b) { return b.seq - a.seq; })[0];
+            cpNew.prior_id = cpWas ? cpWas.id : null;
+            cpNew.changes = !cpWas ? [] : [
+              [cpWas.method, cpWas.bank || '', cpWas.currency, cpWas.account].join('|') !== [cpNew.method, cpNew.bank || '', cpNew.currency, cpNew.account].join('|')
+                ? 'Bank account changed: ending ' + cpWas.account.slice(-4) + ' → ' + cpNew.account.slice(-4) : null,
+              String(cpWas.payee).trim() !== String(cpNew.payee).trim() ? 'Account holder changed: ' + cpWas.payee + ' → ' + cpNew.payee : null,
+              String(cpWas.email).trim().toLowerCase() !== String(cpNew.email).trim().toLowerCase() ||
+                String(cpWas.whatsapp || '').replace(/\D/g, '') !== String(cpNew.whatsapp || '').replace(/\D/g, '') ? 'Contact details changed' : null
+            ].filter(Boolean);
             cpReqs.push(cpNew);
             logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details submitted · ' + cpRef + ' · ' +
               cpMethod(cpNew.method, cpNew.bank) + ' ending ' + cpNew.account.slice(-4));
             DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
             cpQueue('received', cpNew); cpQueue('review', cpNew);
+            if (cpWas && cpNew.changes.length) cpQueue('changed', cpNew);
 
             DB.ops_notifications = DB.ops_notifications || [];
             (DB.team_members || []).forEach(function (tm) {
@@ -16264,6 +16335,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var pc = DB.hiring_candidates.filter(function (x) { return x.link_key === pk && !x.removed_at; })[0];
         if (!pc) return hNo('not_found');
         if (Date.parse(pc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
+        if (['new', 'invited', 'interview'].indexOf(pc.stage) < 0) return hNo('not-open');
         var pi = hIvOf(pc.id).filter(function (i) { return i.state === 'invited'; })[0];
         if (!pi) return hNo('not-open');
         if (pi.reply_by && Date.parse(pi.reply_by) <= Date.now()) return hNo('reply-passed');
@@ -16336,8 +16408,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var od = hdOf(args.p_key, args.p_doc);
         if (!od) return hNo('not_found');
         var oc = (window.__hireCodes || {})[od.id];
+
+        var owd = (window.__hireWrong = window.__hireWrong || {}), oday = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+        if (!owd[od.id] || owd[od.id].day !== oday) owd[od.id] = { day: oday, n: 0 };
+        if (owd[od.id].n >= 10) return hNo('locked-today');
         if (!oc || oc.used) return hNo('no-code');
-        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
+        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; owd[od.id].n++; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
         oc.used = true;
         var ov = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
         DB.hiring_doc_views.push({ doc_id: od.id, view: ov, email: oc.email, until: Date.now() + 30 * 60000 });
@@ -16944,7 +17020,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso,
           decide_by: null, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null });
         if (oc !== 'proceed') (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
-        if (oc !== 'proceed') DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'picked', 'none'].indexOf(i.state) > -1 || (i.state === 'confirmed' && !i.held_at))) i.state = 'cancelled'; });
+        DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'none'].indexOf(i.state) > -1 ||
+          (oc !== 'proceed' && (i.state === 'picked' || (i.state === 'confirmed' && !i.held_at))))) i.state = 'cancelled'; });
         hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Do not proceed');
         return hOk({ was: was, email: oc !== 'proceed' });
       }
@@ -17357,7 +17434,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return spOk();
       }
       if (name === 'supplier_save') {
-        var vals = args.p_values || {}, code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
+
+        var sent = args.p_values || {};
+        if ('expected' in sent && Date.parse(sx.updated_at) !== Date.parse(sent.expected)) return spNo('stale', { supplier: spJson(sx, payView) });
+        var vals = {};
+        Object.keys(sx).forEach(function (k) { if (['id', 'status', 'created_at', 'updated_at'].indexOf(k) < 0) vals[k] = sx[k]; });
+        Object.keys(sent).forEach(function (k) { if (k !== 'expected') vals[k] = sent[k]; });
+        var code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
         if (!/^[A-Z0-9]{2,12}$/.test(code)) return spNo('bad-code');
         var other = DB.suppliers.filter(function (x) { return String(x.code).toUpperCase() === code && x.id !== sx.id; })[0];
         if (other) return spNo('code-taken', { name: other.name });
@@ -20037,6 +20120,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     } };
   } };
+
+  window.__docCode = function (kind, id) {
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[kind];
+    var row = T && (DB[T] || []).filter(function (x) { return x.id === id; })[0];
+    if (!row) return null;
+    var c = docCode(row, DB[T]);
+    return c.slice(0, 4) + '-' + c.slice(4);
+  };
   window.__signIn = function (e, amr) { session = mkSession(e, amr); if (listener) listener('SIGNED_IN', session); };
 
   window.__signInCode = function (e) { session = mkSession(e, [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]); if (listener) listener('SIGNED_IN', session); };

@@ -198,6 +198,7 @@
     'no-code': 'This code can no longer be used. Please select Send a new code.',
     'code-expired': 'This code has expired. Please select Send a new code.',
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
+    'locked-today': 'Too many incorrect codes have been entered today. Please try again tomorrow.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
     'bad-id': 'Enter your NRIC or Passport Number (for example 900101-01-1234).',
@@ -353,8 +354,8 @@
       if (!window.ADspaceHrDocs) return;
       btn.disabled = true;
       var d = openDoc.data;
-      window.ADspaceHrDocs.bytes({ kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory },
-        d.pay).then(function (b) {
+      window.ADspaceHrDocs.bytes({ id: openDoc.id, kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: d.name, signatory: d.signatory },
+        d.pay, { key: key }).then(function (b) {
         btn.disabled = false;
         return window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), window.ADspaceDocs.tabFor && window.ADspaceDocs.tabFor());
       }).catch(function () { btn.disabled = false; docSay('The document could not be generated. Please try again.'); });

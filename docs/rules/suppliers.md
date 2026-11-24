@@ -219,3 +219,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   under the Bukku band (`#supBills`, overdue first, each a `.cpay-job` on
   the phone row with a ⋯ of Open in Bukku; No bills. when none), and its
   tab counts an overdue bill in red (`tests/supbills.js`, `supbillsql.js`).
+- A supplier's Edit sends only the fields that moved, with `expected` (the
+  copy's `updated_at`) inside `p_values`; `supplier_save` lays the stored
+  row under what was sent, refuses `stale` with the supplier as it stands,
+  and the page repaints and says `ADspaceWords.line.stale`
+  (`2026-11-24-supplier-save-version.sql`, `tests/suppliersql.js`,
+  `tests/editstamps.js`).

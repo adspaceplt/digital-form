@@ -79,7 +79,7 @@
   }
   /* The month's short word from one list, never the browser's: Safari on an
      iPhone prints "Sep" where the portal writes "Sept". */
-  var MON_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  var MON_SHORT = CK.MON;
   function niceDate(v) {
     var p = v ? CK.parts(v) : null;
     if (!p) return '';
@@ -4912,9 +4912,9 @@
       db.from('ops_tasks').select('*, clients(name, slug)').eq('id', id).maybeSingle(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
       db.from('ops_task_links').select('*').eq('task_id', id).order('created_at'),
-      /* Enough history that a comment and the correction made to it a week
-         later are both read. */
-      db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).limit(250),
+      /* The whole history, a thousand a page: a cap of 250 cut the first
+         stages from a long task's stage timeline (review 2026-11-24). */
+      readPages(function () { return db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).order('id'); }),
       db.from('ops_task_assignees')
         .select('*, team_members!ops_task_assignees_team_member_id_fkey(name)')
         .eq('task_id', id).is('ended_at', null),
@@ -9277,7 +9277,9 @@
     } catch (e) { earlier = Promise.resolve(null); }
     Promise.all([
       shown(db.from('ops_notifications').select('*').eq('team_member_id', me.id))
-        .is('read_at', null).order('created_at', { ascending: false }).limit(30),
+        /* One past the thirty drawn, so the count can say 30+ (review
+           2026-11-24: thirty read as exactly thirty). */
+        .is('read_at', null).order('created_at', { ascending: false }).limit(31),
       Promise.resolve(earlier).catch(function () { return null; })
     ]).then(function (rs) {
       if (!rs[0] || rs[0].error) {
@@ -9311,7 +9313,7 @@
     if (btn) btn.setAttribute('aria-label', n ? 'Notifications, ' + n + ' unread' : 'Notifications');
     if ($('notifAll')) $('notifAll').hidden = !n;
     if (!list) return;
-    list.innerHTML = (n ? unread.map(notifRow).join('') : '<p class="notif-empty">Nothing unread.</p>') +
+    list.innerHTML = (n ? unread.slice(0, 30).map(notifRow).join('') : '<p class="notif-empty">Nothing unread.</p>') +
       (read.length ? '<p class="notif-earlier">Earlier</p>' + read.map(notifRow).join('') : '');
     Array.prototype.forEach.call(list.querySelectorAll('.notif-item'), function (b) {
       b.addEventListener('click', function () { openNotif(b.getAttribute('data-id')); });
@@ -9332,7 +9334,7 @@
     if (!x.task_id && x.client_id) return 'clients';
     return 'work';
   }
-  function markRead(ids, quiet) {
+  function markRead(ids, quiet, all) {
     var now = new Date().toISOString();
     state.notifs.forEach(function (x) { if (ids.indexOf(x.id) > -1 && !x.read_at) x.read_at = now; });
     /* `quiet` keeps the list as it is (a notice read in place) and moves
@@ -9347,8 +9349,16 @@
         if (b) b.classList.add('is-read');
       });
     } else paintNotifs();
+    /* Mark all read is one write over every unread notice of the reader's,
+       those past the thirty drawn included, never one request a notice. */
+    var me = bridge.me && bridge.me();
+    if (all && me && me.id) {
+      db.from('ops_notifications').update({ read_at: now }).eq('team_member_id', me.id).is('read_at', null).select('id')
+        .then(function () {}).catch(function () {});
+      return;
+    }
     ids.forEach(function (id) {
-      db.from('ops_notifications').update({ read_at: now }).eq('id', id).then(function () {}, function () {});
+      db.from('ops_notifications').update({ read_at: now }).eq('id', id).then(function () {}).catch(function () {});
     });
   }
   function openNotif(id) {
@@ -9554,7 +9564,7 @@
     });
     var all = $('notifAll');
     if (all) all.addEventListener('click', function () {
-      markRead(state.notifs.filter(function (x) { return !x.read_at; }).map(function (x) { return x.id; }));
+      markRead(state.notifs.filter(function (x) { return !x.read_at; }).map(function (x) { return x.id; }), false, true);
     });
   }
 

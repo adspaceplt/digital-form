@@ -37,17 +37,16 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 
-  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-                'August', 'September', 'October', 'November', 'December'];
-  function shortMon(i) { return MONTHS[i].slice(0, 3).replace(/\bSep\b/, 'Sept'); }
+  /* Malaysia's clock is js/clock.js alone (review 2026-11-24: a second
+     copy of it here); these names read it. */
+  var CK = window.ADspaceClock;
+  var MONTHS = CK.LONG;
+  function shortMon(i) { return CK.MON[i]; }
   /* Today, and any stamp, as a day in Malaysia. */
-  function dayMy(t) {
-    var ms = t == null ? Date.now() : Date.parse(t);
-    return isNaN(ms) ? '' : new Date(ms + 8 * 3600000).toISOString().slice(0, 10);
-  }
-  function addDays(day, n) { return new Date(Date.parse(day + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10); }
-  function dayShort(day) { var d = new Date(day + 'T00:00:00Z'); return d.getUTCDate() + ' ' + shortMon(d.getUTCMonth()); }
-  function dayLong(day) { var d = new Date(String(day).slice(0, 10) + 'T00:00:00Z'); return isNaN(d) ? '' : dayShort(String(day).slice(0, 10)) + ' ' + d.getUTCFullYear(); }
+  function dayMy(t) { return t == null ? CK.today() : CK.day(t); }
+  function addDays(day, n) { return CK.addDays(day, n); }
+  function dayShort(day) { return CK.date(day, { year: false }); }
+  function dayLong(day) { return CK.date(String(day).slice(0, 10)); }
 
   /* A month's span: its first and last day. A month in My Work starts on its
      own day; any other is the calendar month. */
