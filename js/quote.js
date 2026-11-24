@@ -80,7 +80,7 @@
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
-      download: 'Download', chat: 'Chat on WhatsApp',
+      download: 'Download', pdfFail: 'The PDF could not be prepared. Please try again.', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
       adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
@@ -197,7 +197,7 @@
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
-      download: '下载', chat: 'WhatsApp 咨询',
+      download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
       adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
@@ -676,7 +676,7 @@
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       /* Once sealed, the signed copy beside it is the one download. */
-      (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
+      (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div><p class="msg" id="qsPdfMsg" role="status"></p>') +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
@@ -1004,6 +1004,8 @@
     }).then(function (r) {
       var d = (r && r.data) || {};
       btn.disabled = false; if (!again) btn.textContent = label;
+      /* Left by Back while the code was asked for: nothing to show it on. */
+      if (!SG) return;
       if (r.error || d.error || !d.ok) { signRefused(d.error || 'any', d); return; }
       SG.email = d.email || SG.ct.email; SG.sentAt = Date.now();
       if (SG.step !== 3) signShow(3);
@@ -1123,13 +1125,6 @@
       if (tab) try { tab.close(); } catch (e) {}
       say('qsSideMsg', t().err.any);
     });
-  }
-  // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14 (js/clock.js, one format).
-  function when(iso) {
-    var C = window.ADspaceClock, p = C && C.parts(iso);
-    if (!p) return '';
-    var dd = C.day(iso);
-    return lang === 'zh' ? day(dd) + ' ' + C.clock(iso, { zh: true }) : day(dd, true) + ', ' + C.clock(iso);
   }
   function cover(title, text, start, glyph) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="' + (glyph || 'alert') + '"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
@@ -1267,7 +1262,7 @@
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
       read(d.key);
-    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsPdfMsg', t().pdfFail); });
   }
   function read(k, then) {
     db.rpc('quote_website_read', { p_key: k }).then(function (r) {
@@ -1322,6 +1317,7 @@
     }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
   }
   function pdf(btn) {
+    say('qsPdfMsg', '');
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
     /* Who prepared and reviewed it, and once accepted who signed for the
@@ -1332,10 +1328,10 @@
       reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
       signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
         via: sg.via, company: sg.company } : null,
-      to: sg ? { name: sg.company.legal_name, address: sg.company.billing_address } : null }).then(function (blob) {
+      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
-    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
+    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} say('qsPdfMsg', t().pdfFail); });
   }
 
   /* A colleague's preview (2026-10-30): the console's Preview opens the
