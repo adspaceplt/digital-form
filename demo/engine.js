@@ -277,6 +277,8 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
+    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
     client_checklist_step: 'p_client p_kind p_step',
@@ -711,6 +713,41 @@
     verify_letter: 'p_doc',
     verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', verify_details_name: 'p_serial p_name', doc_code_of: 'p_kind p_id', doc_code_of_key: 'p_kind p_id p_key', verify_checks_of: 'p_kind p_id', hiring_register: ''
   };
+
+  var FEEDBACK_QUESTIONS = [
+    { kind: 'quick', key: 'quality', n: 1, type: 'scale', min: 1, max: 10, band: null, band_low_max: 4, band_mid_max: 7, lead: true, manager: false, required: true,
+      en: 'How would you rate the quality of ADspace\'s services?', zh: '您如何评价ADspace的服务质量？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'quick', key: 'manager', n: 2, type: 'scale', min: 1, max: 5, band: null, band_low_max: null, band_mid_max: null, lead: false, manager: true, required: true,
+      en: 'How satisfied are you with {name}, your account manager?', zh: '您对客户经理{name}满意吗？', low_en: 'Not satisfied', low_zh: '不满意', high_en: 'Very satisfied', high_zh: '非常满意' },
+    { kind: 'quick', key: 'liked', n: 3, type: 'text', min: null, max: null, band: 'high', lead: false, manager: false, required: false,
+      en: 'Please describe what you liked most.', zh: '请说明您最满意的地方。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'quick', key: 'better', n: 3, type: 'text', min: null, max: null, band: 'mid', lead: false, manager: false, required: false,
+      en: 'Please describe where ADspace could do better.', zh: '请说明ADspace可改进之处。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'quick', key: 'short', n: 3, type: 'text', min: null, max: null, band: 'low', lead: false, manager: false, required: false,
+      en: 'Please describe what fell short, so that ADspace can put it right.', zh: '请说明未达期望之处，以便ADspace及时改进。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'review', key: 'nps', n: 1, type: 'scale', min: 0, max: 10, band: null, band_low_max: 6, band_mid_max: 8, lead: true, manager: false, required: true,
+      en: 'How likely are you to recommend ADspace to a business associate?', zh: '您向业务伙伴推荐ADspace的可能性有多大？', low_en: 'Not at all likely', low_zh: '完全不可能', high_en: 'Extremely likely', high_zh: '极有可能' },
+    { kind: 'review', key: 'creative', n: 2, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How satisfied are you with the creativity and effectiveness of ADspace\'s work?', zh: '您对ADspace作品的创意与成效满意吗？', low_en: 'Not satisfied', low_zh: '不满意', high_en: 'Very satisfied', high_zh: '非常满意' },
+    { kind: 'review', key: 'content', n: 3, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the quality and relevance of the content produced?', zh: '您如何评价所制作内容的质量与相关性？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'design', n: 4, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the design quality of the materials produced?', zh: '您如何评价所制作物料的设计质量？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'brand', n: 5, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How well does the ADspace team understand your brand and audience?', zh: 'ADspace团队对您的品牌与受众了解程度如何？', low_en: 'Not at all well', low_zh: '完全不了解', high_en: 'Extremely well', high_zh: '非常了解' },
+    { kind: 'review', key: 'collab', n: 6, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate communication and collaboration with the ADspace team?', zh: '您如何评价与ADspace团队的沟通与协作？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'respond', n: 7, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the team\'s responsiveness and initiative?', zh: '您如何评价团队的响应速度与主动性？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'sales', n: 8, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How much has ADspace\'s work contributed to your sales performance?', zh: 'ADspace的工作对您的销售业绩贡献有多大？', low_en: 'No contribution', low_zh: '没有贡献', high_en: 'Significant contribution', high_zh: '贡献显著' },
+    { kind: 'review', key: 'manager', n: 9, type: 'scale', min: 1, max: 10, lead: false, manager: true, required: true,
+      en: 'How would you rate {name} as your account manager?', zh: '您如何评价客户经理{name}？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'manager_note', n: 10, type: 'text', min: null, max: null, lead: false, manager: true, required: false,
+      en: 'Comments about {name}', zh: '关于{name}的意见', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'review', key: 'comments', n: 11, type: 'text', min: null, max: null, lead: false, manager: false, required: false,
+      en: 'Additional comments or suggestions', zh: '其他意见或建议', low_en: null, low_zh: null, high_en: null, high_zh: null }
+  ];
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
   function schemaRefusal(table, obj) {
@@ -12501,6 +12538,186 @@ function opsCodeRange(cid, period, ty, src, seq) {
         options: opts }, error: null });
     }
 
+    if (/^feedback_/.test(name) || name === 'portal_feedback') {
+      var fbOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var fbNo = function (e, d) { return Promise.resolve({ data: Object.assign({ error: e }, d || {}), error: null }); };
+      var fbNow = new Date().toISOString();
+      ['feedback_requests', 'feedback_responses'].forEach(function (t) { DB[t] = DB[t] || []; });
+      var FBQ = FEEDBACK_QUESTIONS;
+      var fbQs = function (kind, mgr) {
+        return FBQ.filter(function (q) { return q.kind === kind && (!q.manager || mgr); }).map(function (q) {
+          var o = JSON.parse(JSON.stringify(q)); delete o.kind;
+          o.en = o.en.replace('{name}', mgr || ''); o.zh = o.zh.replace('{name}', mgr || ''); return o;
+        });
+      };
+      var fbLead = function (kind) { return FBQ.filter(function (q) { return q.kind === kind && q.lead; })[0]; };
+      var fbSees = function (mid) {
+        var me = opsMe(); if (!me || !mid) return false;
+        if (me.id === mid || opsAllowed('clients', 'manage')) return true;
+        var m = DB.team_members.filter(function (x) { return x.id === mid; })[0];
+        var g = m && (DB.team_roles || []).filter(function (r) { return r.slug === m.role; })[0];
+        return !!(g && g.reports_to && g.reports_to === me.role);
+      };
+      var fbAnswers = function (s, mgr, withMgr) {
+        return FBQ.filter(function (q) { return q.kind === s.kind && s.answers[q.key] != null && (withMgr || !q.manager); }).map(function (q) {
+          return { key: q.key, type: q.type, max: q.max, band: q.band, manager: q.manager, en: q.en.replace('{name}', mgr || ''),
+            zh: q.zh.replace('{name}', mgr || ''), high_en: q.high_en, high_zh: q.high_zh, low_en: q.low_en, low_zh: q.low_zh, value: s.answers[q.key] };
+        });
+      };
+      var fbKword = function (k) { return k === 'quick' ? 'Service rating' : 'Performance review'; };
+      if (name === 'feedback_read' || name === 'feedback_submit') {
+        var fk = String(args.p_key || '');
+        if (!/^[a-z0-9]{16}$/.test(fk)) return fbNo('not_found');
+        var fr = DB.feedback_requests.filter(function (r) { return r.access_key === fk; })[0];
+        if (!fr) return fbNo('not_found');
+        var fcl = DB.clients.filter(function (c) { return c.id === fr.client_id; })[0] || {};
+        if (fr.closed_reason === 'answered') return fbNo('answered', { answered_at: fr.answered_at, kind: fr.kind, client: fcl.name });
+        if (fr.closed_at || fcl.stage === 'past') return fbNo('closed', { client: fcl.name });
+        if (name === 'feedback_read') {
+          if (!fr.opened_at) fr.opened_at = fbNow;
+          var fct = (DB.client_contacts || []).filter(function (k) { return k.id === fr.contact_id; })[0] || {};
+          return fbOk({ kind: fr.kind, client: fcl.name, requested_at: fr.created_at, manager: fr.manager_name, lang: fct.lang || 'en',
+            questions: fbQs(fr.kind, fr.manager_name) });
+        }
+        var fa = args.p_answers || {}, ld = fbLead(fr.kind), lv = fa[ld.key];
+        if (lv == null || !/^[0-9]{1,2}$/.test(String(lv))) return fbNo('required', { key: ld.key });
+        lv = Number(lv);
+        if (lv < ld.min || lv > ld.max) return fbNo('bad-score', { key: ld.key });
+        var fband = lv <= ld.band_low_max ? 'low' : lv <= ld.band_mid_max ? 'mid' : 'high';
+        var fout = {}, fmgr = null;
+        var qs = FBQ.filter(function (q) { return q.kind === fr.kind && (!q.manager || fr.manager_name) && (!q.band || q.band === fband); })
+          .sort(function (a, b) { return a.n - b.n; });
+        for (var qi = 0; qi < qs.length; qi++) {
+          var q = qs[qi], v = fa[q.key];
+          if (q.type === 'scale') {
+            if (v == null || !/^[0-9]{1,2}$/.test(String(v))) { if (q.required) return fbNo('required', { key: q.key }); continue; }
+            v = Number(v);
+            if (v < q.min || v > q.max) return fbNo('bad-score', { key: q.key });
+            fout[q.key] = v; if (q.manager) fmgr = v;
+          } else {
+            v = String(v == null ? '' : v).trim();
+            if (!v) { if (q.required) return fbNo('required', { key: q.key }); continue; }
+            if (v.length > 2000) return fbNo('too-long', { key: q.key });
+            fout[q.key] = v;
+          }
+        }
+        var fwho = portalNameOf(fr.client_id), fwk = null;
+        if (fwho) fwk = (DB.client_contacts || []).filter(function (k) { return k.client_id === fr.client_id && k.name === fwho; })[0];
+        var fresp = { id: nid('fb'), request_id: fr.id, client_id: fr.client_id, kind: fr.kind, answers: fout, score: lv, band: fband,
+          manager_id: fr.manager_id, manager_score: fmgr, contact_id: fwk ? fwk.id : null, contact_name: fwk ? fwk.name : null,
+          submitted_at: fbNow, followup_task_id: null };
+        DB.feedback_responses.push(fresp);
+        fr.answered_at = fbNow; fr.closed_at = fbNow; fr.closed_reason = 'answered'; fr.opened_at = fr.opened_at || fbNow;
+        DB.activity_log.unshift({ id: nid('al'), actor: fwk ? fwk.name : 'Feedback form', action: 'client.edited', subject: fcl.name,
+          detail: fbKword(fr.kind) + ' answered: ' + lv + ' of ' + ld.max, created_at: fbNow });
+        var ftell = fr.manager_id || fr.sent_by;
+        if (ftell && DB.team_members.some(function (m) { return m.id === ftell && m.active; })) {
+          (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: ftell, kind: 'client.feedback',
+            title: (fband === 'low' ? 'Low score · ' : 'Feedback received · ') + fcl.name,
+            body: fbKword(fr.kind) + ': ' + lv + ' of ' + ld.max + (fband === 'low' ? '. Open the client\'s Feedback to follow up.' : '.'),
+            client_id: fcl.id, created_at: fbNow, read_at: null });
+        }
+        return fbOk();
+      }
+      if (name === 'portal_feedback') {
+        if (!portalNameOf(args.p_client)) return fbNo('no-access');
+        var po = DB.feedback_requests.filter(function (r) { return r.client_id === args.p_client && !r.closed_at; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        return fbOk({ open: po ? { key: po.access_key, kind: po.kind, requested_at: po.created_at, manager: po.manager_name, questions: fbQs(po.kind, po.manager_name) } : null,
+          history: DB.feedback_responses.filter(function (s) { return s.client_id === args.p_client; })
+            .sort(function (a, b) { return a.submitted_at < b.submitted_at ? 1 : -1; }).map(function (s) {
+              var r = DB.feedback_requests.filter(function (x) { return x.id === s.request_id; })[0] || {};
+              return { id: s.id, kind: s.kind, requested_at: r.created_at, submitted_at: s.submitted_at, by: s.contact_name, score: s.score,
+                max: fbLead(s.kind).max, answers: fbAnswers(s, r.manager_name, true) };
+            }) });
+      }
+      var fme = opsMe();
+      if (!fme) return fbNo('denied');
+      if (name === 'feedback_client') {
+        if (!opsAllowed('clients', 'view')) return fbNo('denied');
+        if (!scopeSeen(args.p_client, 'view')) return fbNo('not-found');
+        return fbOk({ requests: DB.feedback_requests.filter(function (r) { return r.client_id === args.p_client; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }).map(function (r) {
+            var s = DB.feedback_responses.filter(function (x) { return x.request_id === r.id; })[0];
+            var t = s && s.followup_task_id && (DB.ops_tasks || []).filter(function (x) { return x.id === s.followup_task_id; })[0];
+            return { id: r.id, kind: r.kind, created_at: r.created_at, sent_by: r.sent_by_name, to_name: r.sent_to_name, to_email: r.sent_to_email,
+              manager: r.manager_name, opened_at: r.opened_at || null, answered_at: r.answered_at || null, closed_at: r.closed_at || null,
+              closed_reason: r.closed_reason || null,
+              response: s ? { id: s.id, score: s.score, band: s.band, submitted_at: s.submitted_at, by: s.contact_name, max: fbLead(s.kind).max,
+                manager_score: fbSees(s.manager_id) ? s.manager_score : null, answers: fbAnswers(s, r.manager_name, fbSees(s.manager_id)),
+                task_id: s.followup_task_id || null, task_done: t ? !!t.completed_at : null } : null };
+          }) });
+      }
+      if (name === 'feedback_figures') {
+        if (!opsAllowed('clients', 'view')) return fbNo('denied');
+        var ff = String(args.p_from || ''), ft = String(args.p_to || '');
+        if (!ff || !ft || ft < ff) return fbNo('bad-period');
+        var fday = function (iso) { return new Date(Date.parse(iso) + 8 * 36e5).toISOString().slice(0, 10); };
+        var inP = function (iso) { var d = iso && fday(iso); return !!d && d >= ff && d <= ft; };
+        var seen = DB.feedback_responses.filter(function (s) { return scopeSeen(s.client_id, 'view'); });
+        var avg = function (xs) { return xs.length ? Math.round(10 * xs.reduce(function (a, b) { return a + b; }, 0) / xs.length) / 10 : null; };
+        var nps = function (xs) { return xs.length ? Math.round(100 * (xs.filter(function (s) { return s.band === 'high'; }).length - xs.filter(function (s) { return s.band === 'low'; }).length) / xs.length) : null; };
+        var qk = seen.filter(function (s) { return s.kind === 'quick' && inP(s.submitted_at); });
+        var rk = seen.filter(function (s) { return s.kind === 'review' && inP(s.submitted_at); });
+        var lowOpen = seen.filter(function (s) { if (s.band !== 'low') return false;
+          var t = s.followup_task_id && (DB.ops_tasks || []).filter(function (x) { return x.id === s.followup_task_id; })[0]; return !(t && t.completed_at); });
+        var quiet = Number(appSet('feedback_quiet_months', fday(fbNow)) || 6), qcut = Date.now() - quiet * 30.44 * 864e5;
+        var people = {};
+        DB.feedback_requests.filter(function (r) { return r.manager_id && scopeSeen(r.client_id, 'view'); }).forEach(function (r) {
+          var p = people[r.manager_id] = people[r.manager_id] || { id: r.manager_id, name: r.manager_name, requested: 0, answered: 0, q: [], r: [], m: [] };
+          if (inP(r.created_at)) p.requested++;
+          var s = DB.feedback_responses.filter(function (x) { return x.request_id === r.id; })[0];
+          if (s && inP(s.submitted_at)) { p.answered++; (s.kind === 'quick' ? p.q : p.r).push(s); if (s.kind === 'quick' && s.manager_score != null) p.m.push(s.manager_score); }
+        });
+        return fbOk({ rating: avg(qk.map(function (s) { return s.score; })), rating_n: qk.length, nps: nps(rk), nps_n: rk.length,
+          low_open: lowOpen.length, low_oldest: lowOpen.map(function (s) { return s.submitted_at; }).sort()[0] || null, quiet_months: quiet,
+          quiet: DB.clients.filter(function (c) { return c.stage === 'active' && scopeSeen(c.id, 'view') &&
+            !DB.feedback_requests.some(function (r) { return r.client_id === c.id && Date.parse(r.created_at) >= qcut; }); }).length,
+          people: Object.keys(people).map(function (k) { return people[k]; }).filter(function (p) { return p.requested || p.answered; })
+            .sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (p) {
+              var may = fbSees(p.id);
+              return { id: p.id, name: p.name, requested: p.requested, answered: p.answered, rating: avg(p.q.map(function (s) { return s.score; })),
+                nps: nps(p.r), manager_score: may ? avg(p.m) : null, manager_max: may ? 5 : null, manager_before: null };
+            }) });
+      }
+      if (name === 'feedback_followup') {
+        if (!opsAllowed('ops', 'work') || !opsAllowed('clients', 'view')) return fbNo('denied');
+        var fs1 = DB.feedback_responses.filter(function (s) { return s.id === args.p_response; })[0];
+        if (!fs1 || !scopeSeen(fs1.client_id, 'view')) return fbNo('not-found');
+        if (fs1.band !== 'low') return fbNo('not-low');
+        if (!(DB.ops_tasks || []).some(function (t) { return t.id === args.p_task && t.client_id === fs1.client_id; })) return fbNo('bad-task');
+        fs1.followup_task_id = args.p_task;
+        return fbOk();
+      }
+      if (!opsAllowed('clients', 'work')) return fbNo('denied');
+      if (name === 'feedback_request') {
+        if (['quick', 'review'].indexOf(args.p_kind) < 0) return fbNo('bad-kind');
+        var rc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+        if (!rc || !scopeSeen(rc.id, 'work')) return fbNo('not-found');
+        if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
+        var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && String(k.email || '').trim(); })[0];
+        if (!rk2) return fbNo('no-contact');
+        var rm = DB.team_members.filter(function (m) { return m.active && String(m.name || '').trim().toLowerCase() === String(rc.owner || '').trim().toLowerCase(); })[0];
+        DB.feedback_requests.forEach(function (r) { if (r.client_id === rc.id && r.kind === args.p_kind && !r.closed_at) { r.closed_at = fbNow; r.closed_reason = 'replaced'; } });
+        var key = ''; while (key.length < 16) key += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
+        var nr = { id: nid('fq'), client_id: rc.id, kind: args.p_kind, access_key: key, sent_by: fme.id, sent_by_name: fme.name, contact_id: rk2.id,
+          sent_to_name: rk2.name, sent_to_email: String(rk2.email).trim().toLowerCase(), manager_id: rm ? rm.id : null,
+          manager_name: rm ? rm.name : (String(rc.owner || '').trim() || null), created_at: fbNow, opened_at: null, answered_at: null, closed_at: null, closed_reason: null };
+        DB.feedback_requests.push(nr);
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: rc.name, detail: fbKword(nr.kind) + ' requested from ' + rk2.name, created_at: fbNow });
+        return fbOk({ id: nr.id, key: nr.access_key, kind: nr.kind, to_name: nr.sent_to_name, to_email: nr.sent_to_email, lang: rk2.lang || 'en',
+          manager: nr.manager_name, created_at: nr.created_at });
+      }
+      if (name === 'feedback_withdraw') {
+        var wr = DB.feedback_requests.filter(function (r) { return r.id === args.p_id; })[0];
+        if (!wr || !scopeSeen(wr.client_id, 'work')) return fbNo('not-found');
+        if (wr.closed_at) return fbNo('closed');
+        wr.closed_at = fbNow; wr.closed_reason = 'withdrawn';
+        var wc = DB.clients.filter(function (c) { return c.id === wr.client_id; })[0] || {};
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: wc.name, detail: fbKword(wr.kind) + ' request withdrawn', created_at: fbNow });
+        return fbOk();
+      }
+    }
     if (name === 'portal_work') {
       var pwName = portalNameOf(args && args.p_client);
       if (!pwName) return Promise.resolve({ data: { error: 'no-access' }, error: null });
@@ -14372,10 +14589,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mtNow = Date.now();
 
       var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify',
-        'careers', 'home', 'notfound', 'card'];
+        'careers', 'feedback', 'home', 'notfound', 'card'];
       var PG_NAME = { admin: 'Console', client: 'Client portal', review: 'Content Review', script: 'Video Scripts', details: 'Details form',
         creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document',
-        careers: 'Candidate page', home: 'Front page', notfound: 'Page not found', card: 'Namecards' };
+        careers: 'Candidate page', feedback: 'Feedback form', home: 'Front page', notfound: 'Page not found', card: 'Namecards' };
       var pgRow = function (k) {
         var rows = DB.app_flags || [];
         var f = rows.filter(function (x) { return x.key === 'page:' + k; })[0];

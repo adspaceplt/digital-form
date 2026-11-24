@@ -9,6 +9,7 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
 (a prospect's own quotation), `details/` (a client's billing details form),
+`feedback/` (a client's feedback on its link),
 `supplier/` (a supplier's details form; `supplier-details/` forwards to it),
 `careers/` (a candidate's own page), `/` and
 `404.html` (covers). Supabase behind
@@ -288,7 +289,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`, `feedback/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -612,6 +613,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Reports | `docs/rules/reports.md` | `js/reports.js`, `js/smreport.js`, `supabase/functions/report-draft`, `supabase/functions/meta-import` |
 | Services | `docs/rules/services.md` | `js/quotes.js`, `js/quotepdf.js`, `js/ratecardpdf.js`, `js/quote.js`, `quote/`, `supabase/functions/quote-request`, `js/money.js` |
 | Client portal | `docs/rules/client-portal.md` | `client/`, `js/portal.js` |
+| Client feedback | `docs/rules/client-feedback.md` | `js/feedback.js`, `js/fbform.js`, `feedback/` |
 | Short Links | `docs/rules/short-links.md` | `workers/links` |
 | Video Scripts | `docs/rules/video-scripts.md` | `js/scripts.js`, `js/scriptpdf.js`, `js/script.js`, `script/`, `js/frames.js`, `js/animatic.js`, `supabase/functions/script-draft`, `supabase/functions/script-pictures` |
 | Handbook | `docs/rules/handbook.md` | `js/handbook.js` |
