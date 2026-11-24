@@ -1,14 +1,14 @@
 /* Email templates (2026-11-10; the overnight Settings review): every email
- * wording the portal sends, one editor for all of them, each recipient's
- * templates opened from the one section whose emails they are (2026-11-24,
- * the user: "deduplicate every sections"): Edit email templates in the
- * command bar's ⋯ of Clients, Suppliers, Creators, Team's Hiring tab
- * (Candidates) and Messages' Email tab (Sign-in and codes), never from
- * Settings and never from two places.
+ * wording the portal sends, one editor for all of them, opened from one
+ * place: Settings, Templates, a row a family (Client emails, Supplier
+ * emails, Creator emails, Candidate emails, Sign-in and codes; the user,
+ * 2026-11-25: "inside business settings in the console"), each opening
+ * that family's templates alone. #1419 had put them in each section's ⋯,
+ * a misread of the ask.
  *
  *   ADspaceMailTpl.open(btn, say, rec)   one recipient's templates
  *   ADspaceMailTpl.may(rec)              whether the reader may open them
- *   a button carrying `data-mailtpl="{rec}"` opens them at its press
+ *   ADspaceMailTpl.count(rec)            the line under its Settings row
  *
  * The words stay where each sender reads them (supplier_email_templates,
  * client_email_templates, email_templates, the two invoice tables,
@@ -68,6 +68,10 @@
      Chinese, its subject, message and button (feedback_email_templates). */
   var FB_WORD = { quick: 'Service rating', review: 'Performance review' };
   var LANG_WORD = { en: 'English', zh: '中文' };
+  /* Each family's name: its Settings row and the sheet's title, one copy. */
+  var REC_WORD = { clients: 'Client emails', suppliers: 'Supplier emails', creators: 'Creator emails',
+    candidates: 'Candidate emails', codes: 'Sign-in and codes' };
+  var RECS = ['clients', 'suppliers', 'creators', 'candidates', 'codes'];
 
   /* One read of a list; a refusal or a missing function is null, so a
      recipient whose part the reader may not open is left out. */
@@ -94,10 +98,17 @@
   /* Every template of the recipient open, each with how it is edited and
      saved: only that recipient's lists are read. */
   function load() {
-    var r = st.rec;
+    return read(st.rec).then(function (d) {
+      st.fields = d.fields; st.free = d.free; st.items = d.items;
+      return d.items;
+    });
+  }
+  /* What a recipient holds, read without touching the open sheet: the
+     sheet's list and the count under its Settings row alike. */
+  function read(r, bare) {
     var on = function (want, ok, fn) { return r === want && ok ? soft(rpc(fn)) : null; };
     return Promise.all([
-      soft(rpc('template_fields_all')),
+      bare ? null : soft(rpc('template_fields_all')),
       on('clients', biz(), 'client_email_templates_list'),
       on('clients', biz(), 'invoice_email_template_get'),
       on('clients', biz(), 'invoice_send_template_get'),
@@ -108,7 +119,6 @@
       on('candidates', biz(), 'hiring_email_templates_get'),
       on('clients', biz(), 'feedback_email_templates_get')
     ]).then(function (a) {
-      st.fields = a[0] || {};
       var out = [];
       var CK = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
       ((a[1] && a[1].rows) || []).forEach(function (t) {
@@ -167,9 +177,18 @@
           out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Standard emails', name: x[0], subject: x[1], fixed: true });
         });
       }
-      st.free = Boolean(a[4]);
-      st.items = out;
-      return out;
+      return { fields: a[0] || {}, free: Boolean(a[4]), items: out };
+    });
+  }
+  /* The Settings row's line: how many templates, and how many are on
+     where each has its own switch. */
+  function count(rec) {
+    if (!mayRec(rec)) return Promise.resolve('');
+    return read(rec, true).then(function (d) {
+      var all = d.items.filter(function (i) { return i.rec === rec; });
+      var sw = all.filter(function (i) { return i.sw; });
+      var n = all.length + (all.length === 1 ? ' template' : ' templates');
+      return sw.length ? n + ' · ' + sw.filter(function (i) { return i.on; }).length + ' on' : n;
     });
   }
   function free(t) {
@@ -225,6 +244,7 @@
     wire();
     st.opener = btn || null; st.say = say || null;
     st.rec = rec || st.rec;
+    if ($('mtTitle')) $('mtTitle').textContent = REC_WORD[st.rec] || 'Email templates';
     st.items = [];
     msg('');
     window.ADspaceSheet.show($('mtSheet'), { opener: st.opener });
@@ -408,13 +428,5 @@
     $('mtEdClose').addEventListener('click', back);
   }
 
-  /* A section's ⋯ item (`data-mailtpl="{rec}"`): drawn for a reader who
-     may open that recipient's templates (`ADspaceAdmin`'s access pass asks
-     `may`), opened at its press. */
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-mailtpl]');
-    if (b && !b.closest('#mtSheet, #mtEdSheet')) open(b, null, b.getAttribute('data-mailtpl'));
-  });
-
-  window.ADspaceMailTpl = { open: open, may: mayRec, _odd: odd };
+  window.ADspaceMailTpl = { open: open, may: mayRec, count: count, RECS: RECS, NAME: REC_WORD, _odd: odd };
 })();

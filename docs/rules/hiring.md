@@ -294,8 +294,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   emails", "the process should be continued, just to show an alert"): the
   invitation, confirmation, time changed, cancellation, thank-you and new decision date,
   both outcomes, an offer or contract sent and sent again, its confirmation
-  and its expiry. Their words are `hiring_email_templates` (Hiring's
-  Edit email templates, Candidates; `team.settings`; each with its own
+  and its expiry. Their words are `hiring_email_templates` (Settings,
+  Templates: Candidate emails; `team.settings`; each with its own
   switch; fields `template_fields('candidate')`; seeded with hiring-mail's
   words, byte for byte, `tests/hiringmailfn.js`), filled by hiring-mail
   (`fill`: a field left empty on its own paragraph leaves with it). A step's
