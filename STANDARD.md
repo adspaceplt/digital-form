@@ -573,8 +573,19 @@ section holds only what is true of the project as a whole.
   pinned to 1.10.0 and deployed (2026-11-21); `tests/fnpins.js` fails any
   `npm:`, `jsr:` or esm.sh import without an exact version. A creator's signed uploads are counted a
   booking a day since 2026-11-09; an AWS Budgets alarm is set (the owner,
-  2026-11-21); the S3 lifecycle rule's storage-class half stays held. Not yet hunted: the client portal's one sign-in (`portal_work`,
-  `portal_link_pass`, its sign-out), new since run 1.
+  2026-11-21); the S3 lifecycle rule's storage-class half stays held. The client portal's sign-in, hunted
+  2026-11-24 (`portal-login`, `portal_clients`, `get_portal`,
+  `portal_work`, `portal_link_pass`, the stamp, sign-out, media-pass and
+  sign-download for a contact, every function `authenticated` may run):
+  nothing a client can reach crosses to another client; checked live,
+  sign-ups are off and Auth's captcha refuses an emailed sign-in without
+  a token. A Past client's contacts, and an inactive client's, are
+  refused by every portal function, media-pass and portal-login as a
+  stranger is, unless the team keeps the client's access on from its
+  record (finding 3, closed 2026-11-24, `portal_client_open`,
+  `tests/portalpastsql.js`). Left with the owner: GoTrue answers an unknown
+  address differently from a known one (captcha per probe), and the email
+  code's length and expiry are dashboard settings.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
   unescaped in the console), 3 (a post link holding a quote) and 4
@@ -629,11 +640,16 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   `demo/seed.js` had not arrived; the same run again passed. Its cause (a
   seed request cut off by the suite's next navigation, or a seed load that
   failed) is to be found; held here until it ships.
-- 2026-11-24, `uxaudit` (the day's full gate, in code no release that day
-  touched): at 390 a campaign's schedule row cuts its visit date and time
-  (`span.kcard-sum` "20 Sept 2026, 2:00pm" is clipped) on six Creators
-  screens, light and dark. Its cause (the row's track or the phone label
-  `sched-lab` added before it) is to be found; held here until it ships.
+- 2026-11-24, `demo` (the audit function release, which touches neither
+  Analytics nor the stand-in): at 390 `s=analytics&tab=clients` read
+  Analytics could not be loaded while 44 suites ran, and passed alone at
+  once; likely the same cause as the 2026-11-21 entry above. Held here
+  until it ships.
+- 2026-11-24, `crm` (the audit database release, which touches no page):
+  "the Clients list's Last seen" timed out waiting for `.crm-c-seen` on
+  Laman Citra's row while 44 suites ran, and passed alone at once. Its
+  cause (a wait the list's first paint outruns under load) is to be
+  found; held here until it ships.
 - 2026-11-24, `sql` (the outstation trip number release, which touches
   neither the function nor its seed): "each with its bill: paid with its
   day and amount, a bill in hand before a paid one, none where none is

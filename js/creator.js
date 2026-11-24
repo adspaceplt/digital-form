@@ -1747,7 +1747,7 @@
           return db.rpc('get_creator', { p_code: code }).then(function (r) {
             if (r.data && !r.data.error) { feed = r.data; paint(); sayOn(b.id, text, 'err'); }
             else finish(text, 'err');
-          }, function () { finish(text, 'err'); });
+          }).catch(function () { finish(text, 'err'); });
         }
         return db.rpc('creator_submit', { p_code: code, p_option: b.id, p_caption: cap }).then(function (r) {
           var d = r.data || {};
@@ -1767,9 +1767,20 @@
   document.addEventListener('click', function (e) {
     var x = e.target.closest && e.target.closest('[data-a="rm"]');
     if (!x) return;
-    var cardEl = x.closest('.filecard');
+    var cardEl = x.closest('.filecard'), bk = x.closest('.booking');
+    if (x.disabled) return;
+    x.disabled = true;
+    /* A removal refused or lost is said on its booking, never left silent
+       (audit 2026-11-24). */
+    var fail = function () {
+      x.disabled = false;
+      if (bk) sayOn(bk.getAttribute('data-id'), t().failText, 'err');
+    };
     db.rpc('creator_remove_file', { p_code: code, p_file: cardEl.getAttribute('data-file') })
-      .then(function () { load(code); });
+      .then(function (r) {
+        if (r.error || (r.data && r.data.error)) { fail(); return; }
+        load(code);
+      }).catch(fail);
   });
 
   // ---- Language and sign out ------------------------------------------------

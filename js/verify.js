@@ -5,7 +5,8 @@
  * a document with this reference, what kind it is, when (the month) and
  * whether it stands (`verify_serial`). Its days and steps are shown only to
  * somebody holding the copy: the Document ID printed at the foot of every
- * page, or for a document issued before Document IDs, its day of issue
+ * page, or for a document issued before Document IDs, the name it is
+ * addressed to (2026-11-24; its day of issue until then)
  * (`verify_details`, VERIFY DETAILS 2026-11-20). A sealed copy's file is
  * checked in the browser (`verify_file`). Never a recipient, a term or a
  * figure: the database answers none.
@@ -20,9 +21,9 @@
 
   var WORDS = {
     en: {
-      title: 'Verify document', text: 'Enter the reference printed on the document.',
+      title: 'Verify document', text: 'Enter the reference or the Document ID printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
-      notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
+      notFound: 'Not found', notFoundText: 'Please check the reference or the Document ID, or contact ADspace.', enterRef: 'Enter the reference or the Document ID.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many checks were made from this network. Please try again in {wait}.',
       ref: 'Reference', issuedBy: 'Issued by', doc: 'Document', issued: 'Issued', docId: 'Document ID', status: 'Status',
@@ -30,8 +31,10 @@
       more: 'More details', moreText: 'Enter the Document ID printed on your copy.', moreGo: 'Show details',
       file: 'File check', fileGo: 'Check a file', fileText: 'Compare a PDF with the sealed copy. The file stays on this device.',
       codeLabel: 'Document ID', codeHint: 'XXXX-XXXX', show: 'Show details', cancel: 'Cancel', showing: 'Checking…',
-      noId: 'No Document ID on your copy?', dayLabel: 'Issue date',
-      enterCode: 'Enter the Document ID.', enterDay: 'Enter the Document ID or the issue date.',
+      noId: 'No Document ID on your copy?', nameLabel: 'Recipient name', nameHint: 'COMPANY NAME SDN BHD',
+      enterCode: 'Enter the Document ID.', enterName: 'Enter the Document ID or the recipient name.',
+      lockedRef: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace at {contact}.',
+      lockedRefBare: 'Too many checks were made for this reference. Please try again in {wait}, or contact ADspace.',
       noMatch: 'No document matches these details. Please check the details entered, or contact ADspace at {contact}.',
       noMatchBare: 'No document matches these details. Please check the details entered, or contact ADspace.',
       history: 'History', never: 'The recipient\'s name, the terms and the amounts are never shown here.',
@@ -43,9 +46,9 @@
         replaced: 'Replaced', expired: 'Expired' }
     },
     zh: {
-      title: '文件核验', text: '请输入文件上印有的编号。',
+      title: '文件核验', text: '请输入文件上印有的编号或文件识别码。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
-      notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
+      notFound: '未找到', notFoundText: '请核对编号或文件识别码，或联系 ADspace。', enterRef: '请输入编号或文件识别码。',
       failed: '无法核验', failedText: '请稍后再试。',
       locked: '查询次数过多', lockedText: '此网络的查询次数过多。请于{wait}后重试。',
       ref: '编号', issuedBy: '签发方', doc: '文件', issued: '签发', docId: '文件识别码', status: '状态',
@@ -53,8 +56,10 @@
       more: '更多详情', moreText: '请输入您副本上印有的文件识别码。', moreGo: '显示详情',
       file: '文件比对', fileGo: '核验文件', fileText: '将 PDF 与封存副本比对。文件不会离开此设备。',
       codeLabel: '文件识别码', codeHint: 'XXXX-XXXX', show: '显示详情', cancel: '取消', showing: '核验中…',
-      noId: '副本上没有文件识别码？', dayLabel: '签发日期',
-      enterCode: '请输入文件识别码。', enterDay: '请输入文件识别码或签发日期。',
+      noId: '副本上没有文件识别码？', nameLabel: '收件方名称', nameHint: 'COMPANY NAME SDN BHD',
+      enterCode: '请输入文件识别码。', enterName: '请输入文件识别码或收件方名称。',
+      lockedRef: '此编号的核验次数过多。请于{wait}后重试，或通过 {contact} 联系 ADspace。',
+      lockedRefBare: '此编号的核验次数过多。请于{wait}后重试，或联系 ADspace。',
       noMatch: '没有与这些资料相符的文件。请核对所输入的资料，或通过 {contact} 联系 ADspace。',
       noMatchBare: '没有与这些资料相符的文件。请核对所输入的资料，或联系 ADspace。',
       history: '记录', never: '此处不会显示收件方姓名、条款或金额。',
@@ -68,7 +73,8 @@
          the team added) reads as it was sent. */
       kind: { 'quotation': '报价单', 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
         'letter to client': '客户函件', 'thank you letter': '感谢函', 'quotation cover': '报价单封面函',
-        'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件' }
+        'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件',
+        'social media accounts report': '社交媒体账户报告', 'social media advertising report': '社交媒体广告报告', 'video script': '视频脚本' }
     }
   };
   /* The issuer's own names, as the page's settings hold them: the demo
@@ -132,11 +138,13 @@
        page draws its month alike. */
     var month = a.issued_month || (a.issued_at ? ADspaceClock.day(a.issued_at).slice(0, 7) : '');
     return '<dl class="verify-facts">' +
-      row(t().ref, esc(a.serial || '')) +
+      /* A report or a script holds no reference: its Document ID is what
+         was asked, and stands in the reference's place (2026-11-24). */
+      (a.by_code ? row(t().docId, '<span class="verify-code">' + esc(a.serial || '') + '</span>') : row(t().ref, esc(a.serial || ''))) +
       row(t().issuedBy, esc(issuer())) +
       row(t().doc, esc(kindWord(a.kind))) +
       (d ? row(t().issued, esc(dayWord(d.issued_on))) : month ? row(t().issued, esc(monthWord(month))) : '') +
-      (d && d.document_id ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
+      (d && d.document_id && !a.by_code ? row(t().docId, '<span class="verify-code">' + esc(d.document_id) + '</span>') : '') +
       row(t().status, '<span class="tone ' + stateTone(state) + '">' + esc(t().state[state] || state) + '</span>') +
       '</dl>';
   }
@@ -197,17 +205,19 @@
     if (a.sealed) wireFile(a.serial);
   }
 
-  /* View more details: the Document ID, or where the day of issue may stand
-     for it (a document from before Document IDs), the day under its fold. */
-  var typed = { code: '', day: '', open: false };
+  /* View more details: the Document ID, or where the name the document is
+     addressed to may stand for it (a document from before Document IDs),
+     the name under its fold (2026-11-24: a reference may carry its day of
+     issue, so the day proved nothing). */
+  var typed = { code: '', name: '', open: false };
   function askHtml(a) {
     var said = askSaid ? '<p class="msg err" id="vDetailMsg" role="alert">' + esc(askSaid) + '</p>' : '<p class="msg err" id="vDetailMsg" role="alert" hidden></p>';
     return '<form class="verify-ask" id="vAsk" novalidate>' +
       '<label class="verify-label" for="vCode">' + esc(t().codeLabel) + '</label>' +
       '<input class="input" id="vCode" placeholder="' + esc(t().codeHint) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" value="' + esc(typed.code) + '">' +
-      (a.by_day ? '<details class="verify-noid" id="vNoId"' + (typed.open ? ' open' : '') + '><summary>' + esc(t().noId) + '</summary>' +
-        '<label class="verify-label" for="vDay">' + esc(t().dayLabel) + '</label>' +
-        '<input class="input" type="date" id="vDay" min="2023-08-14" max="' + esc(ADspaceClock.today()) + '" value="' + esc(typed.day) + '"></details>' : '') +
+      (a.by_name ? '<details class="verify-noid" id="vNoId"' + (typed.open ? ' open' : '') + '><summary>' + esc(t().noId) + '</summary>' +
+        '<label class="verify-label" for="vName">' + esc(t().nameLabel) + '</label>' +
+        '<input class="input" id="vName" placeholder="' + esc(t().nameHint) + '" autocomplete="off" spellcheck="false" maxlength="200" value="' + esc(typed.name) + '"></details>' : '') +
       said +
       '<div class="row acts verify-ask-acts"><button class="btn btn-primary" type="submit" id="vDetailGo">' + esc(t().show) + '</button>' +
       '<button class="btn btn-quiet" type="button" id="vAskCancel">' + esc(t().cancel) + '</button></div>' +
@@ -218,45 +228,49 @@
     if (!form) return;
     var keepTyped = function () {
       typed.code = $('vCode').value;
-      typed.day = $('vDay') ? $('vDay').value : '';
+      typed.name = $('vName') ? $('vName').value : '';
       typed.open = !!($('vNoId') && $('vNoId').open);
     };
     form.addEventListener('input', keepTyped);
     if ($('vNoId')) $('vNoId').addEventListener('toggle', keepTyped);
     $('vAskCancel').addEventListener('click', function () {
-      asking = false; askSaid = null; typed = { code: '', day: '', open: false }; paint(last);
+      asking = false; askSaid = null; typed = { code: '', name: '', open: false }; paint(last);
       if ($('vMoreGo')) $('vMoreGo').focus();
     });
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       keepTyped();
-      var code = typed.code.trim(), day = typed.open ? typed.day : '';
-      if (!code && !day) { say(a.by_day ? t().enterDay : t().enterCode, $('vCode')); return; }
+      var code = typed.code.trim(), name = typed.open ? typed.name.trim() : '';
+      if (!code && !name) { say(a.by_name ? t().enterName : t().enterCode, $('vCode')); return; }
       var go = $('vDetailGo');
       go.disabled = true; go.textContent = t().showing;
-      details(a, code, day, false);
+      details(a, code, name, false);
     });
   }
   /* The details asked of `verify_details`: typed, or from a QR code's
      Document ID (`scanned`, the reference it was scanned for), the same
      call, refusals and count. A scanned ID refused falls back to the typed step with that refusal and an empty
      field, and its pass is let go. */
-  function details(a, code, day, scanned) {
+  function details(a, code, name, scanned) {
     var no = function (text, field, wrong) {
-      if (scanned) { if (wrong) forgetPass(scanned); asking = true; typed = { code: '', day: '', open: false }; }
+      if (scanned) { if (wrong) forgetPass(scanned); asking = true; typed = { code: '', name: '', open: false }; }
       say(text, field, scanned);
     };
     if (!db) { no(t().failedText); return; }
-    db.rpc('verify_details', { p_serial: a.serial, p_code: code || null, p_day: code ? null : day }).then(function (r) {
+    /* A Document ID typed is asked first; else the name. */
+    var ask = code ? db.rpc('verify_details', { p_serial: a.serial, p_code: code, p_day: null })
+      : db.rpc('verify_details_name', { p_serial: a.serial, p_name: name });
+    ask.then(function (r) {
       var d = r && r.data;
       if (last !== a) return;
       if (r.error || !d || d.error) { no(t().failed + '. ' + t().failedText); return; }
-      if (d.locked) { no(lockedLine(d.minutes)); return; }
+      /* Five wrong names lock the reference's name for a day. */
+      if (d.locked) { no(d.reference ? lockedLine(d.minutes, d.contact ? t().lockedRef.replace('{contact}', d.contact) : t().lockedRefBare) : lockedLine(d.minutes)); return; }
       if (!d.ok) {
         no(d.contact ? t().noMatch.replace('{contact}', d.contact) : t().noMatchBare, $('vCode') || { id: 'vCode' }, true);
         return;
       }
-      detail = d; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
+      detail = d; asking = false; askSaid = null; typed = { code: '', name: '', open: false };
       paint(last);
       // Focus follows a request typed here, never an arrival by scan.
       var h = !scanned && $('vHistH'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
@@ -366,12 +380,15 @@
       return;
     }
     $('vSerial').removeAttribute('aria-invalid');
-    fileSaid = null; detail = null; asking = false; askSaid = null; typed = { code: '', day: '', open: false };
+    fileSaid = null; detail = null; asking = false; askSaid = null; typed = { code: '', name: '', open: false };
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
     var done = function (a) {
       go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial);
-      // A pass held in this tab for this reference opens its details.
+      /* A pass held in this tab for this reference opens its details; a
+         Document ID typed as the reference (a report, a script) opens them
+         at once, being the code itself. */
+      if (a.found && a.more && a.by_code) { details(a, a.serial, '', ''); return; }
       var code = a.found && a.more ? readPass(serial) : '';
       if (code) details(a, code, '', serial);
     };

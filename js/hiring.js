@@ -123,7 +123,7 @@
     if (!state.rows) UI.skeleton(box, 4);
     return rpc('hiring_list', {}).then(function (r) {
       var d = r.data || {};
-      if (r.error || d.error) { state.rows = null; UI.failLine(box, 'the candidates', said(r), load); return; }
+      if (r.error || d.error) { state.rows = null; UI.failLine(box, 'The candidates', said(r), load); return; }
       state.rows = d.rows || []; state.admin = Boolean(d.admin);
       if (state.admin && !state.swept) sweepFiles();
       $('hirPositions').innerHTML = uniq(state.rows.map(function (c) { return c.position; })).map(function (p) { return '<option value="' + esc(p) + '">'; }).join('');
@@ -221,7 +221,7 @@
       var d = r.data || {};
       if (r.error || d.error) {
         if (d.error === 'not-found') { state.open = null; state.rec = null; setUrl(); paint(); msg('hirMsg', 'This candidate no longer exists.', 'err'); return; }
-        UI.failLine(rec, 'the candidate', said(r), function () { openRec(id); });
+        UI.failLine(rec, 'The candidate', said(r), function () { openRec(id); });
         return;
       }
       state.rec = d.candidate; state.role = d.role; state.people = d.people || []; state.events = d.events || [];
@@ -236,8 +236,9 @@
           if (state.open !== id) return;
           var o = pair[0], od = o.data || {}, sd = pair[1].data || {};
           state.outcome = o.error || od.error ? null : od;
-          /* The interview sheets; a read that fails leaves them out. */
-          state.sheets = pair[1].error || sd.error ? [] : (sd.sheets || []);
+          /* The interview sheets; a read that fails is said in its pane and
+             the sheet stays shut, since its save replaces the whole row. */
+          state.sheets = pair[1].error || sd.error ? null : (sd.sheets || []);
           if (state.role !== 'admin' && state.role !== 'owner') { state.docs = []; paintRec(); return; }
           return rpc('hiring_docs_of', { p_id: id }).then(function (x) {
             if (state.open !== id) return;
@@ -314,9 +315,10 @@
         return '<div class="readgroups hir-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
       }).join('') + '</div>';
     paintLog();
-    if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', 'Please try again.', function () { openRec(c.id); });
-    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', 'Please try again.', function () { openRec(c.id); });
-    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', 'Please try again.', function () { openRec(c.id); });
+    if ($('hirScFail')) UI.failLine($('hirScFail'), 'The scores', '', function () { openRec(c.id); });
+    if ($('hirShFail')) UI.failLine($('hirShFail'), 'The interview sheets', '', function () { openRec(c.id); });
+    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'The interviews', '', function () { openRec(c.id); });
+    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'The documents', '', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
     /* The strip slides its thumb and fades the edge that has more beyond
@@ -369,8 +371,8 @@
         fact('Decided by', esc([out.by, out.at ? when(out.at) : ''].filter(Boolean).join(' · '))) +
         (out.note ? fact('Note', esc(out.note), 'is-pre') : '') +
         (out.outcome === 'pool' ? fact('Talent pool', esc(POOL[out.pool_consent] || '') + (out.pool_until ? ' · until ' + esc(day(out.pool_until)) : '')) : '') +
-        (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + ' · ' + esc(when(out.mail_at)), out.mail === 'sent' ? '' : 'is-warn') : '') + '</dl>' +
-        (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && out.mail !== 'sent'
+        (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + (out.mail_at ? ' · ' + esc(when(out.mail_at)) : ''), out.mail === 'sent' || out.mail === 'queued' ? '' : 'is-warn') : '') + '</dl>' +
+        (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && ['sent', 'queued', 'sending'].indexOf(out.mail) < 0
             ? '<button class="btn btn-sm" type="button" data-h="outmail" data-gate="email">Email candidate</button>' : '') +
           (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
@@ -383,7 +385,9 @@
       var v = o.scores.map(function (x) { return Number((x.scores || {})[k]); }).filter(function (n) { return n > 0; });
       return [k, v.length ? Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10 : null];
     });
-    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>' +
+    var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>';
+    if (!state.sheets) return head + '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4></div><div id="hirShFail"></div></section>';
+    return head +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
         '<span class="readgroup-acts">' +
         (people.length && isAdminMe() && window.ADspaceHrForms ? '<button class="btn btn-sm" type="button" data-h="ivpdf">Download</button>' : '') +
@@ -497,7 +501,7 @@
   }
   function score() {
     var c = state.rec, o = state.outcome, sh = $('hivSheet');
-    if (!sh || !o) return;
+    if (!sh || !o || !state.sheets) return;
     var mine = o.scores.filter(function (x) { return x.mine; })[0] || {};
     var ms = (state.sheets || []).filter(function (x) { return x.mine; })[0] || {}, ans = ms.answers || {};
     var crit = o.scorecard.criteria || [];
@@ -600,33 +604,45 @@
     if (mails) f = f.concat(mailFields(o, true));
     window.ADspaceConfirm.ask({ title: REC[o] + '?', go: REC[o], tone: o === 'not' ? 'warn' : '', wait: true, body: body, fields: f },
     function (v) {
-      /* Keep in talent pool and Not proceed cancel a confirmed interview not
-         yet held: its Google Meet is taken off first, while the interview
-         still allows it (2026-11-20). */
-      var meets = mails ? (state.interviews || []).filter(function (i) { return i.state === 'confirmed' && !i.held_at && i.meeting_link; }) : [];
-      return Promise.all(meets.map(function (i) { return fnCall('meet-create', { interviewId: i.id, action: 'delete' }); })).then(function (offs) {
-        var kept = offs.some(function (m) { return m && m.error; });
-        return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
-          var d = r.data || {};
-          if (r.error || d.error) return said(r);
-          state.pane = 'scores';
-          /* The email waits out the Undo (2026-11-20): it goes only once the
-             30 seconds pass with no Undo, and the database refuses it once
-             the decision is reopened. */
-          var undone = false, wait = mails && mailWanted(o, v);
-          load().then(function () {
-            msg('hirRecMsg', (wait && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
-              (kept ? MEET_KEPT : ''), kept ? 'warn' : 'ok');
-            if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
-              undone = true;
-              return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function () { openRec(c.id); });
-            }, $('hirRecMsg'), wait ? UNDO_MS : 0);
-            if (wait) setTimeout(function () {
-              if (undone) return;
-              outcomeMail(c.id).then(function (sent) { if (sent && state.rec && state.rec.id === c.id) load(); });
-            }, UNDO_MS);
+      /* The decision first, then the Google Meets of the interviews it
+         cancelled (the review of 2026-11-24: removed first, a refused
+         decision left an interview with no meeting). The decision's email
+         is queued in the database, which sends it once the 30 seconds of
+         Undo pass (`hiring_outcome_mail_queue`, sent by hiring-mail's
+         drain), so a tab shut meanwhile still sends it and Undo cancels it. */
+      return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return said(r);
+        var wait = mails && mailWanted(o, v);
+        return Promise.all((d.meets || []).map(function (id) { return fnCall('meet-create', { interviewId: id, action: 'delete' }); })).then(function (offs) {
+          var kept = offs.some(function (m) { return m && m.error; });
+          return (wait ? rpc('hiring_outcome_mail_queue', { p_id: c.id }) : Promise.resolve({ data: {} })).then(function (q) {
+            var qd = (q && q.data) || {}, queued = wait && !q.error && !qd.error;
+            state.pane = 'scores';
+            load().then(function () {
+              msg('hirRecMsg', (queued && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
+                (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
+                kept || (wait && !queued) ? 'warn' : 'ok');
+              if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
+                return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (x) {
+                  /* Undone only once the reopen is held: a refused one
+                     says so, and the queued email still goes. */
+                  if (x.error || (x.data && x.data.error)) { msg('hirRecMsg', said(x), 'err'); return; }
+                  return openRec(c.id).then(function () { msg('hirRecMsg', 'Undone.', 'ok'); });
+                });
+              }, $('hirRecMsg'), queued ? UNDO_MS : 0);
+              /* The record is read again once the email is due, and a minute
+                 on (the drain is woken every minute), so an open tab shows it
+                 sent; nothing is sent from here. */
+              if (queued) [UNDO_MS + 3000, UNDO_MS + 65000].forEach(function (ms) {
+                setTimeout(function () {
+                  var r0 = state.rec;
+                  if (r0 && r0.id === c.id && (((state.outcome || {}).outcome || {}).mail || 'queued') === 'queued') load();
+                }, ms);
+              });
+            });
+            return '';
           });
-          return '';
         });
       });
     });
@@ -634,7 +650,7 @@
 
   var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-warn'],
     confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
-  var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
+  var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed', queued: 'Queued', sending: 'Sending' };
   /* Interview held (2026-11-20): a confirmed interview once it has taken
      place, its decision date while no decision is made. */
   var HELD = ['Interview held', 'is-ok'];
@@ -1144,7 +1160,7 @@
   function docRecord(d, b) {
     if (!window.ADspaceSeal) return;
     window.ADspaceSeal.open({ title: 'Record of this Document', sub: DOC_WORD[d.kind] + ' ' + (d.serial || ''), opener: b, checks: { kind: 'hiring', id: d.id },
-      verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(d.serial || ''),
+      verifyUrl: window.ADSPACE_CONFIG.verify.page + '?s=' + encodeURIComponent(d.serial || ''),
       load: function () { return rpc('hiring_doc_record', { p_doc: d.id }).then(function (r) { if (r.error || (r.data || {}).error) throw new Error('x'); return r.data; }); },
       download: d.seal_path ? function () { openPath(d.seal_path); } : null });
   }
@@ -1768,8 +1784,16 @@
       var d = r.data || {};
       if (r.error || d.error) {
         go.disabled = false;
+        /* Changed by someone else: the sheet shuts over the fresh record and
+           the message is drawn where it is read, under the record's head
+           (the review of 2026-11-24: it was written into the shut sheet). */
+        if (d.error === 'stale' && ed.id) {
+          var stale = said(r);
+          shutSheet();
+          openRec(ed.id).then(function () { msg('hirRecMsg', stale, 'warn'); });
+          return;
+        }
         msg('hirSheetMsg', said(r), 'err');
-        if (d.error === 'stale' && ed.id) { openRec(ed.id); shutSheet(); }
         var k = { 'bad-name': 'hirName', 'bad-email': 'hirEmail', 'taken': 'hirEmail', 'bad-phone': 'hirPhone', 'bad-position': 'hirPosition', 'bad-source': 'hirSource', 'bad-cv': 'hirCvUrl', 'too-long': 'hirNote' }[d.error];
         if (k) $(k).focus();
         return;
@@ -1817,7 +1841,7 @@
   function hscPaint() {
     var box = $('hscList');
     if (!box) return;
-    if (hsc.err) { UI.failLine(box, 'the scorecards', said(hsc.err), hscRead); return; }
+    if (hsc.err) { UI.failLine(box, 'The scorecards', said(hsc.err), hscRead); return; }
     if (!hsc.rows) { UI.skeleton(box, 3); return; }
     $('hscCount').textContent = hsc.rows.length + (hsc.rows.length === 1 ? ' scorecard' : ' scorecards');
     box.innerHTML = '<div class="ind-row ind-head is-hsc" aria-hidden="true"><span>Position</span><span>Criteria</span><span></span></div>' +

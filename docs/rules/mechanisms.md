@@ -25,7 +25,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   - RM, or S$ for a Singapore client billed in S$ (`curOf(c)`: a payload's
     `bill_market`, else `market` SG with `bill_sgd`; the market alone never
     picks the currency); a Singapore client billed in RM reads its total's
-    S$ beside it (`approx(n, c, at)`, ` (approx. S$ 952.38)` at `fx_sgd`).
+    S$ beside it (`approx(n, c, at)`, ` (approximately S$ 952.38)` at `fx_sgd`).
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
     applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
     campaign's booked creators the client's last confirmation (`kind`
@@ -141,8 +141,7 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   review, Post date, Results; never a bare verb or a word that could read
   as one, the user, 2026-10-15), each breaking at its space, never cut.
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
-  English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept` /
-  `W.roleStd`.
+  English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept`.
   - Pages merge with `ADspaceWords.of({en, zh})`; `/review/` takes
     `ADspaceWords.en`.
   - The console's `STAGES`, `SV_STATE`, `RQ_STATE`, `RQ_KIND`, `OPTION_WORD`

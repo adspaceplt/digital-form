@@ -66,8 +66,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   review of that month has begun, a colleague who has left included where
   that review is not a draft (`active` false; 2026-11-15); the Review list
   sheet ticks active colleagues code first, A to Z (`perf_profile_set`, Work).
-- Department and role standard (`role_family`) live on `team_members`.
-  Performance reads them; `perf_profile_set` sets only its two ticks.
+- The department lives on `team_members`; Performance reads it and draws
+  no role standard (the user, 2026-11-24; `role_family` kept, unread);
+  `perf_profile_set` sets only its two ticks.
 - Departments (`2026-10-23-departments.sql`, its SQL Editor part
   `2026-10-23-departments-editor.sql`; the user, 2026-10-23: "can add more
   departments?"): `departments` (key made once from the name and never
@@ -105,9 +106,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     one bold figure; page one the result (who, Result, Scores, What This
     Grade Means), page two the follow-up (Issues, If This Result Repeats,
     Improvement and Follow-up, Queries, Record of This Document); a
-    heading keeps its block, a short paragraph never splits; the foot
-    PRIVATE & CONFIDENTIAL beside the page count, the reference and who
-    downloaded it above.
+    heading keeps its block, a short paragraph never splits; the foot the
+    template's row (each page its own record's Document ID · Verify document
+    authenticity: go.adspace.me/verify, the page count at the right margin; 2026-11-24),
+    the reference and who downloaded it above.
   - The download is filed first (`perf_printed` answers the server's time,
     who, their address and the released / acknowledged / finalised steps); a
     refused filing makes no file, and one's own record asks the fresh proof
@@ -132,6 +134,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   how many went live by its day; Timeline adherence, the tasks they own
   that reached their review in the month, and how many by every deadline
   they had (My Work's late rule).
+- A category is scored by the letter ladder (the user, 2026-11-24), on the
+  review sheet and in Rate yourself alike (`ladderHtml`, `ladderWire`): the
+  letter (A Exceptional, B Strong, C Meets, D Below, E Poor; a select of
+  five), then its steps, each a fifth of the maximum a point apart from the
+  top (25: A1 25 to E5 1; 20: four a letter; 15: three; 10: two) and E0 for
+  none (a segment while four or fewer, else the select); the readout
+  `A2 · 24 / 25` and the total of 100 follow each choice; a suggestion from
+  the rates is its nearest step. Points are stored as before and the grade
+  bands stand; a figure stored off a step shows its nearest step, written
+  once the form is saved, and reads as its figure alone where only read.
 - Notifications never carry a score.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed

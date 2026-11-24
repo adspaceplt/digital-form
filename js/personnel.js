@@ -198,6 +198,7 @@
     erased: 'This colleague\'s details were erased.',
     inactive: 'An employee record can be requested only from an active colleague.',
     own: 'Fill in your own record from My records.',
+    'own-salary': 'You do not have permission to change your own salary. Please ask an admin.',
     'bad-status': 'Choose an employee status.', 'bad-type': 'Choose an employee type.',
     'bad-probation': 'Enter a probation of 0 to 12 months.', 'bad-date': 'Choose a join date from 14 Aug 2023.',
     'bad-end': 'The end of contract must be after the join date.', 'bad-superior': 'A colleague cannot report to themselves. Choose another colleague.',
@@ -333,7 +334,7 @@
     team.people = people || [];
     team.m = m; team.host = host; team.live = live;
     if (!team.rec || team.rec.member !== m.id) team.rec = null;
-    host.innerHTML = '<div class="panel mrec-card prs-card"><div class="msg" id="prsMsg"></div><div id="prsBox"></div></div>';
+    host.innerHTML = '<div class="panel mrec-card prs-card" data-trace><div class="msg" id="prsMsg"></div><div id="prsBox"></div></div>';
     if (!team.rec) UI.skeleton($('prsBox'), 4);
     call('personnel_get', { p_member: m.id }, function (d) {
       if (!live()) return;
@@ -475,11 +476,23 @@
       '<div class="row"><div class="field"><label class="field-label" for="prsSign">Full name as signature</label>' +
       '<input class="input" id="prsSign" aria-required="true" maxlength="100" autocomplete="name" data-nodraft></div></div></section>' : '');
   }
+  /* The form starts from the record, a field left empty taking what the
+     colleague's Overview holds (the database's `prefill`: their sign-in
+     email and namecard mobile; the user, 2026-11-24). Prefilled, not fixed:
+     a saved value always wins, and nothing is kept until Save. */
+  function startData(rec) {
+    var out = {}, data = rec.data || {}, pre = rec.prefill || {};
+    Object.keys(data).forEach(function (k) { out[k] = data[k]; });
+    Object.keys(pre).forEach(function (k) {
+      if (field(k) && (out[k] == null || out[k] === '') && pre[k]) out[k] = pre[k];
+    });
+    return out;
+  }
   function openForm(rec, member, opener) {
     form.member = member; form.own = !member; form.rec = rec;
     $('prsSheetTitle').textContent = form.own ? 'Employee record' : 'Edit employee record';
     $('prsSave').textContent = form.own ? 'Submit' : 'Save';
-    $('prsBody').innerHTML = formBody(rec.data || {});
+    $('prsBody').innerHTML = formBody(startData(rec));
     msg('prsSheetMsg', '');
     if (form.own && rec.declared_name) $('prsSign').value = '';
     var mar = $('prs_marital');
@@ -592,7 +605,7 @@
         if (relock(d, go)) return;
         if (d.error) { msg('prsMsg', said(d)); return; }
         window.ADspaceConfirm.ask({
-          title: 'Salary', body: m.name, go: 'Save', wait: true,
+          title: 'Salary', body: m.name, go: 'Save', wait: true, trace: true,
           fields: [
             { name: 'probation', label: 'Salary during probation (RM)', type: 'number', min: '0', value: money(d.probation).replace(/,/g, ''), required: false },
             { name: 'confirmed', label: 'Salary after probation (RM)', type: 'number', min: '0', value: money(d.confirmed).replace(/,/g, ''), required: false }],
@@ -652,10 +665,11 @@
     });
   }
   function view(member, kind) {
-    /* Through ADspaceDocs: a tab opened at the press at a desk; in the
-       installed app no window (it has no way back), the viewer instead. */
+    /* Through ADspaceDocs' viewer over the page, never a tab of its own:
+       the viewer carries the reader's trace (js/trace.js), which a tab
+       holding the bare picture cannot (2026-11-24). */
     var Docs = window.ADspaceDocs;
-    var tab = Docs.previewTab();
+    var tab = Docs.previewTab(false, { trace: true });
     return db.functions.invoke('sign-download', { body: { personnel: { member: member || null, kind: kind } } }).then(function (r) {
       if (!r || r.error) throw new Error('The file could not be opened. Try again.');
       return window.ADspaceAPI.fileOf(r.data).then(function (f) {
@@ -720,7 +734,7 @@
     if (!box || !rec) return;
     var act = '<button class="btn btn-sm' + (rec.declared_at ? '' : ' btn-primary') + '" type="button" data-p="edit">' +
       (rec.declared_at ? PEN + 'Edit' : 'Fill in') + '</button>';
-    box.innerHTML = '<div class="panel mrec-card prs-card"><div class="readgroups">' +
+    box.innerHTML = '<div class="panel mrec-card prs-card" data-trace><div class="readgroups">' +
       statusGroup(rec, false, act) +
       (rec.join_date || rec.employee_status ? termsGroup(rec, false) : '') +
       filesGroup(rec, true) + readSections(rec) + '</div></div>';

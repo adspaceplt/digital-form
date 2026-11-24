@@ -498,7 +498,7 @@
       var d = r.data || {};
       if (r.error || d.error) {
         done(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
-                     : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
+                     : d.error === 'bad-window' ? window.ADspaceWords.line.badWindow
                      : d.error === 'denied' ? 'You do not have permission to change page availability. Please ask an admin.' : 'Not saved. The database refused the request.');
         return;
       }
@@ -524,7 +524,7 @@
     var starts = myMoment(v.sday || (v.stime ? today : ''), v.stime, '00:00');
     var ends = myMoment(v.eday || (v.etime ? today : ''), v.etime, '23:59');
     var bad = ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date());
-    return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
+    return { starts: starts, ends: ends, bad: bad ? window.ADspaceWords.line.badWindow : '' };
   }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
   /* The media pass and what this browser kept of the colleague's work
@@ -2675,21 +2675,30 @@
     try { return JSON.parse(document.getElementById('lazyScripts').textContent) || {}; } catch (e) { return {}; }
   })();
   var LAZY_ORDER = Object.keys(LAZY), lazyAsked = {}, lazyRan = {};
+  /* A script is added only once what it reads as it loads (`first`) has
+     run: a dependency that fails to fetch leaves the scripts after it
+     unadded and unmarked, so the next ask fetches them all again (review
+     2026-11-24: a script run without its dependency was marked loaded and
+     never fetched again). */
   function lazyOne(k) {
     if (lazyAsked[k]) return lazyAsked[k];
-    lazyAsked[k] = new Promise(function (ok, bad) {
-      var el = document.createElement('script');
-      el.src = LAZY[k].src;
-      el.async = false;
-      el.onload = function () { lazyRan[k] = true; ok(); };
-      el.onerror = function () {
-        delete lazyAsked[k];
-        if (el.parentNode) el.parentNode.removeChild(el);
-        bad(new Error('Failed to fetch ' + k));
-      };
-      document.body.appendChild(el);
+    var mine = lazyAsked[k] = Promise.resolve().then(function () {
+      return Promise.all((LAZY[k].first || []).filter(function (d) { return LAZY[d] && d !== k; }).map(lazyOne));
+    }).then(function () {
+      return new Promise(function (ok, bad) {
+        var el = document.createElement('script');
+        el.src = LAZY[k].src;
+        el.async = false;
+        el.onload = function () { lazyRan[k] = true; ok(); };
+        el.onerror = function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          bad(new Error('Failed to fetch ' + k));
+        };
+        document.body.appendChild(el);
+      });
     });
-    return lazyAsked[k];
+    mine.catch(function () { if (lazyAsked[k] === mine) delete lazyAsked[k]; });
+    return mine;
   }
   function lazyKeys(keys, whole) {
     var want = {};
@@ -5573,7 +5582,9 @@
 
   /* fetch() cannot report how much of a body has gone out, so a 40 MB video
      looks frozen until it lands. XHR can, and it is the same request. */
-  function putToS3(url, blob, contentType, onProgress) {
+  /* `headers`: any further header the PUT was signed with (a sealed copy's
+     `x-amz-checksum-sha256`, 2026-11-24), sent exactly as signed. */
+  function putToS3(url, blob, contentType, onProgress, headers) {
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
       state.xhrs.push(xhr);
@@ -5582,6 +5593,7 @@
       xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
       // filenames are random and never reused, so this is safe to cache hard
       xhr.setRequestHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      Object.keys(headers || {}).forEach(function (k) { xhr.setRequestHeader(k, headers[k]); });
       if (onProgress) {
         xhr.upload.onprogress = function (e) {
           if (e.lengthComputable) onProgress(e.loaded / e.total);
@@ -6789,6 +6801,8 @@
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SETTING_SHEETS = {
     details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
+    /* Client feedback (2026-11-24): how long since a client was last asked before the Dashboard counts it. */
+    feedback: { title: 'Client feedback', keys: [['feedback_quiet_months', 'Feedback last requested within (months)', 'months', '', 'Not asked within', per('month')]] },
     followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'Lead follow-up limit (hours)', 'hours', 'Every client', 'Lead', per('hour')],
       ['proposal_followup_days', 'Proposal follow-up limit (days)', 'days', 'Every client', 'Proposal', per('day')],
       /* A VIC's own, shorter (2026-10-15). */
@@ -7051,6 +7065,25 @@
     }).catch(function () {});
   }
 
+  /* Who a section's pickers offer (2026-11-24): the ids of the colleagues
+     who may work it (`team_pickable`), asked once a visit; null where the
+     answer is missing, and then every colleague is offered. */
+  var pickAsked = {};
+  function pickable(section) {
+    if (!pickAsked[section]) {
+      pickAsked[section] = db.rpc('team_pickable', { p_section: section }).then(function (r) {
+        return r && !r.error && Array.isArray(r.data) ? r.data : null;
+      }).catch(function () { return null; });
+    }
+    return pickAsked[section];
+  }
+  /* The colleagues a picker offers: those who may work, and the one already
+     chosen whatever their access. */
+  function pickFrom(team, ids, keep) {
+    if (!ids) return team;
+    return team.filter(function (m) { return ids.indexOf(m.id) > -1 || (keep && (m.id === keep || m.name === keep)); });
+  }
+
   /* Creator Campaigns lives in its own file, because this one is long enough.
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
@@ -7214,6 +7247,7 @@
        names, after writing the address the section reads on entry. */
     show: function (name) { visitSection(name); },
     /* ON DEMAND (2026-11-22): a section's scripts, fetched on first ask. */
+    pickable: pickable, pickFrom: pickFrom,
     need: need, needThen: needThen, needSection: needSection, whenSection: whenSection,
     settingsAllowed: settingsAllowed,
     clientKey: clientKey, clientByKey: clientByKey, analyticsTab: analyticsTab,

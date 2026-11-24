@@ -9,6 +9,7 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
 (a prospect's own quotation), `details/` (a client's billing details form),
+`feedback/` (a client's feedback on its link),
 `supplier/` (a supplier's details form; `supplier-details/` forwards to it),
 `careers/` (a candidate's own page), `/` and
 `404.html` (covers). Supabase behind
@@ -267,7 +268,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The console fetches a section's scripts on first ask (ON DEMAND,
   2026-11-22): a section script is never a tag of `admin/index.html` but a
   line of its `#lazyScripts` (address with `?v=`, `first` what it reads as
-  it loads, `uses` what it calls; `tests/lazy.js`); `showSection` draws
+  it loads, `uses` what it calls; `tests/lazy.js`; a script is added only
+  once its `first` have run, so a failed fetch leaves those after it to be
+  fetched again, 2026-11-24); `showSection` draws
   `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
   always-loaded script calling a listed global asks `ADspaceAdmin.need`,
   `needThen` or `whenSection` first, and what it decides before any section
@@ -286,7 +289,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`, `feedback/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -427,6 +430,7 @@ edit of its script; no page keeps a copy of its own.
 - `js/form.js` owns forms, segments, the one save check, the finder and every date field: `docs/rules/form.md`.
 - `js/words.js` holds every word two pages share, in English and Chinese: `docs/rules/mechanisms.md`.
 - `js/captcha.js` is Turnstile: `docs/rules/mechanisms.md`.
+- `js/trace.js` is the viewer's trace over a screen of personal data: `docs/rules/security.md`.
 - A short month is `Sept`, never the browser's `Sep`: `docs/rules/mechanisms.md`.
 
 ### Writes, refusals, reversibility
@@ -610,6 +614,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Reports | `docs/rules/reports.md` | `js/reports.js`, `js/smreport.js`, `supabase/functions/report-draft`, `supabase/functions/meta-import` |
 | Services | `docs/rules/services.md` | `js/quotes.js`, `js/quotepdf.js`, `js/ratecardpdf.js`, `js/quote.js`, `quote/`, `supabase/functions/quote-request`, `js/money.js` |
 | Client portal | `docs/rules/client-portal.md` | `client/`, `js/portal.js` |
+| Client feedback | `docs/rules/client-feedback.md` | `js/feedback.js`, `js/fbform.js`, `feedback/` |
 | Short Links | `docs/rules/short-links.md` | `workers/links` |
 | Video Scripts | `docs/rules/video-scripts.md` | `js/scripts.js`, `js/scriptpdf.js`, `js/script.js`, `script/`, `js/frames.js`, `js/animatic.js`, `supabase/functions/script-draft`, `supabase/functions/script-pictures` |
 | Handbook | `docs/rules/handbook.md` | `js/handbook.js` |
@@ -631,7 +636,7 @@ only a one-line pointer to it (the user, 2026-11-22).
 | Forms and dates | `docs/rules/form.md` | `js/form.js` |
 | Tests, the stand-in, the walks | `docs/rules/tests.md` | `tests/` |
 | Access | `docs/rules/access.md` | `js/team.js`, `js/delreq.js`, `js/admin.js`, `supabase/` |
-| Sign-in, security, secrets | `docs/rules/security.md` | `supabase/functions/`, `client/`, `admin/index.html`, `js/passkey.js`, `js/portal.js`, `workers/` |
+| Sign-in, security, secrets | `docs/rules/security.md` | `supabase/functions/`, `client/`, `admin/index.html`, `js/passkey.js`, `js/portal.js`, `workers/`, `js/trace.js` |
 | Database | `docs/rules/database.md` | `supabase/` |
 
 ### Sign-in, security, secrets

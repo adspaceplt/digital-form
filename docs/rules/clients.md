@@ -275,7 +275,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     hold. `get_portal`, `get_campaign` and `sm_report_snapshot` send
     `bill_market`; `issue_letter` keeps it as the letter's `market`, and
     in `bill_to` the client's market and, billed in RM, `fx_sgd` then in
-    force, which the letter reads under its figure in bold (Approx.
+    force, which the letter reads under its figure in bold (Approximately
     S$ …); `bukku_prepare` sends its currency. The market stays the
     number's, the registration's and Meta's taxes'. A version published
     before reads its market as drawn.
@@ -719,8 +719,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     3-, 6-, 12-, 18- and 24-month commitments (3 to 5, 6 to 11, 12 to 17,
     18 to 23, 24 and more; `quote_term_pct`, `termPct`, the Rate Card's
     3 months reading `term_4_5`), each percentage a setting (`term_1_3` 25,
-    `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
-    from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
+    `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` (12's where it has no
+    row of its own, page and `quote_term_pct` alike, never a seed of the page's), `term_24` −10), Tax and
     terms at `team.settings` alone, 0 for none; a quotation takes them, and
     SST, as in force today over the live version's (`quote_card`,
     `2026-11-06-quotations-priced-on-todays-terms.sql`; the user,
@@ -872,6 +872,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     re-checking, filed `client.edited` from and to), naming a refusal
     against its client, with Undo where it happened putting back each
     client's own.
+
+- Every write to a client goes through `writeClient(id, patch[, since])`:
+  it asks `id, updated_at` back and every copy the page holds takes the new
+  stamp, so the next Edit is never refused as changed by someone else; a
+  write built from the copy read at open (Edit, the Brand sheet's content
+  brief) passes `since` and a refusal reads `ADspaceWords.line.stale`
+  through `staleClient` (review 2026-11-24, `tests/editstamps.js`).
 
 ## Components
 

@@ -249,6 +249,50 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   address and country, the fingerprint; paper: the day). Every page's foot: the reference, PRIVATE &
   CONFIDENTIAL, Page n of 3 (`ADspaceDocs.letterFoot`); named `ADspace
   Quotation {ref}.pdf`.
+- Several brands on one quotation (`2026-11-24-quotation-brands.sql`; the
+  user, 2026-11-24: "1x plan F and 1x plan B for another brand under same
+  client entity"): `p_sel.brands` (1 to 10, each a `name` with its own plan,
+  mix, platforms, extra, langs, translate, budget, once, edits, custom and
+  order) is priced by `quote_compose`, each brand as a quotation of its own,
+  its lines marked `brand` (its place), the whole totalled once by
+  `quote_totals`, the names in `totals.brands`; the term, date, Rate Card,
+  payment terms, validity, advertising budget, Bill to, terms and title stay
+  the quotation's (one contract, one term); no `brands` is priced as before,
+  and a website selection with them is refused (`bad-brands`). A line
+  leaving a quotation of two brands or more (a service line on approval,
+  a Letter of Offer's To quote line, each cycle's invoice line to Bukku) is
+  named after its brand, `{brand} · {line}` (`quote_line_label`,
+  `2026-11-24-quotation-brands-lines.sql`); one brand reads as before.
+- Build quote (the user, 2026-11-24, the approved basket and sheet): one
+  column in the order a quote is built, a numbered step each (`.qb-num`):
+  1 Plan (Without ads / With ads, the plan cards, Content, Advertising
+  budget managed per month), 2 Platforms and content (platforms, the extra
+  content steppers, languages), 3 Extras (Add one-off item and Add
+  advertising budget, each opening its rows only when used), 4 Term (Term,
+  Date, Payment terms, Valid for); then one fold, More details (`#qbMore`:
+  Title, Rate Card version, Make every content piece bilingual, Custom
+  lines with Renew lines, Bill to, Terms), open where the quotation holds
+  any of them. The foot reads the monthly total incl. SST (with `· n
+  brands`), View lines (the sheet turned to the priced lines, every
+  brand's under its name, the brand on the board changed where read, the
+  others read; Preview PDF there; Back returns), Cancel and Create
+  quotation (Save when editing). Add to quotation under Extras puts the
+  board's brand in Brands in this quotation (`#qbBrandList`: a row a
+  brand, its plan, platforms and term, its monthly figure from
+  `quote_preview`'s `brands`, Edit and Remove with Undo where it happened;
+  the board's own row marked Editing) and clears the board for the next,
+  the first press naming the brand after the client; Edit brings a brand
+  back with Save brand and Cancel; a brand choosing nothing is not priced;
+  one brand never pressed through Add to quotation creates as before. With
+  two brands or more, Create asks One for all brands (the answer it opens
+  on) or One per brand, which makes a quotation each from the same list,
+  its own reference, PDF, link, signature and invoicing, a key each
+  (`{idem}-{n}`); a revision stays one. The PDF names the Brands (one made
+  per brand its Brand) in its facts and each brand over its lines, the
+  totals the whole quotation's; /quote/ likewise, offering no Change.
+  Brand name carries no `aria-required` (the one save check would hold
+  Create on the empty name of a new board); a brand's name is required
+  only once it chooses something (`bad-brands`).
 - Quotation signing (`2026-10-31-quotation-signing.sql`; the user,
   2026-10-31: "Jane picks the reviewer, approve"): the client accepts on
   the quotation's link (a team's quotation takes one from
@@ -414,11 +458,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-11-12-quotations-advanced.sql`): one made from then on (`totals.layout`
   2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
   closing on its own total, the term's total a sentence in TERMS, the term
-  row a discount or a surcharge (`ADspaceMoney.termLine`); an older one redraws
+  row a discount or a surcharge (`ADspaceMoney.termLine`, in Chinese on
+  /quote/'s 中文, a row whose lines run different months naming none); an older one redraws
   as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
   subject to ADspace's approval, `payLine`) and Include advertising budget (a
   row a platform, Monthly or One-off; the client's money, kept in the totals,
-  never a service line or revenue; `quote_extras`). Its Advanced switch adds
+  never a service line or revenue; `quote_extras`; in an S$ quotation the
+  Singapore ad account's own S$ figure, typed, never a ringgit tier turned
+  over: its row opens empty and Create asks Enter each platform's budget in
+  S$., the user, 2026-11-24). Its Advanced switch adds
   custom lines (`quote_custom`, priced by `quote_totals`, a quotation of them
   alone through `quote_base`), each with a start printed as its period; Renew
   lines (a client's confirmed lines, each `renews` its line, confirmed for the

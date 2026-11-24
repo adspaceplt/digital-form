@@ -45,12 +45,21 @@ function held(work: Promise<unknown>, origin: string | null) {
   return new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
 }
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
-/* An email or a number typed into a question: a number is nine digits or
-   more, or a Singapore number's 4 and 4; a date (8 digits) is left alone. */
-const scrub = (s: string) => s
-  .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
-  .replace(/\+?\d(?:[\s-]?\d){8,14}/g, '[number]')
-  .replace(/\b[3689]\d{3}[\s-]?\d{4}\b/g, '[number]');
+/* An email or a phone number in a question or a tool's answer: a number is
+   nine digits or more, or a Singapore number's 4 and 4. A date, a time, a
+   moment and a record's id are set aside first and put back as they were
+   (review 2026-11-24: "30-11-2026 10am" and "2026-11-30 14:00" read as
+   [number], and every id in a tool's answer would have). */
+const KEEP = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d{4}-\d{2}-\d{2}(?:[T ]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)?)?|\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b|\b\d{1,2}(?::\d{2})+\s?(?:[ap]\.?m\.?)?|\b\d{1,2}\s?[ap]\.?m\b/gi;
+const scrub = (s: string) => {
+  const kept: string[] = [];
+  return s
+    .replace(KEEP, (m) => { kept.push(m); return '⟦' + (kept.length - 1) + '⟧'; })
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\d(?:[\s-]?\d){8,14}/g, '[number]')
+    .replace(/\b[3689]\d{3}[\s-]?\d{4}\b/g, '[number]')
+    .replace(/⟦(\d+)⟧/g, (m, i) => kept[Number(i)] ?? m);
+};
 
 /* ---- What Claude is told ------------------------------------------------- */
 const SYSTEM = `You are the Assistant inside the ADspace Digital Portal, the internal console of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. A colleague asks you, in words, about their work and asks you to do small pieces of it. You answer from the portal's own records and prepare changes for the colleague to confirm.
@@ -204,7 +213,7 @@ function clean(messages: any): any[] | null {
       if (!b || !BLOCKS.has(b.type)) return null;
       if (m.role === 'user' && b.type === 'text') return { type: 'text', text: scrub(String(b.text || '').slice(0, 4000)) };
       if (b.type === 'tool_result') {
-        const c = typeof b.content === 'string' ? b.content.slice(0, 30000) : '';
+        const c = typeof b.content === 'string' ? scrub(b.content.slice(0, 30000)) : '';
         return { type: 'tool_result', tool_use_id: String(b.tool_use_id || ''), content: c, ...(b.is_error ? { is_error: true } : {}) };
       }
       return b;

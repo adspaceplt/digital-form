@@ -38,15 +38,19 @@
  *                                     contact them to arrange another time;
  *   { action: 'drain' }              from the database alone (2026-11-20,
  *                                     `hiring_mail_kick`, after
- *                                     `hiring_docs_expire`), carrying the
- *                                     wake secret as `x-adspace-wake`
+ *                                     `hiring_docs_expire`, and every minute
+ *                                     a decision email is due), carrying
+ *                                     the wake secret as `x-adspace-wake`
  *                                     (`wake_secret_ok`, anyone else 401):
  *                                     each offer or contract that expired
  *                                     with no reply, claimed once
  *                                     (`hiring_expire_mail_claim`), emailed
  *                                     to the candidate with the careers
  *                                     mailbox to contact, and closed
- *                                     (`hiring_expire_mail_done`);
+ *                                     (`hiring_expire_mail_done`); and each
+ *                                     decision email queued 30 seconds
+ *                                     before (`hiring_outcome_mail_claim`,
+ *                                     `hiring_outcome_mail_close`);
  *   againOf (with any of these)    the Email log's Send again: the same
  *                                     email drawn afresh, filed as sent again;
  *   byHand (with any of these)     a card's Email candidate where the email
@@ -203,9 +207,16 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const r = await db.rpc('hiring_doc_code', { p_key: key, p_doc: doc, p_device: String(b.device || '').slice(0, 200), p_ip: ipOf(req) || null });
   const m = r.data as Record<string, any>;
-  if (r.error || !m) return json({ error: 'not-sent' }, 200, origin);
-  if (m.error) return json({ error: m.error === 'too-many' ? 'too-many' : 'not_found' }, 200, origin);
-  if (!EMAIL.test(String(m.to || m.email || ''))) return json({ error: 'not-sent' }, 200, origin);
+  /* Answered alike whatever befalls (the audit of 2026-11-24): a wrong key
+     or document, a failed send and a sent code all read Sent, so nobody
+     can tell which documents exist; a failed send is in the Email log. Ten
+     wrong codes in a Malaysian day lock the document until the next, and
+     the page says so in its own words. */
+  const alike = () => json({ ok: true }, 200, origin);
+  if (r.error || !m) return alike();
+  if (m.error === 'too-many' || m.error === 'locked-today') return json({ error: m.error }, 200, origin);
+  if (m.error) return alike();
+  if (!EMAIL.test(String(m.to || m.email || ''))) return alike();
   /* The one Verification code email (CLAUDE.md, VERIFICATION CODE
      TEMPLATE): the team's words, the code in its box, never in the subject. */
   const tpl = await db.rpc('code_email_template_read');
@@ -218,7 +229,7 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   }, 'hire-code-' + doc + '-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_code', ref: doc, to: m.email, to_name: m.name, subject: mail.subject, reference: m.ref,
     status, provider, error });
-  return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
+  return alike();
 }
 
 /* Why an automatic email is not sent, as the Email log files it: the
@@ -229,41 +240,57 @@ export function offOf(g: Record<string, any>, tpl: Record<string, any>, kind: st
   return '';
 }
 
-/* The expiry emails the database queued (2026-11-20): woken by the database
-   alone, each claimed once and closed; a send is never repeated by itself. */
+/* The emails the database queued: an offer or contract expired with no reply
+   (2026-11-20), and a decision once its 30 seconds of Undo pass (Keep in
+   talent pool, Not proceed; DECISION EMAILS QUEUED, 2026-11-24). Woken by the
+   database alone; each claimed once and closed; a send is never repeated by
+   itself. The gate is asked before anything is claimed (the review of
+   2026-11-24): a gate that failed once marked every claimed email failed for
+   good, so on a gate error nothing is claimed and the next wake asks again. */
 async function drain(req: Request, origin: string | null): Promise<Response> {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const given = req.headers.get('x-adspace-wake') || '';
   const woken = given.length >= 32 ? await db.rpc('wake_secret_ok', { p_given: given }) : null;
   if (!woken || woken.error || woken.data !== true) return json({ error: 'denied' }, 401, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
-  const { data, error } = await db.rpc('hiring_expire_mail_claim');
-  if (error) return json({ error: 'claim' }, 200, origin);
-  const who = await sender('careers');
   /* An automatic email (CANDIDATE EMAILS, 2026-11-21): sent only while the
      portal's Email, Automatic emails and its own template are on; else
      filed Not sent, never sent later. */
-  const gate = await db.rpc('hiring_mail_gate', { p_kinds: ['expired'] });
-  const g = (gate.data || {}) as Record<string, any>, tpl = g.tpl && g.tpl.expired;
+  const gate = await db.rpc('hiring_mail_gate', { p_kinds: ['expired', 'pool', 'not'] });
+  const g = (gate.data || {}) as Record<string, any>;
+  if (gate.error || g.error || !g.tpl) return json({ error: 'gate' }, 200, origin);
+  const who = await sender('careers');
   let sent = 0;
-  for (const m of (data as Record<string, any>[]) || []) {
-    if (!EMAIL.test(String(m.to || '')) || gate.error || !tpl) { await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' }); continue; }
+  /* One email, sent or filed Not sent, and closed through `close`. */
+  const one = async (m: Record<string, any>, tk: string, close: (st: string, err: string | null) => Promise<unknown>) => {
+    const tpl = g.tpl[tk];
+    if (!EMAIL.test(String(m.to || '')) || !tpl) { await close('failed', 'not sent: no address or template'); return; }
     const w = words(m, tpl);
-    const off = offOf(g, tpl, 'expired');
+    const off = offOf(g, tpl, tk);
     if (off) {
-      await fileSent({ kind: 'hiring_expired', ref: m.id, to: m.to, to_name: m.name, subject: w.subject, body: w.body,
-        reference: m.ref, status: 'failed', error: off });
-      await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: 'failed' });
-      continue;
+      await fileSent({ kind: 'hiring_' + tk, ref: m.id, to: m.to, to_name: m.name, subject: w.subject,
+        body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position, status: 'failed', error: off });
+      await close('failed', off);
+      return;
     }
     const r = await resend({
       from: who.from, reply_to: who.reply_to, to: [m.to], subject: w.subject,
-      html: layout({ heading: w.heading, body: w.body, preheader: w.subject }), text: w.body
-    }, 'hire-expired-' + m.id, secret('RESEND_API_KEY'));
-    await fileSent({ kind: 'hiring_expired', ref: m.id, to: m.to, to_name: m.name, subject: w.subject, body: w.body,
-      reference: m.ref, status: r.status, provider: r.provider, error: r.error });
-    await db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: r.status });
+      html: layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
+      text: w.body.replace('{invoices}', PAGE + m.key)
+    }, 'hire-' + tk + '-' + m.id, secret('RESEND_API_KEY'));
+    await fileSent({ kind: 'hiring_' + tk, ref: m.id, to: m.to, to_name: m.name, subject: w.subject,
+      body: w.body.replace('{invoices}', PAGE + '…'), reference: m.ref || m.position,
+      status: r.status, provider: r.provider, error: r.error });
+    await close(r.status, r.error || null);
     if (r.status === 'sent') sent++;
+  };
+  const exp = await db.rpc('hiring_expire_mail_claim');
+  for (const m of (exp.error ? [] : (exp.data as Record<string, any>[]) || [])) {
+    await one(m, 'expired', (st) => db.rpc('hiring_expire_mail_done', { p_doc: m.id, p_status: st }));
+  }
+  const dec = await db.rpc('hiring_outcome_mail_claim');
+  for (const m of (dec.error ? [] : (dec.data as Record<string, any>[]) || [])) {
+    await one(m, String(m.kind), (st, err) => db.rpc('hiring_outcome_mail_close', { p_id: m.id, p_status: st, p_error: err }));
   }
   return json({ ok: true, sent }, 200, origin);
 }

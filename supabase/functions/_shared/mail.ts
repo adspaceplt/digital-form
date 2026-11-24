@@ -66,6 +66,15 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '</td></tr></table></td></tr></table></body></html>';
 }
 
+/* The email's one button (the action blue, words in white), drawn where a
+   paragraph reads `{invoices}` through `layout`'s `block` (client feedback,
+   2026-11-24; creator-mail keeps its own copy until its next deploy). */
+export function button(a: { label: string; url: string }): string {
+  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;">' +
+    '<a href="' + esc(a.url) + '" style="display:inline-block;padding:9px 16px;font-family:' + FONT + ';font-size:14px;line-height:18px;font-weight:500;color:#ffffff;text-decoration:none;">' +
+    esc(a.label) + '</a></td></tr></table>';
+}
+
 /* Deno's words for a request that failed before it was sent. Anything else
    may have reached Resend, and is filed as not confirmed. */
 const NEVER_LEFT = /client error \(Connect\)|dns error|failed to lookup address|name or service not known|no such host|connection refused|tcp connect error|network is unreachable|no route to host|invalid peer certificate|certificate verify failed|tls handshake|handshake failure/i;

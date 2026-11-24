@@ -213,6 +213,7 @@
         return true;
       });
     }
+    if (DR && DR.closed) DR.closed(true);
     if (!rows.length) arg = true;
     else if (rows.length === 1 && !rows[0].spec.name) arg = valueOf(rows[0]);
     else {
@@ -250,6 +251,9 @@
      so a caller waiting on the answer is told it will not come. */
   function cancel() {
     var no = open && opts && typeof opts.no === 'function' ? opts.no : null;
+    /* A Delete asked as a request (js/delreq.js) left unanswered is no
+       request: it disarms, so the next question is the screen's own. */
+    if (open && window.ADspaceDelReq && window.ADspaceDelReq.closed) window.ADspaceDelReq.closed(false);
     shut();
     if (no) no();
   }
@@ -272,6 +276,9 @@
     lastFocus = document.activeElement;
 
     elTitle.textContent = o.title || 'Confirm';
+    /* `trace`: a question showing personal data (a salary) carries the
+       reader's trace (js/trace.js). */
+    if (o.trace) card.setAttribute('data-trace', ''); else card.removeAttribute('data-trace');
     elBody.textContent = o.body || '';
     elBody.hidden = !o.body;
     say('');

@@ -36,6 +36,25 @@ const EXT_TYPE: Record<string, string> = {
 /* A signed PUT is good for fifteen minutes from signing (aws4fetch's own
    default is a day); a long upload only has to start inside it. */
 const PUT_EXPIRES = 900;
+/* The caller's own address, passed on when this function asks whether a
+   creator's code opens the booking (`creator_may_upload`,
+   `creator_upload_claim`, each counting a wrong code through
+   `creator_code_try`), so a wrong code counts against the person who typed
+   it and never against this function's own address, which every creator
+   shares (review 2026-11-24: five wrong codes locked every creator out of
+   uploads). As media-pass and sign-download: the address Cloudflare saw
+   (`cf-connecting-ip`, else the last X-Forwarded-For entry), carried in
+   `x-adspace-ip` beside the relay secret, the only way `request_ip()`
+   takes it. */
+// deno-lint-ignore no-explicit-any
+async function callerHeaders(req: Request, admin: any): Promise<Record<string, string>> {
+  const xff = (req.headers.get('x-forwarded-for') || '').split(',');
+  const ip = (req.headers.get('cf-connecting-ip') || '').trim() || xff[xff.length - 1].trim();
+  if (!/^[0-9A-Fa-f.:]{3,45}$/.test(ip)) return {};
+  const { data } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
+  return data && data.value ? { 'x-adspace-ip': ip, 'x-adspace-relay': String(data.value) } : {};
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /* What a colleague may upload, and what each needs. `field` names the
@@ -107,7 +126,7 @@ Deno.serve(async (req) => {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
     purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string; quotationId?: string;
-    memberId?: string | null; kind?: string; tripId?: string;
+    memberId?: string | null; kind?: string; tripId?: string; sha256?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -125,11 +144,21 @@ Deno.serve(async (req) => {
   const optionId = String(body.optionId ?? '');
   let scope = '';
   let thumb = false;
+  /* A sealed copy (purpose `seal`): the quotation it is for. */
+  let sealFor = '';
+  /* The service role, asked with the caller's address: every code-counted
+     call goes through this client, never `admin`. */
+  // deno-lint-ignore no-explicit-any
+  let asCaller: any = admin;
 
   if (creatorCode) {
     if (!/^[A-Z0-9]{8}$/.test(creatorCode)) return json({ error: 'bad_code' }, 400, origin);
     if (!/^[0-9a-f-]{36}$/.test(optionId)) return json({ error: 'bad_option' }, 400, origin);
-    const { data: ok } = await admin.rpc('creator_may_upload', {
+    asCaller = createClient(
+      Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { global: { headers: await callerHeaders(req, admin) } }
+    );
+    const { data: ok } = await asCaller.rpc('creator_may_upload', {
       p_code: creatorCode, p_option: optionId
     });
     if (!ok) return json({ error: 'not_allowed' }, 403, origin);
@@ -247,6 +276,7 @@ Deno.serve(async (req) => {
     if (rule.private === 'must' && body.private !== true) return json({ error: 'bad_private' }, 400, origin);
     scope = clientId;
     thumb = purpose === 'thumb';
+    if (purpose === 'seal') sealFor = parent;
   }
 
   // 2. Validate what they are asking to upload.
@@ -261,7 +291,7 @@ Deno.serve(async (req) => {
      2026-11-09): fifty files and 25 GB a Malaysian day, asked after the file
      itself is checked, so a refused type or size is never counted. */
   if (creatorCode) {
-    const { data: claim, error: claimErr } = await admin.rpc('creator_upload_claim', {
+    const { data: claim, error: claimErr } = await asCaller.rpc('creator_upload_claim', {
       p_code: creatorCode, p_option: optionId, p_size: size
     });
     if (claimErr || claim === 'not-allowed') return json({ error: 'not_allowed' }, 403, origin);
@@ -288,6 +318,22 @@ Deno.serve(async (req) => {
     : `${prefix}/${scope}/${crypto.randomUUID()}.${ext}`;
   const target = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
+  /* A sealed copy's hash is signed into its PUT (the review of 2026-11-24):
+     the page declares the SHA-256 of the file it drew, S3 refuses any other
+     body (`x-amz-checksum-sha256`), and the key and the hash are recorded
+     (`quotation_seal_intent`, the service role's), so `quotation_seal`
+     files only the hash of the file S3 holds. */
+  const signHeaders: Record<string, string> = { 'Content-Type': contentType, 'Content-Length': String(size) };
+  let checksum = '';
+  if (sealFor) {
+    const hex = String(body.sha256 ?? '').toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(hex)) return json({ error: 'bad_sha' }, 400, origin);
+    checksum = btoa(String.fromCharCode(...(hex.match(/../g) as string[]).map((h) => parseInt(h, 16))));
+    signHeaders['x-amz-checksum-sha256'] = checksum;
+    const { data: meant, error: meantErr } = await admin.rpc('quotation_seal_intent', { p_id: sealFor, p_key: key, p_sha: hex });
+    if (meantErr || !meant || meant.error) return json({ error: (meant && meant.error) || 'not_allowed' }, 403, origin);
+  }
+
   const aws = new AwsClient({
     accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
     secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
@@ -301,7 +347,7 @@ Deno.serve(async (req) => {
      exactly; the browser sets the length from the file itself. */
   const signed = await aws.sign(`${target}?X-Amz-Expires=${PUT_EXPIRES}`, {
     method: 'PUT',
-    headers: { 'Content-Type': contentType, 'Content-Length': String(size) },
+    headers: signHeaders,
     aws: { signQuery: true, allHeaders: true }
   });
 
@@ -309,6 +355,7 @@ Deno.serve(async (req) => {
     uploadUrl: signed.url,
     publicUrl: priv ? null : `${cdnBase}/${key}`,
     key,
-    contentType
+    contentType,
+    ...(checksum ? { checksum } : {})
   }, 200, origin);
 });

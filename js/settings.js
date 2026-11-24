@@ -457,6 +457,9 @@
           meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') }]],
       ['Clients', [
         biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries'), open: openInd },
+        /* Client feedback (2026-11-24): the Dashboard counts active clients not asked within it. */
+        biz && { id: 'feedback', name: 'Client feedback', kind: 'edit',
+          meta: num('feedback_quiet_months') == null ? '' : 'Not asked within ' + plural(num('feedback_quiet_months'), 'month', 'months') },
         biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
           meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
             num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
@@ -1498,13 +1501,13 @@
      reaches; their own tick under it chooses them ("split under another
      select all"). */
   var pg = { rows: null, err: null, picking: false, picked: {} };
-  var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
+  var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details', 'feedback']],
     ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
   var PG_SYS = { home: '/', notfound: 'Page not found', card: '/card/' };
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
   function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
   var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
-  var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': 'Choose an end after the start, and later than now.',
+  var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': window.ADspaceWords.line.badWindow,
     'bad-page': 'Choose a page.', 'bad-kind': 'Choose the availability.' };
   function pgMsg(text, tone) { var m = $('pgMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function readPg() {
@@ -1688,7 +1691,18 @@
           byArgs[k].p_pages.push(p.key);
         });
       }
-      return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve()).then(function () {
+      /* Every page's own window is checked before any is saved: a mixed
+         change saves a group at a time, and a later group refused would
+         leave the earlier ones changed unsaid (audit 2026-11-24). */
+      var late = [];
+      calls.forEach(function (a) {
+        if (a.p_kind === 'none' || !a.p_ends) return;
+        var from = Math.max(a.p_starts ? new Date(a.p_starts).getTime() : 0, Date.now());
+        if (new Date(a.p_ends).getTime() <= from) late = late.concat(a.p_pages.map(pgName));
+      });
+      if (late.length) return Promise.resolve(window.ADspaceWords.line.badWindow.replace(/\.$/, ' for ' + late.join(', ') + '.'));
+      var saved = [];
+      return calls.reduce(function (pr, a) { return pr.then(function () { return pgSave(a).then(function () { saved = saved.concat(a.p_pages); }); }); }, Promise.resolve()).then(function () {
         pg.picking = false; pg.picked = {};
         paintPg();
         /* The Undo bar says Saved. where it happened; the message line
@@ -1707,7 +1721,15 @@
             });
         }, $('pgMsg'));
         return '';
-      }).catch(function (e) { return e.message || String(e); });
+      }).catch(function (e) {
+        var why = e.message || String(e);
+        if (!saved.length) return why;
+        /* Some groups saved before one was refused: the list shows them, and
+           the line names which pages took the change and which did not. */
+        paintPg();
+        var left = keys.filter(function (k) { return saved.indexOf(k) < 0; });
+        return saved.map(pgName).join(', ') + ' saved. ' + left.map(pgName).join(', ') + ' not saved. ' + why;
+      });
     });
   }
   var pgWired = false;

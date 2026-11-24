@@ -61,6 +61,11 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
 - A check a later band widens (`wa_templates_purpose_check`) is added `not
   valid` in every earlier band, so the schema runs again over rows the later
   band allows (2026-11-11: `representative` made the re-run fail three times).
+- A save of several rows checks every row before it writes any: a function
+  returning a refusal commits what it wrote before it, so a loop never both
+  writes and refuses (2026-11-24: candidate and creator emails, Reply-to
+  mailboxes, a performance query and scripts published stood half saved;
+  `tests/wholesql.js` reads every function's last definition).
 - A seed is a first run, not a running list.
   - Catalogue rows (the rate card, `detail`, Marketing and Sales) seed only
     into an empty table.

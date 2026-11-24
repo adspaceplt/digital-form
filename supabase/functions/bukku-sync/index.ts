@@ -882,7 +882,7 @@ async function billItem(p: any): Promise<any> {
    reference is matched whole in one field: the service cycle's is the start
    of the advertising budget's (`… · Ads`), so a match inside a longer one
    would take the budget's invoice for the service's (review, 2026-11-17). */
-async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string } | null> {
+async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string; amount: number | null } | null> {
   const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const k = key(ref);
   if (k.length < 6) return null;
@@ -890,7 +890,10 @@ async function invoiceHolding(contact: number, ref: string): Promise<{ id: numbe
   for (const x of ((r && r.transactions) || []) as any[]) {
     if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
     if ([x.number2, x.reference].some((f) => key(f) === k))
-      return { id: Number(x.id || 0), number: String(x.number || x.id) };
+      /* Bukku's own total (the review of 2026-11-24): an invoice found there
+         is filed at what Bukku holds, never the portal's sum. */
+      return { id: Number(x.id || 0), number: String(x.number || x.id),
+        amount: x.amount == null || x.amount === '' || !Number.isFinite(Number(x.amount)) ? null : cents(x.amount) };
   }
   return null;
 }
@@ -1617,8 +1620,20 @@ Deno.serve(async (req) => {
         else return json({ error: 'not-confirmed' }, 200, origin);
         throw e;
       }
-      await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
+      /* The bill stands in Bukku once made: a failed read of the bills back
+         never hides it (the review of 2026-11-24: it answered Bukku
+         unreachable and never filed the bill made). The bill is filed
+         either way, and the page told the list was not read. */
+      let readBack = true;
+      try {
+        await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
+      } catch (e) {
+        if (!made) throw e;
+        readBack = false;
+        console.error('bukku-sync: bill made, its list not read', e instanceof Error ? e.message : String(e));
+      }
       await db.rpc('creator_bill_done', { p_option: oid, p_number: made });
+      if (!readBack) return json({ made, note: 'list-not-read' }, 200, origin);
       const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
       if (list.error) return json({ error: 'needs-update' }, 200, origin);
       return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
@@ -1640,7 +1655,8 @@ Deno.serve(async (req) => {
       try {
         const had = await invoiceHolding(Number(p.contact_id), String(p.ref));
         if (had) {
-          await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: had.id, p_number: had.number, p_amount: total });
+          await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: had.id, p_number: had.number,
+            p_amount: had.amount ?? total });
           return json({ ok: true, error: 'in-bukku', number: had.number }, 200, origin);
         }
         let items: any[] | null = null, budgetAccount: number | null = null;
@@ -1761,6 +1777,19 @@ Deno.serve(async (req) => {
 
     const kind = String(body.kind || ''), id = String(body.id || '');
     if (!['client', 'supplier', 'entity', 'creator', 'member'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
+    /* A name is a label a colleague may type on their own record, so a
+       contact matched by name alone is offered and reached only by one who
+       sees every client; the same registration no. or a bill holding the
+       creator's job ID is offered to all (review 2026-11-24: renaming a
+       record to a Bukku contact's name reached that contact). */
+    let seesAll: boolean | null = null;
+    const everyClient = async () => {
+      if (seesAll === null) {
+        const sc = await db.rpc('invoice_scope');
+        seesAll = !sc.error && !!sc.data && sc.data.all === true;
+      }
+      return seesAll;
+    };
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
     let p = prep.data as Prep;
@@ -1812,6 +1841,7 @@ Deno.serve(async (req) => {
       }
       for (const c of all) {
         const why = matchOf(p, c);
+        if (why && why !== 'brn' && !(await everyClient())) continue;
         if (why && !seen.has(c.id)) {
           seen.add(c.id);
           found.push({ id: c.id, code: c.contact_code, name: c.legal_name, reg_no: c.reg_no || null, types: c.types || [],
@@ -1842,9 +1872,8 @@ Deno.serve(async (req) => {
        colleague sees every client (security audit 2026-11-07): the id came
        from the page, and any other read the company's Bukku contacts
        whatever the colleague's own access. */
-    if (cur && !p.contact_id && !matchOf(p, cur) && !(jobs.length && (await jobContacts(jobs)).has(Number(cur.id)))) {
-      const sc = await db.rpc('invoice_scope');
-      if (sc.error || !sc.data || sc.data.all !== true) return json({ error: 'not-offered' }, 200, origin);
+    if (cur && !p.contact_id && matchOf(p, cur) !== 'brn' && !(jobs.length && (await jobContacts(jobs)).has(Number(cur.id)))) {
+      if (!(await everyClient())) return json({ error: 'not-offered' }, 200, origin);
     }
     /* Link only (2026-10-19): the contact as Bukku holds it, linked and
        nothing sent. */
@@ -1886,6 +1915,21 @@ Deno.serve(async (req) => {
       return json({ ok: true, code, rows: rowsOf(p, cur, next, terms) }, 200, origin);
     }
     if (action === 'send') {
+      /* A new contact is made once: a second press while the first is out
+         is refused, never a second contact (review 2026-11-24). */
+      if (!cur) {
+        const cl = await db.rpc('bukku_send_claim', { p_kind: kind, p_id: id });
+        if (cl.error) return json({ error: 'needs-update' }, 200, origin);
+        if (cl.data && cl.data.error) return json({ error: cl.data.error }, 200, origin);
+      }
+      try {
+        return await sendIt();
+      } finally {
+        if (!cur) await db.rpc('bukku_send_release', { p_kind: kind, p_id: id }).then(() => null, () => null);
+      }
+    }
+    return json({ error: 'bad-request' }, 400, origin);
+    async function sendIt() {
       const r = cur ? await bukku('PUT', `/contacts/${contact}`, keepAsHeld(next, cur, body.skip)) : await bukku('POST', '/contacts', next);
       const saved = r && r.contact;
       if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'Bukku did not return the contact. Please try again.' }, 200, origin);
@@ -1907,7 +1951,6 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, contact: saved.id, code: saved.contact_code || code, created: !cur }, 200, origin);
     }
-    return json({ error: 'bad-request' }, 400, origin);
   } catch (e) {
     if (e instanceof BukkuError) {
       console.error('bukku-sync:', e.code, e.status, e.message);

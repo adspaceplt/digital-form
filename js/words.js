@@ -266,17 +266,14 @@
     }
   };
 
-  /* A colleague's department and role standard: set on the Team page, read on
-     the member's row and by Performance, so the words are said once. The
-     keys are what the database stores (`team_members.department`,
-     `team_members.role_family`). Console only, so English only. */
   /* A bank as people read it: the stored list keeps Touch N Go Digital (the
      database checks it), said as the company writes it (2026-11-13, the
      tone review). */
   W.bank = function (v) { return String(v == null ? '' : v).replace(/Touch N Go Digital/g, 'Touch \u2019n Go Digital'); };
+  /* A colleague's department where the Departments list is not read: the
+     keys are what the database stores (`team_members.department`). Console
+     only, so English only. */
   W.dept = { creative: 'Creative', marketing: 'Marketing' };
-  W.roleStd = { visual: 'Visual / Designer', video: 'Video Production Specialist',
-                planner: 'PM / Content Planner / Copywriter', account: 'Account Media / Ads / Account Manager' };
 
   /* The colour half of a state. One map, no language: a word and its tone
      travel together, so the console and the client page cannot show the same
@@ -371,6 +368,12 @@
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
+    /* A notice's or a page's window (Page availability, Upgrade,
+       Announcements). */
+    badWindow: 'Choose an end date later than the start date and the current time.',
+    /* A write refused because the record moved since it was read: the
+       page repaints from the latest copy (every record's Edit). */
+    stale: 'Not saved. This record was changed by someone else. The latest version is now shown.',
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
     mailOff: 'Email is not set up yet. Please contact an admin.',

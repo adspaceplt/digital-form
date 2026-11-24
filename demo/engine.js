@@ -51,7 +51,7 @@
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
-    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
+    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version doc_code',
     video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb ai_frame',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
@@ -107,7 +107,7 @@
     sm_report_ads: 'id report_id position name objective result_label audience starts_on ends_on spend results reach impressions ctr cpr cpr_basis age hook_rate hold_rate avg_play retention thumb_data remark created_at ad_ids ad_account platform ad_error purchase_value',
     sm_report_platforms: 'id report_id platform account_name handle group_key group_label position metrics followers_start followers_end growth_override growth_reason er_basis metric_notes summary worked improve actions created_at platform_name',
     sm_report_posts: 'id report_id platform_id posted_on title caption content_type url thumb_data views reach impressions interactions engagements likes comments shares saves notable observation position created_at',
-    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by',
+    sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by doc_code',
     sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print',
     team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at ai_on email_on whatsapp_on sensitive_on',
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
@@ -122,6 +122,7 @@
     vic_clients: '',
     team_rows: '',
     team_task_takers: '',
+    team_pickable: 'p_section',
     ops_task_client_facts: 'p_tasks',
     ai_check_done: 'p_id p_ok p_result p_basis',
     ai_check_last: 'p_report',
@@ -276,6 +277,8 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
+    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
     client_checklist_step: 'p_client p_kind p_step',
@@ -298,7 +301,7 @@
     hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
     hiring_sheet_save: 'p_id p_rating p_answers', hiring_sheets_of: 'p_id', hiring_sheet_remove: 'p_id p_member',
-    hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
+    hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_queue: 'p_id', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
     hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
     hiring_unlock: 'p_code', hiring_docs_of: 'p_id', hiring_doc_save: 'p_candidate p_doc p_kind p_terms p_expected',
     hiring_doc_pay_set: 'p_doc p_basic p_probation p_token', hiring_doc_pay_get: 'p_doc p_token', hiring_doc_send: 'p_doc',
@@ -568,6 +571,7 @@
     review_revert_confirm: 'p_post',
     review_record_changes: 'p_note p_post',
     review_set_counts: 'p_sets',
+    review_sets_waiting: '',
     review_caption_undo: 'p_post p_round p_caption p_caption_zh',
     s3_keys_in_use: 'p_keys',
     save_selection: 'p_selected p_passcode p_backup p_token',
@@ -656,7 +660,7 @@
     quote_sign_code: 'p_key p_payload',
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
-    quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
+    quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_words_keep: 'p_id p_agency p_terms_url', quotation_seal_key: 'p_id',
     quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
@@ -707,8 +711,43 @@
     team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', doc_code_of: 'p_kind p_id', verify_checks_of: 'p_kind p_id', hiring_register: ''
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', verify_details: 'p_serial p_code p_day', verify_details_name: 'p_serial p_name', doc_code_of: 'p_kind p_id', doc_code_of_key: 'p_kind p_id p_key', verify_checks_of: 'p_kind p_id', hiring_register: ''
   };
+
+  var FEEDBACK_QUESTIONS = [
+    { kind: 'quick', key: 'quality', n: 1, type: 'scale', min: 1, max: 10, band: null, band_low_max: 4, band_mid_max: 7, lead: true, manager: false, required: true,
+      en: 'How would you rate the quality of ADspace\'s services?', zh: '您如何评价ADspace的服务质量？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'quick', key: 'manager', n: 2, type: 'scale', min: 1, max: 5, band: null, band_low_max: null, band_mid_max: null, lead: false, manager: true, required: true,
+      en: 'How satisfied are you with {name}, your account manager?', zh: '您对客户经理{name}满意吗？', low_en: 'Not satisfied', low_zh: '不满意', high_en: 'Very satisfied', high_zh: '非常满意' },
+    { kind: 'quick', key: 'liked', n: 3, type: 'text', min: null, max: null, band: 'high', lead: false, manager: false, required: false,
+      en: 'Please describe what you liked most.', zh: '请说明您最满意的地方。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'quick', key: 'better', n: 3, type: 'text', min: null, max: null, band: 'mid', lead: false, manager: false, required: false,
+      en: 'Please describe where ADspace could do better.', zh: '请说明ADspace可改进之处。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'quick', key: 'short', n: 3, type: 'text', min: null, max: null, band: 'low', lead: false, manager: false, required: false,
+      en: 'Please describe what fell short, so that ADspace can put it right.', zh: '请说明未达期望之处，以便ADspace及时改进。', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'review', key: 'nps', n: 1, type: 'scale', min: 0, max: 10, band: null, band_low_max: 6, band_mid_max: 8, lead: true, manager: false, required: true,
+      en: 'How likely are you to recommend ADspace to a business associate?', zh: '您向业务伙伴推荐ADspace的可能性有多大？', low_en: 'Not at all likely', low_zh: '完全不可能', high_en: 'Extremely likely', high_zh: '极有可能' },
+    { kind: 'review', key: 'creative', n: 2, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How satisfied are you with the creativity and effectiveness of ADspace\'s work?', zh: '您对ADspace作品的创意与成效满意吗？', low_en: 'Not satisfied', low_zh: '不满意', high_en: 'Very satisfied', high_zh: '非常满意' },
+    { kind: 'review', key: 'content', n: 3, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the quality and relevance of the content produced?', zh: '您如何评价所制作内容的质量与相关性？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'design', n: 4, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the design quality of the materials produced?', zh: '您如何评价所制作物料的设计质量？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'brand', n: 5, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How well does the ADspace team understand your brand and audience?', zh: 'ADspace团队对您的品牌与受众了解程度如何？', low_en: 'Not at all well', low_zh: '完全不了解', high_en: 'Extremely well', high_zh: '非常了解' },
+    { kind: 'review', key: 'collab', n: 6, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate communication and collaboration with the ADspace team?', zh: '您如何评价与ADspace团队的沟通与协作？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'respond', n: 7, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How would you rate the team\'s responsiveness and initiative?', zh: '您如何评价团队的响应速度与主动性？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'sales', n: 8, type: 'scale', min: 1, max: 10, lead: false, manager: false, required: true,
+      en: 'How much has ADspace\'s work contributed to your sales performance?', zh: 'ADspace的工作对您的销售业绩贡献有多大？', low_en: 'No contribution', low_zh: '没有贡献', high_en: 'Significant contribution', high_zh: '贡献显著' },
+    { kind: 'review', key: 'manager', n: 9, type: 'scale', min: 1, max: 10, lead: false, manager: true, required: true,
+      en: 'How would you rate {name} as your account manager?', zh: '您如何评价客户经理{name}？', low_en: 'Very poor', low_zh: '极差', high_en: 'Excellent', high_zh: '极好' },
+    { kind: 'review', key: 'manager_note', n: 10, type: 'text', min: null, max: null, lead: false, manager: true, required: false,
+      en: 'Comments about {name}', zh: '关于{name}的意见', low_en: null, low_zh: null, high_en: null, high_zh: null },
+    { kind: 'review', key: 'comments', n: 11, type: 'text', min: null, max: null, lead: false, manager: false, required: false,
+      en: 'Additional comments or suggestions', zh: '其他意见或建议', low_en: null, low_zh: null, high_en: null, high_zh: null }
+  ];
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
   function schemaRefusal(table, obj) {
@@ -901,6 +940,12 @@
   function sealDevice(p) {
     var v = String(p == null ? '' : p).replace(/[\u0000-\u001f\u007f<>"`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
     return v || null;
+  }
+
+  function qtLineLabel(t, l) {
+    var b = t && Array.isArray(t.brands) && t.brands.length > 1 && l && l.brand != null ? t.brands[l.brand] : null;
+    var lab = String((l && l.label) || '').trim() || 'Service';
+    return b && String(b.name || '').trim() ? String(b.name).trim() + ' · ' + lab : lab;
   }
   function nid(p) {
     seq++;
@@ -1737,7 +1782,7 @@
 
             if (meEm && 'system' in pending && Boolean(pending.system) !== Boolean(r.system)) blocked = 'system-account';
             if (meEm && r.system && String(r.email || '').toLowerCase() !== meEm &&
-                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['email']].some(function (k) {
+                [['active'], ['access_until'], ['access_until_time'], ['role'], ['is_admin'], ['removed_at'], ['erased_at'], ['email']].some(function (k) {
                   k = k[0]; if (!(k in pending)) return false;
                   var a1 = pending[k] == null ? null : (k === 'email' ? String(pending[k]).toLowerCase() : k === 'access_until_time' ? t5(pending[k]) : pending[k]);
                   var a0 = r[k] == null ? null : (k === 'email' ? String(r[k]).toLowerCase() : k === 'access_until_time' ? t5(r[k]) : r[k]);
@@ -1829,6 +1874,8 @@
               })) pending.content_version = (r.content_version || 1) + 1;
 
           if (table === 'clients') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
+
+          if (table === 'campaigns') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
           if (table === 'client_requests') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
 
           if (table === 'team_members' || table === 'team_roles') pending.updated_at = new Date(Math.max(Date.now(), Date.parse(r.updated_at || 0) + 1)).toISOString();
@@ -1972,6 +2019,9 @@
           else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' };
           else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'You do not have permission to change white label settings. Please ask an admin.', hint: 'white-label' };
         }
+
+        if (!err && x.id != null && (DB[table] || []).some(function (r) { return r.id === x.id; }))
+          err = { code: '23505', message: 'duplicate key value violates unique constraint "' + table + '_pkey"' };
         if (!err && table === 'campaigns' && (x.invoice_no != null || x.invoice_url != null || x.invoice_uploaded_at != null) && !opsAllowed('campaigns.finance', 'work'))
           err = { code: '42501', message: 'You do not have permission to change the campaign invoice. Please ask an admin.' };
         if (!err && table === 'campaign_deliverables' && (x.hidden_at != null || x.hidden_by != null))
@@ -2439,10 +2489,17 @@ function cardSlugFree(name, self, email) {
     }
     return row.doc_code;
   }
-  function docCodeOf(a) {
-    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[a.p_kind];
+
+  function docCodeOf(a, keyed) {
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews',
+      report: 'sm_report_versions', script: 'video_scripts' }[a.p_kind];
     var row = T && (DB[T] || []).filter(function (x) { return x.id === a.p_id; })[0];
     if (!row) return null;
+    var k = String(a.p_key || '').trim();
+    if (!opsMe() && !(keyed && k && (a.p_kind === 'quotation' ? row.access_key === k && !row.removed_at
+        : a.p_kind === 'hiring' ? row.sent_at && row.state !== 'draft' && (DB.hiring_candidates || []).some(function (c) { return c.id === row.candidate_id && c.link_key === k.toLowerCase(); })
+        : a.p_kind === 'script' ? row.status === 'shared' && (DB.clients || []).some(function (c) { return c.id === row.client_id && c.script_key === k; })
+        : false)) && !(a.p_kind === 'letter' && portalClientIds().indexOf(row.client_id) > -1)) return null;
     var c = docCode(row, DB[T]);
     return c.slice(0, 4) + '-' + c.slice(4);
   }
@@ -2461,14 +2518,19 @@ function cardSlugFree(name, self, email) {
     var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : appToday();
     var d = (DB.documents || []).filter(function (x) { return same(x.serial); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
+    var cn = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0] || {}; return [c.legal_name]; };
+    var mn = function (id) { return [((DB.team_members || []).filter(function (x) { return x.id === id; })[0] || {}).name]; };
     if (d) return { src: 'document', id: d.id, serial: d.serial, kind: d.family === 'hr' ? 'HR Letter' : d.kind, issued: mday(d.issued_at),
+      names: verifyNames([(d.recipient || {}).name].concat(cn(d.client_id), mn(d.member_id))),
       code: docCode(d, DB.documents), sealed: false, state: d.voided_at ? 'voided' : 'valid',
       steps: steps([['issued', mday(d.issued_at)], ['voided', mday(d.voided_at)]]) };
     var o = (DB.client_documents || []).filter(function (x) { return same(x.number); })
       .sort(function (x, y) { return (x.voided_at ? 1 : 0) - (y.voided_at ? 1 : 0); })[0];
     if (o) {
       var by = o.superseded_by && (DB.client_documents || []).filter(function (x) { return x.id === o.superseded_by; })[0];
+      var bt = o.bill_to || {};
       return { src: 'letter', id: o.id, serial: o.number, kind: 'Letter of Offer', issued: mday(o.issued_at), code: docCode(o, DB.client_documents), sealed: false,
+        names: verifyNames([bt.legal_name || bt.name, bt.contact].concat(cn(o.client_id))),
         state: o.voided_at ? 'voided' : (o.superseded_by ? 'replaced' : 'valid'),
         steps: steps([['issued', mday(o.issued_at)], ['signed', mday(o.signed_at)], ['confirmed', mday(o.verified_at)],
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
@@ -2483,6 +2545,7 @@ function cardSlugFree(name, self, email) {
         : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid';
       var after = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 1); return t.toISOString().slice(0, 10); };
       return { src: 'quotation', id: qt.id, serial: qt.ref, kind: 'Quotation', issued: mday(qt.issued_at), code: docCode(qt, DB.quotations), sealed: !!qt.seal_key,
+        names: verifyNames([(qt.contact || {}).name, (qt.bill_to || {}).legal_name].concat(cn(qt.client_id))),
         state: qs, steps: steps([['issued', mday(qt.issued_at)], ['sent', mday(qt.sent_out_at)], ['signed', mday(qt.signed_at)],
           ['confirmed', mday(qt.reviewed_at)], ['sealed', mday(qt.sealed_at)], ['declined', mday(qt.declined_at)], ['withdrawn', qt.withdrawn_on || null],
           ['voided', mday(qt.removed_at)], ['replaced', rev], ['expired', qs === 'expired' ? after(String(qt.valid_until).slice(0, 10)) : null]]) };
@@ -2494,6 +2557,7 @@ function cardSlugFree(name, self, email) {
       var hs = hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
         : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid';
       return { src: 'hiring', id: hd.id, serial: hd.serial, kind: 'HR Letter', issued: mday(hd.sent_at), code: docCode(hd, DB.hiring_docs), sealed: !!hd.seal_sha,
+        names: verifyNames([((DB.hiring_candidates || []).filter(function (c) { return c.id === hd.candidate_id; })[0] || {}).name]),
         state: hs, steps: steps([['issued', mday(hd.sent_at)], ['signed', mday(hd.signed_at)], ['confirmed', mday(hd.confirmed_at)], ['sealed', mday(hd.sealed_at)],
           ['declined', hd.state === 'declined' ? mday(hd.answered_at || hd.updated_at) : null], ['withdrawn', hd.state === 'withdrawn' ? mday(hd.updated_at) : null],
           ['voided', mday(hd.voided_at)], ['expired', hs === 'expired' ? mday(hd.reply_by) : null]]) };
@@ -2502,17 +2566,46 @@ function cardSlugFree(name, self, email) {
       return x.serial && same(x.serial) && (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
     })[0];
     if (pr) return { src: 'perf', id: pr.id, serial: pr.serial, kind: 'HR Letter', issued: mday(pr.released_at), code: docCode(pr, DB.perf_reviews), sealed: false,
+      names: verifyNames(mn(pr.team_member_id)),
       state: pr.status === 'draft' ? 'replaced' : 'valid',
       steps: steps([['issued', mday(pr.released_at)], ['acknowledged', mday(pr.acknowledged_at)], ['finalised', mday(pr.finalised_at)]]) };
 
     var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
     if (pd) return { src: 'perf_deleted', id: pd.id, serial: pd.serial, kind: 'HR Letter', issued: mday(pd.released_at), code: null, sealed: false, state: 'voided',
+      names: verifyNames(mn(pd.team_member_id)),
       steps: steps([['issued', mday(pd.released_at)], ['voided', mday(pd.deleted_at)]]) };
+
+    var vc = v.replace(/[^0-9A-Z]/g, '');
+    if (/^[2-9A-Z]{8}$/.test(vc)) {
+      var vser = vc.slice(0, 4) + '-' + vc.slice(4);
+      var rv = (DB.sm_report_versions || []).filter(function (x) { return x.doc_code === vc; })[0];
+      if (rv) {
+        var rr = (DB.sm_reports || []).filter(function (x) { return x.id === rv.report_id; })[0] || {};
+        var rsnap = (rv.snapshot && rv.snapshot.report) || {};
+        var rnext = (DB.sm_report_versions || []).filter(function (x) { return x.report_id === rv.report_id && x.version_no > rv.version_no; })
+          .map(function (x) { return mday(x.published_at); }).sort()[0] || null;
+        return { src: 'report', id: rv.id, serial: vser, by_code: true,
+          kind: (rsnap.kind || rr.kind) === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report',
+          issued: mday(rv.published_at), code: rv.doc_code, sealed: false,
+          state: rv.withdrawn_at ? 'withdrawn' : rnext ? 'replaced' : 'valid',
+          steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
+      }
+      var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
+      if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
+        issued: mday(vs.shared_at), code: vs.doc_code, sealed: false, state: vs.status === 'shared' ? 'valid' : 'withdrawn',
+        steps: steps([['issued', mday(vs.shared_at)], ['withdrawn', vs.status !== 'shared' ? mday(vs.updated_at) : null]]) };
+    }
     return null;
+  }
+
+  function verifyNameKey(x) { return String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase(); }
+  function verifyNames(list) {
+    return list.map(verifyNameKey).filter(function (k, i, all) { return k.length >= 2 && all.indexOf(k) === i; });
   }
 
   function verifyByDay(f) {
     if (!f || !f.issued) return false;
+    if (f.by_code) return false;
     if (!f.code) return true;
     appDb();
     if (!DB.app_settings.some(function (r) { return r.key === 'verify_code_from'; }))
@@ -2527,8 +2620,12 @@ function cardSlugFree(name, self, email) {
     var f = verifyFind(a.p_serial);
     if (!f) return { found: false };
     verifyCheckNote(f);
-    return { found: true, serial: f.serial, kind: f.kind, state: f.state, issued_month: f.issued ? f.issued.slice(0, 7) : null,
-      sealed: !!f.sealed, more: true, by_day: verifyByDay(f) };
+
+    var byName = verifyByDay(f);
+    var out = { found: true, serial: f.serial, kind: f.kind, state: f.state, sealed: !!f.sealed, more: true, by_name: byName };
+    if (f.by_code) out.by_code = true;
+    if (!byName) out.issued_month = f.issued ? f.issued.slice(0, 7) : null;
+    return out;
   }
 
   function verifyCheckNote(f) {
@@ -2551,8 +2648,7 @@ function cardSlugFree(name, self, email) {
     return b ? b.address : null;
   }
 
-  function verifyDetails(a) {
-    var contact = legalBox();
+  function verifyDetailCount(contact) {
     if (window.__verifyDetailLocked) return { locked: true, minutes: window.__verifyDetailLocked, contact: contact };
     if (!opsMe()) {
       var t = DB.verify_detail_tries = DB.verify_detail_tries || { n: 0, since: Date.now() };
@@ -2560,17 +2656,55 @@ function cardSlugFree(name, self, email) {
       t.n++;
       if (t.n > 10) return { locked: true, minutes: Math.max(1, Math.ceil((t.since + 36e5 - Date.now()) / 6e4)), contact: contact };
     }
+    return null;
+  }
+
+  function verifyAnswer(f, contact) {
+    var o = { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
+      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed, history: f.steps, contact: contact };
+    if (opsMe()) o.checks = Math.max(1, verifyCheckCount(f.src, f.id));
+    return o;
+  }
+
+  function verifyDetailsName(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
+    var f = verifyFind(a.p_serial), k = verifyNameKey(String(a.p_name || '').slice(0, 200));
+    if (!f || !verifyByDay(f) || k.length < 2) return { no_match: true, contact: contact };
+
+    var key = String(f.serial).toUpperCase().replace(/\//g, '-');
+    var rows = DB.verify_name_tries = DB.verify_name_tries || {};
+    var ipKey = key + '|' + (window.__ip || 'stub');
+    var r = rows[key], rc = rows[ipKey];
+    var until = Math.max((r && r.locked_until) || 0, (rc && rc.locked_until) || 0);
+    if (!opsMe() && until > Date.now())
+      return { locked: true, reference: true, minutes: Math.max(1, Math.ceil((until - Date.now()) / 6e4)), contact: contact };
+    if ((f.names || []).indexOf(k) < 0) {
+      if (!opsMe()) {
+        [[key, 50], [ipKey, 5]].forEach(function (x) {
+          var t = rows[x[0]];
+          if (!t || Date.now() - t.since > 864e5) t = rows[x[0]] = { n: 0, since: Date.now(), locked_until: null };
+          t.n++;
+          if (t.n >= x[1] && !(t.locked_until > Date.now())) t.locked_until = Date.now() + 864e5;
+        });
+      }
+      return { no_match: true, contact: contact };
+    }
+
+    var ans = verifyAnswer(f, contact); delete ans.document_id;
+    return ans;
+  }
+  function verifyDetails(a) {
+    var contact = legalBox(), held = verifyDetailCount(contact);
+    if (held) return held;
     var f = verifyFind(a.p_serial);
     var c = String(a.p_code || '').slice(0, 80).replace(/[^0-9A-Za-z]/g, '').toUpperCase(), ok = false;
     if (f) {
       if (c && f.code && c === f.code) ok = true;
       else if (/^[0-9A-F]{32}$/.test(c) && f.sealed && (f.src === 'quotation' || f.src === 'hiring') && c === String(f.id).replace(/-/g, '').toUpperCase()) ok = true;
-      else if (!c && a.p_day && verifyByDay(f) && String(a.p_day) === f.issued) ok = true;
     }
     if (!ok) return { no_match: true, contact: contact };
-    return { ok: true, serial: f.serial, kind: f.kind, state: f.state, issued_on: f.issued,
-      document_id: f.code ? f.code.slice(0, 4) + '-' + f.code.slice(4) : null, sealed: !!f.sealed,
-      checks: Math.max(1, verifyCheckCount(f.src, f.id)), history: f.steps, contact: contact };
+    return verifyAnswer(f, contact);
   }
 
   function issueLetter(a) {
@@ -3383,7 +3517,7 @@ function cardSlugFree(name, self, email) {
 
     health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
 
-    hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
+    hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12, feedback_quiet_months: 6,
 
     hiring_decision_days: 7,
 
@@ -3399,7 +3533,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
     work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
@@ -4065,7 +4199,7 @@ function cardSlugFree(name, self, email) {
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_decision_days' && (v < 1 || v > 30 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
-          (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
+          (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'feedback_quiet_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
           ((k === 'work_start' || k === 'work_end') && (v < 0 || v > 2345 || v % 1 || [0, 15, 30, 45].indexOf(v % 100) < 0)) ||
@@ -4656,7 +4790,11 @@ function cardSlugFree(name, self, email) {
     var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
     var files = {};
     Object.keys(r.files || {}).forEach(function (k) { files[k] = { at: r.files[k].at, type: r.files[k].type }; });
-    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), files: files,
+
+    var prefill = {};
+    if (String(t.email || '').trim()) prefill.email = String(t.email).trim();
+    if (String(t.mobile || '').trim()) prefill.mobile = String(t.mobile).trim();
+    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), prefill: prefill, files: files,
       consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
       requested_at: r.requested_at || null, updated_at: r.updated_at || null,
       updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,
@@ -4808,6 +4946,8 @@ function cardSlugFree(name, self, email) {
       if (name === 'personnel_salary_get') return { ok: true, probation: s ? s.probation : null, confirmed: s ? s.confirmed : null, updated_at: s ? s.updated_at : null };
       var t3 = who(a.p_member);
       if (!t3) return { error: 'not-found' };
+
+      if (t3.id === m.id && !(m.is_admin || m.role === 'admin')) return { error: 'own-salary' };
       var okAmt = function (n) { return n == null || (typeof n === 'number' && n >= 0 && n < 1e7); };
       if (!okAmt(a.p_probation) || !okAmt(a.p_confirmed)) return { error: 'bad-amount' };
       var rd = function (n) { return n == null ? null : Math.round(n * 100) / 100; };
@@ -7019,6 +7159,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return (b.active !== false) - (a.active !== false) || String(a.role || '').localeCompare(String(b.role || '')) ||
           String(a.name || '').localeCompare(String(b.name || ''));
       }))).map(function (t) { if (!trFull) t.last_seen_at = null; return t; });
+    }
+
+    if (name === 'team_pickable') {
+      if (!opsMe()) return [];
+      return DB.team_members.filter(function (t) {
+        if (t.active === false || t.system) return false;
+        var ta = opsAccess(t);
+        return ta.admin || RANK[ta.map[args.p_section] || 'none'] >= RANK.work;
+      }).sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }).map(function (t) { return t.id; });
     }
     if (name === 'team_task_takers') {
       if (!opsMe()) return [];
@@ -10041,6 +10190,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.sm_report_versions = DB.sm_report_versions.filter(function (v) { return !(v.report_id === r.id && v.version_no === r.version_no); });
       var v = { id: nid('smv'), report_id: r.id, version_no: r.version_no, snapshot: smSnap(r, true), published_by: me.name, published_at: now,
         withdrawn_at: null, withdrawn_by: null, withdraw_reason: null };
+
+      docCode(v, DB.sm_report_versions); v.snapshot.doc_code = v.doc_code;
       DB.sm_report_versions.push(v);
       r.status = 'published';
       smPostsFollow(r, 'confirmed');
@@ -10213,6 +10364,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       claNewest('documents', DB.documents || [], 'document', function (d) { return regMay(d.family, 'view'); });
       return Promise.resolve({ data: JSON.parse(JSON.stringify(cla)), error: null });
     }
+
+    if (name === 'review_sets_waiting') {
+      var pub = (DB.batches || []).filter(function (b) { return b.published; }).map(function (b) { return b.id; });
+      return rpc('review_set_counts', { p_sets: pub }).then(function (r) {
+        return { data: (r.data || []).filter(function (c) { return c.n_posts > 0 && c.n_approved < c.n_posts; })
+          .map(function (c) { return { set_id: c.set_id, n_posts: c.n_posts, n_approved: c.n_approved, n_changes: c.n_changes }; }), error: null };
+      });
+    }
     if (name === 'review_set_counts') {
       if (!opsMe() || !opsAllowed('review.sets', 'view')) return Promise.resolve({ data: [], error: null });
       var rsc = {};
@@ -10323,10 +10482,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var oRef = function (t) {
         if (t.ref) return t.ref;
-        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(0, 7).replace('-', '');
+        var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = 'OS/' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
         return t.ref;
       };
       var oJson = function (t) {
@@ -10413,8 +10572,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var tdD = new Date(Date.parse(tdT.started_at) + 8 * 36e5);
         DB.activity_log.unshift({ id: nid('al'), actor: oMe.name, action: 'ops.deleted', subject: tdT.ref,
           detail: 'Outstation trip · ' + tdD.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][tdD.getUTCMonth()] + ' ' + tdD.getUTCFullYear() +
-            ' · ' + (oName(tdT.driver_id).name || 'a colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
+            ' · ' + (oName(tdT.driver_id).name || 'Former colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
         var tdIds = tdS.map(function (x) { return x.id; });
+        var tdTouch = tdS.map(function (x) { return x.touch_id; }).filter(Boolean);
+        DB.client_touches = (DB.client_touches || []).filter(function (x) { return tdTouch.indexOf(x.id) < 0; });
         OST.photos = OST.photos.filter(function (p) { return tdIds.indexOf(p.stop_id) < 0; });
         OST.stops = OST.stops.filter(function (x) { return x.trip_id !== tdT.id; });
         OST.trips = OST.trips.filter(function (t) { return t.id !== tdT.id; });
@@ -10428,7 +10589,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (String(args.p_note || '').length > 2000 || String(args.p_venue || '').length > 200) return oNo('too-long');
         var ciC = oClient(); if (ciC) return oNo(ciC);
         var ciW = (args.p_companions || []).filter(function (x, i, all) { return all.indexOf(x) === i; });
-        if (ciW.length > 10 || ciW.indexOf(oMe.id) > -1 || ciW.some(function (id) { var m = oName(id); return !m.id || !m.active || m.removed_at || m.system; }))
+        if (ciW.length > 10 || ciW.indexOf(oMe.id) > -1 || ciW.some(function (id) { var m = oName(id); if (!m.id || !m.active || m.removed_at || m.system) return true;
+          var mA = opsAccess(m); return !(mA.admin || RANK[mA.map.ops || 'none'] >= RANK.work); }))
           return oNo('bad-companion');
         var ciR = oReading(); if (ciR) return oNo(ciR.error, ciR);
         var ciT = { id: oUuid(), driver_id: oMe.id, companions: ciW, purpose: args.p_purpose, note: String(args.p_note || '').trim() || null, rating: null,
@@ -11221,7 +11383,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: sout, error: null });
     }
-    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$/.test(name)) {
+    if (/^ops_|^client_open_tasks$|^client_code_next$|^client_vic_set$|^vic_clients$|^team_rows$|^team_task_takers$|^team_pickable$/.test(name)) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
@@ -11402,6 +11564,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
     if (name === 'verify_details')     return Promise.resolve({ data: verifyDetails(args), error: null });
     if (name === 'doc_code_of')        return Promise.resolve({ data: docCodeOf(args), error: null });
+    if (name === 'doc_code_of_key')    return Promise.resolve({ data: docCodeOf(args, true), error: null });
+    if (name === 'verify_details_name') return Promise.resolve({ data: verifyDetailsName(args), error: null });
 
     if (name === 'verify_checks_of') {
       if (!opsMe()) return Promise.resolve({ data: null, error: null });
@@ -11571,8 +11735,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
     function cpTpl() {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
         { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
-        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
+        { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\n{changes}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
         { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+
+        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If you did not make this change, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
         { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
@@ -11584,7 +11750,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { id: r.id, ref: r.ref, status: r.status, created_at: r.created_at, decided_at: r.decided_at || null, note: r.note || null,
         bill_kind: r.bill_kind, id_no: whole ? r.id_no : null, id_end: r.id_no.replace(/\W/g, '').slice(-4), legal_name: r.legal_name,
         tin: r.tin || null, address: r.address, currency: r.currency, method: r.method, method_word: cpMethod(r.method, r.bank), bank: r.bank || null,
-        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator' };
+        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator', changes: (r.changes || []).slice() };
     }
     var CP_BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank', 'Alliance Bank',
       'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB', '[SG] Maybank', '[SG] Bank of China'];
@@ -11623,14 +11789,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var t = cpTpl().filter(function (x) { return x.purpose === purpose; })[0];
       if (!t || !t.on_send) return;
       var c = DB.creators.filter(function (x) { return x.id === r.creator_id; })[0] || {};
-      var to = String((purpose === 'review' ? t.to_email : r.email) || '').toLowerCase().trim();
+      var was = purpose === 'changed' ? (DB.creator_pay_requests || []).filter(function (x) { return x.id === r.prior_id; })[0] : null;
+      var to = String((purpose === 'review' ? t.to_email : purpose === 'changed' ? (was && was.email) : r.email) || '').toLowerCase().trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) return;
       var vals = { 'creator name': c.name, 'creator id': c.creator_code || '', reference: r.ref, payee: r.payee, method: cpMethod(r.method, r.bank),
-        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id };
+        'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id,
+        date: (function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); })(String(r.created_at).slice(0, 10)), 'chinese date': String(r.created_at).slice(0, 10).replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日'),
+        changes: (r.changes || []).join('\n') };
       var fill = function (x) { Object.keys(vals).forEach(function (k) { x = x.replace(new RegExp('\\{\\s*' + k + '\\s*\\}', 'gi'), vals[k]); }); return x; };
       DB.creator_emails = DB.creator_emails || [];
       DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
-        body: fill(t.body), status: 'queued', created_at: new Date().toISOString() }));
+        body: fill(t.body).replace(/\n{3,}/g, '\n\n'), status: 'queued', created_at: new Date().toISOString() }));
     }
 
     if (/^creator_sheet_/.test(name)) {
@@ -11907,11 +12076,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var cpRef = cpPat.replace('{creator}', cpC.creator_code || '');
             cpRef = cpRun ? cpRef.replace('{' + cpRun + '}', (new Array(cpRun.length + 1).join('0') + cpSeq).slice(-Math.max(cpRun.length, String(cpSeq).length))) : cpRef + cpSeq;
             var cpNew = Object.assign({ id: nid('cp'), creator_id: cpC.id, seq: cpSeq, ref: cpRef, status: 'pending', created_at: new Date().toISOString() }, cpK.values);
+
+            var cpWas = cpReqs.filter(function (r) { return r.creator_id === cpC.id && r.status === 'approved'; }).sort(function (a, b) { return b.seq - a.seq; })[0];
+            cpNew.prior_id = cpWas ? cpWas.id : null;
+            cpNew.changes = !cpWas ? [] : [
+              [cpWas.method, cpWas.bank || '', cpWas.currency, cpWas.account].join('|') !== [cpNew.method, cpNew.bank || '', cpNew.currency, cpNew.account].join('|')
+                ? 'Bank account changed from the account ending ' + cpWas.account.slice(-4) + ' to the account ending ' + cpNew.account.slice(-4) + '.' : null,
+              String(cpWas.payee).trim() !== String(cpNew.payee).trim() ? 'Account holder changed from ' + cpWas.payee + ' to ' + cpNew.payee + '.' : null,
+              String(cpWas.email).trim().toLowerCase() !== String(cpNew.email).trim().toLowerCase() ||
+                String(cpWas.whatsapp || '').replace(/\D/g, '') !== String(cpNew.whatsapp || '').replace(/\D/g, '') ? 'Contact details changed.' : null
+            ].filter(Boolean);
             cpReqs.push(cpNew);
             logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details submitted · ' + cpRef + ' · ' +
               cpMethod(cpNew.method, cpNew.bank) + ' ending ' + cpNew.account.slice(-4));
             DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
             cpQueue('received', cpNew); cpQueue('review', cpNew);
+            if (cpWas && cpNew.changes.length) cpQueue('changed', cpNew);
 
             DB.ops_notifications = DB.ops_notifications || [];
             (DB.team_members || []).forEach(function (tm) {
@@ -12396,6 +12576,219 @@ function opsCodeRange(cid, period, ty, src, seq) {
         options: opts }, error: null });
     }
 
+    if (/^feedback_/.test(name) || name === 'portal_feedback') {
+      var fbOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var fbNo = function (e, d) { return Promise.resolve({ data: Object.assign({ error: e }, d || {}), error: null }); };
+      var fbNow = new Date().toISOString();
+      ['feedback_requests', 'feedback_responses'].forEach(function (t) { DB[t] = DB[t] || []; });
+      var FBQ = FEEDBACK_QUESTIONS;
+      var fbQs = function (kind, mgr) {
+        return FBQ.filter(function (q) { return q.kind === kind && (!q.manager || mgr); }).map(function (q) {
+          var o = JSON.parse(JSON.stringify(q)); delete o.kind;
+          o.en = o.en.replace('{name}', mgr || ''); o.zh = o.zh.replace('{name}', mgr || ''); return o;
+        });
+      };
+      var fbLead = function (kind) { return FBQ.filter(function (q) { return q.kind === kind && q.lead; })[0]; };
+      var fbSees = function (mid) {
+        var me = opsMe(); if (!me || !mid) return false;
+        if (me.id === mid || opsAllowed('clients', 'manage')) return true;
+        var m = DB.team_members.filter(function (x) { return x.id === mid; })[0];
+        var g = m && (DB.team_roles || []).filter(function (r) { return r.slug === m.role; })[0];
+        return !!(g && g.reports_to && g.reports_to === me.role);
+      };
+      var fbAnswers = function (s, mgr, withMgr) {
+        return FBQ.filter(function (q) { return q.kind === s.kind && s.answers[q.key] != null && (withMgr || !q.manager); }).map(function (q) {
+          return { key: q.key, type: q.type, max: q.max, band: q.band, manager: q.manager, en: q.en.replace('{name}', mgr || ''),
+            zh: q.zh.replace('{name}', mgr || ''), high_en: q.high_en, high_zh: q.high_zh, low_en: q.low_en, low_zh: q.low_zh, value: s.answers[q.key] };
+        });
+      };
+      var fbKword = function (k) { return k === 'quick' ? 'Service rating' : 'Performance review'; };
+      if (name === 'feedback_read' || name === 'feedback_submit') {
+        var fk = String(args.p_key || '');
+        if (!/^[a-z0-9]{16}$/.test(fk)) return fbNo('not_found');
+        var fr = DB.feedback_requests.filter(function (r) { return r.access_key === fk; })[0];
+        if (!fr) return fbNo('not_found');
+        var fcl = DB.clients.filter(function (c) { return c.id === fr.client_id; })[0] || {};
+        if (fr.closed_reason === 'answered') return fbNo('answered', { answered_at: fr.answered_at, kind: fr.kind, client: fcl.name });
+        if (fr.closed_at || fcl.stage === 'past') return fbNo('closed', { client: fcl.name });
+        if (name === 'feedback_read') {
+          if (!fr.opened_at) fr.opened_at = fbNow;
+          var fct = (DB.client_contacts || []).filter(function (k) { return k.id === fr.contact_id; })[0] || {};
+          return fbOk({ kind: fr.kind, client: fcl.name, requested_at: fr.created_at, manager: fr.manager_name, lang: fct.lang || 'en',
+            questions: fbQs(fr.kind, fr.manager_name) });
+        }
+        var fa = args.p_answers || {}, ld = fbLead(fr.kind), lv = fa[ld.key];
+        if (lv == null || !/^[0-9]{1,2}$/.test(String(lv))) return fbNo('required', { key: ld.key });
+        lv = Number(lv);
+        if (lv < ld.min || lv > ld.max) return fbNo('bad-score', { key: ld.key });
+        var fband = lv <= ld.band_low_max ? 'low' : lv <= ld.band_mid_max ? 'mid' : 'high';
+        var fout = {}, fmgr = null;
+        var qs = FBQ.filter(function (q) { return q.kind === fr.kind && (!q.manager || fr.manager_name) && (!q.band || q.band === fband); })
+          .sort(function (a, b) { return a.n - b.n; });
+        for (var qi = 0; qi < qs.length; qi++) {
+          var q = qs[qi], v = fa[q.key];
+          if (q.type === 'scale') {
+            if (v == null || !/^[0-9]{1,2}$/.test(String(v))) { if (q.required) return fbNo('required', { key: q.key }); continue; }
+            v = Number(v);
+            if (v < q.min || v > q.max) return fbNo('bad-score', { key: q.key });
+            fout[q.key] = v; if (q.manager) fmgr = v;
+          } else {
+            v = String(v == null ? '' : v).trim();
+            if (!v) { if (q.required) return fbNo('required', { key: q.key }); continue; }
+            if (v.length > 2000) return fbNo('too-long', { key: q.key });
+            fout[q.key] = v;
+          }
+        }
+        var fwho = portalNameOf(fr.client_id), fwk = null;
+        if (fwho) fwk = (DB.client_contacts || []).filter(function (k) { return k.client_id === fr.client_id && k.name === fwho; })[0];
+        var fresp = { id: nid('fb'), request_id: fr.id, client_id: fr.client_id, kind: fr.kind, answers: fout, score: lv, band: fband,
+          manager_id: fr.manager_id, manager_score: fmgr, contact_id: fwk ? fwk.id : null, contact_name: fwk ? fwk.name : null,
+          submitted_at: fbNow, followup_task_id: null };
+        DB.feedback_responses.push(fresp);
+        fr.answered_at = fbNow; fr.closed_at = fbNow; fr.closed_reason = 'answered'; fr.opened_at = fr.opened_at || fbNow;
+        DB.activity_log.unshift({ id: nid('al'), actor: fwk ? fwk.name : 'Feedback form', action: 'client.edited', subject: fcl.name,
+          detail: fbKword(fr.kind) + ' answered: ' + lv + ' of ' + ld.max, created_at: fbNow });
+        var ftell = fr.manager_id || fr.sent_by;
+        if (ftell && DB.team_members.some(function (m) { return m.id === ftell && m.active; })) {
+          (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: ftell, kind: 'client.feedback',
+            title: (fband === 'low' ? 'Low score · ' : 'Feedback received · ') + fcl.name,
+            body: fbKword(fr.kind) + ': ' + lv + ' of ' + ld.max + (fband === 'low' ? '. Open the client\'s Feedback to follow up.' : '.'),
+            client_id: fcl.id, created_at: fbNow, read_at: null });
+        }
+        return fbOk();
+      }
+      if (name === 'portal_feedback') {
+        if (!portalNameOf(args.p_client)) return fbNo('no-access');
+        var po = DB.feedback_requests.filter(function (r) { return r.client_id === args.p_client && !r.closed_at; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        return fbOk({ open: po ? { key: po.access_key, kind: po.kind, requested_at: po.created_at, manager: po.manager_name, questions: fbQs(po.kind, po.manager_name) } : null,
+          history: DB.feedback_responses.filter(function (s) { return s.client_id === args.p_client; })
+            .sort(function (a, b) { return a.submitted_at < b.submitted_at ? 1 : -1; }).map(function (s) {
+              var r = DB.feedback_requests.filter(function (x) { return x.id === s.request_id; })[0] || {};
+              return { id: s.id, kind: s.kind, requested_at: r.created_at, submitted_at: s.submitted_at, by: s.contact_name, score: s.score,
+                max: fbLead(s.kind).max, answers: fbAnswers(s, r.manager_name, true) };
+            }) });
+      }
+      var fme = opsMe();
+      if (!fme) return fbNo('denied');
+      if (name === 'feedback_client') {
+        if (!opsAllowed('clients', 'view')) return fbNo('denied');
+        if (!scopeSeen(args.p_client, 'view')) return fbNo('not-found');
+        return fbOk({ requests: DB.feedback_requests.filter(function (r) { return r.client_id === args.p_client; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }).map(function (r) {
+            var s = DB.feedback_responses.filter(function (x) { return x.request_id === r.id; })[0];
+            var t = s && s.followup_task_id && (DB.ops_tasks || []).filter(function (x) { return x.id === s.followup_task_id; })[0];
+            return { id: r.id, kind: r.kind, created_at: r.created_at, sent_by: r.sent_by_name, to_name: r.sent_to_name, to_email: r.sent_to_email,
+              manager: r.manager_name, opened_at: r.opened_at || null, answered_at: r.answered_at || null, closed_at: r.closed_at || null,
+              closed_reason: r.closed_reason || null,
+              response: s ? { id: s.id, score: s.score, band: s.band, submitted_at: s.submitted_at, by: s.contact_name, max: fbLead(s.kind).max,
+                manager_score: fbSees(s.manager_id) ? s.manager_score : null, answers: fbAnswers(s, r.manager_name, fbSees(s.manager_id)),
+                task_id: s.followup_task_id || null, task_done: t ? !!t.completed_at : null } : null };
+          }) });
+      }
+      if (name === 'feedback_figures') {
+        if (!opsAllowed('clients', 'view')) return fbNo('denied');
+        var ff = String(args.p_from || ''), ft = String(args.p_to || '');
+        if (!ff || !ft || ft < ff) return fbNo('bad-period');
+        var fday = function (iso) { return new Date(Date.parse(iso) + 8 * 36e5).toISOString().slice(0, 10); };
+        var inP = function (iso) { var d = iso && fday(iso); return !!d && d >= ff && d <= ft; };
+        var seen = DB.feedback_responses.filter(function (s) { return scopeSeen(s.client_id, 'view'); });
+        var avg = function (xs) { return xs.length ? Math.round(10 * xs.reduce(function (a, b) { return a + b; }, 0) / xs.length) / 10 : null; };
+        var nps = function (xs) { return xs.length ? Math.round(100 * (xs.filter(function (s) { return s.band === 'high'; }).length - xs.filter(function (s) { return s.band === 'low'; }).length) / xs.length) : null; };
+        var qk = seen.filter(function (s) { return s.kind === 'quick' && inP(s.submitted_at); });
+        var rk = seen.filter(function (s) { return s.kind === 'review' && inP(s.submitted_at); });
+        var lowOpen = seen.filter(function (s) { if (s.band !== 'low') return false;
+          var t = s.followup_task_id && (DB.ops_tasks || []).filter(function (x) { return x.id === s.followup_task_id; })[0]; return !(t && t.completed_at); });
+        var quiet = Number(appSet('feedback_quiet_months', fday(fbNow)) || 6), qcut = Date.now() - quiet * 30.44 * 864e5;
+        var people = {};
+        DB.feedback_requests.filter(function (r) { return r.manager_id && scopeSeen(r.client_id, 'view'); }).forEach(function (r) {
+          var p = people[r.manager_id] = people[r.manager_id] || { id: r.manager_id, name: r.manager_name, requested: 0, answered: 0, q: [], r: [], m: [] };
+          if (inP(r.created_at)) p.requested++;
+          var s = DB.feedback_responses.filter(function (x) { return x.request_id === r.id; })[0];
+          if (s && inP(s.submitted_at)) { p.answered++; (s.kind === 'quick' ? p.q : p.r).push(s); if (s.kind === 'quick' && s.manager_score != null) p.m.push(s.manager_score); }
+        });
+        return fbOk({ rating: avg(qk.map(function (s) { return s.score; })), rating_n: qk.length, nps: nps(rk), nps_n: rk.length,
+          low_open: lowOpen.length, low_oldest: lowOpen.map(function (s) { return s.submitted_at; }).sort()[0] || null, quiet_months: quiet,
+          quiet: DB.clients.filter(function (c) { return c.stage === 'active' && scopeSeen(c.id, 'view') &&
+            !DB.feedback_requests.some(function (r) { return r.client_id === c.id && Date.parse(r.created_at) >= qcut; }); }).length,
+          people: Object.keys(people).map(function (k) { return people[k]; }).filter(function (p) { return p.requested || p.answered; })
+            .sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (p) {
+              var may = fbSees(p.id);
+              return { id: p.id, name: p.name, requested: p.requested, answered: p.answered, rating: avg(p.q.map(function (s) { return s.score; })),
+                nps: nps(p.r), manager_score: may ? avg(p.m) : null, manager_max: may ? 5 : null, manager_before: null };
+            }) });
+      }
+      if (name === 'feedback_followup') {
+        if (!opsAllowed('ops', 'work') || !opsAllowed('clients', 'view')) return fbNo('denied');
+        var fs1 = DB.feedback_responses.filter(function (s) { return s.id === args.p_response; })[0];
+        if (!fs1 || !scopeSeen(fs1.client_id, 'view')) return fbNo('not-found');
+        if (fs1.band !== 'low') return fbNo('not-low');
+        if (!(DB.ops_tasks || []).some(function (t) { return t.id === args.p_task && t.client_id === fs1.client_id; })) return fbNo('bad-task');
+        fs1.followup_task_id = args.p_task;
+        return fbOk();
+      }
+      if (!opsAllowed('clients', 'work')) return fbNo('denied');
+      if (name === 'feedback_request') {
+        if (['quick', 'review'].indexOf(args.p_kind) < 0) return fbNo('bad-kind');
+        var rc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+        if (!rc || !scopeSeen(rc.id, 'work')) return fbNo('not-found');
+        if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
+        var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && String(k.email || '').trim(); })[0];
+        if (!rk2) return fbNo('no-contact');
+        var rm = DB.team_members.filter(function (m) { return m.active && String(m.name || '').trim().toLowerCase() === String(rc.owner || '').trim().toLowerCase(); })[0];
+        DB.feedback_requests.forEach(function (r) { if (r.client_id === rc.id && r.kind === args.p_kind && !r.closed_at) { r.closed_at = fbNow; r.closed_reason = 'replaced'; } });
+        var key = ''; while (key.length < 16) key += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
+        var nr = { id: nid('fq'), client_id: rc.id, kind: args.p_kind, access_key: key, sent_by: fme.id, sent_by_name: fme.name, contact_id: rk2.id,
+          sent_to_name: rk2.name, sent_to_email: String(rk2.email).trim().toLowerCase(), manager_id: rm ? rm.id : null,
+          manager_name: rm ? rm.name : (String(rc.owner || '').trim() || null), created_at: fbNow, opened_at: null, answered_at: null, closed_at: null, closed_reason: null };
+        DB.feedback_requests.push(nr);
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: rc.name, detail: fbKword(nr.kind) + ' requested from ' + rk2.name, created_at: fbNow });
+        return fbOk({ id: nr.id, key: nr.access_key, kind: nr.kind, to_name: nr.sent_to_name, to_email: nr.sent_to_email, lang: rk2.lang || 'en',
+          manager: nr.manager_name, created_at: nr.created_at });
+      }
+      if (name === 'feedback_mail_done') {
+        if (['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return fbNo('bad-status');
+        var md = DB.feedback_requests.filter(function (r) { return r.id === args.p_id && r.sent_by === fme.id && r.mail_status === 'sending'; })[0];
+        if (!md) return fbNo('not-found');
+        md.mail_status = args.p_status; md.mail_provider = args.p_provider || null; md.mailed_at = args.p_status === 'sent' ? fbNow : null;
+        if (args.p_status === 'failed' && !md.closed_at) { md.closed_at = fbNow; md.closed_reason = 'withdrawn'; }
+        var mdc = DB.clients.filter(function (c) { return c.id === md.client_id; })[0] || {};
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: mdc.name || 'Client',
+          detail: fbKword(md.kind) + ({ sent: ' emailed to ', unknown: ' emailed, not confirmed, to ', failed: ' not emailed to ' })[args.p_status] + md.sent_to_email, created_at: fbNow });
+        return fbOk();
+      }
+      if (name === 'feedback_mail_begin') {
+        if (!opsAllowed('clients', 'work')) return fbNo('denied');
+        if (typeof sendOk === 'function' && !sendOk('email')) return fbNo('send-off');
+        if (Number(appSet('client_email_on', fbNow.slice(0, 10)) || 0) !== 1) return fbNo('email-off');
+        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind }).then(function (rr) {
+          var r = rr.data || {};
+          if (r.error) return { data: r, error: null };
+          var q = DB.feedback_requests.filter(function (x) { return x.id === r.id; })[0];
+          var k = (DB.client_contacts || []).filter(function (x) { return x.id === q.contact_id; })[0] || {};
+          var cl = DB.clients.filter(function (c) { return c.id === q.client_id; })[0] || {};
+          var who = String((k.salutation ? k.salutation + ' ' : '') + (k.name || '')).trim(), zh = k.lang === 'zh';
+          q.mail_status = 'sending'; persist();
+          return { data: Object.assign({}, r, zh ? {
+            subject: (q.kind === 'quick' ? '服务评分' : '绩效评估') + ' · ADspace',
+            body: '尊敬的' + who + '：\n\nADspace诚邀您对其为' + cl.name + '提供的服务作出评价，填写约需' + (q.kind === 'quick' ? '一分钟' : '三分钟') + '。\n\n此链接仅供' + cl.name + '使用。',
+            button: '请评价您的体验', lang: 'zh' } : {
+            subject: (q.kind === 'quick' ? 'Service rating' : 'Performance review') + ' · ADspace',
+            body: 'Dear ' + who + ',\n\nADspace would be grateful for your feedback on the services provided to ' + cl.name + '. The form takes about ' +
+              (q.kind === 'quick' ? 'one minute' : 'three minutes') + ' to complete.\n\nThis link is intended for ' + cl.name + ' only.',
+            button: 'Rate your experience', lang: 'en' }), error: null };
+        });
+      }
+      if (name === 'feedback_withdraw') {
+        var wr = DB.feedback_requests.filter(function (r) { return r.id === args.p_id; })[0];
+        if (!wr || !scopeSeen(wr.client_id, 'work')) return fbNo('not-found');
+        if (wr.closed_at) return fbNo('closed');
+        wr.closed_at = fbNow; wr.closed_reason = 'withdrawn';
+        var wc = DB.clients.filter(function (c) { return c.id === wr.client_id; })[0] || {};
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: wc.name, detail: fbKword(wr.kind) + ' request withdrawn', created_at: fbNow });
+        return fbOk();
+      }
+    }
     if (name === 'portal_work') {
       var pwName = portalNameOf(args && args.p_client);
       if (!pwName) return Promise.resolve({ data: { error: 'no-access' }, error: null });
@@ -13127,6 +13520,35 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
         return qtOrder(Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) }));
       };
+
+      var qtCompose = function (snap, sel, console) {
+        sel = sel || {};
+        if (sel.brands == null) return qtCustom(qtPrice(snap, sel, sel.edits), console ? sel : {});
+        if (!console || !Array.isArray(sel.brands) || sel.brands.length < 1 || sel.brands.length > 10) return { error: 'bad-brands' };
+        var KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order'];
+        var lines = [], req = [], names = [], rates = [], first = null, pct = 0, budget = 0, adj = 0;
+        for (var i = 0; i < sel.brands.length; i++) {
+          var b = sel.brands[i], nm = b && typeof b === 'object' && typeof b.name === 'string' ? b.name.trim() : '';
+          if (!nm || nm.length > 120) return { error: 'bad-brands', brand: i };
+          var bs = { term: sel.term };
+          KEYS.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(b, k)) bs[k] = b[k]; });
+          var p = qtCustom(qtPrice(snap, bs, bs.edits), bs);
+          if (p.error) return Object.assign({}, p, { brand: i, brand_name: nm });
+          var t = p.totals || {};
+          if (!first) first = t;
+          if (Number(t.term_pct || 0)) pct = Number(t.term_pct);
+          budget += Number(t.budget || 0);
+          (p.lines || []).forEach(function (l) { lines.push(Object.assign({}, l, { brand: i })); });
+          req = req.concat(p.on_request || []);
+          names.push({ name: nm });
+          rates.push({ name: nm, extra_rates: p.extra_rates || {}, month: t.month, once: t.once, term_pct: t.term_pct, term_rows: t.term_rows });
+          adj += Number(p.adjusted || 0);
+        }
+        if (!lines.length && !req.length) return { error: 'empty' };
+        var tt = qtTotals(lines, Number(first.term || 1), pct, Number(first.sst_pct || 0));
+        return { lines: lines, on_request: req, adjusted: adj, extra_rates: rates[0].extra_rates, brands: rates,
+          totals: Object.assign({}, first, { term_pct: pct, budget: budget, brands: names, month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) };
+      };
       var qtClientExtras = function (cid, lines, sel) {
         for (var i = 0; i < lines.length; i++) {
           var l = lines[i];
@@ -13385,6 +13807,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fp = (function (str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16)).slice(-8); })(
           sq.ref + JSON.stringify(sq.lines) + JSON.stringify(sq.totals) + JSON.stringify(sfr.payload) + at);
         sq.signed_at = at;
+
+        var swc = (DB.doc_types || []).filter(function (d) { return d.id === 'quote_cover'; })[0];
+        if (swc) sq.signed_words = Object.assign({}, sq.signed_words || {}, { cover: { title: swc.title, salutation: swc.salutation, closing: swc.closing, body_en: swc.body_en } });
         var sfPay = JSON.parse(JSON.stringify(sfr.payload)), sfDev = sfPay.device || null;
         delete sfPay.device;
         sq.signed = Object.assign({ via: 'online' }, sfPay,
@@ -13463,6 +13888,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
           signed: !!rq.signed_at, confirmed: !!rq.reviewed_at, withdrawn: !!rq.withdrawn_at, declined: !!rq.declined_at,
           seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
       }
+
+      if (name === 'quotation_words_keep') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
+        var wq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        if (!wq) return qtOk({ error: 'not-found' });
+        if (!wq.signed_at) return qtOk({ error: 'not-signed' });
+        if (wq.seal_key || (wq.signed_words && wq.signed_words.agency)) return qtOk({ ok: true, same: true });
+        wq.signed_words = Object.assign({}, wq.signed_words || {}, { agency: String(args.p_agency || '').trim(), terms_url: args.p_terms_url || null });
+        return qtOk({ ok: true });
+      }
       if (name === 'quotation_seal') {
         if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
         var lq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
@@ -13472,6 +13907,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (lq.seal_key) return qtOk({ ok: true, kept: true, sha: lq.seal_sha });
         if (!new RegExp('^private/' + lq.client_id + '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$').test(String(args.p_key || ''))) return qtOk({ error: 'bad-key' });
         if (!/^[0-9a-f]{64}$/.test(String(args.p_sha || '')) || !/^[0-9a-f]{64}$/.test(String(args.p_pages_sha || ''))) return qtOk({ error: 'bad-sha' });
+
+        if (!lq.seal_pending || lq.seal_pending.key !== args.p_key || lq.seal_pending.sha !== args.p_sha) return qtOk({ error: 'bad-sha' });
+        lq.seal_pending = null;
         Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
         qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
         return qtOk({ ok: true, sha: args.p_sha });
@@ -13659,7 +14097,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
           else sq2.lines.filter(function (l) { return !l.renews; }).forEach(function (l) {
             have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-              label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
+              label: qtLineLabel(sq2.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
               tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: l.start || null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
               detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
             DB.client_services.push(have[have.length - 1]);
@@ -13791,7 +14229,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpc = args.p_sel && args.p_sel.client && DB.clients.filter(function (c) { return c.id === args.p_sel.client; })[0];
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, qpc.owner_id, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
-        var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
+        var qp = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), true), qpFx);
         if (!qp.error) { qp.version = qtCard.version; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
@@ -13839,7 +14277,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         args.p_sel = qtNoClient(args.p_sel);
         var qcFx = qtFx(qc.id);
         if (qcFx === 0) return qtOk({ error: 'no-fx' });
-        var qpr = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), args.p_sel), qcFx);
+        var qpr = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, true), qcFx);
         if (qpr.error) return qtOk(qpr);
         var qcx = qtExtras(args.p_sel);
         if (qcx.error) return qtOk(qcx);
@@ -13882,7 +14320,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
-        var qe = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qq.source === 'console' ? qeSel : {}), qeFx);
+        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qq.source === 'console' ? qeSel : Object.assign({}, qeSel, { edits: undefined }), qq.source === 'console'), qeFx);
         if (qe.error) return qtOk(qe);
         var qex = qtExtras(qq.source === 'console' ? qeSel : {});
         if (qex.error) return qtOk(qex);
@@ -14010,7 +14448,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.valid_until < qtToday) return qtOk({ error: 'expired' });
         var qids = qq.lines.map(function (l) {
           var row = { id: nid('cs'), client_id: qq.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
-            label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'quoted', note: 'Quotation ' + qq.ref,
+            label: qtLineLabel(qq.totals, l), qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'quoted', note: 'Quotation ' + qq.ref,
             tenure: l.basis === 'month' ? (l.months || qq.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? qq.totals.term_pct : 0,
             detail: (l.detail || []).join('\n') || null, quotation_id: qq.id, created_at: new Date().toISOString(), archived_at: null, tax_code: l.tax_code || null };
           DB.client_services.push(row);
@@ -14222,10 +14660,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mtNow = Date.now();
 
       var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify',
-        'careers', 'home', 'notfound', 'card'];
+        'careers', 'feedback', 'home', 'notfound', 'card'];
       var PG_NAME = { admin: 'Console', client: 'Client portal', review: 'Content Review', script: 'Video Scripts', details: 'Details form',
         creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document',
-        careers: 'Candidate page', home: 'Front page', notfound: 'Page not found', card: 'Namecards' };
+        careers: 'Candidate page', feedback: 'Feedback form', home: 'Front page', notfound: 'Page not found', card: 'Namecards' };
       var pgRow = function (k) {
         var rows = DB.app_flags || [];
         var f = rows.filter(function (x) { return x.key === 'page:' + k; })[0];
@@ -15269,7 +15707,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
           var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
           var sst = Number(e.sst != null ? e.sst : (tot.sst_pct || 0));
-          out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
+          out.push({ label: qtLineLabel(q.totals, e), qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
             sst: sst, sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null,
             _g: mo && pct ? sst + '|' + pct : null, _v: Number(e.qty || 1) * Number(e.rate || 0), _p: pct });
         });
@@ -15797,6 +16235,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!r) return drNo('not-found');
       if (name === 'delete_request_decide') {
         if (r.requested_by === drMe.id) return drNo('own');
+
+        if (r.state === 'approving' && r.decided_by !== drMe.id && Date.now() - Date.parse(r.decided_at || 0) < 600000) return drNo('approving');
         if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
         var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
         if (args.p_approve) {
@@ -16238,6 +16678,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var pc = DB.hiring_candidates.filter(function (x) { return x.link_key === pk && !x.removed_at; })[0];
         if (!pc) return hNo('not_found');
         if (Date.parse(pc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
+        if (['new', 'invited', 'interview'].indexOf(pc.stage) < 0) return hNo('not-open');
         var pi = hIvOf(pc.id).filter(function (i) { return i.state === 'invited'; })[0];
         if (!pi) return hNo('not-open');
         if (pi.reply_by && Date.parse(pi.reply_by) <= Date.now()) return hNo('reply-passed');
@@ -16251,8 +16692,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           if (String(args.p_note || '').length > 300) return hNo('too-long');
           pi.state = 'none'; pi.candidate_note = String(args.p_note || '').trim() || null;
-          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'Other times asked for', created_at: hNowIso });
-          hTell(pc, 'hiring.none', 'A candidate asked for other interview times', pc.position + '. Send new times from the candidate\'s Interview tab.');
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'New times requested', created_at: hNowIso });
+          hTell(pc, 'hiring.none', 'A candidate requested new interview times', pc.position + '. Send new times from the candidate\'s Interview tab.');
         }
         pc.last_step_at = hNowIso;
         return hOk({});
@@ -16310,8 +16751,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var od = hdOf(args.p_key, args.p_doc);
         if (!od) return hNo('not_found');
         var oc = (window.__hireCodes || {})[od.id];
+
+        var owd = (window.__hireWrong = window.__hireWrong || {}), oday = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+        if (!owd[od.id] || owd[od.id].day !== oday) owd[od.id] = { day: oday, n: 0 };
+        if (owd[od.id].n >= 10) return hNo('locked-today');
         if (!oc || oc.used) return hNo('no-code');
-        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
+        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; owd[od.id].n++; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
         oc.used = true;
         var ov = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
         DB.hiring_doc_views.push({ doc_id: od.id, view: ov, email: oc.email, until: Date.now() + 30 * 60000 });
@@ -16504,8 +16949,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return hOk({});
         }
         if (name === 'hiring_interview_meet_prepare') {
-          if (iv.state !== 'confirmed' || iv.mode !== 'online') return hNo('not-confirmed');
-          return Promise.resolve({ data: { id: iv.id, meeting_at: iv.slots[iv.picked - 1], meeting_minutes: iv.minutes, meeting_event_id: iv.meeting_event_id || null,
+
+          if (!(iv.state === 'confirmed' || (iv.state === 'cancelled' && iv.meeting_event_id)) || iv.mode !== 'online') return hNo('not-confirmed');
+          return Promise.resolve({ data: { id: iv.id, meeting_at: iv.state === 'confirmed' ? iv.slots[iv.picked - 1] : null, meeting_minutes: iv.minutes, meeting_event_id: iv.meeting_event_id || null,
             meeting_link: iv.meeting_link || null, position: icand.position }, error: null });
         }
         if (name === 'hiring_mail_prepare') {
@@ -16866,6 +17312,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk({ updated_at: hNowIso });
       }
       if (name === 'hiring_sheets_of') {
+        if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
         if (!hr || !hc) return hNo('not-found');
         return hOk({ sheets: DB.hiring_sheets.filter(function (x) { return x.candidate_id === hc.id; }).map(function (x) {
           return JSON.parse(JSON.stringify({ id: x.team_member_id, name: hName(x.team_member_id), mine: x.team_member_id === hMe.id,
@@ -16918,9 +17365,37 @@ function opsCodeRange(cid, period, ty, src, seq) {
           pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso,
           decide_by: null, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null });
         if (oc !== 'proceed') (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
-        if (oc !== 'proceed') DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'picked', 'none'].indexOf(i.state) > -1 || (i.state === 'confirmed' && !i.held_at))) i.state = 'cancelled'; });
+        var hMeets = [];
+        DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && (['invited', 'none'].indexOf(i.state) > -1 ||
+          (oc !== 'proceed' && (i.state === 'picked' || (i.state === 'confirmed' && !i.held_at))))) { i.state = 'cancelled'; if (i.meeting_event_id) hMeets.push(i.id); } });
         hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Do not proceed');
-        return hOk({ was: was, email: oc !== 'proceed' });
+        return hOk({ was: was, email: oc !== 'proceed', meets: hMeets });
+      }
+
+      if (name === 'hiring_outcome_mail_queue') {
+        if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
+        if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
+        if (hc.outcome_mail === 'sent' || hc.outcome_mail === 'sending') return hOk({ same: true });
+        hc.outcome_mail = 'queued'; hc.outcome_mail_at = null; hc.outcome_mail_due = new Date(Date.now() + 30000).toISOString();
+        persist();
+        var hqId = hc.id;
+        setTimeout(function () {
+          var q = DB.hiring_candidates.filter(function (x) { return x.id === hqId; })[0];
+          if (!q || q.outcome_mail !== 'queued' || ['pool', 'not'].indexOf(q.outcome) < 0) return;
+          var qg = hiringGate([q.outcome]), qt = qg.tpl[q.outcome];
+          if (!qt || !qg.auto || !qt.on || window.__mail === false) {
+            q.outcome_mail = 'failed'; q.outcome_mail_at = new Date().toISOString();
+            window.__hireMailOff = (window.__hireMailOff || []).concat([{ kind: q.outcome, why: !qg.auto ? 'off: Automatic emails are off.' : 'off: This email is turned off in Email templates.' }]);
+          } else {
+            window.__hireMail = (window.__hireMail || []).concat([{ to: q.email, kind: q.outcome,
+              months: Number(appSet('hiring_pool_months', appToday())) || 12 }]);
+            q.outcome_mail = 'sent'; q.outcome_mail_at = new Date().toISOString();
+            hLog(q.id, 'candidate.email', 'Decision' + hMailSaid('sent'));
+          }
+          q.outcome_mail_due = null;
+          persist();
+        }, 30000);
+        return hOk({ due: hc.outcome_mail_due });
       }
       if (name === 'hiring_outcome_mail_prepare') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
@@ -17331,7 +17806,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return spOk();
       }
       if (name === 'supplier_save') {
-        var vals = args.p_values || {}, code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
+
+        var sent = args.p_values || {};
+        if ('expected' in sent && Date.parse(sx.updated_at) !== Date.parse(sent.expected)) return spNo('stale', { supplier: spJson(sx, payView) });
+        var vals = {};
+        Object.keys(sx).forEach(function (k) { if (['id', 'status', 'created_at', 'updated_at'].indexOf(k) < 0) vals[k] = sx[k]; });
+        Object.keys(sent).forEach(function (k) { if (k !== 'expected') vals[k] = sent[k]; });
+        var code = String(vals.code || '').replace(/\s+/g, '').toUpperCase();
         if (!/^[A-Z0-9]{2,12}$/.test(code)) return spNo('bad-code');
         var other = DB.suppliers.filter(function (x) { return String(x.code).toUpperCase() === code && x.id !== sx.id; })[0];
         if (other) return spNo('code-taken', { name: other.name });
@@ -17488,6 +17969,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           context: null, vo: null, vo_vc: null, vo_shot_at: null, vo_shot_by: null, remarks: null, status: 'draft',
           shared_at: null, round: 1, version: 1, idem_key: args.p_idem || null, created_by: vsMe.id, created_by_name: vsWho,
           created_at: vsNow, updated_at: vsNow, updated_by_name: vsWho };
+        docCode(row, DB.video_scripts);
         DB.video_scripts.push(row);
         vsLog('script.created', cc.name, vsLabel(row) + ' · ' + vsKind[kd] + (from ? ' · header from ' + vsCode(from.period, from.seq) : ''));
         return vsOk({ id: row.id, code: row.code, period: per, seq: sq });
@@ -17810,7 +18292,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       else if (pgM.system) pgOut = { error: 'system-account' };
       else if (!pgM.removed_at) pgOut = { error: 'not-removed' };
       else if (String(pgA.p_name || '').trim().toLowerCase() !== String(pgM.name).trim().toLowerCase()) pgOut = { error: 'bad-name' };
+
+      else if ((DB.outstation_trips || []).some(function (t) {
+        return t.driver_id === pgM.id && (t.companions || []).some(function (c) { return c !== pgM.id; }); })) pgOut = { error: 'in-use', held: ['trips'] };
       else {
+        (DB.outstation_trips || []).forEach(function (t) {
+          if ((t.companions || []).indexOf(pgM.id) >= 0) t.companions = t.companions.filter(function (c) { return c !== pgM.id; });
+        });
+        DB.outstation_trips = (DB.outstation_trips || []).filter(function (t) { return t.driver_id !== pgM.id; });
         Object.keys(DB).forEach(function (t) {
           if (!Array.isArray(DB[t]) || t === 'team_members' || t === 'activity_log') return;
           DB[t] = DB[t].filter(function (r) { return !r || !['team_member_id', 'member_id'].some(function (k) { return r[k] === pgM.id; }); });
@@ -19382,6 +19871,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
             });
           });
         }
+
+        if (name === 'supplier-mail' && opts && opts.body && opts.body.feedback === true) {
+          var fmb = opts.body;
+          window.__fbMailAsked = { client: fmb.client, kind: fmb.kind };
+          if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind }).then(function (r) {
+            var b = r.data || {};
+            if (b.error) return { data: b, error: null };
+            window.__fbMailSent = b;
+            var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
+            return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
+              return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
+            });
+          });
+        }
         if (name === 'supplier-mail' && opts && opts.body && opts.body.client === true) {
           var dmb = opts.body;
           window.__docMailAsked = { kind: dmb.kind, ref: dmb.ref, contact: dmb.contact, cc: dmb.cc, subject: dmb.subject, body: dmb.body,
@@ -19906,6 +20410,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           }
           if (bd.ext !== 'pdf') return upRefuse('bad_private');
           var pk = 'private/' + (bd.clientId || 'c1') + '/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.pdf';
+
+          if (bd.purpose === 'seal') {
+            var sh = String(bd.sha256 || '').toLowerCase();
+            if (!/^[0-9a-f]{64}$/.test(sh)) return upRefuse('bad_sha');
+            var sq = (DB.quotations || []).filter(function (r) { return r.id === bd.quotationId; })[0];
+            if (!sq || !sq.reviewed_at || sq.seal_key) return upRefuse(!sq ? 'not-found' : sq.seal_key ? 'sealed' : 'not-reviewed');
+            sq.seal_pending = { key: pk, sha: sh, at: new Date().toISOString() };
+            persist();
+            var ck = btoa(sh.match(/../g).map(function (h) { return String.fromCharCode(parseInt(h, 16)); }).join(''));
+            return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType, checksum: ck }, error: null });
+          }
           return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType }, error: null });
         }
         if (bd.purpose === 'script') {
@@ -20011,6 +20526,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     } };
   } };
+
+  window.__docCode = function (kind, id) {
+    var T = { document: 'documents', letter: 'client_documents', quotation: 'quotations', hiring: 'hiring_docs', perf: 'perf_reviews' }[kind];
+    var row = T && (DB[T] || []).filter(function (x) { return x.id === id; })[0];
+    if (!row) return null;
+    var c = docCode(row, DB[T]);
+    return c.slice(0, 4) + '-' + c.slice(4);
+  };
   window.__signIn = function (e, amr) { session = mkSession(e, amr); if (listener) listener('SIGNED_IN', session); };
 
   window.__signInCode = function (e) { session = mkSession(e, [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]); if (listener) listener('SIGNED_IN', session); };

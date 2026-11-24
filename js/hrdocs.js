@@ -185,7 +185,7 @@
       return PDF.PDFDocument.create().then(function (p) {
         pdf = p;
         /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
-        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf), D.codeOf ? D.codeOf('hiring', opts.draft ? null : doc.id) : '']);
+        return Promise.all([D.embedFonts(pdf, PDF, {}), D.embedLogo(pdf), D.codeOf ? D.codeOf('hiring', opts.draft ? null : doc.id, opts.key) : '']);
       }).then(function (got) {
         fonts = got[0]; logo = got[1];
         var code = got[2] || '';
@@ -305,7 +305,7 @@
     var S = window.ADspaceSeal;
     if (!S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var title = doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer';
-    var info = { ref: doc.serial, docId: record.id, kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(doc.serial),
+    var info = { ref: doc.serial, docId: record.id, kind: doc.kind === 'contract' ? 'hr.contract' : 'hr.offer', verifyUrl: window.ADSPACE_CONFIG.verify.page + '?s=' + encodeURIComponent(doc.serial),
       rows: S.rows(record), sub: title + ' ' + doc.serial + ', ' + (doc.kind === 'contract' ? 'signed' : 'accepted') + ' by ' + (doc.name || '') + ' and confirmed by ' + (ORG.name || 'ADSPACE PLT') + '.' };
     var d;
     return draw(doc, pay, { seal: info }).then(function (x) {

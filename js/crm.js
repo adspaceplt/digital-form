@@ -441,7 +441,7 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var list = team.slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, keep).slice().sort(F.byStaff);
     if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
       list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
@@ -452,7 +452,7 @@
      left stays the chosen option, named as the team list last held them. */
   function salesBySelect(el, team, current) {
     if (!el) return;
-    var list = team.slice().sort(F.byStaff);
+    var list = window.ADspaceAdmin.pickFrom(team, state.offerIds, current).slice().sort(F.byStaff);
     var opts = '<option value="">Not set</option>' + list.map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
     }).join('');
@@ -478,6 +478,8 @@
   }
 
   function loadTeam(then) {
+    /* Who the pickers offer: those who may work Clients (2026-11-24). */
+    window.ADspaceAdmin.pickable('clients').then(function (ids) { state.offerIds = ids; if (ids) peopleSelect($('crmOwnerPick'), state.team || []); });
     db.from('team_members').select('id, name, email, staff_code, designation, department, role, is_admin, system, active').eq('active', true).order('name').then(function (r) {
       /* A system account (2026-10-08) holds no clients and is never offered. */
       var S = window.ADspaceAdmin;
@@ -551,7 +553,7 @@
        PostgREST's thousand at about 350 clients (the audit of 2026-10-26,
        finding 5). */
     window.ADspaceAPI.readPages(function () { return db.rpc('client_last_activity').order('client_id').order('source'); })
-      .then(function (r) { return r.data || []; }, function () { return []; }).then(function (all) {
+      .then(function (r) { return r.data || []; }).catch(function () { return []; }).then(function (all) {
       all.forEach(function (x) {
         take(x.client_id, x.at, x.source === 'touch' ? (KIND_WORD[x.kind] || 'Call')
           : x.source === 'letter' ? 'Letter of Offer' : (x.kind ? title(x.kind) : 'Document'));
@@ -892,7 +894,7 @@
     list.reduce(function (p, c) {
       return p.then(function () {
         var to = nameOf(c);
-        return db.from('clients').update({ owner: to || null }).eq('id', c.id).select('id').then(function (r) {
+        return writeClient(c.id, { owner: to || null }).then(function (r) {
           if (r.error || !(r.data || []).length) { out.bad.push({ c: c, err: r.error ? r.error.message : 'refused' }); return; }
           var was = c.owner || '';
           var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
@@ -1191,7 +1193,7 @@
          rename by a colleague is never put back (audit 2026-11-15). */
       patch = onlyChanged(patch, state.editing);
       if (!Object.keys(patch).length) { shutForm(); return; }
-      db.from('clients').update(patch).eq('id', id).eq('updated_at', state.editing.updated_at).select('id').then(function (r) {
+      writeClient(id, patch, state.editing.updated_at).then(function (r) {
         if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
         if (!(r.data || []).length) {
           staleClient(id, function (found) {
@@ -1312,8 +1314,10 @@
     if (!same) {
       /* White label and its wide logo (2026-10-07) are read with the record
          alone, never with the list: the logo is a picture. */
-      db.from('clients').select('white_label, report_logo, brief, restricted_platform, restricted_since, restricted_note').eq('id', c.id).maybeSingle().then(function (r) {
+      db.from('clients').select('white_label, report_logo, brief, restricted_platform, restricted_since, restricted_note, portal_kept_at').eq('id', c.id).maybeSingle().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
+        c.portal_kept_at = r.data.portal_kept_at || null;
+        paintPortalKept(c);
         c.white_label = Boolean(r.data.white_label); c.report_logo = r.data.report_logo || null;
         c.brief = r.data.brief || null;
         c.restricted_platform = r.data.restricted_platform || null; c.restricted_since = r.data.restricted_since || null;
@@ -1375,17 +1379,13 @@
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
        WhatsApp Manage and its Feedback request part, the client read. */
-    $('crmFeedback').hidden = true;
-    /* Feedback is asked of a client, never a lead (MENU-1, 2026-10-22);
-       wa_compose_prepare refuses it there too (`not-client`). */
-    if (bandKey(c.stage) !== 'clients.leads' && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
-      var fbFor = c.id;
-      window.ADspaceWhatsApp.on('feedback').then(function (yes) {
-        if (!state.client || state.client.id !== fbFor || !yes) return;
-        $('crmFeedback').hidden = false;
-        $('crmClientMenuWrap').hidden = false;
-      });
-    }
+    /* Request feedback (CLIENT FEEDBACK, 2026-11-24; the user: "only
+       requested feedback (via email) to main pic"): a client, never a lead,
+       at Clients Work, where this colleague may send email by hand; the
+       database refuses the same (`feedback_mail_begin`). */
+    $('crmFeedback').hidden = !(bandKey(c.stage) !== 'clients.leads' && canWork && mayPart('clients', 'work') &&
+      (!bridge.may || bridge.may('send.email')));
+    if (!$('crmFeedback').hidden) $('crmClientMenuWrap').hidden = false;
     /* Introduce representative (2026-11-11): a lead whose Sales by is set is
        told on WhatsApp who of the business development team took their
        enquiry, where that template is on; wa_compose_prepare refuses it
@@ -1401,6 +1401,7 @@
     }
     paintRestrict(c);
     paintVic(c);
+    paintPortalKept(c);
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1470,7 +1471,7 @@
      The Activity record has no tab: it opens from the rail's Recent
      activity (View all), and the strip then marks none. */
   var TABS = { overview: ['overview'], calls: ['calls'], engagements: ['engagements', 'checklists'],
-    services: ['services', 'documents'], brand: ['brand'], account: ['contacts', 'billing'], activity: ['activity'] };
+    services: ['services', 'documents'], brand: ['brand'], feedback: ['feedback'], account: ['contacts', 'billing'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
   var PANES = Object.keys(GROUP_OF).concat(['account']);
@@ -1498,6 +1499,8 @@
   /* A part is drawn where its reader may open it. */
   function partOk(k) {
     if (k === 'activity') return maySeeActivity();
+    /* Feedback is asked of a client, never a lead (CLIENT FEEDBACK, 2026-11-24). */
+    if (k === 'feedback') return !!state.client && bandKey(state.client.stage) !== 'clients.leads' && mayPart('clients', 'view');
     if (k === 'engagements') {
       var c = state.client, ENG = window.ADspaceEngage;
       return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
@@ -1543,6 +1546,7 @@
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (group === 'calls' && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
+    if (group === 'feedback') loadFeedback();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
     if (parts.indexOf('billing') > -1 && visit && state.client && !state.entLoading) { state.entFor = null; loadEntities(); }
@@ -1650,7 +1654,6 @@
      client with no month now, or a reader without My Work draws nothing.
      Read with the Engagements pane (js/engage.js, 2026-10-10), so the
      record reads the client's months once. */
-  var SHORT_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function paintMonthLine(c) {
     var meta = $('crmIdMeta'), line = $('crmMonthLine');
     if (!meta) return;
@@ -1667,8 +1670,8 @@
     var parts = ['<span class="part">' + esc(f.word + ': ' + f.done + ' of ' + f.held + ' done') + '</span>'];
     if (f.late) parts.push('<span class="part"><span aria-hidden="true">· </span><span class="is-err">' + f.late + ' overdue</span></span>');
     if (f.due) {
-      var due = new Date(f.due + 'T00:00:00Z');
-      parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + due.getUTCDate() + ' ' + SHORT_MON[due.getUTCMonth()] + '</span>');
+      /* Malaysia's clock reads the day (review 2026-11-24: a second copy). */
+      parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + esc(ADspaceClock.date(f.due, { year: false })) + '</span>');
     }
     var tone = f.late ? 'is-late' : (f.held && f.done >= f.held) ? 'is-ok' : 'is-wait';
     line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
@@ -2044,6 +2047,55 @@
       });
     });
   }
+  /* PAST CLIENTS LEAVE THE CLIENT PORTAL (2026-11-24; the review's finding
+     3): a Past client's contacts are refused by the portal unless the team
+     keeps its access on, from the ⋯ (Enable access / Revoke access, at
+     Clients: Contacts Work, the Past band at Work). Moved back to Active,
+     the client is open again by itself; moved to Past again, an earlier keep
+     no longer stands (`portal_kept_at` against `stage_since`, as
+     `portal_client_open` reads it). Every change goes through
+     `client_portal_access_set`, filed there. */
+  function portalKept(c) {
+    return Boolean(c && c.portal_kept_at) && (!c.stage_since || String(c.portal_kept_at) >= String(c.stage_since));
+  }
+  function paintPortalKept(c) {
+    var on = $('crmPortalOn'), off = $('crmPortalOff');
+    if (!on || !off) return;
+    var may = Boolean(c) && c.stage === 'past' && mayPart('clients.contacts', 'work') && bandMay('past', 'work');
+    var kept = may && portalKept(c);
+    on.hidden = !may || kept;
+    off.hidden = !kept;
+    if (may) $('crmClientMenuWrap').hidden = false;
+  }
+  var KEPT_SAID = { denied: 'You do not have permission to change client portal access. Please ask an admin.',
+    'not-found': 'Not saved. This client no longer exists.', 'not-past': 'This client is no longer Past. Refresh the page.' };
+  function setPortalKept(c, on, then) {
+    return db.rpc('client_portal_access_set', { p_client: c.id, p_on: on }).then(function (r) {
+      if (r.error) return /client_portal_access_set/.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+      var d = r.data || {};
+      if (d.error) return KEPT_SAID[d.error] || 'Not saved. The database refused the request.';
+      c.portal_kept_at = d.on ? (d.at || new Date().toISOString()) : null;
+      if (state.client && state.client.id === c.id) paintPortalKept(c);
+      if (then) then(d);
+      return '';
+    }).catch(function () { return 'Not saved. Please try again.'; });
+  }
+  function askPortalKept(c) {
+    window.ADspaceConfirm.ask({
+      title: 'Enable access', go: 'Enable access', wait: true,
+      body: 'The contacts of ' + c.name + ' with portal access will be able to sign in to the client portal while it is Past.'
+    }, function () {
+      return setPortalKept(c, true, function () { msg('crmWorkMsg', 'Access enabled.', 'ok'); });
+    });
+  }
+  function portalKeptOff(c) {
+    setPortalKept(c, false, function () {
+      msg('crmWorkMsg', '', '');
+      undoBar('Access revoked.', function () {
+        setPortalKept(c, true).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
+      });
+    }).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
+  }
   var RESTRICT = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote'], ['other', 'Other account']];
   function restrictWord(k) { var r = RESTRICT.filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : 'Account'; }
   function paintRestrict(c) {
@@ -2062,7 +2114,7 @@
   }
   function saveRestrict(c, patch, words, after) {
     var was = { p: c.restricted_platform, s: c.restricted_since, n: c.restricted_note };
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
@@ -2365,7 +2417,24 @@
      the record drawn from it, then `then` reopens the sheet on the latest
      version (audit 2026-11-15: a Billing or Edit save sent every field and
      put back a colleague's newer finance email or Reassign). */
-  var STALE_LINE = 'Not saved. This record was changed by someone else. The latest version is now shown.';
+  var STALE_LINE = window.ADspaceWords.line.stale;
+  /* Every write to a client asks its new stamp back, and every copy the
+     page holds takes it, so the next Edit is not refused as changed by
+     someone else (review 2026-11-24: Mark restricted, a stage move, Take
+     lead and Reassign left the old stamp behind). */
+  function stampClient(id, r) {
+    var u = r && !r.error && r.data && r.data[0] && r.data[0].updated_at;
+    if (!u) return r;
+    state.clients.forEach(function (x) { if (x.id === id) x.updated_at = u; });
+    if (state.client && state.client.id === id) state.client.updated_at = u;
+    if (state.editing && state.editing.id === id) state.editing.updated_at = u;
+    return r;
+  }
+  function writeClient(id, patch, since) {
+    var q = db.from('clients').update(patch).eq('id', id);
+    if (since !== undefined) q = q.eq('updated_at', since);
+    return q.select('id, updated_at').then(function (r) { return stampClient(id, r); });
+  }
   function staleClient(id, then) {
     db.from('clients').select(API.CLIENT_COLS).eq('id', id).maybeSingle().then(function (r) {
       return r.data ? API.withBilling([r.data]).then(function () { return r; }) : r;
@@ -2746,6 +2815,8 @@
         if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'vic') { askVic(state.client); return; }
         if (a === 'vicoff') { vicOff(state.client); return; }
+        if (a === 'portalon') { askPortalKept(state.client); return; }
+        if (a === 'portaloff') { portalKeptOff(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);
@@ -2767,11 +2838,119 @@
 
   /* Take a lead nobody is in charge of: Person in charge becomes the person
      pressing, filed as any other edit of it. */
-  /* The feedback template to the client's main contact, in the composer
-     every record shares; it asks before it sends. */
+  /* Request feedback (CLIENT FEEDBACK, 2026-11-24): the form chosen, then
+     emailed to the client's primary contact by supplier-mail; a request of
+     the same form still open is closed by the new one. */
+  var FB_SAID = { denied: 'You do not have permission to request feedback. Please ask an admin.',
+    'send-off': 'Sending email is switched off for you. Please ask an admin.',
+    'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
+    'not-active': 'Feedback can be requested of an active client only. Set the client to Active first.',
+    'no-contact': 'The primary contact has no email address. Add one under Account first.',
+    'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
+    'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.' };
   function askFeedback(c) {
-    window.ADspaceWhatsApp.compose({ purpose: 'feedback', clientId: c.id, opener: $('crmClientMenuBtn'),
-      onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
+    var primary = (state.contacts || []).filter(function (k) { return k.client_id === c.id && k.is_primary && !k.archived_at; })[0];
+    window.ADspaceConfirm.ask({
+      title: 'Request feedback', go: 'Send', wait: true,
+      body: primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
+      fields: [{ name: 'k', label: 'Form', seg: true, choices: [['quick', 'Service rating'], ['review', 'Performance review']], value: 'quick' }]
+    }, function (v) {
+      var kind = (v && v.k) || 'quick';
+      return db.functions.invoke('supplier-mail', { body: { feedback: true, client: c.id, kind: kind } }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return FB_SAID['not-sent'];
+        if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
+        msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
+        if (pane === 'feedback') loadFeedback();
+        return '';
+      }).catch(function () { return FB_SAID['not-sent']; });
+    });
+  }
+
+  /* The record's Feedback pane: every request, newest first, its answer
+     read where it was given, and a low score's follow-up task. An account
+     manager's own score is the database's to withhold. */
+  var fbRows = null;
+  var FB_KIND = { quick: 'Service rating', review: 'Performance review' };
+  function fbState(r) {
+    var s = r.response;
+    if (s && s.band === 'low' && !s.task_done) return ['Follow-up open', 'is-danger'];
+    if (s) return ['Answered', 'is-ok'];
+    if (r.mail_status === 'failed') return ['Not sent', 'is-off'];
+    if (r.closed_reason === 'withdrawn') return ['Withdrawn', 'is-off'];
+    if (r.closed_reason === 'replaced') return ['Closed', 'is-off'];
+    return [r.opened_at ? 'Opened' : 'Sent', 'is-warn'];
+  }
+  function fbScore(s) {
+    if (!s) return '';
+    return s.max === 10 && s.answers && s.answers[0] && s.answers[0].key === 'nps'
+      ? (s.band === 'high' ? 'Promoter' : s.band === 'mid' ? 'Passive' : 'Detractor') + ' · ' + s.score
+      : s.score + ' of ' + s.max;
+  }
+  function loadFeedback() {
+    var c = state.client, box = $('crmFbBox');
+    if (!c || !box) return;
+    var forId = c.id;
+    if (window.ADspaceState) ADspaceState.skeleton(box, 3);
+    db.rpc('feedback_client', { p_client: c.id }).then(function (r) {
+      if (!state.client || state.client.id !== forId) return;
+      if (r.error || (r.data || {}).error) throw r.error || new Error((r.data || {}).error);
+      fbRows = r.data.requests || [];
+      paintFeedback();
+    }).catch(function (e) {
+      if (state.client && state.client.id === forId) ADspaceState.failLine(box, 'Feedback', e && e.message, loadFeedback);
+    });
+  }
+  function paintFeedback() {
+    var box = $('crmFbBox'), rows = fbRows || [];
+    var n = $('crmFbN');
+    if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
+    if (!rows.length) { ADspaceState.emptyLine(box, 'No feedback requested.'); return; }
+    box.innerHTML = '<div class="crm-table fbc-table"><div class="fbc-row crm-head prow"><span class="pr-main">Request</span><span>Sent</span><span>Answered</span>' +
+      '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
+        var st = fbState(q), s = q.response;
+        return '<details class="fbc-item" data-id="' + esc(q.id) + '"><summary class="fbc-row prow">' +
+          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc('Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
+          '<span>' + esc(niceDate(q.created_at)) + '</span><span>' + (s ? esc(niceDate(s.submitted_at)) : '<span class="mute">\u2014</span>') + '</span>' +
+          '<span class="pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
+          '<span class="pr-end fbc-score' + (s && s.band === 'low' ? ' is-late' : '') + '">' + (s ? esc(fbScore(s)) : '<span class="mute">\u2014</span>') + '</span>' +
+          '</summary>' + (s ? fbAnswers(q, s) : '') + '</details>';
+      }).join('') + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-fb="task"]'), function (b) {
+      b.addEventListener('click', function () { followUp(b.getAttribute('data-r'), b); });
+    });
+  }
+  function fbAnswers(q, s) {
+    var body = (s.answers || []).map(function (a) {
+      var head = '<p class="fbread-q">' + esc(a.en) + '</p>';
+      if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
+      return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
+    }).join('');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
+      ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
+    return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';
+  }
+  function followUp(respId, btn) {
+    var c = state.client, me = bridge.me && bridge.me();
+    if (!c || !me) return;
+    btn.disabled = true;
+    var tom = ADspaceClock.addDays ? ADspaceClock.addDays(today(), 1) : today();
+    var payload = { title: 'Follow up low feedback score · ' + c.name, workflow_key: 'task', scope: 'client', client_id: c.id,
+      task_type: 'adhoc', owner_id: me.id, final_due_at: tom + 'T00:00:00Z', priority_level: 2, checklist: [] };
+    db.rpc('ops_create_task', { p_payload: payload, p_idem: 'fb-' + respId }).then(function (r) {
+      var t = r.data || {};
+      if (r.error || t.error || !t.id) throw new Error((t && t.error) || 'not-made');
+      return db.rpc('feedback_followup', { p_response: respId, p_task: t.id });
+    }).then(function (r) {
+      if (r.error || (r.data || {}).error) throw new Error('not-linked');
+      msg('crmFbMsg', 'Task created.', 'ok');
+      loadFeedback();
+    }).catch(function () {
+      btn.disabled = false;
+      msg('crmFbMsg', 'The task could not be created. Please try again.', 'err');
+    });
   }
   function takeLead(c) {
     var me = bridge.me && bridge.me();
@@ -2779,7 +2958,7 @@
     /* Taking a lead is selling it (the user, 2026-11-06: "Take lead … its
        equivalent to sales by"): Sales by is theirs, Person in charge left
        for whoever runs the account. */
-    db.from('clients').update({ sales_by: me.id }).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, { sales_by: me.id }).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!r.data || !r.data.length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       c.sales_by = me.id;
@@ -2952,7 +3131,7 @@
        moves (a Client ID another client holds, which this colleague's own
        list may not show). */
     var inSheet = also && also.inSheet;
-    return db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+    return writeClient(c.id, row).then(function (r) {
       if (r.error) {
         var em = r.error.message || '';
         var said = /stage-reason/.test(em) ? 'Choose a reason to move to ' + stageWord(to)[1] + '.'
@@ -3378,7 +3557,7 @@
         BK_FIELDS.forEach(function (k) { if (k !== 'bill_contact_id' && k in x.values) patch[k] = x.values[k]; });
       }
       if (!Object.keys(port).length) return { data: [{ id: rid }], bukku: n };
-      return db.from('clients').update(port).eq('id', rid).select('id').then(function (r) { r.bukku = n; return r; });
+      return writeClient(rid, port).then(function (r) { r.bukku = n; return r; });
     });
   }
   function entBand(fold) {
@@ -4126,7 +4305,7 @@
     var was = {}, patch = {};
     was[k] = c[k] || null; patch[k] = v || null;
     if (was[k] === patch[k]) { paintSocial(c); return; }
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error) { msg('crmSocialMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error.message, 'err'); paintSocial(c); return; }
       if (!(r.data || []).length) { msg('crmSocialMsg', 'Not saved. The database refused the request.', 'err'); paintSocial(c); return; }
       c[k] = patch[k];
@@ -4200,7 +4379,7 @@
     var was = { white_label: Boolean(c.white_label) }, patch = { white_label: on };
     var sw = $('crmWlSwitch');
     if (sw) { sw.setAttribute('aria-checked', String(on)); sw.disabled = true; }
-    return db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    return writeClient(c.id, patch).then(function (r) {
       if (r.error || !(r.data || []).length) {
         paintWlPart(c);
         msg('crmWlMsg', r.error ? (/denied|whitelabel|white_label/i.test(r.error.message || '') ? 'You do not have permission to change white label settings. Please ask an admin.' : r.error.message) : 'Not saved. The database refused the request.', 'err');
@@ -4856,7 +5035,7 @@
     if (!String(c.handle_fb || '').trim() && page && String(page.name || '').trim()) patch.handle_fb = String(page.name).trim().slice(0, 120);
     if (!Object.keys(patch).length) return;
     Object.keys(patch).forEach(function (k) { was[k] = c[k] || null; });
-    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, patch).then(function (r) {
       if (r.error || !(r.data || []).length) return;
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
       log('client.brand', c.name, 'Filled from Meta: ' + changed(was, patch, HANDLES));
@@ -5178,11 +5357,21 @@
       return;
     }
     $('crmBrandSave').disabled = true;
-    db.from('clients').update(patch).eq('id', c.id)
-      .select('id').then(function (r) {
+    /* The brief is one object rebuilt from the copy read at open, so the
+       write holds to that copy's stamp: a colleague's newer brief is never
+       put back (review 2026-11-24). */
+    writeClient(c.id, patch, c.updated_at).then(function (r) {
         $('crmBrandSave').disabled = false;
         if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change the content brief and other notes. Please ask an admin.' : r.error.message, 'err'); return; }
-        if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (!(r.data || []).length) {
+          staleClient(c.id, function (found) {
+            if (!found) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            if (window.ADspaceSheet) window.ADspaceSheet.clean();
+            shutSheet('crmBrandSheet');
+            msg('crmBrandNote', STALE_LINE, 'err');
+          });
+          return;
+        }
         Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
         log('client.brand', c.name, [changed(was, patch, [
           ['website', 'Website'], ['phone', 'Office phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
@@ -5206,7 +5395,7 @@
      as the client named them. */
   function dfBillTo(id, name) {
     var c = state.client;
-    db.from('clients').update({ bill_contact_id: id }).eq('id', c.id).select('id').then(function (r) {
+    writeClient(c.id, { bill_contact_id: id }).then(function (r) {
       if (!r.error && (r.data || []).length) {
         c.bill_contact_id = id;
         log('client.billing', c.name, 'Billing contact · from the details form');
@@ -5511,7 +5700,7 @@
     if (ct.portal_login_at) return;
     ct.portal_login_at = new Date().toISOString();
     db.from('client_contacts').update({ portal_login_at: ct.portal_login_at })
-      .eq('id', ct.id).then(function () { loadContacts(); }, function () {});
+      .eq('id', ct.id).then(function () { loadContacts(); }).catch(function () {});
   }
 
   function setPortal(ct, on, invite) {
@@ -5988,8 +6177,8 @@
       // `was`, since shutTouch() above has already let go of editingTouch:
       // an old entry edited never moves the lead (audit 2026-11-15).
       if (!was && (state.client.stage || 'lead') === 'lead') {
-        db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
-          if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Logged. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
+        writeClient(state.client.id, { stage: 'contacted' }).then(function (q) {
+          if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Saved. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
           var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
@@ -6076,7 +6265,7 @@
        refused write is named rather than taken for done. */
     if (on) on.addEventListener('click', function () {
       on.disabled = true;
-      db.from('clients').update({ review_hidden: false }).eq('id', c.id).select('id').then(function (r) {
+      writeClient(c.id, { review_hidden: false }).then(function (r) {
         if (r.error || !r.data || !r.data.length) {
           on.disabled = false;
           msg('crmEngageMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
@@ -6743,7 +6932,7 @@
         if (v === was) { done(); return; }
         /* A refused update answers 204 with no row: the figure is kept as
            read and only the lines are read again (audit 2026-11-15). */
-        return db.from('clients').update({ deal_value: v }).eq('id', cl.id).select('id').then(function (q) {
+        return writeClient(cl.id, { deal_value: v }).then(function (q) {
           if (!q.error && (q.data || []).length) { done(); return; }
           if (state.client === cl) loadServices();
         });
@@ -8845,12 +9034,6 @@
       showList();
     },
     showList: function () { showList(); },
-    // What the other sections may offer work to. They ask here rather than
-    // keeping a list of their own.
-    active: function (then) {
-      readPages(function () { return db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name').order('id'); })
-        .then(function (r) { then(r.data || []); }, function () { then([]); });
-    },
     // How long a stage may run before it reads Overdue (the Overview asks).
     staleH: staleH,
     isStale: isStale,

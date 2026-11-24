@@ -60,7 +60,9 @@ window.ADSPACE_CONFIG = {
   // /verify/ (js/verify.js): a QR code's Document ID opens the details, and
   // a refresh in that tab keeps them for passMinutes after the scan; a link
   // shared on never carries it.
-  verify: { passMinutes: 30 },
+  // page is the address a sealed copy's QR code and Record page name, with
+  // the reference after `?s=` (js/quotes.js, js/hiring.js, js/hrdocs.js).
+  verify: { passMinutes: 30, page: 'https://digital.adspace.me/verify/' },
 
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change
@@ -158,6 +160,13 @@ window.ADSPACE_CONFIG = {
      length); js/otp.js draws one box each. */
   signCodeDigits: 8,
   turnstileSiteKey: '0x4AAAAAAFEI21WUxApWeD2V',
+  /* The agency's social pages, offered on /feedback/ once a client has
+     answered (CLIENT FEEDBACK, 2026-11-24). */
+  socialLinks: [
+    { name: 'Facebook', url: 'https://www.facebook.com/adspacestudios' },
+    { name: 'Instagram', url: 'https://www.instagram.com/adspace.advertising' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/company/adspacestudios' }
+  ],
   // The quotation website's Chat on WhatsApp (2026-10-14), the front door's own.
   quoteWhatsApp: 'https://wa.me/adspace'
 

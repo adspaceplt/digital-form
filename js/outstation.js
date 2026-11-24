@@ -60,7 +60,7 @@
     'no-place': 'Choose the client, or enter the venue.',
     'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
-    'bad-location': 'The location could not be read. Press Read again.',
+    'bad-location': 'The location could not be read. Press Locate again.',
     'no-photo': 'Take a photo at this stop first.',
     'too-many': 'This trip has reached the maximum number of stops or photos. Check out and start a new trip.',
     'bad-key': 'The photo could not be saved. Take it again.',
@@ -86,7 +86,7 @@
     var m = Math.round(ms / 60000), h = Math.floor(m / 60);
     return h ? h + 'h ' + (m % 60) + 'm' : m + 'm';
   }
-  function placeName(s) { return s.client || s.venue || 'Client deleted'; }
+  function placeName(s) { return s.client || s.venue || 'Deleted client'; }
 
   /* ---- State and the address ------------------------------------------- */
   var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null };
@@ -120,12 +120,35 @@
     return db.rpc('outstation_trips', { p_from: p.from, p_to: p.to, p_all: st.mode === 'all' }).then(function (r) {
       if (mine !== st.seq) return;
       if (r.error || !r.data || r.data.error) { st.err = (r.data && SAID[r.data.error]) || (r.error && r.error.message) || 'The trips could not be loaded.'; }
-      else st.d = r.data;
+      else { st.d = r.data; heal(st.d.trips || []); }
       paint();
     }).catch(function (e) {
       if (mine !== st.seq) return;
       st.err = (e && e.message) || 'The trips could not be loaded.'; paint();
     });
+  }
+  /* A trip whose place or distance was never filled (the lookup failed, or
+     the trip came before it worked: OS/20261101, 2026-11-24) is asked again
+     when its driver opens the list, once a visit: each stop missing its
+     address, then the trip's legs. Only the driver may ask
+     (`outstation_geo_may`), so a colleague who joined asks nothing. */
+  var healed = {};
+  function heal(trips) {
+    var m = me();
+    if (!m) return;
+    var asks = [];
+    trips.forEach(function (t) {
+      if (t.driver_id !== m.id || healed[t.id]) return;
+      var stops = t.stops || [];
+      var noPlace = stops.filter(function (s) { return !s.address; });
+      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null);
+      if (!noPlace.length && !noKm) return;
+      healed[t.id] = true;
+      noPlace.forEach(function (s) { asks.push({ stop: s.id }); });
+      if (noKm) asks.push({ trip: t.id });
+    });
+    if (!asks.length) return;
+    asks.reduce(function (p, b) { return p.then(function () { return geo(b); }); }, Promise.resolve()).then(reread);
   }
   function openTrip() {
     var m = me();
@@ -263,7 +286,7 @@
     });
   }
   function stateChip(trip) {
-    return trip.state === 'open' ? '<span class="chip chip-state is-warn">On the road</span>'
+    return trip.state === 'open' ? '<span class="chip chip-state is-warn">In progress</span>'
       : '<span class="chip chip-state is-ok">Checked out</span>';
   }
 
@@ -306,12 +329,12 @@
     var w = withWord(trip);
     box.innerHTML =
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' + stateChip(trip) + menuHtml(trip) + '</div>' +
-        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'You drive'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
+        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'Driven by you'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
         (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Route</h2></div></div>' + routeHtml(trip) +
         '<div class="ost-acts">' +
-          '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Next stop</span></button>' +
+          '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Add stop</span></button>' +
           '<label class="btn btn-sm ost-shot">' + CAMERA + '<span class="btn-word">Add photo</span>' +
             '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label>' +
         '</div><p class="msg" id="ostTripMsg" role="status"></p></section>' +
@@ -361,7 +384,7 @@
       id = geo.watchPosition(function (p) {
         var c = p.coords;
         var r = { lat: Math.round(c.latitude * 1e6) / 1e6, lng: Math.round(c.longitude * 1e6) / 1e6,
-          acc: Math.round(c.accuracy * 10) / 10, at: new Date(p.timestamp || Date.now()).toISOString() };
+          acc: Math.round(c.accuracy * 10) / 10, at: new Date().toISOString() };
         if (!best || r.acc < best.acc) { best = r; if (tick) tick(best); }
         if (best.acc <= 5 || (limit && best.acc <= limit && Date.now() - began >= 6000)) finish();
       }, function (e) {
@@ -371,7 +394,7 @@
       /* A phone that reports once and then stays quiet settles at six
          seconds too, where that one reading is inside the limit. */
       setTimeout(function () { if (!done && best && limit && best.acc <= limit) finish(); }, 6100);
-      /* A read abandoned (Read again, the sheet shut) stops watching and
+      /* A read abandoned (Locate again, the sheet shut) stops watching and
          never answers. */
       if (ctl) ctl.cancel = function () { if (done) return; done = true; if (id !== null) geo.clearWatch(id); clearTimeout(timer); };
     });
@@ -392,6 +415,7 @@
       timer = setTimeout(end, 8000);
     });
   }
+  var STALE_MS = 9 * 60 * 1000;
   /* The location block of a sheet: read, refuse, read again. */
   function spotBlock(host) {
     var limit = setting('outstation_accuracy_m', 50);
@@ -399,7 +423,7 @@
     host.className = 'ost-loc';
     host.innerHTML = '<div class="ost-loc-mark" aria-hidden="true"></div><div class="ost-loc-words" role="status">' +
       '<span class="ost-loc-state"></span><small class="ost-loc-note"></small></div>' +
-      '<button class="btn btn-sm" type="button" data-a="again" hidden>Read again</button>';
+      '<button class="btn btn-sm" type="button" data-a="again" hidden>Locate again</button>';
     var state = host.querySelector('.ost-loc-state'), note = host.querySelector('.ost-loc-note'), again = host.querySelector('[data-a="again"]');
     var say = function (tone, word, line) {
       host.setAttribute('data-tone', tone);
@@ -430,14 +454,14 @@
         say('ok', 'Location accurate to ' + Math.round(b.acc) + ' m', at(b));
         geo({ near: { lat: b.lat, lng: b.lng } }).then(function (d) {
           if (o.ctl !== ctl || o.spot !== b || !d || !d.address) return;
-          note.textContent = d.address + ' · ' + at(b);
+          note.innerHTML = esc(d.address) + '<br>' + esc(at(b));
         });
       }).catch(function (e) {
         if (o.ctl !== ctl) return;
         again.hidden = false;
-        say('danger', 'Location not read', e && e.code === 'denied'
-          ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Read again.'
-          : 'The location could not be read. Move to an open spot, then press Read again. ' + PRECISE);
+        say('danger', 'Location unavailable', e && e.code === 'denied'
+          ? 'Location access is off for this site. Allow it in the browser\'s settings, then press Locate again.'
+          : 'The location could not be read. Move to an open spot, then press Locate again. ' + PRECISE);
       });
     };
     again.addEventListener('click', o.read);
@@ -525,10 +549,14 @@
     if (people && clients) return Promise.resolve();
     return Promise.all([
       db.from('team_members').select('id, name, staff_code, active').eq('active', true).order('name'),
-      db.from('clients').select('id, name, stage, client_code').order('name')
+      db.from('clients').select('id, name, stage, client_code').order('name'),
+      /* Only a colleague who may work My Work joins a trip, as only one may
+         drive it: never one kept for the namecard alone (2026-11-24). */
+      bridge.pickable ? bridge.pickable('ops') : null
     ]).then(function (r) {
       var m = me();
       people = ((r[0] && r[0].data) || []).filter(function (p) { return (!m || p.id !== m.id) && !(bridge.isSystem && bridge.isSystem(p)); }).sort(F.byStaff);
+      if (bridge.pickFrom) people = bridge.pickFrom(people, r[2]);
       clients = ((r[1] && r[1].data) || []).filter(function (c) { return c.stage !== 'past'; }).sort(F.byClient);
     });
   }
@@ -536,7 +564,6 @@
     if (stopSheet) return stopSheet;
     stopSheet = document.createElement('div');
     stopSheet.className = 'sheet'; stopSheet.id = 'ostStopSheet'; stopSheet.hidden = true;
-    var keepMonths = setting('outstation_keep_months', 24);
     stopSheet.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostStopH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="ostStopH">Check in</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
@@ -554,10 +581,8 @@
           '<option value="event">Event</option><option value="other">Other</option></select></div></div>' +
         '<div class="row ost-in"><div><label class="field-label" for="ostNote">Note</label>' +
           '<textarea class="input" id="ostNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
-        '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Going together</span>' +
-          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div>' +
-          '<p class="asknote">You are the driver. Only the driver records the trip.</p></div></div>' +
-        '<p class="asknote ost-in">Personal data notice: your location and photos are recorded with this trip and kept for ' + esc(plural(keepMonths, 'month', 'months')) + '.</p>' +
+        '<div class="row ost-in"><div><span class="field-label" id="ostWithL">Colleagues</span>' +
+          '<div class="meta-accs ost-people" id="ostPeople" role="group" aria-labelledby="ostWithL"></div></div></div>' +
         '<p class="msg" id="ostStopMsg" role="status"></p>' +
       '</div>' +
       '<div class="sheet-foot">' +
@@ -577,7 +602,7 @@
   function openStopSheet(trip, opener) {
     buildStopSheet();
     stopSheet.trip = trip;
-    $('ostStopH').textContent = trip ? 'Next stop' : 'Check in';
+    $('ostStopH').textContent = trip ? 'Add stop' : 'Check in';
     $('ostStopGo').textContent = trip ? 'Add stop' : 'Check in';
     Array.prototype.forEach.call(stopSheet.querySelectorAll('.ost-in'), function (el) { el.hidden = !!trip; });
     $('ostVenue').value = ''; $('ostNote').value = ''; $('ostVenueRow').hidden = true;
@@ -591,7 +616,7 @@
     readPick().then(function () {
       $('ostClient').innerHTML = '<option value="">Choose a client</option>' + clients.map(function (c) {
         return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
-      }).join('') + '<option value="other">Other place</option>';
+      }).join('') + '<option value="other">Other venue</option>';
       $('ostPeople').innerHTML = people.map(function (p) {
         return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.id) + '"> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
       }).join('');
@@ -600,9 +625,18 @@
   function sendStop() {
     var trip = stopSheet.trip, go = $('ostStopGo');
     var cv = $('ostClient').value, venue = $('ostVenue').value.trim(), spot = stopKit.loc.spot;
-    if (!cv) { stopMsg('Choose the client, or Other place.', 'err'); $('ostClient').focus(); return; }
+    if (!cv) { stopMsg(SAID['no-place'], 'err'); $('ostClient').focus(); return; }
     if (cv === 'other' && !venue) { stopMsg('Enter the venue.', 'err'); $('ostVenue').focus(); return; }
-    if (!spot) { stopMsg('Read the location within ' + setting('outstation_accuracy_m', 50) + ' m first.', 'err'); return; }
+    if (!spot) { stopMsg('The location must be accurate to within ' + setting('outstation_accuracy_m', 50) + ' m. Press Locate again.', 'err'); return; }
+    /* A reading is good for ten minutes in the database: one older than
+       nine is read again here, never sent to be refused (2026-11-24: a
+       reading left open while the driver did something else read "could not
+       be read"). */
+    if (Date.now() - Date.parse(spot.at) > STALE_MS) {
+      stopKit.loc.read();
+      stopMsg('The location was read more than 10 minutes ago and is being read again. Press ' + go.textContent + ' once it shows.', 'warn');
+      return;
+    }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }
     var args = { p_client: cv === 'other' ? null : cv, p_venue: cv === 'other' ? venue : null,
       p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at };
@@ -792,8 +826,8 @@
     var ref = trip.ref || '';
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: ref + ' · The trip on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
-        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits it recorded on the clients\' Calls and visits stay.' : '') + ' This cannot be undone.',
+      body: (ref ? 'Trip ' + ref : 'The trip') + ' on ' + C.date(trip.started_at) + ' will be deleted, with its ' + plural(stops, 'stop', 'stops') + ' and ' +
+        plural(photos, 'photo', 'photos') + '.' + (filed ? ' The visits this trip added to each client\'s Calls and visits will also be deleted.' : '') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [{ name: 'ref', label: 'Type the trip number to confirm', placeholder: ref, match: ref,
         need: 'Type the trip number to confirm.', mismatch: GONE['confirm-required'] }]
@@ -823,8 +857,8 @@
     }
     var w = withWord(trip), m = me();
     var facts = [['Purpose', PURPOSE[trip.purpose]], ['Driver', m && trip.driver_id === m.id ? 'You' : F.named(trip.driver_code, trip.driver)]]
-      .concat(w ? [['Going together', w]] : [])
-      .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'On the road'],
+      .concat(w ? [['Colleagues', w]] : [])
+      .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress'],
         ['Road distance', trip.km_total != null ? km(trip.km_total) : 'Not available']])
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
@@ -869,8 +903,8 @@
 
   /* ---- Download (All trips) --------------------------------------------- */
   function exportCsv(trips) {
-    var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Going together', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
-      'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous', 'Km back to office', 'Km total',
+    var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Colleagues', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
+      'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous stop', 'Km back to office', 'Km total',
       'Checked out', 'Rating', 'Note', 'Check-out note'];
     var rows = [head];
     trips.forEach(function (t) {

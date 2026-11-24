@@ -24,6 +24,7 @@
   --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
   --z-drawer-scrim: 55; --z-drawer: 60; --z-pull: 70; --z-sheet-side: 85;
   --z-sheet: 90; --z-guide-sheet: 92; --z-pop-sheet: 93; --z-ask: 95; --z-picker: 96;
+  --z-trace: 10;
   --ink:        #1a1a1a;
   --ink-soft:   #515151;
   --ink-mute:   #666666;
@@ -136,6 +137,8 @@
      more transparent, similar as apple"): 72% over a 20px blur. */
   --chrome:     rgba(255,255,255,.72);   /* the translucent sticky bar */
   --veil:       rgba(255,255,255,.88);   /* a label or a question laid over a thumbnail, kept legible */
+  --trace-ink:  #1a1a1a;
+  --trace-strength: .06;
   --knob:       #ffffff;                 /* a switch's thumb, white on its track in both themes */
   --chrome-solid: #ffffff;               /* the same bar, opaque, where a phone's status bar takes its colour */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
@@ -289,6 +292,8 @@
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(23,23,23,.72);
     --veil:       rgba(23,23,23,.88);
+    --trace-ink:  #f0f0f0;
+    --trace-strength: .07;
     --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.6);
@@ -6653,6 +6658,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    2026-11-03: the strips stood at two heights); one sharing a desk's bar
    line keeps the bar's small height. */
 .actstrip > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
+/* A bar left holding its views alone (My Work's Outstation and Months,
+   whose search, filters and acts step away) is that strip on a row of its
+   own, and takes the same height (the user, 2026-11-24: "is it correct
+   that tabs have different heights"). */
+.cmdbar:not(:has(> :not(.cmdbar-views):not([hidden]))) > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
 @media (max-width: 640px) {
   .cmdbar > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
   /* and the bar's row under it stands the block gap below, where every
@@ -9658,6 +9668,9 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 .qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qs-what { overflow-wrap: anywhere; }
+/* A brand's name over its lines where one quotation covers several (2026-11-24). */
+.qs-brandrow { padding-top: 16px; font-weight: 600; }
+.qs-brandrow .qs-what { grid-column: 1 / -1; }
 .qs-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's inclusions, a point each (the quotation's PDF prints them so):
    the bullet hung, the words wrapping under the first (2026-11-04). */
@@ -9886,3 +9899,61 @@ body.qs-page { background: var(--card); }
 .cr-doc-h { margin: 0; font-size: 15px; font-weight: 600; }
 .cr-doc .qs-foot { margin: 0; max-width: none; }
 .cr-code { max-width: 200px; letter-spacing: 4px; font-variant-numeric: tabular-nums; }
+
+/* Client feedback (2026-11-24, CLIENT FEEDBACK; js/fbform.js): a request's
+   questions one after another, a hairline between, the number of each in the
+   mute ink. A scale is a row of numbered options (`.rate`, a radio group):
+   tonal, a finger's height, the chosen the ink fill, as a wrapped segment's
+   chosen pill is; ten across at a desk, two rows of five (six for 0 to 10)
+   on a phone, its two ends named under it. */
+.fb-form { display: grid; }
+.fbq { display: grid; gap: 12px; padding: 24px 0; border-top: 1px solid var(--line-soft); min-width: 0; }
+.fbq:first-child { border-top: 0; padding-top: 8px; }
+.fbq-h { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.4; overflow-wrap: anywhere; }
+.fbq-n { margin-right: 6px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.fbq-opt { margin-left: 6px; font-size: 13px; font-weight: 400; color: var(--ink-mute); }
+.fbq > .msg { margin: 0; }
+.fbq > .msg:empty { display: none; }
+.rate { display: grid; grid-template-columns: repeat(var(--rate-n, 10), minmax(0, 1fr)); gap: 6px; }
+.rate-opt { height: var(--tap); min-width: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: var(--tonal);
+  color: var(--ink); font: inherit; font-size: 15px; font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: background-color var(--t-fast), transform var(--t-fast); }
+.rate-opt:active { transform: scale(.97); }
+.rate-opt.is-on { background: var(--fill); color: var(--on-fill); }
+.rate-opt:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 1px; }
+@media (hover: hover) { .rate-opt:not(.is-on):hover { background: var(--tonal-hover); } }
+.rate-ends { display: flex; justify-content: space-between; gap: 12px; margin-top: -4px; font-size: 12.5px; color: var(--ink-mute); }
+@media (max-width: 640px) {
+  .rate { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .rate[style*="--rate-n: 11"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .rate[style*="--rate-n: 5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+.fb-social { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* On the client portal: the open request's card (its form under its meta
+   line) and the Feedback tab's past answers, each a row opening its answers,
+   read only. */
+.fb-ask-meta { margin: -4px 0 4px; }
+.fb-ask .fbq { padding: 16px 0; }
+.fb-ask .fbq:first-child { padding-top: 4px; }
+.fb-ask-acts { display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .fb-ask-acts > .btn { flex: 1 1 auto; } }
+.fbh-list { display: grid; }
+.fbh { border-top: 1px solid var(--line-soft); }
+.fbh:first-child { border-top: 0; }
+.fbh-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 15px; gap: 4px 16px; align-items: center; padding: 12px 0;
+  list-style: none; cursor: pointer; }
+.fbh:first-child .fbh-row { padding-top: 0; }
+.fbh-row::-webkit-details-marker { display: none; }
+.fbh-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-ctl-sm); }
+.fbh-name { display: grid; gap: 2px; min-width: 0; }
+.fbh-name b { font-weight: 500; }
+.fbh-name small { font-size: 13px; color: var(--ink-mute); }
+.fbh-score { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fbh-chev { width: 15px; height: 15px; color: var(--ink-mute); transition: transform var(--t); }
+.fbh[open] .fbh-chev { transform: rotate(90deg); }
+.fbread { display: grid; gap: 14px; padding: 4px 0 16px; }
+.fbread-q { margin: 0 0 2px; font-size: 13px; color: var(--ink-mute); }
+.fbread-a { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.fbread-a b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.fbread-a span { font-size: 13px; color: var(--ink-mute); }
+.fbread-t { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }

@@ -15,9 +15,9 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   only, with Download (a CSV, a row a stop), is the granted part
   `ops.outstation` (an admin's by itself, View alone).
 - Flow: Check in at the first stop (a client from the Clients picker, else
-  Other place with its venue; the purpose a segment of Meeting, Shooting,
-  Event, Other; a note; Going together; the location; at least one photo),
-  then Next stop (the place, the location, a photo) as often as needed, Add
+  Other venue with its name; the purpose a segment of Meeting, Shooting,
+  Event, Other; a note; Colleagues; the location; at least one photo),
+  then Add stop (the place, the location, a photo) as often as needed, Add
   photo at any time, and Check out (a note, Rate your trip, 1 to 5 stars,
   optional; no location: only the site is read, once; the user, 2026-11-24).
   The visit date and the hours come from the times (check-in at the first
@@ -59,6 +59,10 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
   credited under the route (© openrouteservice.org by HeiGIT · Map data ©
   OpenStreetMap contributors).
+- A trip of the driver's own missing a stop's address or a leg is asked
+  again when the driver opens the list, once a visit (each stop, then the
+  legs; 2026-11-24: OS/20261101 came before the lookup worked and never
+  asked again).
 - The location block shows the reading's coordinates as it arrives and the
   place the geocoder names once the reading is accepted (2026-11-24).
 - A photo reaches the page as `application/octet-stream` and is named by
@@ -71,11 +75,11 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   no policy, no grant; every read and write a security definer function.
   Kept for `outstation_keep_months` (24) after check-out, then pruned nightly
   (`outstation-prune`, 03:47 MYT), the filed visits kept.
-- Check in carries one personal data notice line naming how long a trip is
-  kept.
+- Check in carries no explanatory line: neither who records the trip nor
+  the personal data notice (the user, 2026-11-24: "remove these").
 - Check in reads Client (and Venue), Location, the photo, then Purpose,
-  Note and Going together: what it waits for first (2026-11-24).
-- Every trip has a number, `OS/{YYYYMM}{NN}` (`outstation_trips.ref`; the
+  Note and Colleagues: what it waits for first (2026-11-24).
+- Every trip has a number, `#OS{YYMM}{NN}` (`#OS261101`, as a task is `#WT00001`; the user, 2026-11-24) (`outstation_trips.ref`; the
   user, 2026-11-24): the Malaysian month of check-in and its count from 01,
   two digits and more past 99, given on insert from `outstation_ref_months`
   under the month's row lock, never changed (`code-fixed`) and never given
@@ -89,6 +93,8 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   or checked out, and for an admin on any; My Work at Full control deletes
   with the number typed back, at Edit it is Request delete, filed through
   `delete_kinds` (`rpc:outstation_trip_delete`, named by the number) for an
-  admin. The trip goes with its stops and photo rows; the visits it filed
-  stay, and the photo files stay in storage. Filed `ops.deleted` under the
+  admin. The trip goes with its stops, its photo rows and the visits it
+  filed on the clients' Calls and visits (a deleted trip did not happen;
+  the user, 2026-11-24); a visit written by hand stays, and the photo files
+  stay in storage. Filed `ops.deleted` under the
   number. A deleted open trip frees its driver to check in again.

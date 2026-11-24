@@ -94,6 +94,10 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     reports: the stand-in keeps no sign-in across a load. `report()` fails a
     console screen measured on the Sign in page (2026-11-24: My Work's
     Outstation passed twice on the sign-in form, then the walk crashed).
+  - Every browser suite that waits with `settle` or `ready` tracks its
+    browser (`track(await chromium.launch(...))`): without the probe
+    `settle` sees no request or timer and returns at once (2026-11-24:
+    `sendswitch` read Settings before `settings.js` arrived under load).
   - A suite follows a record by its id, never by being the first card: a
     list's order moves when the order rules do (2026-11-04: `prod` read
     another booking once a posted one sank to the end).
@@ -217,3 +221,8 @@ to E), and merges each section into `tests/ux-audit/results.json`, which the
 board mod reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
 `.claude-plugin/marketplace.json`). A section added to one of the three is
 added to all three in the same push.
+- A worktree of the suites links `pdfx/node_modules` to the main clone's
+  folder; the path is ignored whatever it is (`pdfx/node_modules`, no
+  slash), since a link committed once broke every clone's pull
+  (2026-11-24, tests #229 and #230). `demo-build.js` builds the engine of
+  the portal it is run in.

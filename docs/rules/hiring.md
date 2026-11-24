@@ -60,7 +60,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   already on the shared calendar, by time alone, one row under the times
   (`meet-create` `busy`, 15 days at most, `hiring_busy_may`). A new invitation replaces one still
   open. The candidate picks a time on their page, or None of these times
-  with a note (`careers_pick`, `careers_none`, anon, the link's own key;
+  with a note (`careers_pick`, `careers_none`, anon, the link's own key,
+  refused `not-open` once the candidate is past New, Invited or
+  Interview; any decision, Proceed included, cancels an invitation still
+  open or answered with other times, 2026-11-24;
   the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
   name). An invitation is answered by its reply-by date (`reply_by`,
   stamped as it is made: the earlier of `hiring_reply_days`, 3, 1 to 14,
@@ -207,7 +210,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   lists each by its reference; Read asks a six-digit code emailed to the
   candidate (`hiring-mail` `code`, no sign-in; `hiring_doc_code`, the
   service role's, hashed, 15 minutes, five an hour, the address
-  Cloudflare saw), then the caution step, then the terms and salary for
+  Cloudflare saw; ten wrong codes a document a Malaysian day, over any of
+  its codes, answer `locked-today` to both until the next day,
+  `hiring_doc_wrong_today`, 2026-11-24), then the caution step, then the terms and salary for
   30 minutes (`careers_doc_open`, a view token hashed); an offer is
   accepted (name typed, the confirmation ticked) or declined (a reason
   optional), a contract signed (name, NRIC or passport number, a
@@ -358,8 +363,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Settings, Messages: Reply-to mailboxes; the user, 2026-11-20);
   - Keep in talent pool and Not proceed email the candidate only once their
     Undo's 30 seconds pass with no Undo (the user; this act's own window,
-    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8); a decision
-    reopened is refused the email by the database (`no-email`);
+    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8): the email
+    is queued in the database, never timed in the tab (2026-11-24, the
+    review: a tab shut in those seconds sent nothing;
+    `hiring_outcome_mail_queue`, due 30 seconds on, read Queued; sent by
+    hiring-mail's drain, woken every minute while one is due,
+    `hiring_outcome_mail_claim` and `_close`); Reopen (Undo, filed only
+    once the database holds it) cancels it, and a decision reopened is
+    refused the email (`no-email`); the decision is asked first, and the
+    Google Meets of the interviews it cancelled (`hiring_decide` `meets`)
+    are removed after it, never before;
   - Proceed promises no offer: the page reads ADspace will contact you
     about the next step. (Status Application in progress) until an offer is
     sent; a candidate who declined the talent pool reads ADspace will not

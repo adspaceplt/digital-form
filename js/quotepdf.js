@@ -23,10 +23,11 @@
   /* The issuer and the agency, read from the shared config at the draw, as
      every PDF reads them (the demo's sample agency on sample data). */
   function CFG() { return window.ADSPACE_CONFIG || {}; }
-  function agency() { return CFG().agencyName || 'ADspace'; }
+  var KEPT = null;
+  function agency() { return (KEPT && KEPT.a) || CFG().agencyName || 'ADspace'; }
   function issuer() { return (window.ADSPACE_ORG || {}).name || 'ADSPACE PLT'; }
   /* The Service Terms clause, left out where none is set. */
-  function termsAt(lead) { var u = CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
+  function termsAt(lead) { var u = KEPT ? KEPT.t : CFG().serviceTermsUrl; return u ? lead + agency() + ' Service Terms at ' + u : ''; }
   var FLOOR = 76;
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
     'October', 'November', 'December'];
@@ -88,7 +89,7 @@
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
         /* Its Document ID (VERIFY DETAILS, 2026-11-20), never a draft's. */
-        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf), docs.codeOf ? docs.codeOf('quotation', opts.draft ? null : q.id) : '']);
+        return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf), docs.codeOf ? docs.codeOf('quotation', opts.draft ? null : q.id, opts.key) : '']);
       }).then(function (g) {
         got = g;
         opts.code = g[2] || '';
@@ -101,6 +102,7 @@
             sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ' + issuer() + '.' };
           opts.extraPages = S.pagesFor(PDF, got[0], info);
         }
+        KEPT = opts.agency ? { a: opts.agency, t: opts.termsUrl || '' } : null;
         var form = layout(pdf, PDF, got[0], got[1], q, opts);
         signedN = pdf.getPageCount();
         return docs.formFields(pdf, PDF, form.page, form.boxes);
@@ -108,6 +110,7 @@
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
         docs.meta(pdf, agency() + ' Quotation ' + q.ref, 'Quotation');
+        KEPT = null;
         if (!seal) return pdf.save();
         return pdf.save().then(S.sha256).then(function (pagesSha) {
           info.pagesSha = pagesSha; info.signedPages = signedN; info.total = signedN + opts.extraPages;
@@ -219,6 +222,8 @@
       }
       var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))],
         ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
+      /* Its brands (2026-11-24): one made from a list names its one brand. */
+      if (Array.isArray(t.brands) && t.brands.length) facts.push([t.brands.length > 1 ? 'Brands' : 'Brand', t.brands.map(function (b) { return String((b && b.name) || '').trim(); }).join(', ')]);
       if (t.month) facts.push(['Minimum term', t.term + (Number(t.term) === 1 ? ' month' : ' months')]);
       var colW = FULL / 3;
       for (var fi = 0; fi < facts.length; fi += 3) {
@@ -259,8 +264,19 @@
     /* `tail`: the height of the totals under the list. The last line
        carries it, so the totals never stand on a page alone; where both do
        not fit, the line moves over with them (the user, 2026-11-24). */
+    /* Several brands on one quotation (2026-11-24): each brand's lines under
+       its name, the totals the whole quotation's. */
+    var brandNames = Array.isArray(t.brands) && t.brands.length > 1 ? t.brands.map(function (b) { return String((b && b.name) || '').trim(); }) : null;
     var drawLines = function (list, quiet, tail) {
+    var lastB = null;
     list.forEach(function (l, li) {
+      if (brandNames && l.brand != null && l.brand !== lastB && brandNames[l.brand]) {
+        lastB = l.brand;
+        if (room(48)) headRow();
+        y -= 16;
+        text(brandNames[l.brand], M, y + 2, TB, reg, pn.strong);
+        y -= 2;
+      }
       var name = wrap(l.label, wD, TB, reg);
       /* Each inclusion a point of its own, as the service lists it, its
          words hung under its first (the user, 2026-11-04: one run of

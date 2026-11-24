@@ -83,9 +83,12 @@
     var term = lines[0].quote_term == null || lines[0].quote_term === '' ? null : Math.max(1, Number(lines[0].quote_term));
     if (term != null) {
       if (lines.some(function (l) { return l.term_adjust !== true && Math.max(1, Number(l.tenure || 1)) > 1; })) return null;
-      var mp = lines.filter(function (l) { return l.term_adjust === true; }).map(function (l) { return Number(l.term_pct || 0); })
-        .filter(function (v, i, a) { return a.indexOf(v) === i; });
-      return mp.length > 1 ? null : { pct: mp[0] || 0, sst: Number(sst), term: term };
+      /* Each monthly line keeps its own percentage (2026-11-24, as
+         issue_letter passes it to quote_totals); `pct` is the one a line
+         with none takes, the largest any carries, as the database's. */
+      var mp = lines.filter(function (l) { return l.term_adjust === true && l.term_pct != null && l.term_pct !== ''; })
+        .map(function (l) { return Number(l.term_pct); });
+      return { pct: mp.length ? Math.max.apply(null, mp) : 0, sst: Number(sst), term: term };
     }
     var longs = lines.filter(function (l) { return Math.max(1, Number(l.tenure || 1)) > 1; });
     if (longs.some(function (l) { return l.term_adjust === false; })) return null;
@@ -100,58 +103,83 @@
      with the percentage and SST taken once on it; one-off lines apart. */
   function quotePrice(lines, qm, taxOn) {
     var sst = taxOn === false ? 0 : qm.sst;
-    /* Each line at its own tax code's rate where it carries one (2026-10-22),
-       else the quotation's; the SST worked a rate at a time, rounded once
-       each, as quote_totals works it. */
-    var msub = 0, span = 0, once = 0, month = false, even = true, g = {};
+    /* Grouped as quote_totals groups them (2026-11-24): a line's tax code's
+       rate (else the quotation's) and its own term percentage (else the
+       quotation's). Each group's adjustment is rounded once, and SST once a
+       rate on the subtotals and adjustments of that rate; a mixed-rate
+       quotation rounded once on the whole was a few sen off the letter
+       issue_letter prices, and refused as stale on every press. */
+    var month = false, even = true, g = {}, rates = {};
     lines.forEach(function (l) {
       var n = Math.max(1, Number(l.tenure || 1)), v = Number(l.qty || 0) * Number(l.rate || 0);
       var r = l.tax_pct == null || l.tax_pct === '' ? sst : Number(l.tax_pct);
-      var b = g[r] || (g[r] = { r: r, msub: 0, span: 0, once: 0 });
-      if (l.term_adjust === true) { month = true; msub += v; span += cents(v) * n; b.msub += v; b.span += cents(v) * n; if (n !== qm.term) even = false; }
-      else { once += v; b.once += v; }
+      var m = l.term_adjust === true;
+      var p = !m ? 0 : l.term_pct == null || l.term_pct === '' ? qm.pct : Number(l.term_pct);
+      var b = g[r + '|' + p] || (g[r + '|' + p] = { r: r, p: p, msub: 0, span: 0, once: 0 });
+      rates[r] = true;
+      if (m) { month = true; b.msub += v; b.span += cents(v) * n; if (n !== qm.term) even = false; }
+      else b.once += v;
     });
-    var r2 = cents;
-    var by = function (f) { return r2(Object.keys(g).reduce(function (a, k) { return a + f(g[k]); }, 0)); };
-    var otax = by(function (b) { return cents(b.once * b.r / 100); });
-    var mtaxOf = function (b) { return cents((b.msub + cents(b.msub * qm.pct / 100)) * b.r / 100); };
-    var out = { sstPct: qm.sst, term: 0, each: 0, eachTax: 0, eachTotal: 0, once: once, onceTax: otax, onceTotal: r2(once + otax) };
+    var gs = Object.keys(g).map(function (k) {
+      var b = g[k];
+      b.off = cents(b.msub * b.p / 100); b.se = cents(b.span * (1 + b.p / 100));
+      return b;
+    });
+    /* Sums are kept whole, as the database keeps them; each figure is
+       rounded where quote_totals rounds it. */
+    var sum = function (list, f) { return list.reduce(function (a, b) { return a + f(b); }, 0); };
+    /* SST a rate at a time, rounded once each, on what f gives its groups. */
+    var taxBy = function (f) {
+      return cents(sum(Object.keys(rates).map(Number), function (r) {
+        return cents(sum(gs.filter(function (b) { return b.r === r; }), f) * r / 100);
+      }));
+    };
+    var msub = sum(gs, function (b) { return b.msub; }), once = sum(gs, function (b) { return b.once; });
+    var off = cents(sum(gs, function (b) { return b.off; })), span = cents(sum(gs, function (b) { return b.span; }));
+    var otax = taxBy(function (b) { return b.once; });
+    var mtax = taxBy(function (b) { return b.msub + b.off; });
+    /* A row a percentage on the letter, as quote_totals' term_rows. */
+    var rowsOf = function (f) {
+      var pcts = gs.filter(function (b) { return b.msub && b.p; }).map(function (b) { return b.p; })
+        .filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (x, y) { return x - y; });
+      return pcts.map(function (p) { return { pct: p, adj: cents(sum(gs.filter(function (b) { return b.p === p; }), f)) }; });
+    };
+    var out = { sstPct: qm.sst, term: 0, each: 0, eachTax: 0, eachTotal: 0, once: once, onceTax: otax, onceTotal: cents(once + otax) };
     if (month && even) {
-      var adj = cents(msub * qm.pct / 100), each = msub + adj, etax = by(mtaxOf);
-      out.term = qm.term; out.each = each; out.eachTax = etax; out.eachTotal = r2(each + etax);
-      out.quote = { pct: qm.pct, base: r2(msub), adj: adj, rest: once };
-      out.subtotal = r2(r2(each * qm.term) + once); out.tax = r2(r2(etax * qm.term) + otax);
-      out.total = r2(r2(out.eachTotal * qm.term) + out.onceTotal);
+      var each = msub + off;
+      out.term = qm.term; out.each = each; out.eachTax = mtax; out.eachTotal = cents(each + mtax);
+      out.quote = { pct: qm.pct, base: cents(msub), adj: off, rest: once, rows: rowsOf(function (b) { return b.off; }) };
+      out.subtotal = cents(cents(each * qm.term) + once); out.tax = cents(cents(mtax * qm.term) + otax);
+      out.total = cents(cents(out.eachTotal * qm.term) + out.onceTotal);
       return out;
     }
-    /* Whole amounts: one subtotal, the term's row on the span, one SST
-       figure, the total incl. SST. */
-    /* The quotation's own month and term stay on the letter (2026-10-18):
-       its Monthly incl. SST, as quote_adjust gives it (every monthly line
-       at the percentage, SST rounded once), and its term for the commitment
-       wording. */
-    if (month) {
-      var pex = msub + cents(msub * qm.pct / 100);
-      /* The first month holds the one-off items too (the user, 2026-10-18),
-         as the quotation's First month incl. SST does. */
-      out.plan = qm.term; out.planMonth = r2(pex + by(mtaxOf) + once + otax); out.planOnce = once > 0;
-    }
-    var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
-    /* The term's total is its parts added, as quote_totals works it (TERM
-       TOTAL FROM ITS PARTS, 2026-11-17): each rate's span with its
-       adjustment to the sen, then its SST to the sen. */
-    var mtot = month ? by(function (b) { var se = cents(b.span * (1 + qm.pct / 100)); return se + cents(se * b.r / 100); }) : 0;
-    out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
-    out.each = r2(mex + once); out.eachTotal = r2(mtot + once + otax); out.eachTax = r2(out.eachTotal - out.each);
+    /* Whole amounts: one subtotal, the term's rows on the span, one SST
+       figure, the total incl. SST. The quotation's own month and term stay
+       on the letter (2026-10-18): its Monthly incl. SST, as quote_totals
+       gives it, the one-off items in its first month (the user,
+       2026-10-18), and its term for the commitment wording. */
+    if (month) { out.plan = qm.term; out.planMonth = cents(msub + off + mtax + once + otax); out.planOnce = once > 0; }
+    /* The term's total is its parts added (TERM TOTAL FROM ITS PARTS,
+       2026-11-17): each group's span with its adjustment to the sen, then
+       SST a rate on them. */
+    var mex = month ? cents(sum(gs, function (b) { return b.se; })) : 0;
+    var mtot = month ? cents(mex + taxBy(function (b) { return b.se; })) : 0;
+    out.quote = month ? { pct: qm.pct, base: span, adj: cents(mex - span), rest: once, rows: rowsOf(function (b) { return b.se - b.span; }) } : null;
+    out.each = cents(mex + once); out.eachTotal = cents(mtot + once + otax); out.eachTax = cents(out.eachTotal - out.each);
     out.once = 0; out.onceTax = 0; out.onceTotal = 0;
     out.subtotal = out.each; out.tax = out.eachTax; out.total = out.eachTotal;
     return out;
   }
-  /* To the cent, a half away from nought, as the database rounds. */
-  function cents(v) {
-    var a = Math.round(Math.abs(v) * 100 + 1e-7) / 100;
-    return v < 0 ? -a : a;
+  /* The term rows a quoted letter prints: one a percentage (2026-11-24),
+     else the one it was priced on. */
+  function termRows(qd) {
+    if (!qd) return [];
+    if (Array.isArray(qd.rows)) return qd.rows.filter(function (x) { return Number(x.adj); });
+    return Number(qd.pct) ? [{ pct: qd.pct, adj: qd.adj }] : [];
   }
+  /* To the cent, a half away from nought, as the database rounds: the one
+     copy is js/money.js's. */
+  function cents(v) { return MON.cents(v); }
   function priceOf(lines, market, taxOn, at) {
     var long = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); }).filter(function (x) { return x > 1; });
     var term = (long.length && long.every(function (x) { return x === long[0]; })) ? long[0] : 0;
@@ -638,18 +666,27 @@
      kind document (Documents, HR letters among them), letter (a Letter of
      Offer), quotation, hiring (an offer or contract) or perf. A preview, a
      page with no database and a refused or failed ask answer '', so a
-     drawing never waits on it or fails for it. One ask a document a page. */
+     drawing never waits on it or fails for it. One ask a document a page.
+     A page outside the team names its own key (a quotation's link, a
+     candidate's; `doc_code_of_key`, 2026-11-24): the database answers no
+     code to anybody else. */
   var codes = {};
-  function codeOf(kind, id) {
+  function codeOf(kind, id, key) {
     var api = window.ADspaceAPI, db = api && api.client;
     if (!id || !db) return Promise.resolve('');
     var k = kind + ':' + id;
     if (codes[k]) return Promise.resolve(codes[k]);
-    return Promise.resolve(db.rpc('doc_code_of', { p_kind: kind, p_id: id })).then(function (r) {
+    var ask = key ? db.rpc('doc_code_of_key', { p_kind: kind, p_id: id, p_key: key }) : db.rpc('doc_code_of', { p_kind: kind, p_id: id });
+    return Promise.resolve(ask).then(function (r) {
       var c = r && !r.error && typeof r.data === 'string' && /^[2-9A-Z]{4}-[2-9A-Z]{4}$/.test(r.data) ? r.data : '';
       if (c) codes[k] = c;
       return c;
     }).catch(function () { return ''; });
+  }
+  /* A stored Document ID as printed (XXXX-XXXX), else ''. */
+  function codeWord(raw) {
+    var c = String(raw || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+    return /^[2-9A-Z]{8}$/.test(c) ? c.slice(0, 4) + '-' + c.slice(4) : '';
   }
   /* A copy of a document's fields with its Document ID, the caller's own
      object left as it was. */
@@ -767,9 +804,11 @@
       return y0;
     };
     p.plainHead = function () { return p.head(); };
-    /* The foot, at the template's place on every page. */
-    p.foot = function (i, n) {
+    /* The foot. `code`: the page's own Document ID where one PDF holds
+       several documents. */
+    p.foot = function (i, n, code) {
       var count = 'Page ' + (i + 1) + ' of ' + n;
+      var id = code === undefined ? p.code : (code || '');
       if (acl) {
         /* One row (the user, 2026-11-24: "the serial id or document id and
            the computer generated document and the page x of x should be
@@ -779,20 +818,20 @@
            line would reach the page count. */
         var cw = p.width(count, G.aclCount, font);
         p.right(count, R, at(G.aclCountAt), G.aclCount, font, faint);
-        var ver = verifyLine(tpl === 'ACL_SIGN') + (p.code ? ' · Document ID ' + p.code : '');
+        var ver = verifyLine(tpl === 'ACL_SIGN') + (id ? ' · Document ID ' + id : '');
         var lead = n > 1 && p.reference ? p.reference + '  ·  ' : '';
         if (lead && M + p.width(lead + ver, G.verify, font) > R - cw - 16) lead = '';
         p.text(lead + ver, M, at(G.aclCountAt), G.verify, font, faint);
         return;
       }
+      /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
+      if (tpl !== 'ALP' && id) {
+        p.right(count, R, at(G.countAt), G.count, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        return;
+      }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
       if (tpl === 'ALP') p.spaced('PRIVATE & CONFIDENTIAL', M, at(G.pcAt), 8, med, faint);
-      /* A document /verify/ answers on the AL template (a quotation) names
-         its Document ID on every page at the bottom margin's left, on the
-         page count's own baseline, so the foot reads as one line (the user,
-         2026-11-21: "not inline same row?"). A performance record carries it
-         in its own reference line instead. */
-      else if (p.code) p.text('Document ID ' + p.code, M, at(G.countAt), G.ref, font, faint);
     };
     p.footMark = function (i, n) { p.foot(i, n); };
     /* An ACL letter's opening, as the template sets it: PRIVATE &
@@ -1087,6 +1126,10 @@
       };
 
       var b = doc.bill_to || {};
+      /* A Singapore client billed in RM reads a figure in S$ beside it, at
+         the rate the letter kept when it was issued (2026-10-22), through
+         the one approximation (js/money.js approxSgd). */
+      var nearSgd = function (v) { return MON.approxSgd(v, { market: b.market, bill_market: doc.market }, doc.issued_at, b.fx_sgd || 0); };
       /* One name for the whole letter. `To`, the opening paragraph and the
          acceptance block each resolved this themselves and two of them used
          the opposite precedence, so a client whose registered name and
@@ -1152,8 +1195,8 @@
          the summary's height with it, so where both do not fit, that line
          moves over with the totals it adds up to. */
       var sumH = (function () {
-        var qd0 = price.quote, adj0 = qd0 && Number(qd0.pct) ? 1 : 0;
-        var sg = String(b.market || '').toUpperCase() === 'SG' && String(doc.market || '').toUpperCase() !== 'SG' && Number(b.fx_sgd) > 0;
+        var adj0 = termRows(price.quote).length;
+        var sg = nearSgd(1) != null;
         return 14 + (price.term && price.once > 0 ? 90 : 66) + adj0 * 15 + (price.plan ? 15 : 0) + (sg ? 13 : 0);
       })();
       var lastAt = (doc.lines || []).length - 1;
@@ -1212,7 +1255,7 @@
          without being the number in bold. */
       /* The one-off summary is five rows and a rule, about 85pt: kept whole
          on its page (audit I11, 2026-10-15). */
-      var qd = price.quote, qadj = qd && Number(qd.pct) ? 1 : 0;
+      var qd = price.quote, qadj = termRows(qd).length;
       need((price.term && price.once > 0 ? 90 : 66) + qadj * 15 + (price.plan ? 15 : 0));
       var lx = R - 230;
       var trow = function (label, value, kind) {
@@ -1240,15 +1283,17 @@
       /* A Singapore client billed in RM reads the figure in bold in S$
          under it, at the rate kept when the letter was issued (2026-10-22). */
       var nearRow = function (v) {
-        var fx = Number(b.fx_sgd);
-        if (String(b.market || '').toUpperCase() !== 'SG' || String(doc.market || '').toUpperCase() === 'SG' || !(fx > 0)) return;
-        right('Approx. ' + MON.money2(Math.round(Number(v) / fx * 100) / 100, 'SG'), R, y + 2, 9, font, mute);
+        var sgd = nearSgd(v);
+        if (sgd == null) return;
+        right('Approximately ' + MON.money2(sgd, 'SG'), R, y + 2, 9, font, mute);
         y -= 13;
       };
+      /* A row a term percentage, as the quotation's totals read them. */
       var termRow = function () {
-        if (!qadj) return;
         var tn = price.term || price.plan;
-        trow(MON.termLine(tn, qd.pct).replace(/^./, function (c) { return c.toUpperCase(); }), signed(qd.adj));
+        termRows(qd).forEach(function (x) {
+          trow(MON.termLine(tn, x.pct).replace(/^./, function (c) { return c.toUpperCase(); }), signed(x.adj));
+        });
       };
       if (oneOff) {
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
@@ -1603,12 +1648,16 @@
     try { return window.open('', '_blank'); } catch (e) { return null; }
   }
   /* A Preview's tab, opened at the press, saying what it waits on. */
-  function previewTab(zh) {
+  function previewTab(zh, o) {
     /* In the installed app a Preview is read in the panel over the page,
        never the share sheet (the user, 2026-11-07: "not request download but
        pull from browser preview instead"); Download keeps the share sheet.
-       A stand-in tab carries that choice to save(). */
-    if (installed()) return { viewer: true, closed: false, close: function () { this.closed = true; } };
+       A stand-in tab carries that choice to save(). A file of personal data
+       (`trace`: an NRIC copy, a photograph) is read in that panel
+       everywhere, under the reader's trace (js/trace.js), which a tab
+       holding the bare file cannot carry (2026-11-24). */
+    var traced = Boolean(o && o.trace);
+    if (traced || installed()) return { viewer: true, trace: traced, closed: false, close: function () { this.closed = true; } };
     var tab = null;
     try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
     if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Generating the PDF…'; } catch (e) { /* still blank */ } }
@@ -1617,12 +1666,12 @@
   /* The installed app's Preview, and its Download where there is no share
      sheet for files: the PDF in a sheet over the page, with Close and
      Download in its foot, so the person always has a way back. */
-  function viewer(file, name, zh) {
+  function viewer(file, name, zh, trace) {
     var url = URL.createObjectURL(file);
     var box = document.createElement('div');
     box.className = 'sheet'; box.id = 'pdfViewSheet'; box.hidden = true;
     var e = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
-    box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle">' +
+    box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle"' + (trace ? ' data-trace' : '') + '>' +
       '<div class="sheet-head"><h3 id="pdfViewTitle">' + e(name) + '</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="' + (zh ? '关闭' : 'Close') + '">' +
       '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
@@ -1751,7 +1800,8 @@
   }
   function save(blob, name, tab, zh) {
     var file = fileOf(blob, name);
-    if (tab && tab.viewer) { if (!tab.closed) viewer(file, name, zh); return Promise.resolve(); }
+    /* `trace` (a personnel file) draws the reader's trace over it (js/trace.js). */
+    if (tab && tab.viewer) { if (!tab.closed) viewer(file, name, zh, tab.trace); return Promise.resolve(); }
     if (tab && !tab.closed) {
       return named(file, name).then(function (url) { tab.location.href = url || blobUrl(file); });
     }
@@ -1797,7 +1847,7 @@
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, codeOf: codeOf, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
+    pen: pen, codeOf: codeOf, codeWord: codeWord, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };

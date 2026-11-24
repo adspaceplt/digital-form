@@ -5,7 +5,9 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
 
 - Access is a level per section, **none < view < work < manage**, in
   `team_roles.access` / `team_members.access`. `allowed(section, level)` is
-  every policy's predicate.
+  every policy's predicate; `allowed_of(member, section, level)` answers
+  the same for another colleague (who a bell tells), never a raw read of
+  `access ->> part` (`2026-11-24-saved-whole-and-told.sql`, `tests/wholesql.js`).
   - The page names them Off, View, Edit, Full control (`LEVELS` in
     `js/team.js`; the access restructure, 2026-11-17); the stored keys
     never move.
@@ -91,6 +93,14 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
     `2026-11-17-deletes-and-builds-held.sql`). A new delete function or table joins
     `delete_kinds` and the stand-in's `DK` together. `delete_kinds` and
     `delete_requests` have RLS on, no policy, no grant (`tests/delreq.js`).
+  - A Request delete press arms that one question alone
+    (`js/delreq.js`; review 2026-11-24): the question must open within
+    10 seconds of the press, a question shut unanswered disarms it, and an
+    answered one stays armed 30 seconds for the screen's call; every task
+    of a list request is within the requester's clients (`client_seen`),
+    and a request another admin is approving is refused `approving` for
+    ten minutes from their press (`2026-11-24-delete-requests-held.sql`,
+    `tests/delreq.js`).
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no
@@ -222,7 +232,9 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
   a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
   by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
   trigger `team_members_system_guard` lets only the account itself change its
-  standing, access date, group, admin mark or email (`system-account`).
+  standing, access date, group, admin mark, email, removal or erasure
+  (`system-account`; removal and erasure since 2026-11-24, without which any
+  admin became super admin).
   Team shows it with a Super admin tag and no ⋯ for anyone else.
   - The team list is never derived from `auth.users`. The cutover sweep runs
     only while `team_members` is empty and skips client contacts.

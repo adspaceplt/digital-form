@@ -20,10 +20,8 @@
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
-  /* The role standard is said once, in js/words.js, and set on the
-     colleague's record. The departments are the
-     list kept in Settings (2026-10-23), read once beside me(). */
-  var ROLE_STD = window.ADspaceWords.roleStd;
+  /* The departments are the list kept in Settings (2026-10-23), read once
+     beside me(). */
   function deptName(k) {
     var A = window.ADspaceAdmin;
     return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
@@ -1047,6 +1045,13 @@
       return Promise.resolve(db.rpc('team_member_purge', { p_member: m.id, p_name: typeof v === 'string' ? v : m.name })).then(function (r) {
         if (r.error) return PURGE_SAID[r.error.message] || teamSaid(r.error);
         var a = r.data || {};
+        /* A trip another colleague joined, or a record not the colleague's
+           own, holds the delete (review 2026-11-24). */
+        if (a.error === 'in-use') {
+          return (a.held || []).indexOf('trips') >= 0
+            ? 'This colleague cannot be deleted because other colleagues joined outstation trips they drove. They remain removed.'
+            : 'This colleague cannot be deleted because other work in the portal still names them. They remain removed.';
+        }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
         closeRec();
         msg('teamMsg', m.name + ' deleted.', 'ok');
@@ -2055,12 +2060,14 @@
           load(function () {
             if (!n) { msg('teamMsg', 'Saved.', 'ok'); return; }
             undoHere('Access until set for ' + n + (n === 1 ? ' colleague.' : ' colleagues.'), function () {
-              /* Each row put back over the row as read again, one line filed. */
+              /* Each row put back over the row as read again, one line filed;
+                 a row the write did not reach (none answered) is refused,
+                 never counted as neither (review 2026-11-24). */
               var jobs = was.map(function (w) {
                 var row = (state.rows || []).filter(function (x) { return x.id === w.id; })[0];
                 if (!row || (row.access_until || null) === w.access_until && (row.access_until_time || null) === w.access_until_time) return Promise.resolve(0);
                 return asRead(db.from('team_members').update({ access_until: w.access_until, access_until_time: w.access_until_time }).eq('id', w.id), row)
-                  .select('id').then(function (q) { return q.error ? -1 : (q.data || []).length; });
+                  .select('id').then(function (q) { return q.error || !(q.data || []).length ? -1 : 1; });
               });
               Promise.all(jobs).then(function (got) {
                 var back = got.filter(function (x) { return x > 0; }).length, refused = got.filter(function (x) { return x < 0; }).length;
@@ -2326,7 +2333,6 @@
   var MEMBER_LOG = [
     ['name', 'Name'], ['email', 'Email'], ['role', 'User group', function (v) { return roleName(v); }], ['staff_code', 'Employee ID'],
     ['designation', 'Position'], ['department', 'Department', deptName],
-    ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
     ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
     ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
     ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
@@ -2423,7 +2429,6 @@
         opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
         '</select></dd></div>';
     };
-    var map = function (o, none) { return [['', none || 'Not set']].concat(Object.keys(o).map(function (k) { return [k, o[k]]; })); };
     /* An admin group is offered to an admin alone, and nobody moves
        themselves or an admin's row without being an admin (TEAM2-1). */
     var roles = state.roles.filter(function (r) { return amSuper() || !adminGroup(r) || r.slug === m.role; })
@@ -2443,7 +2448,6 @@
         word('staff_code', 'Employee ID', m.staff_code) +
         pick('department', 'Department', [['', 'Not set']].concat(deptChoices(m.department)), m.department || '', deptName(m.department)) +
         word('designation', 'Position', m.designation) +
-        pick('role_family', 'Role standard', map(ROLE_STD), m.role_family || '', ROLE_STD[m.role_family]) +
         word('capacity_minutes_week', 'Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
       group('Namecard', '<dl class="ovfacts">' +
         word('mobile', 'Mobile', window.ADspaceAPI.phoneWord(m.mobile)) +

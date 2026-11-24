@@ -80,7 +80,7 @@
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
-      download: 'Download', chat: 'Chat on WhatsApp',
+      download: 'Download', pdfFail: 'The PDF could not be prepared. Please try again.', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
       adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
@@ -103,7 +103,7 @@
       decline: 'Decline', declineT: 'Decline this quotation', declineWhy: 'Reason', declineHint: 'Optional',
       declined: 'Declined', declinedT: 'You have declined this quotation',
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
-      monthSub: 'Monthly subtotal', commit: '{n}-month term discount ({p}%)', termAdj: '{n}-month term surcharge ({p}%)', monthExcl: 'Monthly excl. SST',
+      monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
@@ -197,7 +197,7 @@
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
-      download: '下载', chat: 'WhatsApp 咨询',
+      download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
       adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
@@ -220,7 +220,7 @@
       decline: '拒绝', declineT: '拒绝此报价', declineWhy: '原因', declineHint: '选填',
       declined: '已拒绝', declinedT: '您已拒绝此报价',
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
-      monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
+      monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
@@ -594,6 +594,10 @@
   function sstOn(tt) { return taxed(tt).on; }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function adsOf(tt) { return tt.layout === 2 && Array.isArray(tt.ads) ? tt.ads : []; }
+  function termWords(n, p) {
+    var line = window.ADspaceMoney.termLine(n, p, lang === 'zh');
+    return lang === 'zh' ? line : line.charAt(0).toUpperCase() + line.slice(1);
+  }
   function totalsRows(tt) {
     /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
     var w = t(), on = sstOn(tt);
@@ -607,9 +611,10 @@
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
     var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
-      /* a row a term percentage where the lines differ (2026-11-15) */
-      var tp = x[4] ? x[4].pct : tt.term_pct, tn = x[4] ? (x[4].months || tt.term) : tt.term;
-      var label = x[0] === 'term' ? f(tp < 0 ? w.commit : w.termAdj, { n: tn, p: Math.abs(tp) }) : WORD[x[0]];
+      /* a row a term percentage where the lines differ (2026-11-15), in
+         the PDF's words: a row whose lines run different months names
+         none (2026-11-24) */
+      var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
       return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
     });
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
@@ -634,11 +639,19 @@
       : st === 'closed' ? ['is-off', q.declined ? t().declined : t().closed]
       : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until, false, true) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
+    /* Several brands on one quotation (2026-11-24): each brand's lines under
+       its name, as the PDF prints them. */
+    var bn = Array.isArray(tt.brands) && tt.brands.length > 1 ? tt.brands : null, lastB = null;
     var lines = window.ADspaceMoney.planFold(q.lines).map(function (l) {
+      var head = '';
+      if (bn && l.brand != null && l.brand !== lastB && bn[l.brand]) {
+        lastB = l.brand;
+        head = '<div class="qs-row qs-brandrow"><span class="qs-what">' + esc(String(bn[l.brand].name || '')) + '</span></div>';
+      }
       /* Every inclusion a point, as the service lists them and the PDF
          prints them (2026-11-04). */
       var d = (l.detail || []).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
-      return '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
+      return head + '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
         (d.length ? '<ul class="incl">' + d.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + adsOf(tt).map(function (r) {
@@ -664,7 +677,7 @@
     notes.push(f(t().basis, { v: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
-      ((st !== 'quote' && st !== 'ready') || q.revised ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
+      ((st !== 'quote' && st !== 'ready') || q.revised || bn ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1>' + (tt.title ? '<span class="qs-meta qs-own">' + esc(tt.title) + '</span>' : '') + '<span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span>' +
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
@@ -763,7 +776,7 @@
     if (st === 'expired' || st === 'closed') {
       return '<h2>' + esc(st === 'closed' ? (q.declined ? w.declinedT : w.closedT) : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
-        '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
+        '<a class="btn" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
     if (st === 'welcome') {
       return (q.reviewed ? confirmedHtml(q, true) : '') + '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
@@ -999,6 +1012,8 @@
     }).then(function (r) {
       var d = (r && r.data) || {};
       btn.disabled = false; if (!again) btn.textContent = label;
+      /* Left by Back while the code was asked for: nothing to show it on. */
+      if (!SG) return;
       if (r.error || d.error || !d.ok) { signRefused(d.error || 'any', d); return; }
       SG.email = d.email || SG.ct.email; SG.sentAt = Date.now();
       if (SG.step !== 3) signShow(3);
@@ -1118,13 +1133,6 @@
       if (tab) try { tab.close(); } catch (e) {}
       say('qsSideMsg', t().err.any);
     });
-  }
-  // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14 (js/clock.js, one format).
-  function when(iso) {
-    var C = window.ADspaceClock, p = C && C.parts(iso);
-    if (!p) return '';
-    var dd = C.day(iso);
-    return lang === 'zh' ? day(dd) + ' ' + C.clock(iso, { zh: true }) : day(dd, true) + ', ' + C.clock(iso);
   }
   function cover(title, text, start, glyph) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel" data-glyph="' + (glyph || 'alert') + '"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
@@ -1317,20 +1325,26 @@
     }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
   }
   function pdf(btn) {
+    var said = $('qsPdfMsg'); if (said) said.remove();
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
     /* Who prepared and reviewed it, and once accepted who signed for the
        company with the signing record (2026-10-31). */
     var sg = Q.signed, C = window.ADspaceClock;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market },
+    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market }, key: qKey(),
       preparedBy: Q.prepared ? { name: Q.prepared.name, designation: Q.prepared.title || '' } : null,
       reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
       signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
         via: sg.via, company: sg.company } : null,
-      to: sg ? { name: sg.company.legal_name, address: sg.company.billing_address } : null }).then(function (blob) {
+      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
-    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
+    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {}
+      /* Said under its button, drawn only when there is something to say. */
+      var acts = btn.closest('.qs-acts'), m = document.createElement('p');
+      m.className = 'msg err'; m.id = 'qsPdfMsg'; m.setAttribute('role', 'status'); m.textContent = t().pdfFail;
+      if (acts) acts.insertAdjacentElement('afterend', m);
+    });
   }
 
   /* A colleague's preview (2026-10-30): the console's Preview opens the
