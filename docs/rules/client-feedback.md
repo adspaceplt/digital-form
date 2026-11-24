@@ -16,7 +16,8 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   contact alone; never on a schedule, never by itself, never on WhatsApp
   (the user, 2026-11-24). A new request of the same form closes the open one
   (`replaced`); another form stands beside it.
-- Request feedback is the client record's ⋯ (Clients at Work, Send email
+- Request feedback is the Feedback part's head act, and the client record's
+  ⋯ on every other tab (Clients at Work, Send email
   for this colleague, a client never a lead): it asks the form (a segment),
   then `supplier-mail` `{ feedback: true }` makes the request
   (`feedback_mail_begin`, refused `send-off` or `email-off` before anything
@@ -33,7 +34,8 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   Email templates; `feedback_mail_begin` fills the contact's language's
   template, a form missing one refused `not-found` before a request is made
   (`tests/feedbacksql.js`).
-- The record's Feedback tab (after Brand) lists every request newest first:
+- The record's Feedback part (Interactions' second, under Calls and visits;
+  `tab=feedback` opens it there) lists every request newest first:
   Sent, Opened, Answered, Follow-up open (a low score whose task is not done),
   Withdrawn or Closed; a row opens its answers read only, and a low one
   offers Create follow-up task (My Work at Work), linked by

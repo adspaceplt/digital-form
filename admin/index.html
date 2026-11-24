@@ -136,7 +136,7 @@
 <script src="/js/clock.js?v=20261120wd"></script>
 <script src="/js/icons.js?v=20261122zzq"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
-<script src="/js/acts.js?v=20261122zzq"></script>
+<script src="/js/acts.js?v=20261124a"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
 <script src="/js/confirm.js?v=20261124zzzzwm"></script>
@@ -1038,7 +1038,10 @@
             <!-- Calls and visits, the sale's own record (2026-10-11): a tab of
                  its own after Overview, at Clients: Calls, never behind the
                  Activity record's access. -->
-            <button class="tab" data-pane="calls" data-part="clients.calls" type="button" role="tab" aria-selected="false">Calls and visits</button>
+            <!-- Interactions (2026-11-24): Calls and visits, then Client
+                 feedback, so the strip stays at six; `tab=calls` and
+                 `tab=feedback` open it on their part. -->
+            <button class="tab" data-pane="interactions" data-parts="clients.calls clients" type="button" role="tab" aria-selected="false">Interactions</button>
             <!-- The client's work by content month, its reports included
                  (2026-10-10): drawn for a client engaged now or before, or
                  one holding anything there (js/engage.js). -->
@@ -1051,7 +1054,6 @@
             <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false">Engagements</button>
             <button class="tab" data-pane="services" data-parts="clients.quotes clients.services clients.requests clients.documents register.documents" type="button" role="tab" aria-selected="false">Services</button>
             <button class="tab" data-pane="brand" data-parts="clients.brand reports.whitelabel" type="button" role="tab" aria-selected="false">Brand</button>
-            <button class="tab" data-pane="feedback" type="button" role="tab" aria-selected="false">Feedback</button>
             <button class="tab" data-pane="account" data-parts="clients.contacts clients.billing" type="button" role="tab" aria-selected="false">Account</button>
           </nav>
 
@@ -1866,19 +1868,6 @@
           </div>
         </div>
 
-          <!-- Client feedback (CLIENT FEEDBACK, 2026-11-24): every request
-               sent, its answer and a low score's follow-up (js/crm.js). -->
-          <div class="rec-pane" data-pane="feedback" hidden>
-        <section class="rec-part">
-        <div class="viewhead">
-          <span class="headmark"><h2>Feedback <span class="tab-n" id="crmFbN" hidden></span></h2></span>
-          
-        </div>
-        <div class="msg" id="crmFbMsg"></div>
-        <div id="crmFbBox" data-narrow="640"></div>
-        </section>
-          </div>
-
           <div class="rec-pane" data-pane="calls" hidden>
         <!-- Every call, visit and message, newest first. -->
         <section class="rec-part">
@@ -1953,6 +1942,19 @@
         </div>
       </div>
         <div id="crmTouches"></div>
+        </section>
+          </div>
+
+          <!-- Client feedback (CLIENT FEEDBACK, 2026-11-24): every request
+               sent, its answer and a low score's follow-up (js/crm.js). -->
+          <div class="rec-pane" data-pane="feedback" hidden>
+        <section class="rec-part">
+        <div class="viewhead">
+          <span class="headmark"><h2>Feedback <span class="tab-n" id="crmFbN" hidden></span></h2></span>
+          <button class="btn btn-quiet btn-sm" id="crmFbAsk" data-gate="email" type="button" hidden>Request feedback</button>
+        </div>
+        <div class="msg" id="crmFbMsg"></div>
+        <div id="crmFbBox" data-narrow="640"></div>
         </section>
           </div>
 
@@ -6807,7 +6809,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261124zzzps", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261124zzzpt", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261117zzzf"},
   "team": {"src": "/js/team.js?v=20261124rt", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
@@ -6824,8 +6826,8 @@ raya-2026        https://example.com/raya"></textarea>
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261124zzzzwm", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261124zzzfe", "uses": ["documents", "crm", "sales"]},
-  "outstation": {"src": "/js/outstation.js?v=20261124zzd"},
-  "settings": {"src": "/js/settings.js?v=20261124zzzzzet", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "outstation": {"src": "/js/outstation.js?v=20261125a"},
+  "settings": {"src": "/js/settings.js?v=20261125et", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>

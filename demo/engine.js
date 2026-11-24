@@ -5804,8 +5804,8 @@ function cardSlugFree(name, self, email) {
   }
 
   function idFormats() {
-    if (DB.id_formats) return DB.id_formats;
-    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' } };
+    if (DB.id_formats) { if (!DB.id_formats.trip) DB.id_formats.trip = { prefix: 'OS', width: 2, next_no: 1 }; return DB.id_formats; }
+    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' }, trip: { prefix: 'OS', width: 2, next_no: 1 } };
     idBackfill();
     return DB.id_formats;
   }
@@ -10532,7 +10532,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var m = new Date(Date.parse(t.started_at) + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var refs = (OST.refs = OST.refs || {});
         refs[m] = (refs[m] || 0) + 1;
-        t.ref = '#OS' + m + (refs[m] < 10 ? '0' : '') + refs[m];
+
+        var tf = (idFormats().trip) || { prefix: 'OS', width: 2 }, tn = String(refs[m]);
+        while (tn.length < (tf.width || 2)) tn = '0' + tn;
+        t.ref = '#' + (tf.prefix || 'OS') + m + tn;
         return t.ref;
       };
       var oJson = function (t) {
@@ -10566,16 +10569,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return null;
       };
       var oFile = function (st) {
-        if (!st.client_id || st.touch_id || !st.left_at) return;
+        if (!st.client_id) return;
         var t = OST.trips.filter(function (x) { return x.id === st.trip_id; })[0];
         if (!scopeSeen(st.client_id, 'work')) return;
         var clk = function (iso) { var d = new Date(Date.parse(iso) + 8 * 36e5), h = d.getUTCHours();
           return (h % 12 || 12) + ':' + String(d.getUTCMinutes()).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
         var w = t.companions.map(function (id) { return oName(id).name; }).filter(Boolean).sort().join(', ');
+
+        var line = 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + (st.venue ? ', at ' + st.venue : '') + ', ' +
+          (st.left_at ? clk(st.arrived_at) + ' to ' + clk(st.left_at) : 'from ' + clk(st.arrived_at) + ' (in progress)') +
+          (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : '');
+        var had = st.touch_id && (DB.client_touches || []).filter(function (x) { return x.id === st.touch_id; })[0];
+        if (had) { had.summary = line; return; }
         var tid = nid('touch');
         DB.client_touches.push({ id: tid, client_id: st.client_id, kind: 'visit', happened_at: new Date(Date.parse(st.arrived_at) + 8 * 36e5).toISOString().slice(0, 10),
-          by_whom: oName(t.driver_id).name, summary: 'Outstation visit: ' + t.purpose.charAt(0).toUpperCase() + t.purpose.slice(1) + ', ' + clk(st.arrived_at) + ' to ' + clk(st.left_at) +
-            (w ? ', with ' + w : '') + '.' + (t.note ? ' ' + t.note : ''), created_at: new Date().toISOString(), archived_at: null, done_at: null });
+          by_whom: oName(t.driver_id).name, summary: line, created_at: new Date().toISOString(), archived_at: null, done_at: null });
         st.touch_id = tid;
       };
       var oLast = function (t) { return OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return b.seq - a.seq; })[0]; };
@@ -10644,9 +10652,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           started_at: new Date().toISOString(), ended_at: null, end_lat: null, end_lng: null, end_accuracy_m: null, end_note: null, km_back: null, km_total: null, state: 'open' };
         oRef(ciT);
         OST.trips.push(ciT);
-        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+        OST.stops.push({ id: oUuid(), trip_id: ciT.id, seq: 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
           lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
           arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+        oFile(oLast(ciT));
         return oOk({ ok: true, trip: oJson(ciT) });
       }
       if (name === 'outstation_stop_add' || name === 'outstation_check_out') {
@@ -10668,9 +10677,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         saL.left_at = new Date().toISOString();
         oFile(saL);
         if (name === 'outstation_stop_add') {
-          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: args.p_client ? null : String(args.p_venue).trim(),
+          OST.stops.push({ id: oUuid(), trip_id: saT.id, seq: saL.seq + 1, client_id: args.p_client || null, venue: String(args.p_venue || '').trim() || null,
             lat: args.p_lat, lng: args.p_lng, accuracy_m: args.p_accuracy, read_at: args.p_read_at, address: null, zone: null,
             arrived_at: new Date().toISOString(), left_at: null, km_from_prev: null, touch_id: null });
+          oFile(oLast(saT));
         } else {
           saT.state = 'closed'; saT.ended_at = new Date().toISOString(); saT.end_lat = args.p_lat; saT.end_lng = args.p_lng;
           saT.end_accuracy_m = args.p_accuracy; saT.end_note = String(args.p_note || '').trim() || null; saT.rating = args.p_rating == null ? null : args.p_rating;
@@ -11069,7 +11079,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (dfr) return Promise.resolve({ data: null, error: { message: dfr } });
       var da = args || {}, dOut;
       idFormats();
-      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job'].map(function (k) { var f = DB.id_formats[k];
+      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
         return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
@@ -11078,7 +11088,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = dO && opsMe() ? DB.id_formats.job.pattern.replace('{creator}', (dC && dC.creator_code) || '').replace('{campaign}', (dM && dM.campaign_code) || '') : null;
       } else if (!opsGranted('team.settings', 'work')) dOut = { error: 'denied' };
       else {
-        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference' })[da.p_kind];
+        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number' })[da.p_kind];
         if (!dF) dOut = { error: 'not-found' };
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
@@ -11087,6 +11097,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           var dP = String(da.p_prefix || '').trim().toUpperCase(), dWd = Number(da.p_width), dN = Number(da.p_next);
           var dRows = da.p_kind === 'creator' ? (DB.creators || []).map(function (c) { return c.creator_code; }) : (DB.campaigns || []).map(function (m) { return m.campaign_code; });
+          if (da.p_kind === 'trip') { dRows = []; dN = dF.next_no; }
           var dTop = dRows.filter(function (c) { return c && new RegExp('^' + dP + '[0-9]+$').test(c); }).map(function (c) { return Number(c.slice(dP.length)); })
             .reduce(function (a, b) { return Math.max(a, b); }, 0);
           if (!/^[A-Z]{1,6}$/.test(dP)) dOut = { error: 'bad-prefix' };
@@ -11101,7 +11112,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (dN !== dF.next_no) dMv.push('next ' + dF.next_no + ' → ' + dN);
             var dRp = da.p_kind === 'creator' ? String(da.p_pattern || '').trim() : '';
             if (dRp && dRp !== dF.pattern) { dMv.push('payment details reference ' + (dF.pattern || 'not set') + ' → ' + dRp); }
-            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
+            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', da.p_kind === 'trip' ? 'Outstation trip numbers' : 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
             dOut = { ok: true };
           }
         }

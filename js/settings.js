@@ -155,9 +155,17 @@
     ids: function () {
       return db.rpc('id_formats_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('ids');
-        return parts(r.data.filter(function (f) { return f.kind !== 'job'; }).map(function (f) {
+        return parts(r.data.filter(function (f) { return f.kind === 'creator' || f.kind === 'campaign'; }).map(function (f) {
           return (f.kind === 'creator' ? 'Next creator ' : 'Next campaign ') + idNext(f);
         }));
+      });
+    },
+    /* Outstation trip numbers (2026-11-24): the next one this month. */
+    tripno: function () {
+      return db.rpc('id_formats_list').then(function (r) {
+        if (r.error || !Array.isArray(r.data)) throw r.error || new Error('tripno');
+        var f = r.data.filter(function (x) { return x.kind === 'trip'; })[0];
+        return f ? 'Next ' + tripWord(f, 1) : '';
       });
     },
     industries: function () {
@@ -364,6 +372,7 @@
       biz && { id: 'outstation', name: 'Outstation', kind: 'edit',
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months')]) },
+      biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -961,6 +970,46 @@
     return out.replace('{' + run + '}', num);
   }
   var IDS_WORD = { creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference' };
+  /* A trip's number as the database writes it: '#', the prefix, the month
+     (YYMM, Malaysia's) and the month's count to the digits set. */
+  function tripWord(f, n) {
+    var num = String(n);
+    while (num.length < (Number(f.width) || 2)) num = '0' + num;
+    var t = window.ADspaceClock && window.ADspaceClock.today ? window.ADspaceClock.today() : new Date().toISOString().slice(0, 10);
+    return '#' + (f.prefix || 'OS') + String(t).slice(2, 4) + String(t).slice(5, 7) + num;
+  }
+  function openTripNo() {
+    db.rpc('id_formats_list').then(function (r) {
+      var f = ((r && r.data) || []).filter(function (x) { return x.kind === 'trip'; })[0];
+      if (r.error || !f) {
+        rowSay('tripno')(r.error && /function|schema cache/i.test(r.error.message) || !f ? window.ADspaceWords.line.notYet : 'Could not load. Refresh the page.', 'err');
+        return;
+      }
+      window.ADspaceConfirm.ask({
+        title: 'Outstation trip numbers', go: 'Save', wait: true,
+        fields: [
+          { name: 'prefix', label: 'Prefix', half: true, value: f.prefix || '', required: true },
+          { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true,
+            note: 'The first trip this month reads ' + tripWord(f, 1) + '. The count starts again each month.' }],
+        check: function (v) {
+          if (!/^[A-Za-z]{1,6}$/.test(String(v.prefix || '').trim())) return IDS_SAID['bad-prefix'];
+          if (!/^[2-6]$/.test(String(v.width || '').trim())) return IDS_SAID['bad-width'];
+          return '';
+        }
+      }, function (v) {
+        var p = String(v.prefix).trim().toUpperCase(), w = Number(v.width);
+        if (p === f.prefix && w === Number(f.width)) { rowSay('tripno')('No change.', 'ok'); return Promise.resolve(''); }
+        return db.rpc('id_format_set', { p_kind: 'trip', p_prefix: p, p_width: w, p_next: Number(f.next) || 1, p_pattern: null }).then(function (r2) {
+          if (r2.error) return /function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message;
+          var d = r2.data || {};
+          if (d.error) return IDS_SAID[d.error] || 'Not saved. Please try again.';
+          readLine('tripno');
+          rowSay('tripno')('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('tripno')('Could not load. Refresh the page.', 'err'); });
+  }
   function openIds() {
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
