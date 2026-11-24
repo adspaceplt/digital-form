@@ -639,11 +639,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   Laman Citra's row while 44 suites ran, and passed alone at once. Its
   cause (a wait the list's first paint outruns under load) is to be
   found; held here until it ships.
-- 2026-11-24, `uxaudit` (the day's full gate, in code no release that day
-  touched): at 390 a campaign's schedule row cuts its visit date and time
-  (`span.kcard-sum` "20 Sept 2026, 2:00pm" is clipped) on six Creators
-  screens, light and dark. Its cause (the row's track or the phone label
-  `sched-lab` added before it) is to be found; held here until it ships.
 - 2026-11-24, `sql` (the outstation trip number release, which touches
   neither the function nor its seed): "each with its bill: paid with its
   day and amount, a bill in hand before a paid one, none where none is
