@@ -15894,6 +15894,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!r) return drNo('not-found');
       if (name === 'delete_request_decide') {
         if (r.requested_by === drMe.id) return drNo('own');
+
+        if (r.state === 'approving' && r.decided_by !== drMe.id && Date.now() - Date.parse(r.decided_at || 0) < 600000) return drNo('approving');
         if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
         var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
         if (args.p_approve) {

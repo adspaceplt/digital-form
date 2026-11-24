@@ -91,6 +91,7 @@
     var from = document.activeElement;
     if (box.parentNode !== document.body) document.body.appendChild(box);
     box.hidden = false;
+    lineWatch(box);
     open = { box: box, opener: o.opener || null, from: from && from !== document.body ? from : null, dirty: false, onClose: o.onClose || null };
     document.addEventListener('keydown', onKey, true);
     box.addEventListener('input', onEdit);
@@ -144,9 +145,14 @@
      refused for its location and photo read as a press that ran nothing
      (2026-11-24, the user on an iPhone). Whatever line a sheet writes, the
      body scrolls it into view, once, the moment it reads. */
+  /* Watched only while a sheet is open (review 2026-11-24: one observer
+     over the whole document read every change the console made): a sheet
+     unhidden, by show() or directly, takes its own observer, and gives it
+     up when hidden again. */
+  var lineWatch = function () {};
   if (window.MutationObserver) {
     var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
-    new MutationObserver(function (list) {
+    var onLines = function (list) {
       var seen = [];
       list.forEach(function (m) {
         var n = m.target.nodeType === 3 ? m.target.parentNode : m.target;
@@ -159,7 +165,25 @@
         try { line.scrollIntoView({ block: 'nearest', behavior: calm && calm.matches ? 'auto' : 'smooth' }); }
         catch (e) { line.scrollIntoView(false); }
       });
-    }).observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+    };
+    var watching = [];
+    lineWatch = function (sheet) {
+      if (!sheet || !sheet.classList || !sheet.classList.contains('sheet')) return;
+      var at = -1;
+      watching.forEach(function (w, i) { if (w.s === sheet) at = i; });
+      if (!sheet.hidden && at < 0) {
+        var o = new MutationObserver(onLines);
+        o.observe(sheet, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        watching.push({ s: sheet, o: o });
+      } else if (sheet.hidden && at >= 0) {
+        watching[at].o.disconnect();
+        watching.splice(at, 1);
+      }
+    };
+    new MutationObserver(function (list) {
+      list.forEach(function (m) { lineWatch(m.target); });
+    }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    Array.prototype.forEach.call(document.querySelectorAll('.sheet:not([hidden])'), lineWatch);
   }
 
   window.ADspaceSheet = {

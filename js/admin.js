@@ -2675,21 +2675,30 @@
     try { return JSON.parse(document.getElementById('lazyScripts').textContent) || {}; } catch (e) { return {}; }
   })();
   var LAZY_ORDER = Object.keys(LAZY), lazyAsked = {}, lazyRan = {};
+  /* A script is added only once what it reads as it loads (`first`) has
+     run: a dependency that fails to fetch leaves the scripts after it
+     unadded and unmarked, so the next ask fetches them all again (review
+     2026-11-24: a script run without its dependency was marked loaded and
+     never fetched again). */
   function lazyOne(k) {
     if (lazyAsked[k]) return lazyAsked[k];
-    lazyAsked[k] = new Promise(function (ok, bad) {
-      var el = document.createElement('script');
-      el.src = LAZY[k].src;
-      el.async = false;
-      el.onload = function () { lazyRan[k] = true; ok(); };
-      el.onerror = function () {
-        delete lazyAsked[k];
-        if (el.parentNode) el.parentNode.removeChild(el);
-        bad(new Error('Failed to fetch ' + k));
-      };
-      document.body.appendChild(el);
+    var mine = lazyAsked[k] = Promise.resolve().then(function () {
+      return Promise.all((LAZY[k].first || []).filter(function (d) { return LAZY[d] && d !== k; }).map(lazyOne));
+    }).then(function () {
+      return new Promise(function (ok, bad) {
+        var el = document.createElement('script');
+        el.src = LAZY[k].src;
+        el.async = false;
+        el.onload = function () { lazyRan[k] = true; ok(); };
+        el.onerror = function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          bad(new Error('Failed to fetch ' + k));
+        };
+        document.body.appendChild(el);
+      });
     });
-    return lazyAsked[k];
+    mine.catch(function () { if (lazyAsked[k] === mine) delete lazyAsked[k]; });
+    return mine;
   }
   function lazyKeys(keys, whole) {
     var want = {};
