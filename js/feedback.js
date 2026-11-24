@@ -23,14 +23,14 @@
       doneTitle: 'Feedback received', doneText: 'ADspace appreciates the time you have taken to share your feedback.',
       usedTitle: 'Already submitted', usedText: 'This feedback was submitted on {d}.',
       closedTitle: 'Request closed', closedText: 'Please contact your ADspace account manager.',
-      website: 'Visit website'
+      website: 'Visit website', fbSent: 'Feedback submitted', yourFeedback: 'Your feedback', follow: 'Follow ADspace'
     },
     zh: {
       lang: 'EN', preparedFor: '客户', requested: '请求日期：{d}', submit: '提交',
       doneTitle: '已收到您的反馈', doneText: '感谢您抽出宝贵时间提供反馈。',
       usedTitle: '已提交', usedText: '此反馈已于{d}提交。',
       closedTitle: '请求已关闭', closedText: '请联系您的 ADspace 客户经理。',
-      website: '访问网站'
+      website: '访问网站', fbSent: '反馈已提交', yourFeedback: '您的反馈', follow: '关注 ADspace'
     }
   });
   var t = function () { return WORDS[lang]; };
@@ -38,7 +38,7 @@
   var LEAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
-  var info = null, state = 'loading', answers = {}, sending = false, answeredAt = null;
+  var info = null, state = 'loading', answers = {}, sending = false, answeredAt = null, sentAt = null;
   var root = function () { return $('fbRoot'); };
   var CFG = window.ADSPACE_CONFIG || {};
   var site = function () { return W.absUrl((window.ADSPACE_ORG || {}).website || ''); };
@@ -65,6 +65,21 @@
       return '<a class="plink" href="' + esc(W.absUrl(s.url)) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a>';
     }).join('') + '</div>';
   }
+  /* Received (the board ReceivedFeedback, 2026-11-25; js/icons.js received):
+     where it stands, what was answered, and ADspace to follow. */
+  function paintDone() {
+    var w = t(), I = window.ADspaceIcons, C = window.ADspaceClock, zh = lang === 'zh', u = site();
+    var when = sentAt && C ? C.date(sentAt, { zh: zh }) + (zh ? '' : ', ') + C.clock(sentAt, { zh: zh }) : '';
+    var follow = socials() + (u ? '<div class="rcv-acts"><a class="btn" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(w.website) + LEAVE + '</a></div>' : '');
+    root().innerHTML = I.received({
+      title: w.doneTitle, line: w.doneText, ref: F.title(info.kind, lang) + (info.client ? ' · ' + info.client : ''),
+      steps: [
+        { state: 'done', title: w.fbSent, sub: esc(when) },
+        { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow }
+      ],
+      cards: [I.summary(w.yourFeedback, [{ rows: F.read(info.questions, answers, lang) }]), follow ? I.card(w.follow, follow) : '']
+    });
+  }
   function paint() {
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
@@ -75,7 +90,7 @@
     if (state === 'fail') { cover('', w.failTitle, w.failText); return; }
     if (state === 'closed') { cover('archive', w.closedTitle, w.closedText, websiteAct()); return; }
     if (state === 'answered') { cover('done', w.usedTitle, answeredAt ? f(w.usedText, { d: day(answeredAt) }) : '', websiteAct()); return; }
-    if (state === 'done') { cover('done', w.doneTitle, w.doneText, socials() + websiteAct()); return; }
+    if (state === 'done') { paintDone(); return; }
     root().innerHTML = '<div class="qs-step fb-step" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(F.title(info.kind, lang)) + '</h1>' +
       '<p class="qs-lead">' + esc(f(w.requested, { d: day(info.requested_at) })) + '</p></div>' +
       '<form class="fb-form" id="fbForm" novalidate data-lang="' + lang + '">' + F.form(info.questions, lang, answers) + '</form>' +
@@ -100,7 +115,7 @@
         say(t().notSent); return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; paint(); window.scrollTo(0, 0);
+      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say(t().notSent);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });

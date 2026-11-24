@@ -9745,43 +9745,44 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (max-width: 640px) { .qs-svcs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .qs-time { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
 .qs-time .ic { color: var(--ink-soft); }
-/* Request received (the boards QuoteReceivedPhone and QuoteReceivedDesk):
-   the tick disc over the title, the statement and the reference; the track
-   on a shaded card; what was asked for and the representative as hairline
-   cards. */
-.qs-rcv { gap: 24px; }
-.qs-rcv-head { display: grid; justify-items: center; gap: 10px; text-align: center; }
-.qs-rcv-head .qs-lead { max-width: 420px; font-size: 17px; }
-.qs-rcv-tick { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; corner-shape: round;
+/* The received page (js/icons.js received, 2026-11-25; /details/, /supplier/,
+   /careers/, /feedback/, /quote/): the tick disc over the title, the
+   statement and the reference; the track and every card shaded (a client
+   page draws no card edge, DESIGN.md §2). */
+.rcv { gap: 24px; }
+.rcv-head { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.rcv-line { margin: 0; max-width: 440px; font-size: 17px; line-height: 1.5; color: var(--ink-soft); }
+.rcv-note { margin: 0; max-width: 440px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.rcv-ref { margin: 0; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.rcv-tick { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; corner-shape: round;
   background: var(--ok-bg); color: var(--ok); }
-.qs-rcv-tick .ic { width: 30px; height: 30px; stroke-width: 2.2; }
-.qs-rcv .qs-wait-ref { margin: 0; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.qs-track-steps { list-style: none; margin: 0; padding: 20px; display: grid; border-radius: var(--radius-lg); background: var(--sunk); }
-.qs-track-steps li { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
-.qs-track-steps li:last-child { padding-bottom: 0; }
-.qs-track-steps li:not(:last-child)::after { content: ""; position: absolute; left: 15.5px; top: 34px; bottom: 2px; width: 1px; background: var(--line); }
-.qs-track-steps li.is-done:not(:last-child)::after { background: var(--ok); }
-.qs-trk-dot { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
-  corner-shape: round; background: var(--field); color: var(--ink-mute); }
-.qs-trk-dot .ic { width: 16px; height: 16px; }
-.is-done > .qs-trk-dot { background: var(--ok-solid); color: var(--on-ok); }
-.is-done > .qs-trk-dot .ic { stroke-width: 2.2; }
-.is-now > .qs-trk-dot { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
-.qs-track-steps li > span:last-child { display: grid; gap: 2px; padding-top: 6px; }
-.qs-track-steps b { font-size: 14.5px; font-weight: 400; color: var(--ink-soft); }
-.qs-track-steps .is-done b, .qs-track-steps .is-now b { font-weight: 600; color: var(--ink); }
-.qs-track-steps small { font-size: 13px; color: var(--ink-mute); }
-.qs-amber { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); }
-.qs-card { display: grid; gap: 12px; padding: 18px 20px; border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--line-soft); }
-.qs-card > h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.rcv-tick .ic { width: 30px; height: 30px; stroke-width: 2.2; }
+.rcv-track { list-style: none; margin: 0; padding: 20px; display: grid; border-radius: var(--radius-lg); background: var(--sunk); }
+.rcv-track li { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
+.rcv-track li:last-child { padding-bottom: 0; }
+.rcv-track li:not(:last-child)::after { content: ""; position: absolute; left: 15.5px; top: 34px; bottom: 2px; width: 1px; background: var(--line); }
+.rcv-track li.is-done:not(:last-child)::after { background: var(--ok); }
+.rcv-dot { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  corner-shape: round; background: var(--card); color: var(--ink-mute); }
+.rcv-dot .ic { width: 16px; height: 16px; }
+.is-done > .rcv-dot { background: var(--ok-solid); color: var(--on-ok); }
+.is-done > .rcv-dot .ic { stroke-width: 2.2; }
+.is-now > .rcv-dot { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.rcv-track li > span:last-child { display: grid; gap: 2px; padding-top: 6px; min-width: 0; }
+.rcv-track b { font-size: 14.5px; font-weight: 400; color: var(--ink-soft); }
+.rcv-track .is-done b, .rcv-track .is-now b { font-weight: 600; color: var(--ink); }
+.rcv-track small { font-size: 13px; color: var(--ink-mute); }
+.rcv-amber { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); }
 .qs-asklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; }
 .qs-asklist li { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
-.qs-rcv-rep { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
-.qs-rcv-rep .qs-rep-who { display: grid; gap: 2px; }
-.qs-rcv-rep .qs-rep-who small { font-size: 13px; color: var(--ink-soft); }
-.qs-rcv-rep .qs-rep-who small:first-child { font-size: 12px; color: var(--ink-mute); }
-.qs-rcv-rep .qs-rep-who b { font-size: 15px; font-weight: 600; }
-@media (max-width: 640px) { .qs-rcv-rep { grid-template-columns: minmax(0, 1fr); } }
+.qs-asklist .qs-disc { background: var(--card); }
+.rcv-contact { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.rcv-who { display: grid; gap: 2px; min-width: 0; }
+.rcv-who small { font-size: 13px; color: var(--ink-soft); }
+.rcv-who small:first-child { font-size: 12px; color: var(--ink-mute); }
+.rcv-who b { font-size: 15px; font-weight: 600; }
+.rcv-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 640px) { .rcv-contact { grid-template-columns: minmax(0, 1fr); } .rcv-contact .rcv-acts > .btn { flex: 1 1 100%; } }
 /* A platform's name with its marks needs the column's width on a phone. */
 @media (max-width: 560px) { .qs-plats { grid-template-columns: minmax(0, 1fr); } }
 .qs-chip.is-on .ic-cut { fill: var(--card); }
@@ -10115,7 +10116,9 @@ body.qs-page { background: var(--card); }
   .rate[style*="--rate-n: 11"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .rate[style*="--rate-n: 5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
-.fb-social { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+/* ADspace's pages to follow, in the received page's card (2026-11-25): equal widths on a phone. */
+.fb-social { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 640px) { .fb-social > .plink { flex: 1 1 0; justify-content: center; } }
 /* On the client portal: the open request's card (its form under its meta
    line) and the Feedback tab's past answers, each a row opening its answers,
    read only. */

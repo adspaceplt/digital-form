@@ -35,7 +35,8 @@
       introP: 'Provide your company\'s billing details to ADspace.', billing: 'Billing',
       companyLine: 'Registered Company Name, Business Registration No., Old Registration No., Tax Identification Number (TIN) and SST Registration No.',
       billingLine: 'Billing address and finance email.', contactLine: 'Salutation, name, mobile number and email.',
-      reviewLine: 'Confirm that the details are correct, then submit.'
+      reviewLine: 'Confirm that the details are correct, then submit.',
+      dfConfirmed: 'Billing details confirmed'
     },
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
@@ -54,7 +55,8 @@
       introP: '请向 ADspace 提供贵公司的账单资料。', billing: '账单',
       companyLine: '公司注册名称、商业注册号码、旧注册号码、税务识别号（TIN）及 SST 注册号码。',
       billingLine: '账单地址及财务邮箱。', contactLine: '称谓、姓名、手机号码及邮箱。',
-      reviewLine: '确认资料无误后提交。'
+      reviewLine: '确认资料无误后提交。',
+      dfConfirmed: '账单资料已确认'
     }
   });
   var t = function () { return WORDS[lang]; };
@@ -72,7 +74,7 @@
   var info = null, state = 'loading', typed = {}, consent = false, sending = false;
   /* The form in steps (the user, 2026-11-25): the opening page (0), then a
      step a section, the last reading the answers back before Submit. */
-  var at = 0;
+  var at = 0, sentAt = null;
   var STEPS = [
     { glyph: 'building', name: 'company', line: 'companyLine', keys: ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no'] },
     { glyph: 'pin', name: 'billing', line: 'billingLine', keys: ['billing_address', 'finance_email'] },
@@ -133,15 +135,20 @@
         field('dfEmail', w.email, true, input('dfEmail', 'contact_email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
       '</section>';
     /* The answers read back, an empty one left out, then the consent. */
-    var v = function (k) { return String(typed[k] || '').trim(); };
+    return yours({ label: w.stepEdit, attrs: 'id="dfEdit"' }) +
+      '<label class="qs-consent"><input type="checkbox" id="dfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(w.consent) + '</span></label>' +
+      '<span class="msg" id="dfConsentMsg"></span>' +
+      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>';
+  }
+  /* What was typed, read back: on the review step with Edit, and on the
+     received page once sent. */
+  function yours(edit) {
+    var w = t(), v = function (k) { return String(typed[k] || '').trim(); };
     return window.ADspaceIcons.summary(w.yourDetails, [
         { name: w.company, rows: [[w.legal, v('legal_name').toUpperCase()], [w.brn, v('company_no')], [w.old, v('company_no_old')], [w.tin, v('tin')], [w.sst, v('sst_no')]] },
         { name: w.billing, rows: [[w.address, v('billing_address')], [w.finance, v('finance_email')]] },
         { name: w.contact, rows: [[w.name, (v('contact_salutation') ? salWord(v('contact_salutation')) + ' ' : '') + v('contact_name')], [w.phone, v('contact_phone')], [w.email, v('contact_email')]] }
-      ], { label: w.stepEdit, attrs: 'id="dfEdit"' }) +
-      '<label class="qs-consent"><input type="checkbox" id="dfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(w.consent) + '</span></label>' +
-      '<span class="msg" id="dfConsentMsg"></span>' +
-      '<p class="qs-note">' + esc(f(w.formEnds, { d: day(info.expires_at, true) })) + '</p>';
+      ], edit);
   }
   function paintForm() {
     var w = t(), I = window.ADspaceIcons, x = STEPS[at - 1], last = at === STEPS.length;
@@ -152,10 +159,23 @@
       (last ? '<button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button>'
         : '<button class="btn btn-primary" type="button" id="dfNext">' + esc(w.stepNext) + '</button>') + '</div>';
   }
-  function paintDone(title, text) {
-    root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
-      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">' + esc(title) + '</h1><p>' + esc(text) + '</p></div>';
+  /* Received (the board ReceivedDetails, 2026-11-25; js/icons.js received):
+     just sent, where it stands, what was sent and the account manager; a
+     link opened again once sent, the statement alone. */
+  function paintDone(title, text, sent) {
+    var w = t(), I = window.ADspaceIcons, C = window.ADspaceClock, zh = lang === 'zh', rep = sent && info && info.rep;
+    var when = sent && C ? C.date(sent, { zh: zh }) + (zh ? '' : ', ') + C.clock(sent, { zh: zh }) : '';
+    var wa = rep && rep.whatsapp ? '<a class="btn btn-primary" href="https://wa.me/' + esc(rep.whatsapp) + '" target="_blank" rel="noopener">' +
+      I.svg('chat') + esc(w.chatWhatsApp) + '</a>' : '';
+    root().innerHTML = I.received({
+      title: title, line: text, ref: sent && info ? info.brand : '',
+      steps: sent ? [
+        { state: 'done', title: w.detailsSent, sub: esc(when) },
+        { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow },
+        { glyph: 'verified', title: w.dfConfirmed }
+      ] : [],
+      cards: sent ? [yours(null), rep ? I.contactCard(w.accountManager, rep.name, rep.title, wa) : ''] : []
+    });
   }
   function paint() {
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
@@ -166,7 +186,7 @@
     if (state === 'fail') { cover(w.failTitle, w.failText); return; }
     if (state === 'expired') { cover(w.linkExpired, w.notFoundText); return; }
     if (state === 'submitted') { paintDone(w.formReceived, w.formSubmitted); return; }
-    if (state === 'done') { paintDone(w.formReceived, w.doneP); return; }
+    if (state === 'done') { paintDone(w.formReceived, w.doneP, sentAt); return; }
     root().innerHTML = at ? paintForm() : paintIntro();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
@@ -269,7 +289,7 @@
         return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; paint(); window.scrollTo(0, 0);
+      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say('dfMsg', t().notSent);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });

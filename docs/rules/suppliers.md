@@ -23,7 +23,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   groups of Not set (2026-10-20, SUP-1 to SUP-3).
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon),
   in steps since 2026-11-25 (Billing details, Person in charge, Payment
-  details, Authorisation; DESIGN.md §4), each step
+  details, Authorisation; then the received page, no contact; DESIGN.md §4), each step
   leads For ADspace · Supplier ID, Enter moving to the next field and
   submitting from the last alone (2026-10-20, SPF-2, SPF-3), a failed
   send naming ADspace, never an account manager (`W.notSentAdspace`,
