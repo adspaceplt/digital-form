@@ -202,9 +202,11 @@ Deno.serve(async (req) => {
     if (!member || !member.active) {
       /* A client's contact signed in to the client portal (2026-10-08): their
          logos and reports sit under content/ too. Live portal access only,
-         as portal_clients() answers it; an address that is also a colleague's
-         was answered above. Each client they hold access at is a folder. */
-      if (member) return json({ error: 'not_team' }, 403, origin);
+         as portal_clients() answers it; an address that is also an active
+         colleague's was answered above, and a former colleague's address is
+         a contact's like any other (portal_clients() excludes only an
+         active colleague; 2026-11-24). Each client they hold access at is a
+         folder. */
       const { data: contact } = await admin.from('client_contacts')
         .select('client_id').eq('portal_access', true).is('archived_at', null)
         .ilike('email', exactEmail(user.email)).limit(MAX_FOLDERS);
