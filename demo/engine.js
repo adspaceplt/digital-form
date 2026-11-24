@@ -10535,7 +10535,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var tdD = new Date(Date.parse(tdT.started_at) + 8 * 36e5);
         DB.activity_log.unshift({ id: nid('al'), actor: oMe.name, action: 'ops.deleted', subject: tdT.ref,
           detail: 'Outstation trip · ' + tdD.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][tdD.getUTCMonth()] + ' ' + tdD.getUTCFullYear() +
-            ' · ' + (oName(tdT.driver_id).name || 'a colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
+            ' · ' + (oName(tdT.driver_id).name || 'Former colleague') + ' · ' + tdS.length + (tdS.length === 1 ? ' stop' : ' stops'), created_at: new Date().toISOString() });
         var tdIds = tdS.map(function (x) { return x.id; });
         var tdTouch = tdS.map(function (x) { return x.touch_id; }).filter(Boolean);
         DB.client_touches = (DB.client_touches || []).filter(function (x) { return tdTouch.indexOf(x.id) < 0; });
@@ -11700,7 +11700,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\n{changes}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
         { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
 
-        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If this was not you, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If you did not make this change, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
         { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
@@ -12043,10 +12043,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             cpNew.prior_id = cpWas ? cpWas.id : null;
             cpNew.changes = !cpWas ? [] : [
               [cpWas.method, cpWas.bank || '', cpWas.currency, cpWas.account].join('|') !== [cpNew.method, cpNew.bank || '', cpNew.currency, cpNew.account].join('|')
-                ? 'Bank account changed: ending ' + cpWas.account.slice(-4) + ' → ' + cpNew.account.slice(-4) : null,
-              String(cpWas.payee).trim() !== String(cpNew.payee).trim() ? 'Account holder changed: ' + cpWas.payee + ' → ' + cpNew.payee : null,
+                ? 'Bank account changed from the account ending ' + cpWas.account.slice(-4) + ' to the account ending ' + cpNew.account.slice(-4) + '.' : null,
+              String(cpWas.payee).trim() !== String(cpNew.payee).trim() ? 'Account holder changed from ' + cpWas.payee + ' to ' + cpNew.payee + '.' : null,
               String(cpWas.email).trim().toLowerCase() !== String(cpNew.email).trim().toLowerCase() ||
-                String(cpWas.whatsapp || '').replace(/\D/g, '') !== String(cpNew.whatsapp || '').replace(/\D/g, '') ? 'Contact details changed' : null
+                String(cpWas.whatsapp || '').replace(/\D/g, '') !== String(cpNew.whatsapp || '').replace(/\D/g, '') ? 'Contact details changed.' : null
             ].filter(Boolean);
             cpReqs.push(cpNew);
             logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details submitted · ' + cpRef + ' · ' +
@@ -16621,8 +16621,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           if (String(args.p_note || '').length > 300) return hNo('too-long');
           pi.state = 'none'; pi.candidate_note = String(args.p_note || '').trim() || null;
-          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'Other times asked for', created_at: hNowIso });
-          hTell(pc, 'hiring.none', 'A candidate asked for other interview times', pc.position + '. Send new times from the candidate\'s Interview tab.');
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'New times requested', created_at: hNowIso });
+          hTell(pc, 'hiring.none', 'A candidate requested new interview times', pc.position + '. Send new times from the candidate\'s Interview tab.');
         }
         pc.last_step_at = hNowIso;
         return hOk({});

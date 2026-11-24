@@ -278,7 +278,7 @@
   }
   /* A Singapore client billed in RM reads the S$ it comes to beside a
      total, at the rate set in Tax and terms (`fx_sgd`, RM to S$1):
-     " (approx. S$ 952.38)". Nothing where the rate is unset, or for any
+     " (approximately S$ 952.38)". Nothing where the rate is unset, or for any
      other client. */
   /* `fx` is the rate a record kept (a letter's `bill_to.fx_sgd`), else
      the setting on `at`. `approxSgd` is the figure, null where none is
@@ -293,7 +293,7 @@
   }
   function approx(n, c, at, fx) {
     var v = approxSgd(n, c, at, fx);
-    return v == null ? '' : ' (approx. ' + money2(v, 'SG') + ')';
+    return v == null ? '' : ' (approximately ' + money2(v, 'SG') + ')';
   }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.
@@ -368,6 +368,18 @@
      PDF and /quote/. */
   function planFold(lines) {
     lines = (lines || []).map(function (l) { return Object.assign({}, l); });
+    /* Several brands on one quotation (2026-11-24): each brand's lines fold
+       into its own plan, the brands kept in their order. */
+    if (lines.some(function (l) { return l.brand != null; })) {
+      var seen = [];
+      lines.forEach(function (l) { if (seen.indexOf(l.brand) < 0) seen.push(l.brand); });
+      if (seen.length > 1) {
+        return seen.reduce(function (out, b) {
+          return out.concat(planFold(lines.filter(function (l) { return l.brand === b; }).map(function (l) { var c = Object.assign({}, l); delete c.brand; c._b = b; return c; }))
+            .map(function (l) { var c = Object.assign({}, l); c.brand = c._b; delete c._b; return c; }));
+        }, []);
+      }
+    }
     var plan = lines.filter(function (l) { return l.kind === 'plan'; })[0];
     if (!plan) return lines;
     var into = lines.filter(function (l) { return l.in_plan && l !== plan && l.basis !== 'once'; });

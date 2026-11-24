@@ -483,7 +483,9 @@
             valid_until: x.valid_until ? dayWord(x.valid_until) : null,
             monthly_incl_sst: t.month && t.month.incl != null ? amt(t.month.incl, cur) : null,
             one_off_incl_sst: t.once && t.once.incl != null ? amt(t.once.incl, cur) : null,
-            term_months: t.term || null, from_website: x.source === 'website' };
+            term_months: t.term || null, from_website: x.source === 'website',
+            /* several brands on one quotation (2026-11-24) */
+            brands: Array.isArray(t.brands) && t.brands.length > 1 ? t.brands.map(function (b) { return b.name; }) : null };
         });
         return { quotations: out.slice(0, 25), shown: Math.min(out.length, 25), found: out.length };
       });
@@ -923,7 +925,7 @@
             ? after(function () {
               return db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).eq('stage', 'lead').select('id').then(function (q) {
                 /* An empty answer is a client already past Lead; an error is
-                   a stage left unmoved, said with Logged. */
+                   a stage left unmoved, said with Saved. */
                 if (q.error) return 'stuck';
                 if (!(q.data || []).length || !bridge.log) return;
                 return fetched(['crm']).then(function () {
@@ -934,7 +936,7 @@
             })
             : Promise.resolve();
           return moved.then(function (left) {
-            return { said: left === 'stuck' ? 'Logged. The stage was not moved to Contacted. Change the stage on the client\'s record.' : 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
+            return { said: left === 'stuck' ? 'Saved. The stage was not moved to Contacted. Change the stage on the client\'s record.' : 'Saved.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
               undo: function () {
                 return db.from('client_touches').update({ archived_at: new Date().toISOString() }).eq('id', id).select('id').then(function (q) {
                   if (q.error || !(q.data || []).length) throw new Error('Not undone. The database refused the request.');
