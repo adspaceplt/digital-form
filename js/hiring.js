@@ -315,10 +315,10 @@
         return '<div class="readgroups hir-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
       }).join('') + '</div>';
     paintLog();
-    if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', 'Please try again.', function () { openRec(c.id); });
-    if ($('hirShFail')) UI.failLine($('hirShFail'), 'the interview sheets', 'Please try again.', function () { openRec(c.id); });
-    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', 'Please try again.', function () { openRec(c.id); });
-    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', 'Please try again.', function () { openRec(c.id); });
+    if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', '', function () { openRec(c.id); });
+    if ($('hirShFail')) UI.failLine($('hirShFail'), 'the interview sheets', '', function () { openRec(c.id); });
+    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', '', function () { openRec(c.id); });
+    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', '', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
     /* The strip slides its thumb and fades the edge that has more beyond
