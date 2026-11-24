@@ -359,6 +359,7 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    stageFrom: function (stage, day) { return stage + ' from ' + day; },
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
     docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },

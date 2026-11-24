@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -647,7 +647,7 @@
     department_ac_code_set: 'p_key p_code',
     personnel_get: 'p_member', personnel_mine: '', personnel_save: 'p_member p_data p_expected',
     personnel_save_mine: 'p_data p_consent p_name p_expected', personnel_terms_set: 'p_member p_join p_status p_type p_probation p_contract_end p_superior',
-    personnel_request: 'p_member', personnel_revealed: 'p_member p_field', personnel_file_member: 'p_member', personnel_file_set: 'p_member p_kind p_key',
+    personnel_request: 'p_member', personnel_file_member: 'p_member', personnel_file_set: 'p_member p_kind p_key',
     personnel_file_remove: 'p_member p_kind', personnel_file_key: 'p_member p_kind', personnel_unlock: 'p_code',
     personnel_salary_get: 'p_token p_member', personnel_salary_set: 'p_token p_member p_probation p_confirmed',
     personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
@@ -971,6 +971,29 @@
         body: by[m] + (by[m] === 1 ? ' open task' : ' open tasks') + ' to deliver', read_at: null, created_at: now });
     });
   }
+
+  function myDayNow() { return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); }
+  var STAGE_NEXT_WORD = { budget: 'Budget', results: 'Results', in_house: 'Moved in-house', closed: 'Business closed',
+    no_reply: 'No reply', completed: 'Completed', other: 'Other' };
+  var SHORT_MON_STUB = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  function clientsStageDue() {
+    var day = myDayNow();
+    (DB.clients || []).filter(function (c) { return c.stage_next && c.stage_next_on && String(c.stage_next_on).slice(0, 10) <= day; })
+      .sort(function (a, b) { return String(a.stage_next_on).localeCompare(String(b.stage_next_on)) || String(a.name).localeCompare(String(b.name)); })
+      .forEach(function (c) {
+        var to = c.stage_next, on = String(c.stage_next_on).slice(0, 10), why = c.stage_next_reason, note = c.stage_next_note || null;
+        var patch = { stage: to, stage_reason: why, stage_note: note };
+        stageClock('clients', c, patch);
+        Object.assign(c, patch);
+        var d = on.split('-');
+        DB.activity_log = DB.activity_log || [];
+        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name,
+          detail: (to === 'paused' ? 'Paused' : 'Past') + ' from ' + Number(d[2]) + ' ' + SHORT_MON_STUB[Number(d[1]) - 1] + ' ' + d[0] +
+            ', as scheduled · ' + (STAGE_NEXT_WORD[why] || 'Other') + (note ? ': ' + note : ''),
+          created_at: new Date().toISOString() });
+        clientLeftNotice(c, to);
+      });
+  }
   function stageClock(table, row, patch) {
 
     if (table === 'campaigns' && patch && 'state' in patch && patch.state !== row.state && !('state_log' in patch)) {
@@ -982,8 +1005,14 @@
       else patch.completed_at = null;
       return;
     }
+
+    if (table === 'clients' && patch && 'stage_next' in patch && !patch.stage_next) {
+      patch.stage_next_on = null; patch.stage_next_reason = null; patch.stage_next_note = null;
+    }
     if (table !== 'clients' || !patch || !('stage' in patch)) return;
     if (patch.stage === row.stage) return;
+
+    patch.stage_next = null; patch.stage_next_on = null; patch.stage_next_reason = null; patch.stage_next_note = null;
 
     if ('stage_since' in patch || 'stage_log' in patch) return;
     var now = new Date().toISOString();
@@ -1355,6 +1384,8 @@
     });
 
     if (table === 'creators' || table === 'campaigns' || table === 'campaign_options') idBackfill();
+
+    if (table === 'clients') clientsStageDue();
     var rows = (DB[table] || []).slice();
 
     if (table === 'documents') {
@@ -1730,6 +1761,19 @@
             if (srWhy && (['budget', 'results', 'in_house', 'closed', 'no_reply', 'other', 'completed'].indexOf(srWhy) < 0 ||
                 (srWhy === 'completed' && srAt !== 'past')))
               blocked = 'new row for relation "clients" violates check constraint "clients_stage_reason"';
+          }
+
+          if (!blocked && table === 'clients' && pending && pending.stage_next && !('stage' in pending && pending.stage !== r.stage)) {
+            var snRow = Object.assign({}, r, pending);
+            var snChanged = ['stage_next', 'stage_next_on', 'stage_next_reason'].some(function (k) { return k in pending && pending[k] !== r[k]; });
+            if (['paused', 'past'].indexOf(snRow.stage_next) < 0 || !snRow.stage_next_on || !snRow.stage_next_reason ||
+                ['budget', 'results', 'in_house', 'closed', 'no_reply', 'other', 'completed'].indexOf(snRow.stage_next_reason) < 0 ||
+                (snRow.stage_next_reason === 'completed' && snRow.stage_next !== 'past'))
+              blocked = 'new row for relation "clients" violates check constraint "clients_stage_next_shape"';
+            else if (snChanged && String(snRow.stage_next_on).slice(0, 10) <= myDayNow()) blocked = 'stage-next-day';
+            else if (snChanged && snRow.stage_next === snRow.stage) blocked = 'stage-next-same';
+            else if (snChanged && snRow.stage_next_reason === 'completed' && snRow.stage !== 'active' &&
+                     !(snRow.stage_log || []).some(function (e) { return e.stage === 'active'; })) blocked = 'stage-next-reason';
           }
 
           if (table === 'clients' && pending && ('stage' in pending || 'client_code' in pending)) {
@@ -3522,7 +3566,7 @@ function cardSlugFree(name, self, email) {
 
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7,
 
-    health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30, reveal_seconds: 30,
+    health_keep_months: 24, health_leaver_months: 6, health_cap_default: 45, health_near_pct: 90, health_task_hours: 2, health_remind_days: 2, health_alert: 1, abroad_days: 14, abroad_remind_hours: 2, session_idle_days: 30,
 
     hiring_invite_days: 14, hiring_reply_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12, feedback_quiet_months: 6,
 
@@ -3540,7 +3584,7 @@ function cardSlugFree(name, self, email) {
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], stage_back_days: ['Past dates on stage moves', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], reveal_seconds: ['Hidden personal details', ' seconds'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_cap_default: ['Health default weekly capacity', ' hours'], health_near_pct: ['Health near capacity', '%'], health_task_hours: ['Health default hours per task', ' hours'], health_remind_days: ['Health check-in reminder', ' days'], health_alert: ['Health heavy workload notice', ''], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], session_idle_days: ['Signed-in devices', ' days'], hiring_invite_days: ['Interview times within', ' days'], hiring_reply_days: ['Interview reply time', ' days'], hiring_decision_days: ['Decision time', ' working days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'], feedback_quiet_months: ['Feedback not asked within', ' months'],
     work_start: ['Working hours start', ''], work_end: ['Working hours end', ''], work_lunch_min: ['Lunch', ' minutes'], work_weekend: ['Saturday and Sunday', ''],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
@@ -4204,7 +4248,7 @@ function cardSlugFree(name, self, email) {
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
-          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) || (k === 'reveal_seconds' && (v < 10 || v > 600 || v % 1)) ||
+          (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_cap_default' && (v < 1 || v > 80 || v % 1)) || (k === 'health_near_pct' && (v < 50 || v > 100 || v % 1)) || (k === 'health_task_hours' && (v < 0.5 || v > 40 || (v * 2) % 1)) || (k === 'health_remind_days' && (v < 0 || v > 14 || v % 1)) || (k === 'health_alert' && v !== 0 && v !== 1) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'session_idle_days' && (v < 0 || v > 365 || v % 1)) ||
           (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_reply_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_decision_days' && (v < 1 || v > 30 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
           (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'feedback_quiet_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
@@ -4908,19 +4952,6 @@ function cardSlugFree(name, self, email) {
       r1.superior_id = a.p_superior || null; r1.updated_at = nowIso; r1.updated_by = m.id;
       logAct('team.edited', t1.name, 'Employment terms: ' + moves.join(', '));
       return prsJson(t1.id, true);
-    }
-
-    if (name === 'personnel_revealed') {
-      var tr, own2 = a.p_member == null;
-      if (own2) { if (!m) return { error: 'not-team' }; if (!fresh) return { error: 'code-needed' }; tr = m; }
-      else { if (!part) return { error: 'denied' }; tr = who(a.p_member); if (!tr) return { error: 'not-found' }; }
-      if (!m) return { error: 'denied' };
-      if (['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'].indexOf(a.p_field) < 0) return { error: 'bad-field' };
-      var lab = (prsFields()[a.p_field] || [])[2] || a.p_field;
-      var line = lab + ' shown';
-      var since = Date.now() - 60000;
-      if (!DB.activity_log.some(function (x) { return x.action === 'team.revealed' && x.actor === whoNow() && x.subject === tr.name && x.detail === line && Date.parse(x.created_at) > since; })) logAct('team.revealed', tr.name, line);
-      return { ok: true };
     }
     if (name === 'personnel_request') {
       if (!part) return { error: 'denied' };

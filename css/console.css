@@ -5837,6 +5837,15 @@ svg.sec {
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }
 .crm-late-tag { margin-left: 8px; vertical-align: 1px; }
+.crm-ahead-tag { margin-top: 4px; }
+/* A client's stage set ahead, under the record head's meta (CLIENT STAGE
+   AHEAD): its words, then Edit and Withdraw in the line. */
+/* The two acts are one group: wrapped under a phone's words, Edit's word
+   stands on the line's left edge (its padding given back). */
+.rec-ahead { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 16px; }
+.rec-ahead[hidden] { display: none; }
+.rec-ahead-acts { display: inline-flex; margin-inline-start: -8px; white-space: nowrap; }
+.rec-ahead-acts > .linkbtn { font-size: inherit; padding: 0 8px; }
 .crm-c-own .tav, .crm-c-sales .tav { margin-right: 8px; vertical-align: middle; }
 .is-narrow .crm-c-own .tav, .is-narrow .crm-c-sales .tav { display: none; }
 /* Content Review (v3, phase 4): a card a client, three across (two under

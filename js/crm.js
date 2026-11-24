@@ -247,6 +247,21 @@
   var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
                     whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
 
+  /* A stage set ahead (CLIENT STAGE AHEAD, 2026-11-24; the user: "if some
+     client has told us to end for the following month, so we could mark it
+     first"): Paused or Past from a later day in Malaysia, with the reason
+     and note the move will carry. The client stays in its stage until the
+     day; the database's morning job moves it then (`clients_stage_due`). */
+  var AHEAD_COLS = ['stage_next', 'stage_next_on', 'stage_next_reason', 'stage_next_note'];
+  function aheadDay(c, o) {
+    var CK = window.ADspaceClock;
+    return c && c.stage_next_on && CK ? CK.date(String(c.stage_next_on).slice(0, 10), o || {}) : '';
+  }
+  /* "Past from 1 Dec 2026", the same words on the record and, without the
+     year, the list's chip. */
+  function aheadWord(c, o) {
+    return c && c.stage_next ? window.ADspaceWords.line.stageFrom(stageWord(c.stage_next)[1], aheadDay(c, o)) : '';
+  }
   function stageWord(v) {
     for (var i = 0; i < STAGES.length; i++) if (STAGES[i][0] === v) return STAGES[i];
     return STAGES[0];
@@ -256,13 +271,14 @@
      back rather than patched from here: a guessed timestamp is a timestamp
      that disagrees with the one every other screen will load. */
   function refreshClient(c, then) {
-    db.from('clients').select('stage_since, stage_log, updated_at').eq('id', c.id).single().then(function (r) {
+    db.from('clients').select('stage_since, stage_log, updated_at, ' + AHEAD_COLS.join(', ')).eq('id', c.id).single().then(function (r) {
       if (r && r.data) {
         c.updated_at = r.data.updated_at;
         c.stage_since = r.data.stage_since;
         c.stage_log = r.data.stage_log;
         var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
         if (mine) { mine.stage_since = r.data.stage_since; mine.stage_log = r.data.stage_log; }
+        AHEAD_COLS.forEach(function (k) { c[k] = r.data[k] == null ? null : r.data[k]; if (mine) mine[k] = c[k]; });
       }
       then();
     }, then);
@@ -779,6 +795,9 @@
         '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') +
           (isVic(c.id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') +
           (state.late && state.late[c.id] ? '<span class="tone is-danger crm-late-tag">' + state.late[c.id] + ' late</span>' : '') + '</span>' +
+          /* A stage set ahead: its own line under the name, the cell too
+             narrow to hold both (CLIENT STAGE AHEAD). */
+          (c.stage_next ? '<span class="chip crm-ahead-tag">' + esc(aheadWord(c, { year: false })) + '</span>' : '') +
           (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
         '</span>' +
       '</span>' +
@@ -1709,6 +1728,37 @@
       meta.hidden = !bits.length;
     }
     paintMonthLine(c);
+    paintAhead(c);
+  }
+
+  /* The stage set ahead, under the meta (CLIENT STAGE AHEAD): "Past from 1
+     Dec 2026 (Tuesday) · Completed", changed where it is read (Edit) and
+     withdrawn there (Withdraw) at the band's Work; a stage set by hand
+     meanwhile replaces it, so the select is the way in. */
+  function paintAhead(c) {
+    var meta = $('crmIdMeta');
+    if (!meta) return;
+    var line = $('crmAheadLine');
+    if (!line) {
+      line = document.createElement('p');
+      line.id = 'crmAheadLine'; line.className = 'rec-id-meta rec-ahead'; line.hidden = true;
+      var after = $('crmMonthLine') || meta;
+      after.parentNode.insertBefore(line, after.nextSibling);
+    }
+    line.hidden = !(c && c.stage_next);
+    if (line.hidden) { line.innerHTML = ''; return; }
+    var may = bandMay(c.stage || 'lead', 'work') && bandMay(c.stage_next, 'work');
+    line.innerHTML = '<span class="rec-ahead-word">' + esc(aheadWord(c, { named: true })) +
+      (c.stage_next_reason ? '<span aria-hidden="true"> · </span>' + esc(leaveWord(c.stage_next_reason)) : '') + '</span>' +
+      (may ? '<span class="rec-ahead-acts"><button class="linkbtn" id="crmAheadEdit" type="button">Edit</button>' +
+             '<button class="linkbtn" id="crmAheadOff" type="button">Withdraw</button></span>' : '');
+    if (!may) return;
+    $('crmAheadEdit').setAttribute('aria-label', 'Edit ' + aheadWord(c));
+    $('crmAheadOff').setAttribute('aria-label', 'Withdraw ' + aheadWord(c));
+    $('crmAheadEdit').addEventListener('click', function () {
+      askLeave(c, c.stage_next, function (why) { return setAhead(c, c.stage_next, why, true); }, true);
+    });
+    $('crmAheadOff').addEventListener('click', function () { withdrawAhead(c); });
   }
 
   /* ---- The record's Overview -------------------------------------------
@@ -2958,7 +3008,11 @@
        select holds the stage it had until the answer comes. */
     if (to === 'paused' || to === 'past') {
       this.value = was;
-      askLeave(c, to, function (why) { moveStage(c, to, why); });
+      askLeave(c, to, function (why) {
+        /* A later day sets the move ahead; today moves it now. */
+        if (why.on && why.on > todayDay()) return setAhead(c, to, why);
+        moveStage(c, to, why);
+      });
       return;
     }
     /* A Client ID is given when a client turns Active (the user,
@@ -3005,22 +3059,86 @@
       }, function (v) { return then(codeOf(v.code)); });
     });
   }
-  function askLeave(c, to, then) {
+  function todayDay() { return window.ADspaceClock ? ADspaceClock.today() : new Date().toISOString().slice(0, 10); }
+  /* `edit`: the stage set ahead, its day, reason and note filled in, Save
+     keeping the question open until the database answers. Otherwise the
+     move, from today unless a later day is chosen (CLIENT STAGE AHEAD). */
+  function askLeave(c, to, then, edit) {
     var word = stageWord(to)[1];
+    var day = todayDay();
     var ask = function (n) {
       window.ADspaceConfirm.ask({
-        title: 'Move to ' + word + '?',
-        body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It shows' : 'They show') + ' as urgent delivery in My Work.' : '',
-        go: 'Move',
+        title: edit ? 'Edit' : 'Move to ' + word + '?',
+        body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It will show' : 'They will show') + ' as urgent delivery in My Work from the effective date.' : '',
+        go: edit ? 'Save' : 'Move', wait: true,
         fields: [
-          { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(leaveFor(to, logOf(c).concat([{ stage: c.stage }]))), need: 'Choose a reason.' },
-          { name: 'note', label: 'Note', required: false, placeholder: 'Optional' }
-        ]
-      }, function (v) { then({ reason: v.reason, note: v.note || null }); });
+          { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(leaveFor(to, logOf(c).concat([{ stage: c.stage }]), edit ? c.stage_next_reason : null)),
+            value: edit ? c.stage_next_reason : null, need: 'Choose a reason.' },
+          { name: 'note', label: 'Note', required: false, placeholder: 'Optional', value: edit ? c.stage_next_note || '' : null },
+          { name: 'on', label: 'Effective date', type: 'date', required: true,
+            value: edit ? String(c.stage_next_on).slice(0, 10) : day, min: day, need: 'Choose the effective date.' }
+        ],
+        check: function (v) {
+          if (v.on && v.on < day) return 'Choose today or a later date.';
+          if (edit && v.on === day) return 'Choose a later date, or Withdraw and change the stage now.';
+          return '';
+        }
+      }, function (v) { return then({ reason: v.reason, note: v.note || null, on: v.on || day }) || ''; });
     };
     db.rpc('client_open_tasks', { p_client: c.id }).then(function (r) {
       ask(r && !r.error && typeof r.data === 'number' ? r.data : 0);
     }).catch(function () { ask(0); });
+  }
+  /* Set ahead, or changed (CLIENT STAGE AHEAD): one change a client, its
+     day after today in Malaysia; filed under the stage. Answers words for
+     the question still open on a refusal, '' once saved. */
+  var AHEAD_SAID = {
+    'stage-next-day': 'Choose a date after today.',
+    'stage-next-reason': 'Completed applies only to a client that has been Active. Choose another reason.'
+  };
+  function aheadLine(c) {
+    return aheadWord(c) + (c.stage_next_reason ? ' · ' + leaveWord(c.stage_next_reason) + (c.stage_next_note ? ': ' + c.stage_next_note : '') : '');
+  }
+  function setAhead(c, to, why, edit) {
+    var was = c.stage_next ? aheadLine(c) : '';
+    var row = { stage_next: to, stage_next_on: why.on, stage_next_reason: why.reason,
+                stage_next_note: why.note && String(why.note).trim() ? String(why.note).trim() : null };
+    return db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) {
+        var em = r.error.message || '';
+        if (em.indexOf('stage-next-same') > -1) return 'The client is already ' + stageWord(to)[1] + '. Choose another stage.';
+        var k = Object.keys(AHEAD_SAID).filter(function (x) { return em.indexOf(x) > -1; })[0];
+        return k ? AHEAD_SAID[k] : saveWord(em);
+      }
+      if (!(r.data || []).length) return 'Not saved. The database refused the request.';
+      Object.keys(row).forEach(function (k2) { c[k2] = row[k2]; });
+      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+      if (mine && mine !== c) Object.keys(row).forEach(function (k2) { mine[k2] = row[k2]; });
+      log('client.stage', c.name, 'Scheduled: ' + (was && was !== aheadLine(c) ? was + ' → ' : '') + aheadLine(c));
+      msg('crmWorkMsg', 'Saved.', 'ok');
+      openClient(c);
+      return '';
+    }).catch(function () { return 'Not saved. Please try again.'; });
+  }
+  function withdrawAhead(c) {
+    var keep = {};
+    AHEAD_COLS.forEach(function (k) { keep[k] = c[k]; });
+    var said = aheadLine(c);
+    db.from('clients').update({ stage_next: null, stage_next_on: null, stage_next_reason: null, stage_next_note: null })
+      .eq('id', c.id).select('id').then(function (r) {
+        if (r.error) { msg('crmWorkMsg', saveWord(r.error.message || ''), 'err'); return; }
+        if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+        AHEAD_COLS.forEach(function (k) { c[k] = null; if (mine) mine[k] = null; });
+        log('client.stage', c.name, 'Scheduled change withdrawn: ' + said);
+        openClient(c);
+        var host = $('crmWorkMsg');
+        /* Undo where it happened, while the day is still ahead. */
+        if (host && String(keep.stage_next_on).slice(0, 10) > todayDay()) window.ADspaceAdmin.undoHere('Scheduled change withdrawn.', function () {
+          var bad = setAhead(c, keep.stage_next, { on: String(keep.stage_next_on).slice(0, 10), reason: keep.stage_next_reason, note: keep.stage_next_note });
+          if (bad && bad.then) bad.then(function (w) { if (w) msg('crmWorkMsg', w, 'err'); });
+        }, host);
+      }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });
   }
   function moveStage(c, to, why, also) {
     var row = { stage: to };
