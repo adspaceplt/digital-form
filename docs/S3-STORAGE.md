@@ -533,9 +533,12 @@ S3 → **myadspace** → **Permissions** → **Cross-origin resource sharing
 `"AllowedMethods": ["GET", "PUT"]`. Nothing else changes; `private/` stays
 closed to CloudFront, and a link without a signature is still refused.
 
-### 7b. Move the pictures already held (Claude, once)
+### 7b. Move the pictures already held (Claude, once; done, retired 2026-11-24)
 
-`report-thumbs-move` (deployed with Verify JWT off) moves the data URLs out
+The move is done. `report-thumbs-move` was removed from the repo on
+2026-11-24 (it held the S3 write key with nothing left to do); it is
+deleted from the project in the Supabase dashboard (Edge Functions).
+It (deployed with Verify JWT off) moved the data URLs out
 of the database. Claude sets `app_secrets.thumbs_move_token` to a fresh
 random value, calls the function with it in `x-move-token` until `left`
 reads 0 (`{ batch: 50 }`), then with `{ versions: true }` until its `left`

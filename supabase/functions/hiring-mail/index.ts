@@ -207,11 +207,16 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const r = await db.rpc('hiring_doc_code', { p_key: key, p_doc: doc, p_device: String(b.device || '').slice(0, 200), p_ip: ipOf(req) || null });
   const m = r.data as Record<string, any>;
-  if (r.error || !m) return json({ error: 'not-sent' }, 200, origin);
-  /* Ten wrong codes in a Malaysian day lock the document until the next
-     (review 2026-11-24); the page says so in its own words. */
-  if (m.error) return json({ error: m.error === 'too-many' || m.error === 'locked-today' ? m.error : 'not_found' }, 200, origin);
-  if (!EMAIL.test(String(m.to || m.email || ''))) return json({ error: 'not-sent' }, 200, origin);
+  /* Answered alike whatever befalls (the audit of 2026-11-24): a wrong key
+     or document, a failed send and a sent code all read Sent, so nobody
+     can tell which documents exist; a failed send is in the Email log. Ten
+     wrong codes in a Malaysian day lock the document until the next, and
+     the page says so in its own words. */
+  const alike = () => json({ ok: true }, 200, origin);
+  if (r.error || !m) return alike();
+  if (m.error === 'too-many' || m.error === 'locked-today') return json({ error: m.error }, 200, origin);
+  if (m.error) return alike();
+  if (!EMAIL.test(String(m.to || m.email || ''))) return alike();
   /* The one Verification code email (CLAUDE.md, VERIFICATION CODE
      TEMPLATE): the team's words, the code in its box, never in the subject. */
   const tpl = await db.rpc('code_email_template_read');
@@ -224,7 +229,7 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   }, 'hire-code-' + doc + '-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
   await fileSent({ kind: 'hiring_code', ref: doc, to: m.email, to_name: m.name, subject: mail.subject, reference: m.ref,
     status, provider, error });
-  return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
+  return alike();
 }
 
 /* Why an automatic email is not sent, as the Email log files it: the
