@@ -796,6 +796,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     record, on entering it again and on a visit to the pane; a repaint reads
     nothing. A refused read is `failLine` for that block alone, above the
     months, with Try again. Nothing at all reads No engagements.
+  - Every task and outstation visit is a row (the user, 2026-11-24: "Every
+    record a row"), read in one request (`client_engagement_items`, My Work
+    View; visits on a client the reader sees): a task by its content month,
+    else the day it was made, its `#WT` number and stage, open first, after
+    the month's other rows; the first eight shown and the rest behind Show
+    more; a visit by its day, its `#OS` number, purpose and driver, opening
+    its trip (`view=outstation&trip=`) for its driver, a companion or
+    `ops.outstation`, else a row that opens nothing. The month's invoice
+    stays last.
   - The month's invoice (2026-11-22): at My Work View and Clients: Billing
     View, each content month already begun and not cancelled ends with a
     row an invoice the night found in Bukku for it (`ops_month_invoices_of`,

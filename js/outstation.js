@@ -104,6 +104,7 @@
       q.ov = 'all';
       if (st.month !== C.today().slice(0, 7)) q.om = st.month;
     }
+    if (st.ask) { q.om = st.month; q.trip = st.ask; }
     return q;
   }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }

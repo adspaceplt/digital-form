@@ -344,7 +344,6 @@
           live ? 'Version ' + r.live_version + ', ' + esc(dayLong(dayMy(r.published_at))) : 'Version ' + r.version_no + ', not published']),
         state: live ? state('Published', 'is-ok') : state('Confirmed', 'is-warn') });
     });
-    invoiceRows(d, m).forEach(function (r) { rows.push(r); });
     m.visits.forEach(function (v) {
       var month = String(v.day || '').slice(0, 7);
       var reach = v.mine || may('ops.outstation');
@@ -361,6 +360,8 @@
         state: t.cancelled ? state('Cancelled', 'is-off') : state(t.stage || '', t.late ? 'is-danger' : (STAGE_TONE[t.stage_group] || 'is-off')),
         url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' });
     });
+    /* The month's invoice ends it, after the tasks' Show more. */
+    invoiceRows(d, m).forEach(function (r) { rows.push(r); });
     return rows;
   }
   function invMoney(n, cur) {
@@ -497,9 +498,12 @@
         table: function () {
           var t = document.createElement('div');
           t.className = 'crm-table softpanel cmonth-table' + (hasFile ? ' has-file' : '') + (hasInv ? ' has-inv' : '');
+          var inv = m.rows.filter(function (r) { return r.kind === 'invoice'; });
+          var body = m.rows.filter(function (r) { return r.kind !== 'invoice'; });
           var nTask = m.tasks.length, many = nTask > TASKS_SHOWN;
-          GRP.more(t, m.rows, many ? m.rows.length - nTask + TASKS_SHOWN : Math.max(30, m.rows.length - nTask),
+          GRP.more(t, body, many ? body.length - nTask + TASKS_SHOWN : Math.max(30, body.length),
             many ? (nTask - TASKS_SHOWN === 1 ? 'task' : 'tasks') : '', function (row) { return rowEl(row, c, msgEl); });
+          inv.forEach(function (row) { t.appendChild(rowEl(row, c, msgEl)); });
           return t;
         }
       }));
