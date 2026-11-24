@@ -634,6 +634,13 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   (`span.kcard-sum` "20 Sept 2026, 2:00pm" is clipped) on six Creators
   screens, light and dark. Its cause (the row's track or the phone label
   `sched-lab` added before it) is to be found; held here until it ships.
+- 2026-11-24, `sql` (the outstation trip number release, which touches
+  neither the function nor its seed): "each with its bill: paid with its
+  day and amount, a bill in hand before a paid one, none where none is
+  read" (`campaign_creator_bills`) failed once and passed on the same SQL
+  an hour later and on main; its seed counts days from `current_date`
+  (UTC), so the cause is to be found in how the function's day and the
+  seed's meet; held here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
