@@ -956,7 +956,7 @@
   var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (Passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
-  var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
+  var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved', changed: 'Details changed',
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
   /* A booking's payment (2026-11-09, Creator R3): its Bukku bill read back,
      never marked by hand. */
@@ -1078,6 +1078,7 @@
         '<dl class="ovfacts">' +
           '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
           fact(cur.added_by ? 'Added' : 'Submitted', day(cur.created_at)) +
+          fact('Changes', (cur.changes || []).join(' · ')) +
           (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
           fact('Reason', cur.status === 'declined' ? cur.note : '') +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
@@ -1806,6 +1807,8 @@
       var acct = ({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch ’n Go eWallet number' })[cur.method] || 'Account';
       var jobs = ((cpq.data && cpq.data.jobs) || []).filter(function (j) { return j.creator === r.creator && !j.bill; });
       $('cpqSheetBody').innerHTML =
+        ((cur.changes || []).length ? '<section class="fsec"><dl class="ovfacts"><div><dt>Changes</dt><dd>' +
+          cur.changes.map(esc).join('<br>') + '</dd></div></dl></section>' : '') +
         '<section class="fsec"><h4 class="fsec-h">Billing</h4><dl class="ovfacts">' +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
           fact(cur.bill_kind === 'brn' ? 'Business Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +

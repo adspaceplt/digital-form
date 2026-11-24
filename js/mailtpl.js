@@ -46,7 +46,7 @@
      (docs/SIGN-IN-EMAILS.md), so they are listed and never edited here. */
   var SUPABASE = [['Sign-in code', 'Your ADspace sign-in code'],
     ['Invitation', 'Welcome to your ADspace Client Portal · Your access to the ADspace Digital Portal']];
-  var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
+  var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved', changed: 'Details changed',
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
 
   function may(key) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(key, 'work')); }
