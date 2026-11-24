@@ -934,7 +934,7 @@
             })
             : Promise.resolve();
           return moved.then(function (left) {
-            return { said: left === 'stuck' ? 'Logged. The stage was not moved to Contacted.' : 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
+            return { said: left === 'stuck' ? 'Logged. The stage was not moved to Contacted. Change the stage on the client\'s record.' : 'Logged.', open: { kind: 'client', id: c.slug || c.id, pane: 'calls', label: 'Open Calls and visits' },
               undo: function () {
                 return db.from('client_touches').update({ archived_at: new Date().toISOString() }).eq('id', id).select('id').then(function (q) {
                   if (q.error || !(q.data || []).length) throw new Error('Not undone. The database refused the request.');
