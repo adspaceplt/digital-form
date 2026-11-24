@@ -198,6 +198,7 @@
     'no-code': 'This code can no longer be used. Please select Send a new code.',
     'code-expired': 'This code has expired. Please select Send a new code.',
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
+    'locked-today': 'Too many incorrect codes have been entered today. Please try again tomorrow.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
     'bad-id': 'Enter your NRIC or Passport Number (for example 900101-01-1234).',
