@@ -8,6 +8,9 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
   - It is also the demo's engine: a push that changes it runs
     `node tests/demo-build.js` and commits `demo/engine.js` (the seed and
     comments left out; `demo` fails while they differ).
+  - A function it answers is named in `LIVE_FNS` with its arguments, else
+    every call is refused PGRST202 as PostgREST refuses a function it does
+    not hold (2026-11-25: `quote_preflight` read as missing).
   - It must never be more generous than PostgREST. It refuses an ambiguous
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses

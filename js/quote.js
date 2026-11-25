@@ -86,19 +86,19 @@
       make: 'View quotation',
       /* What changed since the page read the Rate Card (QUOTATION PREFLIGHT, 2026-11-25). */
       pf: {
-        head: 'Changes to your selection', edit: 'Edit', cont: 'Continue', thing: 'A selected item',
-        wait: 'Please review the changes above before you submit.',
-        off: 'The quotation portal is temporarily unavailable. Please try again later.',
-        version: 'The Rate Card was updated while this page was open. Your quotation will be prepared on the current Rate Card.',
-        plan: '{x} is no longer offered. Please choose another plan.',
-        mix: 'The content option chosen for {x} is no longer offered. Please choose another option.',
-        platform: '{x} is no longer offered. Please choose your platforms again.',
-        extra: 'Additional {x} is no longer offered. Please review your additional content pieces.',
-        translate: 'Bilingual content is no longer offered. Please review your languages.',
-        term: 'The {x}-month commitment is no longer offered. Please choose another commitment.',
-        once: '{x} is no longer offered. Please review your selection.',
-        price: 'The price of these changes has been updated. Please review it before you send.',
-        chSel: 'A choice is no longer offered on this quotation. Please review your changes.'
+        pfHead: 'Changes to your selection', pfEdit: 'Edit', pfCont: 'Continue', pfThing: 'A selected item',
+        pfWait: 'Please review the changes above before you submit.',
+        pageOff: 'The quotation portal is temporarily unavailable. Please try again later.',
+        cardMoved: 'The Rate Card was updated while this page was open. Your quotation will be prepared on the current Rate Card.',
+        gonePlan: '{x} is no longer offered. Please choose another plan.',
+        goneMix: 'The content option chosen for {x} is no longer offered. Please choose another option.',
+        gonePlatform: '{x} is no longer offered. Please choose your platforms again.',
+        goneExtra: 'Additional {x} is no longer offered. Please review your additional content pieces.',
+        goneTranslate: 'Bilingual content is no longer offered. Please review your languages.',
+        goneTerm: 'The {x}-month commitment is no longer offered. Please choose another commitment.',
+        goneOnce: '{x} is no longer offered. Please review your selection.',
+        priceMoved: 'The price of these changes has been updated. Please review it before you send.',
+        choiceGone: 'A choice is no longer offered on this quotation. Please review your changes.'
       },
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
@@ -230,19 +230,19 @@
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', startOn: '请选择今天或之后的期望开始日期。', consent: window.ADspaceWords.zh.tickToContinue },
       make: '查看报价',
       pf: {
-        head: '您的选择有变动', edit: '修改', cont: '继续', thing: '所选项目',
-        wait: '提交前，请先处理以上变动。',
-        off: '报价门户暂时无法使用，请稍后再试。',
-        version: '本页打开期间，价目表已更新。您的报价将按最新价目表编制。',
-        plan: '{x}已不再提供，请选择其他方案。',
-        mix: '{x}所选的内容组合已不再提供，请选择其他组合。',
-        platform: '{x}已不再提供，请重新选择平台。',
-        extra: '额外的{x}已不再提供，请检查额外内容数量。',
-        translate: '双语内容已不再提供，请检查语言选择。',
-        term: '{x}个月的合约期已不再提供，请选择其他合约期。',
-        once: '{x}已不再提供，请检查您的选择。',
-        price: '这些修改的价格已更新，请先查看再提交。',
-        chSel: '本报价已不再提供您所选的某项内容，请检查您的修改。'
+        pfHead: '您的选择有变动', pfEdit: '修改', pfCont: '继续', pfThing: '所选项目',
+        pfWait: '提交前，请先处理以上变动。',
+        pageOff: '报价门户暂时无法使用，请稍后再试。',
+        cardMoved: '本页打开期间，价目表已更新。您的报价将按最新价目表编制。',
+        gonePlan: '{x}已不再提供，请选择其他方案。',
+        goneMix: '{x}所选的内容组合已不再提供，请选择其他组合。',
+        gonePlatform: '{x}已不再提供，请重新选择平台。',
+        goneExtra: '额外的{x}已不再提供，请检查额外内容数量。',
+        goneTranslate: '双语内容已不再提供，请检查语言选择。',
+        goneTerm: '{x}个月的合约期已不再提供，请选择其他合约期。',
+        goneOnce: '{x}已不再提供，请检查您的选择。',
+        priceMoved: '这些修改的价格已更新，请先查看再提交。',
+        choiceGone: '本报价已不再提供您所选的某项内容，请检查您的修改。'
       },
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
@@ -1165,7 +1165,7 @@
       var d = r && r.data;
       if (r.error || !d || d.error || !Array.isArray(d.changes) || !d.changes.length) { go2(); return; }
       btn.disabled = false;
-      CH.pf = d.changes.map(function (c) { return c.kind === 'price' ? 'price' : 'chSel'; })
+      CH.pf = d.changes.map(function (c) { return c.kind === 'price' ? 'priceMoved' : 'choiceGone'; })
         .filter(function (k, i, a) { return a.indexOf(k) === i; });
       CH.pfKey = chKey(sel); CHP = {}; CH.P = null; chDraw(); chPrice();
     }).catch(go2);
@@ -1586,6 +1586,9 @@
      read again so that step offers what stands. A line stays until its step
      is visited (the Rate Card's own until Continue), so nothing chosen
      leaves the selection unseen, and Submit waits until none stands. */
+  /* A change's kind and its line's word (keys quoted: the kinds are words of the page's own too). */
+  var PF_WORD = { 'off': 'pageOff', 'version': 'cardMoved', 'plan': 'gonePlan', 'mix': 'goneMix', 'platform': 'gonePlatform', 'extra': 'goneExtra',
+    'translate': 'goneTranslate', 'term': 'goneTerm', 'once': 'goneOnce' };
   function pfStep(kind) {
     if (['plan', 'mix', 'platform', 'extra'].indexOf(kind) >= 0) return steps().indexOf('plan') >= 0 ? 'plan' : 'need';
     return kind === 'version' || kind === 'off' ? null : 'custom';
@@ -1632,17 +1635,17 @@
   function pfHtml() {
     var w = t().pf, list = pfPending();
     if (!list.length) return '';
-    return '<section class="sumcard qs-pf" aria-labelledby="qsPfH"><div class="sumcard-head"><h2 id="qsPfH">' + esc(w.head) + '</h2></div>' +
+    return '<section class="sumcard qs-pf" aria-labelledby="qsPfH"><div class="sumcard-head"><h2 id="qsPfH">' + esc(w.pfHead) + '</h2></div>' +
       '<ul class="qs-pflist">' + list.map(function (x) {
-        var line = f(w[x.kind] || w.chSel, { x: pfName(x) || w.thing });
-        var act = x.kind === 'version' ? '<button class="btn btn-sm" type="button" data-a="pfok">' + esc(w.cont) + '</button>'
-          : x.step ? '<button class="btn btn-sm" type="button" data-a="pfgo" data-to="' + x.step + '" aria-label="' + esc(w.edit + ': ' + line) + '">' + esc(w.edit) + '</button>' : '';
+        var line = f(w[PF_WORD[x.kind]] || w.choiceGone, { x: pfName(x) || w.pfThing });
+        var act = x.kind === 'version' ? '<button class="btn btn-sm" type="button" data-a="pfok">' + esc(w.pfCont) + '</button>'
+          : x.step ? '<button class="btn btn-sm" type="button" data-a="pfgo" data-to="' + x.step + '" aria-label="' + esc(w.pfEdit + ': ' + line) + '">' + esc(w.pfEdit) + '</button>' : '';
         return '<li><span class="qs-pftext">' + esc(line) + '</span>' + act + '</li>';
       }).join('') + '</ul></section>';
   }
   function pfDraw() { var b = $('qsPfBox'); if (b) { b.innerHTML = pfHtml(); b.hidden = !pfPending().length; } }
   function pfRefuse() {
-    say('qsMsg', t().pf.wait);
+    say('qsMsg', t().pf.pfWait);
     var b = root().querySelector('#qsPfBox .btn'); if (b) b.focus();
   }
   /* Answers clean or not. A database before this release, or a request

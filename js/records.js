@@ -17,7 +17,9 @@
  *   ADspaceRecords.fold(items)
  *   ADspaceRecords.changes(before, after, [[key, label, fmt]], { names })
  *
- * An item is { at, who, what, on, key, detail, tone, sticky }, newest first.
+ * An item is { at, who, what, on, key, detail, tone, sticky, facts }, newest
+ * first. `facts` ([[label, value]], a function's line alone) is drawn as the
+ * fact list the entry opens to, and such an entry never folds.
  * `key` is what the line is about where the subject does not say it (a
  * document's reference, or the record a pane belongs to); without either,
  * only identical lines fold, because a line about nothing named cannot be
@@ -56,7 +58,7 @@
       var top = out[out.length - 1];
       var t = new Date(x.at).getTime(), tt = top ? new Date(top.last).getTime() : NaN;
       var thing = thingOf(x);
-      if (top && !top.sticky && !x.sticky && top.who === x.who && top.what === x.what &&
+      if (top && !top.sticky && !x.sticky && !top.facts && !x.facts && top.who === x.who && top.what === x.what &&
           top.thing === thing && (thing !== '' || (x.detail || '') === top.first) &&
           !isNaN(t) && !isNaN(tt) && tt - t <= RUN_MS && tt - t >= 0) {
         top.n += 1;
@@ -65,7 +67,7 @@
         return;
       }
       out.push({ at: x.at, last: x.at, who: x.who, what: x.what, on: x.on, tone: x.tone, thing: thing,
-                 first: x.detail || '', sticky: x.sticky, n: 1, details: x.detail ? [x.detail] : [] });
+                 first: x.detail || '', sticky: x.sticky, facts: x.facts || null, n: 1, details: x.detail ? [x.detail] : [] });
     });
     return out;
   }
@@ -113,7 +115,10 @@
      time column's edge. */
   function line(x) {
     var detail = merged(x.details);
-    return '<li class="recline">' +
+    var facts = x.facts && x.facts.length ? '<dl class="ovfacts rl-facts">' + x.facts.map(function (f) {
+      return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+    }).join('') + '</dl>' : '';
+    return '<li class="recline' + (facts ? ' has-facts' : '') + '">' +
       '<time class="rl-time" datetime="' + esc(x.at || '') + '">' + esc(time(x.at)) + '</time>' +
       '<div class="rl-body"><div class="rl-head">' +
         (x.who ? '<span class="rl-who">' + esc(x.who) + '</span> ' : '') +
@@ -121,7 +126,7 @@
         (x.on ? ' <span class="rl-on">' + esc(x.on) + '</span>' : '') +
         (x.n > 1 ? ' <span class="rl-n">\u00b7 ' + x.n + ' times</span>' : '') +
       '</div>' +
-      (detail ? '<div class="rl-detail">' + esc(detail) + '</div>' : '') +
+      (detail ? '<div class="rl-detail">' + esc(detail) + '</div>' : '') + facts +
       '</div>' +
       (x.who ? '<span class="rl-by">' + esc(x.who) + '</span>' : '') + '</li>';
   }
@@ -170,6 +175,8 @@
     if (list) list.classList.toggle('is-wide', wide);
     Array.prototype.forEach.call(host.querySelectorAll('.recline'), function (li) {
       if (li.classList.contains('is-open')) return;
+      /* An entry with facts always opens to them. */
+      if (li.classList.contains('has-facts')) { mark(li, true); return; }
       var body = li.querySelector('.rl-detail'), head = li.querySelector('.rl-head');
       if (wide) {
         var cut = function (el) { return !!el && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1; };

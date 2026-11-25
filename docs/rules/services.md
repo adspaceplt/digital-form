@@ -343,7 +343,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   link made at the first send, to the primary contact's WhatsApp else
   phone, refused `signed`; 2026-10-31, after Meta refused a template
   asking for a signature as Marketing twice).
-- The quotation website (`/quote/`, `js/quote.js`,
+- The Quotation portal (`/quote/`, `js/quote.js`; read as the quotation website until 2026-11-25,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
   asked; each plan names its content, `4 content pieces per month: 2
@@ -499,6 +499,26 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   contact (`quotation_set`, a website quotation's alone; no reminder
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
+- What changed before Submit (QUOTATION PREFLIGHT, `2026-11-25-quotation-preflight.sql`;
+  the user, 2026-11-25: "like a concert ticket checkout"): `/quote/` asks
+  `quote_preflight` (anon, 240 an address an hour, `limit`; never a price)
+  on reaching Your details and again on its Submit, with the Rate Card
+  version its catalogue read; each change is one line over the details
+  (`#qsPfBox`, the amber dot, its act at the right): the Rate Card updated
+  (Continue), a plan, content option, platform, additional content,
+  bilingual content, commitment or one-time item no longer offered (Edit,
+  to its step), the page switched off (no act). The catalogue is read
+  again and what it no longer offers leaves the selection, but a line
+  stays until its step is visited, and Submit is refused in place while
+  one stands. `quote_web_changes` is the one list of what the card no
+  longer offers (`quote_website_sel` asks it for `bad-term`, `bad-once`),
+  `quote_web_check` adds the page and the version; the create runs it
+  before anything is written (`changed` with the list) and holds the
+  version it checked (a card published between undoes the request), the
+  quotation's row and its Quotation requested line naming that Rate Card
+  version. A sent quotation's Request these changes asks it with the key
+  and the totals shown: `price` where they moved, a choice refused by
+  `quote_change_sel`, said in the panel, the preview read again.
 - A quotation's sections (2026-11-12, `2026-11-12-quotation-sections.sql`,
   `2026-11-12-quotations-advanced.sql`): one made from then on (`totals.layout`
   2) prints Monthly Service Fee, One-time Items and Advertising Budget, each

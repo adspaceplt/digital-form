@@ -33,8 +33,12 @@
 --     quotation undoes the whole request (`changed`). A page served before
 --     names no version and is checked on what it chose alone. Its Activity
 --     lines read Quotation portal.
---   * `page_name('quote')` reads Quotation portal, and the Activity
---     record's lines by Quotation website are named Quotation portal.
+--   * `quotations_website_activity` (restated) names the Rate Card version
+--     the quotation holds on its Quotation requested line.
+--   * `page_name('quote')` reads Quotation portal; `quote_activity` and
+--     `quote_proceed` (restated, their actor alone changed) file their
+--     lines as Quotation portal, and the Activity record's lines filed as
+--     Quotation website are named Quotation portal.
 --
 -- ORDER: this file (connector), then the pages; then
 -- 2026-10-07-function-hygiene.sql again (`quote_preflight` joins
@@ -45,7 +49,9 @@
 -- run twice. Holds no drop or delete.
 -- ROLLBACK: run `quote_website_sel` from QUOTE WEBSITE BILINGUAL,
 -- `quote_website_create` from ONE-TIME, NEVER ONE-OFF and `page_name` from
--- FEEDBACK PAGE AVAILABLE again; in the SQL Editor, drop
+-- FEEDBACK PAGE AVAILABLE, `quote_activity` and `quotations_website_activity`
+-- from QUOTATION LINK ACTIVITY
+-- and `quote_proceed` from its last section again; in the SQL Editor, drop
 -- `quote_preflight(jsonb, jsonb, text)`, `quote_web_check(jsonb, text)`,
 -- `quote_web_changes(jsonb, jsonb)`, `quote_throttle()` and the table
 -- `quote_hits`. The Activity lines renamed keep their new name.
@@ -269,6 +275,89 @@ language sql immutable set search_path = public as $$
     when 'home' then 'Front page' when 'notfound' then 'Page not found' when 'card' then 'Namecards' end
 $$;
 revoke all on function public.page_name(text) from public, anon, authenticated;
+
+/* A quotation requested on the quotation portal names the Rate Card
+   version it was checked and priced on (QUOTATION PREFLIGHT, 2026-11-25). */
+create or replace function public.quotations_website_activity()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  c public.clients;
+begin
+  select * into c from public.clients x where x.id = new.client_id;
+  perform public.quote_activity(new, 'quotation.requested',
+    new.ref || ' · ' || case when c.created_at >= now() then 'New lead'
+                             when c.stage in ('lead', 'contacted', 'proposal') then 'Existing lead'
+                             else 'Existing client' end
+      || coalesce(' · Rate Card v.' || new.version, ''),
+    new.contact);
+  return null;
+end $$;
+revoke all on function public.quotations_website_activity() from public, anon, authenticated;
+
+/* The Activity record's lines by the page read Quotation portal (the user,
+   2026-11-25), its own functions' and the ones filed before. */
+/* One step on a quotation link, filed under Clients: the client's name its
+   subject, the one-line detail, and the line's facts (the reference, who,
+   and the visit). */
+create or replace function public.quote_activity(p_q public.quotations, p_action text, p_detail text, p_who jsonb)
+returns void
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_name text;
+begin
+  select c.name into v_name from public.clients c where c.id = p_q.client_id;
+  insert into public.activity_log (actor, action, subject, detail, meta)
+  values ('Quotation portal', p_action, coalesce(v_name, p_q.brand), p_detail,
+          jsonb_strip_nulls(jsonb_build_object('ref', p_q.ref,
+            'name', nullif(btrim(coalesce(p_who->>'salutation', '') || ' ' || coalesce(p_who->>'name', '')), ''),
+            'email', nullif(lower(btrim(coalesce(p_who->>'email', ''))), ''))) || public.request_visit());
+end $$;
+revoke all on function public.quote_activity(public.quotations, text, text, jsonb) from public, anon, authenticated;
+
+create or replace function public.quote_proceed(p_key text, p_start text, p_decider text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w  public.quotations;
+  q  public.quotations;
+  v_due timestamptz;
+  v_words text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  select * into w from public.quotations x
+   where x.access_key = p_key and x.source = 'website' and x.removed_at is null for update;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if w.proceed_at is not null then
+    return jsonb_build_object('ok', true, 'again', true, 'at', w.proceed_at, 'due', w.proceed_due);
+  end if;
+  -- What the prospect sees is the latest revision: its validity and its
+  -- state decide (2026-10-26, audit).
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  if w.status = 'not_proceeding' or q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'not-sent'); end if;
+  if coalesce(p_start, '') not in ('month', 'quarter') or coalesce(p_decider, '') not in ('yes', 'others') then
+    return jsonb_build_object('error', 'bad-answer');
+  end if;
+  if q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  v_due := public.quote_reply_by(now());
+  v_words := public.quote_proceed_words(p_start, p_decider);
+  update public.quotations
+     set proceed_at = now(), proceed_due = v_due, proceed_start = p_start, proceed_decider = p_decider
+   where id = w.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Quotation portal', 'client.quotation', w.brand,
+          w.ref || ' · Ready to proceed on the website' ||
+          coalesce(' by ' || nullif(btrim(w.contact->>'name'), ''), '') || ' · ' || v_words);
+  perform public.quote_tell(w.client_id, 'quote.proceed', 'Ready to proceed · ' || w.brand,
+    w.ref || coalesce(' · ' || nullif(btrim(w.contact->>'name'), ''), '') || ' · ' || v_words || ' · contact by ' ||
+      public.register_day((v_due at time zone 'Asia/Kuala_Lumpur')::date) || ', ' ||
+      lower(to_char(v_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam')),
+    w.id::text);
+  return jsonb_build_object('ok', true, 'at', now(), 'due', v_due);
+end $$;
+revoke all on function public.quote_proceed(text, text, text) from public;
+grant execute on function public.quote_proceed(text, text, text) to anon, authenticated;
 
 update public.activity_log set actor = 'Quotation portal' where actor = 'Quotation website';
 

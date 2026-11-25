@@ -14,7 +14,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   read against a blank row (2026-10-22, SEC-1: a client could be inserted
   Active with billing by a colleague without the Billing part).
 - A public form's typed name is never an actor: it is filed under the form
-  (Details form, Supplier form, Quotation website), the name in the detail
+  (Details form, Supplier form, Quotation portal), the name in the detail
   (2026-10-22, BE-3).
 - What a client page or a creator writes through a function is held to a
   length: a name 80, a note 2,000, a caption 5,000, refused `too-long`

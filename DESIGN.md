@@ -857,7 +857,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   language"): complete, plain statements of fact, never shorthand, slang or
   a phrase coined for the screen ("The portal is covered for the team" read
   as nonsense; "Everyone but admins sees the upgrade screen" does not).
-- What a client reads (client pages, the quotation website, every PDF) is
+- What a client reads (client pages, the Quotation portal, every PDF) is
   formal Malaysian business English, as a corporate letter here writes it
   (the user, 2026-10-13: "natural corporate, professional, formal"): Per
   month, billed separately, incl. SST, Registered Company Name; never a
