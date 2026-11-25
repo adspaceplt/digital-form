@@ -206,8 +206,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `2026-11-25-quotation-cover-not-issued-alone.sql`). Covers already
     issued stay under Quotation Covers, read only: Download, the record,
     Void and /verify/ as before, no Reissue. The `quote_cover` type stays
-    built in and undeletable, listed in Document types as the words
-    that open every quotation, and New type offers no Quotation group.
+    built in and undeletable, listed in Document types as First page of
+    every quotation, and New type offers no Quotation group.
   - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
     out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
     else an Employee ID in the reference). The search reads a dash as a slash,

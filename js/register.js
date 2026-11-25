@@ -1424,7 +1424,7 @@
   }
   function typeMeta(t) {
     /* The cover's words are read by every quotation's PDF, never issued. */
-    if (t.family === 'quote_cover') return 'Opens every quotation';
+    if (t.family === 'quote_cover') return 'First page of every quotation';
     var n = typeFields(t).length;
     return [t.family === 'hr' && t.code ? hrRef(t.code) : '', t.signed === false ? 'Not signed' : 'To be signed',
       n ? n + (n === 1 ? ' field' : ' fields') : ''].filter(Boolean).join(' · ');
