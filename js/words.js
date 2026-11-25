@@ -352,6 +352,14 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  /* A note, escaped, one sentence a line (2026-11-25); never split after a short form (No., Dr.). */
+  var SHORT = /(?:^|[\s(])(?:No|Dr|Mr|Mrs|Ms|Mdm|Prof|Sdn|Bhd|e\.g|i\.e)\.$/i;
+  W.note = function (s) {
+    var t = String(s == null ? '' : s), out = [], at = 0, m, re = /[.!?](?=\s+[A-Z0-9"(])|[。！？](?=\s*\S)/g;
+    while ((m = re.exec(t))) if (m[0] !== '.' || !SHORT.test(t.slice(at, m.index + 1))) { out.push(t.slice(at, m.index + 1).trim()); at = m.index + 1; }
+    out.push(t.slice(at).trim());
+    return out.filter(Boolean).map(W.esc).join('<br>');
+  };
   /* The one reading of a stored address drawn as a link: http or https
      alone, a bare address taking https, and nothing for a space, a quote,
      <, >, a backtick or a backslash the column's check refuses (audit M1,
