@@ -2283,12 +2283,12 @@
       if (!brandHeld(c) && mayPart('clients.brand', 'work')) return { text: 'Add brand', act: 'brand', icon: 'tag' };
       if (quotes && !quotes.length && mayPart('clients.quotes', 'work')) return { text: 'Build quote', act: 'quote', icon: 'file' };
       if (quotes && quotes.some(function (q) { return q.signed_at; }) && missing.length && maySeeBilling()) {
-        return { text: 'Billing details', act: 'billing', icon: 'file' };
+        return { text: 'Add billing details', act: 'billing', icon: 'file' };
       }
     }
     if (stage === 'active' && window.ADspaceEngage && bridge.may && bridge.may('ops', 'view')) {
       var mn = window.ADspaceEngage.monthNow(c.id);
-      if (mn) return { text: mn.word + ' engagement', act: 'month', icon: 'calendar' };
+      if (mn && mn.period) return { text: 'Open ' + window.ADspaceClock.month(mn.period + '-01'), act: 'month', icon: 'calendar' };
     }
     if (!state.contacts.length) return { text: 'No contacts.', go: 'contacts', icon: 'person' };
     if (stage === 'lead') return { text: 'No calls or visits.', go: 'calls', icon: 'phone' };

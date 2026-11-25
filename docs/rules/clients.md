@@ -234,9 +234,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`nextAct`): before Active, a lead with no brand (no Brand profile field
     nor notes, `brandHeld`) Add brand, opening the Brand profile's sheet;
     with a brand and no quotation Build quote, opening it on Services; a
-    signed quotation with Billing incomplete Billing details, opening
-    Billing's sheet; an Active client its month's engagement (`{Mon}
-    engagement`), opening My Work's Months view as the month line does;
+    signed quotation with Billing incomplete Add billing details, opening
+    Billing's sheet; an Active client Open {its month} (`Open Nov 2026`), opening My Work's Months view as the month line does;
     each drawn only where the reader may take it, then the older steps.
     The block is drawn again once the quotations and the month arrive. Its date is said
     there alone (the Timeline holds no Next follow up).

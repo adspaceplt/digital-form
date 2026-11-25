@@ -207,7 +207,7 @@
     var days = (e.reports || []).length && MON && MON.setting ? Number(MON.setting('report_due_days', sp.z)) : NaN;
     var due = isNaN(days) ? '' : addDays(sp.z, days);
     return { held: held, done: Math.min(Number(counts.done) || 0, held), late: Number(counts.late) || 0,
-             due: due, word: MONTHS[Number(e.period.slice(5, 7)) - 1], span: sp };
+             due: due, word: MONTHS[Number(e.period.slice(5, 7)) - 1], period: e.period, span: sp };
   }
   /* The month whose span holds today, for the line under the record's name. */
   function monthNow(clientId) {
