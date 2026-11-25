@@ -1523,7 +1523,9 @@
       $('qbTerm').value = String(sel.term || 6);
       $('qbTermDisc').checked = sel.term_disc !== false;
       discShow();
-      B.aoOff = Array.isArray(sel.addons) ? aoAll().filter(function (k) { return sel.addons.indexOf(k) < 0; }) : [];
+      /* A new quotation starts with no add-on rate ticked; a reopened one keeps
+         what it saved (the user, 2026-11-25). */
+      B.aoOn = Array.isArray(sel.addons) ? sel.addons.slice() : [];
       aoPaint();
       /* Add-ons (an outstation fee, a shoot, a revision, files) are one-time
          items too, each under its group on the card (the user, 2026-11-07:
@@ -2267,10 +2269,10 @@
     if (B.kind === 'package' && B.pkg) sel.packages = [pkgOut()];
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     if (!$('qbDiscBox').hidden && !$('qbTermDisc').checked) sel.term_disc = false;
-    /* The add-on rates ticked (QUOTATION ADD-ON RATES): every key the card
-       could offer less those unticked, so an extra a later package adds
-       starts ticked; the database keeps those it prices. */
-    sel.addons = aoAll().filter(function (k) { return (B.aoOff || []).indexOf(k) < 0; });
+    /* The add-on rates ticked (QUOTATION ADD-ON RATES): only those the
+       colleague ticked, each still on the card; the database keeps those it
+       prices. */
+    sel.addons = aoAll().filter(function (k) { return (B.aoOn || []).indexOf(k) >= 0; });
     sel.pay = Number($('qbPay').value) || 7;
     sel.valid = Number($('qbValid').value) || validDefault();
     var title = $('qbHeading').value.replace(/\s+/g, ' ').trim();
@@ -2683,7 +2685,7 @@
   function aoPaint() {
     var box = $('qbAddons');
     if (!box || !B || !B.card) return;
-    B.aoOff = B.aoOff || [];
+    B.aoOn = B.aoOn || [];
     var W = window.ADspaceWords.line, rows = [], at = {};
     var put = function (g, key, name, hint) { if (!at[g]) { at[g] = []; rows.push([g, at[g]]); } at[g].push([key, name, hint]); };
     if (B.kind === 'package' && B.pkg) B.pkg.items.forEach(function (it) {
@@ -2697,7 +2699,7 @@
     $('qbAddonBox').hidden = !rows.length;
     box.innerHTML = rows.map(function (r) {
       return '<div class="qb-aogroup"><span class="field-label">' + esc(r[0]) + '</span>' + r[1].map(function (x) {
-        return '<label class="tickline"><input type="checkbox" data-ao="' + esc(x[0]) + '"' + (B.aoOff.indexOf(x[0]) < 0 ? ' checked' : '') + '>' +
+        return '<label class="tickline"><input type="checkbox" data-ao="' + esc(x[0]) + '"' + (B.aoOn.indexOf(x[0]) >= 0 ? ' checked' : '') + '>' +
           '<span>' + esc(x[1]) + (x[2] ? '<span class="qb-aorate">' + esc(x[2]) + '</span>' : '') + '</span></label>';
       }).join('') + '</div>';
     }).join('');
@@ -2854,8 +2856,8 @@
     $('qbAddons').addEventListener('change', function (e) {
       var k = e.target && e.target.getAttribute('data-ao');
       if (!B || !k) return;
-      B.aoOff = (B.aoOff || []).filter(function (x) { return x !== k; });
-      if (!e.target.checked) B.aoOff.push(k);
+      B.aoOn = (B.aoOn || []).filter(function (x) { return x !== k; });
+      if (e.target.checked) B.aoOn.push(k);
       on();
     });
     $('qbTerm').addEventListener('change', discShow);

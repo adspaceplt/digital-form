@@ -683,16 +683,13 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
      findings). Continue the branch, merge each area as its own release.
   2. The day's full gate on main (`bash tests/snap.sh all`, two-hour
      limit) after item 1 merges; its findings are the next batch.
-  3. Asked of the user, not yet answered: whether a console quotation's
-     Add-on Rates start ticked (they do; a full fees page then runs to
-     four pages) or unticked.
-  4. Waiting on the user's hand: run
+  3. Waiting on the user's hand: run
      `supabase/migrations/2026-11-25-outstation-office-checkout-editor.sql`
      whole in the SQL Editor (until then Settings refuses the office
      radius and the reminder hours, and the midnight close files under
      Other); approve the PRs' Expectations changed; publish Rate Card
      v.2.0.11; rotate the Bukku token; set the email code's expiry.
-  5. The Activity record's quotation sessions: a city on a live
+  4. The Activity record's quotation sessions: a city on a live
      quotation link's visit is still to be seen once.
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
