@@ -4203,7 +4203,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-table .crm-head + .qb-brandh { border-top: 0; }
 /* The sheet in the order a quote is built (2026-11-24): a step a section,
    its number in a small disc before its heading; Extras' Add buttons open
-   their rows; View lines turns the sheet to the priced lines. */
+   their rows; View quote turns the sheet to the quotation so far. */
 .qb-stepsec > * + * { margin-top: 12px; }
 .qb-stepsec > .qb-plans { margin-bottom: 0; }
 /* A heading led by its number reads from the left, the words beside the
@@ -4215,7 +4215,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-adds { display: flex; flex-wrap: wrap; gap: 8px; }
 /* With no plan chosen, the row of extra content and languages holds
    nothing and keeps no space. The foot's total is not drawn while empty,
-   so View lines keeps the row's left edge. */
+   so View quote keeps the row's left edge. */
 .qb-pc:has(> #qbExtras[hidden]):has(> #qbLangCol[hidden]) { display: none; }
 #qbSum:empty { display: none; }
 /* On a phone the two Add buttons stand one over the other at the column's
