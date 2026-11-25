@@ -4932,29 +4932,60 @@ span.inv-amt { font-weight: 600; }
 .ost-part > .ovfacts { margin-top: 6px; }
 .ost-trip { display: grid; gap: 16px; margin-bottom: 12px; }
 .ost-part > .viewhead { margin-top: 0; }
-.ost-line { margin: 0; color: var(--ink-soft); }
-/* The trip number leads the line as a copy control; its padding is given
-   back on both sides, so the words after it stand one space away. */
-.ost-line .serial-copy { margin-right: -6px; }
-.ost-break { margin-top: 8px; }
-.ost-route { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-.ost-stop { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; column-gap: 10px; align-items: start; }
-.ost-dot { width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; corner-shape: round; background: var(--dot-ok); }
-.ost-stop.is-here .ost-dot { background: var(--dot-wait); }
-.ost-place { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
-.ost-place b { font-weight: 500; }
-.ost-name { min-width: 0; }
-.ost-place small, .ost-time { color: var(--ink-mute); font-size: 12.5px; }
-.ost-km { color: var(--ink-soft); }
-.ost-time { text-align: right; white-space: nowrap; }
-.ost-credit { margin: 12px 0 0; color: var(--ink-mute); font-size: 11.5px; }
-.ost-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.ost-acts > .btn { flex: 0 0 auto; }
+/* The trip card (2026-11-25, the user: "crumpled together with just
+   text"): the head's title, state and ⋯ on one line, centred on it; the
+   trip as facts; the route as the stage timeline; the distance a figure. */
+.ost-vh { flex-wrap: nowrap; align-items: center; }
+.ost-vh > .headmark { flex: 1 1 auto; min-width: 0; }
+.ost-vh h2, #ostTripH { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ostTripH { flex: 1 1 auto; }
+.ost-sheet-head { align-items: center; }
+.fsec > .ost-facts { margin: 0; }
+.ost-vh-end { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.ost-vh-end > .team-act { display: inline-flex; align-items: center; }
+.ost-vh-end > * { align-self: center; margin-block: 0; }
+.ost-vh-end .kmenu-btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
+.ost-part > .ost-facts { margin-top: 4px; margin-bottom: 15px; }
+.ost-facts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.ost-facts .serial-copy { margin-left: -6px; }
+.ost-purpose, .ost-person { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ost-purpose svg { width: 15px; height: 15px; color: var(--ink-soft); flex: 0 0 auto; }
+.ost-people { display: grid; gap: 6px; }
+.ost-break { margin-top: 0; }
+.ost-hglyph { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; corner-shape: round; flex: 0 0 auto;
+  background: var(--sec-work-bg); color: var(--sec-work); }
+.ost-hglyph svg { width: 13px; height: 13px; }
+.ost-route .stl-row { grid-template-columns: 16px minmax(0, 1fr) auto; }
+.ost-route .stl-row.ost-leg { padding-bottom: 10px; }
+.ost-leg-km { color: var(--ink-mute); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ost-office-mark { display: grid; place-items: center; width: 16px; height: 16px; margin-top: 2px; color: var(--ink-mute); background: var(--card); position: relative; }
+.ost-office-mark svg { width: 14px; height: 14px; }
+.ost-office .stl-name { font-weight: 500; }
+.ost-dot-here { background: var(--card); box-shadow: inset 0 0 0 2px var(--dot-wait); }
+.ost-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ost-name .cl-markbox { flex: 0 0 auto; }
+.ost-name .cl-mark { width: 20px; height: 20px; font-size: 8px; }
+.ost-name-w { min-width: 0; }
+.ost-time { color: var(--ink-mute); font-size: 12.5px; text-align: right; white-space: nowrap; }
+.ost-under { display: grid; gap: 4px; margin-top: 2px; min-width: 0; }
+.ost-addr, .ost-credit { display: block; max-width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-addr.is-whole, .ost-credit.is-whole { white-space: normal; overflow-wrap: anywhere; }
+.ost-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.ost-sfact { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.ost-sfact svg { width: 13px; height: 13px; flex: 0 0 auto; }
+.ost-credit { margin-top: 12px; color: var(--ink-mute); font-size: 11px; }
+.ost-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 8px; margin-top: 16px; }
+.ost-acts > .btn { width: 100%; }
+.ost-part > .ost-tally { margin-top: 4px; }
+.ost-tally { grid-template-columns: minmax(140px, max-content); }
+.ost-tally .tally-cell { min-width: 160px; }
+.ost-legs { margin-top: 12px; }
+.fsec > .ost-legs { margin-bottom: 0; }
 .ost-shot { position: relative; cursor: pointer; }
 .ost-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .ost-foot { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; }
 .ost-foot > .btn { flex: 0 0 auto; }
-.ost-soon { color: var(--ink-mute); cursor: not-allowed; }
 .ost-loc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px; border-radius: var(--radius); background: var(--sunk); }
 .ost-loc-mark { display: none; }
 .ost-loc-words { display: grid; gap: 4px; min-width: 0; }
@@ -5003,9 +5034,12 @@ button.ost-row { font: inherit; color: inherit; cursor: pointer; text-align: lef
 .is-narrow .ost-row { padding: 12px 15px; }
 @media (max-width: 640px) {
   .ost-thumb { width: 56px; height: 56px; }
-  .ost-acts > .btn { flex: 1 1 calc(50% - 4px); }
-  /* The primary takes its own row nearest the thumb; Add claim's words
-     stay whole on the row above. */
+  .ost-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ost-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ost-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* The sheet's head keeps the date whole beside the state, ⋯ and close. */
+  .ost-tw { display: none; }
+  /* The primary takes the row's width, nearest the thumb. */
   .ost-foot { flex-direction: column-reverse; }
   .ost-foot > .btn { width: 100%; }
 }

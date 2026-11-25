@@ -28,9 +28,30 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
 - The route lists the client sites alone, each from its check-in to its
   check-out; the office is no stop, only the road distance's start and end
   (Settings' pin; the user, 2026-11-24).
-- Add claim (Coming soon) stands beside Check out, tonal, its words mute,
-  `aria-disabled`, opening nothing, until claims are built (the user,
-  2026-11-23): the one act drawn disabled for being not yet built.
+- The trip card (the user, 2026-11-25: "crumpled together with just
+  text"), the trip in progress and the trip read whole alike, built from
+  the v3 components: the head's title, its state (dot and word) and its ⋯
+  on one line, centred on it, the title never wrapping (`tests/outstation.js`
+  measures it); then the trip as `.facts` (Trip number as a copy token,
+  Purpose with its glyph, Driver, Colleagues as names with their initials
+  discs; two across on a phone, the last of an odd count taking the row;
+  the read whole adds Hours, Rating and the notes), never one dotted
+  sentence. Route: its pin glyph in the 22px disc, then the stage timeline
+  (`.stl`): the office's start mark, each leg's road km on the line before
+  its stop, each stop a dot (filled once left, ringed amber while on site,
+  On site as its state at the right, else its time there), the client's
+  logo before its name, the address on one line with an ellipsis (a press
+  shows it whole), its time, accuracy and photo count as small facts with
+  their glyphs, the zone a grey tag only where the address does not
+  already end with it, the thumbnails; the return's leg and the office
+  once checked out. Add stop and Add photo two equal tonal buttons under
+  it; the map credit last, 11px mute, one line on a phone (a press shows
+  it whole), never dropped. Distance: its glyph, the figure (`.tally`, So
+  far, or Total once checked out), each leg and Return as rows under it.
+  Check out alone, blue, nearest the thumb.
+- Add claim is not drawn until claims are built (the user, 2026-11-25,
+  replacing 2026-11-23's disabled button: a step that cannot apply yet is
+  hidden, DESIGN.md §8).
 - Location: the browser's own (`watchPosition`, `enableHighAccuracy`,
   `maximumAge: 0`), watched up to 20 seconds, the best reading kept; a
   reading worse than Settings' limit (`outstation_accuracy_m`, 50 m) is
@@ -89,7 +110,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   user, 2026-11-24): the Malaysian month of check-in and its count from 01,
   two digits and more past 99, given on insert from `outstation_ref_months`
   under the month's row lock, never changed (`code-fixed`) and never given
-  again after a delete. It leads the trip in progress's line and a list
+  again after a delete. It heads the trip's facts and leads a list
   row's meta line, heads the trip read whole's facts (Trip number, a copy
   control where it is not inside a row's button) and is the CSV's first
   column. Console search does not read trips (no table a page reads).

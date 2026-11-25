@@ -5,7 +5,7 @@
  *
  *   * My trips: the trip in progress (its route, office to each stop and
  *     back, the road distance so far, Next stop, Add photo, Check out, and
- *     Add claim drawn disabled until claims are built, release 2), then the
+ *     Add claim not drawn until claims are built, release 2), then the
  *     trips the colleague drove or joined these three months.
  *   * All trips (`ops.outstation`, an admin's): every trip of a month, read
  *     only, and Download (a CSV of every stop).
@@ -43,6 +43,21 @@
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  /* The trip card's glyphs (2026-11-25): each purpose its own, the route's
+     pin, the office, and the small facts under a stop. */
+  var G_ = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+  var GLYPH = {
+    meeting: G_('<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.8 14.3c2.2.2 3.9 1.8 4.5 4.7"/>'),
+    shooting: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
+    event: G_('<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/>'),
+    other: G_('<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'),
+    pin: G_('<path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/>'),
+    road: G_('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/>'),
+    office: G_('<path d="M5 20V6.5L12 4l7 2.5V20"/><path d="M3.5 20h17M9.5 9.5h.5M14 9.5h.5M9.5 13h.5M14 13h.5M11 20v-3h2v3"/>'),
+    clock: G_('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+    target: G_('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>'),
+    camera: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>')
+  };
   var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
 
   var PURPOSE = { meeting: 'Meeting', shooting: 'Shooting', event: 'Event', other: 'Other' };
@@ -271,11 +286,12 @@
           var hours = trip.ended_at ? span(trip.started_at, trip.ended_at) : '';
           var dist = trip.km_total != null ? km(trip.km_total) : '';
           row.setAttribute('aria-label', (trip.ref ? trip.ref + ', ' : '') + C.date(trip.started_at) + ', ' + route.join(', ') + ', open trip');
-          row.innerHTML = '<span class="pr-main ost-what"><b>' + esc(C.date(trip.started_at)) + '</b><small>' +
+          /* On a phone (2026-11-25): who and when over the number, the
+             stops' count and where they were; the distance under the state. */
+          row.innerHTML = '<span class="pr-main ost-what"><b>' + esc(C.date(trip.started_at)) + '<span class="ost-m"> · ' + esc(who) + '</span></b><small>' +
               (trip.ref ? '<span class="inv-part ost-ref">' + esc(trip.ref) + '</span> · ' : '') +
-              route.map(function (r) { return '<span class="inv-part">' + esc(r) + '</span>'; }).join(' · ') +
-              '<span class="inv-part"> · ' + esc(PURPOSE[trip.purpose] || '') + '</span>' +
-              '<span class="ost-m"> · ' + esc(who) + '</span></small></span>' +
+              '<span class="inv-part">' + esc(plural(route.length, 'stop', 'stops')) + '</span> · ' +
+              route.map(function (r) { return '<span class="inv-part">' + esc(r) + '</span>'; }).join(' · ') + '</small></span>' +
             '<span class="ost-who">' + esc(who) + '</span>' +
             '<span class="ost-n">' + (hours ? esc(hours) : '<span class="muted">—</span>') + '</span>' +
             '<span class="ost-n pr-end">' + (dist ? esc(dist) : '<span class="muted">—</span>') + '</span>' +
@@ -292,27 +308,89 @@
       : '<span class="chip chip-state is-ok">Checked out</span>';
   }
 
-  /* The route, office to each stop and back, as screen 2 draws it. */
-  /* The client sites alone (the user, 2026-11-24: "Check in out only
-     needs to be on client site no need from Office"): each stop from its
-     check-in to its check-out. The office stands only behind the road
-     distance (Settings' pin), never as a stop. */
-  function routeHtml(trip) {
-    var rows = '';
-    (trip.stops || []).forEach(function (s) {
-      var here = !s.left_at && trip.state === 'open';
-      var facts = ['Accurate to ' + Math.round(Number(s.accuracy_m)) + ' m', plural(live(s).length, 'photo', 'photos'),
-        C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')];
-      rows += '<li class="ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '"><span class="ost-dot" aria-hidden="true"></span>' +
-        '<span class="ost-place"><span class="ost-name"><b>' + esc(placeName(s)) + '</b>' + (s.km_from_prev != null ? '<span class="ost-km"> · ' + esc(km(s.km_from_prev)) + '</span>' : '') + '</span>' +
-        '<small>' + facts.map(function (f) { return '<span class="inv-part">' + esc(f) + '</span>'; }).join(' · ') + '</small>' +
-        (s.address ? '<small>' + esc(s.address) + (s.zone ? ' · ' + esc(ZONE[s.zone]) : '') + '</small>' : '') + thumbsHtml(s) + '</span>' +
-        '<span class="ost-time">' + esc(here ? 'On site' : span(s.arrived_at, s.left_at)) + '</span></li>';
-    });
-    var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
-    return '<ol class="ost-route">' + rows + '</ol>' +
-      (credited ? '<p class="ost-credit">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</p>' : '');
+  /* The route as a timeline (the user, 2026-11-25: the card read as lines
+     of words): the office's start, each stop a dot on the hairline (filled
+     once left, ringed while on site) with the leg's road distance on the
+     line before it, then the return once checked out. The office is no
+     stop, only where the road distance starts and ends (2026-11-24). */
+  function zoneTag(s) {
+    if (!s.zone || !ZONE[s.zone]) return '';
+    var z = ZONE[s.zone], a = String(s.address || '').trim().toLowerCase();
+    return a && a.slice(-z.length) === z.toLowerCase() ? '' : '<span class="chip">' + esc(z) + '</span>';
   }
+  function legRow(v) {
+    return '<li class="stl-row ost-leg"><span aria-hidden="true"></span><span class="ost-leg-km">' + esc(km(v)) + '</span></li>';
+  }
+  function officeRow(word) {
+    return '<li class="stl-row ost-office"><span class="ost-office-mark" aria-hidden="true">' + GLYPH.office + '</span>' +
+      '<span class="stl-name">Office<small> · ' + esc(word) + '</small></span><span></span></li>';
+  }
+  function routeHtml(trip) {
+    var stops = trip.stops || [];
+    var rows = officeRow('Start');
+    var clientOf = function (s) { return { name: s.client, logo_url: s.client_logo }; };
+    stops.forEach(function (s) {
+      var here = !s.left_at && trip.state === 'open';
+      if (s.km_from_prev != null) rows += legRow(s.km_from_prev);
+      var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>',
+        GLYPH.target + '<span>' + esc(Math.round(Number(s.accuracy_m)) + ' m') + '</span>',
+        GLYPH.camera + '<span>' + esc(plural(live(s).length, 'photo', 'photos')) + '</span>'];
+      rows += '<li class="stl-row ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '">' +
+        '<span class="stl-dot' + (here ? ' ost-dot-here' : '') + '" aria-hidden="true"></span>' +
+        '<span class="stl-name ost-name">' + (s.client && bridge.clientMark ? bridge.clientMark(clientOf(s), s.client_id) : '') +
+          '<span class="ost-name-w">' + esc(placeName(s)) + '</span></span>' +
+        '<span class="ost-time">' + (here ? '<span class="chip chip-state is-warn">On site</span>' : esc(span(s.arrived_at, s.left_at))) + '</span>' +
+        '<span class="stl-line ost-under">' +
+          (s.address ? '<button class="ost-addr" type="button" aria-expanded="false" title="' + esc(s.address) + '">' + esc(s.address) + '</button>' : '') +
+          '<span class="ost-small">' + small.map(function (x) { return '<span class="ost-sfact">' + x + '</span>'; }).join('') + zoneTag(s) + '</span>' +
+          thumbsHtml(s) + '</span></li>';
+    });
+    if (trip.state === 'closed' && trip.km_back != null) rows += legRow(trip.km_back) + officeRow('Return');
+    return '<ol class="stl ost-route">' + rows + '</ol>';
+  }
+  function credit(trip) {
+    var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
+    return credited ? '<button class="ost-credit" type="button" aria-expanded="false">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</button>' : '';
+  }
+  /* An address and the credit read as one line on a phone; a press shows
+     them whole. */
+  function wireLines(host) {
+    Array.prototype.forEach.call(host.querySelectorAll('.ost-addr, .ost-credit'), function (b) {
+      b.addEventListener('click', function () {
+        var on = !b.classList.contains('is-whole');
+        b.classList.toggle('is-whole', on); b.setAttribute('aria-expanded', String(on));
+      });
+    });
+  }
+  /* What the trip is, as facts: the number, the purpose with its glyph, who
+     drove, who went along. */
+  function headFacts(trip, more) {
+    var m = me(), mine = Boolean(m && trip.driver_id === m.id);
+    var person = function (name, word) { return '<span class="ost-person">' + (bridge.avatar ? bridge.avatar(name) : '') + '<span>' + esc(word || name) + '</span></span>'; };
+    var cells = [];
+    if (trip.ref) cells.push(['Trip number', refHtml(trip, true)]);
+    cells.push(['Purpose', '<span class="ost-purpose">' + (GLYPH[trip.purpose] || '') + '<span>' + esc(PURPOSE[trip.purpose] || '') + '</span></span>']);
+    cells.push(['Driver', mine ? person(trip.driver || 'You', 'You') : person(F.named(trip.driver_code, trip.driver))]);
+    if ((trip.companions || []).length) cells.push(['Colleagues', '<span class="ost-people">' + trip.companions.map(function (c) { return person(c.name); }).join('') + '</span>']);
+    (more || []).forEach(function (f) { cells.push([f[0], esc(f[1])]); });
+    return '<dl class="facts ost-facts">' + cells.map(function (c) { return '<div><dt>' + esc(c[0]) + '</dt><dd>' + c[1] + '</dd></div>'; }).join('') + '</dl>';
+  }
+  /* The road distance as a figure, so far or in total, its legs as rows
+     under it and the return once checked out. */
+  function distanceHtml(trip) {
+    var so = legsSoFar(trip), stops = trip.stops || [];
+    var total = trip.state === 'closed' ? trip.km_total : so;
+    var rows = stops.filter(function (s) { return s.km_from_prev != null; }).map(function (s) {
+      return '<div><dt>To ' + esc(placeName(s)) + '</dt><dd>' + esc(km(s.km_from_prev)) + '</dd></div>';
+    }).join('') + '<div><dt>Return</dt><dd>' + (trip.state === 'closed' ? (trip.km_back != null ? esc(km(trip.km_back)) : 'Not available') : 'Added at check-out') + '</dd></div>';
+    return '<div class="tally ost-tally"><div class="tally-cell"><b>' + (total != null ? esc(km(total)) : 'Not available') + '</b>' +
+      '<span>' + (trip.state === 'closed' ? 'Total' : 'So far') + '</span></div></div>' +
+      '<dl class="ovfacts ost-legs">' + rows + '</dl>';
+  }
+  function partHead(glyph, title) {
+    return '<div class="viewhead"><div class="headmark"><span class="ost-hglyph" aria-hidden="true">' + glyph + '</span><h2>' + esc(title) + '</h2></div></div>';
+  }
+
   /* ---- The photos under each stop (2026-11-25) ------------------------- */
   /* The user, 2026-11-25: a stop read only "1 photo"; the photos are drawn
      instead, a tile each. A removed photo leaves the colleague's own view
@@ -498,30 +576,26 @@
     var box = document.createElement('div');
     box.className = 'ost-trip';
     var long = Date.now() - Date.parse(trip.started_at) >= BREAK_MS;
-    var so = legsSoFar(trip);
-    var w = withWord(trip);
     box.innerHTML =
-      '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' + stateChip(trip) + menuHtml(trip) + '</div>' +
-        '<p class="ost-line">' + refHtml(trip) + esc([PURPOSE[trip.purpose], 'Driven by you'].concat(w ? ['With ' + w] : []).join(' · ')) + '</p>' +
+      '<section class="rec-part ost-part"><div class="viewhead ost-vh"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' +
+          '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span></div>' +
+        headFacts(trip) +
         (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
-      '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Route</h2></div></div>' + routeHtml(trip) +
+      '<section class="rec-part ost-part">' + partHead(GLYPH.pin, 'Route') + routeHtml(trip) +
         '<div class="ost-acts">' +
           '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Add stop</span></button>' +
           '<label class="btn btn-sm ost-shot">' + CAMERA + '<span class="btn-word">Add photo</span>' +
             '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label>' +
-        '</div><p class="msg" id="ostTripMsg" role="status"></p></section>' +
-      '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Distance</h2></div></div>' +
-        '<dl class="ovfacts"><div><dt>Road distance</dt><dd>' + (so != null ? esc(km(so)) + ' so far' : '<span class="muted">Not available</span>') + '</dd></div>' +
-        '<div><dt>Return</dt><dd>Added at check-out</dd></div></dl></section>' +
+        '</div><p class="msg" id="ostTripMsg" role="status"></p>' + credit(trip) + '</section>' +
+      '<section class="rec-part ost-part">' + partHead(GLYPH.road, 'Distance') + distanceHtml(trip) + '</section>' +
       '<div class="ost-foot">' +
         '<button class="btn btn-primary" type="button" data-a="out">Check out</button>' +
-        '<button class="btn ost-soon" type="button" aria-disabled="true" data-a="claim">Add claim (Coming soon)</button>' +
       '</div>';
     box.querySelector('[data-a="next"]').addEventListener('click', function (e) { openStopSheet(trip, e.currentTarget); });
     box.querySelector('[data-a="out"]').addEventListener('click', function (e) { openOutSheet(trip, e.currentTarget); });
-    box.querySelector('[data-a="claim"]').addEventListener('click', function (e) { e.preventDefault(); });
     wire(box, trip);
+    wireLines(box);
     fillThumbs(box, trip, 'card');
     var file = box.querySelector('[data-a="photo"]');
     file.addEventListener('change', function () {
@@ -1054,24 +1128,21 @@
       detail.className = 'sheet'; detail.id = 'ostTripSheet'; detail.hidden = true;
       document.body.appendChild(detail);
     }
-    var w = withWord(trip), m = me();
-    var facts = [['Purpose', PURPOSE[trip.purpose]], ['Driver', m && trip.driver_id === m.id ? 'You' : F.named(trip.driver_code, trip.driver)]]
-      .concat(w ? [['Colleagues', w]] : [])
-      .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress'],
-        ['Road distance', trip.km_total != null ? km(trip.km_total) : 'Not available']])
+    var more = [['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress']]
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
       .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);
     detail.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostTripH" data-narrow="560">' +
-      '<div class="sheet-head"><h3 id="ostTripH">Trip · ' + esc(C.date(trip.started_at)) + '</h3>' + menuHtml(trip) +
+      '<div class="sheet-head ost-sheet-head"><h3 id="ostTripH"><span class="ost-tw">Trip · </span>' + esc(C.date(trip.started_at)) + '</h3>' + '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<section class="fsec"><dl class="ovfacts">' + (trip.ref ? '<div><dt>Trip number</dt><dd>' + refHtml(trip, true) + '</dd></div>' : '') +
-          facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl></section>' +
-        '<section class="fsec"><h4 class="fsec-h">Route</h4>' + routeHtml(trip) + '</section>' +
+        '<section class="fsec">' + headFacts(trip, more) + '</section>' +
+        '<section class="fsec"><h4 class="fsec-h">Route</h4>' + routeHtml(trip) + credit(trip) + '</section>' +
+        '<section class="fsec"><h4 class="fsec-h">Distance</h4>' + distanceHtml(trip) + '</section>' +
       '</div></div>';
     detail.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     wire(detail, trip);
+    wireLines(detail);
     window.ADspaceSheet.show(detail, { opener: opener });
     fillThumbs(detail, trip, 'detail');
   }

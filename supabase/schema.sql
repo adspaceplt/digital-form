@@ -155231,7 +155231,8 @@ revoke all on function public.quote_files_cap(jsonb, jsonb) from public, anon, a
 --     photo answers the trip as it stands.
 --   * `outstation_photo_restore(p_photo)`: Undo, under the same conditions
 --     but the last.
---   * `outstation_trip_json`: each photo carries `removed_at` and
+--   * `outstation_trip_json`: each stop carries its client's logo (the
+--     trip card's timeline draws it); each photo carries `removed_at` and
 --     `removed_by` (the name); a removed photo is drawn only to a reader
 --     holding `ops.outstation` (All trips), never to the driver or a
 --     colleague who joined.
@@ -155285,6 +155286,7 @@ language sql stable security definer set search_path = public as $$
         'id', s.id, 'seq', s.seq, 'client_id', s.client_id,
         'client', (select c.name from public.clients c where c.id = s.client_id),
         'client_code', (select c.client_code from public.clients c where c.id = s.client_id),
+        'client_logo', (select c.logo_url from public.clients c where c.id = s.client_id),
         'venue', s.venue, 'lat', s.lat, 'lng', s.lng, 'accuracy_m', s.accuracy_m, 'read_at', s.read_at,
         'address', s.address, 'zone', s.zone, 'arrived_at', s.arrived_at, 'left_at', s.left_at,
         'km_from_prev', s.km_from_prev, 'filed', s.touch_id is not null,
