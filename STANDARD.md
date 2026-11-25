@@ -686,12 +686,8 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   3. Asked of the user, not yet answered: whether a console quotation's
      Add-on Rates start ticked (they do; a full fees page then runs to
      four pages) or unticked.
-  4. Waiting on the user's hand: run
-     `supabase/migrations/2026-11-25-outstation-office-checkout-editor.sql`
-     whole in the SQL Editor (until then Settings refuses the office
-     radius and the reminder hours, and the midnight close files under
-     Other); approve the PRs' Expectations changed; publish Rate Card
-     v.2.0.11; rotate the Bukku token; set the email code's expiry.
+  4. Waiting on the user's hand: rotate the Bukku token, then update the
+     `BUKKU_TOKEN` Supabase secret.
   5. The Activity record's quotation sessions: a city on a live
      quotation link's visit is still to be seen once.
   6. Build quote keeps no draft of a quote part-built (not built; asked
