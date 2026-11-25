@@ -664,10 +664,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   quotation is released, or a WhatsApp for it is queued, sent or not
   confirmed, or an email for it sent, never while only filed or once
   failed (`2026-11-07-quotation-sent-when-it-went.sql`); a team's
-  quotation also when its own link is first opened by anyone but a
+  quotation also (the one the opened key belongs to, never a revision
+  still being made nor one not proceeding) when its own link is first opened by anyone but a
   signed-in colleague (`quote_opened`, the console's Preview never asking
   it), never when it is only given its link: Copy link is not sending
-  (`2026-11-25-quotation-sent-when-opened.sql`). Until then a team's quotation's ⋯
+  (`2026-11-25-quotation-sent-when-opened.sql`); nor an opening from the
+  address a colleague copied that link from in the last 30 days (every
+  Copy link press asks `quotation_link`, which records it), filed as
+  `{ref} · Opened by the team` (`2026-11-25-quotation-copier-opening.sql`;
+  its retention, `docs/rules/security.md`). Until then a team's quotation's ⋯
   and an awaiting website quotation's row offer Edit, Build quote opened
   as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
   Quotations at Work, in scope; priced again from the live card into the

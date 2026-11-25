@@ -156420,4 +156420,211 @@ create or replace trigger quotation_drafts_clear
 
 -- END OF QUOTATION DRAFTS ------------------------------------------------------
 
+-- ===========================================================================
+-- QUOTATION COPIER'S OPENING (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (choice A). QUOTATION SENT WHEN IT REACHES THE
+-- CLIENT stamps a team's quotation sent at its first opening by anyone but
+-- a signed-in colleague. The live openings of ADP/QT2611-C01 and -B01 came
+-- four seconds after Copy link, from the copier's own iPhone: the console
+-- on the Home Screen keeps its sign-in apart from Safari, so a colleague
+-- opening the link they copied read as the client.
+--
+-- WHAT CHANGES
+--   * `quotation_link_copies` (quotation, address, when): where a colleague
+--     copied a quotation's link, one row an address, its time renewed at
+--     every copy. Row level security on, no policy, no grant: no page reads
+--     it. The address is the caller's as `request_ip()` reads it (the
+--     gateway's, never a header a caller sets). Cleared 30 days after the
+--     copy by `privacy_retention` (QUOTATION COPIER'S ADDRESS KEPT 30 DAYS).
+--   * `quotation_link`: records the copier's address at every press (the
+--     console asks it at every Copy link, the link already made or not).
+--   * `quote_opened`: an opening from an address a colleague copied that
+--     quotation's link from in the last 30 days neither stamps it sent nor
+--     moves the stage; it is still filed, `{ref} · Opened by the team`.
+--   * `quote_opened` stamps the quotation the opened key belongs to, never
+--     the newest revision `quote_shown` reads (a revision still being
+--     edited was stamped sent when the old link was opened again), nor one
+--     not proceeding (review of QUOTATION SENT WHEN IT REACHES THE CLIENT).
+--   Each restated from its last section with those lines alone added.
+--
+-- ORDER: the pages first (Copy link asks the function at every press),
+-- then this file (connector), then QUOTATION COPIER'S ADDRESS KEPT 30 DAYS
+-- (SQL Editor: its function holds the connector's stop words). Safe to run
+-- twice.
+-- ROLLBACK: run `quotation_link` (QUOTATION SIGNING) and `quote_opened`
+-- (QUOTATION SENT WHEN IT REACHES THE CLIENT) again; the table is then
+-- read by nothing.
+-- ===========================================================================
+
+-- QUOTATION COPIER'S OPENING ---------------------------------------------------
+
+create table if not exists public.quotation_link_copies (
+  id           uuid primary key default gen_random_uuid(),
+  quotation_id uuid not null,
+  ip           text,
+  at           timestamptz not null default now()
+);
+create unique index if not exists quotation_link_copies_one on public.quotation_link_copies (quotation_id, ip);
+alter table public.quotation_link_copies enable row level security;
+revoke all on table public.quotation_link_copies from public, anon, authenticated;
+
+create or replace function public.quotation_link(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  v_ip text := nullif(public.request_ip(), '');
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.access_key is null then
+    update public.quotations set access_key = public.new_link_key() where id = q.id returning * into q;
+  end if;
+  -- Where the link was copied from, so the colleague's own opening is never
+  -- taken for the client's (QUOTATION COPIER'S OPENING, 2026-11-25). Kept
+  -- 30 days (privacy_retention), never read by a page.
+  if v_ip is not null then
+    insert into public.quotation_link_copies (quotation_id, ip, at) values (q.id, v_ip, now())
+    on conflict (quotation_id, ip) do update set at = excluded.at;
+  end if;
+  return jsonb_build_object('ok', true, 'key', q.access_key);
+end $$;
+revoke all on function public.quotation_link(uuid) from public, anon;
+grant execute on function public.quotation_link(uuid) to authenticated;
+
+create or replace function public.quote_opened(p_key text, p_device text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+  v_ip  text := nullif(public.request_ip(), '');
+  v_dev text := public.seal_device(p_device);
+  v_team boolean := false;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  if public.is_team() then return jsonb_build_object('ok', true, 'kept', false); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  if q.id is null or (q.source = 'website' and q.released_at is null) then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  -- An opening from where a colleague copied this quotation's link in the
+  -- last 30 days is the team's own, never the client's.
+  v_team := v_ip is not null and exists (select 1 from public.quotation_link_copies c
+              where c.quotation_id in (w.id, q.id) and c.ip = v_ip and c.at > now() - interval '30 days');
+  -- A team's quotation reaches the client the first time its own link is
+  -- opened by anyone but a colleague: it is sent out then, once. The
+  -- quotation the key belongs to, never a revision still being made, nor
+  -- one not proceeding.
+  if w.source = 'console' and w.sent_out_at is null and w.status <> 'not_proceeding' and not v_team then
+    update public.quotations set sent_out_at = now() where id = w.id and sent_out_at is null;
+  end if;
+  if exists (select 1 from public.signing_steps s
+              where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened'
+                and s.at > now() - interval '6 hours'
+                and s.ip is not distinct from v_ip and s.device is not distinct from v_dev)
+     or (select count(*) from public.signing_steps s
+          where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened') >= 100 then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  insert into public.signing_steps (doc_kind, doc_id, step, ip, country, device)
+  values ('quotation', q.id, 'opened', v_ip, nullif(public.request_country(), ''), v_dev);
+  -- The same opening, kept once, is the Activity record's line.
+  perform public.quote_activity(q, 'quotation.opened', q.ref || case when v_team then ' · Opened by the team' else '' end, q.contact);
+  return jsonb_build_object('ok', true, 'kept', true);
+end $$;
+revoke all on function public.quote_opened(text, text) from public;
+grant execute on function public.quote_opened(text, text) to anon, authenticated;
+
+-- END OF QUOTATION COPIER'S OPENING --------------------------------------------
+
+-- ===========================================================================
+-- QUOTATION COPIER'S ADDRESS KEPT 30 DAYS (2026-11-25)
+-- ===========================================================================
+-- WHY: the copier's address (QUOTATION COPIER'S OPENING) is personal data
+-- kept for one purpose, PDPA 2010: it is cleared 30 days after the copy, as
+-- a link passcode's caller address is.
+--
+-- WHAT CHANGES
+--   * `privacy_retention`: clears `quotation_link_copies.ip` 30 days after
+--     its copy, counted as `quotation_copiers_cleared`. Restated from its
+--     last section with that step alone added.
+--
+-- ORDER: after QUOTATION COPIER'S OPENING. Run whole in the SQL Editor (the
+-- function holds the connector's stop words). Safe to run twice.
+-- ROLLBACK: run `privacy_retention` from its last section before this one.
+-- ===========================================================================
+
+-- QUOTATION COPIER'S ADDRESS KEPT 30 DAYS --------------------------------------
+
+create or replace function public.privacy_retention(p_now timestamptz default now())
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_wa integer := 0; v_act integer := 0; v_hc integer := 0; v_hl integer := 0; v_lt integer := 0; v_vt integer := 0; v_vd integer := 0; v_vc integer := 0; v_hm integer := 0; v_qc integer := 0;
+  v_today date := (p_now at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keep integer := coalesce(public.app_setting('health_keep_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 24)::integer;
+  v_left integer := coalesce(public.app_setting('health_leaver_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 6)::integer;
+  v_gone uuid[];
+begin
+  update public.wa_outbox o
+     set to_number = '', to_name = null, params = '[]'::jsonb, button = null
+   where o.created_at < p_now - interval '12 months'
+     and o.state not in ('queued', 'sending')
+     and (o.to_number <> '' or o.to_name is not null or o.params <> '[]'::jsonb or o.button is not null);
+  get diagnostics v_wa = row_count;
+  delete from public.activity_log a where a.created_at < p_now - interval '3 years';
+  get diagnostics v_act = row_count;
+  delete from public.health_checkins k where k.half < v_today - make_interval(months => v_keep);
+  get diagnostics v_hc = row_count;
+  delete from public.health_moods k where k.period_start < v_today - make_interval(months => v_keep);
+  get diagnostics v_hm = row_count;
+  v_hc := v_hc + v_hm;
+  select coalesce(array_agg(m.id), '{}') into v_gone from public.team_members m
+   where not m.active and coalesce(m.removed_at, m.expired_at) < p_now - make_interval(months => v_left);
+  if array_length(v_gone, 1) > 0 then
+    delete from public.health_checkins k where k.team_member_id = any(v_gone);
+    get diagnostics v_hl = row_count;
+    delete from public.health_moods k where k.team_member_id = any(v_gone);
+    get diagnostics v_hm = row_count;
+    v_hl := v_hl + v_hm;
+    delete from public.health_talks t where t.team_member_id = any(v_gone) or t.with_id = any(v_gone);
+    delete from public.health_log l where l.team_member_id = any(v_gone);
+    delete from public.health_consents c where c.team_member_id = any(v_gone);
+  end if;
+  -- A caller's address against a link's passcode, once it has had nothing
+  -- to say for 30 days and holds no lock (audit 2026-10-18, item 14).
+  delete from public.link_tries t
+   where greatest(t.last_at, coalesce(t.ok_at, t.last_at)) < p_now - interval '30 days'
+     and coalesce(t.locked_until, t.last_at) < p_now;
+  get diagnostics v_lt = row_count;
+  -- A caller's address against /verify/, once its hour began 30 days ago.
+  delete from public.verify_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vt = row_count;
+  -- And against /verify/'s details (VERIFY DETAILS, 2026-11-20).
+  delete from public.verify_detail_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vd = row_count;
+  -- And a check's address hash, 30 days after its day; the document's
+  -- total stays (VERIFY CHECKS COUNTED, 2026-11-21).
+  delete from public.verify_checks v where v.day < v_today - 30;
+  get diagnostics v_vc = row_count;
+  -- And where a colleague copied a quotation's link, 30 days after the copy
+  -- (QUOTATION COPIER'S OPENING, 2026-11-25).
+  update public.quotation_link_copies c set ip = null where c.ip is not null and c.at < p_now - interval '30 days';
+  get diagnostics v_qc = row_count;
+  return jsonb_build_object('whatsapp_cleared', v_wa, 'activity_removed', v_act,
+    'health_checkins_removed', v_hc + v_hl, 'health_leavers', coalesce(array_length(v_gone, 1), 0),
+    'link_tries_removed', v_lt, 'verify_tries_removed', v_vt, 'verify_detail_tries_removed', v_vd,
+    'verify_checks_removed', v_vc, 'quotation_copiers_cleared', v_qc);
+end $$;
+revoke all on function public.privacy_retention(timestamptz) from public, anon, authenticated;
+
+-- END OF QUOTATION COPIER'S ADDRESS KEPT 30 DAYS -------------------------------
+
 select public.functions_tidy();

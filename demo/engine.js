@@ -2408,6 +2408,8 @@ function cardSlugFree(name, self, email) {
   function issueDocument(a) {
     var type = docType(a.p_type);
     if (!type || type.active === false) return { error: 'no-type' };
+
+    if (type.family === 'quote_cover') return { error: 'not-issuable' };
     if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     if (!regMay(type.family, 'work')) return { error: 'not-allowed' };
     var idem = String(a.p_idem || '').trim();
@@ -2465,6 +2467,7 @@ function cardSlugFree(name, self, email) {
     if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     var d = (DB.documents || []).filter(function (x) { return x.id === a.p_doc; })[0];
     if (!d) return { error: 'no-doc' };
+    if (d.family === 'quote_cover') return { error: 'not-issuable' };
     if (!regMay(d.family, 'work')) return { error: 'not-allowed' };
 
     if ((DB.documents || []).some(function (x) { return x.replaces === d.id; })) return { error: 'not-current' };
@@ -14451,18 +14454,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!oq) return qtOk({ error: 'not-found' });
         if (oq.source === 'website' && !oq.released_at) return qtOk({ ok: true, kept: false });
 
-        if (oq.source === 'console' && !oq.sent_out_at) {
-          oq.sent_out_at = qtNow.toISOString();
-          if (!oq.removed_at && !oq.signed_at) proposalSent(oq.client_id, oq.ref + ' sent out');
+        var oip = window.__callerIp || '203.0.113.24', odev = sealDevice(args.p_device);
+
+        var w0 = qsByKey(args.p_key), month = qtNow.getTime() - 30 * 864e5;
+        var oteam = (DB.quotation_link_copies || []).some(function (c) {
+          return (c.quotation_id === oq.id || (w0 && c.quotation_id === w0.id)) && c.ip && c.ip === oip && Date.parse(c.at) > month; });
+
+        if (w0 && w0.source === 'console' && !w0.sent_out_at && w0.status !== 'not_proceeding' && !oteam) {
+          w0.sent_out_at = qtNow.toISOString();
+          if (!w0.removed_at && !w0.signed_at) proposalSent(w0.client_id, w0.ref + ' sent out');
         }
         DB.signing_steps = DB.signing_steps || [];
-        var oip = window.__callerIp || '203.0.113.24', odev = sealDevice(args.p_device);
         var six = qtNow.getTime() - 6 * 3600e3;
         var mine = DB.signing_steps.filter(function (x) { return x.doc_kind === 'quotation' && x.doc_id === oq.id && x.step === 'opened'; });
         if (mine.some(function (x) { return Date.parse(x.at) > six && x.ip === oip && x.device === odev; }) || mine.length >= 100) return qtOk({ ok: true, kept: false });
         DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: oq.id, step: 'opened', at: qtNow.toISOString(), email: null, in_contacts: null,
           ip: oip, country: window.__country || 'MY', device: odev });
-        quoteActivity(oq, 'quotation.opened', oq.ref, oq.contact);
+        quoteActivity(oq, 'quotation.opened', oq.ref + (oteam ? ' · Opened by the team' : ''), oq.contact);
         return qtOk({ ok: true, kept: true });
       }
       if (name === 'quote_seal_state' || name === 'quote_seal_key') {
@@ -14608,6 +14616,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qsLater = DB.quotations.some(function (x) { return x.replaces === sq2.id && !x.removed_at; });
         if (name === 'quotation_link') {
           if (!sq2.access_key) sq2.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
+
+          var cip = window.__callerIp || '203.0.113.24';
+          DB.quotation_link_copies = (DB.quotation_link_copies || []).filter(function (c) { return !(c.quotation_id === sq2.id && c.ip === cip); });
+          DB.quotation_link_copies.push({ id: nid('qlc'), quotation_id: sq2.id, ip: cip, at: new Date().toISOString() });
           return qtOk({ ok: true, key: sq2.access_key });
         }
         if (name === 'quotation_reviewers') {
