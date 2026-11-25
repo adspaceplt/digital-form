@@ -670,9 +670,16 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
 - A supplier's approval email sent by itself on Approve: held until the
   portal's flows are settled (the user, 2026-10-27, SUP-11); Approve asks
   and the sheet sends at its Send.
-- Content months derived from a client's Confirmed service lines: declined
-  for now (the user, 2026-09-28) while the team's SOPs are refined; months
-  stay manual.
+- The closed loop, from quotation to report: held until the team has
+  worked in the portal past its first month (the user, 2026-11-25: "this
+  is our first month … I don't suggest to build to lock it entirely yet …
+  we will be building it so that it closes the loop entirely"). To build
+  then: a signed quotation is Activated, each plan or package one service
+  line over its period; content months made within that period (and
+  refused outside it, an admin excepted); a monthly report opened only once
+  the month's work is posted. Until then the links stay soft: New month
+  warns No service line and refuses nothing, and a report needs its month
+  and planned content alone (`docs/rules/services.md`, `docs/rules/reports.md`).
 - S3 (`docs/S3-STORAGE.md`), built 2026-09-28. The daily report
   (`s3-sweep`, 03:17 MYT) is deployed and scheduled, and nothing is ever
   deleted (the user, 2026-09-28). The user's part is done (2026-10-12: the
