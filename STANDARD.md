@@ -656,7 +656,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   read" (`campaign_creator_bills`) failed once and passed on the same SQL
   an hour later and on main; its seed counts days from `current_date`
   (UTC), so the cause is to be found in how the function's day and the
-  seed's meet; held here until it ships.
+  seed's meet; held here until it ships. Failed again 2026-11-25 (the email templates release, which touches neither), the only failure of 33 suites.
 - 2026-11-25, `hiringsql` (the section email templates release, which
   touches neither hiring nor its functions): "an interview never moved is
   refused the time-changed email" failed once while 40 suites ran

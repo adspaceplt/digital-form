@@ -1468,10 +1468,10 @@
      kept here since 2026-11-22 so the rail's mark and search ask it before
      js/settings.js is fetched): a colleague holding any of them, or
      WhatsApp or Services at Full Access (WhatsApp templates, Rate card
-     wording), or Performance at View. A supplier's email templates are
-     Suppliers' own (2026-11-24). */
+     wording), Suppliers at Full Access (Supplier emails in Templates;
+     2026-11-25), or Performance at View. */
   var SETTINGS_KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering', 'ops.workflows'];
-  var SETTINGS_FULL = ['whatsapp', 'services'];
+  var SETTINGS_FULL = ['whatsapp', 'services', 'suppliers'];
   function settingsAllowed() {
     return SETTINGS_KEYS.some(function (k) { return may(k, 'work'); }) ||
       SETTINGS_FULL.some(function (k) { return may(k, 'manage'); }) || may('team.performance', 'view');
@@ -1542,11 +1542,6 @@
        item names what it does for the reader (the menu wording sweep,
        2026-11-21). */
     if ($('advancedToggle')) $('advancedToggle').textContent = may('review.settings', 'work') ? 'Set access code' : 'Show access code';
-    /* Edit email templates in a section's ⋯ (js/mailtpl.js, 2026-11-24):
-       drawn for a reader who may open that section's templates. */
-    Array.prototype.forEach.call(document.querySelectorAll('[data-mailtpl]'), function (b) {
-      b.hidden = !(window.ADspaceMailTpl && window.ADspaceMailTpl.may(b.getAttribute('data-mailtpl')));
-    });
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });

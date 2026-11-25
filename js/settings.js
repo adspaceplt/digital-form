@@ -4,8 +4,9 @@
    One page at the rail's foot, above the Activity record, holds what changes
    the portal for everybody: upgrade mode, announcements and notices; the
    business figures; Meta checks; AI usage and limits; task numbering; and,
-   since 2026-10-29, every template (WhatsApp, emails, document types, task
-   templates, the rate card's wording) in one Templates group. Each row is drawn only for a colleague holding its granted
+   since 2026-10-29, the wording of documents and tasks in one Templates
+   group, and every message's (emails, WhatsApp, the meeting message) in
+   Messages (the user, 2026-11-25: "Sorry inside Messages"). Each row is drawn only for a colleague holding its granted
    part, and each opens the one sheet that already edits it (one copy of
    every mechanism). The account menu keeps what is the person's own.
    Since 2026-10-11: eight groups, each a card under its heading on one
@@ -251,6 +252,10 @@
       });
     }
   };
+  /* The email families (js/mailtpl.js): how many templates each holds. */
+  if (window.ADspaceMailTpl) window.ADspaceMailTpl.RECS.forEach(function (rec) {
+    READ['mail-' + rec] = function () { return window.ADspaceMailTpl.count(rec); };
+  });
   function readLine(id) {
     if (!document.querySelector('.stg-row[data-row="' + id + '"]')) return;
     var asked = READ[id] && READ[id]();
@@ -408,6 +413,7 @@
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
     /* The portal's own switches over the Messages ones (SEND SWITCHES). */
     var mailOn = autoOn('email_on'), waOn = autoOn('whatsapp_on'), L = window.ADspaceWords.line;
+    var MT = W.ADspaceMailTpl;
     add('messages', 'Messages', 'whatsapp', [
       /* What governs the whole group heads it, above its parts (the user,
          2026-11-22: "if a button is applied throughout all parts then be
@@ -429,13 +435,20 @@
            drawn, disabled with its reason. */
         biz && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: autoOn('client_email_on'), off: !mailOn,
           meta: !mailOn ? L.portalOffRow : autoOn('client_email_on') ? 'On · Emails sent by colleagues' : 'Off', open: flipMail },
-        /* Every email's wording is its own section's (Edit email templates
-           in the section's ⋯; 2026-11-24), never a row here. */
         /* Reply-to mailboxes (EVERY EMAIL IN MESSAGES, 2026-11-17): the
            company mailbox each section's emails reply to, never a
            colleague's own address. */
         biz && { id: 'mailboxes', name: 'Reply-to mailboxes', kind: 'edit', meta: 'General, HR, Accounts payable, Finance, e-Invoice, Legal and compliance',
           open: function () { openMailboxes(); } }]],
+      /* Every email's wording, one place (the user, 2026-11-25: "Sorry
+         inside Messages"): a row a family, drawn where its reader may open
+         it (js/mailtpl.js), opening that family alone. No section's bar or
+         ⋯ offers them. */
+      ['Email templates', MT ? MT.RECS.map(function (rec) {
+        var id = 'mail-' + rec;
+        return MT.may(rec) && { id: id, name: MT.NAME[rec], kind: 'open', meta: line(id),
+          open: function (btn) { MT.open(btn, rowSay(id), rec); } };
+      }) : []],
       ['WhatsApp', [
         /* Send on WhatsApp (SEND SWITCHES, 2026-11-21): every WhatsApp a
            colleague sends by hand. */
