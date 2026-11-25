@@ -3451,6 +3451,7 @@
     'ops.month_deleted':     ['Month deleted', 'is-danger', 'ops'],
     /* An admin setting the next task number. */
     'ops.numbering':         ['Numbering changed', '', 'ops'],
+    'ops.trip_closed':       ['Trip closed automatically', '', 'ops'],
     /* A change a colleague confirmed through the Assistant (2026-11-13),
        filed under the section it changed, beside that section's own line. */
     'assistant.task':        ['Changed through the Assistant', '', 'ops'],
