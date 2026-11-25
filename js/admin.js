@@ -3980,7 +3980,7 @@
     if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
     var at = a.created_at ? ADspaceClock.date(a.created_at) + ', ' + ADspaceClock.clock(a.created_at, { sec: true }) + ' (GMT+8)' : '';
     var f = [['Reference', m.ref], [FACT_WHO[a.action] || 'Contact', m.name], ['Email', m.email],
-      ['Device', m.device], ['Place', placeOf(m)], ['Time', at], ['Session', m.session]]
+      ['Device', m.device], ['Location', placeOf(m)], ['Time', at], ['Visit reference', m.session]]
       .filter(function (x) { return x[1] != null && String(x[1]) !== ''; })
       .map(function (x) { return [x[0], String(x[1])]; });
     return f.length ? f : null;
