@@ -62,11 +62,14 @@
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
       platHead1: 'Plan {p} includes 1 platform. Each additional platform is charged per month.',
       platHeadN: 'Plan {p} includes {n} platforms. Each additional platform is charged per month.',
-      files: 'Choose the files to receive', termMin: 'The minimum commitment is 6 months.',
+      files: 'Choose the files to receive',
+      filesNote: 'Every content piece is delivered in high definition, formatted to each platform\'s specifications. Working files and raw footage are available on request at a charge per content piece.',
+      termMin: 'The minimum commitment is 6 months.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
       extra: 'Add content pieces per month to the plan', fewer: 'One fewer', more: 'One more',
       langs: 'Choose your languages', langsNote: 'Each content piece is published in one language. The monthly content pieces may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no additional charge.',
+      translate: 'Make every content piece bilingual', translateNote: 'Each additional language is charged per content piece.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Choose your commitment', months: '{n} months',
       once: 'Choose the content to produce', onceNote: 'One-time, charged per item',
@@ -188,11 +191,14 @@
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
       platHead1: '方案 {p} 包含1个平台，每增加一个平台按月收费。',
       platHeadN: '方案 {p} 包含{n}个平台，每增加一个平台按月收费。',
-      files: '选择需交付的文件', termMin: '最低合约期为6个月。',
+      files: '选择需交付的文件',
+      filesNote: '所有内容均以高清格式交付，并符合各平台的规格要求。工作文件与原始素材可按需提供，按每件内容收费。',
+      termMin: '最低合约期为6个月。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
       extra: '为方案增加每月内容', fewer: '减少一条', more: '增加一条',
       langs: '选择语言', langsNote: '每条内容使用一种语言。每月内容可分配至所选语言，例如2条英文、4条中文，不另收费。',
+      translate: '每条内容均制作为双语', translateNote: '每增加一种语言，按每条内容收费。',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '选择合约期', months: '{n}个月',
       once: '选择制作内容', onceNote: '一次性，按件收费',
@@ -367,7 +373,7 @@
      nothing chosen or typed carried over (the user, 2026-10-14). */
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
-      plan: null, mix: 0, extra: {}, langs: ['en'], budget: null, term: 12, once: {}, files: {}, koc: '', kol: false, verify: [],
+      plan: null, mix: 0, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, files: {}, koc: '', kol: false, verify: [],
       contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', commence_on: '', consent: false }, step: 'intro', idem: null };
   }
   var S = blank();
@@ -430,6 +436,8 @@
       Object.keys(S.extra).forEach(function (k) { if (S.extra[k] > 0) ex[k] = S.extra[k]; });
       sel.extra = ex;
       sel.langs = S.langs.slice();
+      /* Every content piece bilingual: Build quote's own key, priced there as Translation. */
+      if (S.translate && S.langs.length > 1 && CAT.translation) sel.translate = true;
     }
     if (adsAsked()) sel.budget = S.budget == null ? (p && p.ad_budget ? 0 : (CAT.budgets[0] || 0)) : S.budget;
     if (S.need.content) onceList().forEach(function (c) { if (S.once[c.slug] > 0) once.push({ slug: c.slug, qty: S.once[c.slug] }); });
@@ -598,7 +606,8 @@
     if (p) {
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
-        '<p class="qs-note">' + esc(t().langsNote) + '</p>');
+        '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
+        (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : ''));
     }
     if (adsAsked()) {
       var opts = budgetOptions(), cur = S.budget == null ? opts[0][0] : S.budget;
@@ -619,7 +628,7 @@
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (filesAsked()) {
-      h += sec(t().files, CAT.files.map(function (x) {
+      h += sec(t().files, '<p class="qs-note">' + esc(t().filesNote) + '</p>' + CAT.files.map(function (x) {
         return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0);
       }).join(''));
     }
@@ -1822,8 +1831,10 @@
       S.langs = S.langs.filter(function (l) { return l !== el.value; });
       if (el.checked) S.langs.push(el.value);
       if (!S.langs.length) { S.langs = [el.value]; el.checked = true; }
+      if (S.langs.length < 2) S.translate = false;
       keep(); paint(); return;
     }
+    else if (nm === 'translate') { S.translate = el.checked; }
     else if (id === 'qsMix') { S.mix = Number(el.value) || 0; }
     else if (nm === 'kol') { S.kol = el.checked; }
     else if (nm === 'verify') {
@@ -1905,7 +1916,7 @@
   function adopt(sel) {
     S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
-    S.langs = (sel.langs || ['en']).slice(); S.budget = sel.budget == null ? null : Number(sel.budget);
+    S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate) && S.langs.length > 1; S.budget = sel.budget == null ? null : Number(sel.budget);
     S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.files = {}; S.koc = ''; S.kol = false; S.verify = [];
     (sel.once || []).forEach(function (o) {
       var c = CAT && CAT.contents.some(function (x) { return x.slug === o.slug; });

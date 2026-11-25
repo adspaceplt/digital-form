@@ -353,13 +353,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   options (1 graphic and 3 reels, or 4 reels; sent as `mix`, a string; the
   user, 2026-10-27); the user, 2026-10-14), Customise (languages: each
   content piece is in one language, the month's content pieces divided
-  across those chosen at no charge; translation is the team's to add in
-  Build quote, never offered on /quote/ (the user, 2026-11-24); budget;
+  across those chosen at no charge; with two languages or more, Make every
+  content piece bilingual, a tick with no price, cleared when one language
+  is left, sent as Build quote's `translate` and priced there as
+  Translation (the user, 2026-11-25, reversing 2026-11-24); budget;
   Choose your commitment of 6, 12 or 24 months alone, a segment, 3 and 18
   Build quote's (`quote_web_terms`); with a plan, Content production lists
   only the formats its additional contents do not; Choose your files, the
   card's File Release add-ons (Working files, Raw footage) as steppers
-  wherever content is made, every other add-on and an outstation fee Build
+  wherever content is made, a count of content pieces, under one note in
+  the user's words (`filesNote`: delivered in high definition to each
+  platform's specifications; the files on request, charged per content
+  piece; no figure; 2026-11-25), every other add-on and an outstation fee Build
   quote's; verification only for the platforms chosen),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
@@ -405,7 +410,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   send"): `quote_catalogue` (anon) holds none, `tests/sql.js` reading its
   payload for any rate key or Rate Card fee. What a website selection may
   hold is `quote_website_sel`, read by the create (6, 12 or 24 months, else
-  `bad-term`; no translation; of the add-ons the File Release group alone,
+  `bad-term`; `translate` true alone and only with two languages or more,
+  `quote_catalogue` `translation` saying whether the card prices one,
+  `2026-11-25-quote-website-bilingual.sql`; of the add-ons the File Release group alone,
   else `bad-once`; `2026-11-24-quote-website-choices.sql`). Prices are
   shown on the quotation the team sent alone, where the prospect may
   change the plan, content option, platforms, additional content, files
