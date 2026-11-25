@@ -2766,9 +2766,13 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields.has-third { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .askfields.has-third > .askentry.is-half { grid-column: span 3; }
 .askfields.has-third > .askentry.is-third { grid-column: span 2; }
-/* Fields side by side keep one line when a narrow label wraps: each entry
-   stands on the row's foot. */
-.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
+/* Fields side by side stand on the row's top (DESIGN.md §5, a row aligns
+   to the top): labels on one line, fields on one line, a note under its
+   own field never moving the other (2026-11-25, the numbering sheets drew
+   Prefix 120px under Digits). Labels are nouns short enough for a column;
+   a longer one takes the row whole. */
+.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-start; }
+.askentry:is(.is-half, .is-third) > .field-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 /* A select in a half or third column fits it: its own floor (180px) would
    run past the column on a phone (2026-11-20, Working hours' two times). */
@@ -2785,6 +2789,24 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields > .askrow { grid-column: 1 / -1; margin: -4px 0 0; }
 .askfields.has-half > .askhead:not(:first-child) { margin-top: 8px; }
 .asknote { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
+/* A figure's unit inside its box (m, days, %) and a currency before it
+   (RM, US$): the label stays a noun alone (2026-11-25). The words are laid
+   over the box and the field pads by their length, never a width. */
+.unitbox { position: relative; display: block; width: 100%; }
+.unitbox > .input { width: 100%; }
+.unitbox > .input { padding-right: calc(var(--unit-post, 0) * 0.62em + 22px); }
+.unitbox[style*="--unit-pre"] > .input { padding-left: calc(var(--unit-pre) * 0.62em + 18px); }
+.unitbox-unit, .unitbox-pre { position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none;
+  font-size: var(--field-text); color: var(--ink-mute); white-space: nowrap; }
+.unitbox-unit { right: 12px; }
+.unitbox-pre { left: 12px; }
+/* A worked example under a sheet's figures, the whole row's width: the
+   first reference a number makes, in the token face, over one mute line. */
+.askpreview { grid-column: 1 / -1; margin-top: 16px; padding: 10px 12px; background: var(--sunk); border-radius: var(--radius-sm); }
+.askfields.has-half > .askpreview { margin-top: 0; }
+.askpreview-main { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.askpreview-token { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.askpreview > .asknote { margin-top: 2px; }
 /* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
    words and mark give way to a turning ring in its own ink. */
 .btn.is-busy { position: relative; cursor: progress; }

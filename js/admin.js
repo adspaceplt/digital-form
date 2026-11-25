@@ -6764,7 +6764,11 @@
     month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true], lateby: [0, 30, false, 1], idle: [0, 365, true], reveal: [10, 600, true],
     clock: [0, 2345, true], lunch: [0, 180, true], weekend: [0, 2, true],
     caph: [1, 80, true], near: [50, 100, true], taskh: [0.5, 40, false, 1], hcrem: [0, 14, true], onoff: [0, 1, true],
-    lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true] };
+    lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true],
+    /* The ranges app_settings_set holds (2026-11-25: months, orad and remh
+       were missing, so their sheets refused nothing and threw at Save). */
+    months: [1, 24, true], keepc: [1, 36, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
+    sback: [0, 30, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
      demand"): a weekday's start and end as HHMM (1000, 1900), the lunch in
@@ -6833,10 +6837,10 @@
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
     /* A term takes the longest commitment it has reached (the user,
        2026-11-17): under 3 months, then 3, 6, 12, 18 and 24 months. */
-    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '3-month commitment', 'adj', 'Terms under a year (%)'],
-    ['term_6_11', '6-month commitment', 'adj', 'Terms under a year (%)'],
-    ['term_12_23', '12-month commitment', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18-month commitment', 'adj', 'Terms of a year or more (%)'],
-    ['term_24', '24-month commitment', 'adj', 'Terms of a year or more (%)'],
+    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year'], ['term_4_5', '3-month commitment', 'adj', 'Terms under a year'],
+    ['term_6_11', '6-month commitment', 'adj', 'Terms under a year'],
+    ['term_12_23', '12-month commitment', 'adj', 'Terms of a year or more'], ['term_18_23', '18-month commitment', 'adj', 'Terms of a year or more'],
+    ['term_24', '24-month commitment', 'adj', 'Terms of a year or more'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
@@ -6857,6 +6861,66 @@
     term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 months', setSigned], term_6_11: ['6 months', setSigned],
     term_12_23: ['12 months', setSigned], term_18_23: ['18 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
+  /* A figure's field as the sheet asks it (2026-11-25, the user: units and
+     ranges in the labels wrapped and broke the columns): the label a noun
+     alone, the unit inside the box (`unit`, or a currency `pre`), the range
+     said by the refusal (SET_BOUND), and what 0 does as one line under the
+     field (`zero`). A key not named here keeps its label as written. */
+  var SET_FIELD = {
+    sst_pct: ['SST', '', '%'], quote_valid_days: ['Quotation valid for', '', 'days'],
+    /* Under the section's heading (Terms under a year), a term's length
+       alone, so three stand across on a phone. */
+    term_1_3: ['Under 3 months', '', '%'], term_4_5: ['3 months', '', '%'], term_6_11: ['6 months', '', '%'],
+    term_12_23: ['12 months', '', '%'], term_18_23: ['18 months', '', '%'], term_24: ['24 months', '', '%'],
+    quote_reply_days: ['Contact a ready prospect within', '', 'working days'],
+    details_form_days: ['Link open for', '', 'days'],
+    feedback_quiet_months: ['Feedback requested within', '', 'months'],
+    lead_followup_hours: ['Lead follow-up limit', '', 'hours'], proposal_followup_days: ['Proposal follow-up limit', '', 'days'],
+    vic_lead_followup_hours: ['VIC lead follow-up limit', '', 'hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', '', 'days'],
+    report_due_days: ['Report due after the month ends', '', 'days'],
+    revision_due_days: ['Revision (Client) due after changes are requested', '', 'working days'],
+    approval_reminder_days: ['Approval reminder after', '', 'days'],
+    task_past_days: ['Past dates on new tasks', '', 'days', '0 allows none.'],
+    stage_back_days: ['Past dates on stage moves', '', 'days', '0 allows none.'],
+    priority_urgent_hours: ['Urgent', '', 'hours'], priority_high_hours: ['High', '', 'hours'], priority_medium_hours: ['Medium', '', 'hours'],
+    task_remind_hours: ['Reminder every', '', 'hours', '0 turns this off.'],
+    task_start_days: ['Reminder for tasks not started', '', 'days before due', '0 turns this off.'],
+    ai_price_in: [null, 'US$'], ai_price_out: [null, 'US$'], ai_price_search: [null, 'US$'],
+    reach_allowance_pct: ['Reach allowance against Meta', '', '%'],
+    bench_cpr_low: [null, 'RM'], bench_cpr_mid: [null, 'RM'], bench_cpr_high: [null, 'RM'], bench_cpr_top: [null, 'RM'],
+    bench_msg_min: [null, 'RM'], bench_msg_target: [null, 'RM'], bench_msg_max: [null, 'RM'],
+    bench_form_min: [null, 'RM'], bench_form_target: [null, 'RM'], bench_form_max: [null, 'RM'],
+    bench_cpm_min: ['Cost per 1,000 impressions, low', 'RM'], bench_cpm_max: ['Cost per 1,000 impressions, high', 'RM'],
+    bench_cpl_rise: ['Yearly rise in cost per lead', '', '%'], bench_reels_share: ['Reels share of impressions', '', '%'],
+    bench_ad_spend_pct: ['Ad spend share of the budget', '', '%'], bench_adset_daily: ['Minimum daily budget per ad set', 'RM'],
+    abroad_days: ['Longest approval', '', 'days'], abroad_remind_hours: ['Reminder every', '', 'hours', '0 turns this off.'],
+    outstation_office_lat: [null, '', '', '', 'decimal'], outstation_office_lng: [null, '', '', '', 'decimal'],
+    outstation_office_radius_m: ['Office radius', '', 'm'],
+    outstation_accuracy_m: ['Location accuracy limit', '', 'm'], outstation_keep_months: ['Trips kept', '', 'months'],
+    outstation_remind_hours: ['Reminder for open trips', '', 'hours'],
+    session_idle_days: ['Signed out after', '', 'days unused', '0 turns this off.'],
+    reveal_seconds: ['Hidden again after', '', 'seconds'],
+    hiring_invite_days: ['Interview times within', '', 'days'], hiring_reply_days: ['Interview reply time', '', 'days'],
+    hiring_decision_days: ['Decision time', '', 'working days'], hiring_link_days: ['Candidate link open', '', 'days'],
+    hiring_pool_months: ['Talent pool kept', '', 'months'], hiring_keep_months: ['Closed candidates kept', '', 'months'],
+    health_cap_default: ['Default weekly capacity', '', 'hours'], health_near_pct: ['Near capacity', '', '%'],
+    health_task_hours: ['Default hours per task', '', 'hours', '', 'decimal'],
+    health_remind_days: ['Check-in reminder', '', 'days', '0 turns this off.'],
+    health_keep_months: ['Check-ins kept', '', 'months'], health_leaver_months: ['Leavers\' health data kept', '', 'months'],
+    creator_pay_days_myr: ['Payment time in MYR', '', 'working days'], creator_pay_days_other: ['Payment time in other currencies', '', 'working days'],
+    timely_pct: ['On time or early', '', '%'], timely_late_days: ['Average lateness at most', '', 'days', '', 'decimal'],
+    wa_repeat_hours: ['Ask before sending again within', '', 'hours', '0 turns this off.'],
+    quote_wa_day: ['WhatsApp messages per day', '', '', '0 turns this off.'],
+    analytics_change_pct: ['Minimum change to report', '', '%'], analytics_churn_pct: ['Quarterly churn alert', '', '%'],
+    fx_sgd: [null, '', '', '', 'decimal']
+  };
+  function setLabel(k) { var f = SET_FIELD[k[0]]; return (f && f[0]) || k[1]; }
+  function setUnit(k) { var f = SET_FIELD[k[0]] || []; return { pre: f[1] || '', unit: f[2] || '', zero: f[3] || '', mode: f[4] || '' }; }
+  /* A range in the reader's words: 1,000 for 1000, the unit after it. */
+  function setRange(k) {
+    var b = SET_BOUND[k[2]] || [], u = setUnit(k), num = function (n) { return Number(n).toLocaleString('en-GB'); };
+    return (u.pre ? u.pre + ' ' : '') + num(b[0]) + ' to ' + (u.pre ? u.pre + ' ' : '') + num(b[1]) + (u.unit === '%' ? '%' : u.unit ? ' ' + u.unit : '');
+  }
   var SETTING_SHEETS = {
     details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
     /* Client feedback (2026-11-24): how long since a client was last asked before the Dashboard counts it. */
@@ -6873,7 +6937,7 @@
       /* How far back a new task's dates may go (2026-11-10). */
       ['task_past_days', 'Past dates on new tasks (days before today, 0 allows none)', 'back', '', 'Past dates', per('day')],
       /* How far back a stage move may be dated (2026-11-19). */
-      ['stage_back_days', 'Past dates on stage moves (days before today, 0 allows none)', 'back', '', 'Past dates on stage moves', per('day')]] },
+      ['stage_back_days', 'Past dates on stage moves (days before today, 0 allows none)', 'sback', '', 'Past dates on stage moves', per('day')]] },
     priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent (hours from when it is set)', 'hours', '', 'Urgent', per('hour')],
       ['priority_high_hours', 'High (hours from when it is set)', 'hours', '', 'High', per('hour')],
       ['priority_medium_hours', 'Medium (hours from when it is set)', 'hours', '', 'Medium', per('hour')]] },
@@ -6886,16 +6950,16 @@
     /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
        against (2026-10-15, the client analysis playbook). */
     bench: { title: 'Ad benchmarks', keys: [
-      ['bench_cpr_low', 'Tier 1 from', 'rm', 'Property cost per result (RM)', 'Property from RM', String],
-      ['bench_cpr_mid', 'Tier 2 from', 'rm', 'Property cost per result (RM)', 'Tier 2 from RM', String],
-      ['bench_cpr_high', 'Tier 3 from', 'rm', 'Property cost per result (RM)', 'Tier 3 from RM', String],
-      ['bench_cpr_top', 'Tier 3 up to', 'rm', 'Property cost per result (RM)', 'Up to RM', String],
-      ['bench_msg_min', 'Low', 'rm', 'Messaging cost per result (RM)', 'Messaging low RM', String],
-      ['bench_msg_target', 'Target', 'rm', 'Messaging cost per result (RM)', 'Messaging target RM', String],
-      ['bench_msg_max', 'High', 'rm', 'Messaging cost per result (RM)', 'Messaging high RM', String],
-      ['bench_form_min', 'Low', 'rm', 'Lead form cost per result (RM)', 'Lead form low RM', String],
-      ['bench_form_target', 'Target', 'rm', 'Lead form cost per result (RM)', 'Lead form target RM', String],
-      ['bench_form_max', 'High', 'rm', 'Lead form cost per result (RM)', 'Lead form high RM', String],
+      ['bench_cpr_low', 'Tier 1 from', 'rm', 'Property cost per result', 'Property from RM', String],
+      ['bench_cpr_mid', 'Tier 2 from', 'rm', 'Property cost per result', 'Tier 2 from RM', String],
+      ['bench_cpr_high', 'Tier 3 from', 'rm', 'Property cost per result', 'Tier 3 from RM', String],
+      ['bench_cpr_top', 'Tier 3 up to', 'rm', 'Property cost per result', 'Up to RM', String],
+      ['bench_msg_min', 'Low', 'rm', 'Messaging cost per result', 'Messaging low RM', String],
+      ['bench_msg_target', 'Target', 'rm', 'Messaging cost per result', 'Messaging target RM', String],
+      ['bench_msg_max', 'High', 'rm', 'Messaging cost per result', 'Messaging high RM', String],
+      ['bench_form_min', 'Low', 'rm', 'Lead form cost per result', 'Lead form low RM', String],
+      ['bench_form_target', 'Target', 'rm', 'Lead form cost per result', 'Lead form target RM', String],
+      ['bench_form_max', 'High', 'rm', 'Lead form cost per result', 'Lead form high RM', String],
       ['bench_cpm_min', 'Cost per 1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
       ['bench_cpm_max', 'Cost per 1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
       ['bench_cpl_rise', 'Yearly rise in cost per lead (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
@@ -6913,21 +6977,23 @@
        ends at, the worst location a trip accepts and how long a trip is kept. */
     outstation: { title: 'Outstation', keys: [['outstation_office_lat', 'Latitude', 'lat', 'Office pin', 'Office latitude', String],
       ['outstation_office_lng', 'Longitude', 'lng', 'Office pin', 'Office longitude', String],
+      /* OUTSTATION CHECK-OUT AT THE OFFICE (2026-11-25): the radius with
+         the pin it draws round, one section (it stood under a second Office
+         pin heading). */
+      ['outstation_office_radius_m', 'Office radius (metres, 20 to 1,000)', 'orad', 'Office pin', 'Office radius', function (v) { return v + ' m'; }],
       ['outstation_accuracy_m', 'Location accuracy limit (metres)', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
       ['outstation_keep_months', 'Trips kept (months, 6 to 120)', 'keep', 'Trips', 'Kept', per('month')],
-      /* OUTSTATION CHECK-OUT AT THE OFFICE (2026-11-25). */
-      ['outstation_office_radius_m', 'Office radius (metres, 20 to 1,000)', 'orad', 'Office pin', 'Office radius', function (v) { return v + ' m'; }],
       ['outstation_remind_hours', 'Reminder for open trips (hours after the last activity, 1 to 12)', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]] },
     idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     /* Hidden personal details (2026-11-25): how long a value shown on an
        employee record stays shown (js/personnel.js). */
     reveal: { title: 'Hidden personal details', keys: [['reveal_seconds', 'Hidden again after (seconds, 10 to 600)', 'reveal', '', 'Hidden again after', function (v) { return setPlural(v, 'second', 'seconds'); }]] },
-    hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
-      ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'days', '', 'Interview reply time', per('day')],
+    hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'inv', '', 'Interview times within', per('day')],
+      ['hiring_reply_days', 'Interview reply time (days after the invitation, 1 to 14)', 'inv', '', 'Interview reply time', per('day')],
       ['hiring_decision_days', 'Decision time (working days after the interview, 1 to 30)', 'away', '', 'Decision time', per('working day')],
-      ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],
+      ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'link', '', 'Candidate link open', per('day')],
       ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool kept', per('month')],
-      ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed candidates kept', per('month')]] },
+      ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'keepc', '', 'Closed candidates kept', per('month')]] },
     /* When a colleague is asked to check in (the Health redesign,
        2026-11-22): weekly while their planned work this week is near
        their weekly capacity, else monthly. */
@@ -6989,18 +7055,32 @@
     var runs = {};
     spec.keys.forEach(function (k) { var s = k[3] || ''; runs[s] = (runs[s] || 0) + 1; });
     var seen = {}, prev = null, shown = {};
+    /* Figures sit side by side only where every label of the section
+       stands on one line in its column (2026-11-25: a label that wrapped
+       pushed its neighbour's field down); a section of longer labels runs
+       one figure a row, each filling it. A latitude and its longitude stay
+       a pair, the radius under them. */
+    var short = {}, tiny = {};
+    spec.keys.forEach(function (k) {
+      var s = k[3] || '', n = setLabel(k).length;
+      short[s] = (short[s] !== false) && n <= 24;
+      tiny[s] = (tiny[s] !== false) && n <= 14;
+    });
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
       var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
-      /* A named section of three figures runs three across, so the sheet
-         fits a phone (2026-10-15, ux-audit SET-10). */
-      var third = Boolean(s) && n === 3;
+      /* A named section of three short figures runs three across, so the
+         sheet fits a phone (2026-10-15, ux-audit SET-10). */
+      var pairOnly = k[2] === 'lat' || k[2] === 'lng';
+      var third = Boolean(s) && n === 3 && tiny[s] && !spec.keys.some(function (x) { return (x[3] || '') === s && (x[2] === 'lat' || x[2] === 'lng'); });
       var next = MON.next ? MON.next(k[0]) : null;
-      var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
+      var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4], u = setUnit(k);
       shown[k[0]] = cur == null ? '' : String(cur);
-      var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
+      var whole = SET_BOUND[k[2]] && SET_BOUND[k[2]][2];
+      var f = { name: k[0], label: setLabel(k), type: 'text', inputMode: u.mode || (whole ? 'numeric' : 'decimal'), unit: u.unit, pre: u.pre,
+        value: cur == null ? '' : String(cur), required: !opt,
         choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || k[2] === 'onoff' || undefined,
-        half: !third && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]], third: third,
-        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
+        half: pairOnly || (!third && short[s] && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]]), third: third,
+        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : u.zero };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
          From moves to its day and the figure to the one in force the day
          before, which app_settings_set reads as a withdrawal. */
@@ -7009,7 +7089,7 @@
         fr.value = next.from; fr.dispatchEvent(new Event('input', { bubbles: true }));
         var x = get(k[0]), was = MON.setting(k[0], ADspaceClock.addDays(next.from, -1));
         x.value = was == null ? '' : String(was); x.dispatchEvent(new Event('input', { bubbles: true }));
-        return k[1] + ' stays ' + setWord(k, was) + ' from ' + ADspaceClock.date(next.from) + '. Save to withdraw the change.';
+        return setLabel(k) + ' stays ' + setWord(k, was) + ' from ' + ADspaceClock.date(next.from) + '. Save to withdraw the change.';
       }];
       if (s && s !== prev) f.head = s;
       prev = s;
@@ -7038,7 +7118,9 @@
           var dp = Math.pow(10, b[3] || 2);
           if (x === '' && b[4] && MON.setting(k[0]) == null) continue;
           if (x === '' || isNaN(n) || n < b[0] || n > b[1] || (b[2] && n % 1) || Math.abs(Math.round(n * dp) - n * dp) > 1e-6) {
-            return 'Enter ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + ' for ' + k[1] + '.';
+            /* The range as the reader reads it, its unit after it (Enter 20
+               to 1,000 m for Office radius.). */
+            return 'Enter ' + (b[2] ? 'a whole number from ' : '') + setRange(k) + ' for ' + setLabel(k) + '.';
           }
         }
         return spec.check ? spec.check(v) : '';
@@ -7223,7 +7305,7 @@
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
     TAX_KEYS: TAX_KEYS,
-    SETTING_SHEETS: SETTING_SHEETS,
+    SETTING_SHEETS: SETTING_SHEETS, SET_BOUND: SET_BOUND,
     monthOfSetting: monthOfSetting,
     workHours: workHours,
     /* Write with AI waits for the client's brand (2026-10-12). */
