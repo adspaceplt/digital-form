@@ -131,7 +131,7 @@
       declined: 'Declined', declinedT: 'You have declined this quotation',
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
       monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
-      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time',
+      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time', packH: 'Package',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-time total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-time incl. SST',
       newQuote: 'New quotation',
@@ -278,6 +278,7 @@
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
       monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
+      packH: '套餐', pack: { more: '同月追加内容：', each: '／件', not: '不包括：', stop: '。', sep: '；' },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
       newQuote: '申请新报价',
@@ -832,7 +833,7 @@
     /* Several brands on one quotation (2026-11-24): each brand's lines under
        its name, as the PDF prints them. */
     var bn = Array.isArray(tt.brands) && tt.brands.length > 1 ? tt.brands : null, lastB = null;
-    var lines = window.ADspaceMoney.planFold(q.lines).map(function (l) {
+    var lines = window.ADspaceMoney.planFold(q.lines, (q.totals || {}).currency, t().pack || null).map(function (l) {
       var head = '';
       if (bn && l.brand != null && l.brand !== lastB && bn[l.brand]) {
         lastB = l.brand;
@@ -1076,7 +1077,7 @@
      them: its pieces, the quotation's one-time content among them, and
      never fewer than the quotation already held. */
   function chFileLim(sl) {
-    var n = piecesOf(chPlan(), CH.sel.mix, CH.sel.extra, (Q && Q.selection && Q.selection.once) || []);
+    var n = piecesOf(chPlan(), CH.sel.mix, CH.sel.extra, ((Q && Q.selection && Q.selection.once) || []).concat(chPackItems()));
     var x = ((CAT && CAT.files) || []).filter(function (f2) { return f2.slug === sl; })[0];
     return Math.max(x ? fileCap(x, n) : STEP_MAX, (CH.held || {})[sl] || 0);
   }
@@ -1131,11 +1132,28 @@
     });
     return out;
   }
+  /* A package the team quoted (QUOTATION PACKAGES, 2026-11-25) is read
+     here as the PDF prints it, never changed by the prospect: its contents
+     and price are the team's. Its pieces still count towards the files. */
+  function chPackItems() {
+    return ((Q && Q.selection && Q.selection.packages) || []).reduce(function (a, pk) { return a.concat((pk && pk.items) || []); }, []);
+  }
+  function chPackHtml() {
+    var w = t(), pk = window.ADspaceMoney.planFold(((Q && Q.lines) || []).filter(function (l) { return l.kind === 'package'; }), (Q.totals || {}).currency, w.pack || null);
+    if (!pk.length) return '';
+    return sec(w.packH, '<div class="qs-table">' + pk.map(function (l) {
+      var d = (l.detail || []).map(function (x) { return String(x == null ? '' : x).trim(); }).filter(Boolean);
+      return '<div class="qs-row"><span class="qs-what">' + esc(l.label) +
+        (d.length ? '<ul class="incl">' + d.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+        (l.basis === 'once' ? '<small>' + esc(w.onceTag) + '</small>' : '') + '</span>' +
+        '<span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
+    }).join('') + '</div>');
+  }
   function chEditor() {
     var w = t(), p = chPlan(), P = CH.P || {}, card = P.card || {}, I = window.ADspaceIcons;
     var plans = CAT.plans.filter(function (x) { return Boolean(x.ads) === Boolean(CH.withAds); });
     var notes = chPlatNotes(), xr = P.extra_rates || {};
-    var h = sec(w.planH, seg('qsChAds', w.need.ads[0], [['no', w.noAds], ['ads', w.withAds]], CH.withAds ? 'ads' : 'no', true) +
+    var h = chPackHtml() + sec(w.planH, seg('qsChAds', w.need.ads[0], [['no', w.noAds], ['ads', w.withAds]], CH.withAds ? 'ads' : 'no', true) +
       '<div class="qs-plans">' + plans.map(function (x, i) {
         var on = CH.sel.plan === x.slug, feat = plans.length === 3 && i === 1, r = (card.plans || {})[x.slug];
         return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="chplan" value="' + esc(x.slug) + '"' + (on ? ' checked' : '') + '>' +
