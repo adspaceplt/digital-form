@@ -6129,7 +6129,8 @@ language sql immutable parallel safe as $$
                     'report.submitted', 'report.unpublished', 'report.version_deleted') then 'reports'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
-    when action in ('assistant.meeting', 'assistant.schedule', 'assistant.task', 'ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('assistant.meeting', 'assistant.schedule', 'assistant.task', 'ops.deleted', 'ops.month_deleted', 'ops.numbering',
+                    'ops.trip_closed') then 'ops'
     when action in ('document.deleted', 'document.issued', 'document.reissued',
                     'document.restored', 'document.signed', 'document.superseded',
                     'document.unsigned', 'document.verified', 'document.voided',

@@ -300,7 +300,7 @@
             '<span class="ost-who">' + esc(who) + '</span>' +
             '<span class="ost-n">' + (hours ? esc(hours) : '<span class="muted">—</span>') + '</span>' +
             '<span class="ost-n pr-end">' + (dist ? esc(dist) : '<span class="muted">—</span>') + '</span>' +
-            '<span class="pr-state">' + stateChip(trip) + '</span>';
+            '<span class="pr-state">' + stateChip(trip, true) + '</span>';
           row.addEventListener('click', function () { openDetail(trip, row); });
           return row;
         });
@@ -308,9 +308,11 @@
       }
     });
   }
-  function stateChip(trip) {
+  /* A list row reads its state alone; the trip itself says it closed
+     automatically. */
+  function stateChip(trip, row) {
     return trip.state === 'open' ? '<span class="chip chip-state is-warn">In progress</span>'
-      : '<span class="chip chip-state is-ok">Checked out</span>' + (closedAuto(trip) ? '<span class="chip ost-auto">Closed automatically</span>' : '');
+      : '<span class="chip chip-state is-ok">Checked out</span>' + (!row && closedAuto(trip) ? '<span class="chip ost-auto">Closed automatically</span>' : '');
   }
 
   /* The route as a timeline (the user, 2026-11-25: the card read as lines
