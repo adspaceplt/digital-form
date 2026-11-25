@@ -417,6 +417,52 @@
   /* The files a content piece is released with (Working files, Raw
      footage; the user, 2026-11-24): asked wherever content is made. */
   function filesAsked() { return Boolean((S.need.social || S.need.content) && CAT && (CAT.files || []).length); }
+  /* The files held to what the selection makes (QUOTE FILES CAPPED, the
+     user, 2026-11-25): Working files at most its graphics, Raw footage at
+     most its reels, counted as quote_files_cap counts them (the plan's
+     content option, its additional content pieces, the one-time content),
+     each piece by the catalogue's `piece` for its kind, never its name. A
+     file covering neither covers every piece. A catalogue naming no piece
+     caps nothing; the database holds the files either way. */
+  var STEP_MAX = 30;
+  function piecesOf(plan, mix, extra, once) {
+    var C = (CAT && CAT.contents) || [], n = { graphic: 0, reel: 0 };
+    if (!C.some(function (c) { return c.piece; })) return null;
+    var add = function (c, q) { if (c && n[c.piece] != null && Number(q) > 0) n[c.piece] += Number(q); };
+    var bySlug = function (sl) { return C.filter(function (c) { return c.slug === sl; })[0]; };
+    if (plan) {
+      var ms = plan.mix || [], m = ms[mix < ms.length ? mix : 0] || {};
+      Object.keys(m).forEach(function (k) { add(C.filter(function (c) { return c.kind === k; })[0], m[k]); });
+      Object.keys(extra || {}).forEach(function (sl) { add(bySlug(sl), extra[sl]); });
+    }
+    (once || []).forEach(function (o) { add(bySlug(o.slug), o.qty); });
+    return n;
+  }
+  function fileCap(x, n) { return !n ? STEP_MAX : Math.min(STEP_MAX, x.covers ? n[x.covers] || 0 : n.graphic + n.reel); }
+  function stepPieces() {
+    var p = S.need.social ? planOf() : null;
+    return piecesOf(p, S.mix, S.extra, S.need.content ? onceList().map(function (c) { return { slug: c.slug, qty: S.once[c.slug] || 0 }; }) : []);
+  }
+  /* A count above its cap comes down to it; a file the selection makes no piece for leaves. */
+  function filesFit() {
+    if (!CAT) return;
+    var n = stepPieces();
+    (CAT.files || []).forEach(function (x) {
+      var lim = fileCap(x, n);
+      if ((S.files[x.slug] || 0) > lim) { if (lim > 0) S.files[x.slug] = lim; else delete S.files[x.slug]; }
+    });
+  }
+  /* Choose the files to receive: offered only for what the selection makes. */
+  function filesHtml() {
+    if (!filesAsked()) return '';
+    filesFit();
+    var n = stepPieces(), list = CAT.files.filter(function (x) { return fileCap(x, n) > 0; });
+    if (!list.length) return '';
+    return sec(t().files, '<p class="qs-note">' + esc(t().filesNote) + '</p>' + list.map(function (x) {
+      return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0, '', fileCap(x, n));
+    }).join(''));
+  }
+  function filesRepaint() { var b = $('qsFilesBox'); if (b) b.innerHTML = filesHtml(); }
   /* A verification for the platforms chosen, where platforms are chosen;
      every one where verification alone is asked. */
   function verifyList() {
@@ -444,7 +490,7 @@
     if (S.need.koc && S.koc) once.push({ slug: S.koc, qty: 1 });
     if (S.need.koc && S.kol && CAT.kol) once.push({ slug: CAT.kol, qty: 1 });
     if (S.need.verify) verifyList().forEach(function (v) { if (S.verify.indexOf(v.slug) >= 0) once.push({ slug: v.slug, qty: 1 }); });
-    if (filesAsked()) (CAT.files || []).forEach(function (x) { if (S.files[x.slug] > 0) once.push({ slug: x.slug, qty: S.files[x.slug] }); });
+    if (filesAsked()) { filesFit(); (CAT.files || []).forEach(function (x) { if (S.files[x.slug] > 0) once.push({ slug: x.slug, qty: S.files[x.slug] }); }); }
     if (once.length) sel.once = once;
     return sel;
   }
@@ -470,11 +516,13 @@
     return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
       (on ? ' checked' : '') + '><span class="qs-text">' + (lead ? '<span class="qs-lead-mark">' + lead + '</span>' : '') + esc(label) + '</span>' + MARK + '</label>';
   }
-  function stepper(group, slug, label, n, sub) {
+  /* `max`: the most it may count (the files a selection makes); + stops there. */
+  function stepper(group, slug, label, n, sub, max) {
+    var top = max == null ? STEP_MAX : max;
     return '<div class="qs-stepper"><span>' + esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="qs-count">' +
       '<button class="btn btn-sm qs-pm" type="button" data-step="-1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().fewer + ': ' + label) + '"' + (n ? '' : ' disabled') + '>−</button>' +
       '<b aria-live="polite">' + n + '</b>' +
-      '<button class="btn btn-sm qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().more + ': ' + label) + '">+</button></span></div>';
+      '<button class="btn btn-sm qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" data-max="' + top + '" aria-label="' + esc(t().more + ': ' + label) + '"' + (n >= top ? ' disabled' : '') + '>+</button></span></div>';
   }
   function seg(id, label, options, value, quiet) {
     return '<div class="field">' + (quiet ? '' : '<span class="field-label" id="' + id + 'L">' + esc(label) + '</span>') +
@@ -627,11 +675,7 @@
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
-    if (filesAsked()) {
-      h += sec(t().files, '<p class="qs-note">' + esc(t().filesNote) + '</p>' + CAT.files.map(function (x) {
-        return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0);
-      }).join(''));
-    }
+    if (filesAsked()) h += '<div class="qs-xbox" id="qsFilesBox">' + filesHtml() + '</div>';
     if (S.need.koc) {
       var cr = '';
       if (CAT.koc.length) {
@@ -981,8 +1025,26 @@
   function chChanged() { return chKey(chSel()) !== CH.baseKey; }
   function chPlan() { return CAT && CH.sel.plan ? CAT.plans.filter(function (p) { return p.slug === CH.sel.plan; })[0] || null : null; }
   function chMoney(v) { return qc() + ' ' + n0(v); }
+  /* The files the changed selection may hold, as quote_change_sel holds
+     them: its pieces, the quotation's one-time content among them, and
+     never fewer than the quotation already held. */
+  function chFileLim(sl) {
+    var n = piecesOf(chPlan(), CH.sel.mix, CH.sel.extra, (Q && Q.selection && Q.selection.once) || []);
+    var x = ((CAT && CAT.files) || []).filter(function (f2) { return f2.slug === sl; })[0];
+    return Math.max(x ? fileCap(x, n) : STEP_MAX, (CH.held || {})[sl] || 0);
+  }
+  function chFilesHtml() {
+    var w = t(), card = (CH.P && CH.P.card) || {};
+    Object.keys(CH.sel.files).forEach(function (k) { if (CH.sel.files[k] > chFileLim(k)) CH.sel.files[k] = chFileLim(k); });
+    var list = (card.files || []).filter(function (x) { return chFileLim(x.slug) > 0; });
+    return list.length ? sec(w.files, list.map(function (x) {
+      return stepper('chf', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, CH.sel.files[x.slug] || 0, f(w.each, { a: chMoney(x.rate) }), chFileLim(x.slug));
+    }).join('')) : '';
+  }
+  function chFilesRepaint() { var b = $('qsChFilesBox'); if (b) b.innerHTML = chFilesHtml(); }
   function chOpen() {
     CH = { sel: chBase(Q), P: null, fail: false };
+    CH.held = JSON.parse(JSON.stringify(CH.sel.files));
     var s0 = chSel(); CH.baseKey = chKey(s0);
     CH.withAds = Boolean((chPlan() || {}).ads);
     paint(); window.scrollTo(0, 0); chPrice();
@@ -1051,11 +1113,7 @@
         '<span class="qs-lead-mark">' + (I && I.mark ? I.mark(k) : '') + '</span><span class="qs-chip-w">' + esc(w.plat[k] || k) + '</span>' +
         (notes[k] ? '<small class="qs-price" data-chnote="' + esc(k) + '">' + esc(notes[k]) + '</small>' : '') + '</span>' + MARK + '</label>';
     }).join('') + '</div>');
-    if ((card.files || []).length) {
-      h += sec(w.files, card.files.map(function (x) {
-        return stepper('chf', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, CH.sel.files[x.slug] || 0, f(w.each, { a: chMoney(x.rate) }));
-      }).join(''));
-    }
+    h += '<div class="qs-xbox" id="qsChFilesBox">' + chFilesHtml() + '</div>';
     var terms = (card.terms || []).map(function (x) { return Number(x.months); });
     if (terms.length) {
       var off = (card.terms || []).filter(function (x) { return Number(x.pct) < 0; }).map(function (x) { return f(w.termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
@@ -1741,12 +1799,18 @@
       var g = b.getAttribute('data-group'), slug = b.getAttribute('data-slug');
       /* The change editor's steppers keep their counts on the change, the steps' in the tab. */
       var bag = g === 'chx' && CH ? CH.sel.extra : g === 'chf' && CH ? CH.sel.files : S[g];
+      var row = b.closest('.qs-stepper'), up = row.querySelector('[data-step="1"]');
+      var top = up && up.hasAttribute('data-max') ? Number(up.getAttribute('data-max')) : STEP_MAX;
       var n = (bag[slug] || 0) + Number(b.getAttribute('data-step'));
-      bag[slug] = Math.max(0, Math.min(30, n));
-      if (g !== 'chx' && g !== 'chf') keep();
-      var row = b.closest('.qs-stepper');
+      bag[slug] = Math.max(0, Math.min(top, n));
       row.querySelector('b').textContent = bag[slug];
       row.querySelector('[data-step="-1"]').disabled = !bag[slug];
+      /* At its cap + rests and the press moves to − on the same row. */
+      if (up) { up.disabled = bag[slug] >= top; if (up.disabled && document.activeElement === up) row.querySelector('[data-step="-1"]').focus(); }
+      /* A content piece added or taken away moves what the files may count. */
+      if (g === 'once') filesRepaint();
+      if (g === 'chx' && CH) chFilesRepaint();
+      if (g !== 'chx' && g !== 'chf') keep();
       if (CH && (g === 'chx' || g === 'chf')) chPrice();
       return;
     }
@@ -1801,7 +1865,7 @@
         if (!CH.sel.platforms.length) { CH.sel.platforms = [el.value]; el.checked = true; }
         var lb = el.closest('.qs-chip'); if (lb) lb.classList.toggle('is-on', el.checked);
       }
-      if (id === 'qsChMix') CH.sel.mix = Number(el.value) || 0;
+      if (id === 'qsChMix') { CH.sel.mix = Number(el.value) || 0; chFilesRepaint(); }
       if (id === 'qsChTerm') CH.sel.term = Number(el.value);
       if (id === 'qsChAds') {
         CH.withAds = el.value === 'ads';
