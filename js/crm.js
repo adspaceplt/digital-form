@@ -1476,8 +1476,10 @@
      made a seventh; Interactions holds Calls and visits and Feedback, so
      the strip stays at six (2026-11-24; `tab=calls` and `tab=feedback`
      open it on their part). */
-  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], engagements: ['engagements', 'checklists'],
-    services: ['services', 'documents'], brand: ['brand'], account: ['contacts', 'billing'], activity: ['activity'] };
+  /* In the order a client is won (2026-11-25, the user): Overview,
+     Interactions, Brand, Services, Account, Engagements. */
+  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], brand: ['brand'], services: ['services', 'documents'],
+    account: ['contacts', 'billing'], engagements: ['engagements', 'checklists'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
   /* Every part's address and every tab's own (`tab=account`, `tab=interactions`). */
@@ -1778,7 +1780,7 @@
     /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
        the services and the letters; a section the reader may not open is
        not drawn, and one whose read was refused says so, never empty. */
-    var secs = [ovQuotes(), ovTouches(), ovContact(c), ovServices(c), ovDocuments(c)].join('');
+    var secs = [ovQuotes(), ovTouches(), ovServices(c), ovDocuments(c), ovContact(c)].join('');
     box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
@@ -2233,14 +2235,40 @@
     }
     var step = nextStep(c);
     if (!step) { block.hidden = true; box.innerHTML = ''; return; }
-    box.innerHTML = '<button class="railnext" type="button" data-go="' + esc(step.go) + '">' + ico(step.icon || 'dot') +
+    box.innerHTML = '<button class="railnext" type="button" ' + (step.act ? 'data-act="' + esc(step.act) + '"' : 'data-go="' + esc(step.go) + '"') + '>' + ico(step.icon || 'dot') +
       '<span class="railnext-text">' + esc(step.text) + '</span>' + CHEV + '</button>';
+    var b = box.querySelector('[data-act]');
+    if (b) b.addEventListener('click', function () { nextAct(c, step.act, b); });
     block.hidden = false;
+  }
+  /* The step the stage asks for, opened by one press (2026-11-25, the
+     user): the Brand part's sheet, Build quote, Billing's sheet, or the
+     month in My Work. */
+  function nextAct(c, act, btn) {
+    if (act === 'month') {
+      history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
+      if (bridge.show) bridge.show('work');
+      return;
+    }
+    showPane(act === 'brand' ? 'brand' : act === 'quote' ? 'services' : 'billing', true);
+    pushUrl();
+    if (act === 'brand') openBrandSheet('profile', btn);
+    else if (act === 'billing') openBilling(btn);
+    else if (act === 'quote') {
+      var tries = 0, press = function () {
+        var q = $('qtBuild');
+        if (q && !q.closest('[hidden]')) { q.click(); return; }
+        if (++tries < 20) setTimeout(press, 150);
+      };
+      press();
+    }
   }
 
   /* The one thing this record needs next, read off the same gate, stage and
      lines every other part of the record reads. The line states what is true;
      the control opens the pane that changes it. */
+  /* A brand is held once its profile holds a field (BRAND_KEYS, notes). */
+  function brandHeld(c) { return BRAND_KEYS.some(function (k) { return c[k]; }) || Boolean(c.brand_notes); }
   function nextStep(c) {
     var stage = c.stage || 'lead';
     var missing = billingMissing(c);
@@ -2248,6 +2276,20 @@
     var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
+    /* The sale in the order it is won (2026-11-25, the user): a brand, a
+       quotation, then billing once it is signed; an Active client's month. */
+    var quotes = state.quotes ? state.quotes.filter(function (q) { return !q.removed_at; }) : null;
+    if (['active', 'paused', 'past'].indexOf(stage) < 0) {
+      if (!brandHeld(c) && mayPart('clients.brand', 'work')) return { text: 'Add brand', act: 'brand', icon: 'tag' };
+      if (quotes && !quotes.length && mayPart('clients.quotes', 'work')) return { text: 'Build quote', act: 'quote', icon: 'file' };
+      if (quotes && quotes.some(function (q) { return q.signed_at; }) && missing.length && maySeeBilling()) {
+        return { text: 'Billing details', act: 'billing', icon: 'file' };
+      }
+    }
+    if (stage === 'active' && window.ADspaceEngage && bridge.may && bridge.may('ops', 'view')) {
+      var mn = window.ADspaceEngage.monthNow(c.id);
+      if (mn) return { text: mn.word + ' engagement', act: 'month', icon: 'calendar' };
+    }
     if (!state.contacts.length) return { text: 'No contacts.', go: 'contacts', icon: 'person' };
     if (stage === 'lead') return { text: 'No calls or visits.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
@@ -6232,7 +6274,7 @@
     ENG.load(c, function (got) {
       if (!state.client || state.client.id !== got.id) return;
       paintEngage();
-      paintMonthLine(state.client);
+      paintMonthLine(state.client); railNext(state.client); wireGo($('crmNextBlock')); lastRule();
     });
   }
 
@@ -6314,7 +6356,7 @@
   }
   if (window.ADspaceEngage) {
     window.ADspaceEngage.onData(function (c) {
-      if (state.client && state.client.id === c.id) { paintEngage(); paintMonthLine(state.client); }
+      if (state.client && state.client.id === c.id) { paintEngage(); paintMonthLine(state.client); railNext(state.client); wireGo($('crmNextBlock')); lastRule(); }
     });
   }
 
@@ -6464,6 +6506,7 @@
       state.quotes = rows;
       Q.paint(host, quoteCtx(), rows);
       paintSummary();
+      railNext(state.client); wireGo($('crmNextBlock')); lastRule();
       if (done) done(rows);
     });
   }

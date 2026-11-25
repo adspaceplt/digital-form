@@ -191,6 +191,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   showing its parts one under the other (`#crmPanes`, 24px apart), each
   part keeping its heading and its own address (`tab=billing` opens
   Account on Billing, so every older link lands):
+  - in the order a client is won (2026-11-25, the user): Overview,
+    Interactions, Brand, Services, Account, Engagements;
   - Overview; Interactions (2026-11-24): Calls and visits (`tab=calls`,
     Clients: Calls, never behind the Activity record's access; 2026-10-11)
     then Feedback (`tab=feedback`), each its own card with its count and
@@ -215,8 +217,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - `.rail-after` (Timeline, Details, Recent activity) follows the pane.
 - `.rec` is `grid-template-rows: auto 1fr`.
 - Overview:
-  - One `.ovcard` in the tabs' order: Calls and visits, Contact details,
-    Services, Letters; a section whose part the reader may not open is not
+  - One `.ovcard` in the tabs' order: Calls and visits, Services, Letters,
+    Contact details; a section whose part the reader may not open is not
     drawn, and one whose read was refused reads Could not load., never empty
     (`ovFailed`, 2026-10-11).
   - Contact details names the primary contact's phone, then a WhatsApp
@@ -227,7 +229,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - An empty section says so in one line.
 - Rail blocks (`.railblock`, `.railtitle` at 15px):
   - Next action: a written `next_action`/`next_at` beats `nextStep()`; a
-    written one opens Calls and visits, where it is done. Its date is said
+    written one opens Calls and visits, where it is done. `nextStep()`
+    follows the stage first (2026-11-25, the user), each opened by one press
+    (`nextAct`): before Active, a lead with no brand (no Brand profile field
+    nor notes, `brandHeld`) Add brand, opening the Brand profile's sheet;
+    with a brand and no quotation Build quote, opening it on Services; a
+    signed quotation with Billing incomplete Billing details, opening
+    Billing's sheet; an Active client its month's engagement (`{Mon}
+    engagement`), opening My Work's Months view as the month line does;
+    each drawn only where the reader may take it, then the older steps.
+    The block is drawn again once the quotations and the month arrive. Its date is said
     there alone (the Timeline holds no Next follow up).
   - The billing gate: `.railgate` in red, only while a billing field is
     missing on a record that is not Active; it opens Billing where
