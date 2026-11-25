@@ -626,6 +626,9 @@
     quote_preview: 'p_sel',
     tax_codes_list: '', tax_codes_save: 'p_rows p_replace', tax_codes_delete: 'p_codes',
     quotation_create: 'p_client p_sel p_idem',
+    quotation_draft_read: 'p_client',
+    quotation_draft_save: 'p_client p_sel p_card',
+    quotation_draft_discard: 'p_client',
     quotation_set: 'p_id p_what',
     quotation_delete: 'p_id p_ref',
     client_request_add: 'p_client p_kind p_service p_contact p_note p_idem',
@@ -876,7 +879,7 @@
   function qtStampOut() {
     (DB.quotations || []).forEach(function (q) {
       if (q.sent_out_at) return;
-      var out = q.released_at || (q.source === 'console' && q.access_key) ||
+      var out = q.released_at ||
         (DB.wa_outbox || []).some(function (w) { return w.ref_id === q.id && w.state !== 'failed' && w.status !== 'failed'; }) ||
         (DB.client_emails || []).some(function (e) { return e.ref_id === q.id && e.kind === 'quotation'; });
       if (!out) return;
@@ -13454,7 +13457,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$|change_request$|preflight$)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_(invoice|draft_)/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$|change_request$|preflight$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -14447,6 +14450,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var oq = sealOf(args.p_key);
         if (!oq) return qtOk({ error: 'not-found' });
         if (oq.source === 'website' && !oq.released_at) return qtOk({ ok: true, kept: false });
+
+        if (oq.source === 'console' && !oq.sent_out_at) {
+          oq.sent_out_at = qtNow.toISOString();
+          if (!oq.removed_at && !oq.signed_at) proposalSent(oq.client_id, oq.ref + ' sent out');
+        }
         DB.signing_steps = DB.signing_steps || [];
         var oip = window.__callerIp || '203.0.113.24', odev = sealDevice(args.p_device);
         var six = qtNow.getTime() - 6 * 3600e3;
@@ -14924,6 +14932,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         DB.quotations.push(qrow);
+
+        (DB.quotation_drafts || []).forEach(function (d) { if (d.client_id === qc.id && qtMe && d.member_id === qtMe.id) { d.selection = null; d.card = null; d.saved_at = qtNow.toISOString(); } });
         qtLog(qc.name, qrow.ref + ' sent · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + qrow.version +
           (qpr.adjusted ? ' · ' + qpr.adjusted + (qpr.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qrow.id, ref: qrow.ref, key: null });
@@ -19220,6 +19230,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.guide_seen.push({ team_member_id: gme2.id, guide: gk, seen_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
+    }
+
+    if (name === 'quotation_draft_read' || name === 'quotation_draft_save' || name === 'quotation_draft_discard') {
+      var dme = opsMe();
+      var dOut = function (x) { return Promise.resolve({ data: x, error: null }); };
+      if (!dme || !opsAllowed('clients.quotes', 'work')) return dOut({ error: 'denied' });
+      var dcl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+      if (!dcl || !scopeRowOk(dcl.stage, dcl.owner, dcl.owner_id, 'work', dcl.sales_by)) return dOut({ error: 'client-scope' });
+      DB.quotation_drafts = DB.quotation_drafts || [];
+      var drow = DB.quotation_drafts.filter(function (d) { return d.client_id === dcl.id && d.member_id === dme.id; })[0];
+      if (name === 'quotation_draft_read') {
+        return dOut({ draft: drow && drow.selection ? { selection: JSON.parse(JSON.stringify(drow.selection)), card: drow.card, saved_at: drow.saved_at } : null });
+      }
+      if (name === 'quotation_draft_save') {
+        if (window.__draftRefuse) return dOut({ error: 'denied' });
+        if (!args.p_sel || typeof args.p_sel !== 'object' || Array.isArray(args.p_sel)) return dOut({ error: 'bad-request' });
+        if (JSON.stringify(args.p_sel).length > 200000 || String(args.p_card || '').length > 40) return dOut({ error: 'too-long' });
+        var dat = new Date().toISOString();
+        if (!drow) { drow = { id: nid('qd'), client_id: dcl.id, member_id: dme.id }; DB.quotation_drafts.push(drow); }
+        drow.selection = JSON.parse(JSON.stringify(args.p_sel)); drow.card = args.p_card || null; drow.saved_at = dat;
+        persist();
+        return dOut({ saved_at: dat });
+      }
+      var dn = drow && drow.selection ? 1 : 0;
+      if (dn) { drow.selection = null; drow.card = null; drow.saved_at = new Date().toISOString(); persist(); }
+      return dOut({ ok: true, removed: dn });
     }
 
     if (name === 'rail_order_mine') {

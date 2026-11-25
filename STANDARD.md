@@ -678,12 +678,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
      the copy review's wider reading are merged.
   2. The day's full gate on main (`bash tests/snap.sh all`, two-hour
      limit) after item 1 merges; its findings are the next batch.
-  3. Waiting on the user's hand: approve the PRs' Expectations changed;
-     publish Rate Card v.2.0.11; rotate the Bukku token; set the email code's expiry.
+  3. Waiting on the user's hand: rotate the Bukku token, then update the
+     `BUKKU_TOKEN` Supabase secret.
   4. The Activity record's quotation sessions: a city on a live
      quotation link's visit is still to be seen once.
-  5. Build quote keeps no draft of a quote part-built (not built; asked
-     of the user only if raised).
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
   build the whatsapp first"). The email reminders are built.
