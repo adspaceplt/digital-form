@@ -10,7 +10,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29; Suppliers left with its email templates, 2026-11-24); its address falls back for anyone else. Ten groups
+  Full Access (2026-10-22, SET2-11; 2026-10-29), or Suppliers at Full Access (Supplier email templates, 2026-11-25); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings, in the
@@ -24,9 +24,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
   and emails; Email: Send by email at `team.settings`,
-  Reply-to mailboxes; WhatsApp: Send on WhatsApp, WhatsApp
-  templates at WhatsApp Full Access, Meeting
-  message, Website quotations: how many a day are told on WhatsApp),
+  Reply-to mailboxes; Email templates (the user, 2026-11-25: "Sorry
+  inside Messages": every email's wording, one place): Client, Supplier,
+  Creator and Candidate email templates, Sign-in and codes, each drawn
+  where `ADspaceMailTpl.may` lets its reader open it and opening that
+  family alone, `docs/rules/messages.md`; WhatsApp: Send on WhatsApp,
+  WhatsApp templates at WhatsApp Full Access, Meeting message, Website
+  quotations: how many a day are told on WhatsApp),
   Partners (the user, 2026-11-22: "Clients tab redesign to Partners …
   inside includes Clients, Creators and Suppliers"; `tab=partners`, an
   old `tab=clients` landing on it; Details forms first: one figure for a
@@ -40,9 +44,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   (Candidates: Time limits at `team.settings`, Interview scorecards at
   `team.hiring`, its row the Standard's criteria and how many positions hold
   their own, Standard: 5 criteria · 1 position with its own; New colleagues:
-  Welcome Kit; 2026-11-17). No email's wording is a row here: each is
-  its own section's (`docs/rules/messages.md`, Email templates; the user,
-  2026-11-24). A row carries what a press opens (`open`); a switch acts at the
+  Welcome Kit; 2026-11-17). No section's bar or ⋯ offers a template
+  (#1419's Edit email templates, a misread, removed 2026-11-25). A row carries what a press opens (`open`); a switch acts at the
   press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
   phone's page), finding a row by its name, group, part or value across every
   group (a hit's line its group, then its part: Partners · Suppliers) and opening its group on its control (Enter takes the first);

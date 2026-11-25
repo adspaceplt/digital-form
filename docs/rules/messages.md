@@ -81,7 +81,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Email templates, New email under Clients' or Suppliers' own
-  (each section's Edit email templates; `ADspaceMailTpl`, `team.settings`, a supplier's at Suppliers
+  (Settings, Messages: Client email templates or Supplier email templates; `ADspaceMailTpl`, `team.settings`, a supplier's at Suppliers
   Full Access too, `email_template_may`; `email_template_save` with
   `taken`, `email_template_delete` in the row's ⋯, filed under Email
   templates). A client's audience asks Clients: Contacts at View too
@@ -118,24 +118,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   email is closed is answered 503 for ten minutes, and one the database
   could not take 500, so Resend asks again. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.
-- Email templates (`js/mailtpl.js`; the user, 2026-11-24: "deduplicate
-  every sections"): every email's wording is its own section's, reached
-  from that section's command bar as Edit email templates (`data-mailtpl`,
-  `data-rare`, Change, behind the ⋯; the bar's one item where the ⋯ would
-  hold it alone), never from Settings and never from two places: Clients
+- Email templates (`js/mailtpl.js`; the user, 2026-11-25: "Sorry
+  inside Messages"): every email's wording has one place, Settings,
+  Messages, Email templates, a row a family (`mail-{rec}`, its line counting its templates and
+  how many are on, `ADspaceMailTpl.count`), each opening that family's
+  alone; no section's bar or ⋯ offers them (#1419's Edit email templates
+  removed): Client email templates
   (Quotation, Letter of Offer, Client letter; Overdue reminder, Invoice
   email; Feedback: Service rating and Performance review, each in English
-  and 中文, `docs/rules/client-feedback.md`; New email's own), Suppliers
-  (Supplier approved, Document, New email's own), Creators (the seven
-  creator emails), Team's Hiring tab (Candidates: the twelve candidate
+  and 中文, `docs/rules/client-feedback.md`; New email's own), Supplier
+  email templates (Supplier approved, Document, New email's own), Creator email templates
+  (the seven creator emails), Candidate email templates (the twelve candidate
   emails, each with its own switch, `hiring_email_templates`, 2026-11-21)
-  and Messages' Email tab (Sign-in and codes: Verification code, the one
+  and Sign-in and codes (Verification code, the one
   email every code the portal sends goes out in, `code_email_template`,
   its fields {name}, {code}, {minutes}, {purpose}, {code} never in the
   subject, read by `quote-request` and `hiring-mail` through
   `_shared/mail.ts` `codeEmail`, 2026-11-17, SEAL-SPEC decision 9; and
   Supabase's Sign-in code and Invitation listed with no Edit). Drawn
-  (`ADspaceMailTpl.may`, asked by `applyAccess`) and read at
+  (`ADspaceMailTpl.may`, asked by Settings) and read at
   `team.settings`, a supplier's every template, fixed or New email's, at
   Suppliers Full Access too (`email_template_may`, 2026-11-10); the sheet
   reads only the opened recipient's lists. Each template saves through its
@@ -385,4 +386,4 @@ Moved from DESIGN.md §4 on 2026-11-23.
 | A message sent on WhatsApp (the WhatsApp section) | `#waList` (`js/whatsapp.js`): the month's figures in the line under the section's name (`ADspaceAdmin.counts`), then one `ADspaceGroup` card of `.wam-row`s: who (name over client and number, a failure's reason in `--err` under it on a narrow pane), what (purpose over template and category), who sent it, the status over when (`.chip-state` with its dot); on a narrow pane who over meta at the left and status over when at the right. Templates: `.wat-row` a purpose over its template, its `button.switch`, Edit |
 | The emails the portal sent (Messages, Email) | `#emlPane`: the WhatsApp tab's own layout (sent, delivered, opened and not delivered in red in the line under the section's name, then one `ADspaceGroup` card), a row a `button.wam-row.eml-row` (who over what and its client or supplier, what over its reference, who sent it, the status over when); `#emlSheet` a read-only `.formsheet`: the subject as its title, `dl.ovfacts.eml-facts`, each step its own fact, then the message on `--sunk` with its lines kept (`.eml-body`) |
 | Sending a template on WhatsApp from any record | `#waCompose` (`ADspaceWhatsApp.compose`): a `.formsheet` of Recipient (To as a select, the number as a `.readfield`, a warn line where it cannot be messaged), Template (Meta's approved ones; Report where it has a Document header), Variables (one `data-oneline` box each, prefilled) and Preview (`.wa-preview` on `--sunk`: header, body with each variable at 600, footer, buttons); Send asks first |
-| An email's wording (a section's Email templates) | `#mtSheet` (`js/mailtpl.js`), opened from the section whose emails they are (Edit email templates, `data-mailtpl`): that recipient's alone, no recipient switch, a section a kind of email (`.mt-sec`: the `fsec-h` heading, Add template at its right for New email) over a shaded card of rows (the name over its subject, Edit with the pen, a New email template's ⋯ holding Delete); the editor `#mtEdSheet` (880px): the fields at the left, Subject a one-line box, Message a box of lines with the sender's fields as `.btn-sm` chips under it (a feedback request's Button a one-line box under them, drawn in the preview as the email's blue button), an unknown field the `.msg.warn` line and the field's red edge; Preview at the right on the email's own light page (`.inv-mail`), each field a tinted span, an unknown one red words with a wavy underline; stacked under 720 |
+| An email's wording (Settings, Messages) | `#mtSheet` (`js/mailtpl.js`), opened from its family's row in Settings, Messages, Email templates (`mail-{rec}`) and titled as the row: that family's alone, no recipient switch, a section a kind of email (`.mt-sec`: the `fsec-h` heading, Add template at its right for New email) over a shaded card of rows (the name over its subject, Edit with the pen, a New email template's ⋯ holding Delete); the editor `#mtEdSheet` (880px): the fields at the left, Subject a one-line box, Message a box of lines with the sender's fields as `.btn-sm` chips under it (a feedback request's Button a one-line box under them, drawn in the preview as the email's blue button), an unknown field the `.msg.warn` line and the field's red edge; Preview at the right on the email's own light page (`.inv-mail`), each field a tinted span, an unknown one red words with a wavy underline; stacked under 720 |
