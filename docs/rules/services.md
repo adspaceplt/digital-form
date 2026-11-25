@@ -361,7 +361,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Build quote's (`quote_web_terms`); with a plan, Content production lists
   only the formats its additional contents do not; Choose your files, the
   card's File Release add-ons (Working files, Raw footage) as steppers
-  wherever content is made, a count of content pieces, under one note in
+  wherever content is made, a count of content pieces, Working files at
+  most the graphics the selection makes and Raw footage at most its reels
+  (`quote_files_cap`: the plan's content option, its additional content
+  pieces and the one-time content, each piece by its kind on the card,
+  `quote_piece_class`; a file the selection makes none for is not offered,
+  + rests at the cap and a count above it comes down; held server-side by
+  `quote_website_sel` and `quote_change_sel`, what a sent quotation held
+  staying allowed; Build quote warns, `quote_preview` `files_over`, never
+  refuses; `2026-11-25-quote-files-capped.sql`), under one note in
   the user's words (`filesNote`: delivered in high definition to each
   platform's specifications; the files on request, charged per content
   piece; no figure; 2026-11-25), every other add-on and an outstation fee Build
