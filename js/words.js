@@ -382,6 +382,9 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* The S$ rate not set (2026-11-25, copy review): one refusal for
+       every screen that prices a Singapore client. */
+    fxUnset: 'Set the S$ exchange rate in Settings, Accounting, Tax and terms.',
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
        PDF and the quotation link say them alike; Build quote's ticks read
        the group words. */

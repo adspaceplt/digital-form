@@ -396,20 +396,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator in the queue, one after another) at `campaigns.pay` Work; the fee
   and every amount at `campaigns.pay` View alone; `row=` (a booking or a
   set of details) opens its row, ringed (`tests/payqueue.js`).
-- A campaign's creator payments (`2026-11-22-campaign-creator-payments.sql`;
-  the user approved screen (f) of mockups/bukku-structure, 2026-11-22): the
-  Creators tab draws each booking's payment after its step in `.kcard-tags`
-  (`.kcard-pay`: under the step at a desk, beside it on a phone), the dot and
-  its word as the Payment pane says it (Paid {day}, Processing, Draft in
-  Bukku; posted with no bill Not billed, or Not linked; nothing before it is
-  posted), Open in Bukku in the booking's ⋯ where a bill exists (`billlink`),
-  and the rail's Creator payments block (`#campPayBlock`, after Details,
-  `rail-after`): Paid n of N creators, Processing, Draft in Bukku and Not
-  billed where any, Paid to creators a currency a line. One read for the
-  campaign (`campaign_creator_bills(p_campaign)`: Campaigns View and
-  `campaigns.pay` View, else `denied`; client scope, else `not-found`; no
-  Bukku call), at `campaigns.pay` View alone; never on /creators/ or the
-  creator's page, whose payloads name no bill (`tests/cpaycamp.js`, `sql`).
+- The campaign record carries no creator payment figure, so it can be
+  shown to a client (the user, 2026-11-25): no booking's payment or bill
+  chip, no Open in Bukku in a booking's ⋯, no Creator payments rail block,
+  no creator fee, margin or paid figure on any of its panes; its figures
+  are the client's alone (the amount, SST, Total, the invoice). A
+  creator's payment work stays on Creators > Payments and the creator's
+  own page (Payment, Totals). `campaign_creator_bills(p_campaign)`
+  (`2026-11-22-campaign-creator-payments.sql`) is left in place and
+  called by no page (`tests/cpaycamp.js`).
 - Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
   show amount just internal records creator records and bukku bill for
   payments"): the fee agreed with the creator a booking, in their payment
@@ -656,14 +651,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`hint()`, `bumpHint()`).
   - Sign out is named, and hidden until there is a session.
 - Creators selection page (`creators/`, `js/creators.js`):
-  - The detail card is folded and shut by default. The purpose and brief sit
-    inside it; the due date (else the count) is on the head.
-  - When the slots fill, the unpicked leave.
-  - At 640 and under (the phone line, a folded-open phone at 626 too) a
-    creator's row is the phone's: no column heads, the name over its
-    placements (Posting on), the profiles and Backup under them, the fee
-    at the right of the first line on every row (the iPhone Duo pass,
-    2026-10-18).
+  - Built from the mockup the user approved on 2026-11-25: the head (the
+    client's mark, the campaign over its client, Choose by with its weekday
+    `22 Sept (Tue)` and Creators n of N at the right, rows on a phone), the
+    brief as one shaded line (never folded), the view strip All, Selected,
+    Backup with counts, a shaded card a creator (two across beside the cart
+    at a desk, one on a phone) and the cart. No profile picture and no
+    follower count: neither is held.
+  - When the slots fill, the unpicked leave. A tick past the slots is
+    refused on the card pressed (`.cs-msg`), never greyed silently.
+  - The fee is read under it with the deliverable it buys and its
+    placements (`per video · rednote, Instagram`, `platsOf()`).
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
@@ -717,6 +715,8 @@ Moved from DESIGN.md §4 on 2026-11-22.
 | A creator's payments (the creator page's Payment pane) | After the details, the Bukku band (`.bk-band`, Send to Bukku), then Payments (`#cpayJobs`, Read from Bukku a `.btn-sm` at its heading's right): a booking a `.cpay-job` row, its Job reference in the token face over its campaign and earlier job ID, its bill's state (`.chip-state`: Paid, Processing, Not billed with Pay by, Not due) over the bill's number and amount at the right, its fee (Fee RM …, else Fee not set, at Creator payments View) after the campaign, Create bill (`.btn-sm`) under the state where a bill can be made (its question asks the amount), the pen (the fee and the earlier job ID) last; Create n bills beside Read from Bukku once two are ready, a `.msg.warn` line where no Bukku account is chosen; Earlier payments the bills matching no booking, under their heading; Read from Bukku {day, time} a mute line at the foot |
 | A creator's payment details on the Creators List | After the name, never a column (the user, 2026-11-12): approved a green 8px dot alone (`.cr-paydot`, `--dot-ok`, 8px after the name, `role="img"` named Payment details approved, its title on hover), the one dot that stands without its word, since nearly every row holds it and none submitted shows nothing; To review and Declined their `.chip-state` with its word |
 | A creator's payment details (the creator's page) | `.panel.crpay` under the head: the record head's shape (`.rec-id-solo`), a 16/600 title over its standing (`.chip-state` and its parts, each held whole, `.crpay-part`), the act at the right (blue Submit details while none is held or one was declined, else tonal Change details), the details paid to as `.ovfacts` under a hairline (104px labels on a phone), numbers by their last four; its sheet a `.formsheet` of three `.fsec`s (Billing, Payment, Contact) and the confirmation tick, a choice that changes the fields under it redrawing them with what was typed kept |
+| A creator offered for selection (/creators/) | `.cs-card`: a `--sunk` card, no outline; the number and the name (Replacement or New a grey `.chip`), the round tick at the top right (`.cs-tick`: a ring, selected a blue disc with a white tick, the card then white with a 1.5px `--action` edge), the profiles as `.plink`s with the platform's mark and the leaving mark, a hairline, the fee 17/600 over its unit mute, Mark as backup (`.cs-backup`, `.btn-sm` with the bookmark; marked, Marked as backup on the ink fill with the bookmark filled, a press again unmarks) |
+| The client's selection, totalled (/creators/) | The cart, as Build quote's Summary: at a desk `.sumcard.cs-cart` sticky under the bar in the 1.618 : 1 split (Your selection with its count as a `.tab-n`, each selected name and fee, the backups one mute line, Subtotal, SST at the campaign's rate through `js/money.js`, Total 17/600, Submit selection blue at the card's width); on a phone `.cs-bar` fixed at the foot over the safe area (n of N selected and the total over the backups and incl. SST, then View selection with its count and Submit selection as equal halves at the control's height, nothing in the bar setting its own), View selection carrying the cart into its sheet |
 | A booking's steps (client pages) | `.cx-journey` (`ADspaceIcons.journey`): a hairline a step with its name under it in 12px, the done steps in the mute ink, the one in hand amber with its name in ink, as Apple tracks an order; never bare bars, never large ringed marks (the user, 2026-10-08) |
 | Where a campaign stands (client page) | `.cx-standing` under the name card: n of N posted, a 6px track a booking in its state's dot colour, a legend, the next shoot |
 | What the client owes (client page) | `.cx-needs`: the booking's own card above the rest, led by the amber dot and Waiting for your approval, the booking leaving the list while it waits |
