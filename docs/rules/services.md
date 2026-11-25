@@ -300,10 +300,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   lets go of the other's choices), Bill to where the client has two
   billing entities or more), 2 Build (Plan: the plan cards, content,
   budget, platforms, extra content and languages; Package: its builder
-  (`#qbPkgBox`: name, basis, Rate Card lines with quantities, At Rate Card
-  rates, Package price, Discount, Included in the package a tick a line);
-  Items: the one-time items), 3 Extras (a package's rate for one more of
-  each content piece, prefilled from the card; Add one-time item, the
+  (`#qbPkgBox`: name, basis, Rate Card lines with quantities, Rate Card
+  value, Package price, Discount, Inclusions a tick a line);
+  Items: the one-time items), 3 Extras (Rate per additional content piece,
+  a package's, prefilled from the card; Add one-time item, the
   files held to their cap as before; Add advertising budget; Add to
   quotation), 4 Term and review (Term, Date, Payment terms, Valid for,
   Apply the term discount, More details: Title, Rate Card version,

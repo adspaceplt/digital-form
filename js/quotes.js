@@ -2550,7 +2550,7 @@
     $('qbPkgBasis').dispatchEvent(new Event('input'));
     $('qbPkgPrice').value = k.price || '';
     var list = 0;
-    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Contents</span><span>Quantity</span><span class="qb-fig">Rate Card</span><span class="qb-fig">Value</span><span></span></div>' : '') +
+    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Value</span><span></span></div>' : '') +
       k.items.map(function (it) {
         var s = pkgSvc(it.slug) || { name: it.slug, rate: 0 }, r = cv(s.rate || 0), id = 'qbPk-' + esc(it.slug), nm = esc(s.name);
         list += r * (Number(it.qty) || 0);
@@ -2632,7 +2632,7 @@
       '<div class="qb-sidetotal"><span>' + (t.month || !t.once ? 'Monthly' : 'One-time') + (MON.sstOf(d ? d.lines : [], t.sst_pct).on ? ' incl. SST' : '') + '</span><span class="qb-fig">' +
         (t.month ? esc(CUR + ' ' + acct(t.month.incl)) : t.once ? esc(CUR + ' ' + acct(t.once.incl)) : '—') + '</span></div>' +
       (t.month && t.once ? '<p class="qb-sidenote">One-time ' + esc(CUR + ' ' + acct(t.once.incl)) + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') + '.</p>'
-        : !d ? '<p class="qb-sidenote">Choose what to quote to begin.</p>' : '');
+        : !d ? '<p class="qb-sidenote">No lines.</p>' : '');
   }
 
   function wire() {

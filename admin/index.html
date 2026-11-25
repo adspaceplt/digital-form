@@ -1640,7 +1640,7 @@
                 <div class="qb-types" id="qbTypes" role="radiogroup" aria-labelledby="qbTypesLabel">
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="plan"><span class="qb-typemark" data-mark="layers"></span><b>Plan</b><span>Social media management on a monthly plan, with platforms and advertising.</span></button>
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="package"><span class="qb-typemark" data-mark="box"></span><b>Package</b><span>Content planning and production at one price, without account management.</span></button>
-                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Rate Card lines one by one, such as a one-time video or a KOC campaign.</span></button>
+                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card lines, such as a one-time video or a KOC campaign.</span></button>
                 </div>
                   <div class="row qb-billrow" id="qbBillBox" hidden><div>
                     <label class="field-label" for="qbBillTo">Bill to</label>
@@ -1698,11 +1698,11 @@
                 <div class="qb-pkgtable" id="qbPkgRows"></div>
                 <div class="row"><div><label class="field-label" for="qbPkgAdd">Add from Rate Card</label>
                   <select class="select" id="qbPkgAdd"></select></div></div>
-                <div class="row fgrid-3 qb-pkgfig"><div><span class="field-label">At Rate Card rates</span><p class="readfield" id="qbPkgList">—</p></div>
+                <div class="row fgrid-3 qb-pkgfig"><div><span class="field-label">Rate Card value</span><p class="readfield" id="qbPkgList">—</p></div>
                   <div><label class="field-label" for="qbPkgPrice">Package price</label>
                   <input class="input" id="qbPkgPrice" type="text" inputmode="decimal" data-noenter data-nodraft></div>
                   <div><span class="field-label">Discount</span><p class="readfield" id="qbPkgOff">—</p></div></div>
-                <div class="qb-pkgincl"><span class="field-label">Included in the package</span>
+                <div class="qb-pkgincl"><span class="field-label">Inclusions</span>
                   <div id="qbPkgIncl"></div>
                   <button class="btn btn-sm" id="qbPkgInclAdd" type="button">Add line</button>
                   <p class="qb-hint">Unticked lines print under Not included.</p></div>
@@ -1711,7 +1711,7 @@
               </div>
               <div class="qb-pane" data-qbstep="3">
               <section class="fsec qb-for-package" id="qbPkgExtraBox">
-                <h4 class="fsec-h">Additional content pieces in the same month</h4>
+                <h4 class="fsec-h">Rate per additional content piece</h4>
                 <div class="row fgrid" id="qbPkgExtra"></div>
               </section>
               <section class="fsec qb-stepsec">
@@ -1742,7 +1742,6 @@
               </div>
               <div class="qb-pane" data-qbstep="4">
               <section class="fsec qb-stepsec">
-                <h4 class="fsec-h">Term</h4>
                 <div class="row fgrid"><div><label class="field-label" for="qbTerm">Term</label>
                   <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select></div>
                   <div><label class="field-label" for="qbDate">Date</label>
