@@ -28,9 +28,52 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
 - The route lists the client sites alone, each from its check-in to its
   check-out; the office is no stop, only the distance's start and end
   (Settings' pin; the user, 2026-11-24).
-- Add claim (Coming soon) stands beside Check out, tonal, its words mute,
-  `aria-disabled`, opening nothing, until claims are built (the user,
-  2026-11-23): the one act drawn disabled for being not yet built.
+- The trip card (the user, 2026-11-25: "crumpled together with just
+  text"), the trip in progress and the trip read whole alike, built from
+  the v3 components: the head's title, its state (dot and word) and its ⋯
+  on one line, centred on it, the title never wrapping (`tests/outstation.js`
+  measures it); then the trip as `.facts` (Trip number as a copy token,
+  Purpose with its glyph, Driver, Colleagues as names with their initials
+  discs; two across on a phone, the last of an odd count taking the row;
+  the read whole adds Hours, Rating and the notes), never one dotted
+  sentence. Route: its pin glyph in the 22px disc, then the stage timeline
+  (`.stl`): the office's start mark, each leg's road km on the line before
+  its stop, each stop a dot (filled once left, ringed amber while on site,
+  On site as its state at the right, else its time there), the client's
+  logo before its name, the address on one line with an ellipsis (a press
+  shows it whole), its time, accuracy and photo count as small facts with
+  their glyphs, the zone a grey tag only where the address does not
+  already end with it, the thumbnails; the return's leg and the office (End)
+  once checked out. Under the stop on site, Add note (or Edit note) and
+  Add photo, two equal tonal buttons with their glyphs; the map credit last, 11px mute, one line on a phone (a press shows
+  it whole), never dropped. Distance: its glyph, the figure (`.tally`, So
+  far, or Total once checked out), each leg and Back to office as rows under it.
+  The trip's foot: Add stop (tonal, its plus) and Check out (blue) as
+  equal halves, Check out on the right, at a desk and on a phone alike: at
+  the end of a visit the choice is another site or finish.
+- A stop's note (`outstation_stops.note`, `outstation_stop_note`; the
+  user, 2026-11-25): what was done or what to remember, written in place
+  (`ADspaceAsk.note`) by the driver alone while the trip is open, up to
+  2,000 characters (`too-long`), refused by the database otherwise; shown
+  under the stop, its pen editing it on a stop already left; the CSV's
+  Stop note column.
+- Recording is from a phone (the user, 2026-11-25: a desk computer never
+  travels, so its location is wrong): Check in, Add stop, Add photo, Add
+  note and Check out carry `data-gate="phone"` and, on a device with hover
+  or a fine pointer, stay drawn but disabled with the reason (Trips are
+  recorded on a phone. Open My Work on your phone to record a trip.;
+  `ADspaceWords.line.phoneOnly`) through the one painter and `#gateWhy`:
+  an approved instance of DESIGN.md §8's disabled-with-reason exception,
+  the user having asked for disabled over hidden. The device test is
+  `(hover: none) and (pointer: coarse)` (`onTravelDevice` in
+  `js/admin.js`, named once): a phone or tablet passes, a laptop's touch
+  screen has hover and does not. Page-side only: the database cannot tell
+  the device; the accuracy limit (50 m) already refuses most desk
+  readings. Reading stays whole at a desk (My trips, All trips, the
+  timeline, the photos, the CSV).
+- Add claim is not drawn until claims are built (the user, 2026-11-25,
+  replacing 2026-11-23's disabled button: a step that cannot apply yet is
+  hidden, DESIGN.md §8).
 - Location: the browser's own (`watchPosition`, `enableHighAccuracy`,
   `maximumAge: 0`), watched up to 20 seconds, the best reading kept; a
   reading worse than Settings' limit (`outstation_accuracy_m`, 50 m) is
@@ -38,7 +81,11 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   reading) with the way to turn precise location on (iPhone: Precise
   Location; Android: Google Location Accuracy). A new read cancels the one
   before, and a sheet shut stops its read. Never an IP lookup.
-- Photos: the camera alone (`accept=image/*`, `capture=environment`), drawn
+- Photos: the camera alone (`accept=image/*`, `capture=environment`) on
+  every Add photo, Check in and Add stop alike, never a picker of the
+  album: an iPhone opens the camera directly; Android may offer the gallery
+  beside the camera on some devices, which the page cannot prevent
+  (2026-11-25). Drawn
   down to a 1600px JPEG (the picture's own metadata left behind), each with
   its time and the location at capture, private under
   `private/outstation/{trip}/` (sign-upload `outstation`, asked of
@@ -89,7 +136,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   user, 2026-11-24): the Malaysian month of check-in and its count from 01,
   two digits and more past 99, given on insert from `outstation_ref_months`
   under the month's row lock, never changed (`code-fixed`) and never given
-  again after a delete. It leads the trip in progress's line and a list
+  again after a delete. It heads the trip's facts and leads a list
   row's meta line, heads the trip read whole's facts (Trip number, a copy
   control where it is not inside a row's button) and is the CSV's first
   column. Console search does not read trips (no table a page reads).
@@ -107,3 +154,30 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
 - A client's stop is filed on its Calls and visits as it begins ("from
   2:00pm (in progress)", the venue named) and completed with its end time
   once left (`outstation_file_visit`; OUTSTATION VISITS FOR THE CLIENT).
+- A stop's photos are drawn under it as tiles (`.ost-thumbs`, the sheet's
+  photo tile, 64px at a desk and 56px on a phone, wrapping), on the trip in
+  progress and on a trip read whole, My trips and All trips alike, and the
+  count beside them counts the photos shown (the user, 2026-11-25: "1
+  photo" alone). Every photo of a trip is signed in one request
+  (sign-download `outstation.trip`, an hour's S3 link a photo, the keys
+  `outstation_photo_keys` answers the caller), never one a photo; a repaint
+  asks nothing again until the links near their hour or a photo is new. A
+  photo still being saved shows at once from the phone with the turning
+  ring; a tile that cannot load stays shaded.
+- A tile opens the photo full size in a sheet (sheets never stack: from a
+  trip read whole it closes back to that trip), titled by the stop's place,
+  with Taken, Accuracy (in metres) and the stop's Address; it offers no Download or
+  Share of its own (the image is not draggable and carries no iPhone
+  callout).
+- Remove (OUTSTATION PHOTOS SHOWN AND REMOVED, 2026-11-25): the photo's ⋯
+  in that sheet, offered only to the driver (who alone adds photos), only
+  while the trip is in progress, and only while another photo stays at the
+  stop: a stop always keeps one (`no-photo`; `outstation_photo_remove`
+  refuses the same, the trip row locked so two removes cannot take a
+  stop's last two). A soft remove: `removed_at`, `removed_by` on
+  `outstation_photos`, asked nothing, with Undo where it happened
+  (`outstation_photo_restore`, the same driver, the trip still open); the
+  row and the S3 file stay. A removed photo is no photo for the next stop
+  or check-out, leaves the driver's and the companions' reads and the
+  count, and is answered only at `ops.outstation`: under All trips it is
+  drawn faded, marked Removed, its sheet naming who removed it and when.

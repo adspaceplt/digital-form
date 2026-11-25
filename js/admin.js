@@ -1342,6 +1342,14 @@
      `may('send.email')`, `may('use.ai')`, which hides the act instead. */
   var HAND_KEY = { email: 'client_email_on', whatsapp: 'client_wa_on' };
   var GATE_ON = { on: true, reason: '', title: '' };
+  /* A device that travels: a phone or a tablet (no hover, a coarse
+     pointer); a laptop's touch screen has hover. The one device test
+     (2026-11-25: a trip is recorded from a phone, a desk computer's
+     location being wrong). Page-side only: the database cannot tell the
+     device, and the accuracy limit refuses most desk readings. */
+  var travelMq = window.matchMedia ? window.matchMedia('(hover: none) and (pointer: coarse)') : null;
+  function onTravelDevice() { return Boolean(travelMq && travelMq.matches); }
+  if (travelMq && travelMq.addEventListener) travelMq.addEventListener('change', function () { gatePaintQueued = false; paintGates(); });
   /* Each AI use as its daily limit names it, one and several. */
   var AI_USE = { caption: ['caption written with AI', 'captions written with AI'],
     draft: ['report draft written with AI', 'report drafts written with AI'],
@@ -1409,6 +1417,7 @@
       return first || GATE_ON;
     }
     var base = k.split(':')[0], use = k.split(':')[1];
+    if (base === 'phone') return onTravelDevice() ? GATE_ON : { on: false, title: 'Outstation', reason: L.phoneOnly };
     if (base === 'meet') return learned('meet') ? { on: false, title: 'Google Meet', reason: L.meetOff } : GATE_ON;
     if (base === 'meta') {
       if (learned('meta')) return { on: false, title: 'Meta', reason: L.metaOff };
