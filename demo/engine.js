@@ -708,6 +708,7 @@
     outstation_photo_keys: 'p_trip',
     outstation_photo_remove: 'p_photo',
     outstation_photo_restore: 'p_photo',
+    outstation_stop_note: 'p_stop p_note',
     outstation_trip_delete: 'p_trip p_confirm',
     outstation_geo_may: 'p_stop p_trip',
     team_session_end: 'p_id p_session',
@@ -10664,7 +10665,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { id: x.id, seq: x.seq, client_id: x.client_id, client: x.client_id ? cl(x.client_id).name || null : null,
               client_code: x.client_id ? cl(x.client_id).client_code || null : null, client_logo: x.client_id ? cl(x.client_id).logo_url || null : null, venue: x.venue, lat: x.lat, lng: x.lng,
               accuracy_m: x.accuracy_m, read_at: x.read_at, address: x.address, zone: x.zone, arrived_at: x.arrived_at, left_at: x.left_at,
-              km_from_prev: x.km_from_prev, filed: !!x.touch_id,
+              km_from_prev: x.km_from_prev, filed: !!x.touch_id, note: x.note || null,
 
               photos: OST.photos.filter(function (p) { return p.stop_id === x.id && (!p.removed_at || opsGranted('ops.outstation', 'view')); })
                 .sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; })
@@ -10743,6 +10744,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var kyS = OST.stops.filter(function (x) { return x.trip_id === kyT.id; }).map(function (x) { return x.id; });
         return oOk({ trip: kyT.id, photos: OST.photos.filter(function (p) { return kyS.indexOf(p.stop_id) > -1 && (!p.removed_at || kyAll); })
           .sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; }).map(function (p) { return { id: p.id, key: p.path }; }) });
+      }
+
+      if (name === 'outstation_stop_note') {
+        if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
+        var snS = OST.stops.filter(function (x) { return x.id === args.p_stop; })[0];
+        var snT = snS && oOwn(snS.trip_id);
+        if (!snT) return oNo('no-trip');
+        if (snT.state !== 'open') return oNo('closed');
+        if (String(args.p_note || '').length > 2000) return oNo('too-long');
+        snS.note = String(args.p_note || '').trim() || null;
+        persist();
+        return oOk({ ok: true, trip: oJson(snT) });
       }
       if (name === 'outstation_photo_remove' || name === 'outstation_photo_restore') {
         if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
