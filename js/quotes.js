@@ -2346,7 +2346,10 @@
           /* A Rate Card one-time item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
              Months cell. */
-          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
+          /* The head names Tax while any code is offered, so every line
+             holds the cell, empty where no select applies (a custom line,
+             another brand's): a column on every row (2026-11-25). */
+          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : hasTax ? '<span class="qb-taxc"></span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' || flex ? 'Months' : '&nbsp;') + '</span>' +
