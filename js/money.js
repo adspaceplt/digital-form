@@ -400,7 +400,8 @@
   }
   function addonRate(r, cur, zh) {
     var p = addonParts(r, cur), unit = p.unit;
-    if (zh) return (p.from ? '起价 ' : '') + p.fig + (unit ? '（' + unit + '）' : '');
+    // the card's unit is English alone: a Chinese reader takes the figure
+    if (zh) return (p.from ? '起价 ' : '') + p.fig;
     unit = unit.charAt(0).toLowerCase() + unit.slice(1);
     return (p.from ? 'from ' : '') + p.fig + (unit ? ' ' + unit : '');
   }

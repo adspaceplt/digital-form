@@ -9915,7 +9915,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-aogrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; margin-top: 8px; }
 .qs-aogroup h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
 .qs-aogroup dl { margin: 0; display: grid; }
-.qs-aogroup dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
+.qs-aogroup dl > div { display: grid; grid-template-columns: minmax(40%, 1fr) minmax(0, auto); gap: 0 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
 .qs-aogroup dt { overflow-wrap: anywhere; }
 .qs-aogroup dd { margin: 0; text-align: right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .qs-aogrid { grid-template-columns: minmax(0, 1fr); } }

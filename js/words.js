@@ -383,7 +383,8 @@
      that types one). A new line said on a second screen joins it. */
   W.line = {
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
-       PDF, the quotation link and Build quote say them alike. */
+       PDF and the quotation link say them alike; Build quote's ticks read
+       the group words. */
     addonRates: 'Add-on Rates',
     addons: 'Add-ons',
     addonExtra: 'Additional content',
