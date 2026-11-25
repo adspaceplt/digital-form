@@ -628,7 +628,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     one ringed in ink; the open booking's steps are discs on a line
     (`ADspaceIcons.journey` with `glyphs` and `days`: done the green tick,
     the step in hand outlined, each with its date under it where one is
-    held), its facts two columns of glyph discs, its brief a shaded box.
+    held), its facts two columns of glyph discs (an odd count's last fact
+    taking the row, never alone on it), its brief a shaded box.
     Payments and Profile are two columns at 900 and over (Profile 1.618 to
     1), a lone card the pane's width; Payments' rows lead with the
     campaign's glyph tile.
