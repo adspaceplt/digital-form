@@ -62,7 +62,9 @@
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
       platHead1: 'Plan {p} includes 1 platform. Each additional platform is charged per month.',
       platHeadN: 'Plan {p} includes {n} platforms. Each additional platform is charged per month.',
-      files: 'Choose the files to receive', termMin: 'The minimum commitment is 6 months.',
+      files: 'Choose the files to receive',
+      filesNote: 'Every content piece is delivered in high definition, formatted to each platform\'s specifications. Working files and raw footage are available on request at a charge per content piece.',
+      termMin: 'The minimum commitment is 6 months.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
       extra: 'Add content pieces per month to the plan', fewer: 'One fewer', more: 'One more',
@@ -189,7 +191,9 @@
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
       platHead1: '方案 {p} 包含1个平台，每增加一个平台按月收费。',
       platHeadN: '方案 {p} 包含{n}个平台，每增加一个平台按月收费。',
-      files: '选择需交付的文件', termMin: '最低合约期为6个月。',
+      files: '选择需交付的文件',
+      filesNote: '所有内容均以高清格式交付，并符合各平台的规格要求。工作文件与原始素材可按需提供，按每件内容收费。',
+      termMin: '最低合约期为6个月。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
       extra: '为方案增加每月内容', fewer: '减少一条', more: '增加一条',
@@ -624,7 +628,7 @@
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (filesAsked()) {
-      h += sec(t().files, CAT.files.map(function (x) {
+      h += sec(t().files, '<p class="qs-note">' + esc(t().filesNote) + '</p>' + CAT.files.map(function (x) {
         return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0);
       }).join(''));
     }
