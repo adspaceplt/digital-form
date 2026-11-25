@@ -5863,6 +5863,54 @@ svg.sec {
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }
+/* Figures hidden (2026-11-25, js/admin.js): the eye is a mark of the bar,
+   the Filters mark's square (a held toggle one step deeper), never an act.
+   Hidden (`:root.figs-off`), every figure and amount on the screens that
+   carry it keeps its box unseen, read to nobody, with four dots drawn over
+   it in its own place (right aligned figures from their right edge); a
+   tile's shaded foot keeps its strip. One list: a figure a new screen
+   draws joins it, and its bar takes the eye. A figure in Health or in a
+   record stays, as no eye stands over it. */
+.cmdbar .figs-eye, .ovw-bar .figs-eye {
+  display: inline-grid; place-items: center; padding: 0; flex: 0 0 auto;
+  width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
+  border-radius: var(--radius-ctl-sm); background: var(--tonal); color: var(--ink); }
+.cmdbar .figs-eye svg, .ovw-bar .figs-eye svg { width: 15px; height: 15px; }
+@media (hover: hover) { .cmdbar .figs-eye:hover, .ovw-bar .figs-eye:hover { background: var(--tonal-hover); color: var(--ink); } }
+.cmdbar .figs-eye[aria-pressed="true"], .ovw-bar .figs-eye[aria-pressed="true"] { background: var(--tonal-press); }
+.ovw-bar:has(> .figs-eye) { justify-content: flex-start; }
+.ovw-bar > .tabrow + :is(.ovw-when, .figs-eye) { margin-left: auto; }
+/* On a narrow pane the strip shares its line with the eye, never a row
+   of the eye's own; the period goes under them. */
+.is-narrow .ovw-bar:has(> .figs-eye) > .tabrow { flex: 1 1 0; min-width: 0; }
+.is-narrow .ovw-bar:has(> .figs-eye) > .figs-eye { order: 1; margin-left: 0; }
+.is-narrow .ovw-bar:has(> .figs-eye) > .ovw-when { order: 2; flex: 0 0 100%; margin-left: 0; }
+:root.figs-off :where(:not(.health-kpis)) > .ovw-kpi > :where(.ovw-kpi-fig, .ovw-kpi-sub, .ovw-kpi-line, .crm-tile-foot),
+:root.figs-off :where(#odTallies, #spyTallies) .tally-cell b,
+:root.figs-off :where(#sectionOverview, #sectionAnalytics, #pynBody) :where(.cb-value, .cp-value, .cc-fig, .cp-total, .cc-axis > span,
+  .chart-tbl:not(.ovw-moved) td.is-end, .ovw-facts dd, .ovw-facts dt small, .tl-fig-v, .ovw-tr .ovw-n:not(:has(.chip-state)), .pyn-sum dd, .pyn-row:not(.crm-head) .pyn-n),
+:root.figs-off :where(.inv-sum, .cpq-fig, .inv-row:not(.crm-head) .inv-amt) { visibility: hidden; }
+:root.figs-off :where(:not(.health-kpis)) > .ovw-kpi > :where(.ovw-kpi-fig, .ovw-kpi-sub, .ovw-kpi-line, .crm-tile-foot),
+:root.figs-off :where(#odTallies, #spyTallies) .tally-cell b,
+:root.figs-off :where(#sectionOverview, #sectionAnalytics, #pynBody) :where(.cb-value, .cp-value,
+  .chart-tbl:not(.ovw-moved) td.is-end, .ovw-facts dd, .ovw-facts dt small, .tl-fig-v, .ovw-tr .ovw-n:not(:has(.chip-state)), .pyn-sum dd, .pyn-row:not(.crm-head) .pyn-n),
+:root.figs-off :where(.inv-sum, .cpq-fig, .inv-row:not(.crm-head) .inv-amt) { position: relative; }
+:root.figs-off :where(:not(.health-kpis)) > .ovw-kpi > :where(.ovw-kpi-fig, .ovw-kpi-sub, .ovw-kpi-line, .crm-tile-foot)::after,
+:root.figs-off :where(#odTallies, #spyTallies) .tally-cell b::after,
+:root.figs-off :where(#sectionOverview, #sectionAnalytics, #pynBody) :where(.cb-value, .cp-value, .cc-fig, .cp-total, .cc-axis > span,
+  .chart-tbl:not(.ovw-moved) td.is-end, .ovw-facts dd, .ovw-facts dt small, .tl-fig-v, .ovw-tr .ovw-n:not(:has(.chip-state)), .pyn-sum dd, .pyn-row:not(.crm-head) .pyn-n)::after,
+:root.figs-off :where(.inv-sum, .cpq-fig, .inv-row:not(.crm-head) .inv-amt)::after {
+  content: '\2022\2022\2022\2022'; content: '\2022\2022\2022\2022' / ''; visibility: visible;
+  position: absolute; left: 0; top: 0; white-space: nowrap; color: var(--ink-mute); font-weight: 400; }
+:root.figs-off .ovw-kpi > .ovw-kpi-fig::after, :root.figs-off .tl-fig-v::after { color: var(--ink); font-weight: 500; }
+/* A figure that stands at its right edge keeps its dots there. */
+:root.figs-off :where(#sectionOverview, #sectionAnalytics, #pynBody) :where(.cb-value, .cp-value, .cc-axis > span,
+  .chart-tbl td.is-end, .ovw-facts dd, .ovw-tr .ovw-n:not(:has(.chip-state)), .pyn-row .pyn-n)::after,
+:root.figs-off :where(.inv-sum, .inv-row .inv-amt, .cpq-fig)::after { left: auto; right: 0; }
+:root.figs-off :where(#sectionOverview, #sectionAnalytics, #pynBody) :where(.cc-fig, .cp-total)::after { left: 50%; transform: translateX(-50%); }
+:root.figs-off .ovw-kpi > .crm-tile-foot::after,
+:root.figs-off .ovw-kpi > .ovw-kpi-line:has(.ovw-kpi-arrow)::after { inset: -1px 0 0; padding: inherit; background: var(--sunk);
+  border-top: 1px solid var(--line-soft); border-radius: inherit; color: var(--ink-soft); }
 .crm-late-tag { margin-left: 8px; vertical-align: 1px; }
 .crm-ahead-tag { margin-top: 4px; }
 /* A client's stage set ahead, under the record head's meta (CLIENT STAGE
@@ -6231,6 +6279,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .ovw-stage-key .is-soon::before { background: var(--dot-wait); }
 .ovw-stage-key .is-late::before { background: var(--dot-late); }
 .ovw-stage text { font-size: 17px; font-weight: 500; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.ovw-stage text.figs-dots { display: none; }
+:root.figs-off .ovw-stage text { visibility: hidden; }
+:root.figs-off .ovw-stage text.figs-dots { display: inline; visibility: visible; font-weight: 400; }
 .ovw-stage b { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); line-height: 1.3; }
 .ovw-stage-who { display: flex; justify-content: center; min-height: 22px; padding-left: 5px; }
 .ovw-stage-who .tav { margin-left: -5px; box-shadow: 0 0 0 2px var(--card); }

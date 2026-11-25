@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261125pi">
-<link rel="stylesheet" href="/css/console.css?v=20261125bq">
+<link rel="stylesheet" href="/css/console.css?v=20261125bs">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -148,9 +148,9 @@
 <script src="/js/group.js?v=20261117zzzf"></script>
 <script src="/js/menu.js?v=20261125tpl"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
-<script src="/js/cmdbar.js?v=20261117zzzf"></script>
+<script src="/js/cmdbar.js?v=20261125fh"></script>
 <script src="/js/records.js?v=20261125qla"></script>
-<script src="/js/chart.js?v=20261117zzzf"></script>
+<script src="/js/chart.js?v=20261125fh"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261124x"></script>
@@ -785,6 +785,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage" data-rare data-g="2">Select clients</button>
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -907,6 +908,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="odCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm" id="odRead" type="button" data-gate="bukku">Refresh</button>
             </span>
           </span>
@@ -935,6 +937,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="pynCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm" id="pynRead" type="button" data-gate="bukku">Read from Bukku</button>
             </span>
           </span>
@@ -2822,6 +2825,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="cpqRead" data-gate="bukku" data-need="campaigns.pay:work" type="button" hidden>Read from Bukku</button>
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="cpqBills" data-gate="bukku" data-need="campaigns.pay:work" type="button" hidden></button>
             </span>
           </span>
@@ -2930,6 +2934,7 @@
               <span class="cmdbar-count" id="rosterCount"></span>
             </span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
             </span>
           </span>
@@ -4087,6 +4092,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
             </span>
           </span>
@@ -4107,6 +4113,7 @@
             <span class="cmdbar-end">
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="spyCount"></span></span>
               <span class="cmdbar-acts">
+                <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
                 <button class="btn btn-sm" id="spyRead" data-gate="bukku" data-need="suppliers:work" type="button" hidden>Read from Bukku</button>
               </span>
             </span>
@@ -6871,16 +6878,16 @@ raya-2026        https://example.com/raya"></textarea>
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261125tse", "uses": ["documents", "crm", "sales"]},
-  "outstation": {"src": "/js/outstation.js?v=20261125tse"},
+  "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
+  "outstation": {"src": "/js/outstation.js?v=20261125geo"},
   "settings": {"src": "/js/settings.js?v=20261125tpl", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261125ph"></script>
+<script src="/js/admin.js?v=20261125fh"></script>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261124zqc"></script>
-<script src="/js/overview.js?v=20261124zzzfex"></script>
+<script src="/js/overview.js?v=20261125fh"></script>
 </body>
 </html>
