@@ -219,7 +219,7 @@
     return '<div class="qs-step rcv" data-shown><div class="rcv-head"><span class="rcv-tick">' + svg('check') + '</span>' +
         '<h1 class="qs-title">' + esc(o.title) + '</h1>' +
         (o.line ? '<p class="rcv-line">' + esc(o.line) + '</p>' : '') +
-        (o.note ? '<p class="rcv-note">' + esc(o.note) + '</p>' : '') +
+        (o.note ? '<p class="rcv-note">' + (window.ADspaceWords && window.ADspaceWords.note ? window.ADspaceWords.note(o.note) : esc(o.note)) + '</p>' : '') +
         (o.ref || o.refHtml ? '<p class="rcv-ref">' + (o.refHtml || esc(o.ref)) + '</p>' : '') + '</div>' +
       (steps.length ? '<ol class="rcv-track">' + steps.map(function (x) {
         var cls = x.state === 'done' ? 'is-done' : x.state === 'now' ? 'is-now' : '';

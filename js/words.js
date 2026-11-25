@@ -352,6 +352,24 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  /* A note on a client form drawn one sentence a line (the user,
+     2026-11-25: "one sentence per line in every note"): escaped, each
+     sentence after the first on a line of its own (`<br>`). A sentence
+     ends at . ! or ? before a space and a capital, a digit or an opening
+     mark, never after a short form (No., Dr., Sdn., e.g.); in Chinese at
+     。！？ before more words. */
+  var SHORT_FORM = /(?:^|[\s(])(?:No|Nos|Dr|Mr|Mrs|Ms|Mdm|Prof|Sdn|Bhd|St|Jln|Tmn|e\.g|i\.e|etc|vs)\.$/i;
+  W.note = function (s) {
+    var t = String(s == null ? '' : s), out = [], from = 0, m;
+    var re = /[.!?](?=\s+[A-Z0-9"\u201c(])|[\u3002\uff01\uff1f](?=\s*\S)/g;
+    while ((m = re.exec(t))) {
+      var head = t.slice(from, m.index + 1);
+      if (/[.]/.test(m[0]) && SHORT_FORM.test(head)) continue;
+      out.push(head.trim()); from = m.index + 1;
+    }
+    out.push(t.slice(from).trim());
+    return out.filter(Boolean).map(W.esc).join('<br>');
+  };
   /* The one reading of a stored address drawn as a link: http or https
      alone, a bare address taking https, and nothing for a space, a quote,
      <, >, a backtick or a backslash the column's check refuses (audit M1,
