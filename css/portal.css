@@ -9908,6 +9908,17 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-tot > .is-total { border-top: 1px solid var(--line); font-weight: 600; }
 .qs-tot > .is-total dt { color: var(--ink); }
 .qs-acts { display: flex; gap: 8px; }
+/* A quotation's Add-on Rates (2026-11-25): read only, two columns at a
+   desk, a group's name over its rates; never a total. */
+.qs-addons { display: grid; gap: 8px; border-top: 1px solid var(--line-soft); padding-top: 24px; }
+.qs-addons > .qs-note { margin: 0; }
+.qs-aogrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; margin-top: 8px; }
+.qs-aogroup h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.qs-aogroup dl { margin: 0; display: grid; }
+.qs-aogroup dl > div { display: grid; grid-template-columns: minmax(40%, 1fr) minmax(0, auto); gap: 0 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
+.qs-aogroup dt { overflow-wrap: anywhere; }
+.qs-aogroup dd { margin: 0; text-align: right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .qs-aogrid { grid-template-columns: minmax(0, 1fr); } }
 .qs-acts > .btn { flex: 1 1 0; }
 .qs-notes { display: grid; gap: 2px; font-size: 13px; color: var(--ink-mute); }
 /* The review page's way to chat stands under its note at its own width at a

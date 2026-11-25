@@ -208,10 +208,26 @@
        in place of a sentence restating them. */
     var H1 = 16.18, H2 = 12, LBL = 8.5;   // a title: the body (10pt) times φ
     var secNo = 0;
-    var h2 = function (s) {
-      room(80); y -= 8; secNo++;
-      text(secNo + '.', M, y, H2, reg); text(s, M + 18, y, H2, reg);
-      y -= 8;
+    /* A glyph in a 22pt shaded disc (QUOTATION ADD-ON RATES, 2026-11-25):
+       each payable section's, and the Add-on Rates block's. */
+    var GLYPH = {
+      month: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+      once: 'M3 3h8l10 10-8 8L3 11zM8 6.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3z',
+      ads: 'M3 10v4h4l6 4V6L7 10zM16 9a4 4 0 0 1 0 6',
+      add: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 8v8M8 12h8'
+    };
+    var disc = function (g, cx, cy) {
+      pn.page.drawCircle({ x: cx, y: cy, size: 11, color: pn.shade });
+      try { pn.page.drawSvgPath(GLYPH[g], { x: cx - 6, y: cy + 6, scale: 0.5, borderColor: pn.strong, borderWidth: 1.6 / 0.5 }); } catch (e) { /* the disc alone */ }
+    };
+    /* Only a section the client pays is numbered: its glyph, its number and
+       name, and how it is billed at the right edge. */
+    var h2 = function (s, g, billed) {
+      room(80); y -= 18; secNo++;
+      disc(g, M + 11, y + 4);
+      text(secNo + '  ' + s, M + 30, y, H2, reg);
+      if (billed) right(billed, R, y, 8.5, book, mute);
+      y -= 14;
     };
     if (t.layout === 2) {
       y -= 6; text('Quotation', M, y, H1, reg, pn.strong); y -= 22;
@@ -238,6 +254,12 @@
         y -= rowH + 18;
       }
       rule(y + 6); y -= 14;
+      /* The fees' head: PROPOSED FEES (a quotation proposes; 2026-11-25),
+         an uppercase mark with no letter
+         spacing, and the currency every figure under it is in. */
+      text('PROPOSED FEES', M, y, 8.5, reg, pn.strong);
+      right('All amounts in ' + (t.currency === 'SGD' ? 'S$' : 'RM'), R, y, 8.5, book, mute);
+      y -= 4;
     } else {
     heading('Quotation');
     /* Its validity is said once, in TERMS (the user, 2026-11-12: the PDF
@@ -337,7 +359,7 @@
           right(r[1], R, y + 5, TB, r[2] ? reg : book);
         });
       };
-      var section = function (title) { h2(title); y += 2; };
+      var section = function (title, g, billed) { h2(title, g, billed); y += 2; };
       var folded = MONY.planFold(q.lines, (q.totals || {}).currency);
       var monthly = folded.filter(function (l) { return l.basis !== 'once'; });
       var onceL = folded.filter(function (l) { return l.basis === 'once'; });
@@ -346,7 +368,7 @@
       if (t.once) bolds++;
       var mWord = own ? 'First month' + incl : sstOn ? 'Monthly incl. SST' : 'Monthly total';
       if (t.month && monthly.length) {
-        section('Monthly Service Fee');
+        section('Monthly Service Fee', 'month', 'Billed monthly');
         var mTerms = Array.isArray(t.term_rows) ? t.term_rows.filter(function (x) { return Number(x.amount); }).length : (Number(t.term_pct) ? 1 : 0);
         headRow(); drawLines(monthly, true, 14 + (3 + mTerms) * 17 + 12 + 24);
         y -= 6; rule(y); y -= 8;
@@ -362,7 +384,7 @@
         y -= 20;
       }
       if (t.once && onceL.length) {
-        section('One-time Items');
+        section('One-time Items', 'once', 'Billed once');
         headRow(); drawLines(onceL, true, 14 + 3 * 17 + 12 + 24);
         y -= 6; rule(y); y -= 8;
         var oWord = sstOn ? 'One-time incl. SST' : 'One-time total';
@@ -373,7 +395,7 @@
       }
       var ads = Array.isArray(t.ads) ? t.ads : [];
       if (ads.length) {
-        section('Advertising Budget');
+        section('Advertising Budget', 'ads', t.ads.some(function (r) { return r.freq !== 'once'; }) ? 'Billed monthly' : 'Billed once');
         var xs = { f: M + 120, b: R - 196, m: R - 120 };
         var adHead = function () {
           y -= 9;
@@ -397,6 +419,98 @@
         y -= 20;
       }
 
+      /* Add-on Rates (QUOTATION ADD-ON RATES, 2026-11-25): the rates the
+         team ticked in Build quote, as the quotation's Rate Card prices
+         them (`totals.addons`, the database's), never added to any total.
+         Anchored above the foot of the fees page as a sealed copy's Record
+         is; where it does not fit there it takes the next page, and a list
+         longer than a page runs on under the same head. */
+      var addons = Array.isArray(t.addons) ? t.addons.filter(function (r) { return r && r.name; }) : [];
+      if (addons.length) {
+        var WL = window.ADspaceWords.line, AS = 8.5, colGap = 24, colW = (FULL - colGap) / 2;
+        var units = [], lastG = null;
+        addons.forEach(function (r) {
+          var g = r.kind === 'extra' ? WL.addonExtra : (r.group || WL.addons);
+          if (g !== lastG) { lastG = g; units.push({ g: g, h: 16 }); }
+          var p = MONY.addonParts(r, t.currency), unit = p.unit ? ' ' + p.unit.charAt(0).toLowerCase() + p.unit.slice(1) : '';
+          var runs = [[p.from ? 'from ' : '', mute], [p.fig, ink], [unit, mute]];
+          var rw = runs.reduce(function (n, x) { return n + width(x[0], AS); }, 0);
+          var nl = wrap(r.name, Math.max(60, colW - rw - 16), AS, book);
+          units.push({ r: runs, rw: rw, nl: nl, h: nl.length * 11 + 3 });
+        });
+        var leadL = wrap(WL.addonLead, FULL, AS, book);
+        var headH = function (lead) { return 14 + 22 + (lead ? leadL.length * 11 + 4 : 0) + 8; };
+        /* Columns of at most colH, a group's name never last in one. */
+        var pack = function (colH) {
+          var cols = [], cur = [], h = 0, g = null;
+          units.forEach(function (u) {
+            if (h + u.h > colH && cur.length) {
+              /* A column never ends on a group's name, and one that starts
+                 inside a group names it again. */
+              var carry = cur[cur.length - 1].g ? [cur.pop()] : !u.g && g ? [{ g: g, h: 16 }] : [];
+              cols.push(cur); cur = carry; h = carry.reduce(function (n, x) { return n + x.h; }, 0);
+            }
+            if (u.g) g = u.g;
+            cur.push(u); h += u.h;
+          });
+          if (cur.length) cols.push(cur);
+          return cols;
+        };
+        var colHOf = function (c) { return c.reduce(function (n, x) { return n + x.h; }, 0); };
+        var total = units.reduce(function (n, x) { return n + x.h; }, 0);
+        var balanced = function (limit) {
+          for (var ch = Math.ceil(total / 2); ch <= limit; ch += 4) { var c = pack(ch); if (c.length <= 2) return c; }
+          return null;
+        };
+        var drawHead = function (lead) {
+          rule(y); y -= 14 + 11;
+          disc('add', M + 11, y + 4);
+          text(WL.addonRates, M + 30, y, H2, reg);
+          y -= 11 + (lead ? 4 : 0);
+          if (lead) leadL.forEach(function (ln) { y -= 11; text(ln, M, y + 2, AS, book, mute); });
+          y -= 8;
+        };
+        var drawCols = function (cols) {
+          var top = y, low = y;
+          cols.forEach(function (c, ci) {
+            var x0 = M + ci * (colW + colGap), x1 = x0 + colW, yy = top;
+            c.forEach(function (u, k) {
+              if (u.g) { yy -= (k ? 16 : 11); text(u.g, x0, yy + (k ? 5 : 0), AS, reg, pn.strong); if (!k) yy -= 5; return; }
+              yy -= 11;
+              u.nl.forEach(function (ln, j) { text(ln, x0, yy - j * 11 + 2, AS, book); });
+              var ly = yy - (u.nl.length - 1) * 11 + 2, xr = x1 - u.rw;
+              var x = xr; u.r.forEach(function (run) { text(run[0], x, ly, AS, book, run[1]); x += width(run[0], AS); });
+              var from = x0 + width(u.nl[u.nl.length - 1], AS) + 4, lead2 = '';
+              while (from + width(lead2 + ' .', AS) < xr - 4) lead2 += ' .';
+              text(lead2, xr - 4 - width(lead2, AS), ly, AS, book, mute);
+              yy -= (u.nl.length - 1) * 11 + 3;
+            });
+            low = Math.min(low, yy);
+          });
+          y = low;
+        };
+        var full = H - pn.TOP - 10 - FLOOR;
+        var fit = balanced(y - FLOOR - 16 - headH(true));
+        if (fit) {
+          /* At the foot of the page, its last line on the floor. */
+          y = FLOOR + headH(true) + Math.max(colHOf(fit[0]), fit[1] ? colHOf(fit[1]) : 0);
+          drawHead(true); drawCols(fit);
+        } else {
+          newPage();
+          fit = balanced(full - headH(true));
+          if (fit) { drawHead(true); drawCols(fit); }
+          else {
+            var cols = pack(full - headH(true));
+            for (var ci2 = 0; ci2 < cols.length; ci2 += 2) {
+              if (ci2) newPage();
+              drawHead(!ci2); drawCols(cols.slice(ci2, ci2 + 2));
+            }
+          }
+        }
+      }
+      /* TERMS stand on the acceptance page, above what is signed
+         (QUOTATION ADD-ON RATES, 2026-11-25). */
+      var drawTerms = function () {
       // TERMS.
       /* TERMS in the register of a contract (the user, 2026-11-12: "legal
          professional since this has the legal power when signed"): one
@@ -421,7 +535,7 @@
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
           ? 'Any Advertising Budget is not included in the fees in this Quotation and shall be invoiced separately.' : '']);
       /* Files and further filming (2026-11-12, the user's own sentence). */
-      grp('Exclusions', ['Additional footage, working files and raw files are not included and shall be charged separately upon request.',
+      grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : 'Additional footage, working files and raw files are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
           var w = t.on_request.map(function (x) { return x === 'budget' ? 'An advertising budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
           return w.join(', ') + ' shall be quoted separately upon request.';
@@ -435,7 +549,6 @@
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
       groups.forEach(function (g) { all = all.concat(g.list); });
-      room(30);
       y -= 8;
       text('TERMS', M, y, SM, book, mute);
       y -= 6;
@@ -447,6 +560,7 @@
         ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
         y -= (ls.length - 1) * 12;
       });
+      };
     } else {
     headRow();
     var tot0 = window.ADspaceMoney.quoteRows(t, q.lines, sstOn);
@@ -529,7 +643,13 @@
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
     var v2 = t.layout === 2;
-    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8; } else heading('Acceptance of Quotation');
+    if (v2) {
+      drawTerms();
+      /* What is signed keeps to one page: where TERMS leave too little
+         room under them, the acceptance takes the next. */
+      if (y - (200 + agreed.length * 16 + 200) < FLOOR) newPage(); else y -= 30;
+      y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8;
+    } else heading('Acceptance of Quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
       'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;
