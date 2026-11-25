@@ -640,10 +640,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
   "Quotation is a serious one so it must be accurate", Download never
   locks it): `quotations.sent_out_at`, stamped by trigger when a website
-  quotation is released, a team's quotation is given its link, or a
-  WhatsApp for it is queued, sent or not confirmed, or an email for it
-  sent, never while only filed or once failed
-  (`2026-11-07-quotation-sent-when-it-went.sql`). Until then a team's quotation's ⋯
+  quotation is released, or a WhatsApp for it is queued, sent or not
+  confirmed, or an email for it sent, never while only filed or once
+  failed (`2026-11-07-quotation-sent-when-it-went.sql`); a team's
+  quotation also when its own link is first opened by anyone but a
+  signed-in colleague (`quote_opened`, the console's Preview never asking
+  it), never when it is only given its link: Copy link is not sending
+  (`2026-11-25-quotation-sent-when-opened.sql`). Until then a team's quotation's ⋯
   and an awaiting website quotation's row offer Edit, Build quote opened
   as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
   Quotations at Work, in scope; priced again from the live card into the
