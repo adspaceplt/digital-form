@@ -137,6 +137,12 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   (`link_lock_state`, `.linklock`) and clears it (`link_lock_clear`, the
   section at Work, filed). A passcode asked for names nobody; the tables
   have RLS on, no policy, no grant.
+- Where a colleague copied a quotation's link (`quotation_link_copies`,
+  `request_ip()`, never a header a caller sets; QUOTATION COPIER'S
+  OPENING, 2026-11-25) is kept for one purpose, telling the team's own
+  opening from the client's, and cleared 30 days after the copy by the
+  monthly `privacy_retention` (PDPA 2010). RLS on, no policy, no grant;
+  never answered to a page or drawn on a screen.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
   and under `private/` (write and read, for invoices, each published
   report's kept PDF and every report picture, `private/{client}/thumbs/`,
