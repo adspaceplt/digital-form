@@ -650,13 +650,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   Laman Citra's row while 44 suites ran, and passed alone at once. Its
   cause (a wait the list's first paint outruns under load) is to be
   found; held here until it ships.
-- 2026-11-24, `sql` (the outstation trip number release, which touches
-  neither the function nor its seed): "each with its bill: paid with its
-  day and amount, a bill in hand before a paid one, none where none is
-  read" (`campaign_creator_bills`) failed once and passed on the same SQL
-  an hour later and on main; its seed counts days from `current_date`
-  (UTC), so the cause is to be found in how the function's day and the
-  seed's meet; held here until it ships. Failed again 2026-11-25 (the email templates release, which touches neither), the only failure of 33 suites.
 - 2026-11-25, `hiringsql` (the section email templates release, which
   touches neither hiring nor its functions): "an interview never moved is
   refused the time-changed email" failed once while 40 suites ran
