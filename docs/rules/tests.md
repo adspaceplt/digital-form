@@ -226,3 +226,4 @@ added to all three in the same push.
   slash), since a link committed once broke every clone's pull
   (2026-11-24, tests #229 and #230). `demo-build.js` builds the engine of
   the portal it is run in.
+- A check that a value is absent from an answer reads its field, or strips every uuid first: a digit string matched over a payload holding uuids fails by chance (2026-11-25: `/999/` over eight uuids failed `sql` one run in twenty).
