@@ -181,8 +181,9 @@
     return bits.join(' · ');
   }
   function fromOf(q) {
+    /* The Rate Card version it was priced on, held from the press that made it (QUOTATION PREFLIGHT, 2026-11-25). */
     return (q.source === 'website' ? 'Website' : q.made_by || 'The team') + ' · ' + window.ADspaceClock.date(q.issued_at) +
-      (q._revises ? ' · revises ' + q._revises : '');
+      (q.version ? ' · Rate Card v.' + q.version : '') + (q._revises ? ' · revises ' + q._revises : '');
   }
   /* The day the client asked to start, kept on the quotation it asked on
      (START DATE ON THE QUOTATION, 2026-11-21); a revision reads the day of

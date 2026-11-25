@@ -142,7 +142,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the nine the portal offered (F&B and Tech as Food and beverage and
   Technology, their clients moving with them). `industries_list()`, A to Z
   with Other last, answers the team each with how many clients hold it and
-  anyone else (the quotation website) the names alone; the console's
+  anyone else (the Quotation portal) the names alone; the console's
   Industry and `/quote/` read it once a visit, and `quote_website_create`
   takes only one it holds (`bad-industry`). Settings, Partners, Clients: Industries
   (`#indSheet`, `team.settings`): one table, English · 中文 · Clients · the

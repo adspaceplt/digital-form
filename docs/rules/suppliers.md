@@ -197,7 +197,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   moved since (`changed-terms`). A letter and a quotation PDF name SST by
   its rate (`ADspaceMoney.sstOf`) and, where the lines are on more than one
   rate, each amount says its own under it, (+8% SST) or (0% SST), never
-  under the description (the user, 2026-10-23: it read as the item's). The quotation website keeps the client's
+  under the description (the user, 2026-10-23: it read as the item's). The Quotation portal keeps the client's
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
 - Supplier bills (`2026-11-22-supplier-bills.sql`, `supplier_bills`; the
