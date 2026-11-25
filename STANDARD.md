@@ -663,6 +663,12 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   check names a code sent to an address outside Contacts" while 35 suites
   ran, and passed alone at once; likely the load cause of the entries
   above. Held here until it ships.
+- 2026-11-25, `outstationsql` (the trip card's stop mark release, which
+  touches no SQL): while 17 suites ran, the second photo on a stop
+  (`outstation_photo_add`) answered without its trip, so the suite threw
+  reading `stops` at line 302; it passed alone at once. Its cause (the
+  answer under load, or a refusal the suite does not name) is to be
+  found; held here until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
