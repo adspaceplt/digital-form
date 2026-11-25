@@ -369,26 +369,43 @@
      `{qty} × {label}` where more than one. One copy for the quotation's
      PDF and /quote/. */
   /* A package (QUOTATION PACKAGES, 2026-11-25) prints as one line: its
-     contents and what it includes under its name, then the rate for one
-     more piece in the same month and what it does not include. Never a
-     rate of a piece inside it. `cur` is the quotation's currency. */
-  var PACK_WORDS = { more: 'Additional content pieces in the same month: ', each: ' each', not: 'Not included: ', stop: '.', sep: '; ' };
+     contents and what it includes under its name, then what it does not
+     include as a sentence (2026-11-25: "Advertising management is not
+     included."). Never a rate of a piece inside it; the rate for one more
+     piece is the quotation's Add-on Rates. */
+  var PACK_WORDS = { not: function (list) {
+    var w = list.map(function (x, i) { x = String(x || '').trim().replace(/[.;]+$/, ''); return i ? x.charAt(0).toLowerCase() + x.slice(1) : x; });
+    var joined = w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0];
+    return joined + (w.length > 1 ? ' are' : ' is') + ' not included.';
+  } };
   function packFold(l, cur, w) {
     if (l.kind !== 'package') return l;
     w = Object.assign({}, PACK_WORDS, w || {});
-    var sign = String(cur || '').toUpperCase() === 'SGD' ? 'S$' : 'RM';
     var d = (l.detail || []).slice();
-    if (l.extra && l.extra.length) {
-      d.push(w.more + l.extra.map(function (x) {
-        return x.label + ', ' + sign + ' ' + Number(x.rate || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + w.each;
-      }).join(w.sep) + w.stop);
-    }
-    if (l.excluded && l.excluded.length) d.push(w.not + l.excluded.join(w.sep) + w.stop);
+    if (l.excluded && l.excluded.length) d.push(w.not(l.excluded));
     l.detail = d;
     // folded once: a brand's own pass reads the words as they stand
     delete l.extra; delete l.excluded;
     return l;
   }
+  /* An add-on's rate as the quotation states it (QUOTATION ADD-ON RATES):
+     the card's unit after the figure, a unit ending ", from" read first
+     ("Per trip, from" prints "from RM 450.00 per trip"). `zh` the Chinese. */
+  function addonParts(r, cur) {
+    var sign = String(cur || '').toUpperCase() === 'SGD' ? 'S$' : 'RM';
+    var fig = sign + ' ' + Number(r && r.rate || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var unit = String((r && r.unit) || '').trim(), from = /,\s*from$/i.test(unit);
+    unit = unit.replace(/,\s*from$/i, '');
+    return { from: from, fig: fig, unit: unit };
+  }
+  function addonRate(r, cur, zh) {
+    var p = addonParts(r, cur), unit = p.unit;
+    // the card's unit is English alone: a Chinese reader takes the figure
+    if (zh) return (p.from ? '起价 ' : '') + p.fig;
+    unit = unit.charAt(0).toLowerCase() + unit.slice(1);
+    return (p.from ? 'from ' : '') + p.fig + (unit ? ' ' + unit : '');
+  }
+
   function planFold(lines, cur, words) {
     lines = (lines || []).map(function (l) { return packFold(Object.assign({}, l), cur, words); });
     /* Several brands on one quotation (2026-11-24): each brand's lines fold
@@ -457,6 +474,8 @@
     PAY_DAYS: PAY_DAYS,
     payLine: payLine,
     planFold: planFold,
+    addonRate: addonRate,
+    addonParts: addonParts,
     quoteRows: quoteRows,
     money: money,
     money2: money2,

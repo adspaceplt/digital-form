@@ -13842,7 +13842,28 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return qtOrder(Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) }));
       };
 
-      var qtCompose = function (snap, sel, console) {
+      var qtWithAddons = function (snap, pr, sel, console) {
+        if (!console || !pr || pr.error || sel.addons == null) return pr;
+        if (!Array.isArray(sel.addons) || sel.addons.length > 200 || sel.addons.some(function (k) { return typeof k !== 'string' || k.length > 90; })) return { error: 'bad-addons' };
+        var out = [], seen = [];
+        (pr.lines || []).forEach(function (l) { if (l.kind === 'package' && Array.isArray(l.extra)) l.extra.forEach(function (x) {
+          var k = 'extra:' + x.slug, sl = x.slug;
+          if (sel.addons.indexOf(k) < 0 || seen.indexOf(k) >= 0) return;
+          var sv = ((snap && snap.services) || []).filter(function (z) { return z.slug === sl; })[0] || {};
+          var r = { key: k, kind: 'extra', name: x.label || sv.name, rate: Number(x.rate) };
+          if (sv.unit != null) r.unit = sv.unit;
+          out.push(r); seen.push(k);
+        }); });
+        ((snap && snap.services) || []).forEach(function (sv) {
+          if (!sv.spec || sv.spec.role !== 'addon' || sv.active === false || typeof sv.rate !== 'number' || sel.addons.indexOf(sv.slug) < 0 || seen.indexOf(sv.slug) >= 0) return;
+          var r = { key: sv.slug, kind: 'addon', group: String((sv.spec && sv.spec.group) || '').trim() || 'Add-ons', name: sv.name, rate: sv.rate };
+          if (sv.unit != null) r.unit = sv.unit;
+          out.push(r); seen.push(sv.slug);
+        });
+        return Object.assign({}, pr, { totals: Object.assign({}, pr.totals || {}, { addons: out }) });
+      };
+      var qtCompose = function (snap, sel, console) { sel = sel || {}; return qtWithAddons(snap, qtCompose0(snap, sel, console), sel, console); };
+      var qtCompose0 = function (snap, sel, console) {
         sel = sel || {};
         if (!console && (Array.isArray(sel.packages) || (Array.isArray(sel.brands) && sel.brands.some(function (b) { return b && Array.isArray(b.packages); })))) return { error: 'bad-package' };
         var off = false;

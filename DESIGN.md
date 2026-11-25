@@ -271,6 +271,10 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
     and the template's page count, and a draft and a white-label report the
     page count alone;
+  - a quotation's Add-on Rates are a block anchored above the foot of its
+    fees page, as a sealed copy's Record is, two columns with dotted
+    leaders and the unit mute, never in a total; where it does not fit it
+    takes the next page under the same head (2026-11-25);
   - a summary of totals never stands on a page alone: the last line carries
     the summary's height, and moves over with it where both do not fit
     (letters and quotations alike, 2026-11-24);
@@ -987,6 +991,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     (Not issued, Not set, No reviews.).
   - A missing value in a table cell is a mute em dash (the one place a dash is
     allowed).
+- A client document proposes and states, never demands: no payable, must
+  or shall pay in a heading or a label (Proposed Fees, never Fees
+  payable; the user, 2026-11-25); a contract clause in TERMS keeps its
+  legal shall.
 - Content is uncountable: a client page, a quotation and its PDF count
   content pieces (`6 content pieces per month`), never contents; no
   contraction or exclamation mark, and no chat words (Hand in, Needs you,
