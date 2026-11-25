@@ -33,6 +33,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 
+/* openrouteservice's one address (HeiGIT moved it off
+   api.openrouteservice.org on 2026-11-24, which answers 410 since): the
+   matrix at /openrouteservice/v2, the geocoder at /pelias/v1, each with
+   the key in the Authorization header, never in the address. */
+const ORS_BASE = 'https://api.heigit.org';
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /* A Business setting as app_setting(key, at) answers it: the newest row
@@ -68,19 +74,15 @@ async function placeOf(admin: ReturnType<typeof createClient>, key: string, lat:
   const { data: wait } = await admin.rpc('outstation_geo_turn');
   if (Number(wait) > 0) await new Promise((r) => setTimeout(r, Math.min(Number(wait), 8000)));
   try {
-    /* The geocoder takes its key in the address, as its documentation
-       writes it; the address never leaves this function. */
-    const r = await fetch(`https://api.openrouteservice.org/geocode/reverse?api_key=${encodeURIComponent(key)}&point.lat=${lat}&point.lon=${lng}&size=1`,
-      { headers: { 'Accept': 'application/json' } });
+    const r = await fetch(`${ORS_BASE}/pelias/v1/reverse?point.lat=${lat}&point.lon=${lng}&size=1`,
+      { headers: { 'Authorization': key, 'Accept': 'application/json' } });
     if (!r.ok) throw new Error('geocode ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
     const f = ((d.features || []) as Feature[])[0];
     if (!f || !f.properties) { console.error('outstation-geo: no place', lat, lng); return null; }
     return { address: addressOf(f.properties), zone: zoneOf(f.properties) };
   } catch (e) {
-    /* The key rides in the address, raw or encoded, in a fetch error's
-       words; neither form reaches the log. */
-    console.error('outstation-geo: reverse failed', String((e as Error)?.message || e).split(key).join('…').split(encodeURIComponent(key)).join('…'));
+    console.error('outstation-geo: reverse failed', String((e as Error)?.message || e));
     return null;
   }
 }
@@ -146,7 +148,7 @@ Deno.serve(async (req) => {
   const n = coords.length;
   let km: (number | null)[] = [];
   try {
-    const r = await fetch('https://api.openrouteservice.org/v2/matrix/driving-car', {
+    const r = await fetch(`${ORS_BASE}/openrouteservice/v2/matrix/driving-car`, {
       method: 'POST',
       headers: { 'Authorization': key, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ locations: coords, metrics: ['distance'], units: 'km',
