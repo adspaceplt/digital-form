@@ -1520,6 +1520,8 @@
       $('qbFor').textContent += ' · priced from v.' + c.version;
       termOptions();
       $('qbTerm').value = String(sel.term || 6);
+      $('qbTermDisc').checked = sel.term_disc !== false;
+      discShow();
       /* Add-ons (an outstation fee, a shoot, a revision, files) are one-time
          items too, each under its group on the card (the user, 2026-11-07:
          "couldnt add the outstation fees and add ons"). */
@@ -1882,6 +1884,20 @@
       return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
     }).join('');
     if (was) $('qbTerm').value = was;
+    discShow();
+  }
+  /* The term discount, the team's choice per quotation (QUOTATION
+     PACKAGES, 2026-11-25): offered only where the term has one, ticked
+     unless the team unticks it; a surcharge is never a choice. */
+  function termPctOf(m) {
+    var set = ((B.card || {}).snapshot || {}).settings || {}, key = MON.termKey(m), own = MON.setting(key, qbDay());
+    if (own == null && key === 'term_18_23') own = MON.setting('term_12_23', qbDay());
+    return Number((own != null ? own : set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : 0) || 0);
+  }
+  function discShow() {
+    var pct = termPctOf(Number($('qbTerm').value) || 6);
+    $('qbDiscBox').hidden = !(pct < 0);
+    $('qbDiscPct').textContent = pct < 0 ? '(' + Math.abs(pct) + '% for ' + (Number($('qbTerm').value) || 6) + ' months)' : '';
   }
   /* The advertising budget (2026-11-12, the user): a tick, then a row a
      platform, each Monthly or One-time with its budget and, for Monthly,
@@ -2152,6 +2168,7 @@
     });
     stepQtys(false);
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
+    if (!$('qbDiscBox').hidden && !$('qbTermDisc').checked) sel.term_disc = false;
     sel.pay = Number($('qbPay').value) || 7;
     sel.valid = Number($('qbValid').value) || validDefault();
     var title = $('qbHeading').value.replace(/\s+/g, ' ').trim();
@@ -2442,6 +2459,8 @@
     });
     $('qbCard').addEventListener('change', function () { if (B && B.card && this.value !== B.card.version) rebuildOn(this.value, true); });
     $('qbPay').addEventListener('change', on);
+    $('qbTermDisc').addEventListener('change', on);
+    $('qbTerm').addEventListener('change', discShow);
     $('qbValid').addEventListener('change', on);
     $('qbHeading').addEventListener('change', on);
     $('qbAdOn').addEventListener('change', function () {

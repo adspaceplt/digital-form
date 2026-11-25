@@ -338,7 +338,7 @@
         });
       };
       var section = function (title) { h2(title); y += 2; };
-      var folded = MONY.planFold(q.lines);
+      var folded = MONY.planFold(q.lines, (q.totals || {}).currency);
       var monthly = folded.filter(function (l) { return l.basis !== 'once'; });
       var onceL = folded.filter(function (l) { return l.basis === 'once'; });
       var bolds = 0;
@@ -450,7 +450,7 @@
     } else {
     headRow();
     var tot0 = window.ADspaceMoney.quoteRows(t, q.lines, sstOn);
-    drawLines(window.ADspaceMoney.planFold(q.lines), false, 14 + tot0.length * 17 + 12 + tot0.filter(function (x) { return x[2]; }).length * 24);
+    drawLines(window.ADspaceMoney.planFold(q.lines, (q.totals || {}).currency), false, 14 + tot0.length * 17 + 12 + tot0.filter(function (x) { return x[2]; }).length * 24);
     y -= 6;
     rule(y);
     y -= 8;
