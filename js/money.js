@@ -368,8 +368,29 @@
      has no row of its own and is listed under the plan's inclusions,
      `{qty} × {label}` where more than one. One copy for the quotation's
      PDF and /quote/. */
-  function planFold(lines) {
-    lines = (lines || []).map(function (l) { return Object.assign({}, l); });
+  /* A package (QUOTATION PACKAGES, 2026-11-25) prints as one line: its
+     contents and what it includes under its name, then the rate for one
+     more piece in the same month and what it does not include. Never a
+     rate of a piece inside it. `cur` is the quotation's currency. */
+  var PACK_WORDS = { more: 'Additional content pieces in the same month: ', each: ' each', not: 'Not included: ', stop: '.', sep: '; ' };
+  function packFold(l, cur, w) {
+    if (l.kind !== 'package') return l;
+    w = Object.assign({}, PACK_WORDS, w || {});
+    var sign = String(cur || '').toUpperCase() === 'SGD' ? 'S$' : 'RM';
+    var d = (l.detail || []).slice();
+    if (l.extra && l.extra.length) {
+      d.push(w.more + l.extra.map(function (x) {
+        return x.label + ', ' + sign + ' ' + Number(x.rate || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + w.each;
+      }).join(w.sep) + w.stop);
+    }
+    if (l.excluded && l.excluded.length) d.push(w.not + l.excluded.join(w.sep) + w.stop);
+    l.detail = d;
+    // folded once: a brand's own pass reads the words as they stand
+    delete l.extra; delete l.excluded;
+    return l;
+  }
+  function planFold(lines, cur, words) {
+    lines = (lines || []).map(function (l) { return packFold(Object.assign({}, l), cur, words); });
     /* Several brands on one quotation (2026-11-24): each brand's lines fold
        into its own plan, the brands kept in their order. */
     if (lines.some(function (l) { return l.brand != null; })) {
