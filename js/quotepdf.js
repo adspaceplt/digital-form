@@ -207,26 +207,42 @@
        table heads; the quotation's own facts as one block under the title
        in place of a sentence restating them. */
     var H1 = 16.18, H2 = 12, LBL = 8.5;   // a title: the body (10pt) times φ
-    var secNo = 0;
-    /* A glyph in a 22pt shaded disc (QUOTATION ADD-ON RATES, 2026-11-25):
-       each payable section's, and the Add-on Rates block's. */
+    /* A section's mark (QUOTATION SECTION HEADS, 2026-11-25; the mockup
+       PdfQuotationBlendV7): an outline glyph about 10pt square, stroked
+       0.75pt in the body's ink and never filled, in a small shaded disc
+       (18pt) centred on the heading's capitals; the heading a fixed gap
+       after it. One set for every glyph the quotation draws: each payable
+       section's and the Add-on Rates block's. Never numbered: a figure
+       before Monthly Service Fee read as one month. */
     var GLYPH = {
       month: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
       once: 'M3 3h8l10 10-8 8L3 11zM8 6.5a1.5 1.5 0 1 0 0 3a1.5 1.5 0 1 0 0-3z',
       ads: 'M3 10v4h4l6 4V6L7 10zM16 9a4 4 0 0 1 0 6',
       add: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 8v8M8 12h8'
     };
-    var disc = function (g, cx, cy) {
-      pn.page.drawCircle({ x: cx, y: cy, size: 11, color: pn.shade });
-      try { pn.page.drawSvgPath(GLYPH[g], { x: cx - 6, y: cy + 6, scale: 0.5, borderColor: pn.strong, borderWidth: 1.6 / 0.5 }); } catch (e) { /* the disc alone */ }
+    var DISC = 18, GL = 10, GL_STROKE = 0.75, GL_BOX = 24, GAP = 8;
+    /* The heading face's own cap height, read from the font (Slate's is
+       about 0.7 of the size where the face does not say). */
+    var capOf = function (f, size) {
+      var k = f && f.embedder && f.embedder.font, u = k && k.unitsPerEm;
+      return size * (u && k.capHeight ? k.capHeight / u : 0.7);
     };
-    /* Only a section the client pays is numbered: its glyph, its number and
-       name, and how it is billed at the right edge. */
+    var mark = function (g, baseline, size) {
+      var cx = M + DISC / 2, cy = baseline + capOf(reg, size) / 2, sc = GL / GL_BOX;
+      pn.page.drawCircle({ x: cx, y: cy, size: DISC / 2, color: pn.shade });
+      try {
+        pn.page.drawSvgPath(GLYPH[g], { x: cx - GL / 2, y: cy + GL / 2, scale: sc,
+          borderColor: pn.ink, borderWidth: GL_STROKE / sc, borderLineCap: PDF.LineCapStyle ? PDF.LineCapStyle.Round : undefined });
+      } catch (e) { /* the disc alone */ }
+      return M + DISC + GAP;
+    };
+    /* A section the client pays: its mark and name, and how it is billed
+       in the mute ink at the label size on the heading's own baseline, at
+       the right margin. */
     var h2 = function (s, g, billed) {
-      room(80); y -= 18; secNo++;
-      disc(g, M + 11, y + 4);
-      text(secNo + '  ' + s, M + 30, y, H2, reg);
-      if (billed) right(billed, R, y, 8.5, book, mute);
+      room(80); y -= 18;
+      text(s, mark(g, y, H2), y, H2, reg);
+      if (billed) right(billed, R, y, LBL, book, mute);
       y -= 14;
     };
     if (t.layout === 2) {
@@ -255,10 +271,9 @@
       }
       rule(y + 6); y -= 14;
       /* The fees' head: PROPOSED FEES (a quotation proposes; 2026-11-25),
-         an uppercase mark with no letter
-         spacing, and the currency every figure under it is in. */
+         an uppercase mark with no letter spacing, alone on its row: every
+         figure under it prints its own RM or S$. */
       text('PROPOSED FEES', M, y, 8.5, reg, pn.strong);
-      right('All amounts in ' + (t.currency === 'SGD' ? 'S$' : 'RM'), R, y, 8.5, book, mute);
       y -= 4;
     } else {
     heading('Quotation');
@@ -464,8 +479,7 @@
         };
         var drawHead = function (lead) {
           rule(y); y -= 14 + 11;
-          disc('add', M + 11, y + 4);
-          text(WL.addonRates, M + 30, y, H2, reg);
+          text(WL.addonRates, mark('add', y, H2), y, H2, reg);
           y -= 11 + (lead ? 4 : 0);
           if (lead) leadL.forEach(function (ln) { y -= 11; text(ln, M, y + 2, AS, book, mute); });
           y -= 8;
