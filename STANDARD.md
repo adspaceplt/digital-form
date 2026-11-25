@@ -683,10 +683,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
      findings). Continue the branch, merge each area as its own release.
   2. The day's full gate on main (`bash tests/snap.sh all`, two-hour
      limit) after item 1 merges; its findings are the next batch.
-  3. Asked of the user, not yet answered: whether a console quotation's
-     Add-on Rates start ticked (they do; a full fees page then runs to
-     four pages) or unticked.
-  4. Waiting on the user's hand: run
+  3. Waiting on the user's hand: run
      `supabase/migrations/2026-11-25-outstation-office-checkout-editor.sql`
      whole in the SQL Editor (until then Settings refuses the office
      radius and the reminder hours, and the midnight close files under
