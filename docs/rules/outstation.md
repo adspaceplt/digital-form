@@ -61,7 +61,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   travels, so its location is wrong): Check in, Add stop, Add photo, Add
   note and Check out carry `data-gate="phone"` and, on a device with hover
   or a fine pointer, stay drawn but disabled with the reason (Trips are
-  recorded from a phone. Open My Work on your phone to check in.;
+  recorded on a phone. Open My Work on your phone to record a trip.;
   `ADspaceWords.line.phoneOnly`) through the one painter and `#gateWhy`:
   an approved instance of DESIGN.md §8's disabled-with-reason exception,
   the user having asked for disabled over hidden. The device test is
