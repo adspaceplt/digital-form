@@ -65,7 +65,7 @@
   var STEP = { issued: 'Issued', sent: 'Sent', opened: 'Opened', code: 'Code sent', signed: 'Signed', submitted: 'Submitted',
     returned: 'Sent back', confirmed: 'Confirmed', stamped: 'Stamped', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined',
     voided: 'Void' };
-  var VIA = { link: 'on the quotation website', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
+  var VIA = { link: 'on the quotation portal', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
   /* Time to the second, Malaysia's (GMT+8): 17 Nov 2026, 10:42:15am. */
   function when(iso) {
     if (!iso || !C()) return '';
@@ -102,7 +102,7 @@
     else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : party;
     var rest = st.step === 'code' ? 'to ' + (st.email || '') :
       st.step === 'sent' ? [VIA[st.via] || '', 'by ' + by].filter(Boolean).join(' ') :
-      st.step === 'issued' && !st.team && !st.by ? 'on the quotation website' : 'by ' + by;
+      st.step === 'issued' && !st.team && !st.by ? 'on the quotation portal' : 'by ' + by;
     var how = st.step === 'signed' && st.via === 'paper' ? 'Signed on paper' + (st.entered_by ? ', entered by ' + st.entered_by : '') : '';
     var dev = String(st.device || '').split(' · ').filter(function (x) { return x && !ZONE.test(x); }).join(' · ');
     var place = [st.ip || '', country(st.country), dev].filter(Boolean).join(' · ');
@@ -125,7 +125,7 @@
   }
   function line(st) {
     var head = STEP[st.step] || st.step, who = '', meta = [];
-    if (st.step === 'issued') who = st.by ? 'by ' + st.by : 'on the quotation website';
+    if (st.step === 'issued') who = st.by ? 'by ' + st.by : 'on the quotation portal';
     else if (st.step === 'sent') { who = (VIA[st.via] || '') + (st.by ? ' by ' + st.by : ''); if (st.to) meta.push('To ' + st.to); if (st.state && st.via !== 'link') meta.push(String(st.state).replace(/^./, function (c) { return c.toUpperCase(); })); }
     else if (st.step === 'opened') { who = 'by the ' + String(st.party || 'Client').toLowerCase(); meta.push(where(st)); }
     else if (st.step === 'stamped') { who = st.by ? 'by ' + st.by : ''; if (st.note) meta.push('Stamp certificate ' + st.note); }

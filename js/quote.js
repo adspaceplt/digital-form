@@ -83,7 +83,23 @@
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Choose when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
-      make: 'View quotation', making: 'Preparing…',
+      make: 'View quotation',
+      /* What changed since the page read the Rate Card (QUOTATION PREFLIGHT, 2026-11-25). */
+      pf: {
+        head: 'Changes to your selection', edit: 'Edit', cont: 'Continue', thing: 'A selected item',
+        wait: 'Please review the changes above before you submit.',
+        off: 'The quotation portal is temporarily unavailable. Please try again later.',
+        version: 'The Rate Card was updated while this page was open. Your quotation will be prepared on the current Rate Card.',
+        plan: '{x} is no longer offered. Please choose another plan.',
+        mix: 'The content option chosen for {x} is no longer offered. Please choose another option.',
+        platform: '{x} is no longer offered. Please choose your platforms again.',
+        extra: 'Additional {x} is no longer offered. Please review your additional content pieces.',
+        translate: 'Bilingual content is no longer offered. Please review your languages.',
+        term: 'The {x}-month commitment is no longer offered. Please choose another commitment.',
+        once: '{x} is no longer offered. Please review your selection.',
+        price: 'The price of these changes has been updated. Please review it before you send.',
+        chSel: 'A choice is no longer offered on this quotation. Please review your changes.'
+      },
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
       download: 'Download', pdfFail: 'The PDF could not be prepared. Please try again.', chat: 'Chat on WhatsApp',
@@ -212,7 +228,22 @@
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', startOn: '请选择今天或之后的期望开始日期。', consent: window.ADspaceWords.zh.tickToContinue },
-      make: '查看报价', making: '准备中…',
+      make: '查看报价',
+      pf: {
+        head: '您的选择有变动', edit: '修改', cont: '继续', thing: '所选项目',
+        wait: '提交前，请先处理以上变动。',
+        off: '报价门户暂时无法使用，请稍后再试。',
+        version: '本页打开期间，价目表已更新。您的报价将按最新价目表编制。',
+        plan: '{x}已不再提供，请选择其他方案。',
+        mix: '{x}所选的内容组合已不再提供，请选择其他组合。',
+        platform: '{x}已不再提供，请重新选择平台。',
+        extra: '额外的{x}已不再提供，请检查额外内容数量。',
+        translate: '双语内容已不再提供，请检查语言选择。',
+        term: '{x}个月的合约期已不再提供，请选择其他合约期。',
+        once: '{x}已不再提供，请检查您的选择。',
+        price: '这些修改的价格已更新，请先查看再提交。',
+        chSel: '本报价已不再提供您所选的某项内容，请检查您的修改。'
+      },
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
       download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
@@ -382,6 +413,9 @@
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
   var CAT = null, Q = null;
+  /* The changes a preflight reported, each kept until its step is visited
+     (`items`), and the selection it last checked (`key`). Never kept in the tab. */
+  var PF = { items: [], key: null };
   /* Held in this page alone, never kept in the tab: the contact for Change
      selection, once the quotation is made (the user, 2026-10-14: "dont
      cache my record"). */
@@ -658,7 +692,9 @@
   }
   function paintDetails() {
     var c = S.contact;
-    return frame('<h1 class="qs-title">' + esc(t().detailsT) + '</h1><form class="qs-form" id="qsDetails" novalidate>' +
+    return frame('<h1 class="qs-title">' + esc(t().detailsT) + '</h1>' +
+      '<div class="qs-pfbox" id="qsPfBox"' + (pfPending().length ? '' : ' hidden') + '>' + pfHtml() + '</div>' +
+      '<form class="qs-form" id="qsDetails" novalidate>' +
       field('qsSal', t().salutation, false, '<select class="select" id="qsSal"><option value="">' + esc(t().optional) + '</option>' +
         SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
       field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">') +
@@ -1087,6 +1123,7 @@
     var tot = tt ? chTotals(tt, CH.P.lines).filter(function (x) { return x[2]; }) : [];
     return (tot.length ? '<dl class="qs-tot">' + tot.map(function (x) { return '<div class="is-total"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
       (changed ? '' : '<p>' + esc(w.chgNone) + '</p>') +
+      (CH.pf && CH.pf.length && CH.pfKey === chKey(chSel()) ? '<ul class="qs-pflist">' + CH.pf.map(function (k) { return '<li><span class="qs-pftext">' + esc(w.pf[k]) + '</span></li>'; }).join('') + '</ul>' : '') +
       '<div class="qs-sfoot is-stack"><button class="btn" type="button" data-a="chcancel">' + esc(w.chgCancel) + '</button>' +
       (changed ? '<button class="btn btn-primary" type="button" data-a="chsend">' + esc(w.chgReq) + '</button>' : '') + '</div>' +
       '<p class="msg" id="qsSideMsg" role="status"></p>';
@@ -1114,9 +1151,27 @@
     });
   }
   function chRepaint() { var e = $('qsChEdit'); if (e) { e.innerHTML = chEditor(); decorate(); } chDraw(); }
+  /* Request these changes is checked first against the preview the page
+     shows (QUOTATION PREFLIGHT, 2026-11-25): a choice no longer offered, or
+     a price that is no longer the one shown, is said in the panel and the
+     preview read again; nothing is sent until the check is clean. A
+     refusal of the link itself is the request's own to say. */
   function chSend(btn) {
     btn.disabled = true;
-    db.rpc('quote_change_request', { p_key: qKey(), p_sel: chSel() }).then(function (r) {
+    var P = CH && CH.P, tt = (P && P.totals) || {}, sel = chSel();
+    var go2 = function () { chRequest(btn, sel); };
+    db.rpc('quote_preflight', { p_sel: sel, p_key: qKey(), p_seen: { version: P && P.version,
+      month: tt.month ? tt.month.incl : null, once: tt.once ? tt.once.incl : null } }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || d.error || !Array.isArray(d.changes) || !d.changes.length) { go2(); return; }
+      btn.disabled = false;
+      CH.pf = d.changes.map(function (c) { return c.kind === 'price' ? 'price' : 'chSel'; })
+        .filter(function (k, i, a) { return a.indexOf(k) === i; });
+      CH.pfKey = chKey(sel); CHP = {}; CH.P = null; chDraw(); chPrice();
+    }).catch(go2);
+  }
+  function chRequest(btn, sel) {
+    db.rpc('quote_change_request', { p_key: qKey(), p_sel: sel }).then(function (r) {
       var d = (r && r.data) || {};
       if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
       CH = null; CHP = {};
@@ -1495,13 +1550,14 @@
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
-      S = blank();
+      S = blank(); PF = { items: [], key: null };
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       root().innerHTML = paintIntro(); decorate(); return;
     }
     if (steps().indexOf(S.step) < 0) S.step = 'need';
     root().innerHTML = { need: paintNeed, plan: paintPlan, custom: paintCustom, details: paintDetails }[S.step]();
     decorate();
+    if (S.step === 'details' && CAT && PF.key !== pfKey()) pfRun();
   }
   function decorate() {
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
@@ -1520,7 +1576,93 @@
     var m = $(id); if (!m) return;
     m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : '');
   }
-  function go(step) { S.step = step; keep(); paint(); window.scrollTo(0, 0); }
+  function go(step) { pfSeen(step); S.step = step; keep(); paint(); window.scrollTo(0, 0); }
+
+  // ---- What changed before Submit (QUOTATION PREFLIGHT, 2026-11-25) ------------
+  /* The user, 2026-11-25, "like a concert ticket checkout": on reaching the
+     final step, and again on Submit, what was chosen is checked against the
+     live Rate Card (`quote_preflight`, never a price). Each change is one
+     line on the final step with the step that resolves it; the catalogue is
+     read again so that step offers what stands. A line stays until its step
+     is visited (the Rate Card's own until Continue), so nothing chosen
+     leaves the selection unseen, and Submit waits until none stands. */
+  function pfStep(kind) {
+    if (['plan', 'mix', 'platform', 'extra'].indexOf(kind) >= 0) return steps().indexOf('plan') >= 0 ? 'plan' : 'need';
+    return kind === 'version' || kind === 'off' ? null : 'custom';
+  }
+  function pfName(x) {
+    var c = x.cat || CAT || {}, w = t();
+    var find = function (list) { return (list || []).filter(function (o) { return o.slug === x.slug; })[0]; };
+    if (x.kind === 'plan' || x.kind === 'mix') { var p = find(c.plans); return p ? f(w.plan, { p: p.plan }) : ''; }
+    if (x.kind === 'platform') return w.plat[x.slug] || '';
+    if (x.kind === 'term') return x.slug || '';
+    var o = find(c.contents) || (x.kind === 'once' ? find(c.verify) || find(c.files) || find(c.koc) : null);
+    return !o ? '' : o.kind ? contentName(o) : (lang === 'zh' && FILE_ZH[o.name]) || o.name;
+  }
+  function pfKey() { return CAT ? JSON.stringify(selection()) + '|' + CAT.version : null; }
+  function pfPending() { return PF.items.filter(function (x) { return !x.done; }); }
+  function pfSeen(step) { PF.items.forEach(function (x) { if (x.step && x.step === step) x.done = true; }); }
+  /* The page being switched off is the server's state: it leaves when an answer no longer says it. */
+  function pfTake(changes, cat) {
+    var off = changes.some(function (c) { return c.kind === 'off'; });
+    PF.items = PF.items.filter(function (x) { return x.kind !== 'off' || off; });
+    changes.forEach(function (c) {
+      var slug = c.slug == null ? null : String(c.slug);
+      if (PF.items.some(function (x) { return !x.done && x.kind === c.kind && x.slug === slug; })) return;
+      PF.items.push({ kind: c.kind, slug: slug, step: pfStep(c.kind), cat: cat, done: false });
+    });
+  }
+  /* What the catalogue no longer offers leaves what is kept in the tab; the
+     line naming it stays until its step is seen. */
+  function prune() {
+    if (!CAT) return;
+    if (S.plan && !planOf()) S.plan = null;
+    S.platforms = S.platforms.filter(function (k) { return CAT.platforms.indexOf(k) >= 0; });
+    var p = planOf();
+    if (p) {
+      var ok = extrasOf(p).map(function (c) { return c.slug; });
+      Object.keys(S.extra).forEach(function (k) { if (ok.indexOf(k) < 0) delete S.extra[k]; });
+      if (S.mix >= (p.mix || []).length) S.mix = 0;
+    }
+    if (TERMS.indexOf(Number(S.term)) < 0) S.term = TERMS.indexOf(12) >= 0 ? 12 : TERMS[0];
+    if (!CAT.translation) S.translate = false;
+    if (S.koc && !CAT.koc.some(function (k) { return k.slug === S.koc; })) S.koc = '';
+    keep();
+  }
+  function pfHtml() {
+    var w = t().pf, list = pfPending();
+    if (!list.length) return '';
+    return '<section class="sumcard qs-pf" aria-labelledby="qsPfH"><div class="sumcard-head"><h2 id="qsPfH">' + esc(w.head) + '</h2></div>' +
+      '<ul class="qs-pflist">' + list.map(function (x) {
+        var line = f(w[x.kind] || w.chSel, { x: pfName(x) || w.thing });
+        var act = x.kind === 'version' ? '<button class="btn btn-sm" type="button" data-a="pfok">' + esc(w.cont) + '</button>'
+          : x.step ? '<button class="btn btn-sm" type="button" data-a="pfgo" data-to="' + x.step + '" aria-label="' + esc(w.edit + ': ' + line) + '">' + esc(w.edit) + '</button>' : '';
+        return '<li><span class="qs-pftext">' + esc(line) + '</span>' + act + '</li>';
+      }).join('') + '</ul></section>';
+  }
+  function pfDraw() { var b = $('qsPfBox'); if (b) { b.innerHTML = pfHtml(); b.hidden = !pfPending().length; } }
+  function pfRefuse() {
+    say('qsMsg', t().pf.wait);
+    var b = root().querySelector('#qsPfBox .btn'); if (b) b.focus();
+  }
+  /* Answers clean or not. A database before this release, or a request
+     lost, answers clean: Submit's own create checks the same again. */
+  function pfRun(then) {
+    var key = pfKey(), done = function (clean) { if (then) then(clean); };
+    if (!key) { done(true); return; }
+    PF.key = key;
+    db.rpc('quote_preflight', { p_sel: selection(), p_seen: { version: CAT.version } }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || d.error || !Array.isArray(d.changes)) { done(!pfPending().length); return; }
+      pfFound(d.changes, done);
+    }).catch(function () { done(!pfPending().length); });
+  }
+  function pfFound(changes, then) {
+    pfTake(changes, CAT);
+    var fin = function () { pfDraw(); then(!pfPending().length); };
+    if (!changes.some(function (c) { return c.kind !== 'off'; })) { fin(); return; }
+    load(function () { prune(); PF.key = pfKey(); if (S.step === 'details' && !Q) pfDraw(); fin(); });
+  }
 
   // ---- Moving through the steps -------------------------------------------------
   function next() {
@@ -1581,13 +1723,24 @@
   function make() {
     if (!checkDetails()) return;
     var btn = root().querySelector('[data-a="next"]');
-    btn.disabled = true; btn.textContent = t().making;
+    /* A line to act on stops Submit here; the page switched off is asked again. */
+    if (pfPending().some(function (x) { return x.kind !== 'off'; })) { pfRefuse(); return; }
+    /* The button keeps its words and turns while the request is out (js/acts.js). */
+    btn.disabled = true;
+    pfRun(function (clean) {
+      if (!clean) { btn.disabled = false; pfRefuse(); return; }
+      send(btn);
+    });
+  }
+  function send(btn) {
     /* One key a selection and email: a press again after a lost reply is
        the same request, but a changed selection is a new one, never answered
        with the quotation made for the old (audit 2026-11-15). */
     var fp = JSON.stringify(selection()) + '|' + String(S.contact.email || '').toLowerCase();
     if (!S.idem || S.idemFor !== fp) { S.idem = key8(); S.idemFor = fp; keep(); }
-    var body = { sel: selection(), idem: S.idem,
+    /* The Rate Card version the page read rides with the selection: the
+       create refuses a card moved on since (`changed`), and keeps nothing of it. */
+    var body = { sel: Object.assign(selection(), { seen: CAT.version }), idem: S.idem,
       contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
         industry: S.contact.industry || null, commence: startPeriod(S.contact), commence_on: S.contact.commence_on || null, consent: true, lang: lang } };
     var C = window.ADspaceCaptcha;
@@ -1598,7 +1751,8 @@
     }).then(function (r) {
       var d = (r && r.data) || {};
       if (r.error || d.error || !d.key) {
-        btn.disabled = false; btn.textContent = t().make;
+        btn.disabled = false;
+        if (d.error === 'changed' && Array.isArray(d.changes)) { pfFound(d.changes, function () { pfRefuse(); }); return; }
         /* An industry renamed or removed while the form was open: the list
            is read again and the choice cleared (audit 2026-11-04, 5). */
         if (d.error === 'bad-industry') {
@@ -1612,11 +1766,11 @@
       }
       // Made: nothing chosen or typed stays in the tab (a refresh reads the quotation by its key).
       madeBy = S.contact;
-      S = blank();
+      S = blank(); PF = { items: [], key: null };
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
       read(d.key);
-    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
+    }).catch(function () { btn.disabled = false; say('qsMsg', t().err.any); });
   }
   function read(k, then) {
     db.rpc('quote_website_read', { p_key: k }).then(function (r) {
@@ -1759,6 +1913,12 @@
       return;
     }
     if (a === 'next') next();
+    else if (a === 'pfgo') { if (S.step === 'details' && $('qsName')) readDetails(); go(b.getAttribute('data-to')); }
+    else if (a === 'pfok') {
+      PF.items.forEach(function (x) { if (x.kind === 'version') x.done = true; });
+      pfDraw(); say('qsMsg', '');
+      var nb = root().querySelector('#qsPfBox .btn') || root().querySelector('[data-a="next"]'); if (nb) nb.focus();
+    }
     else if (a === 'start') go('need');
     else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
     else if (a === 'decline') { $('qsSide').innerHTML = declineHtml(); decorate(); var dw = $('qsDeclineWhy'); if (dw) dw.focus(); }

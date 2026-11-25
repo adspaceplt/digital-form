@@ -1063,7 +1063,7 @@
      release B). A quotation link already sent keeps opening while the
      website is only paused, so it says nothing then. */
   var PAGE_NAME = { review: 'Content Review', creators: 'Creator selection', script: 'Video Scripts', details: 'Details form',
-    supplier: 'Supplier form', quote: 'Quotation website', careers: 'Candidate page', client: 'Client portal' };
+    supplier: 'Supplier form', quote: 'Quotation portal', careers: 'Candidate page', client: 'Client portal' };
   function pageWarn(key) {
     var M = window.ADspaceMaintenance, all = M && M.pages ? M.pages() : null, d = all ? all[key] : null;
     if (!d || !(d.on || d.set) || !PAGE_NAME[key]) return '';
@@ -6785,7 +6785,7 @@
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
        days (2026-10-26). */
-    ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Quotation website']];
+    ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Quotation portal']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
      Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a

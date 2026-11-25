@@ -9804,6 +9804,13 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-asklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; }
 .qs-asklist li { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
 .qs-asklist .qs-disc { background: var(--card); }
+/* What changed before Submit (QUOTATION PREFLIGHT, 2026-11-25): a line a
+   change, led by the amber dot as a caution is, its act at the right edge. */
+.qs-pflist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 14px; }
+.qs-pflist li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.qs-pftext { min-width: 0; overflow-wrap: anywhere; }
+.qs-pftext::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; corner-shape: round; background: var(--dot-wait); vertical-align: .05em; }
+.qs-pflist .btn { flex: 0 0 auto; }
 .rcv-contact { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; }
 .rcv-who { display: grid; gap: 2px; min-width: 0; }
 .rcv-who small { font-size: 13px; color: var(--ink-soft); }
