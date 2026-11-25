@@ -188,6 +188,9 @@ is empty and only shrinks (`--write` refuses to add).
   A restamp or a merge's resolution keeps every script tag a page holds:
   `tests/pagescripts.js` fails a page missing a script its own scripts call
   (2026-11-25: #1427 dropped `js/icons.js` from /details/ and /supplier/).
+  A page holds no script nothing on it calls: a client page's weight is
+  every visitor's (2026-11-25: `js/state.js` on five forms that never
+  called it, 3.7 KB each, put /quote/ over its budget).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new thing joins every shared list of its kind in the same push that

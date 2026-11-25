@@ -295,7 +295,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Panel padding | 18px 20px (14 phone) |
 | Fold head `.disclosure` | 16px 22px (12px 14px phone) |
 | Table row | 10px 15px (12px 15px phone); header row `12px 15px 8px` on the header itself, whatever its row's own pad |
-| Field row gap `.row` | 12 across; **16 down between fields in a sheet** (`.sheet-body :where(.row)`), never a per-row style |
+| Field row gap `.row` | 12 across; **16 down between fields in a sheet** (`.sheet-body :where(.row)`), never a per-row style; a row inside a box that lays its own gap (`.qb-morebox`, `.perf-plan`) takes no step of its own, the gap being the step |
 | Side-sheet cards | 16 apart, padded 18/20 |
 | `.facts` / `.tally` gap | 14px 24px / 14px |
 | Label beside value (`.ovfacts`, `.tfacts`, `.raildates`, `.railmoney`) | 8 between rows; the label 13px `--ink-mute` |
