@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
   let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string;
     thumbs?: { report?: string; keys?: unknown };
     personnel?: { member?: string | null; kind?: string };
-    outstation?: { photo?: string } };
+    outstation?: { photo?: string; trip?: string } };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -243,6 +243,45 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data, error } = await admin.rpc('quote_seal_key', { p_key: qk });
     return kept(data, error, true);
+  }
+
+  if (body.outstation && body.outstation.trip) {
+    /* Every photo of a trip at once (OUTSTATION PHOTOS SHOWN AND REMOVED,
+       2026-11-25): an hour's S3 link a photo, the keys what
+       `outstation_photo_keys` answers the caller, each under the trip's own
+       folder; one request a trip, never one a photo. */
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const trip = String(body.outstation.trip);
+    if (!UUID.test(trip)) return json({ error: 'bad_request' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('outstation_photo_keys', { p_trip: trip });
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
+    if (String(data.trip || '') !== trip) return json({ error: 'bad_key' }, 400, origin);
+    const shape = new RegExp('^private/outstation/' + trip + '/[0-9a-f-]{36}\\.jpg$');
+    const bucket = Deno.env.get('S3_BUCKET')!;
+    const region = Deno.env.get('S3_REGION')!;
+    const aws = new AwsClient({
+      accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+      secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+      region,
+      service: 's3'
+    });
+    const urls: Record<string, string> = {};
+    // deno-lint-ignore no-explicit-any
+    for (const ph of (Array.isArray(data.photos) ? data.photos : []) as any[]) {
+      const id = String(ph && ph.id || ''), key = String(ph && ph.key || '');
+      if (!UUID.test(id) || !shape.test(key)) continue;
+      const target = new URL(`https://${bucket}.s3.${region}.amazonaws.com/${key}`);
+      target.searchParams.set('X-Amz-Expires', String(THUMB_EXPIRES));
+      const signed = await aws.sign(new Request(target.toString(), { method: 'GET' }), {
+        aws: { signQuery: true, allHeaders: false },
+        headers: {}
+      });
+      urls[id] = signed.url;
+    }
+    return json({ urls, expires_in: THUMB_EXPIRES }, 200, origin);
   }
 
   if (body.outstation) {

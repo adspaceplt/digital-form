@@ -705,6 +705,10 @@
     outstation_trips: 'p_from p_to p_all',
     outstation_photo_may: 'p_trip',
     outstation_photo_key: 'p_photo',
+    outstation_photo_keys: 'p_trip',
+    outstation_photo_remove: 'p_photo',
+    outstation_photo_restore: 'p_photo',
+    outstation_stop_note: 'p_stop p_note',
     outstation_trip_delete: 'p_trip p_confirm',
     outstation_geo_may: 'p_stop p_trip',
     team_session_end: 'p_id p_session',
@@ -10659,11 +10663,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           km_back: t.km_back, km_total: t.km_total,
           stops: OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return a.seq - b.seq; }).map(function (x) {
             return { id: x.id, seq: x.seq, client_id: x.client_id, client: x.client_id ? cl(x.client_id).name || null : null,
-              client_code: x.client_id ? cl(x.client_id).client_code || null : null, venue: x.venue, lat: x.lat, lng: x.lng,
+              client_code: x.client_id ? cl(x.client_id).client_code || null : null, client_logo: x.client_id ? cl(x.client_id).logo_url || null : null, venue: x.venue, lat: x.lat, lng: x.lng,
               accuracy_m: x.accuracy_m, read_at: x.read_at, address: x.address, zone: x.zone, arrived_at: x.arrived_at, left_at: x.left_at,
-              km_from_prev: x.km_from_prev, filed: !!x.touch_id,
-              photos: OST.photos.filter(function (p) { return p.stop_id === x.id; }).sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; })
-                .map(function (p) { return { id: p.id, taken_at: p.taken_at, lat: p.lat, lng: p.lng, accuracy_m: p.accuracy_m }; }) };
+              km_from_prev: x.km_from_prev, filed: !!x.touch_id, note: x.note || null,
+
+              photos: OST.photos.filter(function (p) { return p.stop_id === x.id && (!p.removed_at || opsGranted('ops.outstation', 'view')); })
+                .sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; })
+                .map(function (p) { return { id: p.id, taken_at: p.taken_at, lat: p.lat, lng: p.lng, accuracy_m: p.accuracy_m,
+                  removed_at: p.removed_at || null, removed_by: p.removed_at ? (oName(p.removed_by).name || 'Former colleague') : null }; }) };
           }) };
       };
       var oOwn = function (id) { return OST.trips.filter(function (t) { return t.id === id && oMe && t.driver_id === oMe.id; })[0]; };
@@ -10698,7 +10705,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         st.touch_id = tid;
       };
       var oLast = function (t) { return OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return b.seq - a.seq; })[0]; };
-      var oHasPhoto = function (st) { return OST.photos.some(function (p) { return p.stop_id === st.id; }); };
+      var oHasPhoto = function (st) { return OST.photos.some(function (p) { return p.stop_id === st.id && !p.removed_at; }); };
       if (name === 'outstation_trips') {
         if (!oMe || !opsAllowed('ops', 'view')) return oNo('denied');
         if (args.p_all && !opsGranted('ops.outstation', 'view')) return oNo('denied');
@@ -10722,10 +10729,49 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!oMe || !opsAllowed('ops', 'view')) return oNo('denied');
         var pkP = OST.photos.filter(function (p) { return p.id === args.p_photo; })[0];
         if (!pkP) return oNo('not-kept');
+        if (pkP.removed_at && !opsGranted('ops.outstation', 'view')) return oNo('not-kept');
         var pkS = OST.stops.filter(function (x) { return x.id === pkP.stop_id; })[0];
         var pkT = OST.trips.filter(function (x) { return x.id === pkS.trip_id; })[0];
         if (!(pkT.driver_id === oMe.id || pkT.companions.indexOf(oMe.id) > -1 || opsGranted('ops.outstation', 'view'))) return oNo('denied');
         return oOk({ key: pkP.path, trip: pkT.id });
+      }
+      if (name === 'outstation_photo_keys') {
+        if (!oMe || !opsAllowed('ops', 'view')) return oNo('denied');
+        var kyT = OST.trips.filter(function (x) { return x.id === args.p_trip; })[0];
+        if (!kyT) return oNo('not-kept');
+        var kyAll = opsGranted('ops.outstation', 'view');
+        if (!(kyT.driver_id === oMe.id || kyT.companions.indexOf(oMe.id) > -1 || kyAll)) return oNo('denied');
+        var kyS = OST.stops.filter(function (x) { return x.trip_id === kyT.id; }).map(function (x) { return x.id; });
+        return oOk({ trip: kyT.id, photos: OST.photos.filter(function (p) { return kyS.indexOf(p.stop_id) > -1 && (!p.removed_at || kyAll); })
+          .sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; }).map(function (p) { return { id: p.id, key: p.path }; }) });
+      }
+
+      if (name === 'outstation_stop_note') {
+        if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
+        var snS = OST.stops.filter(function (x) { return x.id === args.p_stop; })[0];
+        var snT = snS && oOwn(snS.trip_id);
+        if (!snT) return oNo('no-trip');
+        if (snT.state !== 'open') return oNo('closed');
+        if (String(args.p_note || '').length > 2000) return oNo('too-long');
+        snS.note = String(args.p_note || '').trim() || null;
+        persist();
+        return oOk({ ok: true, trip: oJson(snT) });
+      }
+      if (name === 'outstation_photo_remove' || name === 'outstation_photo_restore') {
+        if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
+        var rmP = OST.photos.filter(function (p) { return p.id === args.p_photo; })[0];
+        if (!rmP) return oNo('not-found');
+        var rmS = OST.stops.filter(function (x) { return x.id === rmP.stop_id; })[0];
+        var rmT = OST.trips.filter(function (x) { return x.id === rmS.trip_id; })[0];
+        if (rmT.driver_id !== oMe.id) return oNo('denied');
+        if (rmT.state !== 'open') return oNo('closed');
+        if (name === 'outstation_photo_remove' && !rmP.removed_at) {
+          if (!OST.photos.some(function (p) { return p.stop_id === rmS.id && p.id !== rmP.id && !p.removed_at; })) return oNo('no-photo');
+          rmP.removed_at = new Date().toISOString(); rmP.removed_by = oMe.id;
+        }
+        if (name === 'outstation_photo_restore') { rmP.removed_at = null; rmP.removed_by = null; }
+        persist();
+        return oOk({ ok: true, trip: oJson(rmT) });
       }
       if (name === 'outstation_trip_delete') {
         if (!oMe || !opsAllowed('ops', 'manage')) return oNo('denied');
@@ -19509,6 +19555,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
       functions: { invoke: function fnInvoke(name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
 
+        if (name === 'sign-download' && opts && opts.body && opts.body.outstation && opts.body.outstation.trip) {
+          window.__ostSigns = (window.__ostSigns || 0) + 1;
+          return rpc('outstation_photo_keys', { p_trip: opts.body.outstation.trip }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: d.error === 'not-kept' ? 404 : 403 } };
+            var urls = {};
+            (d.photos || []).forEach(function (x) { if (x.key.indexOf('private/outstation/' + d.trip + '/') === 0) urls[x.id] = 'https://s3.test/get/' + x.key + '?X-Amz-Expires=3600'; });
+            return { data: { urls: urls, expires_in: 3600 }, error: null };
+          });
+        }
         if (name === 'sign-download' && opts && opts.body && opts.body.outstation) {
           var ofErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
           return rpc('outstation_photo_key', { p_photo: opts.body.outstation.photo }).then(function (r) {

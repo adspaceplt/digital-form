@@ -426,6 +426,8 @@
     /* Release B: Google Meet, Meta, a website quotation on WhatsApp, and a
        link whose page is set unavailable or upgrading. */
     meetOff: 'Google Meet is not set up for the portal. Please contact an admin.',
+    /* Outstation's recording acts at a desk (2026-11-25). */
+    phoneOnly: 'Trips are recorded on a phone. Open My Work on your phone to record a trip.',
     metaOff: 'Meta is not connected to the portal. Please contact an admin.',
     metaChecksOff: 'Meta checks are turned off. An admin can turn them on in Settings → Reports.',
     quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
