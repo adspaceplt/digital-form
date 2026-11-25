@@ -11,7 +11,9 @@
 --     website selection holds that the card no longer offers, each as
 --     `{kind, slug}`: `plan`, `mix` (the plan's content option), `platform`,
 --     `extra` (an additional content piece), `translate`, `term`, `once` (a
---     one-time item, a verification, a creator list or a file).
+--     one-time item, a verification, a creator list or a file), `cap` (a
+--     file counted past the pieces the selection makes, as QUOTE FILES
+--     CAPPED's `quote_files_fit` counts them; the create holds it there).
 --   * `quote_website_sel` (restated) asks it for the term and the one-time
 --     items (`bad-term`, `bad-once` as before), never a second copy.
 --   * `quote_web_check(p_sel, p_seen)` (internal): the page switched off
@@ -47,7 +49,7 @@
 -- hygiene file runs again, the grant below stands (functions_tidy, run at
 -- the foot, would take anon's away), so it runs straight after. Safe to
 -- run twice. Holds no drop or delete.
--- ROLLBACK: run `quote_website_sel` from QUOTE WEBSITE BILINGUAL,
+-- ROLLBACK: run `quote_website_sel` from QUOTE FILES CAPPED,
 -- `quote_website_create` from ONE-TIME, NEVER ONE-OFF and `page_name` from
 -- FEEDBACK PAGE AVAILABLE, `quote_activity` and `quotations_website_activity`
 -- from QUOTATION LINK ACTIVITY
@@ -95,6 +97,7 @@ declare
   v_s   jsonb;
   v_k   text;
   v_o   jsonb;
+  v_fit jsonb;
 begin
   if jsonb_typeof(p_sel) is distinct from 'object' then return v_out; end if;
   if nullif(p_sel->>'plan', '') is not null then
@@ -139,15 +142,26 @@ begin
       v_out := v_out || jsonb_build_object('kind', 'once', 'slug', left(coalesce(v_o->>'slug', ''), 80));
     end if;
   end loop;
+  -- A file counted past the pieces the selection makes, as QUOTE FILES
+  -- CAPPED counts them (quote_files_fit, the one count; the create holds it so).
+  if not exists (select 1 from jsonb_array_elements(v_out) c where c->>'kind' in ('once', 'plan')) and jsonb_typeof(p_sel->'once') = 'array' then
+    v_fit := public.quote_files_fit(p_sel, p_snap, null);
+    for v_o in select * from jsonb_array_elements(p_sel->'once') loop
+      continue when jsonb_typeof(v_o->'qty') is distinct from 'number';
+      if coalesce((select sum((f->>'qty')::numeric) from jsonb_array_elements(v_fit->'once') f where f->>'slug' = v_o->>'slug'), 0) < (v_o->>'qty')::numeric then
+        v_out := v_out || jsonb_build_object('kind', 'cap', 'slug', left(coalesce(v_o->>'slug', ''), 80));
+      end if;
+    end loop;
+  end if;
   return v_out;
 end $$;
 revoke all on function public.quote_web_changes(jsonb, jsonb) from public, anon, authenticated;
 
 /* What a website selection may hold, and nothing else: since 2026-11-25
    the prospect may ask for every content piece bilingual, kept only with
-   two languages or more, and priced as Translation by the team. Its term
-   and one-time items are judged by quote_web_changes (QUOTATION
-   PREFLIGHT, 2026-11-25). */
+   two languages or more, and priced as Translation by the team; the files
+   held to the pieces the selection makes. Its term and one-time items are
+   judged by quote_web_changes (QUOTATION PREFLIGHT, 2026-11-25). */
 create or replace function public.quote_website_sel(p_sel jsonb, p_snap jsonb)
 returns jsonb
 language plpgsql immutable set search_path = public as $$
@@ -185,6 +199,11 @@ begin
   end if;
   if exists (select 1 from jsonb_array_elements(v_ch) c where c->>'kind' = 'once') then
     return jsonb_build_object('error', 'bad-once');
+  end if;
+  -- The files held to the graphics and reels the selection makes (QUOTE FILES CAPPED).
+  if v_sel ? 'once' then
+    v_sel := public.quote_files_fit(v_sel, p_snap, null);
+    if jsonb_array_length(v_sel->'once') = 0 then v_sel := v_sel - 'once'; end if;
   end if;
   return v_sel;
 end $$;

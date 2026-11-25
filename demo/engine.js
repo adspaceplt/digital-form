@@ -13759,6 +13759,38 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var qtWebOnce = function (x) { return !!x && !!x.spec && (['content', 'verify', 'koc', 'kol'].indexOf(x.spec.role) >= 0 ||
         (x.spec.role === 'addon' && String(x.spec.group || '').toLowerCase() === 'file release')); };
+
+      var qtPiece = function (k) { return ['graphic', 'gif', 'carousel'].indexOf(k) >= 0 ? 'graphic' : ['reel30', 'reel', 'video120'].indexOf(k) >= 0 ? 'reel' : null; };
+      var qtCovers = function (x) { var c = x && x.spec && x.spec.covers; return c === 'graphic' || c === 'reel' ? c : x && x.slug === 'working-files' ? 'graphic' : x && x.slug === 'raw-footage' ? 'reel' : null; };
+      var qtFilesCap = function (sel, snap) {
+        var n = { graphic: 0, reel: 0 }, svc = function (sl) { return ((snap && snap.services) || []).filter(function (x) { return x.slug === sl && x.active !== false; })[0]; };
+        var add = function (c, v) { if (c && /^[0-9]{1,3}$/.test(String(v))) n[c] += Number(v); };
+        if (!sel || typeof sel !== 'object') return n;
+        var pl = svc(sel.plan);
+        if (pl && pl.spec && pl.spec.role === 'plan' && Array.isArray(pl.spec.mix) && pl.spec.mix.length) {
+          var mi = /^[0-9]$/.test(String(sel.mix == null ? '0' : sel.mix)) ? Number(sel.mix) : 0;
+          if (mi >= pl.spec.mix.length) mi = 0;
+          var m = pl.spec.mix[mi] || {};
+          Object.keys(m).forEach(function (k) { add(qtPiece(k), m[k]); });
+          if (sel.extra && typeof sel.extra === 'object') Object.keys(sel.extra).forEach(function (k) { var s = svc(k); if (s && s.spec && s.spec.role === 'content') add(qtPiece(s.spec.kind), sel.extra[k]); });
+        }
+        (Array.isArray(sel.once) ? sel.once : []).forEach(function (o) { var s = o && svc(o.slug); if (s && s.spec && s.spec.role === 'content') add(qtPiece(s.spec.kind), o.qty); });
+        return n;
+      };
+      var qtFilesFit = function (sel, snap, base) {
+        if (!sel || typeof sel !== 'object' || !Array.isArray(sel.once)) return sel;
+        var cap = qtFilesCap(sel, snap), svc = function (sl) { return ((snap && snap.services) || []).filter(function (x) { return x.slug === sl && x.active !== false; })[0]; };
+        var out = [];
+        sel.once.forEach(function (o) {
+          var s = o && svc(o.slug);
+          if (s && s.spec && s.spec.role === 'addon' && qtWebOnce(s) && typeof o.qty === 'number') {
+            var c = qtCovers(s), lim = c ? cap[c] : cap.graphic + cap.reel;
+            ((base && Array.isArray(base.once)) ? base.once : []).forEach(function (b) { if (b && b.slug === o.slug && /^[0-9]{1,3}$/.test(String(b.qty))) lim = Math.max(lim, Number(b.qty)); });
+            if (lim > 0) out.push(o.qty > lim ? Object.assign({}, o, { qty: lim }) : o);
+          } else out.push(o);
+        });
+        return Object.assign({}, sel, { once: out });
+      };
       var qtWebSel = function (wsel0, snap) {
         if (!wsel0 || typeof wsel0 !== 'object' || Array.isArray(wsel0) || (Array.isArray(wsel0.once) && wsel0.once.length > 20) ||
           (wsel0.extra && typeof wsel0.extra === 'object' && Object.keys(wsel0.extra).length > 10)) return { error: 'bad-selection' };
@@ -13772,6 +13804,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!/^[0-9]{1,2}$/.test(String(wsel.term == null ? '' : wsel.term)) || [1, 6, 12, 24].indexOf(Number(wsel.term)) < 0) return { error: 'bad-term' };
         var svc = (snap && snap.services) || [];
         if ((wsel.once || []).some(function (o) { return !qtWebOnce(svc.filter(function (x) { return x.slug === o.slug; })[0]); })) return { error: 'bad-once' };
+        if (wsel.once) { wsel = qtFilesFit(wsel, snap, null); if (!wsel.once.length) delete wsel.once; }
         return wsel;
       };
 
@@ -13793,6 +13826,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sel.translate === true && !svc.some(function (x) { return x.spec && x.spec.role === 'language' && x.rate != null && x.active !== false; })) out.push({ kind: 'translate' });
         if (!/^[0-9]{1,2}$/.test(String(sel.term == null ? '' : sel.term)) || [1, 6, 12, 24].indexOf(Number(sel.term)) < 0) out.push({ kind: 'term', slug: String(sel.term == null ? '' : sel.term).slice(0, 4) });
         (Array.isArray(sel.once) ? sel.once : []).forEach(function (o) { if (!qtWebOnce(one(o && o.slug))) out.push({ kind: 'once', slug: String((o && o.slug) || '').slice(0, 80) }); });
+
+        if (!out.some(function (c) { return c.kind === 'once' || c.kind === 'plan'; }) && Array.isArray(sel.once)) {
+          var fit = qtFilesFit(JSON.parse(JSON.stringify(sel)), snap, null);
+          sel.once.forEach(function (o) {
+            if (typeof (o && o.qty) !== 'number') return;
+            var got = (fit.once || []).filter(function (f) { return f.slug === o.slug; }).reduce(function (n, f) { return n + Number(f.qty); }, 0);
+            if (got < o.qty) out.push({ kind: 'cap', slug: String(o.slug).slice(0, 80) });
+          });
+        }
         return out;
       };
       var qtPageOff = function () {
@@ -13818,9 +13860,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               included: String(txt).split('\n').map(function (d) { return d.trim(); }).filter(Boolean) }; }),
           terms: [6, 12, 24],
           files: cs.filter(function (x) { return x.spec.role === 'addon' && qtWebOnce(x) && x.rate != null; }).sort(function (a, b) { return a.rate - b.rate; })
-            .map(function (x) { return { slug: x.slug, name: x.name }; }),
+            .map(function (x) { return { slug: x.slug, name: x.name, covers: qtCovers(x) }; }),
           platforms: on('platform').map(function (x) { return x.spec.platform; }).sort(function (a, b) { return pOrder.indexOf(a) - pOrder.indexOf(b); }),
-          contents: on('content').sort(function (a, b) { return a.rate - b.rate; }).map(function (x) { return { slug: x.slug, name: x.name, kind: x.spec.kind }; }),
+          contents: on('content').sort(function (a, b) { return a.rate - b.rate; }).map(function (x) { return { slug: x.slug, name: x.name, kind: x.spec.kind, piece: qtPiece(x.spec.kind) }; }),
           budgets: on('ads').concat(on('booster')).map(function (x) { return x.spec.budget; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }),
           verify: on('verify').map(function (x) { return { slug: x.slug, name: x.name,
             platform: x.spec.platform || ['meta', 'tiktok', 'rednote', 'linkedin'].filter(function (k) { return new RegExp('\\b' + { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' }[k] + '\\b', 'i').test(x.name); })[0] || null }; }),
@@ -14067,7 +14109,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!/^[0-9]{1,2}$/.test(String(p.term)) || ([6, 12, 24].indexOf(Number(p.term)) < 0 && Number(p.term) !== Number(base.term))) return { error: 'bad-term' };
           v.term = Number(p.term);
         }
-        return v;
+        return v.once ? qtFilesFit(v, snap, base) : v;
       };
       var qsChangeSnap = function (q) {
         var vs = DB.rate_card_versions.filter(function (x) { return q.version_id && x.id === q.version_id; })[0] ||
@@ -14635,7 +14677,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, qpc.owner_id, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
         var qp = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), true), qpFx);
-        if (!qp.error) { qp.version = qtCard.version; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
+
+        var qpOver = [], qpSel = args.p_sel || {};
+        (Array.isArray(qpSel.brands) ? qpSel.brands.map(function (b, i) { return [Object.assign({}, qpSel, b), i]; }) : [[qpSel, null]]).forEach(function (bi) {
+          var bs = bi[0], cap = qtFilesCap(bs, qtCard.snapshot);
+          (Array.isArray(bs.once) ? bs.once : []).forEach(function (o) {
+            var s = (qtCard.snapshot.services || []).filter(function (x) { return x.slug === o.slug && x.active !== false; })[0];
+            if (!s || !s.spec || s.spec.role !== 'addon' || !qtWebOnce(s) || !/^[0-9]{1,3}$/.test(String(o.qty))) return;
+            var c = qtCovers(s), lim = c ? cap[c] : cap.graphic + cap.reel;
+            if (Number(o.qty) > lim) qpOver.push({ slug: s.slug, name: s.name, qty: Number(o.qty), cap: lim, covers: c, brand: bi[1] });
+          });
+        });
+        if (!qp.error) { qp.version = qtCard.version; qp.files_over = qpOver; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
 

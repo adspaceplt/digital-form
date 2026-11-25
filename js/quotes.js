@@ -1542,7 +1542,7 @@
             '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button>' +
             '<span class="qb-stepname">' + nm + ' <small class="qb-rate">' + CUR + ' ' + esc(rm(cv(s.rate))) + ' each</small></span></div>';
         }).join('');
-      }).join('');
+      }).join('') + '<p class="msg warn" id="qbFilesMsg" role="status" hidden></p>';
       fill(s1);
       basket();
       if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
@@ -2180,6 +2180,21 @@
     var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
     var langs = document.querySelectorAll('#qbLangs input:checked').length;
     $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + cv(tr.rate).toLocaleString('en-MY') : '';
+    /* The files asked beyond the pieces the selection makes (QUOTE FILES
+       CAPPED, 2026-11-25; quote_preview `files_over`, the one count): the
+       team is warned, never stopped, since more may be agreed by hand. */
+    var fm = $('qbFilesMsg');
+    if (fm) {
+      var at = d && d.brands ? boardAt() : null;
+      var over = ((d && d.files_over) || []).filter(function (o) { return at == null ? o.brand == null : o.brand === at; });
+      fm.textContent = over.map(filesWord).join(' ');
+      fm.hidden = !over.length;
+    }
+  }
+  function filesWord(o) {
+    var unit = o.covers === 'graphic' ? ['graphic', 'graphics'] : o.covers === 'reel' ? ['reel', 'reels'] : ['content piece', 'content pieces'];
+    return o.name + (/s$/i.test(o.name) ? ' are' : ' is') + ' requested for ' + o.qty + ' content ' + (o.qty === 1 ? 'piece' : 'pieces') + '. This quotation includes ' +
+      (o.cap ? o.cap + ' ' + unit[o.cap === 1 ? 0 : 1] : 'no ' + unit[1]) + '.';
   }
   var timer = null;
   function preview() {
