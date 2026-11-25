@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       checklist_now: now
     });
 
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const SUBMIT = { name: 'submit_checklist', description: 'Submit every field of the checklist.', strict: true, input_schema: schema };
     let input = 0, output = 0, usedModel = model;
     // deno-lint-ignore no-explicit-any
@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
         model, max_tokens: 12000, system: SYSTEM, tools: [SUBMIT], tool_choice: { type: 'auto' },
         output_config: { effort: 'medium' },
         messages: [{ role: 'user', content: 'Fill in the Pre-Advertising Checklist for {brand}. What is known follows as JSON.\n\n' + JSON.stringify(data) }]
-      } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: 130000 });
+      } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(5000, 130000 - (Date.now() - started)) });
       // deno-lint-ignore no-explicit-any
       const u: any = res.usage || {};
       input = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);

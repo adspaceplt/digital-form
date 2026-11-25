@@ -107,7 +107,11 @@ async function graph(path: string, params: Record<string, string> = {}, token = 
   if (!url.searchParams.get('access_token')) url.searchParams.set('access_token', token);
   const p = token === TOKEN() ? await appProof() : null;
   if (p && !url.searchParams.get('appsecret_proof')) url.searchParams.set('appsecret_proof', p);
-  const res = await fetch(url.toString());
+  /* Held to 20 seconds; a network failure's message names the address
+     with the token in it, so only its kind is passed on. */
+  let res: Response;
+  try { res = await fetch(url.toString(), { signal: AbortSignal.timeout(20000) }); }
+  catch (e) { throw new Error('Meta could not be reached (' + String((e as Error)?.name || 'fetch failed') + ')'); }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || (body && (body as Record<string, unknown>).error)) throw new MetaError(body);
   return body as Record<string, unknown>;
@@ -618,7 +622,7 @@ Deno.serve(async (req) => {
       published_reports: reports, post_results: results, meta
     };
 
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const tools = [
       { type: 'web_search_20260209', name: 'web_search', max_uses: 8,
         user_location: { type: 'approximate', country: market === 'Singapore' ? 'SG' : 'MY',
@@ -638,7 +642,7 @@ Deno.serve(async (req) => {
         const res = await client.messages.create({
           model, max_tokens: 16000, system: SYSTEM, tools, tool_choice: { type: 'auto' },
           output_config: { effort: 'medium' }, messages
-        } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: left });
+        } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(5000, left) });
         // deno-lint-ignore no-explicit-any
         const u: any = res.usage || {};
         input += (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
@@ -678,8 +682,8 @@ Deno.serve(async (req) => {
     if (!answer) { await done(false); return { error: Date.now() - started > 120000 ? 'ai-slow' : 'ai-incomplete' }; }
 
     /* Not settled which business the client is, and no colleague has chosen:
-       nothing is saved and the press is not counted; the candidates go back
-       to be chosen from. */
+       nothing is saved; the press is counted, as every run that reached the
+       model is, and the candidates go back to be chosen from. */
     const idt = (answer.identity && typeof answer.identity === 'object') ? answer.identity : null;
     const cands = idt && Array.isArray(idt.candidates) ? (idt.candidates as Record<string, unknown>[])
       .map((x) => ({ name: text(x && x.name, 160), url: /^https:\/\//i.test(text(x && x.url, 300)) ? text(x && x.url, 300) : null, note: words(x && x.note, 200) }))

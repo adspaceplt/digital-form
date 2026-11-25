@@ -47,7 +47,7 @@ export async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
   const hex = hexOf(ref), lit = '(' + ref;
   const hit = (t: string) => t.indexOf(lit) >= 0 || t.toUpperCase().replace(/\s+/g, '').indexOf(hex) >= 0;
   if (hit(raw)) return true;
-  const re = /stream\r?\n/g;
+  const re = /(?<!end)stream\r?\n/g;
   let m: RegExpExecArray | null, seen = 0, room = INFLATE_CAP;
   while ((m = re.exec(raw)) && seen < 400) {
     seen++;

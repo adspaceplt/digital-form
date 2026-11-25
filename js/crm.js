@@ -4935,7 +4935,7 @@
     var host = function (u) { return u ? String(u).replace(/^https:\/\/(www\.)?/i, '').replace(/\/.*$/, '') : ''; };
     window.ADspaceConfirm.ask({
       title: 'Choose the brand',
-      body: 'More than one business matches ' + c.name + '. Choose the one to analyse. The earlier run was not counted.',
+      body: 'More than one business matches ' + c.name + '. Choose the one to analyse.',
       go: 'Run',
       fields: [{ name: 'pick', label: 'Brand', required: true, need: 'Choose a brand.', value: '',
         choices: [['', 'Choose a brand']].concat(cands.map(function (x, i) {

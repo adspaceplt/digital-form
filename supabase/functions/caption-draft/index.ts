@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
   const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
 
   try {
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     /* Held to the fields asked for by structured output; a caption is a
        short piece, so medium effort leaves room to think without waiting. */
     const res = await client.messages.create({
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: 'Write the caption for this post' +
         '. The post and the team\'s notes follow as JSON.\n\n' + JSON.stringify(data) }]
-    } as Anthropic.MessageCreateParamsNonStreaming);
+    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: 110000, maxRetries: 0 });
     await keepTokens(db, pressId, res);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('caption-draft: answer stopped short', res.stop_reason);

@@ -47,7 +47,9 @@ function secret(name: string): string { return (Deno.env.get(name) ?? '').trim()
 const text = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
 const scrub = (s: string) => s
   .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
-  .replace(/(\+?\d[\d\s-]{7,}\d)/g, '[number]');
+  /* A phone or account number goes (nine digits or more); a date, a
+     month or an amount stays, as brand-analysis and report-draft mask. */
+  .replace(/\+?\(?\d[\d\s().-]{6,}\d/g, (m) => (m.replace(/\D/g, '').length >= 9 ? '[number]' : m));
 
 /* ---- What Claude is told ------------------------------------------------- */
 const SYSTEM = `You are a senior commercial analyst writing for the management of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. You read the company's own sales and client figures from its portal and say plainly whether the business is heading the right way, what is going wrong, what is working, and what to do next.
@@ -177,7 +179,7 @@ Deno.serve(async (req) => {
 
   return held((async () => {
     const started = Date.now();
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const SUBMIT = { name: 'submit_analysis', description: 'Submit the analysis.', strict: true, input_schema: SCHEMA };
     let input = 0, output = 0, usedModel = model;
     // deno-lint-ignore no-explicit-any
@@ -188,7 +190,7 @@ Deno.serve(async (req) => {
         output_config: { effort: 'medium' },
         messages: [{ role: 'user', content: 'Analyse the figures for ' + period + '.' +
           (notes ? '\n\nManagement\'s notes: ' + notes : '') + '\n\nThe figures follow as JSON.\n\n' + JSON.stringify(figures) }]
-      } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: 130000 });
+      } as unknown as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(5000, 130000 - (Date.now() - started)) });
       // deno-lint-ignore no-explicit-any
       const u: any = res.usage || {};
       input = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
