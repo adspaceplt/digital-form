@@ -254,9 +254,10 @@
         y -= rowH + 18;
       }
       rule(y + 6); y -= 14;
-      /* The fees' head: FEES PAYABLE, an uppercase mark with no letter
+      /* The fees' head: PROPOSED FEES (a quotation proposes; 2026-11-25),
+         an uppercase mark with no letter
          spacing, and the currency every figure under it is in. */
-      text('FEES PAYABLE', M, y, 8.5, reg, pn.strong);
+      text('PROPOSED FEES', M, y, 8.5, reg, pn.strong);
       right('All amounts in ' + (t.currency === 'SGD' ? 'S$' : 'RM'), R, y, 8.5, book, mute);
       y -= 4;
     } else {

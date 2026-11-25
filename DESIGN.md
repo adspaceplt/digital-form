@@ -991,6 +991,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     (Not issued, Not set, No reviews.).
   - A missing value in a table cell is a mute em dash (the one place a dash is
     allowed).
+- A client document proposes and states, never demands: no payable, must
+  or shall pay in a heading or a label (Proposed Fees, never Fees
+  payable; the user, 2026-11-25); a contract clause in TERMS keeps its
+  legal shall.
 - Content is uncountable: a client page, a quotation and its PDF count
   content pieces (`6 content pieces per month`), never contents; no
   contraction or exclamation mark, and no chat words (Hand in, Needs you,

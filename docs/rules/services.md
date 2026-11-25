@@ -306,7 +306,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   invoiced in the month following its confirmation.: the month's invoice
   is issued on the 1st, so an add-on confirmed during a month is billed on
   the next month's invoice, whenever it is delivered.
-- The quotation PDF's fees page (2026-11-25): FEES PAYABLE with the
+- The quotation PDF's fees page (2026-11-25): PROPOSED FEES with the
   currency at its right; only a section the client pays is numbered (1
   Monthly Service Fee, 2 One-time Items, 3 Advertising Budget), each led by
   its glyph in a 22pt shaded disc with Billed monthly or Billed once at its
