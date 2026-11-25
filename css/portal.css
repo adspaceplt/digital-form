@@ -10301,6 +10301,10 @@ body.qs-page { background: var(--card); }
 
 .booking .cx-facts.booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
 .booking .cx-facts.booking-facts > div:nth-child(n) { grid-column: auto; }
+/* Two across, an odd count's last fact takes the row, as every
+   `.booking-facts` of two columns does: no cell alone on the last row
+   (DESIGN.md §4 Facts). */
+.booking .cx-facts.booking-facts > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .booking .cx-facts > div { position: relative; padding-left: 44px; min-height: 32px; }
 .booking .cx-facts dt .ic { position: absolute; left: 0; top: 0; width: 32px; height: 32px; padding: 8px; box-sizing: border-box;
   border-radius: 50%; corner-shape: round; background: var(--sunk); color: var(--ink); }
