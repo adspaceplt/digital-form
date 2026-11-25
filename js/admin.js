@@ -3470,6 +3470,14 @@
     'client.billing':        ['Billing updated', '', 'clients'],
     'client.brand':          ['Brand updated', '', 'clients'],
     'client.quotation':      ['Quotation', '', 'clients'],
+    /* A prospect's or client's own step on a quotation link (QUOTATION LINK
+       ACTIVITY, 2026-11-25), each line opening to its visit. */
+    'quotation.requested':   ['Quotation requested', '', 'clients'],
+    'quotation.opened':      ['Quotation link opened', '', 'clients'],
+    'quotation.changes':     ['Changes requested', '', 'clients'],
+    'quotation.withdrawn':   ['Change request withdrawn', '', 'clients'],
+    'quotation.declined':    ['Quotation declined', '', 'clients'],
+    'quotation.signed':      ['Quotation signed', 'is-ok', 'clients'],
     'client.service':        ['Service added', 'is-ok', 'clients'],
     'client.service_changed': ['Service changed', '', 'clients'],
     'client.service_removed': ['Service removed', 'is-danger', 'clients'],
@@ -3955,6 +3963,28 @@
     if (a.action === 'campaign.dates') d = d.replace(/ \u00b7 schedule updated$/, '');
     return d;
   }
+  /* A line's facts (QUOTATION LINK ACTIVITY, 2026-11-25): written by a
+     function alone (`activity_log.meta`), read when the line is opened:
+     the reference, who, the device, the place, the time to the second and
+     the visit's reference. A caller's address is never among them. */
+  var FACT_WHO = { 'quotation.requested': 'Requested by', 'quotation.signed': 'Signed by' };
+  function placeOf(m) {
+    var c = String(m.country || '').toUpperCase(), name = '';
+    if (/^[A-Z]{2}$/.test(c)) {
+      try { name = new Intl.DisplayNames(['en'], { type: 'region' }).of(c) || c; } catch (e) { name = c; }
+    }
+    return [String(m.city || ''), name].filter(Boolean).join(', ');
+  }
+  function factsOf(a) {
+    var m = a.meta;
+    if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+    var at = a.created_at ? ADspaceClock.date(a.created_at) + ', ' + ADspaceClock.clock(a.created_at, { sec: true }) + ' (GMT+8)' : '';
+    var f = [['Reference', m.ref], [FACT_WHO[a.action] || 'Contact', m.name], ['Email', m.email],
+      ['Device', m.device], ['Place', placeOf(m)], ['Time', at], ['Session', m.session]]
+      .filter(function (x) { return x[1] != null && String(x[1]) !== ''; })
+      .map(function (x) { return [x[0], String(x[1])]; });
+    return f.length ? f : null;
+  }
   function recordOf(a) {
     var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [String(a.action || '').replace(/[._]/g, ' '), '']);
     var detail = detailOf(a), lead = '', rest = detail;
@@ -3967,7 +3997,7 @@
     }
     return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',
              key: keyOf(a), detail: detail, lead: lead, rest: rest,
-             tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
+             tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a), facts: factsOf(a) };
   }
 
   /* The sections a reader may open in the record (its part, or Performance's
