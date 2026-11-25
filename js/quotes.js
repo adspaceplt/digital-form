@@ -2192,7 +2192,7 @@
   }
   function filesWord(o) {
     var unit = o.covers === 'graphic' ? ['graphic', 'graphics'] : o.covers === 'reel' ? ['reel', 'reels'] : ['content piece', 'content pieces'];
-    return o.name + ' for ' + o.qty + ' content ' + (o.qty === 1 ? 'piece' : 'pieces') + '; this selection makes ' +
+    return o.name + (/s$/i.test(o.name) ? ' are' : ' is') + ' requested for ' + o.qty + ' content ' + (o.qty === 1 ? 'piece' : 'pieces') + '. This quotation includes ' +
       (o.cap ? o.cap + ' ' + unit[o.cap === 1 ? 0 : 1] : 'no ' + unit[1]) + '.';
   }
   var timer = null;
