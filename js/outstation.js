@@ -320,10 +320,16 @@
      once left, ringed while on site) with the leg's road distance on the
      line before it, then the return once checked out. The office is no
      stop, only where the road distance starts and ends (2026-11-24). */
+  /* The zone only where the address does not already name it as one of
+     its parts (2026-11-25: "…, Johor, Malaysia" read Johor twice, the
+     country after it). */
+  function zoneSaid(s) {
+    if (!s.zone || !ZONE[s.zone]) return true;
+    var z = ZONE[s.zone].toLowerCase();
+    return String(s.address || '').split(',').some(function (part) { return part.trim().toLowerCase() === z; });
+  }
   function zoneTag(s) {
-    if (!s.zone || !ZONE[s.zone]) return '';
-    var z = ZONE[s.zone], a = String(s.address || '').trim().toLowerCase();
-    return a && a.slice(-z.length) === z.toLowerCase() ? '' : '<span class="chip">' + esc(z) + '</span>';
+    return zoneSaid(s) ? '' : '<span class="chip">' + esc(ZONE[s.zone]) + '</span>';
   }
   function legRow(v) {
     return '<li class="stl-row ost-leg"><span aria-hidden="true"></span><span class="ost-leg-km">' + esc(km(v)) + '</span></li>';
@@ -403,7 +409,10 @@
   }
   function credit(trip) {
     var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
-    return credited ? '<button class="ost-credit" type="button" aria-expanded="false">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</button>' : '';
+    /* A block of its own holds the line inside the card's content box
+       (2026-11-25: the button, a part's child with its inset, ran to the
+       card's edge before its ellipsis). */
+    return credited ? '<div class="ost-credit-line"><button class="ost-credit" type="button" aria-expanded="false">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</button></div>' : '';
   }
   /* An address and the credit read as one line on a phone; a press shows
      them whole. */
@@ -539,7 +548,7 @@
     var can = mayRemove(trip, x);
     var facts = [['Taken', C.date(p.taken_at) + ', ' + C.clock(p.taken_at)],
       ['Accuracy', p.accuracy_m != null ? Math.round(Number(p.accuracy_m)) + ' m' : 'Not available']]
-      .concat(s.address ? [['Address', s.address + (s.zone ? ' · ' + ZONE[s.zone] : '')]] : [])
+      .concat(s.address ? [['Address', s.address + (zoneSaid(s) ? '' : ' · ' + ZONE[s.zone])]] : [])
       .concat(p.removed_at ? [['Removed', (p.removed_by || 'Former colleague') + ' · ' + C.date(p.removed_at) + ', ' + C.clock(p.removed_at)]] : []);
     viewer.innerHTML = '<div class="sheet-card formsheet ost-viewer" role="dialog" aria-modal="true" aria-labelledby="ostPhotoH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="ostPhotoH">' + esc(placeName(s)) + '</h3>' +
