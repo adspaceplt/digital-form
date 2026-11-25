@@ -4108,7 +4108,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    description under it; two lines and more on a phone. */
 .qb-advhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .qb-advhead .fsec-h { margin: 0; }
-.qb-advbox { display: grid; gap: 16px; margin-top: 12px; }
+.qb-advbox { display: grid; gap: 16px; }
 .qb-advpart { display: grid; gap: 8px; }
 .qb-advparth { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .qb-advacts { display: flex; gap: 8px; }
@@ -4153,9 +4153,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   /* One line under the name (the user, 2026-10-31): Tax, Qty (a figure
      of two digits), Rate and Months (up to 99), each under its label. */
   .qb-row { grid-template-columns: minmax(0, 1.1fr) 40px minmax(0, 1fr) 44px; grid-template-areas: "name name amt amt" "tax qty rate mo"; column-gap: 6px; row-gap: 8px; padding-inline: 12px; align-items: end; }
-  .qb-row:not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
+  .qb-row:not(:has(> .qb-taxc:not(:empty))) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
+  .qb-row > .qb-taxc:empty { display: none; }
   .qb-row:has(> .qb-incl) { grid-template-areas: "name name amt amt" "incl incl incl incl" "tax qty rate mo"; }
-  .qb-row:has(> .qb-incl):not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
+  .qb-row:has(> .qb-incl):not(:has(> .qb-taxc:not(:empty))) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
   .qb-row > .qb-incl { margin-top: -4px; }
   /* A name being changed takes the line's width, Cancel and Done equal
      halves under it (2026-11-16). */
@@ -4218,6 +4219,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-stepsec .select, .qb-morebox .select { width: 100%; min-width: 0; }
 .qb-oncebox .qb-once { padding-top: 8px; }
 .qb-morebox { display: grid; gap: 16px; padding-top: 12px; }
+/* The box's gap is the step between its blocks: a row, the bilingual tick
+   and the custom lines take no step of their own (the Rate Card version,
+   #1444, stood 32px under the title; DESIGN.md §2 Spacing). */
+.qb-morebox > .row { margin-top: 0; }
 .qb-sumrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
 .qb-card.is-lines .sheet-body > :not(#qbLinesBox):not(#qbMsg) { display: none; }
 @media (max-width: 640px) {
@@ -4249,7 +4254,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    right edge (2026-10-14). */
 .qb-step .qb-stepname { order: -1; flex: 1 1 auto; min-width: 0; color: var(--ink); }
 .qb-step .qb-stepname .qb-rate { display: block; }
-.qb-translate { margin-top: 4px; }
 /* No plan: the platforms run four across and the budget sits beside the
    term, so nothing stands alone in a third of the sheet. */
 #qbPlats { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px 24px; }
