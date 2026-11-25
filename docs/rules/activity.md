@@ -70,6 +70,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `12 Sept 2026`); an HR row is filed under `HR` with its type, date, note
   and file only.
 - `document.*` and `register.*` rows file under Documents.
+- A prospect's or client's step on a quotation link is its own line under
+  Clients (`quotation.requested`, `.opened`, `.changes`, `.withdrawn`,
+  `.declined`, `.signed`), subject the client's name, filed by
+  `quote_activity` with its facts in `activity_log.meta` (reference, who,
+  device and browser, city and country, session reference); an entry with
+  facts never folds and opens to them as `dl.ovfacts.rl-facts`. A caller's
+  address is never among them (`activity_log_meta_check`), and only a
+  function writes them (`activity_log_stamp` clears a page's)
+  (`2026-11-25-quotation-link-activity.sql`, `tests/quotelinksql.js`).
 - The record keeps three years: `privacy_retention()` (pg_cron
   `privacy-retention`, the 2nd of each month) removes older rows, and
   clears a WhatsApp message's number, name, variables and link code twelve
