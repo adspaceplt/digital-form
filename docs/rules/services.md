@@ -371,12 +371,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `#qbSide`, sticking under the sheet's head and scrolling on its own where
   taller than the body): every priced line under Monthly, One-time and
   Advertising budget (Per month, billed separately, Up to RM {budget}),
-  each with its amount and each group's subtotal, then the totals as the
-  quotation reads them (SST, the term adjustment where it applies,
+  each with its amount, then the totals in the quotation's own order
+  (each group's subtotal before its SST, the term adjustment where it applies,
   Monthly incl. SST, One-time incl. SST), one mute line counting the
-  Add-on Rates ticked (3 add-on rates), and a ⋯ on each of the board's
+  Add-on Rates ticked (3 add-on rates listed; No items. while none is
+  priced), and a ⋯ on each of the board's
   lines (`.team-act`; Edit for a custom line, opening More details on
-  Term and review; Tax code, asked in a sheet from `taxOpts`, the lines'
+  Term and review; Change tax code, asked in a sheet from `taxOpts`, the lines'
   one list; Move up; Move down; Remove for a custom line or a one-time
   item, red and last); it repaints as the steps change. View quote is not
   drawn while the Summary shows (`sideOn`), and a resize that brings the

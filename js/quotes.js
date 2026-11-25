@@ -2789,7 +2789,7 @@
       var mine = B && board.indexOf(l.key) > -1, at = board.indexOf(l.key), items = [];
       if (mine) {
         if (l.kind === 'custom') items.push(['edit', 2, 'Edit']);
-        if (taxOpts(l, t)) items.push(['tax', 2, 'Tax code']);
+        if (taxOpts(l, t)) items.push(['tax', 2, 'Change tax code']);
         if (at > 0) items.push(['up', 2, 'Move up']);
         if (at > -1 && at < board.length - 1) items.push(['down', 2, 'Move down']);
         if (l.kind === 'custom' || (l.basis === 'once' && l.slug && onceBox(l.slug))) items.push(['remove', 6, 'Remove']);
@@ -2802,26 +2802,23 @@
             return '<button class="kmenu-item" data-g="' + x[1] + '" data-a="' + x[0] + '" type="button" role="menuitem">' + esc(x[2]) + '</button>';
           }).join('') + '</div>' : '') + '</span></div>';
     };
+    /* The totals in the quotation's own order, each subtotal before its
+       SST, so no tax row stands apart from the figure it is on. */
     var tot = d ? totRows(d) : [];
-    var sub = {};
-    tot.forEach(function (x) { if (x[3] === 'monthSub' || x[3] === 'onceSub') sub[x[3]] = x; });
-    var group = function (name, list, key) {
+    var group = function (name, list) {
       if (!list.length) return '';
-      var st = sub[key];
-      return '<div class="qb-sidegroup"><p class="qb-sidegh">' + esc(name) + '</p>' + list.map(row).join('') +
-        (st ? '<div class="qb-sidesub"><span>' + esc(st[0]) + '</span><span class="qb-fig">' + esc(st[1]) + '</span><span class="qb-sideact"></span></div>' : '') + '</div>';
+      return '<div class="qb-sidegroup"><p class="qb-sidegh">' + esc(name) + '</p>' + list.map(row).join('') + '</div>';
     };
     var month = lines.filter(function (l) { return l.basis === 'month'; }), once = lines.filter(function (l) { return l.basis !== 'month'; });
     var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, billed separately</span>' +
       '<span class="qb-fig">' + esc('Up to ' + CUR + ' ' + whole(t.budget)) + '</span><span class="qb-sideact"></span></div></div>' : '';
-    var rest = tot.filter(function (x) { return x[3] !== 'monthSub' && x[3] !== 'onceSub'; });
     var n = B ? aoAll().filter(function (k) { return (B.aoOn || []).indexOf(k) >= 0; }).length : 0;
     box.innerHTML = '<p class="qb-sidehead">Summary</p>' +
-      (lines.length ? group('Monthly', month, 'monthSub') + group('One-time', once, 'onceSub') + ads +
-        '<dl class="qb-sidetot">' + rest.map(function (x) {
+      (lines.length ? group('Monthly', month) + group('One-time', once) + ads +
+        '<dl class="qb-sidetot">' + tot.map(function (x) {
           return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-        }).join('') + '</dl>' : ads + '<p class="qb-sidenote">No lines.</p>') +
-      (n ? '<p class="qb-sidenote">' + n + (n === 1 ? ' add-on rate' : ' add-on rates') + '</p>' : '');
+        }).join('') + '</dl>' : ads + '<p class="qb-sidenote">No items.</p>') +
+      (n ? '<p class="qb-sidenote">' + n + (n === 1 ? ' add-on rate listed' : ' add-on rates listed') + '</p>' : '');
     sideFit();
   }
   /* The Summary sticks under the sheet's head and scrolls on its own

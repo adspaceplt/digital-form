@@ -6690,9 +6690,8 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    one column on every row, the ⋯'s track kept where a line has none. */
 .qb-sidegroup + .qb-sidegroup { margin-top: 12px; }
 .qb-sidegh { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 8px 0 0; }
-.qb-sideline, .qb-sidesub { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--ctl-h-sm); gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line-soft); }
+.qb-sideline { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--ctl-h-sm); gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line-soft); }
 .qb-sidename { overflow-wrap: anywhere; }
-.qb-sidesub { font-weight: 500; }
 .qb-sideact { position: relative; display: flex; justify-content: flex-end; }
 .qb-sideact .kmenu-btn { margin-block: -4px; }
 .qb-sidetot { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
