@@ -13742,6 +13742,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         ['mix', 'plan', 'term', 'budget'].forEach(function (k) { if (wsel0[k] != null && typeof wsel0[k] !== 'object') wsel[k] = wsel0[k]; });
         if (Array.isArray(wsel0.platforms)) wsel.platforms = wsel0.platforms.filter(function (v, i, a) { return ['meta', 'tiktok', 'rednote', 'linkedin'].indexOf(v) >= 0 && a.indexOf(v) === i; });
         if (Array.isArray(wsel0.langs)) wsel.langs = wsel0.langs.filter(function (v, i, a) { return ['en', 'zh', 'ms'].indexOf(v) >= 0 && a.indexOf(v) === i; });
+        if (wsel0.translate === true && (wsel.langs || []).length > 1) wsel.translate = true;
         if (wsel0.extra && typeof wsel0.extra === 'object') wsel.extra = JSON.parse(JSON.stringify(wsel0.extra));
         if (Array.isArray(wsel0.once)) wsel.once = wsel0.once.filter(function (o) { return o && typeof o === 'object'; }).map(function (o) { return { slug: o.slug, qty: o.qty }; });
         if (!/^[0-9]{1,2}$/.test(String(wsel.term == null ? '' : wsel.term)) || [1, 6, 12, 24].indexOf(Number(wsel.term)) < 0) return { error: 'bad-term' };
@@ -13771,7 +13772,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           koc: cs.filter(function (x) { return x.spec.role === 'koc'; }).sort(function (a, b) { return (a.spec.creators || 1e9) - (b.spec.creators || 1e9); })
             .map(function (x) { return { slug: x.slug, name: x.name, creators: x.spec.creators || null }; }),
           kol: (cs.filter(function (x) { return x.spec.role === 'kol'; })[0] || {}).slug || null,
-          translation: false })));
+          translation: on('language').length > 0 })));
       }
       if (name === 'quote_website_create') {
         if (!window.__quoteFn) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_website_create' } });
