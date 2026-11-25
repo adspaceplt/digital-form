@@ -6726,3 +6726,15 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
   .qb-pkgrow > .qb-pkgx { grid-area: x; }
   .qb-pkghd { display: none; }
 }
+
+/* A plain page in the console (the sign-in, its code step, every cover, the
+   whole-screen Upgrade) is one ground from the browser's toolbar down: the
+   bar, the root and the theme-color meta all take the page's own --card,
+   white in light and the dark card in dark, never the signed-in console's
+   --chrome-solid (2026-11-25: Safari on a Mac in dark read three greys
+   stacked). js/admin.js `wearToolbar()` sets the meta from the same token. */
+body.is-plain .topbar, :root[data-boot="out"] .topbar {
+  background: var(--card);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+:root[data-boot="out"], :root:has(> body.is-plain), :root:has(> body.is-maint) { background: var(--card); }
