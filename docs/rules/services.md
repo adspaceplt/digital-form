@@ -361,7 +361,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Build quote's (`quote_web_terms`); with a plan, Content production lists
   only the formats its additional contents do not; Choose your files, the
   card's File Release add-ons (Working files, Raw footage) as steppers
-  wherever content is made, every other add-on and an outstation fee Build
+  wherever content is made, a count of content pieces, under one note in
+  the user's words (`filesNote`: delivered in high definition to each
+  platform's specifications; the files on request, charged per content
+  piece; no figure; 2026-11-25), every other add-on and an outstation fee Build
   quote's; verification only for the platforms chosen),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
