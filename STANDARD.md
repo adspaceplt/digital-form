@@ -682,8 +682,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
      `BUKKU_TOKEN` Supabase secret.
   4. The Activity record's quotation sessions: a city on a live
      quotation link's visit is still to be seen once.
-  5. Build quote keeps no draft of a quote part-built (not built; asked
-     of the user only if raised).
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
   build the whatsapp first"). The email reminders are built.

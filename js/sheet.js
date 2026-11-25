@@ -337,7 +337,7 @@
 (function () {
   var phone = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
   var KEY = 'adspace-draft:';
-  var EXCLUDE = '#askSheet, #cmdSheet, #searchSheet, #activitySheet';
+  var EXCLUDE = '#askSheet, #cmdSheet, #searchSheet, #activitySheet, #qbBox';  // Build quote keeps its own draft
   var live = {};   // sheet id -> { base, edited: {key: true}, pressed: time }
 
   function isPhone() { return !!(phone && phone.matches); }
