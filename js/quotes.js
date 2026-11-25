@@ -669,7 +669,10 @@
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
     if (a === 'link') {
       var copy = function (key) { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); };
-      if (q.access_key) { copy(q.access_key); return; }
+      /* Copied again, the link is copied at once and the copy still told,
+         so the copier's own opening is never taken for the client's
+         (QUOTATION COPIER'S OPENING, 2026-11-25). */
+      if (q.access_key) { copy(q.access_key); ctx.db.rpc('quotation_link', { p_id: q.id }).then(function () {}).catch(function () {}); return; }
       /* A team's quotation has no link until the first copy (2026-10-31). */
       ctx.db.rpc('quotation_link', { p_id: q.id }).then(function (r) {
         var d = r.data || {};
