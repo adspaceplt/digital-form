@@ -4218,6 +4218,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-stepsec .select, .qb-morebox .select { width: 100%; min-width: 0; }
 .qb-oncebox .qb-once { padding-top: 8px; }
 .qb-morebox { display: grid; gap: 16px; padding-top: 12px; }
+/* The box's gap is the step between its fields: a row in it takes no
+   sheet step of its own (the Rate Card version, #1444, stood 32px under
+   the title; DESIGN.md §2 Spacing). */
+.qb-morebox > .row { margin-top: 0; }
 .qb-sumrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
 .qb-card.is-lines .sheet-body > :not(#qbLinesBox):not(#qbMsg) { display: none; }
 @media (max-width: 640px) {
