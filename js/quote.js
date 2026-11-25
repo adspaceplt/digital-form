@@ -132,7 +132,6 @@
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
       monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time',
-      pack: { more: 'Additional pieces in the same month: ', each: ' each', not: 'Not included: ', stop: '.', sep: '; ' },
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-time total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-time incl. SST',
       newQuote: 'New quotation',
@@ -834,7 +833,7 @@
     /* Several brands on one quotation (2026-11-24): each brand's lines under
        its name, as the PDF prints them. */
     var bn = Array.isArray(tt.brands) && tt.brands.length > 1 ? tt.brands : null, lastB = null;
-    var lines = window.ADspaceMoney.planFold(q.lines, (q.totals || {}).currency, t().pack).map(function (l) {
+    var lines = window.ADspaceMoney.planFold(q.lines, (q.totals || {}).currency, t().pack || null).map(function (l) {
       var head = '';
       if (bn && l.brand != null && l.brand !== lastB && bn[l.brand]) {
         lastB = l.brand;

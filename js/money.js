@@ -372,7 +372,7 @@
      contents and what it includes under its name, then the rate for one
      more piece in the same month and what it does not include. Never a
      rate of a piece inside it. `cur` is the quotation's currency. */
-  var PACK_WORDS = { more: 'Additional pieces in the same month: ', each: ' each', not: 'Not included: ', stop: '.', sep: '; ' };
+  var PACK_WORDS = { more: 'Additional content pieces in the same month: ', each: ' each', not: 'Not included: ', stop: '.', sep: '; ' };
   function packFold(l, cur, w) {
     if (l.kind !== 'package') return l;
     w = Object.assign({}, PACK_WORDS, w || {});
