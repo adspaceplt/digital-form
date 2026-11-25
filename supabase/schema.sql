@@ -155721,7 +155721,7 @@ begin
     insert into public.activity_log (actor, action, subject, detail)
     values ('Portal', 'ops.trip_closed', r.ref,
             'Outstation trip · ' || coalesce((select m.name from public.team_members m where m.id = r.driver_id), 'Former colleague') ||
-            ' · closed automatically at midnight, at its last activity');
+            ' · ended at midnight, at its last activity');
     n := n + 1;
   end loop;
   return n;
@@ -155764,8 +155764,8 @@ end $$;
 -- ===========================================================================
 -- OUTSTATION CHECK-OUT AT THE OFFICE, THE SQL EDITOR PART (2026-11-25) — run
 -- in the SQL Editor after OUTSTATION CHECK-OUT AT THE OFFICE: it restates
--- `app_settings_set` to take the two settings (Office radius, Open trip
--- reminder) and `activity_section` to file `ops.trip_closed` under My Work;
+-- `app_settings_set` to take the two settings (Office radius, Reminder
+-- for open trips) and `activity_section` to file `ops.trip_closed` under My Work;
 -- both bodies hold words the connector stops on. Safe to run twice.
 -- ROLLBACK: run the two functions from their sections before this one
 -- (QUOTATION LINK ACTIVITY's `activity_section`, the last `app_settings_set`
@@ -155929,7 +155929,7 @@ begin
         when 'health_alert' then 'Health heavy workload notice'
         when 'outstation_office_lat' then 'Office latitude' when 'outstation_office_lng' then 'Office longitude'
         when 'outstation_accuracy_m' then 'Location accuracy limit' when 'outstation_keep_months' then 'Outstation trips kept'
-        when 'outstation_office_radius_m' then 'Office radius' when 'outstation_remind_hours' then 'Open trip reminder'
+        when 'outstation_office_radius_m' then 'Office radius' when 'outstation_remind_hours' then 'Reminder for open trips'
         when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
         when 'analytics_from' then 'Analytics counts from'
         when 'verify_code_from' then 'Document IDs printed from'

@@ -1057,7 +1057,7 @@
         /* No reading at check-out (the user, 2026-11-24: "checkout doesnt
            need to read location again. Only on-site needs to check once"):
            the way back is measured to the office pin. */
-        '<dl class="ovfacts ost-out-facts" id="ostOutFacts" hidden><div><dt>Check out</dt><dd>At the office</dd></div></dl>' +
+        '<dl class="ovfacts ost-out-facts" id="ostOutFacts" hidden><div><dt>Location</dt><dd>At the office</dd></div></dl>' +
         '<div class="row"><div><label class="field-label" for="ostOutNote">Note</label>' +
           '<textarea class="input" id="ostOutNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
         '<div class="row"><div><span class="field-label" id="ostRateL">Rate your trip</span>' +

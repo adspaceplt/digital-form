@@ -222,7 +222,7 @@ begin
     insert into public.activity_log (actor, action, subject, detail)
     values ('Portal', 'ops.trip_closed', r.ref,
             'Outstation trip · ' || coalesce((select m.name from public.team_members m where m.id = r.driver_id), 'Former colleague') ||
-            ' · closed automatically at midnight, at its last activity');
+            ' · ended at midnight, at its last activity');
     n := n + 1;
   end loop;
   return n;

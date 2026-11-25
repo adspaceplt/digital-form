@@ -381,7 +381,8 @@
       biz && { id: 'outstation', name: 'Outstation', kind: 'edit',
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months'),
-          'Office within ' + num('outstation_office_radius_m') + ' m']) },
+          'Office radius ' + num('outstation_office_radius_m') + ' m',
+          'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) },
       biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);

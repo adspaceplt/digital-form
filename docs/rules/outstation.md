@@ -202,7 +202,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   office ends the last stop at the check-out, as before.
 - A trip left open: one push to its driver (`ops_notifications`, kind
   `outstation`, Your trip is still open. Check out?, opening My Work's
-  Outstation) once it has stood open Settings' Open trip reminder
+  Outstation) once it has stood open Settings' Reminder for open trips
   (`outstation_remind_hours`, 3) after its last stop's check-in or last
   photo; never again for that trip (`reminded_at`; `outstation-remind`,
   every 15 minutes). At 00:00 Malaysia time a trip still open from an

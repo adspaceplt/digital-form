@@ -6901,7 +6901,7 @@
       ['outstation_keep_months', 'Trips kept (months, 6 to 120)', 'keep', 'Trips', 'Kept', per('month')],
       /* OUTSTATION CHECK-OUT AT THE OFFICE (2026-11-25). */
       ['outstation_office_radius_m', 'Office radius (metres, 20 to 1,000)', 'orad', 'Office pin', 'Office radius', function (v) { return v + ' m'; }],
-      ['outstation_remind_hours', 'Open trip reminder (hours after the last activity, 1 to 12)', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]] },
+      ['outstation_remind_hours', 'Reminder for open trips (hours after the last activity, 1 to 12)', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]] },
     idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after (days unused, 0 turns this off)', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     /* Hidden personal details (2026-11-25): how long a value shown on an
        employee record stays shown (js/personnel.js). */
