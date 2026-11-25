@@ -853,6 +853,11 @@ Every sign-in and security rule: `docs/rules/security.md`.
 ### Guardrails the user gave
 - "This should be automatic on your structure when designing": every rule in
   `DESIGN.md` is applied before the user sees a screenshot.
+- A first build is the finished design, never text first and design later
+  (the user, 2026-11-25: Outstation's trip card shipped as lines of words):
+  every new screen is built from the v3 components it needs (facts, a
+  timeline, figures, thumbnails, the phone row) in its first release, and
+  its screenshots are read for runs of text a component would carry.
 - "Do not state the obvious." "Be concise and direct." No explanatory copy.
 - "Every action needs a way back." "Same status throughout." "Prefilled, not
   fixed." "A phone screenshot is reviewed, not just taken." "Intake asks for

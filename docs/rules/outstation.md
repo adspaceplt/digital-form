@@ -26,7 +26,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   site to check-out), never typed. A trip open more than four hours shows
   the break reminder.
 - The route lists the client sites alone, each from its check-in to its
-  check-out; the office is no stop, only the road distance's start and end
+  check-out; the office is no stop, only the distance's start and end
   (Settings' pin; the user, 2026-11-24).
 - Add claim (Coming soon) stands beside Check out, tonal, its words mute,
   `aria-disabled`, opening nothing, until claims are built (the user,
@@ -60,7 +60,11 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   instructions carried no legs), office to each stop in order and, once
   checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
   credited under the route (© openrouteservice.org by HeiGIT · Map data ©
-  OpenStreetMap contributors).
+  OpenStreetMap contributors). Its one address is `ORS_BASE`
+  (`https://api.heigit.org`) at the top of the function: the matrix at
+  `/openrouteservice/v2`, the geocoder at `/pelias/v1`, the key in the
+  Authorization header for both, never in the address
+  (`api.openrouteservice.org` answers 410 since 2026-11-24).
 - A trip of the driver's own missing a stop's address or a leg is asked
   again when the driver opens the list, once a visit (each stop, then the
   legs; 2026-11-24: OS/20261101 came before the lookup worked and never
