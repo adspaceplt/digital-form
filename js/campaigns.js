@@ -3173,7 +3173,6 @@
   }
 
   function loadOptions() {
-    var paysIn = loadPays(state.campaign.id);
     db.from('campaign_options').select('*, creators(name, access_code, creator_code, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         return new Promise(function (res) { readJobPattern(function () { res(r); }); });
@@ -3209,8 +3208,8 @@
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
-            loadQc(ids, function () { loadReviews(ids, function () { loadPosts(function () { paysIn.then(paintOptions); }); }); });
-          }, function () { paysIn.then(paintOptions); });
+            loadQc(ids, function () { loadReviews(ids, function () { loadPosts(function () { paintOptions(); }); }); });
+          }, function () { paintOptions(); });
       });
   }
 
@@ -4268,10 +4267,9 @@
     }
 
     paintCampTiming(c);
-    paintCampPays();
 
     /* The rule under the last block, set in the paint. */
-    var blocks = ['campFactBlock', 'campPayBlock', 'campPickBlock', 'campDateBlock', 'campTimeBlock'].map($).filter(Boolean);
+    var blocks = ['campFactBlock', 'campPickBlock', 'campDateBlock', 'campTimeBlock'].map($).filter(Boolean);
     blocks.forEach(function (b) { b.classList.remove('is-last'); });
     var shown = blocks.filter(function (b) { return !b.hidden; });
     if (shown.length) shown[shown.length - 1].classList.add('is-last');
@@ -5043,90 +5041,10 @@
     return window.ADspaceMenu.item(action, label, need);
   }
 
-  /* A booking's payment (CAMPAIGN CREATOR PAYMENTS, 2026-11-22, screen (f)
-     of the Bukku structure mockup): the bill `creator_bills` holds for its
-     Job reference, read in one request for the whole campaign at Creator
-     payments View (`campaign_creator_bills`), never one a booking and never
-     Bukku itself. The console's alone: no client page or creator page reads
-     it. A refused or failed read draws no payment, the record as before. */
-  var pays = { campaign: null, rows: null };
-  function loadPays(id) {
-    pays = { campaign: id, rows: null };
-    if (!mayPart('campaigns.pay', 'view')) return Promise.resolve();
-    return db.rpc('campaign_creator_bills', { p_campaign: id }).then(function (r) {
-      var d = r && r.data;
-      if (pays.campaign !== id || !d || !d.ok) return;
-      var m = {};
-      (d.bookings || []).forEach(function (b) { m[b.option] = b; });
-      pays.rows = m;
-    }).catch(function () {});
-  }
-  function payOf(o) {
-    return pays.rows && state.campaign && pays.campaign === state.campaign.id ? pays.rows[o.id] || null : null;
-  }
-  function payDay(v) {
-    return ADspaceClock.date(v, String(v).slice(0, 4) === ADspaceClock.today().slice(0, 4) ? { year: false } : {});
-  }
-  /* The dot and its word, as the creator's Payment pane says it: Paid {day},
-     Processing, Draft in Bukku; a booking posted with no bill Not billed, or
-     Not linked while its creator is not linked to Bukku; nothing before. */
-  function bookingPayChip(o) {
-    var p = payOf(o), b = p && p.bill;
-    if (!p) return '';
-    if (b) {
-      var w = JOB_STATE[b.status];
-      if (!w) return '';
-      return '<span class="chip-state ' + w[1] + ' kcard-pay">' +
-        esc(b.status === 'paid' && b.paid_on ? 'Paid ' + payDay(b.paid_on) : w[0]) + '</span>';
-    }
-    if (['posted', 'completed'].indexOf(o.state) < 0) return '';
-    return p.linked ? '<span class="chip-state is-warn kcard-pay">Not billed</span>'
-      : '<span class="chip-state is-off kcard-pay">Not linked</span>';
-  }
-  /* The tab opens at the press, then goes to the bill once bukku-sync names
-     it, as Payments opens one; a refusal is said on the booking's card. */
-  function openPayBill(o, num) {
-    var tab = window.open('', '_blank');
-    db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: o.creator_id, number: num } }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
-    }).then(function (x) {
-      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
-      if (tab) tab.close();
-      cardSay(o, 'Bill ' + num + ' could not be opened in Bukku. Open the creator\'s Payment tab, press Read from Bukku, then try again.', 'err');
-    }).catch(function () { if (tab) tab.close(); });
-  }
-  /* Creator payments in the rail: the creators paid of those booked, what
-     is still with Bukku and what is posted with no bill, and the sum paid in
-     each currency. A line with nothing to count is left out. */
-  function paintCampPays() {
-    var box = $('campPayBlock');
-    if (!box) return;
-    var rows = pays.rows && state.campaign && pays.campaign === state.campaign.id
-      ? (state.options || []).filter(function (o) { return BOOKED_OUT_PAY.indexOf(o.state) < 0; }) : [];
-    box.hidden = !rows.length;
-    if (!rows.length) return;
-    var n = { paid: 0, processing: 0, draft: 0, none: 0 }, sums = {};
-    rows.forEach(function (o) {
-      var p = payOf(o), b = p && p.bill;
-      if (b && n[b.status] != null) n[b.status]++;
-      if (b && b.status === 'paid' && b.amount != null) {
-        var cur = b.currency || 'MYR';
-        sums[cur] = (sums[cur] || 0) + Number(b.amount);
-      }
-      if (!b && ['posted', 'completed'].indexOf(o.state) > -1) n.none++;
-    });
-    var line = function (k, v, cls) { return '<div><dt>' + esc(k) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd></div>'; };
-    var curs = Object.keys(sums).sort();
-    $('campPayRail').innerHTML =
-      line('Paid', esc(n.paid + ' of ' + rows.length + (rows.length === 1 ? ' creator' : ' creators'))) +
-      (n.processing ? line('Processing', String(n.processing)) : '') +
-      (n.draft ? line('Draft in Bukku', String(n.draft)) : '') +
-      (n.none ? line('Not billed', String(n.none)) : '') +
-      (curs.length ? line('Paid to creators', curs.map(function (c) {
-        return '<span class="crtot-amt">' + esc(billMoney(Math.round(sums[c] * 100) / 100, c)) + '</span>';
-      }).join(''), 'crtot') : '');
-  }
-  var BOOKED_OUT_PAY = ['option', 'shortlisted', 'backup', 'withdrawn', 'replaced'];
+  /* The campaign record carries no creator payment (the user, 2026-11-25):
+     it may be shown to a client, so no booking draws a bill or its state,
+     no ⋯ opens a bill and the rail holds no Creator payments block. That
+     work is Creators > Payments' and the creator's own page's. */
 
   function cardMenu(o) {
     var items = '';
@@ -5153,8 +5071,6 @@
         items += menuItem('replace', 'Replace');
       }
     }
-    var pb = payOf(o);
-    if (pb && pb.bill && pb.bill.number) items += window.ADspaceMenu.item('paybill', 'Open in Bukku');
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
 
@@ -5276,7 +5192,6 @@
           '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
           (o.is_replacement ? '<span class="tone">Replacement</span>' : '') +
           (o.goodwill ? '<span class="tone">Goodwill</span>' : '') +
-          bookingPayChip(o) +
         '</span>' +
         '<span class="kcard-act">' +
           /* Sending a creator their link is the everyday action on this row, so
@@ -5824,7 +5739,6 @@
     on('del',       function () { dropOption(o); });
     on('unbook',    function () { unbook(o); });
     on('wasend',    function () { sendBooking(o); });
-    on('paybill',   function () { var pb = payOf(o); if (pb && pb.bill && pb.bill.number) openPayBill(o, pb.bill.number); });
     var waItem = card.querySelector('[data-a="wasend"]');
     if (waItem) {
       waItem.hidden = true;
