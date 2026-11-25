@@ -1550,11 +1550,20 @@
       }).join('') + '<p class="msg warn" id="qbFilesMsg" role="status" hidden></p>';
       fill(s1);
       basket();
-      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
+      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { draftKeep(); B = null; } });
       /* A quotation opened again opens at the review (2026-11-25). */
       stepGo(sel._step || (editing || revises ? 4 : 1));
       sidePaint(null);
       preview();
+      /* QUOTATION DRAFTS: what the sheet opened with, so a close that
+         changed nothing keeps no draft; a draft continued on another
+         Rate Card version says so in one line. */
+      B.base = sel._base != null ? sel._base : draftCmp(draftOut());
+      if (sel._draft && sel._draft !== c.version) {
+        $('qbMsg').textContent = 'Repriced on Rate Card v.' + c.version + '. The draft was priced on v.' + sel._draft + '.';
+        $('qbMsg').className = 'msg';
+      }
+      draftOffer(sel._draft != null || sel._step != null);
     });
   }
 
@@ -2160,7 +2169,79 @@
     /* The brands all kept, the board on the brand it held. */
     if (B.brands) { s.brands = JSON.parse(JSON.stringify(B.brands)); s._bi = B.bi; s._was = B.was; BRAND_KEYS.forEach(function (k) { delete s[k]; }); }
     if (B.entity) s.entity = B.entity;
+    s._base = B.base;
     build(B.ctx, s, B.opener, B.revises, B.editing);
+  }
+
+  /* QUOTATION DRAFTS (2026-11-25, the user): a new quotation closed before
+     Create is kept as a draft against the client and the colleague, in the
+     database so it follows the colleague to another device (one a client a
+     colleague, no number and no PDF; Create clears it). Build quote opened
+     again on the same client offers it at the top of step 1. */
+  function draftOut() {
+    var s = fullSel();
+    if (B.brands) { s.brands = JSON.parse(JSON.stringify(B.brands)); s._bi = B.bi; BRAND_KEYS.forEach(function (k) { delete s[k]; }); }
+    if (B.entity) s.entity = B.entity;
+    s.cardPicked = Boolean(B.cardPicked);
+    s._step = B.step || 1;
+    /* Today's date is the default, so a draft continued tomorrow is dated
+       tomorrow; a date typed back is kept. */
+    if (s.date === window.ADspaceClock.today()) delete s.date;
+    return s;
+  }
+  function draftCmp(s) { var c = Object.assign({}, s); delete c._step; return JSON.stringify(c); }
+  function draftKeep() {
+    if (!B || B.made || B.editing || B.revises || !B.card || B.base == null) return;
+    var s;
+    try { s = draftOut(); } catch (e) { return; }
+    if (draftCmp(s) === B.base) return;
+    var ctx = B.ctx;
+    var bad = function (e) { ctx.msg('qtMsg', 'The draft was not saved. ' + said(e), 'err'); };
+    ctx.db.rpc('quotation_draft_save', { p_client: ctx.client.id, p_sel: s, p_card: B.card.version }).then(function (r) {
+      var e = r.error || (r.data && r.data.error);
+      if (e) { bad(e); return; }
+      ctx.msg('qtMsg', 'Draft saved.', 'ok');
+    }).catch(bad);
+  }
+  function draftOffer(skip) {
+    var box = $('qbDraft'), mine = B;
+    if (!box) return;
+    box.hidden = true; box.innerHTML = '';
+    B.draft = null;
+    if (skip || B.editing || B.revises) return;
+    B.ctx.db.rpc('quotation_draft_read', { p_client: B.ctx.client.id }).then(function (r) {
+      var d = r && r.data && r.data.draft;
+      if (B !== mine || !d || !d.selection) return;
+      var C = window.ADspaceClock;
+      B.draft = d;
+      box.innerHTML = '<span>Draft saved ' + esc(C.date(d.saved_at)) + ', ' + esc(C.clock(d.saved_at)) + '</span>' +
+        '<span class="draftline-acts"><button class="btn btn-sm" type="button" data-a="discard">Discard</button>' +
+        '<button class="btn btn-sm" type="button" data-a="continue">Continue draft</button></span>';
+      box.hidden = false;
+    }).catch(function () {});
+  }
+  function draftPress(e) {
+    var b = e.target.closest && e.target.closest('button[data-a]');
+    if (!b || !B || !B.draft) return;
+    var d = B.draft, ctx = B.ctx;
+    if (b.getAttribute('data-a') === 'continue') {
+      var s = JSON.parse(JSON.stringify(d.selection));
+      /* Priced on the version live on its date, unless one was chosen. */
+      if (!s.cardPicked) delete s.card;
+      s._draft = d.card || '';
+      s._step = Number(s._step) || 1;
+      build(ctx, s, B.opener);
+      return;
+    }
+    window.ADspaceConfirm.ask({ title: 'Discard draft?', body: 'The draft saved ' + window.ADspaceClock.date(d.saved_at) + ' will be discarded. This cannot be undone.',
+      go: 'Discard', tone: 'danger', wait: true }, function () {
+      return ctx.db.rpc('quotation_draft_discard', { p_client: ctx.client.id }).then(function (r) {
+        var x = r.error || (r.data && r.data.error);
+        if (x) return said(x);
+        if (B && B.draft === d) { B.draft = null; $('qbDraft').hidden = true; $('qbDraft').innerHTML = ''; }
+        return '';
+      });
+    });
   }
   function qbDay() {
     var v = $('qbDate') ? $('qbDate').value : '';
@@ -2995,6 +3076,7 @@
     });
     $('qbCancel').addEventListener('click', function () { window.ADspaceSheet.close(); B = null; });
     $('qbClose').addEventListener('click', function () { $('qbCancel').click(); });
+    $('qbDraft').addEventListener('click', draftPress);
     /* Preview PDF (2026-10-31; the user: "preview pdf … before sending"):
        the quotation as it is priced now, drawn under DRAFT with the
        reference PREVIEW; nothing is made and no number is spent. */
@@ -3081,6 +3163,7 @@
       go.disabled = true;
       var next = function () {
         if (at >= sel.brands.length) {
+          if (B) B.made = true;
           window.ADspaceSheet.close();
           B = null;
           ctx.reload(function () { ctx.msg('qtMsg', made.join(', ') + ' made.', 'ok'); made.forEach(markNew); });
@@ -3108,6 +3191,7 @@
         go.disabled = false;
         if (r.error || d.error) { $('qbMsg').textContent = said(r.error || d.error); $('qbMsg').className = 'msg err'; return; }
         var ctx = B.ctx, revises = B.revises, opener = B.opener;
+        B.made = true;
         window.ADspaceSheet.close();
         B = null;
         if (!revises) { ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' made.', 'ok'); markNew(d.ref); }); return; }
