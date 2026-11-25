@@ -10,8 +10,8 @@
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Select your creators', zh: '挑选创作者' }, steps: [
-    { at: '.crow-tick', text: { en: 'Select the creators for this campaign. Your selection is saved automatically.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
-    { at: '#confirmBtn', text: { en: 'Press Confirm selection once your selection is final.', zh: '选定后，请点「确认选择」。' } }] };
+    { at: '.cs-tick', text: { en: 'Select the creators for this campaign. Your selection is saved automatically.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
+    { at: '#confirmBtn', text: { en: 'Press Submit selection once your selection is final.', zh: '选定后，请点「提交选择」。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
 
@@ -49,6 +49,7 @@
   /* The mark that says this opens somewhere else: the one leaving mark
      (js/icons.js, loaded first; CR-7). */
   var EXT_ICON = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
+  function icon(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   /* What is booked carries SST at the rate in force when the client last
      confirmed, so a confirmed campaign's total never moves with a later rate
      (the third audit, item 10); a selection still to confirm, today's. */
@@ -77,12 +78,9 @@
       over: 'The selection exceeds the number of creators for this campaign.',
       yourSelection: 'Your selection',
       count: function (a, b) { return a + ' of ' + b + ' selected'; },
-      newAdded: function (n) { return n + ' creators were added recently'; },
-      seeNew: 'View new creators',
       select: 'Select',
       selected: 'Selected',
       backup: 'Backup',
-      isBackup: 'Backup ✓',
       backupHint: 'Select your creators. Backups are optional and not charged.',
       backupsNeeded: function () { return 'Backup creators are optional.'; },
       backupsDone: 'Backup creators selected.',
@@ -95,15 +93,28 @@
       viewOn: function (platform) { return 'View ' + platform + ' profile'; },
       platform: { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: 'All creators selected',
-      confirm: 'Confirm selection',
-      confirmHeading: 'Confirm your selection',
+      fullLine: 'All creators have been selected. Please deselect a creator first.',
+      confirm: 'Submit selection',
+      confirmHeading: 'Submit selection',
+      /* The selection page's cards and cart (the mockup of 2026-11-25). */
+      chooseBy: 'Choose by',
+      ofN: function (a, b) { return a + ' of ' + b; },
+      viewsLabel: 'Creators shown',
+      viewAll: 'All', viewSelected: 'Selected', viewBackup: 'Backup',
+      markBackup: 'Mark as backup', markedBackup: 'Marked as backup',
+      perUnit: { video: 'per video', graphic: 'per graphic' },
+      backupLine: function (names, fee) { return 'Backup: ' + names + ' (' + fee + ', not charged unless used)'; },
+      backupsN: function (n) { return n + (n === 1 ? ' backup' : ' backups'); },
+      inclTax: function (tax) { return 'incl. ' + tax; },
+      viewSelection: 'View selection',
+      close: 'Close',
       confirmBlurb: '',
       nameLabel: 'Your name',
       /* Just Name. Asking a client for their full name every time they
          approve something reads as an identity check rather than a signature.
          Chinese already said 姓名, which is the same register. */
       namePlaceholder: 'John Doe',
-      send: 'Confirm',
+      send: 'Submit',
       cancel: 'Cancel',
       nameNeeded: 'Please enter your name.',
       confirmedBy: function (who, d) { return 'Confirmed by ' + who + ' on ' + d + '. Shoot dates will follow.'; },
@@ -120,9 +131,6 @@
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
       platformsLabel: 'Posting on',
-      /* The columns a fee is compared across. Named only where there is room
-         to compare: below the phone line the header leaves with them. */
-      colCreator: 'Creator', colProfiles: 'Profiles', colFee: 'Fee',
       stageLabel: 'Stage',
       nextLabel: 'Next',
       /* Next names the client only where the client is the one who acts. At
@@ -138,7 +146,6 @@
       },
       tbc: 'To be confirmed',
       amountLabel: 'Amount',
-      detailsLabel: 'Campaign details',
       creatorsLabel: 'Creators',
       dueLabel: 'Campaign due',
       pdf: 'PDF',
@@ -191,12 +198,9 @@
       over: '所选人数已超出本次合作的名额。',
       yourSelection: '您的选择',
       count: function (a, b) { return '已选 ' + a + ' / ' + b; },
-      newAdded: function (n) { return '新增了' + n + '位创作者'; },
-      seeNew: '查看新增',
       select: '选择',
       selected: '已选',
       backup: '设为备选',
-      isBackup: '备选 ✓',
       backupHint: '请选择创作者。备选为可选项，不产生费用。',
       backupsNeeded: function () { return '备选为可选项。'; },
       backupsDone: '已设定备选创作者。',
@@ -209,12 +213,24 @@
       viewOn: function (platform) { return '查看' + platform + '主页'; },
       platform: { xhs: '小红书', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: '名额已满',
-      confirm: '确认选择',
-      confirmHeading: '确认您的选择',
+      fullLine: '名额已满，请先取消一位已选的创作者。',
+      confirm: '提交选择',
+      confirmHeading: '提交选择',
+      chooseBy: '选择截止',
+      ofN: function (a, b) { return a + ' / ' + b; },
+      viewsLabel: '显示的创作者',
+      viewAll: '全部', viewSelected: '已选', viewBackup: '备选',
+      markBackup: '设为备选', markedBackup: '已设为备选',
+      perUnit: { video: '每条视频', graphic: '每张图文' },
+      backupLine: function (names, fee) { return '备选：' + names + '（' + fee + '，仅在启用时收费）'; },
+      backupsN: function (n) { return n + '位备选'; },
+      inclTax: function (tax) { return '含' + tax; },
+      viewSelection: '查看已选',
+      close: '关闭',
       confirmBlurb: '',
       nameLabel: '您的姓名',
       namePlaceholder: '陈小明',
-      send: '确认',
+      send: '提交',
       cancel: '取消',
       nameNeeded: '请填写姓名。',
       confirmedBy: function (who, d) { return who + ' 已于 ' + d + ' 确认。拍摄日期将随后通知。'; },
@@ -231,7 +247,6 @@
       deliveryOn: '寄送',
       postedOn: '发布于',
       platformsLabel: '发布平台',
-      colCreator: '创作者', colProfiles: '主页', colFee: '费用',
       stageLabel: '当前进度',
       nextLabel: '下一步',
       nextUp: {
@@ -242,7 +257,6 @@
       },
       tbc: '待确认',
       amountLabel: '金额',
-      detailsLabel: '合作详情',
       creatorsLabel: '创作者人数',
       dueLabel: '合作截止',
       pdf: 'PDF',
@@ -495,26 +509,11 @@
     var brief = (lang === 'zh' && c.brief_zh) ? c.brief_zh : c.brief;
     $('campBrief').textContent = brief || '';
     $('campBrief').hidden = !brief;
-    // The engagement in one line: how many creators, when, which invoice.
-    var facts = [[t().creatorsLabel, String(c.slots || 0)]];
-    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline, 'ahead')]);
-    if (c.invoice_no) facts.push([t().invoice, c.invoice_no]);
-    $('engageFacts').innerHTML = facts.map(function (f) {
-      return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
-    }).join('');
-
-    /* The fold's own head. The label names what is behind it, and the summary
-       carries the one fact with a consequence — the date — so it is readable
-       while the card is shut and the client is not made to open a card to
-       find out when this is due. A date needs no label, because a date reads as
-       one; where the campaign has none the count takes its place with its own
-       word, since a shut fold whose summary is blank is a fold with dead space
-       where the reason to open it should be. */
-    $('engageLabel').textContent = t().detailsLabel;
-    $('engageSum').textContent = c.deadline ? fmtDate(c.deadline)
-      : (c.slots ? t().creatorsLabel + ' ' + c.slots : '');
-    $('engageSum').setAttribute('data-base', c.deadline ? fmtDate(c.deadline) : '');
-    $('engageSum').setAttribute('data-fallback', $('engageSum').textContent);
+    /* The brief is one shaded line under the head, never folded (the
+       mockup of 2026-11-25): the client reads it before choosing. */
+    $('campBriefBox').hidden = !brief && !purpose;
+    $('campBriefIc').innerHTML = icon('doc');
+    paintFacts();
 
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
 
@@ -626,15 +625,6 @@
     $('bookedTotals').hidden = !open;
     this.setAttribute('aria-expanded', String(open));
     this.classList.toggle('is-open', open);
-  });
-
-  /* The detail card. Shut when the page opens, because the creators the client
-     came to choose are below it; opening and shutting is the same move every
-     other fold in this portal makes, so the card grows and collapses in place
-     rather than blinking away. */
-  $('engageToggle').addEventListener('click', function () {
-    var shut = $('engageCard').classList.toggle('is-shut');
-    this.setAttribute('aria-expanded', String(!shut));
   });
 
   /* Where the campaign stands, on its own head card: how many of the booked
@@ -1147,6 +1137,59 @@
   // True once the slots are full and the list is only still there for backups.
   function backupStage() { return slotsLeft() <= 0 && backupsOpen() && choosable().length > 0; }
 
+  /* The view the strip shows: every creator, the selected or the backups. */
+  var view = 'all';
+
+  /* The head's facts (the mockup of 2026-11-25): Choose by, the day the
+     client waits on with its weekday, and Creators, n of N. Once nothing
+     is left to choose, the day is the campaign's own. */
+  function paintFacts() {
+    var c = feed.campaign || {};
+    var slots = c.slots || 0, n = countSelected() + countBooked();
+    var open = choosable().length > 0;
+    var facts = [];
+    if (c.deadline) facts.push(['calendar', open ? t().chooseBy : t().dueLabel, dueShort(c.deadline)]);
+    if (slots) facts.push(['people', t().creatorsLabel, t().ofN(n, slots)]);
+    if (c.invoice_no) facts.push(['doc', t().invoice, c.invoice_no]);
+    $('csFacts').innerHTML = facts.map(function (f) {
+      return '<div><span class="cs-fact-ic" aria-hidden="true">' + icon(f[0]) + '</span>' +
+        '<dt>' + esc(f[1]) + '</dt><dd>' + esc(f[2]) + '</dd></div>';
+    }).join('');
+    $('csFacts').hidden = !facts.length;
+  }
+  /* 22 Sept (Tue): the year only where it is not this one (js/clock.js). */
+  function dueShort(d) {
+    var thisYear = String(d).slice(0, 4) === String(ADspaceClock.today()).slice(0, 4);
+    return ADspaceClock.date(d, { zh: lang === 'zh', named: 'ahead', short: true, year: thisYear ? false : undefined });
+  }
+
+  function viewOf(o) {
+    if (view === 'selected') return chosen[o.id] === 'selected';
+    if (view === 'backup') return chosen[o.id] === 'backup';
+    return true;
+  }
+  /* The strip: All, Selected and Backup, each with its count (`.tab-n`). */
+  function paintStrip(options) {
+    var n = { all: options.length, selected: 0, backup: 0 };
+    options.forEach(function (o) { if (chosen[o.id] === 'selected') n.selected++; else if (chosen[o.id] === 'backup') n.backup++; });
+    var views = [['all', t().viewAll], ['selected', t().viewSelected]];
+    if (backupsOpen() || n.backup) views.push(['backup', t().viewBackup]);
+    if (!views.some(function (v) { return v[0] === view; })) view = 'all';
+    var strip = $('csStrip');
+    strip.setAttribute('aria-label', t().viewsLabel);
+    strip.innerHTML = views.map(function (v) {
+      var on = v[0] === view;
+      return '<button type="button" class="acttab btn-sm' + (on ? ' is-on' : '') + '" aria-pressed="' + on + '" data-v="' + v[0] + '">' +
+        esc(v[1]) + '<span class="tab-n">' + n[v[0]] + '</span></button>';
+    }).join('');
+  }
+  $('csStrip').addEventListener('click', function (e) {
+    var b = e.target.closest('.acttab');
+    if (!b || b.getAttribute('data-v') === view) return;
+    view = b.getAttribute('data-v');
+    paintCards();
+  });
+
   function paintCards() {
     var grid = $('optionGrid');
     var options = choosable();
@@ -1164,104 +1207,93 @@
     var isNew = function (o) { return before.length > 0 && before.indexOf(o.id) < 0; };
 
     grid.innerHTML = '';
+    paintFacts();
     if (!options.length) {
       // Nothing left to choose is not the same as nothing sourced yet.
-      grid.innerHTML = countBooked()
-        ? '' : '<div class="empty">' + esc(t().noneYet) + '</div>';
+      $('csBody').hidden = !!countBooked();
+      $('csStrip').parentNode.hidden = true;
+      grid.innerHTML = countBooked() ? '' : '<p class="cs-empty">' + esc(t().noneYet) + '</p>';
+      $('csCart').hidden = true;
       $('chooseHead').hidden = true;
       $('chooseHint').hidden = true;
       return;
     }
-    // The progress card already says how to choose; only a reopened slot
-    // needs a line here.
+    $('csBody').hidden = false;
+    $('csCart').hidden = false;
+    $('csStrip').parentNode.hidden = false;
+    // Only a reopened slot needs a line here.
     $('chooseHint').hidden = !priority;
     $('chooseHint').textContent = priority ? t().priorityNotice : '';
     $('chooseHint').classList.toggle('is-priority', priority);
 
-    /* A list, not cards. Ten is a page of cards and forty is an afternoon of
-       scrolling; the decision is made by opening profiles and comparing rates,
-       and a row puts both within reach without moving the eye.
+    paintStrip(options);
+    var unit = (t().perUnit || {})[(feed.campaign || {}).deliverable] || t().perUnit.video;
 
-       On a screen wide enough to compare on, the columns are named: a fee and
-       a set of placements with nothing over them is a number the client has to
-       work out what to read against. Below the phone line the header leaves
-       and the row stacks, because four labels over a 358px row is furniture. */
-    var head = document.createElement('div');
-    head.className = 'crow crow-head';
-    head.innerHTML =
-      '<span class="crow-no"></span><span class="crow-tick-cell"></span>' +
-      '<div class="crow-name">' + esc(t().colCreator) + '</div>' +
-      '<div class="crow-plat">' + esc(t().platformsLabel) + '</div>' +
-      '<div class="crow-links">' + esc(t().colProfiles) + '</div>' +
-      '<div class="crow-rate">' + esc(t().colFee) + '</div>' +
-      (backupsOpen() ? '<span class="crow-backup-cell">' + esc(t().backup) + '</span>' : '');
-    grid.appendChild(head);
-
+    /* A card a creator (the mockup of 2026-11-25): the name and its tags,
+       the profiles as contact chips, a hairline, then the fee over what it
+       buys and Mark as backup; the round tick at the top right. Numbers
+       carry on from the bookings above (SEL-4). */
     options.forEach(function (o, idx) {
+      if (!viewOf(o)) return;
       var pick = chosen[o.id];
       var full = countSelected() >= slots && pick !== 'selected';
-      var row = document.createElement('div');
-      row.className = 'crow' + (pick === 'selected' ? ' is-on' : '') +
-        (pick === 'backup' ? ' is-backup' : '');
+      var card = document.createElement('div');
+      card.className = 'cs-card' + (pick === 'selected' ? ' is-on' : '') + (pick === 'backup' ? ' is-backup' : '');
 
-      // The profile link is the thing they came to click, so it is a button
-      // with the platform named on it, not a chip that reads as decoration.
-      /* The profile is the thing they came to open, so it is named in full and
-         carries the icon that says it leaves the page. Several sit side by
-         side and wrap when the width runs out. */
       var links = (o.profiles || []).map(function (p) {
         var name = t().platform[p.platform] || platLabel(p.platform);
-        return '<a class="plink" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' +
-          esc(t().viewOn(name)) + EXT_ICON + '</a>';
+        var href = absUrl(p.url);
+        if (!href) return '';
+        return '<a class="plink" href="' + esc(href) + '" target="_blank" rel="noopener" aria-label="' + esc(t().viewOn(name)) + '">' +
+          (window.ADspaceIcons ? (window.ADspaceIcons.mark(p.platform) || window.ADspaceIcons.platform(p.platform)) : '') + esc(name) + EXT_ICON + '</a>';
       }).join('');
-
-      /* The fee is for a stated set of platforms, so the rate beside it cannot
-         be read without them. It sits under the name as the row's meta line,
-         where every other list in the portal puts what qualifies the money. */
+      /* The fee is for a stated set of placements, read under it with the
+         deliverable it buys. */
       var plats = platsOf(o);
+      var per = unit + (plats.length ? ' · ' + plats.join(', ') : '');
 
-      row.innerHTML =
-        '<span class="rowno crow-no">' + (listedAbove + idx + 1) + '</span>' +
-        '<button class="crow-tick' + (full ? ' is-full' : '') + '" type="button"' +
-          (full ? ' disabled' : '') + ' aria-pressed="' + (pick === 'selected') + '"' +
-          ' title="' + esc(full ? t().full : t().select) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" ' +
-          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-          '<path d="m5 12.5 4.5 4.5L19 7.5"/></svg></button>' +
-        '<div class="crow-name">' +
-          '<b>' + esc(o.name) + '</b>' +
-          (isNew(o) ? '<span class="tag-new">' + esc(t().newTag) + '</span>' : '') +
-          (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
-          (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
+      card.innerHTML =
+        '<div class="cs-top">' +
+          '<div class="cs-name">' +
+            '<span class="rowno">' + (listedAbove + idx + 1) + '</span>' +
+            '<b>' + esc(o.name) + '</b>' +
+            (isNew(o) ? '<span class="chip tag-new">' + esc(t().newTag) + '</span>' : '') +
+            (priority && pick === 'backup' ? '<span class="chip tag-pri">' + esc(t().priority) + '</span>' : '') +
+            (o.is_replacement ? '<span class="chip tag-rep">' + esc(t().replacement) + '</span>' : '') +
+          '</div>' +
+          '<button class="cs-tick' + (full ? ' is-full' : '') + '" type="button" aria-pressed="' + (pick === 'selected') + '"' +
+            (full ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t().select + ' ' + o.name) + '">' + icon('check') + '</button>' +
         '</div>' +
-        /* Its own column on a screen wide enough to compare on, and back
-           under the name on a phone. A fee is quoted for a stated set of
-           placements, so the two are read against each other. */
-        '<div class="crow-plat">' +
-          (plats.length
-            ? '<span>' + esc(t().platformsLabel) + '</span>' + esc(plats.join(' · '))
+        (links ? '<div class="cs-links">' + links + '</div>' : '') +
+        '<div class="msg err cs-msg" role="status" hidden></div>' +
+        '<div class="cs-foot">' +
+          '<div class="cs-fee"><b>' + money(o.rate) + '</b><small>' + esc(per) + '</small></div>' +
+          (backupsOpen() || pick === 'backup'
+            ? '<button class="btn btn-sm cs-backup' + (pick === 'backup' ? ' is-on' : '') + '" type="button" aria-pressed="' + (pick === 'backup') + '">' +
+              icon('bookmark') + esc(pick === 'backup' ? t().markedBackup : t().markBackup) + '</button>'
             : '') +
-        '</div>' +
-        '<div class="crow-links">' + (links || '<span class="mute">\u2014</span>') + '</div>' +
-        '<div class="crow-rate">' + money(o.rate) + '</div>' +
-        (backupsOpen()
-          ? '<button class="crow-backup' + (pick === 'backup' ? ' is-on' : '') + '" type="button">' +
-            esc(pick === 'backup' ? t().isBackup : t().backup) + '</button>'
-          : '');
+        '</div>';
 
-      row.querySelector('.crow-tick').addEventListener('click', function () {
+      card.querySelector('.cs-tick').addEventListener('click', function () {
         if (chosen[o.id] === 'selected') delete chosen[o.id];
         else if (countSelected() < slots) chosen[o.id] = 'selected';
+        else {
+          /* The slots are full: refused in place, on the card pressed. */
+          var m = card.querySelector('.cs-msg');
+          m.textContent = t().fullLine; m.hidden = false;
+          return;
+        }
         redraw();
       });
-      var bk = row.querySelector('.crow-backup');
+      var bk = card.querySelector('.cs-backup');
       if (bk) bk.addEventListener('click', function () {
         if (chosen[o.id] === 'backup') delete chosen[o.id];
-        else chosen[o.id] = 'backup';
+        else if (backupsOpen()) chosen[o.id] = 'backup';
         redraw();
       });
-      grid.appendChild(row);
+      grid.appendChild(card);
     });
+    if (!grid.children.length) grid.innerHTML = '<p class="cs-empty">' + esc(t().noneYet) + '</p>';
 
     remember(options.map(function (o) { return o.id; }));
   }
@@ -1292,24 +1324,28 @@
 
   function redraw() { paintCards(); paintProgress(); save(); }
 
+  /* The cart (the mockup of 2026-11-25, as Build quote's Summary): at a
+     desk a shaded card beside the creators, on a phone the bar at the foot
+     with its sheet. It counts against the slots, lists what is selected
+     with its fee, the backups on one mute line, then the totals and
+     Submit selection. */
   function paintProgress() {
     var slots = (feed.campaign || {}).slots || 0;
     var booked = countBooked();
     var n = countSelected() + booked;      // locked creators already hold a slot
-    var pct = slots ? Math.min(100, Math.round((n / slots) * 100)) : 0;
-
-    // Once everything is booked there is nothing left to choose, so the card
-    // would be telling the client about a job that is finished.
-    $('progressCard').hidden = !choosable().length;
-
-    $('progLabel').textContent = t().yourSelection;
-    $('progCount').textContent = t().count(n, slots);
-    $('progFill').style.width = pct + '%';
+    var open = choosable().length > 0;
     var over = slots > 0 && n > slots;
+    paintFacts();
+
+    $('cartHeading').textContent = t().yourSelection;
+    $('cartIc').innerHTML = icon('doccheck');
+    $('cartClose').setAttribute('aria-label', t().close);
+    $('progCount').textContent = t().ofN(n, slots);
     $('progSay').textContent = over ? t().overSlots(slotsLeft()) : n >= slots ? t().complete : t().chooseMore(slots - n);
     $('progSay').classList.toggle('is-over', over);
+    $('progSay').classList.toggle('is-done', !over && n >= slots);
     /* A selection the client has confirmed says so when the link is opened
-       again, and Confirm returns only once the picks differ from what was
+       again, and Submit returns only once the picks differ from what was
        confirmed (UX audit SELECTION-1, 2026-10-14). */
     var conf = lastConfirm || (feed.campaign || {}).confirmed;
     var mine = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; }).map(function (o) { return o.id; }).sort();
@@ -1317,15 +1353,21 @@
       conf.selected.slice().sort().join(',') === mine.join(','));
     var confDay = conf && conf.at ? fmtDate(conf.at) : '';
     if (asConfirmed) $('progSay').textContent = t().confirmedBy(conf.person, confDay);
-    /* The count rides the fold's own head while there is a choice to make,
-       so it reads while the detail is shut (SELECTION-2). */
-    var sum = $('engageSum'), base = sum.getAttribute('data-base') || '';
-    var parts = [base, choosable().length && slots ? t().count(n, slots) : ''].filter(Boolean);
-    sum.innerHTML = parts.map(function (x, i) {
-      return '<span>' + esc(x) + (i < parts.length - 1 ? '<i class="engage-dot" aria-hidden="true">·</i>' : '') + '</span>';
-    }).join(' ');
-    if (!parts.length) sum.textContent = sum.getAttribute('data-fallback') || '';
-    $('progressCard').classList.toggle('is-done', n >= slots);
+
+    var pending = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
+    var backs = (feed.options || []).filter(function (o) { return chosen[o.id] === 'backup'; });
+    var value = pending.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    var sst = sstOf(value);
+    $('cartLines').innerHTML = pending.map(function (o) {
+      return '<li><span>' + esc(o.name) + '</span><span>' + money(o.rate) + '</span></li>';
+    }).join('');
+    $('cartLines').hidden = !pending.length;
+    var bval = backs.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    $('cartBackup').hidden = !backs.length;
+    $('cartBackup').textContent = backs.length
+      ? t().backupLine(backs.map(function (o) { return o.name; }).join(lang === 'zh' ? '、' : ', '), money(bval)) : '';
+    $('cartTotals').innerHTML = pending.length ? totalsHtml(value) : '';
+    $('cartTotals').hidden = !pending.length;
 
     var want = backupsWanted();
     var have = countBackups();
@@ -1337,37 +1379,50 @@
       (backupsOk ? t().backupsDone + gap + t().backupCount(have, want)
                  : t().backupsNeeded(want - have) + gap + t().backupCount(have, want));
     $('progBackup').classList.toggle('is-ok', backupsOk);
+    $('cartChanged').hidden = !(conf && !asConfirmed && confDay && pending.length);
+    $('cartChanged').textContent = confDay ? t().changedSince(confDay) : '';
 
-    /* The bar is about what is waiting to be confirmed, not about the campaign.
-       Counting booked creators in it said "3 chosen · RM 0" and offered to
-       confirm a selection nobody had made. */
-    var pending = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
-    var value = pending.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
-    $('confirmSummary').innerHTML =
-      '<b>' + esc(t().totalShort(money2(value + sstOf(value)),
-                 sstOf(value) ? MON.taxLabel(mkt()) : '')) + '</b>' +
-      // A client who is not charged tax should not read a tax line of zero.
-      /* The count reads against the slots, as the selection card does
-         (SELECTION-2): "2 of 3 chosen", never a count with no total. */
-      '<span class="muted">' + esc(t().count(n, slots) + ' · ' + money2(value)) +
-        (sstOf(value) ? ' + ' + esc(MON.taxLabel(mkt())) + ' ' + money2(sstOf(value)) : '') +
-      '</span>' +
-      /* Backups are said once, on the selection card; never again in the bar
-         (SEL-4). */
-      (over ? '<span class="is-over">' + esc(t().overSlots(slotsLeft())) + '</span>' : '') +
-      (conf && !asConfirmed && confDay ? '<span class="muted">' + esc(t().changedSince(confDay)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
-    // Backups are advice. Blocking the button on them left people who had
-    // made their choice staring at a grey Confirm with no idea why.
-    /* More chosen than the slots left (a creator booked meanwhile): nothing
-       to confirm until one is taken off in the list (2026-10-20, SEL-1). */
-    $('confirmBtn').disabled = !pending.length || over;
-    /* Confirmed as it stands: the bar says who confirmed it and when, and
-       offers no second Confirm until the picks change. */
-    if (asConfirmed) $('confirmSummary').innerHTML = '<b>' + esc(t().confirmedBy(conf.person, confDay)) + '</b>';
+    $('barSubmit').textContent = t().confirm;
+    /* Backups are advice, never a block; more chosen than the slots left
+       rests Submit until one is taken off (2026-10-20, SEL-1). */
+    var rest = !pending.length || over;
+    $('confirmBtn').disabled = rest;
+    $('barSubmit').disabled = rest;
     $('confirmBtn').hidden = asConfirmed;
-    $('confirmBar').hidden = !pending.length;
+    $('barSubmit').hidden = asConfirmed;
+
+    /* The bar: n of N selected and the total, over the backups and the tax
+       (a client charged none reads no tax word). */
+    var taxWord = sst ? t().inclTax(MON.taxLabel(mkt())) : '';
+    var under = [backs.length ? t().backupsN(backs.length) : '', taxWord].filter(Boolean).join(' · ');
+    $('confirmSummary').innerHTML = asConfirmed
+      ? '<b>' + esc(t().confirmedBy(conf.person, confDay)) + '</b>'
+      : '<b>' + esc(t().count(n, slots)) + ' · ' + money2(value + sst) + '</b>' +
+        (over ? '<span class="is-over">' + esc(t().overSlots(slotsLeft())) + '</span>' : under ? '<span>' + esc(under) + '</span>' : '');
+    $('cartOpen').innerHTML = esc(t().viewSelection) + '<span class="tab-n">' + pending.length + '</span>';
+    $('confirmBar').hidden = !open || (!pending.length && !asConfirmed && !backs.length);
+    document.documentElement.classList.toggle('has-csbar', !$('confirmBar').hidden);
   }
+
+  /* View selection carries the cart into its sheet, and back when it shuts. */
+  function cartHome() {
+    var cart = $('csCart');
+    if (cart.parentNode !== $('csBody')) $('csBody').appendChild(cart);
+    cart.classList.remove('is-sheet');
+  }
+  $('cartOpen').addEventListener('click', function () {
+    var cart = $('csCart');
+    $('cartSheetBody').appendChild(cart);
+    cart.classList.add('is-sheet');
+    if (window.ADspaceSheet) window.ADspaceSheet.show($('cartSheet'), { opener: $('cartOpen'), onClose: cartHome });
+    else $('cartSheet').hidden = false;
+  });
+  $('cartClose').addEventListener('click', function () {
+    if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('cartSheet'))) window.ADspaceSheet.close();
+    else { $('cartSheet').hidden = true; cartHome(); }
+  });
+  $('barSubmit').addEventListener('click', function () { $('confirmBtn').click(); });
 
   // ---- Save (fire and forget, the client never waits on it) ---------------
   /* One save at a time, the latest picks sent last: two saves on their
