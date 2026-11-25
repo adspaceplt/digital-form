@@ -382,6 +382,13 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
+       PDF, the quotation link and Build quote say them alike. */
+    addonRates: 'Add-on Rates',
+    addons: 'Add-ons',
+    addonExtra: 'Additional content',
+    addonLead: 'The following services may be requested in any month of the term, at the rates below. All rates are exclusive of SST.',
+    addonTerm: 'Add-ons are not included in the fees above. Each is confirmed in writing before it begins and invoiced in the month following its confirmation.',
     stageFrom: function (stage, day) { return stage + ' from ' + day; },
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */

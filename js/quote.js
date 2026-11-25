@@ -131,7 +131,7 @@
       declined: 'Declined', declinedT: 'You have declined this quotation',
       withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
       monthSub: 'Monthly subtotal', monthExcl: 'Monthly excl. SST',
-      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time', packH: 'Package',
+      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-time subtotal', onceTag: 'One-time', packH: 'Package', aoH: null, aoLead: null, aoTerm: null, aoExtra: null,
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-time total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-time incl. SST',
       newQuote: 'New quotation',
@@ -278,7 +278,8 @@
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
       monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
-      packH: '套餐', pack: { more: '同月追加内容：', each: '／件', not: '不包括：', stop: '。', sep: '；' },
+      packH: '套餐', aoH: '附加服务费率', aoLead: '以下服务可于合约期内任何月份另行申请，费率如下。所有费率均不含SST。',
+      aoTerm: '附加服务不包括在上述费用内。每项附加服务须于开始前以书面确认，并于确认后次月开具发票。', aoExtra: '追加内容', pack: { not: function (list) { return '本套餐不包括' + list.map(function (x) { return String(x || '').trim().replace(/[.;。；]+$/, ''); }).join('、') + '。'; } },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
       newQuote: '申请新报价',
@@ -865,6 +866,7 @@
       notes.push(f(pd >= 30 ? t().payApprove : t().payNote, { d: pd }));
       (Array.isArray(tt.terms) ? tt.terms : []).forEach(function (x) { if (String(x || '').trim()) notes.push(String(x).trim()); });
     }
+    if (addonsOf(tt).length) notes.push(aoWord('aoTerm'));
     notes.push(f(t().basis, { v: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
@@ -877,7 +879,26 @@
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + noteH(n) + '</span>'; }).join('') + '</div>' +
-      '</section>' + aside + '</div>';
+      addonsHtml(tt) + '</section>' + aside + '</div>';
+  }
+  /* Add-on Rates (QUOTATION ADD-ON RATES, 2026-11-25): the rates the team
+     ticked, read only, as the PDF prints them; never in a total. */
+  function aoWord(k) { var L = window.ADspaceWords.line; return t()[k] || { aoH: L.addonRates, aoLead: L.addonLead, aoTerm: L.addonTerm, aoExtra: L.addonExtra }[k]; }
+  function addonsOf(tt) { return Array.isArray(tt.addons) ? tt.addons.filter(function (r) { return r && r.name; }) : []; }
+  function addonsHtml(tt) {
+    var list = addonsOf(tt), groups = [], at = {};
+    if (!list.length) return '';
+    list.forEach(function (r) {
+      var g = r.kind === 'extra' ? aoWord('aoExtra') : (r.group || window.ADspaceWords.line.addons);
+      if (!at[g]) { at[g] = { g: g, rows: [] }; groups.push(at[g]); }
+      at[g].rows.push(r);
+    });
+    return '<section class="qs-addons" id="qsAddons"><h2 class="qs-sec-h">' + esc(aoWord('aoH')) + '</h2><p class="qs-note">' + noteH(aoWord('aoLead')) + '</p>' +
+      '<div class="qs-aogrid">' + groups.map(function (g) {
+        return '<div class="qs-aogroup"><h3>' + esc(g.g) + '</h3><dl>' + g.rows.map(function (r) {
+          return '<div><dt>' + esc(r.name) + '</dt><dd>' + esc(window.ADspaceMoney.addonRate(r, tt.currency, lang === 'zh')) + '</dd></div>';
+        }).join('') + '</dl></div>';
+      }).join('') + '</div></section>';
   }
   function paintBare() {
     var q = Q;

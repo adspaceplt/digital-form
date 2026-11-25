@@ -271,6 +271,10 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
     and the template's page count, and a draft and a white-label report the
     page count alone;
+  - a quotation's Add-on Rates are a block anchored above the foot of its
+    fees page, as a sealed copy's Record is, two columns with dotted
+    leaders and the unit mute, never in a total; where it does not fit it
+    takes the next page under the same head (2026-11-25);
   - a summary of totals never stands on a page alone: the last line carries
     the summary's height, and moves over with it where both do not fit
     (letters and quotations alike, 2026-11-24);

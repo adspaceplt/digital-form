@@ -284,8 +284,34 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   package) and `list_amount` (the contents at the card's rates). It leaves
   the quotation as any line (a service line, each cycle's invoice line,
   `{brand} · {package}` with brands); `ADspaceMoney.planFold(lines, cur,
-  words)` prints its extra rates and Not included under it, once, on the
-  PDF and the link. `quote_files_cap` counts its graphics and reels.
+  words)` prints what it leaves out under it as a sentence (Advertising
+  management is not included.), once, on the PDF and the link; its rate
+  for one more piece is an add-on rate, never under the line.
+  `quote_files_cap` counts its graphics and reels.
+- Add-on Rates (`2026-11-25-quotation-addon-rates.sql`; the user,
+  2026-11-25): `p_sel.addons` (console only, quotation-wide, 200 keys at
+  most, else `bad-addons`), a Rate Card add-on's slug or `extra:{slug}` for
+  a package's rate for one more piece, kept by `quote_with_addons` as
+  `totals.addons` (`{key, kind, group, name, rate, unit}`; the package's
+  extras first in its order, then the card's add-ons in the card's order,
+  from the quotation's own card and currency); never added to a line or a
+  total. Build quote's Extras step ticks them (`#qbAddons`, all ticked by
+  default, a reopened quotation keeping its choice); the PDF prints them as
+  a block anchored above the foot of the fees page (on the next page where
+  it does not fit, running on under the same head), and the link reads
+  them read only under its notes; none ticked, no block. A rate whose unit
+  ends `, from` reads `from RM 450.00 per trip` (`ADspaceMoney.addonRate`).
+  Wherever they print, TERMS' Exclusions read Add-ons are not included in
+  the fees above. Each is confirmed in writing before it begins and
+  invoiced in the month following its confirmation.: the month's invoice
+  is issued on the 1st, so an add-on confirmed during a month is billed on
+  the next month's invoice, whenever it is delivered.
+- The quotation PDF's fees page (2026-11-25): FEES PAYABLE with the
+  currency at its right; only a section the client pays is numbered (1
+  Monthly Service Fee, 2 One-time Items, 3 Advertising Budget), each led by
+  its glyph in a 22pt shaded disc with Billed monthly or Billed once at its
+  right edge; no summary card; TERMS on the acceptance page above the
+  Acceptance of Quotation, whose figures are plain body text.
 - The term discount is the team's choice per quotation (`p_sel.term_disc`;
   2026-11-25): false takes every negative term percentage to 0
   (`quote_term_off`, kept as `totals.term_off`), a short term's surcharge
