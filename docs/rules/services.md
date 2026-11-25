@@ -292,20 +292,39 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   kept; absent or true prices as before. Build quote's Term step draws
   Apply the term discount (`#qbTermDisc`) only where the term has one,
   ticked unless a quotation reopened kept it off.
-- Build quote (the user, 2026-11-24, the approved basket and sheet): one
-  column in the order a quote is built, a numbered step each (`.qb-num`):
-  1 Plan (Without ads / With ads, the plan cards, Content, Advertising
-  budget managed per month), 2 Platforms and content (platforms, the extra
-  content steppers, languages), 3 Extras (Add one-time item and Add
-  advertising budget, each opening its rows only when used), 4 Term (Term,
-  Date, Payment terms, Valid for); then one fold, More details (`#qbMore`:
-  Title, Rate Card version, Make every content piece bilingual, Custom
-  lines with Renew lines, Bill to, Terms), open where the quotation holds
-  any of them. The foot reads the monthly total incl. SST (with `· n
-  brands`), View lines (the sheet turned to the priced lines, every
-  brand's under its name, the brand on the board changed where read, the
-  others read; Preview PDF there; Back returns), Cancel and Create
-  quotation (Save when editing). Add to quotation under Extras puts the
+- Build quote in four steps (the user, 2026-11-25, the approved boards
+  "Build quote, step by step" and "Build quote on a phone"; `#qbTrack`,
+  `.qb-pane` a step, `stepGo`): 1 Type (the brands in this quotation and
+  the board's brand name, Choose what to quote as three tiles, Plan,
+  Package or Items (`#qbTypes`, `kindPick`, a brand's own: choosing one
+  lets go of the other's choices), Bill to where the client has two
+  billing entities or more), 2 Build (Plan: the plan cards, content,
+  budget, platforms, extra content and languages; Package: its builder
+  (`#qbPkgBox`: name, basis, Rate Card lines with quantities, At Rate Card
+  rates, Package price, Discount, Included in the package a tick a line);
+  Items: the one-time items), 3 Extras (a package's rate for one more of
+  each content piece, prefilled from the card; Add one-time item, the
+  files held to their cap as before; Add advertising budget; Add to
+  quotation), 4 Term and review (Term, Date, Payment terms, Valid for,
+  Apply the term discount, More details: Title, Rate Card version,
+  bilingual content, custom lines with Renew lines, Terms; then the lines
+  as the client reads them, Move up and Move down, Preview PDF). Continue
+  checks its own step alone (`stepWrong`: Choose what to quote.; Choose a
+  plan.; Enter the package name.; Add a Rate Card line to the package.;
+  Enter the package price.; Choose at least one item.), Back keeps what
+  was entered, and a quotation opened again (Edit, Adjust and send) opens
+  at Term and review. A package's line is changed in its builder alone,
+  never in the lines (`ownLine`, as a custom line). At a desk a summary
+  stands beside the steps (`#qbSide`: the board's lines and the monthly
+  figure incl. SST); on a phone Step n of 4 heads the track and the foot
+  holds the figure over Back and Continue as equal halves. The suites
+  open a step through `ADspaceQuotes.stepTo(n, kind)`.
+  The foot reads the monthly total incl. SST (with `· n
+  brands`), View lines on steps 1 to 3 (the sheet turned to the priced
+  lines, every brand's under its name, the brand on the board changed
+  where read, the others read; its Back returns), then Cancel on Type or
+  Back, and Continue, or Create quotation (Save when editing) on Term and
+  review. Add to quotation under Extras puts the
   board's brand in Brands in this quotation (`#qbBrandList`: a row a
   brand, its plan, platforms and term, its monthly figure from
   `quote_preview`'s `brands`, Edit and Remove with Undo where it happened;
@@ -644,4 +663,4 @@ Moved from DESIGN.md §4 on 2026-11-22.
 | Need | Component |
 |---|---|
 | A prospect's own quotation (`/quote/`) | The opening page (the boards QuoteIntroPhone and QuoteIntroDesk, 2026-11-25): the title over its line, no service tiles (the services are chosen on the Need step alone), What to expect as the shared step cards (`ADspaceIcons.stepCards`, DESIGN.md §4: a glyph in a white disc, its number on an ink badge), the time after its clock, then Chat on WhatsApp and Start as equal halves. The Need step (What do you need?; the user, 2026-11-25: "the five boxes replace here"): the services as tiles (`.qs-svcs` > `button.qs-svc`, one list `needKeys`), each a toggle (`aria-pressed`) on `S.need`: the glyph in its disc, the name, its line under it; a shaded card, white and ringed in ink once chosen with the several-of mark filled at its top right corner (as `.qs-pick`); three over two at a desk (a six-track grid, the last two half the row each), two across on a phone, a last tile alone taking its row; a thing drawn as a choice is a control a suite presses (2026-11-25: tiles on the opening page read as choices and pressed as nothing). Request received (QuoteReceivedPhone and QuoteReceivedDesk; no longer a cover) is the shared received page (`ADspaceIcons.received`, DESIGN.md §4, 2026-11-25): the title, the day as the statement, the reference and brand; the track (Request sent with its time, Review by ADspace In progress, Quotation sent on WhatsApp by its day, Accept and sign on this page); Your request (`ADspaceIcons.card`, `.qs-asklist`, a glyph a part of the selection kept, never a price); the representative's `contactCard` with Chat with {name} on WhatsApp (blue), else Chat on WhatsApp under the cards. Every glyph is `js/icons.js`'s, at 1.7 on this page. The plans (the boards QuotePhone and QuoteDesk, 2026-11-25): Without ads / With ads over three `.qs-plan` cards (its mark on top, `plancontent` or `planads`, the name, a line a fact with its glyph: content pieces, platforms, an ad plan's advertising budget), the middle one Recommended (`.qs-rec`, ink, on the mark's row at the card's right edge, never a row of its own; 2026-11-25) at 1.4 to 1, first and the row's width on a phone; under them the chosen plan (`.qs-plansel`, shaded): its name, best_for, its content each month (a segment `#qsMix` where two, else the one as a pill) and its inclusions a tick each; platforms with their ink marks (`ADspaceIcons.mark`, Facebook and Instagram one choice); never a figure. `.qs`, white to the edge: an opening page first (`.qs-intro`: the title, one line of what the page gives, What to expect as numbered steps `.qs-steps`, one mute line of time, validity and commitment, then Chat on WhatsApp and Start as equal halves; no step count), written to the client or lead using it, never to a colleague; then one 560px column a step (`.qs-progress`: Step n of m over a 4px track in `--fill`; the title; choices as `--sunk` cards, `.qs-pick` and `.qs-chip`, ringed in ink once chosen, never a browser tick box: a 22px mark at the card's right edge (`.qs-mark`), where several may be chosen a rounded square (6px) filled in ink with its tick, where one of a set a ring holding an ink dot; the consent tick the same square; a step's categories each under a 16/600 heading (`.qs-sec`), items 8 apart, the next category set off by a `--line-soft` hairline and a 24px step; steppers `.qs-stepper`; Back and Continue as equal halves; every choice of one line (a chip, a card with no line under its name), field, select, segment, stepper and button one height, `--ctl-h` (34 at a desk, 36 under a finger), a stepper's − and + the small control (`.btn-sm`, never `--ctl-h` set to the small figure); every control's words the portal's control text and a field's its field text, never a page's own; the title 26px, the lead's 16 times φ, its lead 8px under it); the quotation on the record's proportion at a desk (`.qs-quote`: the lines as rows with hairlines, the totals right aligned on `--sunk`, Ready to proceed beside it in a `--sunk` card, `.qs-side`: its two questions as `fieldset.qs-ask` of `.qs-pick` cards on `--card`, the one blue Proceed with this quotation at the card's width), on a phone under it; a step done beside the quotation is the green tick (`.qs-asked`); a quotation the team has not sent is the cover (Request received, the day it will be sent as the statement, the note and the reference under it, Chat on WhatsApp, with the colleague's name where one took the lead); a colleague who took the lead is a person card under the line about them (`.qs-rep`: a `--card` card, the name 15/600 over the position, Chat on WhatsApp tonal inside it; never an initials disc, 2026-11-07) |
-| A client's quotations and Build quote | `#crmQuotes` (`js/quotes.js`) above the Services pane's lines: `.svc-row.qt-row`s (the reference over what it is, the monthly figure over its label, the state as `.chip-state`, a ⋯), two columns on a narrow pane. `#qbBox`, a 780px `.formsheet`: the plans as cards (`.qb-plan`: a radio mark, the letter and fee over platforms and contents; `--sunk`, the chosen `--line-soft`) under a Without ads / With ads segment at the heading's right; content and platforms (what each adds, `.qb-rate`) side by side; extra contents as steppers, languages, budget and term in three columns (one on a phone); the lines as a table and the totals right aligned, Monthly incl. SST the one bold figure; on a phone a line is its name over qty × rate and its subtotal; a line's inclusions run under its name a point each (`ul.incl`: 12.5 mute, the bullet hung), the figures on the name's line, on the phone the row's width |
+| A client's quotations and Build quote | `#crmQuotes` (`js/quotes.js`) above the Services pane's lines: `.svc-row.qt-row`s (the reference over what it is, the monthly figure over its label, the state as `.chip-state`, a ⋯), two columns on a narrow pane. `#qbBox`, a 1000px `.formsheet` in four steps (`.qb-track` over the panes, `.qb-pane` a step; the type tiles `.qb-type`, a `--sunk` card ringed in ink once chosen; a package row `.qb-pkgrow`; the summary `.qb-side`, beside the steps at a desk): the plans as cards (`.qb-plan`: a radio mark, the letter and fee over platforms and contents; `--sunk`, the chosen `--line-soft`) under a Without ads / With ads segment at the heading's right; content and platforms (what each adds, `.qb-rate`) side by side; extra contents as steppers, languages, budget and term in three columns (one on a phone); the lines as a table and the totals right aligned, Monthly incl. SST the one bold figure; on a phone a line is its name over qty × rate and its subtotal; a line's inclusions run under its name a point each (`ul.incl`: 12.5 mute, the bullet hung), the figures on the name's line, on the phone the row's width |
