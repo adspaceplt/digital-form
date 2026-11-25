@@ -6770,7 +6770,7 @@
     if (fill && s) {
       var r = svRateOf(s.rate);
       $('svRate').value = r != null ? r : '';
-      if (s.rate != null && svFx() === 0) msg('svMsg', 'Set the Singapore dollar rate in Tax and terms.', 'warn');
+      if (s.rate != null && svFx() === 0) msg('svMsg', window.ADspaceWords.line.fxUnset, 'warn');
       $('svTenure').value = Math.max(1, Number(s.min_months || 1));
       $('svDetail').value = s.detail || '';
     }

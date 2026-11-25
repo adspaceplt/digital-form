@@ -907,11 +907,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-lead { grid-area: lead; min-width: max-content; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; min-width: max-content; }
 :is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags:empty { display: none; }
-/* A booking's payment stands under its step in the state's column at a
-   desk, and beside it on the phone's second line (2026-11-22, screen (f)). */
-.bookreg .kcard-tags > .kcard-pay { flex-basis: 100%; }
-:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags > .kcard-pay { flex-basis: auto; }
-/* Where the second line holds more than the state (its payment, Goodwill,
+/* Where the second line holds more than the state (Goodwill,
    Replacement), the date takes a line of its own under it, read whole, and
    the chips wrap between themselves: beside four chips the date had 23px
    at 390 (2026-11-24, the day's gate). The state alone keeps it beside. */

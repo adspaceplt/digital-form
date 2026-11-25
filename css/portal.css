@@ -739,7 +739,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .pair-chip:empty { display: none; }
 /* The name card above the stage strip, the client portal's own. */
 .shell-review > .rec-head { margin-top: 16px; }
-.camp-namecard { margin-top: 16px; }
 .shell-review > .rec-head + .stagestrip { margin-top: 0; }
 
 /* Copy block under the mockup: the caption is half the deliverable. */
@@ -3151,170 +3150,164 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .langtoggle:hover { border-color: var(--ink-mute); color: var(--ink); }
 
-/* ---------- Progress ----------
-   Determinate, because the slot count is known and fixed by the invoice. It
-   leads with what is left to do; a tally alone makes the reader do the
-   subtraction before they know whether to act. */
-/* Inside the summary band the progress is a section, not a second card: one
-   bounded surface, its parts divided by the hairline this system already uses
-   between the sections of a record. */
-.engage-band { padding: 16px 18px; }
-/* What the campaign is about reads as one block of prose, then the facts.
-   Both lines used to be `.camphead p`, which is a caption under a title; inside
-   the card they are its content, so they take the card's own quiet body size
-   and the first of them sits on the band's own padding rather than 6px below
-   it. The `.engage-card` prefix is what makes these outrank `.camphead-purpose`
-   and `.engage-band > .booking-facts`, which are single-class rules later in
-   the file; one stack rule beats six margins written at their point of use. */
-.engage-card .engage-band > .camphead-purpose,
-.engage-card .engage-band > p { font-size: 14px; color: var(--ink-soft); }
-.engage-card .engage-band > .camphead-purpose { color: var(--ink); }
-.engage-card .engage-band > * { margin-top: 0; }
-.engage-card .engage-band > * + * { margin-top: 8px; }
-.engage-card .engage-band > * + .booking-facts { margin-top: 14px; }
-/* The detail folds, and the one fact with a consequence rides the head so it
-   is readable while the card is shut. The head is the control, the way every
-   other fold in this portal is opened by its own title. */
-.engage-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; }
-.engage-toggle {
-  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
-  background: none; border: 0; padding: 0; cursor: pointer;
-  font: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
-  /* A bare button is a control and clears the control floor, so the target is
-     38px at a desk and 44 under a finger. The negative block margin keeps its
-     footprint the label's own line, the way the rate card's ⋯ does: without it
-     the card's one-line head stood 66px at a desk and 72 on a phone. */
-  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2);
+/* ---------- The creator selection page (creators/, 2026-11-25) ----------
+   The mockup the user approved: a head with two facts, the brief as one
+   shaded line, the view strip, a shaded card a creator beside the cart,
+   and on a phone the cart as a bar at the foot. Cards are shaded, never
+   outlined (the client forms' family, `.sumcard`). */
+.cs-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px;
+  margin-top: 16px; padding: 0 0 20px; border-bottom: 1px solid var(--line);
 }
-.engage-toggle svg {
-  width: 15px; height: 15px; flex: 0 0 auto; color: inherit; stroke-width: 1.8;
-  transition: transform var(--t) var(--ease);
+.cs-id { display: flex; align-items: center; gap: 14px; flex: 1 1 320px; min-width: 0; }
+.cs-who { min-width: 0; }
+.cs-who h1 { margin: 0; font-family: var(--font-head); font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; overflow-wrap: anywhere; }
+.cs-who p { margin: 2px 0 0; font-size: 14px; color: var(--ink-mute); }
+.cs-who p:empty { display: none; }
+.cs-facts { display: flex; gap: 24px; margin: 0; flex: 0 0 auto; }
+.cs-facts > div {
+  display: grid; grid-template-columns: auto auto; grid-template-areas: "ic dt" "ic dd";
+  column-gap: 10px; align-items: center;
 }
-.engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
-.engage-sum {
-  margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: right;
-  font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
-  /* Its parts wrap between them, never leaving the dot at a line's end
-     (SEL-8): each dot hangs into the gap after its part, and the one that
-     would end a line overhangs the box and is clipped. */
-  display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 1em; overflow: hidden;
+.cs-fact-ic {
+  grid-area: ic; display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--sunk); color: var(--ink-soft);
 }
-.engage-dot { display: inline-block; width: 1em; margin-right: -1em; text-align: center; font-style: normal; }
-/* The label keeps its line; the summary wraps between its parts, never
-   inside one (the count joined it, 2026-10-14). */
-.engage-toggle { flex: 0 0 auto; white-space: nowrap; }
-.engage-sum > span { white-space: nowrap; }
-/* The body opens and shuts in place, on the grid row this portal animates
-   every fold with (`.crm-group-body`): 0fr to 1fr is the one height CSS can
-   move without being told what it is. Driven by a class rather than `hidden`,
-   because `hidden` is `display: none` and a display change cannot animate. */
-.engage-body {
-  display: grid; grid-template-rows: 1fr; opacity: 1;
-  transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
-}
-.engage-inner { min-height: 0; overflow: hidden; }
-.engage-card.is-shut > .engage-body { grid-template-rows: 0fr; opacity: 0; }
-.engage-body .engage-band { border-top: 1px solid var(--line-soft); }
-.progress-card {
-  padding: 16px 18px; border-top: 1px solid var(--line-soft);
-}
-.progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.progress-top b { font-size: 14px; font-weight: 600; }
-.progress-card .progress-track {
-  height: 8px; border-radius: 999px; corner-shape: round; background: var(--line-soft);
-  overflow: hidden; margin: 10px 0 0;
-}
-.progress-card .progress-fill {
-  height: 100%; background: var(--fill); border-radius: 999px; corner-shape: round;
-  transition: width var(--t-slow) var(--ease);
-}
-.progress-card.is-done .progress-fill { background: var(--ok); }
-.progress-say { font-size: 13.5px; margin-top: 10px; }
-.progress-card.is-done .progress-say { color: var(--ok); font-weight: 500; }
-/* More chosen than the slots left: said in red where the picks are made. */
-.progress-say.is-over, .progress-card.is-done .progress-say.is-over, #confirmSummary .is-over { color: var(--err); font-weight: 500; }
-.progress-new {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
-  font-size: 13px; color: var(--ink-mute);
-}
+.cs-fact-ic .ic { width: 16px; height: 16px; }
+.cs-facts dt { grid-area: dt; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.cs-facts dd { grid-area: dd; margin: 0; font-size: 14px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cs-head > .cx-standing { flex: 1 1 100%; }
 
-/* ---------- Creator list ----------
-   A list rather than cards. Ten creators is a page of cards and forty is an
-   afternoon of scrolling, and the decision is made by opening profiles and
-   comparing rates, which a row puts side by side. */
+.cs-brief {
+  display: flex; gap: 12px; align-items: flex-start; margin-top: 16px;
+  padding: 14px 18px; border-radius: var(--radius); background: var(--sunk);
+}
+.cs-brief[hidden] { display: none; }
+.cs-brief-ic { flex: 0 0 auto; display: inline-flex; padding-top: 2px; color: var(--ink-soft); }
+.cs-brief-ic .ic { width: 16px; height: 16px; }
+.cs-brief-text { min-width: 0; display: grid; gap: 4px; }
+.cs-brief-text p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-soft); overflow-wrap: anywhere; white-space: pre-line; }
+.cs-brief-text .cs-purpose { color: var(--ink); font-weight: 500; }
+
 .listhint { font-size: 13px; color: var(--ink-mute); margin: -4px 0 12px; }
-.clist { border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
-/* A comparison, on a screen wide enough to compare on: the placements a fee
-   buys are their own column beside it rather than a line under the name, and
-   the columns are named, because a fee with nothing over it is a number the
-   client has to work out what to read against. */
-.crow {
-  display: grid; align-items: center; gap: 4px 14px;
-  /* Every track is stated, because a column sized `auto` is sized by its own
-     row: the creator with two profile buttons pushed the placements column
-     ninety pixels right of the rows under it, and a value that starts
-     somewhere different on every line is what reads as unaligned. */
-  grid-template-columns: 26px var(--ctl-h) minmax(0, 1.15fr) minmax(0, .95fr) minmax(0, 1.9fr) 84px 92px;
-  grid-template-areas: "no tick name plat links rate backup";
-  padding: 12px 14px; background: var(--card);
-  border-bottom: 1px solid var(--line-soft);
-}
-.crow-head {
-  padding: 12px 14px 8px; background: var(--sunk);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute); border-bottom: 1px solid var(--line);
-}
-/* Every head cell reads 12/600, the column's own rule never outranking it
-   (2026-10-20, SEL-3). */
-.crow.crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
-  text-transform: inherit; color: inherit; }
-.crow-head .crow-plat > span { margin: 0; }
-/* Left aligned, like the two columns before it. Right aligned, the cell ended
-   at the same x but *started* wherever its contents happened to: the creator
-   with two profile buttons began at 703px and the three with one began at
-   868px, so a column built to be compared down could not be. A column starts
-   at the same x on every row or it is not a column. */
-.crow-head .crow-links { justify-content: flex-start; }
-.crow-tick-cell { grid-area: tick; }
-.crow-backup-cell { grid-area: backup; text-align: center; }
-.crow:last-child { border-bottom: 0; }
-.crow.is-on { background: var(--line-soft); }
-.crow.is-backup { background: repeating-linear-gradient(135deg, var(--card) 0 8px, var(--line-soft) 8px 16px); }
+.listhint.is-priority { color: var(--ink); font-weight: 500; }
 
-.crow-no { grid-area: no; }
-/* The box stays 24px; the button around it is a full-size target and the
-   negative margin keeps the row's footprint unchanged. */
-.crow-tick {
-  grid-area: tick; width: var(--ctl-h); height: var(--ctl-h); flex: 0 0 auto; padding: 0;
-  margin: calc((24px - var(--ctl-h)) / 2); border: 0; background: none;
-  display: inline-grid; place-items: center; color: transparent;
+/* The creators beside the cart: 1.618 : 1 at a desk (DESIGN.md §8). */
+.cs-body {
+  display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr);
+  gap: 24px; align-items: start; margin-top: 24px;
 }
-.crow-tick::before {
+.cs-body[hidden] { display: none; }
+.cs-main { min-width: 0; }
+.cs-main > .actstrip { padding-top: 0; }
+.cs-main .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+.cs-main > .actstrip[hidden] { display: none; }
+.cs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cs-empty { grid-column: 1 / -1; margin: 0; padding: 16px 0; font-size: 14px; color: var(--ink-mute); }
+
+.cs-card {
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  padding: 16px 18px; border-radius: var(--radius); background: var(--sunk);
+  transition: background var(--t-fast) var(--ease-out), outline-color var(--t-fast) var(--ease-out);
+  outline: 1.5px solid transparent; outline-offset: -1.5px;
+}
+.cs-card.is-on { background: var(--card); outline-color: var(--action); }
+.cs-top { display: flex; align-items: flex-start; gap: 12px; }
+.cs-name { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.cs-name .rowno { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.cs-name b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; min-width: 0; }
+.cs-name .chip { align-self: center; }
+/* The round tick: a ring, and once selected a blue disc with a white tick;
+   its press a control's box, given back to the title line. */
+.cs-tick {
+  flex: 0 0 auto; display: inline-grid; place-items: center; padding: 0; border: 0; background: none;
+  width: var(--ctl-h); height: var(--ctl-h); margin: calc((22px - var(--ctl-h)) / 2); color: transparent; cursor: pointer;
+}
+.cs-tick::before {
   content: ''; grid-area: 1 / 1; width: 24px; height: 24px; box-sizing: border-box;
-  border: 1.5px solid var(--line-ctl); border-radius: 7px; background: var(--card);
+  border: 1.5px solid var(--line-ctl); border-radius: 50%; corner-shape: round; background: var(--card);
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
-.crow-tick svg { grid-area: 1 / 1; width: 14px; height: 14px; position: relative; }
-.crow-tick:hover:not([disabled])::before { border-color: var(--ink-mute); }
-.crow.is-on .crow-tick::before { background: var(--fill); border-color: var(--fill); }
-.crow.is-on .crow-tick { color: var(--on-fill); }
-.crow-tick[disabled] { opacity: .35; }
-
-.crow-name { grid-area: name; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.crow-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
-/* Its own line under the name: the meta a row's money is read against. */
-.crow-plat {
-  grid-area: plat; min-width: 0; font-size: 12.5px; color: var(--ink-soft);
+.cs-tick .ic { grid-area: 1 / 1; width: 14px; height: 14px; stroke-width: 2.6; position: relative; }
+.cs-tick[aria-pressed="true"]::before { background: var(--action); border-color: var(--action); }
+.cs-tick[aria-pressed="true"] { color: var(--on-action); }
+.cs-tick[aria-disabled="true"]::before { opacity: .45; }
+@media (hover: hover) { .cs-tick:not([aria-disabled="true"]):not([aria-pressed="true"]):hover::before { border-color: var(--ink-mute); } }
+.cs-links { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.cs-links .plink .ic, .cs-links .plink .ic-mark { width: 14px; height: 14px; opacity: 1; }
+.cs-card.is-on .ic-cut { fill: var(--card); }
+.cs-msg { margin: 0; }
+.cs-msg[hidden] { display: none; }
+.cs-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line);
 }
-.crow-plat:empty { display: none; }
-/* The label belongs to the phone layout, where the value has no column head
-   to sit under. */
-.crow:not(.crow-head) .crow-plat > span { display: none; }
-.crow-plat > span { color: var(--ink-mute); margin-right: 6px; }
+.cs-fee { display: grid; gap: 2px; min-width: 0; flex: 1 1 0; }
+.cs-backup { flex: 0 0 auto; }
+.cs-fee b { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cs-fee small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.cs-backup .ic { width: 14px; height: 14px; }
+/* A selected card is white, so its tonal button keeps its shade on it. */
+.cs-backup.is-on { background: var(--fill); color: var(--on-fill); }
+.cs-backup.is-on .ic { fill: currentColor; }
+@media (hover: hover) { .cs-backup.is-on:hover { background: var(--fill); color: var(--on-fill); filter: brightness(1.15); } }
 
-/* The thing they came to click, so it looks like something to click. */
-.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-start; }
+/* The cart, as Build quote's Summary: sticky under the bar at a desk. */
+.cs-cart { position: sticky; top: calc(var(--head-h) + 16px); gap: 12px; }
+.cs-cart[hidden] { display: none; }
+.cs-cart-head { display: flex; align-items: center; gap: 10px; }
+.cs-cart-head h2 { margin: 0; flex: 0 1 auto; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.cs-cart-head .tab-n { margin-left: 0; }
+.cs-cart-ic { display: inline-flex; color: var(--ink-soft); }
+.cs-cart-ic .ic { width: 16px; height: 16px; }
+.cs-cart-close { margin-left: auto; display: none; }
+.cs-cart.is-sheet .cs-cart-close { display: inline-flex; }
+.cs-say { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+.cs-say.is-done { color: var(--ok); font-weight: 500; }
+.cs-say.is-over, .cs-bar-sum .is-over { color: var(--err); font-weight: 500; }
+.cs-say.cs-mute { color: var(--ink-mute); }
+.cs-say[hidden], .cs-backups[hidden], .cs-lines[hidden], .cs-totals[hidden] { display: none; }
+.cs-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cs-lines li { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.cs-lines li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.cs-lines li span:last-child { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.cs-backups { margin: 0; font-size: 13px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.cs-totals { margin: 0; padding-top: 12px; border-top: 1px solid var(--line); max-width: none; }
+.cs-totals .is-total { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.cs-submit { width: 100%; }
+
+/* The cart on a phone: a bar at the foot, above the safe area; its two
+   acts ordinary buttons at the control's height, equal halves. */
+.cs-bar { display: none; }
+.cs-cartsheet .sheet-body { padding-bottom: 0; }
+.cs-cart.is-sheet { position: static; padding: 0 0 18px; background: none; }
+@media (max-width: 640px) {
+  .cs-head { gap: 14px; padding-bottom: 16px; }
+  .cs-facts { flex: 1 1 100%; flex-direction: column; gap: 8px; }
+  .cs-facts > div { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ic dt dd"; }
+  .cs-fact-ic { width: 28px; height: 28px; }
+  .cs-fact-ic .ic { width: 14px; height: 14px; }
+  .cs-facts dt { font-size: 14px; font-weight: 400; color: var(--ink-soft); }
+  .cs-body { grid-template-columns: minmax(0, 1fr); margin-top: 16px; }
+  .cs-grid { grid-template-columns: minmax(0, 1fr); }
+  .cs-main .cmdbar-views.actviews { display: flex; }
+  .cs-body > .cs-cart { display: none; }
+  .cs-bar:not([hidden]) {
+    display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-bar);
+    background: var(--card); border-top: 1px solid var(--line);
+  }
+  .cs-bar-in { display: grid; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .cs-bar-sum { margin: 0; display: grid; gap: 2px; min-width: 0; }
+  .cs-bar-sum b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cs-bar-sum span { font-size: 12.5px; color: var(--ink-mute); }
+  .cs-bar-acts { display: flex; gap: 8px; }
+  .cs-bar-acts > .btn { flex: 1 1 50%; min-width: 0; white-space: nowrap; padding-inline: 10px; }
+  .cs-bar-acts > .btn[hidden] { display: none; }
+  .cs-bar-acts .tab-n { margin-left: 6px; }
+  /* The page keeps its last card clear of the bar. */
+  :root.has-csbar .shell { padding-bottom: 150px; }
+}
+
 /* The way to reach a person or open their profile: the one outlined chip in
    the portal, on every page (the user, 2026-09-28: "outlined chip is contact
    button and applies sitewide"). Outlined, so it never reads as a state chip
@@ -3330,93 +3323,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .plink svg { width: 12px; height: 12px; opacity: .65; flex: 0 0 auto; }
 @media (hover: hover) { .plink:hover { background: var(--sunk); color: var(--ink); } }
-
-.crow-rate {
-  grid-area: rate; font-size: 14px; font-weight: 600; letter-spacing: -.01em;
-  font-variant-numeric: tabular-nums; text-align: right; min-width: 76px;
-}
-
-/* Was an underlined word, which read as fine print rather than a control. */
-/* Same corner as the profile buttons it stands beside: two shapes in one row
-   read as two unrelated systems. */
-.crow-backup {
-  grid-area: backup; flex: 0 0 auto; white-space: nowrap;
-  border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--tonal);
-  min-height: var(--ctl-h); padding: 0 11px; font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
-}
-@media (hover: hover) { .crow-backup:hover { background: var(--tonal-hover); color: var(--ink); } }
-/* A ticked row is shaded, and the tonal button on it all but vanished
-   (#dedede on #ececec): it takes the card's white there (SEL-6). */
-.crow.is-on .crow-backup:not(.is-on) { background: var(--card); }
-@media (hover: hover) { .crow.is-on .crow-backup:not(.is-on):hover { background: var(--sunk); } }
-.crow-backup.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
-
-.tag-new {
-  font-size: 11px; font-weight: 700; letter-spacing: 0;
-  padding: 2px 6px; border-radius: 4px; background: var(--fill); color: var(--on-fill);
-}
-.tag-rep {
-  font-size: 11px; font-weight: 600;
-  padding: 2px 7px; border-radius: 4px; background: var(--line-soft); color: var(--ink-soft);
-}
-
-/* The client's creator list on a phone (640 and under, the phone line, so
-   a folded-open phone at 626 reads it as a 390 one does). Name and rate read
-   as one line, the placements under the name with their label, the things
-   to tap on the next. Below 640 the desk's seven named tracks no longer fit,
-   and the four-track row that stood here kept the header and gave the
-   placements no area: the header broke into three lines and an implicit
-   track moved the fee and Backup on the rows that held one placement. */
-@media (max-width: 640px) {
-  .crow {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "no tick name rate" "no . plat plat" "no . links backup";
-    gap: 8px 10px; padding: 12px 14px;
-  }
-  .crow-tick, .crow-no { align-self: start; }
-  .crow-no { padding-top: 3px; }
-  /* Four labels over a phone's row is furniture, so the header leaves and
-     the placements go back under the name with their label. */
-  .crow-head { display: none; }
-  .crow:not(.crow-head) .crow-plat > span { display: inline; margin-right: 6px; color: var(--ink-mute); }
-  .crow-plat { font-size: 12px; margin-top: -2px; }
-  /* The name carries a second line, so the fee sits against the first one
-     rather than floating halfway down it. */
-  .crow-rate { min-width: 0; align-self: start; }
-  .crow-backup { align-self: start; padding: 0 13px; }
-  /* Two profile chips stack in the cell: each takes its width, so they
-     read as one pair rather than two lengths (SEL-5). */
-  .crow-links:has(> .plink + .plink) > .plink { flex: 1 1 100%; justify-content: center; }
-}
-
-/* ---------- Confirm bar ---------- */
-/* Bleeds to the page edge, so the negative margin has to be the shell's own
-   gutter. A guessed 20px sat inside it on desktop and overflowed it on a
-   phone, where the gutter is 16. */
-.confirmbar {
-  position: sticky; bottom: 0; z-index: var(--z-bar); margin: 18px -24px 0;
-  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
-  border-top: 1px solid var(--line);
-}
-.confirmbar-in {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 12px 24px; font-size: 13.5px;
-}
-
-@media (max-width: 640px) {
-  .tabrow { overflow-x: auto; }
-  .prof-read { min-width: 0; flex: 1 1 100%; }
-  .confirmbar { margin-left: -16px; margin-right: -16px; }
-  .confirmbar-in { flex-direction: column; align-items: stretch; gap: 9px; padding: 12px 16px; }
-  .confirmbar-in .btn { width: 100%; }
-}
-
-/* The KOC list has always gone out as a printed sheet, so it still can. */
-@media print {
-  .langtoggle, .confirmbar, .crow-tick, .crow-backup, .progress-new { display: none !important; }
-  .crow { break-inside: avoid; }
-  .progress-card { border-color: #ccc; }
-}
 
 .qrrow.is-off { opacity: .55; }
 .qrrow-img canvas, .qrrow-img img { display: block; border-radius: 4px; }
@@ -3633,25 +3539,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .postrow-head span { font-size: 12px; color: var(--ink-mute); }
 .postrow .msg:empty { display: none; }
 
-/* The engagement, above everything: how many creators, when it is due, the
-   invoice and the money. "Your campaign" below is then only the creators. */
-.engage-card {
-  border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
-  padding: 0; margin: 12px 0;
-}
-.engage-card .booking-facts { margin: 0; }
-.engage-card .amountfold {
-  border: 0; border-top: 1px solid var(--line-soft); border-radius: 0;
-  /* The hairline is 12px under the facts and the Amount row's ink is 16px
-     under the hairline, which is what the band's own floor gives it below.
-     It was 4px above and 26 below: the row is a 44px target holding a 20px
-     line, so the slack inside the button was counted only at the bottom. The
-     toggle takes the negative block margin every other bare control in this
-     portal takes, so its footprint is its label's line and its target is
-     untouched. */
-  margin: 12px 0 0; padding: 16px 0 0;
-}
-.engage-card .amountfold-btn { margin-block: calc((20px - var(--ctl-h)) / 2); }
 .rollup-card {
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin: 0 0 12px;
@@ -3719,14 +3606,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .amountfold-link:hover { color: var(--ink); text-decoration: underline; }
 .amountfold .totals { margin: 6px 0 8px; max-width: none; }
 
-/* Backups are part of the selection, so their count sits with the count. */
-.progress-backup { color: var(--ink-mute); margin-top: 4px; }
-.progress-backup.is-ok { color: var(--ok); }
-.listhint.is-priority { color: var(--ink); font-weight: 500; }
-.tag-pri {
-  font-size: 11px; font-weight: 600; letter-spacing: 0;
-  padding: 2px 7px; border-radius: 4px; background: var(--line-soft); color: var(--ink-soft);
-}
 
 .rate-edit .slugfield { width: 150px; }
 .rate-edit .input { min-width: 0; width: 100%; }
@@ -3819,9 +3698,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .totals > div span:last-child { font-variant-numeric: tabular-nums; }
 .totals .is-total { padding-top: 6px; border-top: 1px solid var(--line); font-weight: 600; color: var(--ink); font-size: 14.5px; }
 #confirmTotals { margin-top: 10px; }
-.confirmbar-in > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.confirmbar-in > span b { font-size: 14px; }
-.confirmbar-in > span .muted { font-size: 12.5px; }
 
 /* The invoice, once there is one. */
 .topbar .headlink { margin-right: 8px; text-decoration: none; }
@@ -3918,7 +3794,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* Full label on a phone too: the client has to know which profile they are
      opening. They wrap to their own lines rather than being abbreviated. */
   .plink { padding-inline: 11px; }
-  .crow-links { flex: 1 1 100%; }
 
   /* A sheet sits on the floor of a phone rather than floating in a dark room;
      the shape is set at 640, and this is the gutter it takes below that. */
@@ -5081,12 +4956,11 @@ body > .shell { width: 100%; }
 .navitem:active,
 .tab:active,
 .acttab:active,
-.crow-tick:active:not([disabled]),
-.crow-backup:active,
+.cs-tick:active:not([aria-disabled="true"]),
 .langtoggle:active,
 .plink:active,
 .state-select:active { transform: scale(.97); }
-.kmenu-item, .navitem, .tab, .acttab, .plink, .langtoggle, .crow-backup, .state-select {
+.kmenu-item, .navitem, .tab, .acttab, .plink, .langtoggle, .state-select {
   transition: background var(--t) var(--ease-out), color var(--t) var(--ease-out),
               border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
@@ -5124,7 +4998,7 @@ body > .shell { width: 100%; }
     transition-duration: .01ms !important; scroll-behavior: auto !important;
   }
   .btn:active, .iconbtn:active, .kmenu-item:active, .navitem:active, .tab:active,
-  .acttab:active, .crow-tick:active, .crow-backup:active, .langtoggle:active,
+  .acttab:active, .cs-tick:active, .langtoggle:active,
   .plink:active, .state-select:active, .pbox:active { transform: none; }
 }
 
@@ -7782,7 +7656,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .portalfoot-link { position: relative; }
   .portalfoot-link::after { content: ''; position: absolute; left: -8px; right: -8px; bottom: 0; height: var(--tap); }
 }
-.confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
   .console-body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
@@ -9260,8 +9133,6 @@ body.is-maint { overflow: hidden; }
 }
 /* What sits at the foot keeps clear of the bar. */
 :root.has-tabbar .console-body { padding-bottom: calc(32px + var(--tabbar-space)); }
-:root.has-tabbar .confirmbar { bottom: var(--tabbar-space); }
-:root.has-tabbar .confirmbar-in { padding-bottom: 12px; }
 :root.has-tabbar .popcard.is-dock { bottom: calc(12px + var(--sheet-floor)); }
 /* Every panel is a card above the bar (the user, 2026-10-11: "every panel
    opens a card above the bar on mobile"), as More is: a sheet, a question,
@@ -9335,7 +9206,6 @@ body.is-maint { overflow: hidden; }
   transform: translateY(var(--tx, 0px));
 }
 :root.has-tabbar.tabbar-side .console-body { padding-right: var(--tabbar-room); }
-:root.has-tabbar.tabbar-side .confirmbar { margin-right: 0; }
 :root.has-tabbar.tabbar-side .sidebar {
   right: var(--tabbar-room); bottom: var(--tabbar-bottom);
   max-height: calc(100vh - var(--tabbar-bottom) - var(--head-h) - 16px);
