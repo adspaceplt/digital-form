@@ -271,6 +271,11 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
     and the template's page count, and a draft and a white-label report the
     page count alone;
+  - a quotation's section heads carry an outline glyph alone (0.75pt in
+    `#515151`, about 10pt, never filled) in an 18pt `#f5f5f5` disc on the
+    heading's capitals, never a number; its billing note in the mute ink at
+    the label size on the heading's baseline at the right margin; PROPOSED
+    FEES alone on its row (2026-11-25);
   - a quotation's Add-on Rates are a block anchored above the foot of its
     fees page, as a sealed copy's Record is, two columns with dotted
     leaders and the unit mute, never in a total; where it does not fit it
