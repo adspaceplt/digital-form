@@ -53,7 +53,7 @@
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Messages, WhatsApp templates.',
     'no-number': 'This prospect has no WhatsApp number. Add one in Contacts first.',
     'wa-limit': 'Today\'s WhatsApp limit for website quotations has been reached. Send the quotation tomorrow, or raise the limit in Settings, Messages, Website quotations.',
-    'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.',
+    'no-fx': window.ADspaceWords.line.fxUnset,
     /* Signing, submitting and reviewing (QUOTATION SIGNING, 2026-10-31). */
     'not-signed': 'This quotation has not been signed. Mark it signed, or send the client the link to sign.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
@@ -1243,7 +1243,7 @@
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
     creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Accounting, Bukku.',
     nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
-    'no-fx': 'Set the Singapore dollar rate in Settings, Accounting, Tax and terms.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
+    'no-fx': window.ADspaceWords.line.fxUnset, 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
     'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Accounting, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
     withdrawn: 'This quotation has been withdrawn. No further invoices can be created from it.',

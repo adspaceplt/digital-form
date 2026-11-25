@@ -26,7 +26,8 @@
  *                               o.named (20 Nov 2026 (Friday); with o.zh
  *                               2026年11月20日（星期五）): a day the reader
  *                               waits on carries its weekday; o.named
- *                               'ahead' only while the day has not passed
+ *                               'ahead' only while the day has not passed;
+ *                               o.short the weekday cut (22 Sept (Tue))
  *   ADspaceClock.due(v, o)      a moment the reader waits on: 20 Nov 2026
  *                               (Friday), 12:30pm; o.zh 2026年11月20日（星期五）
  *                               下午12:30; o.space (12:30 pm)
@@ -124,9 +125,12 @@
     /* 'ahead': the weekday only while the day is today or later, so a
        shoot or a deadline gone by reads as history. */
     if (o.named === 'ahead') o = Object.assign({}, o, { named: dayOf(p.y, p.mo, p.d) >= today() });
-    if (o.zh) return (o.year === false ? '' : p.y + '年') + (p.mo + 1) + '月' + p.d + '日' + (o.named ? '（' + WD_ZH[p.wd] + '）' : '');
+    /* o.short: the weekday cut, where a fact has a narrow box (22 Sept (Tue),
+       9月22日（周二）; the selection page's head, 2026-11-25). */
+    if (o.zh) return (o.year === false ? '' : p.y + '年') + (p.mo + 1) + '月' + p.d + '日' +
+      (o.named ? '（' + (o.short ? '周' + WD_ZH[p.wd].slice(2) : WD_ZH[p.wd]) + '）' : '');
     return (o.weekday ? WD[p.wd] + ', ' : '') + p.d + ' ' + (o.long ? LONG : MON)[p.mo] + (o.year === false ? '' : ' ' + p.y) +
-      (o.named ? ' (' + WDAY[p.wd] + ')' : '');
+      (o.named ? ' (' + (o.short ? WD : WDAY)[p.wd] + ')' : '');
   }
   /* A date and time the reader waits on (a deadline, an appointment, a page
      back by): the weekday in brackets after the date, then the time
