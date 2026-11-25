@@ -79,6 +79,8 @@
     card.appendChild(tip);
     var shown = null;
     function show(mark) {
+      /* While figures are hidden (js/admin.js), a mark tells none. */
+      if (document.documentElement.classList.contains('figs-off')) return;
       shown = mark;
       tip.textContent = mark.getAttribute('data-tip');
       tip.hidden = false;
@@ -370,6 +372,8 @@
     }).join('; ');
   }
 
+  function bareOf(spec) { return spec.title || spec.name || 'Chart'; }
+  function figsOff() { return document.documentElement.classList.contains('figs-off'); }
   function draw(host, spec) {
     spec = spec || {};
     var fmt = spec.fmt || plain;
@@ -393,7 +397,10 @@
       : spec.kind === 'meter' ? meter(spec, fmt)
       : bars(spec, fmt);
     card.innerHTML = head +
-      '<div class="chart-plot" role="img" aria-label="' + esc(nameOf(spec, fmt)) + '">' + body + '</div>' +
+      /* Its name reads the figures; while they are hidden (js/admin.js)
+         it is the chart's title alone. */
+      '<div class="chart-plot" role="img" aria-label="' + esc(figsOff() ? bareOf(spec) : nameOf(spec, fmt)) + '" data-figs-say="' + esc(nameOf(spec, fmt)) +
+        '" data-figs-bare="' + esc(bareOf(spec)) + '">' + body + '</div>' +
       keyHtml(spec.kind === 'columns' || spec.kind === 'line' ? spec.series : null, spec.kind === 'line' && spec.band && spec.bandWord) +
       (spec.kind === 'bars' && spec.markLabel && (spec.rows || []).some(function (r) { return num(r.mark) > 0; })
         ? '<ul class="chart-key"><li><i class="is-mark"></i>' + esc(spec.markLabel) + '</li></ul>' : '') +
