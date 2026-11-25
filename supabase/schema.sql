@@ -156420,4 +156420,204 @@ create or replace trigger quotation_drafts_clear
 
 -- END OF QUOTATION DRAFTS ------------------------------------------------------
 
+-- ===========================================================================
+-- CREATOR BILLS GONE BY THEIR OWN CONTACT (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (the Bukku review). `creator_bills_take` marked
+-- gone every bill of the creator that one read did not hold. A read is of
+-- one Bukku contact, so a creator paid through two sets of payment details
+-- lost the other contact's bills: their bookings read as not billed and
+-- could be billed, and paid, again.
+--
+-- WHAT CHANGES
+--   * `creator_bills_take`: a bill is marked gone only among the bills of
+--     the contact just read (`y.contact_id = p_contact`). Restated from THE
+--     SUPPLIER'S REFERENCE NO. ON BUKKU LISTS with that filter alone.
+--   * Existing rows are not changed; the next read of each contact sets
+--     its own bills right.
+--
+-- ORDER: this file (connector), then bukku-sync. No page calls it.
+-- Safe to run twice.
+-- ROLLBACK: run `creator_bills_take` from THE SUPPLIER'S REFERENCE NO. ON
+-- BUKKU LISTS again.
+-- ===========================================================================
+
+-- CREATOR BILLS GONE BY THEIR OWN CONTACT ------------------------------------
+
+create or replace function public.creator_bills_take(p_creator uuid, p_contact bigint, p_rows jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  x jsonb; b public.creator_bills; v_id bigint; v_status text; v_opt uuid; v_n int := 0; v_paid int := 0;
+  v_seen bigint[] := '{}'; v_post boolean;
+begin
+  if p_creator is null or jsonb_typeof(p_rows) is distinct from 'array' then return jsonb_build_object('error', 'bad-request'); end if;
+  for x in select * from jsonb_array_elements(p_rows) loop
+    v_id := (x->>'id')::bigint;
+    if v_id is null then continue; end if;
+    v_seen := v_seen || v_id;
+    select * into b from public.creator_bills y where y.bill_id = v_id for update;
+    -- A bill the portal made keeps its booking, whatever its reference reads now.
+    v_opt := coalesce(b.made_for,
+      case when coalesce(x->>'made_for', '') ~ '^[0-9a-f-]{36}$' then (x->>'made_for')::uuid end,
+      public.creator_bill_option(p_creator, x->>'ref', x->>'number'));
+    -- A bill read with no balance keeps the state it had, never Paid by default.
+    v_status := case when coalesce(x->>'draft', '') = 'true' then 'draft'
+                     when nullif(x->>'balance', '') is null then coalesce(nullif(b.status, 'draft'), 'processing')
+                     when (x->>'balance')::numeric <= 0 then 'paid' else 'processing' end;
+    v_post := v_opt is not null and exists (select 1 from public.campaign_options o where o.id = v_opt and o.posted_on is not null);
+    if b.bill_id is null then
+      insert into public.creator_bills (bill_id, creator_id, contact_id, number, ref, ref_no, bill_date, amount, balance, currency, status,
+                                        option_id, made_for, read_at, paid_seen_at, paid_told_at, paid_on)
+      values (v_id, p_creator, p_contact, left(x->>'number', 60), left(x->>'ref', 200),
+              left(nullif(btrim(x->>'ref_no'), ''), 60), nullif(x->>'date', '')::date,
+              (x->>'amount')::numeric, nullif(x->>'balance', '')::numeric, left(coalesce(x->>'currency', 'MYR'), 3), v_status, v_opt,
+              case when coalesce(x->>'made_for', '') ~ '^[0-9a-f-]{36}$' then (x->>'made_for')::uuid end, now(),
+              case when v_status = 'paid' then now() end,
+              case when v_status = 'paid' then now() end,
+              case when v_status = 'paid' then nullif(x->>'paid_on', '')::date end);
+      -- A bill first read already paid is told only for a booking posted in the
+      -- portal; one from before the portal (no posted day) tells nobody.
+      if v_status = 'paid' and v_post then
+        perform public.creator_mail_job('paid', v_opt);
+        v_paid := v_paid + 1;
+      end if;
+    else
+      update public.creator_bills y set creator_id = p_creator, contact_id = p_contact, number = left(x->>'number', 60),
+        ref = left(x->>'ref', 200), ref_no = left(nullif(btrim(x->>'ref_no'), ''), 60), bill_date = nullif(x->>'date', '')::date, amount = (x->>'amount')::numeric,
+        balance = coalesce(nullif(x->>'balance', '')::numeric, y.balance), currency = left(coalesce(x->>'currency', 'MYR'), 3), status = v_status,
+        option_id = v_opt, gone = false, read_at = now(),
+        paid_seen_at = case when v_status = 'paid' then coalesce(y.paid_seen_at, now()) end,
+        paid_on = case when v_status = 'paid' then coalesce(nullif(x->>'paid_on', '')::date, y.paid_on) end
+       where y.bill_id = v_id;
+      if v_status = 'paid' and b.status in ('processing', 'draft') and b.paid_told_at is null and v_opt is not null then
+        update public.creator_bills y set paid_told_at = now() where y.bill_id = v_id;
+        perform public.creator_mail_job('paid', v_opt);
+        v_paid := v_paid + 1;
+      end if;
+    end if;
+    v_n := v_n + 1;
+  end loop;
+  -- Gone only among this contact's bills: a creator paid through two sets of
+  -- payment details keeps the other contact's bills (2026-11-25).
+  update public.creator_bills y set gone = true
+   where y.creator_id = p_creator and y.contact_id = p_contact and not (y.bill_id = any(v_seen)) and not y.gone;
+  return jsonb_build_object('ok', true, 'bills', v_n, 'told', v_paid);
+end $$;
+revoke all on function public.creator_bills_take(uuid, bigint, jsonb) from public, anon, authenticated;
+grant execute on function public.creator_bills_take(uuid, bigint, jsonb) to service_role;
+
+-- END OF CREATOR BILLS GONE BY THEIR OWN CONTACT -----------------------------
+
+-- ===========================================================================
+-- BUKKU MADE ONCE (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (the Bukku review, "approve all the fixes"). A
+-- contact Bukku made whose link the portal failed to file, or whose answer
+-- timed out, let the claim go, so the next Send made a second contact; a
+-- bill made whose list then failed to read let its hold go, so the next
+-- press could make a second bill.
+--
+-- WHAT CHANGES
+--   * `bukku_send_claims` keeps `sent_code` (the contact code a new contact
+--     was sent under) and `made_contact` (the contact Bukku made).
+--   * `bukku_send_claim` answers them when a record is claimed again, so
+--     bukku-sync links that contact rather than making another.
+--   * `bukku_send_sent(p_kind, p_id, p_code, p_contact)` writes them on the
+--     caller's claim before and after the contact is sent.
+--   * `bukku_send_release` clears them once the send is settled.
+--   * `creator_bill_made(p_option, p_number)` files a bill made in Bukku and
+--     keeps the press held ten minutes more, for a bill whose list was not
+--     read back.
+--
+-- ORDER: this file (connector), then bukku-sync. Until bukku-sync is
+-- deployed nothing calls the new function, and the claim answers two keys
+-- more. Safe to run twice.
+-- ROLLBACK: run BUKKU SEND CLAIMED's `bukku_send_claim` and
+-- `bukku_send_release` again and redeploy the previous bukku-sync; the two
+-- columns and two functions may stay unused.
+-- ===========================================================================
+
+-- BUKKU MADE ONCE ------------------------------------------------------------
+
+alter table public.bukku_send_claims add column if not exists sent_code text;
+alter table public.bukku_send_claims add column if not exists made_contact bigint;
+
+create or replace function public.bukku_send_claim(p_kind text, p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_got boolean;
+  k public.bukku_send_claims;
+begin
+  if me.id is null or not public.bukku_may(p_kind, p_id, 'work') then return jsonb_build_object('error', 'denied'); end if;
+  insert into public.bukku_send_claims as c (kind, record_id, claimed_at, claimed_by)
+  values (p_kind, p_id, now(), me.id)
+  on conflict (kind, record_id) do update set claimed_at = now(), claimed_by = me.id
+   where c.claimed_at is null or c.claimed_at < now() - interval '2 minutes'
+  returning true into v_got;
+  if v_got is null then return jsonb_build_object('error', 'busy'); end if;
+  -- What an earlier send left unsettled: the code it was sent under, and
+  -- the contact Bukku made, so the contact is linked, never made twice.
+  select * into k from public.bukku_send_claims x where x.kind = p_kind and x.record_id = p_id;
+  return jsonb_build_object('ok', true, 'sent_code', k.sent_code, 'made', k.made_contact);
+end $$;
+revoke all on function public.bukku_send_claim(text, uuid) from public, anon;
+grant execute on function public.bukku_send_claim(text, uuid) to authenticated;
+
+create or replace function public.bukku_send_sent(p_kind text, p_id uuid, p_code text, p_contact bigint)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  update public.bukku_send_claims c
+     set sent_code = coalesce(left(nullif(btrim(coalesce(p_code, '')), ''), 40), c.sent_code),
+         made_contact = coalesce(p_contact, c.made_contact)
+   where c.kind = p_kind and c.record_id = p_id and c.claimed_by = me.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_send_sent(text, uuid, text, bigint) from public, anon;
+grant execute on function public.bukku_send_sent(text, uuid, text, bigint) to authenticated;
+
+create or replace function public.bukku_send_release(p_kind text, p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  update public.bukku_send_claims c set claimed_at = null, sent_code = null, made_contact = null
+   where c.kind = p_kind and c.record_id = p_id and c.claimed_by = me.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_send_release(text, uuid) from public, anon;
+grant execute on function public.bukku_send_release(text, uuid) to authenticated;
+
+-- A bill made in Bukku whose list was not read back: filed as made, and the
+-- press held ten minutes more, so a second press makes no second bill.
+create or replace function public.creator_bill_made(p_option uuid, p_number text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  o  public.campaign_options;
+  f  public.creator_fees;
+  c  public.creators;
+begin
+  if me.id is null or not public.ops_granted('campaigns.pay', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into o from public.campaign_options x where x.id = p_option;
+  if o.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.creator_bill_claims k set claimed_at = now() where k.option_id = o.id;
+  if nullif(btrim(coalesce(p_number, '')), '') is not null then
+    select * into f from public.creator_fees x where x.option_id = o.id;
+    select * into c from public.creators x where x.id = o.creator_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'creator.updated', c.name,
+            coalesce(public.creator_job_ref(o.id) || ' · ', '') || 'Bill ' || left(btrim(p_number), 60) || ' created in Bukku · '
+            || public.creator_fee_word(f.amount, f.currency));
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.creator_bill_made(uuid, text) from public, anon;
+grant execute on function public.creator_bill_made(uuid, text) to authenticated;
+
+-- END OF BUKKU MADE ONCE -----------------------------------------------------
+
 select public.functions_tidy();

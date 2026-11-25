@@ -750,7 +750,8 @@ export function paidOn(bill: any, self: RegExp = /bill/): string | null {
 }
 /* `made`: a bill Create bill just made, by Bukku's own ID, held to its
    booking from then on (`made_for`), whatever its reference reads later. */
-async function creatorBills(creator: string, contact: number, made?: { id: number; option: string }): Promise<any> {
+async function creatorBills(creator: string, contact: number, made?: { id: number; option: string } | { id: number; option: string }[]): Promise<any> {
+  const pins = (Array.isArray(made) ? made : made ? [made] : []).filter((m) => m && m.id > 0);
   const out: any[] = [];
   for (let page = 1; page <= 20; page++) {
     const r = await bukku('GET', `/purchases/bills?contact_id=${contact}&page=${page}&page_size=100`);
@@ -759,7 +760,8 @@ async function creatorBills(creator: string, contact: number, made?: { id: numbe
       if (!x || !x.id || Number(x.contact_id) !== contact) continue;
       if (x.status && !['draft', 'ready', 'paid'].includes(String(x.status))) continue;
       const b: any = billOf(x);
-      if (made && b.id === made.id) b.made_for = made.option;
+      const pin = pins.find((m) => m.id === b.id);
+      if (pin) b.made_for = pin.option;
       out.push(b);
     }
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
@@ -813,7 +815,10 @@ async function billHolding(contact: number, ref: string): Promise<string | null>
   const r = await bukku('GET', `/purchases/bills?search=${encodeURIComponent(ref)}&contact_id=${contact}&page=1&page_size=100`);
   for (const x of ((r && r.transactions) || []) as any[]) {
     if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
-    if (key([x.number2, x.reference, x.title, x.description, x.remarks, x.number].join(' ')).includes(k)) return String(x.number || x.id);
+    /* The reference matched whole in one field, as invoiceHolding does: a
+       match inside a longer one took ADC0001/CC1001's bill for
+       ADC0001/CC100's (the Bukku review, 2026-11-25). */
+    if ([x.number2, x.reference].some((f) => key(f) === k)) return String(x.number || x.id);
   }
   return null;
 }
@@ -867,7 +872,15 @@ export function accountOf(raw: any, code: string): number | null {
 }
 /* The item a creator's bill is made on, from the Business settings the
    database answered: the product by its SKU, the account by its code. */
-async function billItem(p: any): Promise<any> {
+/* What a bill is made of; a run of bills reads it once (see createbill). */
+async function billItem(p: any, seen?: Map<string, any>): Promise<any> {
+  const key = [p.sku, p.account_code, p.class_code].join('|');
+  if (seen && seen.has(key)) return seen.get(key);
+  const v = await billItemRead(p);
+  if (seen && !v.error) seen.set(key, v);
+  return v;
+}
+async function billItemRead(p: any): Promise<any> {
   const r = await bukku('GET', `/products?search=${encodeURIComponent(String(p.sku))}&page=1&page_size=100`);
   const prod = productOf(r, String(p.sku));
   if (!prod) return { error: 'no-product', sku: String(p.sku) };
@@ -1165,6 +1178,9 @@ export async function monthInvoices(contacts: number[], from: string, to: string
    earliest instalment still owing, else the last, else the invoice's date;
    its state Paid where no balance stands, Overdue where its due date has
    passed, else Outstanding. */
+/* The client portal's invoice reads, kept a client's contacts at a time. */
+const PORTAL_KEEP_MS = 3 * 60 * 1000;
+const portalKept = new Map<string, { at: number; read: Promise<any[]> }>();
 export async function portalInvoices(contacts: number[], today: string): Promise<any[]> {
   const want = new Set(contacts.map(Number));
   const from = monthStart(today, 24);
@@ -1525,8 +1541,10 @@ export function jobHits(rows: any[], jobs: string[]): Map<number, string> {
   const keys = jobs.map((j) => [j, refKey(j)] as [string, string]).filter(([, k]) => k.length >= 4);
   for (const x of rows) {
     if (!x || !x.contact_id) continue;
-    const b = billOf(x), ref = refKey(b.ref), no = refKey(b.number);
-    for (const [j, k] of keys) if ((ref.includes(k) || no.includes(k)) && !out.has(Number(x.contact_id))) out.set(Number(x.contact_id), j);
+    /* Each field whole (the Bukku review, 2026-11-25): a job key inside a
+       longer reference names another job. */
+    const fields = [x.number2, x.reference, x.number].map(refKey).filter(Boolean);
+    for (const [j, k] of keys) if (fields.includes(k) && !out.has(Number(x.contact_id))) out.set(Number(x.contact_id), j);
   }
   return out;
 }
@@ -1630,54 +1648,88 @@ Deno.serve(async (req) => {
        press ten minutes; Bukku asked first for a bill already holding the Job
        reference, so a second press makes nothing; the bills read back. */
     if (action === 'createbill') {
-      const oid = String(body.option || '');
-      if (!/^[0-9a-f-]{36}$/i.test(oid)) return json({ error: 'bad-request' }, 400, origin);
-      const prep = await db.rpc('creator_bill_prep', { p_option: oid });
-      if (prep.error) return json({ error: 'needs-update' }, 200, origin);
-      const p = prep.data || {};
-      if (p.error) return json({ error: p.error }, 200, origin);
-      let made: string | null = null, had: string | null = null, madeId = 0, sent = false;
-      try {
-        had = await billHolding(Number(p.contact_id), String(p.ref));
-        if (!had) {
-          const item = await billItem(p);
-          if (item.error) {
-            await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
-            return json(item, 200, origin);
+      /* One booking, or a run of them (`options`, twenty at most): a run
+         reads the bill's product and account once and each creator's bills
+         once at its end (the Bukku review, 2026-11-25: each bill read them
+         all again). */
+      const run = Array.isArray(body.options) ? body.options.map(String) : [String(body.option || '')];
+      if (!run.length || run.length > 20 || run.some((x: string) => !/^[0-9a-f-]{36}$/i.test(x))) return json({ error: 'bad-request' }, 400, origin);
+      const items = new Map<string, any>();
+      const results: any[] = [];
+      const reads = new Map<string, { creator: string; contact: number; pins: { id: number; option: string }[]; options: string[] }>();
+      for (const oid of run) {
+        const prep = await db.rpc('creator_bill_prep', { p_option: oid });
+        if (prep.error) { results.push({ option: oid, error: 'needs-update' }); continue; }
+        const p = prep.data || {};
+        if (p.error) { results.push({ option: oid, error: p.error }); continue; }
+        let made: string | null = null, had: string | null = null, madeId = 0, sent = false;
+        try {
+          had = await billHolding(Number(p.contact_id), String(p.ref));
+          if (!had) {
+            const item = await billItem(p, items);
+            if (item.error) {
+              await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+              results.push(Object.assign({ option: oid }, item));
+              continue;
+            }
+            sent = true;
+            const r = await bukku('POST', '/purchases/bills', billBody(p, item));
+            made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
+            madeId = Number((r && r.transaction && r.transaction.id) || 0);
           }
-          sent = true;
-          const r = await bukku('POST', '/purchases/bills', billBody(p, item));
-          made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
-          madeId = Number((r && r.transaction && r.transaction.id) || 0);
+        } catch (e) {
+          /* The hold is let go only where no bill can have been made: before
+             the bill was sent, or Bukku refusing it outright (a 4xx). A bill
+             sent that timed out, or met a 5xx, may stand in Bukku: the hold
+             keeps its ten minutes, so a second press makes no second bill
+             (audit 2026-11-15). */
+          const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
+          if (!sent || refused) await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+          if (sent && !refused) { results.push({ option: oid, error: 'not-confirmed' }); continue; }
+          if (run.length === 1) throw e;
+          results.push({ option: oid, error: e instanceof BukkuError ? e.code : 'failed', message: e instanceof BukkuError && e.code === 'bukku-refused' ? e.message : undefined });
+          continue;
         }
-      } catch (e) {
-        /* The hold is let go only where no bill can have been made: before
-           the bill was sent, or Bukku refusing it outright (a 4xx). A bill
-           sent that timed out, or met a 5xx, may stand in Bukku: the hold
-           keeps its ten minutes, so a second press makes no second bill
-           (audit 2026-11-15). */
-        const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
-        if (!sent || refused) await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
-        else return json({ error: 'not-confirmed' }, 200, origin);
-        throw e;
+        const key = String(p.creator) + '|' + Number(p.contact_id);
+        const rd = reads.get(key) || { creator: String(p.creator), contact: Number(p.contact_id), pins: [], options: [] };
+        if (madeId > 0) rd.pins.push({ id: madeId, option: oid });
+        rd.options.push(oid);
+        reads.set(key, rd);
+        results.push({ option: oid, made, had, creator: String(p.creator) });
       }
-      /* The bill stands in Bukku once made: a failed read of the bills back
-         never hides it (the review of 2026-11-24: it answered Bukku
-         unreachable and never filed the bill made). The bill is filed
-         either way, and the page told the list was not read. */
-      let readBack = true;
-      try {
-        await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
-      } catch (e) {
-        if (!made) throw e;
-        readBack = false;
-        console.error('bukku-sync: bill made, its list not read', e instanceof Error ? e.message : String(e));
+      /* The bills stand in Bukku once made: a failed read of the bills back
+         never hides them (the review of 2026-11-24). A bill made whose list
+         was not read is not yet filed, so its hold is kept ten minutes more,
+         never let go (the Bukku review, 2026-11-25): the next press would
+         find no bill in the portal and, where Bukku's search lagged, make a
+         second one. */
+      for (const rd of reads.values()) {
+        let readBack = true;
+        try { await creatorBills(rd.creator, rd.contact, rd.pins); }
+        catch (e) {
+          readBack = false;
+          console.error('bukku-sync: bills made, their list not read', e instanceof Error ? e.message : String(e));
+        }
+        for (const x of results.filter((y) => rd.options.includes(y.option))) {
+          if (x.made && !readBack) { await db.rpc('creator_bill_made', { p_option: x.option, p_number: x.made }); x.note = 'list-not-read'; }
+          else await db.rpc('creator_bill_done', { p_option: x.option, p_number: x.made });
+          if (!x.made && x.had) { x.error = 'in-bukku'; x.number = x.had; }
+          if (!x.made && !x.had && !readBack) throw new BukkuError('bukku-unreachable', 0, 'list not read');
+        }
       }
-      await db.rpc('creator_bill_done', { p_option: oid, p_number: made });
-      if (!readBack) return json({ made, note: 'list-not-read' }, 200, origin);
-      const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
-      if (list.error) return json({ error: 'needs-update' }, 200, origin);
-      return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
+      const creators = Array.from(new Set(results.map((x) => x.creator).filter(Boolean)));
+      const list = creators.length === 1 ? await db.rpc('creator_bills_list', { p_creator: creators[0] }) : null;
+      /* A failed list read never says a bill was not made: the bill made is
+         named, and the page told the list was not read. */
+      const listed = list && !list.error ? (list.data || {}) : null;
+      if (run.length === 1 && !Array.isArray(body.options)) {
+        const x = results[0];
+        if (!x.made && !x.had && x.error) return json(Object.assign({}, x, { option: undefined, creator: undefined }), 200, origin);
+        if (x.note === 'list-not-read' || !listed) return json({ made: x.made || x.had, note: 'list-not-read' }, 200, origin);
+        return json(Object.assign({}, listed, x.had ? { error: 'in-bukku', number: x.had } : { made: x.made }), 200, origin);
+      }
+      return json(Object.assign({ ok: true, results: results.map((x) => ({ option: x.option, made: x.made || null, error: x.error, number: x.number,
+        note: x.note || (listed || !x.made ? undefined : 'list-not-read'), sku: x.sku, code: x.code, message: x.message })) }, listed ? { list: listed } : {}), 200, origin);
     }
     /* A quotation's cycle made in Bukku as a draft invoice (2026-11-17):
        asked of quotation_invoice_prep as the caller, which holds the press
@@ -1791,7 +1843,18 @@ Deno.serve(async (req) => {
       if (a.error) return json({ error: a.error }, 200, origin);
       const ids = (Array.isArray(a.contacts) ? a.contacts : []).map(Number).filter((n: number) => n > 0);
       if (!ids.length) return json({ ok: true, invoices: [] }, 200, origin);
-      return json({ ok: true, invoices: await portalInvoices(ids, todayMY()) }, 200, origin);
+      /* A client's invoices are read from Bukku once a few minutes, every
+         reader of that client sharing the read (the Bukku review,
+         2026-11-25: each open of the portal asked Bukku up to thirty times,
+         against the company's API limit). Asked of the database first, so
+         the cache answers only a caller the database let through. */
+      const key = cid + '|' + ids.slice().sort().join(',');
+      const hit = portalKept.get(key);
+      if (hit && Date.now() - hit.at < PORTAL_KEEP_MS) return json({ ok: true, invoices: await hit.read }, 200, origin);
+      const read = portalInvoices(ids, todayMY());
+      portalKept.set(key, { at: Date.now(), read });
+      try { return json({ ok: true, invoices: await read }, 200, origin); }
+      catch (e) { portalKept.delete(key); throw e; }
     }
     /* A completed month's invoice (2026-11-10): asked as the caller, read
        from Bukku, kept by the service role. */
@@ -1867,7 +1930,10 @@ Deno.serve(async (req) => {
 
     if (action === 'find') {
       if (p.contact_id) {
-        const cur = await bukku('GET', `/contacts/${Number(p.contact_id)}`).then((r) => r && r.contact).catch(() => null);
+        /* Only a contact Bukku says is gone reads as unlinked: a timeout or
+           a 5xx is an error, never "not linked" (the Bukku review, 2026-11-25). */
+        const cur = await bukku('GET', `/contacts/${Number(p.contact_id)}`).then((r) => r && r.contact)
+          .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
         /* A supplier with no link of its own whose client is linked
            (2026-11-23, the user: "still no link button?"): its band reads
            Not linked, so its client's contact is offered to link, alone,
@@ -1973,27 +2039,58 @@ Deno.serve(async (req) => {
     if (action === 'send') {
       /* A new contact is made once: a second press while the first is out
          is refused, never a second contact (review 2026-11-24). */
+      let claim: any = null;
       if (!cur) {
         const cl = await db.rpc('bukku_send_claim', { p_kind: kind, p_id: id });
         if (cl.error) return json({ error: 'needs-update' }, 200, origin);
         if (cl.data && cl.data.error) return json({ error: cl.data.error }, 200, origin);
+        claim = cl.data || {};
       }
+      /* A contact an earlier send made, or one sent under a code whose
+         answer never came, is linked as Bukku holds it, never made again
+         (the Bukku review, 2026-11-25). */
+      if (!cur && claim && (claim.made || claim.sent_code)) {
+        const had = claim.made ? (every || []).find((c) => Number(c.id) === Number(claim.made))
+          : (every || []).find((c) => String(c.contact_code || '') === String(claim.sent_code));
+        if (had) {
+          const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: had.id, p_code: had.contact_code || null });
+          if (l.error || (l.data && l.data.error)) return json({ error: 'not-filed', contact: had.id, code: had.contact_code }, 200, origin);
+          await db.rpc('bukku_send_release', { p_kind: kind, p_id: id }).then(() => null, () => null);
+          return json({ ok: true, contact: had.id, code: had.contact_code || null, linked: true, existing: true }, 200, origin);
+        }
+      }
+      /* The claim is let go only once no second contact can follow: the
+         send settled and filed, nothing sent, or Bukku refusing it (a 4xx).
+         A send unanswered, or a contact made and not filed, keeps it with
+         what was sent, so the next Send finds that contact. */
+      let settle = true;
       try {
-        return await sendIt();
+        return await sendIt((made) => { settle = made !== null; });
+      } catch (e) {
+        if (e instanceof BukkuError && e.status >= 400 && e.status < 500) settle = true;
+        else if (!cur && !settle) return json({ error: 'not-confirmed' }, 200, origin);
+        throw e;
       } finally {
-        if (!cur) await db.rpc('bukku_send_release', { p_kind: kind, p_id: id }).then(() => null, () => null);
+        if (!cur && settle) await db.rpc('bukku_send_release', { p_kind: kind, p_id: id }).then(() => null, () => null);
       }
     }
     return json({ error: 'bad-request' }, 400, origin);
-    async function sendIt() {
+    async function sendIt(holding: (made: number | null) => void) {
+      if (!cur) {
+        /* The code is kept on the claim before the contact is sent. */
+        await db.rpc('bukku_send_sent', { p_kind: kind, p_id: id, p_code: code, p_contact: null }).then(() => null, () => null);
+        holding(null);
+      }
       const r = cur ? await bukku('PUT', `/contacts/${contact}`, keepAsHeld(next, cur, body.skip)) : await bukku('POST', '/contacts', next);
       const saved = r && r.contact;
       if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'Bukku did not return the contact. Please try again.' }, 200, origin);
       const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: saved.id, p_code: saved.contact_code || code });
       if (l.error || (l.data && l.data.error)) {
         console.error('bukku-sync: sent but not filed', kind, id, saved.id, l.error ? l.error.message : l.data.error);
+        if (!cur) await db.rpc('bukku_send_sent', { p_kind: kind, p_id: id, p_code: null, p_contact: Number(saved.id) }).then(() => null, () => null);
         return json({ error: 'not-filed', contact: saved.id, code: saved.contact_code }, 200, origin);
       }
+      if (!cur) holding(Number(saved.id));
       /* What was sent is what Bukku holds: a client's or an entity's link
          is held from here, the portal taking Bukku's read back. */
       if (kind === 'client' || kind === 'entity') {

@@ -69,8 +69,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   2026-11-07; 2026-11-24, a record renamed reached any contact). A new
   contact is made once a press: `bukku_send_claim` (two minutes,
   `bukku_send_claims`, RLS on, no policy) refuses a second `busy`, and
-  `bukku_send_release` lets the caller's own claim go once the send has its
-  answer (`2026-11-24-bukku-send-claimed.sql`).
+  `bukku_send_release` lets the caller's own claim go once the send is
+  settled (`2026-11-24-bukku-send-claimed.sql`). A contact sent and not
+  answered (`not-confirmed`), or made and not filed (`not-filed`), keeps its
+  claim with the code sent and the contact made (`bukku_send_sent`), and the
+  next Send links that contact, never a second (`2026-11-25-bukku-made-once.sql`).
+  A linked record's contact Bukku fails to answer is an error, never read as
+  unlinked (a 404 alone is). The client portal's invoices are read from Bukku
+  once three minutes a client, every reader sharing the read, the database
+  asked first each time.
   Bukku by entity (`2026-10-29-bukku-by-entity.sql`, the SQL Editor's; the
   user, 2026-10-29: one brand billed by several companies): a Bukku contact
   is a company, so `bukku_links` takes the kind `entity`; an entity's fold

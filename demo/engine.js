@@ -642,7 +642,7 @@
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows', creator_email_again: 'p_id',
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', campaign_creator_bills: 'p_campaign', creator_earlier_job_set: 'p_option p_ref',
-    creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
+    creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number', creator_bill_made: 'p_option p_number', bukku_send_sent: 'p_kind p_id p_code p_contact',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
     bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
     quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
@@ -4107,7 +4107,7 @@ function cardSlugFree(name, self, email) {
         if (st === 'paid' && (was === 'processing' || was === 'draft') && !b.paid_told_at && opt) tell(b);
       }
     });
-    DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
+    DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && Number(b.contact_id) === Number(contact) && seen.indexOf(b.bill_id) < 0) b.gone = true; });
 
     DB.creator_fees = DB.creator_fees || [];
     DB.creator_bills.forEach(function (b) {
@@ -12128,7 +12128,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: JSON.parse(JSON.stringify(ejOut)), error: null });
     }
 
-    if (/^creator_(standard_)?fee_set$|^creator_bill_(prep|done)$/.test(name)) {
+    if (/^creator_(standard_)?fee_set$|^creator_bill_(prep|done|made)$/.test(name)) {
       var cfA = args || {}, cfOut, cfMe = opsMe();
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
       DB.creator_fees = DB.creator_fees || []; DB.creator_standard_fees = DB.creator_standard_fees || []; DB.creator_bill_claims = DB.creator_bill_claims || [];
@@ -12200,7 +12200,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               description: ((pM.title || 'Creator campaign') + ' · ' + (fC ? fC.name : '')).slice(0, 200) };
           }
         } else {
-          DB.creator_bill_claims = DB.creator_bill_claims.filter(function (k) { return k.option_id !== fO.id; });
+
+          if (name === 'creator_bill_made') DB.creator_bill_claims.forEach(function (k) { if (k.option_id === fO.id) k.claimed_at = new Date().toISOString(); });
+          else DB.creator_bill_claims = DB.creator_bill_claims.filter(function (k) { return k.option_id !== fO.id; });
           if (String(cfA.p_number || '').trim()) logAct('creator.updated', fC.name, jobRefOf(fO) + ' · Bill ' + String(cfA.p_number).trim() + ' created in Bukku · ' + cfWord(fF && fF.amount, fF && fF.currency));
           cfOut = { ok: true };
         }
@@ -20215,6 +20217,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
               window.__bukkuInvoices.push({ number: num, number2: p.ref, contact_id: p.contact_id, lines: p.lines, status: 'draft' });
               return fin(num).then(function () { return { data: { ok: true, made: num }, error: null }; });
             });
+          }
+
+          if (bkb.action === 'createbill' && Array.isArray(bkb.options)) {
+            var runOut = [], runList = null;
+            return bkb.options.reduce(function (pr, opt) {
+              return pr.then(function () {
+                return fnInvoke('bukku-sync', { body: { action: 'createbill', option: opt } }).then(function (x) {
+                  var d = (x && x.data) || {};
+                  if (d.jobs) runList = d;
+                  runOut.push({ option: opt, made: d.made || null, error: d.error, number: d.number, note: d.note, sku: d.sku, code: d.code });
+                });
+              });
+            }, Promise.resolve()).then(function () { return { data: Object.assign({ ok: true, results: runOut }, runList ? { list: runList } : {}), error: null }; });
           }
           if (bkb.action === 'createbill') {
             return rpc('creator_bill_prep', { p_option: bkb.option }).then(function (r) {

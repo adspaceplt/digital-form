@@ -1380,6 +1380,46 @@
   /* Create bill: one booking, or every one ready (Create n bills), each
      made in Bukku on the creator's contact with the Job reference, one after
      another, a refusal named against its booking. */
+  /* Bills made in runs of twenty, one call a run (the Bukku review,
+     2026-11-25): bukku-sync reads the bill's product and account once and
+     each creator's bills once a run. A bill Bukku did not confirm, or a
+     call unanswered, is never said Not created: it may stand in Bukku. */
+  function billRun(list, tick) {
+    var out = { done: [], refused: [], unsure: [], unread: false, list: null };
+    var byOption = {};
+    list.forEach(function (j) { byOption[j.option] = j; });
+    var runs = [];
+    for (var i = 0; i < list.length; i += 20) runs.push(list.slice(i, i + 20));
+    return runs.reduce(function (p, part) {
+      return p.then(function () {
+        return db.functions.invoke('bukku-sync', { body: { action: 'createbill', options: part.map(function (j) { return j.option; }) } }).then(function (r) {
+          return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
+        }).then(function (d) {
+          if (!d.results) { part.forEach(function (j) { out.unsure.push(j.job); }); return; }
+          if (d.list) out.list = d.list;
+          d.results.forEach(function (x) {
+            var j = byOption[x.option] || { job: '' };
+            if (x.error === 'in-bukku') out.refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
+            else if (x.error === 'not-confirmed') out.unsure.push(j.job);
+            else if (x.error) out.refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
+            else { out.done.push(x.made || j.job); if (x.note === 'list-not-read') out.unread = true; }
+          });
+        }).catch(function () { part.forEach(function (j) { out.unsure.push(j.job); }); }).then(function () {
+          if (tick) tick(out.done.length + out.refused.length + out.unsure.length);
+        });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+  /* What a run of bills says: the bills made, those refused with why, and
+     those Bukku did not confirm, each its own sentence. */
+  function billRunWords(out, one) {
+    var parts = [];
+    if (out.done.length) parts.push(one && !out.refused.length && !out.unsure.length ? 'Draft bill ' + out.done[0] + ' created in Bukku.'
+      : (out.refused.length || out.unsure.length ? 'Created ' + out.done.join(', ') + '.' : out.done.length + ' draft bills created in Bukku.'));
+    if (out.refused.length) parts.push('Not created: ' + out.refused.join(' '));
+    if (out.unsure.length) parts.push('Bukku did not confirm ' + out.unsure.join(', ') + '. Press Read from Bukku, then try again.');
+    return parts.join(' ') + (out.unread ? UNREAD : '');
+  }
   function makeBills(list, btn) {
     var c = payFor;
     if (!c || !list.length) return;
@@ -1399,7 +1439,7 @@
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
       check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
-      var m = $('cpayJobMsg'), done = [], refused = [], unread = false;
+      var m = $('cpayJobMsg');
       var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
       /* One booking: its amount kept as the creator fee first, then billed. */
       var first = Promise.resolve('');
@@ -1415,25 +1455,13 @@
       return first.then(function (msg) {
         if (msg) return msg;
         if (btn) btn.disabled = true;
-        list.reduce(function (p, j) {
-          return p.then(function () {
-            if (payFor !== c) return;
-            return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
-              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
-            }).then(function (x) {
-              if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
-              if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
-              else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
-              else { done.push(x.made || j.job); if (x.note === 'list-not-read') unread = true; }
-            }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
-          });
-        }, Promise.resolve()).then(function () {
+        billRun(list).then(function (out) {
           if (btn) btn.disabled = false;
           if (payFor !== c) return;
+          if (out.list && out.list.jobs) payJobs = Object.assign({ creator: c.id }, out.list);
           delete crTotals[c.id]; paintCrRail(c);
-          if (!done.length && one) readJobs(); else paintJobs();
-          if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' ') + (unread ? UNREAD : ''), 'err');
-          else say((one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.') + (unread ? UNREAD : ''), unread ? 'warn' : 'ok');
+          if (!out.done.length && one) readJobs(); else paintJobs();
+          say(billRunWords(out, one), out.refused.length || out.unsure.length ? 'err' : out.unread ? 'warn' : 'ok');
         });
         return '';
       });
@@ -1749,7 +1777,6 @@
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
       check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
-      var done = [], refused = [], unread = false;
       var first = Promise.resolve('');
       if (one) {
         var amt = feeIn(v && v.fee);
@@ -1764,22 +1791,9 @@
         if (msg) return msg;
         if (btn) btn.disabled = true;
         cpqSaid(one ? '' : 'Creating bills: 0 of ' + list.length + '.', '');
-        list.reduce(function (p, j) {
-          return p.then(function () {
-            return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
-              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
-            }).then(function (x) {
-              if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
-              else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
-              else { done.push(x.made || j.job); if (x.note === 'list-not-read') unread = true; }
-            }).catch(function (e) { refused.push(j.job + ': ' + e.message); }).then(function () {
-              if (!one) cpqSaid('Creating bills: ' + (done.length + refused.length) + ' of ' + list.length + '.', '');
-            });
-          });
-        }, Promise.resolve()).then(function () {
+        billRun(list, function (n) { if (!one) cpqSaid('Creating bills: ' + n + ' of ' + list.length + '.', ''); }).then(function (out) {
           if (btn) btn.disabled = false;
-          if (refused.length) cpqSaid((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' ') + (unread ? UNREAD : ''), 'err');
-          else cpqSaid((one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.') + (unread ? UNREAD : ''), unread ? 'warn' : 'ok');
+          cpqSaid(billRunWords(out, one), out.refused.length || out.unsure.length ? 'err' : out.unread ? 'warn' : 'ok');
           loadQueue();
         });
         return '';
