@@ -663,6 +663,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   check names a code sent to an address outside Contacts" while 35 suites
   ran, and passed alone at once; likely the load cause of the entries
   above. Held here until it ships.
+- 2026-11-25, `menus` (the quotation link activity release, which touches
+  no ⋯): Services' rows offer Move up and Move down (#1436, the rate card
+  line order), which `tests/menus.js` does not name in its groups, so
+  "every word in its group, in the fixed order" fails at 1280. Held here
+  until it ships.
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
