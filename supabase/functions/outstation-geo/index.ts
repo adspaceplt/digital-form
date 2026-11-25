@@ -19,6 +19,9 @@
  *                 once the trip is checked out, back to the office. (The
  *                 directions answer, asked without instructions, carried no
  *                 legs, and every trip read Not available; 2026-11-24.)
+ *                 With the distance the matrix answers the drive's time:
+ *                 a trip checked out at the office takes its last stop's
+ *                 end from it (`outstation_back_drive`, 2026-11-25).
  *
  * Only the driver asks (`outstation_geo_may`, as the caller); the reading
  * is the stop's own, never the browser's. The figures are written by the
@@ -147,17 +150,20 @@ Deno.serve(async (req) => {
      matrix's row i, column i (sources 0..n-2, destinations 1..n-1). */
   const n = coords.length;
   let km: (number | null)[] = [];
+  let mins: (number | null)[] = [];
   try {
     const r = await fetch(`${ORS_BASE}/openrouteservice/v2/matrix/driving-car`, {
       method: 'POST',
       headers: { 'Authorization': key, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ locations: coords, metrics: ['distance'], units: 'km',
+      body: JSON.stringify({ locations: coords, metrics: ['distance', 'duration'], units: 'km',
         sources: Array.from({ length: n - 1 }, (_, i) => i), destinations: Array.from({ length: n - 1 }, (_, i) => i + 1) })
     });
     if (!r.ok) throw new Error('ors ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
     const m = (d.distances || []) as (number | null)[][];
     km = Array.from({ length: n - 1 }, (_, i) => (m[i] && m[i][i] != null ? Math.round(Number(m[i][i]) * 10) / 10 : null));
+    const du = (d.durations || []) as (number | null)[][];
+    mins = Array.from({ length: n - 1 }, (_, i) => (du[i] && du[i][i] != null ? Math.round(Number(du[i][i]) / 6) / 10 : null));
   } catch (e) {
     console.error('outstation-geo: route failed', String((e as Error)?.message || e));
     return json({ error: 'route_failed' }, 502, origin);
@@ -170,5 +176,13 @@ Deno.serve(async (req) => {
   const back = closed ? km[km.length - 1] : null;
   const { data: put, error: putErr } = await admin.rpc('outstation_route_set', { p_trip: tripId, p_legs: legs, p_back: back });
   if (putErr || put?.error) return json({ error: 'not_saved' }, 500, origin);
-  return json({ ok: true, legs, back }, 200, origin);
+  /* The drive back's minutes: the database keeps a last stop left at the
+     office that much before the arrival (never before its last activity);
+     any other trip it leaves as it stands. */
+  const backMins = closed ? mins[mins.length - 1] : null;
+  if (closed && backMins != null) {
+    const { error: bdErr } = await admin.rpc('outstation_back_drive', { p_trip: tripId, p_mins: backMins });
+    if (bdErr) console.error('outstation-geo: back drive not saved', bdErr.message);
+  }
+  return json({ ok: true, legs, back, back_mins: backMins }, 200, origin);
 });
