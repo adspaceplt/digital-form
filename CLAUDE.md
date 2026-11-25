@@ -366,6 +366,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   is painted `--chrome-solid` under a finger too: WebKit colours the status
   bar from the root's background, never the head (2026-11-14). The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
+- A plain console page (sign-in, its code step, every cover, the
+  whole-screen Upgrade, `admin/offline.html`) is one ground from the
+  browser's toolbar down: its bar, its root and the `theme-color` meta take
+  `--card` in both themes, the signed-in console `--chrome-solid`, set from
+  the tokens by `wearToolbar()` on every `is-plain` or `is-maint` change,
+  both ways (2026-11-25, `tests/covers.js`).
 - The bar is two families: the console's `.console-head` (`css/console.css`)
   and every client page's `.topbar` (`js/chrome.js`, `css/portal.css`), one
   height, `--head-h` (64 at a desk, 56 on a phone), the console's signed-in
