@@ -712,7 +712,8 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
    1. Open: Open, Open file, Versions, Download (here even beside Preview
       PDF on screen).
    2. Change: Edit, Rename, Duplicate, New version, Take, Offer to
-      team, Repeat, Reassign, Change reviewer, Transfer client, White label.
+      team, Repeat, Reassign, Change reviewer, Transfer client, White label,
+      Move up, Move down.
    3. Send: anything reaching a person outside the screen (Send on
       WhatsApp, Request feedback, Resend booking, Send
       invitation, Share with {name}).
