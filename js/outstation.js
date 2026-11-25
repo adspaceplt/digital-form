@@ -56,8 +56,13 @@
     office: G_('<path d="M5 20V6.5L12 4l7 2.5V20"/><path d="M3.5 20h17M9.5 9.5h.5M14 9.5h.5M9.5 13h.5M14 13h.5M11 20v-3h2v3"/>'),
     clock: G_('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     target: G_('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>'),
-    camera: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>')
+    camera: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
+    pen: G_('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>')
   };
+  /* Recording acts wait for a phone (2026-11-25, the user: a desk computer
+     never travels): drawn disabled with the reason at a desk, through the
+     one painter (`data-gate="phone"`, js/admin.js). */
+  var GATE = ' data-gate="phone"';
   var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
 
   var PURPOSE = { meeting: 'Meeting', shooting: 'Shooting', event: 'Event', other: 'Other' };
@@ -218,7 +223,7 @@
       var head = document.createElement('div');
       head.className = 'viewhead ost-head';
       head.innerHTML = '<div class="headmark"><h2>Trips</h2></div>' +
-        (may('ops', 'work') ? '<button class="btn btn-primary" type="button" id="ostCheckIn">Check in</button>' : '');
+        (may('ops', 'work') ? '<button class="btn btn-primary" type="button" id="ostCheckIn"' + GATE + '>Check in</button>' : '');
       body.appendChild(head);
       var ci = head.querySelector('#ostCheckIn');
       if (ci) ci.addEventListener('click', function () { openStopSheet(null, ci); });
@@ -343,10 +348,55 @@
         '<span class="stl-line ost-under">' +
           (s.address ? '<button class="ost-addr" type="button" aria-expanded="false" title="' + esc(s.address) + '">' + esc(s.address) + '</button>' : '') +
           '<span class="ost-small">' + small.map(function (x) { return '<span class="ost-sfact">' + x + '</span>'; }).join('') + zoneTag(s) + '</span>' +
-          thumbsHtml(s) + '</span></li>';
+          thumbsHtml(s) + noteHtml(trip, s, here) +
+          (here && mayRecord(trip) ? '<span class="ost-acts" data-acts="' + esc(s.id) + '">' +
+            '<button class="btn btn-sm" type="button" data-a="note"' + GATE + '>' + GLYPH.pen + '<span class="btn-word">' + (s.note ? 'Edit note' : 'Add note') + '</span></button>' +
+            '<label class="btn btn-sm ost-shot"' + GATE + '>' + CAMERA + '<span class="btn-word">Add photo</span>' +
+              '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label></span>' : '') +
+          '</span></li>';
     });
     if (trip.state === 'closed' && trip.km_back != null) rows += legRow(trip.km_back) + officeRow('End');
     return '<ol class="stl ost-route">' + rows + '</ol>';
+  }
+  /* A stop's note (2026-11-25): what was done or what to remember, under
+     the stop; its pen edits it while the trip is open (the stop on site's
+     own Edit note does so there). */
+  function mayRecord(trip) {
+    var m = me();
+    return Boolean(m && trip.driver_id === m.id && trip.state === 'open' && may('ops', 'work'));
+  }
+  function noteHtml(trip, s, here) {
+    if (!s.note) return '';
+    var pen = !here && mayRecord(trip) ? '<button class="iconbtn ost-note-pen" type="button" data-a="note"' + GATE + ' aria-label="Edit note">' + GLYPH.pen + '</button>' : '';
+    return '<span class="ost-note" data-note="' + esc(s.id) + '"><span>' + esc(s.note) + '</span>' + pen + '</span>';
+  }
+  function wireNotes(host, trip) {
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="note"]'), function (b) {
+      b.addEventListener('click', function () {
+        var li = b.closest('[data-stop]'), id = li.getAttribute('data-stop');
+        var stop = (trip.stops || []).filter(function (x) { return x.id === id; })[0];
+        if (!stop) return;
+        var after = b.closest('.ost-acts') || b.closest('.ost-note');
+        if (after._ask && after._ask.open_()) { after._ask.close(); return; }
+        after._ask = window.ADspaceAsk.note(after, {
+          label: 'Note', send: 'Save', once: true,
+          save: function (v) {
+            db.rpc('outstation_stop_note', { p_stop: id, p_note: v }).then(function (r) {
+              if (r.error || !r.data || r.data.error || !r.data.trip) throw new Error((r.data && SAID[r.data.error]) || W.notSaved);
+              keep(r.data.trip);
+              if (window.ADspaceSheet.isOpen(detail)) openDetail(r.data.trip, null);
+              else { st.msg = { text: 'Saved.', tone: 'ok' }; paint(); st.msg = null; }
+            }).catch(function (e) {
+              st.msg = { text: (e && e.message) || W.notSaved, tone: 'err' };
+              if (!window.ADspaceSheet.isOpen(detail)) paint();
+              st.msg = null;
+            });
+          }
+        });
+        after._ask.box.querySelector('textarea').value = stop.note || '';
+        after._ask.open();
+      });
+    });
   }
   function credit(trip) {
     var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
@@ -583,22 +633,22 @@
         (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part">' + partHead(GLYPH.pin, 'Route') + routeHtml(trip) +
-        '<div class="ost-acts">' +
-          '<button class="btn btn-sm" type="button" data-a="next">' + PLUS + '<span class="btn-word">Add stop</span></button>' +
-          '<label class="btn btn-sm ost-shot">' + CAMERA + '<span class="btn-word">Add photo</span>' +
-            '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label>' +
-        '</div><p class="msg" id="ostTripMsg" role="status"></p>' + credit(trip) + '</section>' +
+        '<p class="msg" id="ostTripMsg" role="status"></p>' + credit(trip) + '</section>' +
       '<section class="rec-part ost-part">' + partHead(GLYPH.road, 'Distance') + distanceHtml(trip) + '</section>' +
+      /* Go on to another site or finish (2026-11-25): Add stop then
+         Check out, equal, Check out nearest the thumb. */
       '<div class="ost-foot">' +
-        '<button class="btn btn-primary" type="button" data-a="out">Check out</button>' +
+        '<button class="btn btn-primary" type="button" data-a="out"' + GATE + '>Check out</button>' +
+        '<button class="btn" type="button" data-a="next"' + GATE + '>' + PLUS + '<span class="btn-word">Add stop</span></button>' +
       '</div>';
     box.querySelector('[data-a="next"]').addEventListener('click', function (e) { openStopSheet(trip, e.currentTarget); });
     box.querySelector('[data-a="out"]').addEventListener('click', function (e) { openOutSheet(trip, e.currentTarget); });
     wire(box, trip);
     wireLines(box);
+    wireNotes(box, trip);
     fillThumbs(box, trip, 'card');
     var file = box.querySelector('[data-a="photo"]');
-    file.addEventListener('change', function () {
+    if (file) file.addEventListener('change', function () {
       var f = file.files && file.files[0];
       file.value = '';
       if (!f) return;
@@ -1143,6 +1193,7 @@
     detail.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     wire(detail, trip);
     wireLines(detail);
+    wireNotes(detail, trip);
     window.ADspaceSheet.show(detail, { opener: opener });
     fillThumbs(detail, trip, 'detail');
   }
@@ -1151,7 +1202,7 @@
   function exportCsv(trips) {
     var head = ['Trip number', 'Date', 'Driver', 'Driver code', 'Colleagues', 'Purpose', 'Stop', 'Client code', 'Client or venue', 'Address', 'Zone',
       'Arrived', 'Left', 'Hours on site', 'Accuracy (m)', 'Latitude', 'Longitude', 'Photos', 'Km from previous stop', 'Km back to office', 'Km total',
-      'Checked out', 'Rating', 'Note', 'Check-out note'];
+      'Checked out', 'Rating', 'Note', 'Check-out note', 'Stop note'];
     var rows = [head];
     trips.forEach(function (t) {
       (t.stops || []).forEach(function (s, i) {
@@ -1161,7 +1212,7 @@
           s.left_at ? (Math.round((Date.parse(s.left_at) - Date.parse(s.arrived_at)) / 36e4) / 10).toFixed(1) : '',
           s.accuracy_m, s.lat, s.lng, live(s).length, s.km_from_prev == null ? '' : s.km_from_prev,
           last && t.km_back != null ? t.km_back : '', last && t.km_total != null ? t.km_total : '',
-          last && t.ended_at ? C.clock(t.ended_at) : '', last && t.rating ? t.rating : '', i === 0 ? t.note || '' : '', last ? t.end_note || '' : '']);
+          last && t.ended_at ? C.clock(t.ended_at) : '', last && t.rating ? t.rating : '', i === 0 ? t.note || '' : '', last ? t.end_note || '' : '', s.note || '']);
       });
     });
     var csv = rows.map(function (r) {

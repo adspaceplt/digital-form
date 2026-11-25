@@ -4975,7 +4975,11 @@ span.inv-amt { font-weight: 600; }
 .ost-sfact { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .ost-sfact svg { width: 13px; height: 13px; flex: 0 0 auto; }
 .ost-credit { margin-top: 12px; color: var(--ink-mute); font-size: 11px; }
-.ost-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 8px; margin-top: 16px; }
+.ost-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 8px; margin-top: 8px; }
+.ost-note { display: flex; align-items: flex-start; gap: 4px; margin-top: 4px; color: var(--ink-soft); font-size: 13px; white-space: pre-line; overflow-wrap: anywhere; }
+.ost-note > span { flex: 1 1 auto; min-width: 0; padding-top: 2px; }
+.ost-note-pen { flex: 0 0 auto; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.ost-under > .asknote { margin-top: 8px; }
 .ost-acts > .btn { width: 100%; }
 .ost-part > .ost-tally { margin-top: 4px; }
 .ost-tally { grid-template-columns: minmax(140px, max-content); }
@@ -4985,7 +4989,7 @@ span.inv-amt { font-weight: 600; }
 .ost-shot { position: relative; cursor: pointer; }
 .ost-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .ost-foot { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; }
-.ost-foot > .btn { flex: 0 0 auto; }
+.ost-foot > .btn { flex: 0 0 160px; }
 .ost-loc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 12px; border-radius: var(--radius); background: var(--sunk); }
 .ost-loc-mark { display: none; }
 .ost-loc-words { display: grid; gap: 4px; min-width: 0; }
@@ -5039,9 +5043,8 @@ button.ost-row { font: inherit; color: inherit; cursor: pointer; text-align: lef
   .ost-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   /* The sheet's head keeps the date whole beside the state, ⋯ and close. */
   .ost-tw { display: none; }
-  /* The primary takes the row's width, nearest the thumb. */
-  .ost-foot { flex-direction: column-reverse; }
-  .ost-foot > .btn { width: 100%; }
+  /* Add stop and Check out as equal halves, Check out nearest the thumb. */
+  .ost-foot > .btn { flex: 1 1 50%; min-width: 0; }
 }
 .pyn-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1.6fr) 96px 96px 80px 160px 96px; }
 .crm-head.pyn-row { padding: 12px 15px 8px; }

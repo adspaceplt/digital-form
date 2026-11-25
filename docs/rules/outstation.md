@@ -44,11 +44,33 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   shows it whole), its time, accuracy and photo count as small facts with
   their glyphs, the zone a grey tag only where the address does not
   already end with it, the thumbnails; the return's leg and the office (End)
-  once checked out. Add stop and Add photo two equal tonal buttons under
-  it; the map credit last, 11px mute, one line on a phone (a press shows
+  once checked out. Under the stop on site, Add note (or Edit note) and
+  Add photo, two equal tonal buttons with their glyphs; the map credit last, 11px mute, one line on a phone (a press shows
   it whole), never dropped. Distance: its glyph, the figure (`.tally`, So
   far, or Total once checked out), each leg and Back to office as rows under it.
-  Check out alone, blue, nearest the thumb.
+  The trip's foot: Add stop (tonal, its plus) and Check out (blue) as
+  equal halves, Check out on the right, at a desk and on a phone alike: at
+  the end of a visit the choice is another site or finish.
+- A stop's note (`outstation_stops.note`, `outstation_stop_note`; the
+  user, 2026-11-25): what was done or what to remember, written in place
+  (`ADspaceAsk.note`) by the driver alone while the trip is open, up to
+  2,000 characters (`too-long`), refused by the database otherwise; shown
+  under the stop, its pen editing it on a stop already left; the CSV's
+  Stop note column.
+- Recording is from a phone (the user, 2026-11-25: a desk computer never
+  travels, so its location is wrong): Check in, Add stop, Add photo, Add
+  note and Check out carry `data-gate="phone"` and, on a device with hover
+  or a fine pointer, stay drawn but disabled with the reason (Trips are
+  recorded from a phone. Open My Work on your phone to check in.;
+  `ADspaceWords.line.phoneOnly`) through the one painter and `#gateWhy`:
+  an approved instance of DESIGN.md §8's disabled-with-reason exception,
+  the user having asked for disabled over hidden. The device test is
+  `(hover: none) and (pointer: coarse)` (`onTravelDevice` in
+  `js/admin.js`, named once): a phone or tablet passes, a laptop's touch
+  screen has hover and does not. Page-side only: the database cannot tell
+  the device; the accuracy limit (50 m) already refuses most desk
+  readings. Reading stays whole at a desk (My trips, All trips, the
+  timeline, the photos, the CSV).
 - Add claim is not drawn until claims are built (the user, 2026-11-25,
   replacing 2026-11-23's disabled button: a step that cannot apply yet is
   hidden, DESIGN.md §8).

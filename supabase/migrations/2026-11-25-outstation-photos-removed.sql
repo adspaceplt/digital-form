@@ -25,6 +25,10 @@
 --     no photo at the stop (`no-photo`), every other refusal kept.
 --   * `outstation_photo_key`: a removed photo is read only at
 --     `ops.outstation`.
+--   * `outstation_stops.note` and `outstation_stop_note(p_stop, p_note)`:
+--     a stop's note (what was done, what to remember), written by the
+--     driver alone while the trip is open, up to 2,000 characters
+--     (`too-long`); an empty note clears it. The trip JSON carries it.
 --   * `outstation_photo_keys(p_trip)`: what sign-download asks as the
 --     caller to sign every photo of a trip in one request: the same readers
 --     as `outstation_photo_key`, removed photos only at `ops.outstation`.
@@ -37,15 +41,19 @@
 -- ROLLBACK: run OUTSTATION TRIP NUMBER AND DELETE's `outstation_trip_json`,
 -- OUTSTATION CHECK-OUT WITHOUT A READING's `outstation_check_out`,
 -- OUTSTATION VISITS FOR THE CLIENT's `outstation_stop_add` and OUTSTATION
--- RECORD's `outstation_photo_key` again; revoke the three new functions
--- (the page goes back first). The two columns may stay: nothing before
+-- RECORD's `outstation_photo_key` again; revoke the four new functions
+-- (the page goes back first). The three columns may stay: nothing before
 -- this reads them. A photo removed meanwhile then shows again.
 -- ===========================================================================
 
 alter table public.outstation_photos add column if not exists removed_at timestamptz;
 alter table public.outstation_photos add column if not exists removed_by uuid;
+alter table public.outstation_stops add column if not exists note text;
 do $$
 begin
+  if not exists (select 1 from pg_constraint where conname = 'outstation_stops_note_check') then
+    alter table public.outstation_stops add constraint outstation_stops_note_check check (length(note) <= 2000);
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'outstation_photos_removed_check') then
     alter table public.outstation_photos add constraint outstation_photos_removed_check
       check (removed_at is not null or removed_by is null);
@@ -74,7 +82,7 @@ language sql stable security definer set search_path = public as $$
         'client_logo', (select c.logo_url from public.clients c where c.id = s.client_id),
         'venue', s.venue, 'lat', s.lat, 'lng', s.lng, 'accuracy_m', s.accuracy_m, 'read_at', s.read_at,
         'address', s.address, 'zone', s.zone, 'arrived_at', s.arrived_at, 'left_at', s.left_at,
-        'km_from_prev', s.km_from_prev, 'filed', s.touch_id is not null,
+        'km_from_prev', s.km_from_prev, 'filed', s.touch_id is not null, 'note', s.note,
         'photos', coalesce((select jsonb_agg(jsonb_build_object('id', p.id, 'taken_at', p.taken_at,
             'lat', p.lat, 'lng', p.lng, 'accuracy_m', p.accuracy_m, 'removed_at', p.removed_at,
             'removed_by', case when p.removed_at is null then null
@@ -202,6 +210,26 @@ begin
 end $$;
 revoke all on function public.outstation_photo_keys(uuid) from public, anon;
 grant execute on function public.outstation_photo_keys(uuid) to authenticated;
+
+/* A stop's note: the driver's, while the trip is open; empty clears it. */
+create or replace function public.outstation_stop_note(p_stop uuid, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_trip uuid; v_t public.outstation_trips;
+begin
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select s.trip_id into v_trip from public.outstation_stops s where s.id = p_stop;
+  if v_trip is null then return jsonb_build_object('error', 'no-trip'); end if;
+  v_t := public.outstation_own_trip(v_trip);
+  if v_t.id is null then return jsonb_build_object('error', 'no-trip'); end if;
+  if v_t.state <> 'open' then return jsonb_build_object('error', 'closed'); end if;
+  if length(coalesce(p_note, '')) > 2000 then return jsonb_build_object('error', 'too-long'); end if;
+  update public.outstation_stops set note = nullif(btrim(coalesce(p_note, '')), '') where id = p_stop;
+  update public.outstation_trips set updated_at = now() where id = v_t.id;
+  return jsonb_build_object('ok', true, 'trip', public.outstation_trip_json(v_t.id));
+end $$;
+revoke all on function public.outstation_stop_note(uuid, text) from public, anon;
+grant execute on function public.outstation_stop_note(uuid, text) to authenticated;
 
 /* A photo removed by the driver who took it, while the trip is open and
    another photo stays at its stop; the file stays in storage. */
