@@ -5863,6 +5863,26 @@ svg.sec {
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }
+/* Figures hidden (2026-11-25, js/admin.js `figs`): the eye stands at the
+   top right tile's corner, centred on its label's line as the Dashboard's
+   mark is, the label giving way to it in both states. Hidden, every word
+   box keeps its size unseen and reads to nobody, with dots drawn over it;
+   a shaded foot keeps its strip. */
+.crm-tile.has-eye .ovw-kpi-label { padding-right: 34px; }
+.figs-eye { --eye: var(--ctl-h); position: absolute; z-index: 1;
+  top: calc(27px - var(--eye) / 2); right: calc(20px - (var(--eye) - 16px) / 2); }
+.is-narrow .figs-eye, .is-tight .figs-eye { top: calc(23px - var(--eye) / 2); right: calc(14px - (var(--eye) - 16px) / 2); }
+@media (pointer: coarse) { .figs-eye { --eye: var(--tap); } }
+:root.figs-off .crm-tile > .ovw-kpi-fig, :root.figs-off .crm-tile > .ovw-kpi-sub,
+:root.figs-off .crm-tile > .ovw-kpi-line, :root.figs-off .crm-tile > .crm-tile-foot { position: relative; visibility: hidden; }
+:root.figs-off .crm-tile > .ovw-kpi-fig::after, :root.figs-off .crm-tile > .ovw-kpi-sub::after,
+:root.figs-off .crm-tile > .ovw-kpi-line::after, :root.figs-off .crm-tile > .crm-tile-foot::after {
+  content: '\2022\2022\2022\2022'; content: '\2022\2022\2022\2022' / ''; visibility: visible;
+  position: absolute; left: 0; top: 0; white-space: nowrap; color: var(--ink-mute); }
+:root.figs-off .crm-tile > .ovw-kpi-fig::after { color: var(--ink); }
+:root.figs-off .crm-tile > .crm-tile-foot::after,
+:root.figs-off .crm-tile > .ovw-kpi-line:has(.ovw-kpi-arrow)::after { inset: -1px 0 0; padding: inherit; background: var(--sunk);
+  border-top: 1px solid var(--line-soft); border-radius: inherit; color: var(--ink-soft); }
 .crm-late-tag { margin-left: 8px; vertical-align: 1px; }
 .crm-ahead-tag { margin-top: 4px; }
 /* A client's stage set ahead, under the record head's meta (CLIENT STAGE
