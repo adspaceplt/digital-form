@@ -345,7 +345,7 @@
           '<span class="ost-small">' + small.map(function (x) { return '<span class="ost-sfact">' + x + '</span>'; }).join('') + zoneTag(s) + '</span>' +
           thumbsHtml(s) + '</span></li>';
     });
-    if (trip.state === 'closed' && trip.km_back != null) rows += legRow(trip.km_back) + officeRow('Return');
+    if (trip.state === 'closed' && trip.km_back != null) rows += legRow(trip.km_back) + officeRow('End');
     return '<ol class="stl ost-route">' + rows + '</ol>';
   }
   function credit(trip) {
@@ -382,7 +382,7 @@
     var total = trip.state === 'closed' ? trip.km_total : so;
     var rows = stops.filter(function (s) { return s.km_from_prev != null; }).map(function (s) {
       return '<div><dt>To ' + esc(placeName(s)) + '</dt><dd>' + esc(km(s.km_from_prev)) + '</dd></div>';
-    }).join('') + '<div><dt>Return</dt><dd>' + (trip.state === 'closed' ? (trip.km_back != null ? esc(km(trip.km_back)) : 'Not available') : 'Added at check-out') + '</dd></div>';
+    }).join('') + '<div><dt>Back to office</dt><dd>' + (trip.state === 'closed' ? (trip.km_back != null ? esc(km(trip.km_back)) : 'Not available') : 'Added at check-out') + '</dd></div>';
     return '<div class="tally ost-tally"><div class="tally-cell"><b>' + (total != null ? esc(km(total)) : 'Not available') + '</b>' +
       '<span>' + (trip.state === 'closed' ? 'Total' : 'So far') + '</span></div></div>' +
       '<dl class="ovfacts ost-legs">' + rows + '</dl>';
@@ -505,7 +505,7 @@
       var box = $('ostPhotoBox');
       if (!box || !viewer.contains(box)) return;
       var u = urls[p.id];
-      var none = function () { box.classList.add('is-gone'); box.innerHTML = '<span class="ost-view-note">Not available</span>'; };
+      var none = function () { box.classList.add('is-gone'); box.innerHTML = '<span class="ost-view-note">The photo could not be loaded. Close it and open it again.</span>'; };
       if (!u) { none(); return; }
       var img = document.createElement('img');
       img.alt = 'Photo ' + n + ', ' + placeName(s) + ', ' + C.clock(p.taken_at); img.draggable = false;

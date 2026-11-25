@@ -43,11 +43,11 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   logo before its name, the address on one line with an ellipsis (a press
   shows it whole), its time, accuracy and photo count as small facts with
   their glyphs, the zone a grey tag only where the address does not
-  already end with it, the thumbnails; the return's leg and the office
+  already end with it, the thumbnails; the return's leg and the office (End)
   once checked out. Add stop and Add photo two equal tonal buttons under
   it; the map credit last, 11px mute, one line on a phone (a press shows
   it whole), never dropped. Distance: its glyph, the figure (`.tally`, So
-  far, or Total once checked out), each leg and Return as rows under it.
+  far, or Total once checked out), each leg and Back to office as rows under it.
   Check out alone, blue, nearest the thumb.
 - Add claim is not drawn until claims are built (the user, 2026-11-25,
   replacing 2026-11-23's disabled button: a step that cannot apply yet is
