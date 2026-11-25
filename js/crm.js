@@ -7855,7 +7855,7 @@
     if (!R || !c) return;
     var main = (state.contacts || []).filter(function (p) { return p.is_primary && !p.archived_at; })[0] ||
                (state.contacts || []).filter(function (p) { return !p.archived_at; })[0] || null;
-    R.openIssue({ client: c, contact: main, families: ['quote_cover', 'client'], msg: 'crmDocMsg',
+    R.openIssue({ client: c, contact: main, families: ['client'], msg: 'crmDocMsg',
                   onDone: function () { loadDocuments(); } });
   });
 

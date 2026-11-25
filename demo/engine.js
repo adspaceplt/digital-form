@@ -2405,6 +2405,8 @@ function cardSlugFree(name, self, email) {
   function issueDocument(a) {
     var type = docType(a.p_type);
     if (!type || type.active === false) return { error: 'no-type' };
+
+    if (type.family === 'quote_cover') return { error: 'not-issuable' };
     if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     if (!regMay(type.family, 'work')) return { error: 'not-allowed' };
     var idem = String(a.p_idem || '').trim();
@@ -2462,6 +2464,7 @@ function cardSlugFree(name, self, email) {
     if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     var d = (DB.documents || []).filter(function (x) { return x.id === a.p_doc; })[0];
     if (!d) return { error: 'no-doc' };
+    if (d.family === 'quote_cover') return { error: 'not-issuable' };
     if (!regMay(d.family, 'work')) return { error: 'not-allowed' };
 
     if ((DB.documents || []).some(function (x) { return x.replaces === d.id; })) return { error: 'not-current' };
