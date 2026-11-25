@@ -2297,6 +2297,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    label track in a wide history, 104px in a rail or on a phone. */
 .rl-facts { display: none; }
 .recline.is-open .rl-facts { display: grid; margin: 8px 0 4px; }
+.rl-facts dt, .rl-facts dd { font-size: 12.5px; }
 .reclist:not(.is-wide) .rl-facts > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
 .tabrow.poststages .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {.tabline > .tabrow { flex: 1 1 auto; }
