@@ -194,7 +194,6 @@
     var box = $('pynTiles');
     box.style.setProperty('--n', tiles.length);
     box.innerHTML = tiles.join('');
-    if (window.ADspaceAdmin && window.ADspaceAdmin.figs) window.ADspaceAdmin.figs(box);
   }
   function paintCharts(d) {
     var s = d.summary || {}, a = s.aging || {}, CH = window.ADspaceChart, cur = d.currency;

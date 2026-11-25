@@ -620,7 +620,6 @@
     box.style.setProperty('--n', tiles.length);
     box.innerHTML = tiles.join('');
     box.hidden = false;
-    if (window.ADspaceAdmin && window.ADspaceAdmin.figs) window.ADspaceAdmin.figs(box);
   }
 
   function visible() {

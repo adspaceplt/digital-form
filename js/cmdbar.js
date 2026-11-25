@@ -396,7 +396,10 @@
   function wireActions(bar) {
     var acts = bar.querySelector('.cmdbar-acts');
     if (!acts) return;
-    var buttons = Array.prototype.filter.call(acts.children, function (el) { return el.tagName === 'BUTTON'; });
+    /* The eye that hides figures (js/admin.js) is a mark of the bar, never
+       an act: it stays beside the primary at every width. */
+    var eye = acts.querySelector(':scope > .figs-eye');
+    var buttons = Array.prototype.filter.call(acts.children, function (el) { return el.tagName === 'BUTTON' && el !== eye; });
     if (!buttons.length) return;
     /* A rare or administrative act the page declares (`data-rare`:
        Compare groups, Bulk import) is behind the bar's ⋯ at
@@ -475,7 +478,7 @@
     });
     if (rare.length) wrap.classList.add('has-rare');
     wrap.appendChild(btn); wrap.appendChild(menu);
-    acts.insertBefore(wrap, lead || null);
+    acts.insertBefore(wrap, lead ? (eye && eye.nextElementSibling === lead ? eye : lead) : (eye || null));
     /* A ⋯ never holds one item (the user, 2026-11-17: "menu only sit one
        option"): where only one would show, its own button stands on the bar
        (`.cmd-solo`) and the ⋯ is not drawn. On a phone a button with a

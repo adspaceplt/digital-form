@@ -148,9 +148,9 @@
 <script src="/js/group.js?v=20261117zzzf"></script>
 <script src="/js/menu.js?v=20261125tpl"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
-<script src="/js/cmdbar.js?v=20261117zzzf"></script>
+<script src="/js/cmdbar.js?v=20261125fh"></script>
 <script src="/js/records.js?v=20261125qla"></script>
-<script src="/js/chart.js?v=20261117zzzf"></script>
+<script src="/js/chart.js?v=20261125fh"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261124x"></script>
@@ -785,6 +785,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage" data-rare data-g="2">Select clients</button>
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -907,6 +908,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="odCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm" id="odRead" type="button" data-gate="bukku">Refresh</button>
             </span>
           </span>
@@ -935,6 +937,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="pynCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm" id="pynRead" type="button" data-gate="bukku">Read from Bukku</button>
             </span>
           </span>
@@ -2774,6 +2777,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="cpqRead" data-gate="bukku" data-need="campaigns.pay:work" type="button" hidden>Read from Bukku</button>
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="cpqBills" data-gate="bukku" data-need="campaigns.pay:work" type="button" hidden></button>
             </span>
           </span>
@@ -2882,6 +2886,7 @@
               <span class="cmdbar-count" id="rosterCount"></span>
             </span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
             </span>
           </span>
@@ -4039,6 +4044,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
             <span class="cmdbar-acts">
+              <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
               <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
             </span>
           </span>
@@ -4059,6 +4065,7 @@
             <span class="cmdbar-end">
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="spyCount"></span></span>
               <span class="cmdbar-acts">
+                <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
                 <button class="btn btn-sm" id="spyRead" data-gate="bukku" data-need="suppliers:work" type="button" hidden>Read from Bukku</button>
               </span>
             </span>
@@ -6795,11 +6802,11 @@ raya-2026        https://example.com/raya"></textarea>
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261123d", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261125fh", "uses": ["letters", "register", "bukku"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261124s", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261124za", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261124"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
-  "payments": {"src": "/js/payments.js?v=20261125fh", "uses": ["invoices", "sales"]},
+  "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261125nx", "uses": ["smreport", "reports"]},
   "quotes": {"src": "/js/quotes.js?v=20261125qk", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261125pk", "uses": ["documents", "seal"]},
@@ -6807,7 +6814,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261125fh", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261125nx", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
   "team": {"src": "/js/team.js?v=20261125tse", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
@@ -6818,12 +6825,12 @@ raya-2026        https://example.com/raya"></textarea>
   "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261125fh", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261124zd", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261124ru", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261125tse", "uses": ["documents", "crm", "sales"]},
+  "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
   "outstation": {"src": "/js/outstation.js?v=20261125tse"},
   "settings": {"src": "/js/settings.js?v=20261125tpl", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
@@ -6833,6 +6840,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261124zqc"></script>
-<script src="/js/overview.js?v=20261124zzzfex"></script>
+<script src="/js/overview.js?v=20261125fh"></script>
 </body>
 </html>

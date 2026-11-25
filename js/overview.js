@@ -1738,7 +1738,9 @@
         }).join('') + '</nav>' : '') +
       (page === 'me' ? '' : '<span class="ovw-when"><select class="select select-sm" id="ovwPeriod" data-nofind aria-label="Period">' +
       PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
-      '</select><span class="ovw-span" id="ovwSpan"></span></span>');
+      '</select><span class="ovw-span" id="ovwSpan"></span></span>') +
+      /* The eye that hides every figure (js/admin.js), at the bar's end. */
+      (window.ADspaceAdmin && window.ADspaceAdmin.figsEye ? window.ADspaceAdmin.figsEye() : '');
     box.appendChild(head);
     var strip = head.querySelector('#ovwPages');
     /* A sideways swipe anywhere on the Dashboard turns its page, as the
@@ -1932,10 +1934,15 @@
                   Math.max(0.5, len - gap).toFixed(1) + ' 100" stroke-dashoffset="' + (-off).toFixed(1) + '"/>';
                 off += len;
                 return c;
-              }).join('') + '<text x="32" y="32" dominant-baseline="central" text-anchor="middle">' + x.n + '</text></svg>';
+              }).join('') + '<text x="32" y="32" dominant-baseline="central" text-anchor="middle">' + x.n + '</text>' +
+                '<text class="figs-dots" x="32" y="32" dominant-baseline="central" text-anchor="middle">\u2022\u2022\u2022\u2022</text></svg>';
               var discs = names.slice(0, 3).map(function (nm) { return A && A.avatar ? A.avatar(nm) : ''; }).join('') +
                 (names.length > 3 ? '<span class="ovw-stage-more">+' + (names.length - 3) + '</span>' : '');
-              return '<button class="ovw-stage" type="button" aria-label="' + esc(say) + '">' + ring + '<b>' + esc(x.label) + '</b>' +
+              /* Its name carries the figures, so while they are hidden it is
+                 the stage alone (js/admin.js swaps the two). */
+              var hid = A && A.figsHidden && A.figsHidden();
+              return '<button class="ovw-stage" type="button" aria-label="' + esc(hid ? x.label : say) + '" data-figs-say="' + esc(say) +
+                '" data-figs-bare="' + esc(x.label) + '">' + ring + '<b>' + esc(x.label) + '</b>' +
                 '<span class="ovw-stage-who">' + discs + '</span></button>';
             }).join('') + '</div><p class="ovw-stage-key"><span class="is-ok">On track</span><span class="is-soon">Due within 2 days</span><span class="is-late">Late</span></p>';
             Array.prototype.forEach.call(body.querySelectorAll('.ovw-stage'), function (b) {
@@ -2094,7 +2101,9 @@
                 '<span class="ovw-n ovw-hide-n' + (isSlow ? ' is-late' : '') + '">' + (turn == null ? '—' : tlDays(turn)) + '</span>' +
                 '<span class="ovw-n ovw-hide-n">' + (s.rate == null ? '—' : '<span class="chip-state ' + (s.below ? 'is-danger' : 'is-ok') + '">' + (s.below ? 'Below' : 'Met') + '</span>') + '</span>';
               var say = p.name + ': ' + (s.rate == null ? 'nothing due' : s.rate + '% on time or early') + (s.below ? ', below target' : '');
-              return open ? '<button class="ovw-tr is-tl' + (s.below ? ' is-below' : '') + '" type="button" aria-label="' + esc(say) + '" data-go="/admin/?s=team&member=' + esc(encodeURIComponent(p.team_member_id)) + '&mtab=work">' + cells + '</button>'
+              var bare = p.name + (s.below ? ', below target' : ''), hid = A && A.figsHidden && A.figsHidden();
+              return open ? '<button class="ovw-tr is-tl' + (s.below ? ' is-below' : '') + '" type="button" aria-label="' + esc(hid ? bare : say) +
+                '" data-figs-say="' + esc(say) + '" data-figs-bare="' + esc(bare) + '" data-go="/admin/?s=team&member=' + esc(encodeURIComponent(p.team_member_id)) + '&mtab=work">' + cells + '</button>'
                 : '<div class="ovw-tr is-tl' + (s.below ? ' is-below' : '') + '">' + cells + '</div>';
             }).join('') + (list.length ? tlKey() : '');
           Array.prototype.forEach.call(body.querySelectorAll('[data-go]'), function (b) {
