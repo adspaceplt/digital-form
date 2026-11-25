@@ -40,6 +40,7 @@
     'bad-valid': 'Choose how many days the quotation is valid for.',
     'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the lines could not be read. Refresh the page.',
     'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
+    'bad-package': 'Enter the package name, its price and at least one Rate Card line, each with a quantity.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
@@ -1548,6 +1549,9 @@
       fill(s1);
       basket();
       if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
+      /* A quotation opened again opens at the review (2026-11-25). */
+      stepGo(sel._step || (editing || revises ? 4 : 1));
+      sidePaint(null);
       preview();
     });
   }
@@ -1582,6 +1586,13 @@
     });
     onceShow(Boolean((s.once || []).length));
     stepQtys(true);
+    B.pkg = (s.packages || []).length ? JSON.parse(JSON.stringify(s.packages[0])) : null;
+    if (B.pkg) {
+      B.pkg.items = (B.pkg.items || []).map(function (it) { return { slug: it.slug, qty: Number(it.qty) || 1, extra: it.extra != null ? it.extra : null }; });
+      B.pkg.incl = B.pkg.incl || [];
+    }
+    kindShow(kindOf(s));
+    pkgPaint();
     if (B.brands) {
       $('qbCusRows').innerHTML = (s.custom || []).map(cusRow).join('');
       if ((s.custom || []).length) $('qbMore').open = true;
@@ -1589,7 +1600,7 @@
     sync();
   }
   /* What a brand chooses on its own; the rest is the quotation's. */
-  var BRAND_KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order'];
+  var BRAND_KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order', 'packages'];
   function pickBrand(s) {
     var b = {};
     BRAND_KEYS.forEach(function (k) { if (s[k] !== undefined) b[k] = s[k]; });
@@ -1602,7 +1613,7 @@
   }
   /* A brand that chooses nothing yet is not priced (a new board). */
   function chosen(b) {
-    return Boolean(b && (b.plan || (b.platforms || []).length || (b.once || []).length || (b.custom || []).length || Number(b.budget) !== 0));
+    return Boolean(b && (b.plan || (b.platforms || []).length || (b.once || []).length || (b.custom || []).length || (b.packages || []).length || Number(b.budget) !== 0));
   }
   /* The selection as it is priced and kept: the board's alone for one
      brand; for several, the quotation's own choices with each brand that
@@ -1631,6 +1642,7 @@
     var NAMES = { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' };
     var pl = (b.platforms || []).map(function (x) { return NAMES[x] || x; });
     var bits = [];
+    if ((b.packages || []).length) bits.push(String(b.packages[0].name || 'Package'));
     if (p) bits.push('Plan ' + p.spec.plan);
     if (pl.length) bits.push(pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0]);
     if (!p && !pl.length && (b.once || []).length) bits.push('One-time items');
@@ -1691,6 +1703,7 @@
     }
     brandSay('');
     brandNew();
+    stepGo(1);
     $('qbBrandName').focus();
   }
   /* Cancel while a listed brand is edited: it keeps what it held. */
@@ -1709,6 +1722,7 @@
     fill(B.brands[i]);
     basket();
     preview();
+    stepGo(2);
     $('qbBrandName').focus();
   }
   /* Remove takes a brand off the list, Undo where it happened puts it back
@@ -2140,7 +2154,7 @@
   function rebuildOn(version, picked) {
     if (!B) return;
     var s = fullSel();
-    s.card = version; s.cardPicked = picked;
+    s.card = version; s.cardPicked = picked; s._step = B.step;
     /* The brands all kept, the board on the brand it held. */
     if (B.brands) { s.brands = JSON.parse(JSON.stringify(B.brands)); s._bi = B.bi; s._was = B.was; BRAND_KEYS.forEach(function (k) { delete s[k]; }); }
     if (B.entity) s.entity = B.entity;
@@ -2167,6 +2181,7 @@
       if (n) sel.once.push({ slug: i.getAttribute('data-slug'), qty: n });
     });
     stepQtys(false);
+    if (B.kind === 'package' && B.pkg) sel.packages = [pkgOut()];
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     if (!$('qbDiscBox').hidden && !$('qbTermDisc').checked) sel.term_disc = false;
     sel.pay = Number($('qbPay').value) || 7;
@@ -2241,6 +2256,7 @@
         var keys = boardLines().map(function (l) { return l.key; });
         Object.keys(B.edits).forEach(function (k) { if (keys.indexOf(k) < 0) delete B.edits[k]; });
         $('qbLines').innerHTML = table(d);
+        sidePaint(d);
         $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '') + (B.sent && B.sent.length > 1 ? ' · ' + B.sent.length + ' brands' : '');
         basket();
         $('qbSave').disabled = false;
@@ -2265,6 +2281,9 @@
   var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
   var DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   /* The lines and the totals as the quotation will keep them. */
+  /* A line written in the sheet itself (a custom line in More details, a
+     package in its builder) is changed there, never in the lines. */
+  function ownLine(l) { return l.kind === 'custom' || l.kind === 'package'; }
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
     /* The head holds a cell for the Tax cell where the lines carry one, so
@@ -2301,22 +2320,22 @@
            second option beside that code (2026-11-12). */
         var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
         if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
-        var tax = codes.length + (own ? 1 : 0) && l.kind !== 'custom' && !ro ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+        var tax = codes.length + (own ? 1 : 0) && !ownLine(l) && !ro ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
           '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
         /* A Rate Card one-time item takes Months too (2026-11-12, the user):
            a number bills it monthly, empty or 0 keeps it one-time. */
-        var flex = l.kind !== 'custom' && (l.basis === 'once' || l.was_once);
+        var flex = !ownLine(l) && (l.basis === 'once' || l.was_once);
         var box = function (what, v, cls, mode, label) {
           /* A custom line is changed in Advanced, where it is typed. */
-          if (l.kind === 'custom' || ro) return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
+          if (ownLine(l) || ro) return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
         /* The line's inclusions a point each, as the quotation prints them
            (2026-11-04). */
-        var incl = (l.detail || []).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
+        var incl = (l.kind === 'package' ? MON.planFold([l], t.currency)[0].detail : (l.detail || [])).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
         /* Include in plan (the user, 2026-11-06, option A): a line at RM 0
            beside a plan is listed under the plan's inclusions on the
            quotation, not as a row of its own; on unless unticked. */
@@ -2329,13 +2348,13 @@
         var own = !!(B && B.edits[l.key] && (B.edits[l.key].detail || B.edits[l.key].name));
         /* Changed from the Rate Card for this quotation (2026-11-16): its
            name, its description or its rate, said once on the line. */
-        var edited = l.kind !== 'custom' && (l.list_label != null || l.list_detail != null || l.list_rate != null);
+        var edited = !ownLine(l) && (l.list_label != null || l.list_detail != null || l.list_rate != null);
         var grp = B && B.sent ? rows.filter(function (x) { return x.brand === l.brand; }) : rows;
         var at = grp.indexOf(l);
         var move = B && !ro ? '<button type="button" class="iconbtn qb-move" data-move="-1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move up, ' + l.label) + '"' + (at === 0 ? ' disabled' : '') + '>' + UP + '</button>' +
           '<button type="button" class="iconbtn qb-move" data-move="1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move down, ' + l.label) + '"' + (at === grp.length - 1 ? ' disabled' : '') + '>' + DOWN + '</button>' : '';
         var desc = '';
-        if (l.kind !== 'custom' && B && !ro) {
+        if (!ownLine(l) && B && !ro) {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
             (B.descKey === l.key ?
               '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
@@ -2352,7 +2371,7 @@
             (B && !ro ? '<div class="qb-desc-acts"><span class="qb-moves">' + move + '</span></div>' : '') + '</div>';
         }
         /* The line's name, changed for this quotation where it is read. */
-        var naming = !ro && B && B.nameKey === l.key && l.kind !== 'custom';
+        var naming = !ro && B && B.nameKey === l.key && !ownLine(l);
         var nameCell = naming ?
           '<input class="input input-sm qb-name-in" type="text" maxlength="120" data-noenter data-nodraft data-key="' + esc(l.key || '') + '" value="' + esc(l.label) + '" aria-label="Name">' +
           '<span class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-name-cancel" data-key="' + esc(l.key || '') + '">Cancel</button><button type="button" class="btn btn-sm qb-name-done" data-key="' + esc(l.key || '') + '">Done</button></span>' :
@@ -2406,10 +2425,261 @@
     if (dl) dl.focus({ preventScroll: false });
     setTimeout(function () { row.classList.remove('is-new'); }, NEW_MS);
   }
+  // ---- BUILD QUOTE IN STEPS (2026-11-25) ------------------------------------
+  /* The user's approved boards "Build quote, step by step" and "Build quote
+     on a phone": 1 Type (the brands, Plan, Package or Items, Bill to),
+     2 Build (what the type chosen holds), 3 Extras (one-time items, files,
+     the advertising budget), 4 Term and review (the term, More details and
+     the lines as the client reads them). Continue checks its own step
+     alone; Back keeps what was entered; a quotation opened again opens at
+     the review. A brand chooses its own type. */
+  var STEPS = ['Type', 'Build', 'Extras', 'Term and review'];
+  function stepGo(n) {
+    if (!B) return;
+    n = Math.min(4, Math.max(1, Number(n) || 1));
+    B.step = n;
+    var cardEl = $('qbBox').querySelector('.sheet-card');
+    linesView(false);
+    cardEl.setAttribute('data-at', String(n));
+    Array.prototype.forEach.call(cardEl.querySelectorAll('.qb-pane'), function (p) { p.classList.toggle('is-on', Number(p.getAttribute('data-qbstep')) === n); });
+    Array.prototype.forEach.call($('qbTrack').querySelectorAll('li'), function (li) {
+      var k = Number(li.getAttribute('data-n'));
+      li.classList.toggle('is-done', k <= n);
+      li.classList.toggle('is-now', k === n);
+      if (k === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+    $('qbStepWord').innerHTML = 'Step ' + n + ' of 4 · <b>' + esc(STEPS[n - 1]) + '</b>';
+    $('qbBack').hidden = n === 1;
+    $('qbCancel').hidden = n !== 1;
+    $('qbNext').hidden = n === 4;
+    $('qbSave').hidden = n !== 4;
+    /* The review is the lines as the client reads them, under the term. */
+    $('qbLinesBox').hidden = n !== 4;
+    $('qbView').hidden = n === 4;
+    brandSay('');
+    $('qbBox').querySelector('.sheet-body').scrollTop = 0;
+  }
+  /* What a brand's choices are for: a package, a plan (or platforms and a
+     budget with none, as before), else items alone. */
+  function kindOf(s) {
+    s = s || {};
+    if ((s.packages || []).length) return 'package';
+    if (s.plan || (s.platforms || []).length || Number(s.budget) > 0) return 'plan';
+    if ((s.once || []).length || (s.custom || []).length) return 'items';
+    return null;
+  }
+  function kindShow(k) {
+    B.kind = k || null;
+    var cardEl = $('qbBox').querySelector('.sheet-card');
+    cardEl.setAttribute('data-kind', B.kind || '');
+    Array.prototype.forEach.call($('qbTypes').querySelectorAll('[data-kind]'), function (t) {
+      t.setAttribute('aria-checked', t.getAttribute('data-kind') === B.kind ? 'true' : 'false');
+    });
+    /* Items are the one-time lines themselves; otherwise they are extras. */
+    var box = $('qbOnceMore');
+    if (B.kind === 'items') { $('qbItemsSlot').appendChild(box); onceShow(true); }
+    else if (box.parentNode === $('qbItemsSlot')) {
+      $('qbAdBox').parentNode.insertBefore(box, $('qbAdOn'));
+      onceShow(Array.prototype.some.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return Number(i.value) > 0; }));
+    }
+  }
+  /* A brand chooses one type: changing it lets go of the other type's choices. */
+  function kindPick(k) {
+    if (!B || k === B.kind) return;
+    if (k !== 'plan') {
+      B.plan = null;
+      Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) { i.checked = false; });
+      $('qbGraphic').value = '0'; $('qbReel').value = '0';
+      budgets(0); paintPlans(); mixFor(0);
+    }
+    if (k !== 'package') B.pkg = null;
+    else if (!B.pkg) B.pkg = { name: '', basis: 'month', price: '', items: [], incl: [] };
+    kindShow(k);
+    pkgPaint();
+    sync();
+    preview();
+  }
+  /* What is missing on a step, else nothing. */
+  function stepWrong(n) {
+    if (n === 1) {
+      if (!B.kind) return 'Choose what to quote.';
+      if (B.brands && !$('qbBrandRow').hidden && !String($('qbBrandName').value || '').trim()) return SAID['bad-brands'];
+    }
+    if (n === 2) {
+      if (B.kind === 'plan' && !B.plan && !Array.prototype.some.call(document.querySelectorAll('#qbPlats input'), function (i) { return i.checked; })) return 'Choose a plan.';
+      if (B.kind === 'package') {
+        var k = B.pkg || {};
+        if (!String(k.name || '').trim()) return 'Enter the package name.';
+        if (!(k.items || []).length) return 'Add a Rate Card line to the package.';
+        if (!/^\d{1,7}(\.\d{1,2})?$/.test(String(k.price || '').replace(/,/g, ''))) return 'Enter the package price.';
+      }
+      if (B.kind === 'items' && !Array.prototype.some.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return Number(i.value) > 0; }) &&
+          !document.querySelector('#qbCusRows [data-cus]')) return 'Choose at least one item.';
+    }
+    return '';
+  }
+  function stepNext() {
+    if (!B) return;
+    var w = stepWrong(B.step);
+    if (w) {
+      brandSay(w);
+      var f = B.step === 1 ? (B.kind ? $('qbBrandName') : $('qbTypes').querySelector('[data-kind]'))
+        : B.kind === 'package' ? ($('qbPkgName').value.trim() ? (B.pkg.items.length ? $('qbPkgPrice') : $('qbPkgAdd')) : $('qbPkgName')) : null;
+      if (f && f.focus) f.focus();
+      return;
+    }
+    stepGo(B.step + 1);
+  }
+
+  /* The package on the board: its Rate Card lines, price, inclusions and
+     the rate for one more piece, as `p_sel.packages` holds it. */
+  function pkgSvc(slug) { return ((B && B.card && B.card.snapshot && B.card.snapshot.services) || []).filter(function (s) { return s.slug === slug && s.active !== false; })[0]; }
+  function pkgOut() {
+    var k = B.pkg;
+    var out = { name: String(k.name || '').replace(/\s+/g, ' ').trim(), basis: k.basis === 'once' ? 'once' : 'month',
+      price: String(k.price || '').replace(/,/g, '').trim(),
+      items: k.items.map(function (it) { var o = { slug: it.slug, qty: Math.max(1, Number(it.qty) || 1) }; if (it.extra != null && it.extra !== '') o.extra = String(it.extra).replace(/,/g, ''); return o; }),
+      incl: (k.incl || []).filter(function (x) { return String(x.text || '').trim(); }).map(function (x) { return { text: String(x.text).trim(), on: Boolean(x.on) }; }) };
+    return out;
+  }
+  function pkgPaint() {
+    if (!B || !B.card) return;
+    var k = B.pkg || { name: '', basis: 'month', price: '', items: [], incl: [] };
+    $('qbPkgName').value = k.name || '';
+    $('qbPkgBasis').value = k.basis === 'once' ? 'once' : 'month';
+    $('qbPkgBasis').dispatchEvent(new Event('input'));
+    $('qbPkgPrice').value = k.price || '';
+    var list = 0;
+    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Value</span><span></span></div>' : '') +
+      k.items.map(function (it) {
+        var s = pkgSvc(it.slug) || { name: it.slug, rate: 0 }, r = cv(s.rate || 0), id = 'qbPk-' + esc(it.slug), nm = esc(s.name);
+        list += r * (Number(it.qty) || 0);
+        return '<div class="qb-pkgrow" data-pk="' + esc(it.slug) + '"><span class="qb-pkgname">' + nm + '</span>' +
+          '<div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="' + id + '" aria-label="One fewer ' + nm + '">' + MINUS + '</button>' +
+          '<input class="qb-stepval" type="number" min="1" max="999" step="1" inputmode="numeric" id="' + id + '" value="' + esc(it.qty) + '" aria-label="' + nm + '">' +
+          '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button></div>' +
+          '<span class="qb-fig qb-rate">' + esc(rm(r)) + '</span><span class="qb-fig">' + esc(rm(r * (Number(it.qty) || 0))) + '</span>' +
+          '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove ' + nm + '">' + X_ICON + '</button></div>';
+      }).join('');
+    var taken = k.items.map(function (it) { return it.slug; });
+    $('qbPkgAdd').innerHTML = '<option value="">Choose a Rate Card line</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
+      return s.active !== false && s.rate != null && !(s.spec && s.spec.role === 'plan') && taken.indexOf(s.slug) < 0;
+    }).map(function (s) { return '<option value="' + esc(s.slug) + '">' + esc(s.name) + '</option>'; }).join('');
+    var price = Number(String(k.price || '').replace(/,/g, ''));
+    $('qbPkgList').textContent = k.items.length ? CUR + ' ' + rm(list) : '—';
+    $('qbPkgOff').textContent = k.items.length && k.price !== '' && isFinite(price) && list > price
+      ? CUR + ' ' + rm(list - price) + ' (' + (Math.round((list - price) / list * 1000) / 10) + '%)' : '—';
+    $('qbPkgIncl').innerHTML = (k.incl || []).map(function (x, i) {
+      return '<div class="qb-pkgline" data-in="' + i + '"><label class="tickline"><input type="checkbox"' + (x.on ? ' checked' : '') + ' aria-label="Included"></label>' +
+        '<input class="input" type="text" maxlength="300" data-noenter data-nodraft value="' + esc(x.text || '') + '" aria-label="Line ' + (i + 1) + '">' +
+        '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>';
+    }).join('');
+    /* The rate for one more piece in the same month: a content piece's,
+       prefilled from the card, the team's where typed (step 3). */
+    var contentItems = k.items.filter(function (it) { var s = pkgSvc(it.slug); return s && s.spec && s.spec.role === 'content'; });
+    $('qbPkgExtraBox').hidden = !contentItems.length;
+    $('qbPkgExtra').innerHTML = contentItems.map(function (it) {
+      var s = pkgSvc(it.slug), id = 'qbPx-' + esc(it.slug);
+      return '<div><label class="field-label" for="' + id + '">' + esc(s.name) + '</label>' +
+        '<input class="input" type="text" inputmode="decimal" id="' + id + '" data-px="' + esc(it.slug) + '" data-noenter data-nodraft value="' + esc(it.extra != null ? it.extra : rm(cv(s.rate))) + '"></div>';
+    }).join('');
+  }
+  /* The package as typed, read back into the board. */
+  function pkgRead() {
+    if (!B || !B.pkg) return;
+    var k = B.pkg;
+    k.name = $('qbPkgName').value;
+    k.basis = $('qbPkgBasis').value;
+    k.price = $('qbPkgPrice').value;
+    k.items.forEach(function (it) {
+      var q = document.getElementById('qbPk-' + it.slug), x = document.getElementById('qbPx-' + it.slug);
+      if (q) it.qty = Math.min(999, Math.max(1, Math.floor(Number(q.value) || 1)));
+      if (x) { var s = pkgSvc(it.slug); it.extra = s && String(x.value).replace(/,/g, '') === String(rm(cv(s.rate))).replace(/,/g, '') ? null : x.value; }
+    });
+    k.incl = Array.prototype.map.call($('qbPkgIncl').querySelectorAll('[data-in]'), function (r) {
+      return { text: r.querySelector('input[type="text"]').value, on: r.querySelector('input[type="checkbox"]').checked };
+    });
+  }
+
+  /* The figures under the contents, followed as the quantities and the
+     price are typed, the rows kept where they are. */
+  function pkgFigs() {
+    if (!B || !B.pkg) return;
+    var k = B.pkg, list = 0;
+    k.items.forEach(function (it) {
+      var s = pkgSvc(it.slug), r = cv((s && s.rate) || 0), row = $('qbPkgRows').querySelector('[data-pk="' + it.slug + '"]');
+      list += r * it.qty;
+      var q = document.getElementById('qbPk-' + it.slug);
+      if (q && Number(q.value) !== it.qty && document.activeElement !== q) q.value = String(it.qty);
+      if (row) row.lastElementChild.previousElementSibling.textContent = rm(r * it.qty);
+    });
+    var price = Number(String(k.price || '').replace(/,/g, ''));
+    $('qbPkgList').textContent = k.items.length ? CUR + ' ' + rm(list) : '—';
+    $('qbPkgOff').textContent = k.items.length && String(k.price || '').trim() !== '' && isFinite(price) && list > price
+      ? CUR + ' ' + rm(list - price) + ' (' + (Math.round((list - price) / list * 1000) / 10) + '%)' : '—';
+  }
+  /* The summary beside the steps at a desk: the board's lines, then the
+     figure the person is choosing towards. */
+  function sidePaint(d) {
+    var box = $('qbSide');
+    if (!box) return;
+    var t = (d && d.totals) || {};
+    var lines = d ? (MON.planFold(d.lines || [], t.currency)) : [];
+    box.innerHTML = '<p class="qb-sidehead">Summary</p>' +
+      lines.map(function (l) {
+        return '<div class="qb-sideline"><span>' + esc(l.label) + (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span><span class="qb-fig">' + esc(CUR + ' ' + acct(l.amount)) + '</span></div>';
+      }).join('') +
+      '<div class="qb-sidetotal"><span>' + (t.month || !t.once ? 'Monthly' : 'One-time') + (MON.sstOf(d ? d.lines : [], t.sst_pct).on ? ' incl. SST' : '') + '</span><span class="qb-fig">' +
+        (t.month ? esc(CUR + ' ' + acct(t.month.incl)) : t.once ? esc(CUR + ' ' + acct(t.once.incl)) : '—') + '</span></div>' +
+      (t.month && t.once ? '<p class="qb-sidenote">One-time ' + esc(CUR + ' ' + acct(t.once.incl)) + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') + '.</p>'
+        : !d ? '<p class="qb-sidenote">No lines.</p>' : '');
+  }
+
   function wire() {
     if (!$('qbBox') || wire.done) return;
     wire.done = true;
-    var on = function () { if (!B) return; sync(); preview(); };
+    var on = function () { if (!B) return; pkgRead(); pkgFigs(); sync(); preview(); };
+    /* The steps (2026-11-25). */
+    Array.prototype.forEach.call($('qbTypes').querySelectorAll('[data-kind]'), function (t) {
+      var m = t.querySelector('.qb-typemark'), I = window.ADspaceIcons;
+      if (m && I && I.svg) m.innerHTML = I.svg(m.getAttribute('data-mark'));
+      t.addEventListener('click', function () { kindPick(t.getAttribute('data-kind')); brandSay(''); });
+    });
+    $('qbNext').addEventListener('click', stepNext);
+    $('qbBack').addEventListener('click', function () { if (B) stepGo(B.step - 1); });
+    $('qbPkgAdd').addEventListener('change', function () {
+      if (!B || !B.pkg || !this.value) return;
+      pkgRead();
+      B.pkg.items.push({ slug: this.value, qty: 1, extra: null });
+      pkgPaint(); on();
+      var q = document.getElementById('qbPk-' + B.pkg.items[B.pkg.items.length - 1].slug);
+      if (q) q.focus();
+    });
+    $('qbPkgRows').addEventListener('click', function (e) {
+      var x = e.target.closest('.qb-pkgx');
+      if (!x || !B || !B.pkg) return;
+      pkgRead();
+      var sl = x.closest('[data-pk]').getAttribute('data-pk');
+      B.pkg.items = B.pkg.items.filter(function (it) { return it.slug !== sl; });
+      pkgPaint(); on(); $('qbPkgAdd').focus();
+    });
+    $('qbPkgIncl').addEventListener('click', function (e) {
+      var x = e.target.closest('.qb-pkgx');
+      if (!x || !B || !B.pkg) return;
+      pkgRead();
+      B.pkg.incl.splice(Number(x.closest('[data-in]').getAttribute('data-in')), 1);
+      pkgPaint(); on(); $('qbPkgInclAdd').focus();
+    });
+    $('qbPkgInclAdd').addEventListener('click', function () {
+      if (!B || !B.pkg) return;
+      pkgRead();
+      B.pkg.incl.push({ text: '', on: true });
+      pkgPaint();
+      var rows = $('qbPkgIncl').querySelectorAll('[data-in] input[type="text"]');
+      rows[rows.length - 1].focus();
+    });
+    ['qbPkgName', 'qbPkgPrice', 'qbPkgIncl', 'qbPkgExtra', 'qbPkgRows'].forEach(function (id) { $(id).addEventListener('input', on); });
+    ['qbPkgBasis', 'qbPkgIncl'].forEach(function (id) { $(id).addEventListener('change', on); });
     $('qbBrandAdd').addEventListener('click', brandAdd);
     $('qbBrandCancel').addEventListener('click', brandCancel);
     $('qbBrandList').addEventListener('click', function (e) {
@@ -2811,5 +3081,8 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline, offerable: offerable, sealedCopy: sealedCopy };
+  /* A step of Build quote opened directly, a type chosen where none is
+     (the suites walk a step's own controls this way). */
+  function stepTo(n, kind) { if (!B) return; if (kind && kind !== B.kind) kindPick(kind); stepGo(n); }
+  window.ADspaceQuotes = { stepTo: stepTo, load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline, offerable: offerable, sealedCopy: sealedCopy };
 })();

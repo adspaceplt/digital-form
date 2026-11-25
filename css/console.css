@@ -6580,3 +6580,64 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
   overflow-wrap: anywhere;
 }
 @media print { .trace-ink { display: none !important; } }
+
+/* BUILD QUOTE IN STEPS (2026-11-25, the user's approved boards): a track of
+   four steps over the sheet, one pane a step, the type chosen drawing its
+   own block, a summary beside the steps at a desk. */
+.sheet-card.formsheet.qb-card.is-steps { width: min(1000px, 100%); }
+.qb-track { display: flex; gap: 8px; list-style: none; margin: 0; padding: 16px 22px 0; }
+.qb-track li { flex: 1 1 0; min-width: 0; }
+.qb-trackbar { display: block; height: 4px; border-radius: 2px; background: var(--line); }
+.qb-track li.is-done .qb-trackbar { background: var(--fill); }
+.qb-trackname { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-mute); }
+.qb-track li.is-now .qb-trackname { color: var(--ink); font-weight: 600; }
+.qb-stepword { display: none; }
+.qb-pane:not(.is-on) { display: none; }
+.qb-card:not([data-kind="plan"]) .qb-for-plan,
+.qb-card:not([data-kind="package"]) .qb-for-package,
+.qb-card:not([data-kind="items"]) .qb-for-items { display: none; }
+.qb-card.is-steps .sheet-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 24px; align-content: start; }
+.qb-card.is-steps .sheet-body > * { grid-column: 1; min-width: 0; }
+.qb-card.is-steps .sheet-body > .qb-side { grid-column: 2; grid-row: 1 / span 9; align-self: start; position: sticky; top: 0; }
+.qb-side { background: var(--sunk); border-radius: var(--radius); padding: 16px; margin-top: 16px; }
+.qb-sidehead { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 0 0 4px; }
+.qb-sideline { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.qb-sidetotal { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; padding-top: 10px; border-top: 1px solid var(--line); margin-top: 4px; }
+.qb-sidenote { font-size: 12px; color: var(--ink-mute); margin: 8px 0 0; }
+.qb-fig { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.qb-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.qb-type { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px; border: 0; border-radius: var(--radius); background: var(--sunk); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: background var(--t-fast); }
+.qb-type b { margin-top: 8px; font-size: 14px; font-weight: 600; }
+.qb-type > span:last-child { font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+.qb-type[aria-checked="true"] { background: var(--card); outline: 1.5px solid var(--ink); outline-offset: -1.5px; }
+.qb-type:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+@media (hover: hover) { .qb-type:not([aria-checked="true"]):hover { background: var(--line-soft); } }
+.qb-typemark { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--line-soft); }
+.qb-typemark svg { width: 18px; height: 18px; }
+.qb-billrow { margin-top: 16px; }
+.qb-pkgrow { display: grid; grid-template-columns: minmax(0, 1fr) 128px 90px 100px var(--ctl-h); gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px; }
+.qb-pkghd { padding-top: 0; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.qb-pkgrow .qb-step { margin: 0; }
+.qb-pkgfig .readfield { margin: 0; }
+.qb-pkgincl { margin-top: 16px; }
+.qb-pkgline { display: grid; grid-template-columns: auto minmax(0, 1fr) var(--ctl-h); gap: 8px; align-items: center; margin-top: 8px; }
+.qb-pkgline .tickline { margin: 0; }
+#qbPkgInclAdd { margin-top: 8px; }
+@media (max-width: 760px) {
+  .qb-card.is-steps .sheet-body { display: block; }
+  .qb-card.is-steps .sheet-body > .qb-side { display: none; }
+  .qb-types { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .qb-stepword { display: block; margin: 12px 16px 0; font-size: 12.5px; color: var(--ink-mute); }
+  .qb-stepword b { font-weight: 600; color: var(--ink); }
+  .qb-track { padding: 8px 16px 0; gap: 6px; }
+  .qb-trackname { display: none; }
+  .qb-pkgrow { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name name x" "step fig fig"; row-gap: 4px; }
+  .qb-pkgrow > .qb-pkgname { grid-area: name; }
+  .qb-pkgrow > .qb-step { grid-area: step; }
+  .qb-pkgrow > .qb-rate { display: none; }
+  .qb-pkgrow > :nth-child(4) { grid-area: fig; }
+  .qb-pkgrow > .qb-pkgx { grid-area: x; }
+  .qb-pkghd { display: none; }
+}
