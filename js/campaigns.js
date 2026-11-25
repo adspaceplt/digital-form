@@ -119,7 +119,7 @@
     if (fx === null) return Number(rm);
     return fx ? Math.round(Number(rm) / fx * 100) / 100 : null;
   }
-  var FX_UNSET = 'Set the Singapore dollar rate in Tax and terms.';
+  var FX_UNSET = window.ADspaceWords.line.fxUnset;
   /* SST at the rate in force on the client's last confirmation, the one the
      selection page reads (`get_campaign`'s `confirmed`), so a confirmed
      campaign's total never moves with a later rate (the third audit, item
@@ -981,7 +981,7 @@
     'no-item': 'Set the item SKU and classification code for creator bills in Settings, Accounting, Bukku.',
     'no-product': 'Bukku has no product with the item SKU chosen for creator bills. Check the SKU in Bukku, or in Settings, Accounting, Bukku.',
     'no-bukku-account': 'Bukku has no account with the account code chosen for creator bills. Check the account in Bukku, or in Settings, Accounting, Bukku.',
-    'no-fx': 'Set the S$ exchange rate in Settings, Accounting, Tax and terms first.',
+    'no-fx': FX_UNSET,
     creating: 'This bill is already being created. Press Read from Bukku in a minute.',
     'not-confirmed': 'Bukku did not confirm the bill. Press Read from Bukku in a few minutes before you create it again.' };
   var payJobs = null;
@@ -1342,8 +1342,7 @@
     var fields = [];
     if (pay && !fixed) fields.push({ name: 'fee', label: 'Creator fee' + (j.fee && j.fee.currency === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text',
       value: j.fee ? Number(j.fee.amount).toFixed(2) : '', required: false, note: 'The amount agreed with the creator for this booking.' });
-    fields.push({ name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
-      note: 'The job ID on this booking\'s AP01 form, used to find its bill in Bukku.' });
+    fields.push({ name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40 });
     window.ADspaceConfirm.ask({ title: j.job || 'Booking', go: 'Save', wait: true, opener: btn, fields: fields,
       body: pay && fixed && j.fee ? 'The creator fee is ' + billMoney(j.fee.amount, j.fee.currency) + '. Change it on the bill in Bukku.' : undefined,
       check: function (v) { return pay && !fixed && !feeOk(feeIn(v.fee)) ? JOB_SAID['bad-amount'] : ''; } }, function (v) {
@@ -3049,7 +3048,7 @@
     if (s === 'draft')      return { to: 'open',  label: 'Publish', cls: 'btn-go', icon: A ? A.glyph('send') : STATE_ICON.send };
     if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: A ? A.glyph('hide') : STATE_ICON.eyeOff,
       ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
-        body: 'The client link stops working until this is published again. Selections are kept.' } };
+        body: 'The client link will stop working until this is published again. Selections are kept.' } };
     /* In production the client keeps choosing while a slot is free; once the
        slots have filled, a slot freed later is offered again only here. */
     // In production with nothing to reopen: no move.
@@ -3098,7 +3097,7 @@
     var c = state.campaign;
     window.ADspaceConfirm.ask({
       title: 'Reset link?',
-      body: 'The current link for ' + campName(c) + ' stops working immediately. Send the new link to the client.',
+      body: 'The current link for ' + campName(c) + ' will stop working immediately. Send the new link to the client.',
       go: 'Reset link',
       tone: 'warn'
     }, function () {
@@ -3173,7 +3172,6 @@
   }
 
   function loadOptions() {
-    var paysIn = loadPays(state.campaign.id);
     db.from('campaign_options').select('*, creators(name, access_code, creator_code, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         return new Promise(function (res) { readJobPattern(function () { res(r); }); });
@@ -3209,8 +3207,8 @@
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
-            loadQc(ids, function () { loadReviews(ids, function () { loadPosts(function () { paysIn.then(paintOptions); }); }); });
-          }, function () { paysIn.then(paintOptions); });
+            loadQc(ids, function () { loadReviews(ids, function () { loadPosts(function () { paintOptions(); }); }); });
+          }, function () { paintOptions(); });
       });
   }
 
@@ -3784,8 +3782,8 @@
     if (!live.length) { UI.emptyLine(box, 'No creators offered.'); return; }
     var t = document.createElement('div');
     t.className = 'crm-table softpanel';
-    t.innerHTML = '<div class="crm-head svc-row pick-row"><span>Creator</span><span>Placements</span>' +
-      '<span class="svc-rate">Client rate</span><span>State</span></div>';
+    t.innerHTML = '<div class="crm-head svc-row pick-row"><span>Creator</span><span>Platforms</span>' +
+      '<span class="svc-rate">Client rate</span><span>Status</span></div>';
     var band = function (name, n) {
       var el = document.createElement('div');
       el.className = 'svc-cat';
@@ -3805,7 +3803,7 @@
     };
     if (picked.length) { t.appendChild(band('Chosen', picked.length)); picked.forEach(add); }
     if (backups.length) { t.appendChild(band('Backups', backups.length)); backups.forEach(add); }
-    if (waiting.length) { t.appendChild(band('Offered, not chosen', waiting.length)); waiting.forEach(add); }
+    if (waiting.length) { t.appendChild(band('Not selected', waiting.length)); waiting.forEach(add); }
     box.innerHTML = '';
     box.appendChild(t);
   }
@@ -4136,7 +4134,7 @@
       ? '<p class="ovmore">' + (live.length - 8) + ' more in Creators.</p>' : '';
     return ovSec('Bookings', 'creators', 'Creators',
       '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
-      '<span>Posting on</span><span>Step</span><span class="ovamt">Client rate</span></div>' +
+      '<span>Platforms</span><span>Step</span><span class="ovamt">Client rate</span></div>' +
       rows + '</div>' + more);
   }
 
@@ -4268,10 +4266,9 @@
     }
 
     paintCampTiming(c);
-    paintCampPays();
 
     /* The rule under the last block, set in the paint. */
-    var blocks = ['campFactBlock', 'campPayBlock', 'campPickBlock', 'campDateBlock', 'campTimeBlock'].map($).filter(Boolean);
+    var blocks = ['campFactBlock', 'campPickBlock', 'campDateBlock', 'campTimeBlock'].map($).filter(Boolean);
     blocks.forEach(function (b) { b.classList.remove('is-last'); });
     var shown = blocks.filter(function (b) { return !b.hidden; });
     if (shown.length) shown[shown.length - 1].classList.add('is-last');
@@ -4321,8 +4318,8 @@
     if (!block || !box) return;
     var m = campMilestones(c), now = new Date().toISOString();
     var steps = [
-      ['Setting up', m.created, m.published],
-      ['Client selection', m.published, m.confirmed],
+      ['Draft', m.created, m.published],
+      ['Open for selection', m.published, m.confirmed],
       ['Confirming creators', m.confirmed, m.production],
       ['In production', m.production, m.completed]
     ];
@@ -5043,90 +5040,10 @@
     return window.ADspaceMenu.item(action, label, need);
   }
 
-  /* A booking's payment (CAMPAIGN CREATOR PAYMENTS, 2026-11-22, screen (f)
-     of the Bukku structure mockup): the bill `creator_bills` holds for its
-     Job reference, read in one request for the whole campaign at Creator
-     payments View (`campaign_creator_bills`), never one a booking and never
-     Bukku itself. The console's alone: no client page or creator page reads
-     it. A refused or failed read draws no payment, the record as before. */
-  var pays = { campaign: null, rows: null };
-  function loadPays(id) {
-    pays = { campaign: id, rows: null };
-    if (!mayPart('campaigns.pay', 'view')) return Promise.resolve();
-    return db.rpc('campaign_creator_bills', { p_campaign: id }).then(function (r) {
-      var d = r && r.data;
-      if (pays.campaign !== id || !d || !d.ok) return;
-      var m = {};
-      (d.bookings || []).forEach(function (b) { m[b.option] = b; });
-      pays.rows = m;
-    }).catch(function () {});
-  }
-  function payOf(o) {
-    return pays.rows && state.campaign && pays.campaign === state.campaign.id ? pays.rows[o.id] || null : null;
-  }
-  function payDay(v) {
-    return ADspaceClock.date(v, String(v).slice(0, 4) === ADspaceClock.today().slice(0, 4) ? { year: false } : {});
-  }
-  /* The dot and its word, as the creator's Payment pane says it: Paid {day},
-     Processing, Draft in Bukku; a booking posted with no bill Not billed, or
-     Not linked while its creator is not linked to Bukku; nothing before. */
-  function bookingPayChip(o) {
-    var p = payOf(o), b = p && p.bill;
-    if (!p) return '';
-    if (b) {
-      var w = JOB_STATE[b.status];
-      if (!w) return '';
-      return '<span class="chip-state ' + w[1] + ' kcard-pay">' +
-        esc(b.status === 'paid' && b.paid_on ? 'Paid ' + payDay(b.paid_on) : w[0]) + '</span>';
-    }
-    if (['posted', 'completed'].indexOf(o.state) < 0) return '';
-    return p.linked ? '<span class="chip-state is-warn kcard-pay">Not billed</span>'
-      : '<span class="chip-state is-off kcard-pay">Not linked</span>';
-  }
-  /* The tab opens at the press, then goes to the bill once bukku-sync names
-     it, as Payments opens one; a refusal is said on the booking's card. */
-  function openPayBill(o, num) {
-    var tab = window.open('', '_blank');
-    db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: o.creator_id, number: num } }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
-    }).then(function (x) {
-      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
-      if (tab) tab.close();
-      cardSay(o, 'Bill ' + num + ' could not be opened in Bukku. Open the creator\'s Payment tab, press Read from Bukku, then try again.', 'err');
-    }).catch(function () { if (tab) tab.close(); });
-  }
-  /* Creator payments in the rail: the creators paid of those booked, what
-     is still with Bukku and what is posted with no bill, and the sum paid in
-     each currency. A line with nothing to count is left out. */
-  function paintCampPays() {
-    var box = $('campPayBlock');
-    if (!box) return;
-    var rows = pays.rows && state.campaign && pays.campaign === state.campaign.id
-      ? (state.options || []).filter(function (o) { return BOOKED_OUT_PAY.indexOf(o.state) < 0; }) : [];
-    box.hidden = !rows.length;
-    if (!rows.length) return;
-    var n = { paid: 0, processing: 0, draft: 0, none: 0 }, sums = {};
-    rows.forEach(function (o) {
-      var p = payOf(o), b = p && p.bill;
-      if (b && n[b.status] != null) n[b.status]++;
-      if (b && b.status === 'paid' && b.amount != null) {
-        var cur = b.currency || 'MYR';
-        sums[cur] = (sums[cur] || 0) + Number(b.amount);
-      }
-      if (!b && ['posted', 'completed'].indexOf(o.state) > -1) n.none++;
-    });
-    var line = function (k, v, cls) { return '<div><dt>' + esc(k) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd></div>'; };
-    var curs = Object.keys(sums).sort();
-    $('campPayRail').innerHTML =
-      line('Paid', esc(n.paid + ' of ' + rows.length + (rows.length === 1 ? ' creator' : ' creators'))) +
-      (n.processing ? line('Processing', String(n.processing)) : '') +
-      (n.draft ? line('Draft in Bukku', String(n.draft)) : '') +
-      (n.none ? line('Not billed', String(n.none)) : '') +
-      (curs.length ? line('Paid to creators', curs.map(function (c) {
-        return '<span class="crtot-amt">' + esc(billMoney(Math.round(sums[c] * 100) / 100, c)) + '</span>';
-      }).join(''), 'crtot') : '');
-  }
-  var BOOKED_OUT_PAY = ['option', 'shortlisted', 'backup', 'withdrawn', 'replaced'];
+  /* The campaign record carries no creator payment (the user, 2026-11-25):
+     it may be shown to a client, so no booking draws a bill or its state,
+     no ⋯ opens a bill and the rail holds no Creator payments block. That
+     work is Creators > Payments' and the creator's own page's. */
 
   function cardMenu(o) {
     var items = '';
@@ -5153,8 +5070,6 @@
         items += menuItem('replace', 'Replace');
       }
     }
-    var pb = payOf(o);
-    if (pb && pb.bill && pb.bill.number) items += window.ADspaceMenu.item('paybill', 'Open in Bukku');
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
 
@@ -5276,7 +5191,6 @@
           '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
           (o.is_replacement ? '<span class="tone">Replacement</span>' : '') +
           (o.goodwill ? '<span class="tone">Goodwill</span>' : '') +
-          bookingPayChip(o) +
         '</span>' +
         '<span class="kcard-act">' +
           /* Sending a creator their link is the everyday action on this row, so
@@ -5641,7 +5555,7 @@
        ask nothing, and the way back is drawn where it happened. */
     var FILE_SAID = {
       denied: 'You do not have permission to change this file. Please ask an admin.',
-      'client-scope': 'This client is not one of your clients.',
+      'client-scope': 'You do not have access to this client. Please ask an admin.',
       'not-approved': 'Only a file the client has approved can be hidden from the client. Remove this file instead.',
       'not-found': 'The file is no longer on this booking.',
       'not-hidden': 'Hide the file first.'
@@ -5824,7 +5738,6 @@
     on('del',       function () { dropOption(o); });
     on('unbook',    function () { unbook(o); });
     on('wasend',    function () { sendBooking(o); });
-    on('paybill',   function () { var pb = payOf(o); if (pb && pb.bill && pb.bill.number) openPayBill(o, pb.bill.number); });
     var waItem = card.querySelector('[data-a="wasend"]');
     if (waItem) {
       waItem.hidden = true;
@@ -5867,7 +5780,7 @@
         return rows.reduce(function (chain, x) {
           return chain.then(function (ok) { return x.__save().then(function (y) { return ok && y; }); });
         }, Promise.resolve(true)).then(function (ok) {
-          if (!ok) { m.textContent = 'A placement was not saved. See below.'; m.className = 'msg err'; return; }
+          if (!ok) { m.textContent = 'A post was not saved. See below.'; m.className = 'msg err'; return; }
           m.textContent = 'Saved.'; m.className = 'msg ok';
           say('card:' + o.id, 'Saved.');
           loadOptions();
@@ -5983,7 +5896,7 @@
     var name = (o.creators || {}).name || 'this creator';
     window.ADspaceConfirm.ask({
       title: 'Confirm internally',
-      body: name + '\u2019s draft moves to Scheduled. The client\u2019s page reads Confirmed by ' +
+      body: name + '\u2019s draft will move to Scheduled. The client\u2019s page will read Confirmed by ' +
         ((bridge.actorName && bridge.actorName()) || 'you') + '.',
       go: 'Confirm'
     }, function () {
@@ -6034,8 +5947,8 @@
     var name = (o.creators || {}).name || 'this creator';
     window.ADspaceConfirm.ask({
       title: 'Revert to options',
-      body: name + ' goes back among the options and their place frees up. '
-          + 'Dates and notes are kept. The client chooses again once the selection is reopened.',
+      body: name + ' will go back to the options, and the place will open for another creator. '
+          + 'Dates and notes are kept. The client will choose again once the selection is reopened.',
       go: 'Revert',
       tone: 'warn'
     }, function () {
@@ -6176,7 +6089,7 @@
        stands on its own below it, and a release still names who checked. */
     var all = document.createElement('label');
     all.className = 'qcrow qcall';
-    all.innerHTML = '<input type="checkbox" id="qcAll"><span>Tick all</span>';
+    all.innerHTML = '<input type="checkbox" id="qcAll"><span>Select all</span>';
     box.appendChild(all);
     var n = 0;
     QC_CHECKS.forEach(function (group) {
@@ -6609,7 +6522,7 @@
       var spend = posted.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
       $('rollup').hidden = false;
       $('rollupTally').innerHTML =
-        tallyCell('Placements', rows.length) +
+        tallyCell('Posts', rows.length) +
         tallyCell('Impressions', imp.toLocaleString()) +
         tallyCell('Engagements', eng.toLocaleString()) +
         tallyCell('Views', vie.toLocaleString()) +
@@ -6867,7 +6780,7 @@
     empty: function () { return 'No creators selected.'; },
     'over-slots': function (d) { return 'Not confirmed. ' + d.booked + ' of ' + d.slots + ' creators are already booked; confirm ' + Math.max(0, d.slots - d.booked) + ' at most.'; },
     denied: function () { return 'Not confirmed. You do not have permission to confirm creators. Please ask an admin.'; },
-    'client-scope': function () { return 'Not confirmed. This client is not one of your clients.'; },
+    'client-scope': function () { return 'Not confirmed. You do not have access to this client. Please ask an admin.'; },
     'not-found': function () { return 'This campaign no longer exists.'; }
   };
 
@@ -6897,7 +6810,7 @@
       var patch = {};
       keys.forEach(function (k) {
         // "Apply to blanks" is the safe one: a row somebody set by hand keeps
-        // what they set. Overwrite is the deliberate, separate button.
+        // what they set. Apply all is the deliberate, separate button.
         if (overwrite || o[k] == null || o[k] === '') patch[k] = vals[k];
       });
       if (!Object.keys(patch).length) { if (!--left) done(); return; }
@@ -6918,7 +6831,7 @@
       }
       msg('bulkMsg', touched
         ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
-        : 'All bookings already have these values. Use Overwrite to replace them.',
+        : 'All bookings already have these values. Use Apply all to replace them.',
         touched ? 'ok' : 'warn');
       log('campaign.bulk', state.campaign.title, touched + ' rows');
       loadOptions();
@@ -6928,10 +6841,9 @@
   $('bulkApply').addEventListener('click', function () { applyBulk(false); });
   $('bulkApplyAll').addEventListener('click', function () {
     window.ADspaceConfirm.ask({
-      title: 'Overwrite every creator',
-      body: 'Dates set by hand on a booking will be replaced with these. '
-          + 'Apply to blanks keeps them.',
-      go: 'Overwrite',
+      title: 'Apply to all creators?',
+      body: 'Dates set by hand on a booking will be replaced. Apply keeps them.',
+      go: 'Apply all',
       tone: 'warn'
     }, function () { applyBulk(true); });
   });
