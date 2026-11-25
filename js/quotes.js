@@ -2055,14 +2055,29 @@
     $('qbOnceAdd').hidden = on;
   }
   function adsShow() { $('qbAdAddFirst').hidden = $('qbAdOn').checked; }
-  /* View lines turns the sheet to the priced lines; Back returns. */
+  /* View quote turns the sheet to the quotation so far, as a cart shows
+     what is in it; Back returns (the user, 2026-11-25: "It's like a
+     bucket or cart"). The step's own Back gives way while it is open, so
+     the foot never holds two Backs. */
   function linesView(on) {
     var card = $('qbBox').querySelector('.sheet-card');
     card.classList.toggle('is-lines', on);
     $('qbLinesBox').hidden = !on;
-    $('qbView').textContent = on ? 'Back' : 'View lines';
     $('qbView').setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (B) $('qbBack').hidden = on || B.step === 1;
+    viewSay();
     $('qbBox').querySelector('.sheet-body').scrollTop = 0;
+  }
+  /* Drawn once a line is priced, with the count beside it as a cart's;
+     hidden on the review, which shows the quotation itself. */
+  function viewSay() {
+    var b = $('qbView');
+    if (!B || !b) return;
+    var on = $('qbBox').querySelector('.sheet-card').classList.contains('is-lines');
+    var n = ((B.priced && B.priced.lines) || []).length;
+    b.hidden = B.step === 4 || (!n && !on);
+    b.innerHTML = on ? 'Back' : 'View quote<span class="tab-n">' + n + '</span>';
+    b.setAttribute('aria-label', on ? 'Back' : 'View quote, ' + n + (n === 1 ? ' item' : ' items'));
   }
   /* Bill to: the client's billing entities, the primary first, drawn
      where there are two or more. */
@@ -2257,6 +2272,7 @@
         if (r.error || d.error) {
           $('qbLines').innerHTML = '<p class="ovnone">' + esc((d.brand != null && B.sent ? brandWord(B.brands[B.sent[d.brand]]) + ': ' : '') + said(r.error || d.error)) + '</p>';
           basket();
+          viewSay();
           return;
         }
         B.priced = d;
@@ -2267,6 +2283,7 @@
         sidePaint(d);
         $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '') + (B.sent && B.sent.length > 1 ? ' · ' + B.sent.length + ' brands' : '');
         basket();
+        viewSay();
         $('qbSave').disabled = false;
         $('qbPreview').disabled = false;
       }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
@@ -2463,7 +2480,7 @@
     $('qbSave').hidden = n !== 4;
     /* The review is the lines as the client reads them, under the term. */
     $('qbLinesBox').hidden = n !== 4;
-    $('qbView').hidden = n === 4;
+    viewSay();
     brandSay('');
     $('qbBox').querySelector('.sheet-body').scrollTop = 0;
   }
