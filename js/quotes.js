@@ -2084,7 +2084,8 @@
     if (!B || !b) return;
     var on = $('qbBox').querySelector('.sheet-card').classList.contains('is-lines');
     var n = ((B.priced && B.priced.lines) || []).length;
-    b.hidden = B.step === 4 || (!n && !on);
+    /* At a desk the Summary is the cart, so View quote is not drawn. */
+    b.hidden = B.step === 4 || (!n && !on) || (sideOn() && !on);
     b.innerHTML = on ? 'Back' : 'View quote<span class="tab-n">' + n + '</span>';
     b.setAttribute('aria-label', on ? 'Back' : 'View quote, ' + n + (n === 1 ? ' item' : ' items'));
   }
@@ -2390,6 +2391,30 @@
   /* A line written in the sheet itself (a custom line in More details, a
      package in its builder) is changed there, never in the lines. */
   function ownLine(l) { return l.kind === 'custom' || l.kind === 'package'; }
+  /* The tax codes a line may take, the client's own first (its value
+     empty), or null where none is offered or the line is the team's own
+     (2026-10-22); one copy for the lines and the Summary's ⋯. */
+  function taxOpts(l, t) {
+    var codes = (B && B.codes || []).filter(function (c) { return c.active; });
+    var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
+    /* The client's SST reads as Bukku's code at its rate, never a
+       second option beside that code (2026-11-12). */
+    var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
+    if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
+    if (!(codes.length + (own ? 1 : 0)) || ownLine(l)) return null;
+    return { cur: cur, opts: [['', own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE]]
+      .concat(codes.map(function (c) { return [c.code, MON.taxCodeWord(c)]; })) };
+  }
+  /* The totals as the quotation reads them, [label, figure, is total, key]
+     (ADspaceMoney.quoteRows, one copy, QT-4). */
+  function totRows(d) {
+    var t = d.totals || {}, rows = d.lines || [];
+    var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
+    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-time subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
+      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-time incl. SST' : 'One-time total',
+      term: MON.termLine(t.term, t.term_pct) };
+    return MON.quoteRows(t, rows, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2], x[0]]; });
+  }
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
     /* The head holds a cell for the Tax cell where the lines carry one, so
@@ -2420,15 +2445,9 @@
            The client's own reads as the rate alone (SST 8%), the codes by
            their code, so on a phone it shares the line with Qty, Rate and
            Months (2026-10-31). */
-        var codes = (B && B.codes || []).filter(function (c) { return c.active; });
-        var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
-        /* The client's SST reads as Bukku's code at its rate, never a
-           second option beside that code (2026-11-12). */
-        var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
-        if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
-        var tax = codes.length + (own ? 1 : 0) && !ownLine(l) && !ro ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
-          '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
-          codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
+        var tx = !ro ? taxOpts(l, t) : null;
+        var tax = tx ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+          tx.opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] && o[0] === tx.cur ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
           '</select>' : '';
         /* A Rate Card one-time item takes Months too (2026-11-12, the user):
            a number bills it monthly, empty or 0 keeps it one-time. */
@@ -2502,11 +2521,7 @@
       }).join('') + '</div>';
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
        the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
-    var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
-    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-time subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
-      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-time incl. SST' : 'One-time total',
-      term: MON.termLine(t.term, t.term_pct) };
-    var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
+    var tot = totRows(d);
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
@@ -2757,19 +2772,108 @@
   }
   /* The summary beside the steps at a desk: the board's lines, then the
      figure the person is choosing towards. */
+  /* The Summary is the cart at a desk (the user, 2026-11-25): every
+     priced line under Monthly, One-time and Advertising budget, each
+     group's subtotal, then the totals as the quotation reads them, the
+     add-on rates ticked counted in one mute line, and a line's own acts
+     in its ⋯ (Edit a custom line, Tax code, Move up, Move down, Remove).
+     On a phone it is not drawn, and View quote turns the sheet to the
+     lines instead. */
   function sidePaint(d) {
     var box = $('qbSide');
     if (!box) return;
     var t = (d && d.totals) || {};
-    var lines = d ? (MON.planFold(d.lines || [], t.currency)) : [];
+    var lines = d ? MON.planFold(d.lines || [], t.currency) : [];
+    var board = B ? boardLines().map(function (l) { return l.key; }) : [];
+    var row = function (l) {
+      var mine = B && board.indexOf(l.key) > -1, at = board.indexOf(l.key), items = [];
+      if (mine) {
+        if (l.kind === 'custom') items.push(['edit', 2, 'Edit']);
+        if (taxOpts(l, t)) items.push(['tax', 2, 'Tax code']);
+        if (at > 0) items.push(['up', 2, 'Move up']);
+        if (at > -1 && at < board.length - 1) items.push(['down', 2, 'Move down']);
+        if (l.kind === 'custom' || (l.basis === 'once' && l.slug && onceBox(l.slug))) items.push(['remove', 6, 'Remove']);
+      }
+      return '<div class="qb-sideline" data-key="' + esc(l.key || '') + '"><span class="qb-sidename">' + esc(l.label) +
+        (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span>' +
+        '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + '</span>' +
+        '<span class="team-act qb-sideact">' + (items.length ? '<button class="kmenu-btn" type="button" aria-label="' + esc('More actions, ' + l.label) + '" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
+            return '<button class="kmenu-item" data-g="' + x[1] + '" data-a="' + x[0] + '" type="button" role="menuitem">' + esc(x[2]) + '</button>';
+          }).join('') + '</div>' : '') + '</span></div>';
+    };
+    var tot = d ? totRows(d) : [];
+    var sub = {};
+    tot.forEach(function (x) { if (x[3] === 'monthSub' || x[3] === 'onceSub') sub[x[3]] = x; });
+    var group = function (name, list, key) {
+      if (!list.length) return '';
+      var st = sub[key];
+      return '<div class="qb-sidegroup"><p class="qb-sidegh">' + esc(name) + '</p>' + list.map(row).join('') +
+        (st ? '<div class="qb-sidesub"><span>' + esc(st[0]) + '</span><span class="qb-fig">' + esc(st[1]) + '</span><span class="qb-sideact"></span></div>' : '') + '</div>';
+    };
+    var month = lines.filter(function (l) { return l.basis === 'month'; }), once = lines.filter(function (l) { return l.basis !== 'month'; });
+    var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, billed separately</span>' +
+      '<span class="qb-fig">' + esc('Up to ' + CUR + ' ' + whole(t.budget)) + '</span><span class="qb-sideact"></span></div></div>' : '';
+    var rest = tot.filter(function (x) { return x[3] !== 'monthSub' && x[3] !== 'onceSub'; });
+    var n = B ? aoAll().filter(function (k) { return (B.aoOn || []).indexOf(k) >= 0; }).length : 0;
     box.innerHTML = '<p class="qb-sidehead">Summary</p>' +
-      lines.map(function (l) {
-        return '<div class="qb-sideline"><span>' + esc(l.label) + (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span><span class="qb-fig">' + esc(CUR + ' ' + acct(l.amount)) + '</span></div>';
-      }).join('') +
-      '<div class="qb-sidetotal"><span>' + (t.month || !t.once ? 'Monthly' : 'One-time') + (MON.sstOf(d ? d.lines : [], t.sst_pct).on ? ' incl. SST' : '') + '</span><span class="qb-fig">' +
-        (t.month ? esc(CUR + ' ' + acct(t.month.incl)) : t.once ? esc(CUR + ' ' + acct(t.once.incl)) : '—') + '</span></div>' +
-      (t.month && t.once ? '<p class="qb-sidenote">One-time ' + esc(CUR + ' ' + acct(t.once.incl)) + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') + '.</p>'
-        : !d ? '<p class="qb-sidenote">No lines.</p>' : '');
+      (lines.length ? group('Monthly', month, 'monthSub') + group('One-time', once, 'onceSub') + ads +
+        '<dl class="qb-sidetot">' + rest.map(function (x) {
+          return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+        }).join('') + '</dl>' : ads + '<p class="qb-sidenote">No lines.</p>') +
+      (n ? '<p class="qb-sidenote">' + n + (n === 1 ? ' add-on rate' : ' add-on rates') + '</p>' : '');
+    sideFit();
+  }
+  /* The Summary sticks under the sheet's head and scrolls on its own
+     where it is taller than the sheet's body. */
+  function sideFit() {
+    var body = $('qbBox') && $('qbBox').querySelector('.sheet-body');
+    if (body && body.clientHeight) body.style.setProperty('--qb-side-max', Math.max(160, body.clientHeight - 32) + 'px');
+  }
+  function sideOn() { var b = $('qbSide'); return !!b && b.getClientRects().length > 0; }
+  function onceBox(slug) {
+    return Array.prototype.filter.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return i.getAttribute('data-slug') === slug; })[0] || null;
+  }
+  function sideAct(a, key) {
+    if (!B || !B.priced) return;
+    var l = (B.priced.lines || []).filter(function (x) { return x.key === key; })[0];
+    if (!l) return;
+    if (a === 'up' || a === 'down') {
+      var keys = boardLines().map(function (x) { return x.key; });
+      var i = keys.indexOf(key), j = i + (a === 'up' ? -1 : 1);
+      if (i < 0 || j < 0 || j >= keys.length) return;
+      var tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
+      B.order = keys;
+      preview();
+      return;
+    }
+    var cus = l.kind === 'custom' ? document.querySelectorAll('#qbCusRows [data-cus]')[Number(String(key).split('|')[1]) - 1] : null;
+    if (a === 'edit') {
+      stepGo(4);
+      $('qbMore').open = true;
+      var nm = cus && cus.querySelector('.qb-cusname');
+      if (nm) { nm.scrollIntoView({ block: 'center' }); nm.focus(); }
+      return;
+    }
+    if (a === 'remove') {
+      if (cus) { var x = cus.querySelector('.qb-cusx'); if (x) x.click(); return; }
+      var ob = l.slug && onceBox(l.slug);
+      if (ob) { ob.value = '0'; ob.dispatchEvent(new Event('input', { bubbles: true })); ob.dispatchEvent(new Event('change', { bubbles: true })); }
+      return;
+    }
+    if (a === 'tax') {
+      var tx = taxOpts(l, B.priced.totals || {});
+      if (!tx) return;
+      window.ADspaceConfirm.ask({ title: 'Tax code', go: 'Save',
+        field: { name: 'tax', label: l.label, choices: tx.opts, value: tx.cur, required: false } }, function (v) {
+        if (!B) return;
+        v = typeof v === 'string' ? v : (v && v.tax) || '';
+        var e0 = B.edits[key] || {};
+        if (v) e0.tax = v; else delete e0.tax;
+        if (Object.keys(e0).length) B.edits[key] = e0; else delete B.edits[key];
+        preview();
+      });
+    }
   }
 
   function wire() {
@@ -2783,6 +2887,28 @@
       t.addEventListener('click', function () { kindPick(t.getAttribute('data-kind')); brandSay(''); });
     });
     $('qbNext').addEventListener('click', stepNext);
+    $('qbSide').addEventListener('click', function (e) {
+      var btn = e.target.closest('.kmenu-btn'), it = e.target.closest('.kmenu-item');
+      if (it) {
+        it.closest('[data-menu]').hidden = true;
+        sideAct(it.getAttribute('data-a'), it.closest('[data-key]').getAttribute('data-key'));
+        return;
+      }
+      if (!btn) return;
+      var menu = btn.parentNode.querySelector('[data-menu]'), open = menu.hidden;
+      Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
+    });
+    /* The Summary shows or gives way as the sheet narrows: View quote
+       follows it, and the lines turned open close where the Summary
+       holds them. */
+    window.addEventListener('resize', function () {
+      if (!B || $('qbBox').hidden) return;
+      if (sideOn() && $('qbBox').querySelector('.sheet-card').classList.contains('is-lines')) linesView(false);
+      viewSay(); sideFit();
+    });
     $('qbBack').addEventListener('click', function () { if (B) stepGo(B.step - 1); });
     $('qbPkgAdd').addEventListener('change', function () {
       if (!B || !B.pkg || !this.value) return;

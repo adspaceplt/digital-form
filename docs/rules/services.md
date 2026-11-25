@@ -367,10 +367,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   draft on the client (`quotation_drafts_clear`, on insert), so Create
   clears it. The phone's own sheet draft (`js/sheet.js`) leaves `#qbBox`
   alone (`tests/quotedraft.js`).
-  The foot reads the monthly total incl. SST (with `· n
-  brands`), View lines on steps 1 to 3 (the sheet turned to the priced
-  lines, every brand's under its name, the brand on the board changed
-  where read, the others read; its Back returns), then Cancel on Type or
+  At a desk the Summary is the cart (the user, 2026-11-25; `sidePaint`,
+  `#qbSide`, sticking under the sheet's head and scrolling on its own where
+  taller than the body): every priced line under Monthly, One-time and
+  Advertising budget (Per month, billed separately, Up to RM {budget}),
+  each with its amount and each group's subtotal, then the totals as the
+  quotation reads them (SST, the term adjustment where it applies,
+  Monthly incl. SST, One-time incl. SST), one mute line counting the
+  Add-on Rates ticked (3 add-on rates), and a ⋯ on each of the board's
+  lines (`.team-act`; Edit for a custom line, opening More details on
+  Term and review; Tax code, asked in a sheet from `taxOpts`, the lines'
+  one list; Move up; Move down; Remove for a custom line or a one-time
+  item, red and last); it repaints as the steps change. View quote is not
+  drawn while the Summary shows (`sideOn`), and a resize that brings the
+  Summary back closes the lines turned open. On a phone, where the
+  Summary gives way, the foot reads the monthly total incl. SST (with `· n
+  brands`), View quote on steps 1 to 3 once a line is priced, its count
+  of priced lines a `.tab-n` (the sheet turned to the priced lines, every
+  brand's under its name, the brand on the board changed where read, the
+  others read; its Back returns); at every width, then Cancel on Type or
   Back, and Continue, or Create quotation (Save when editing) on Term and
   review. Add to quotation under Extras puts the
   board's brand in Brands in this quotation (`#qbBrandList`: a row a

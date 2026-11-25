@@ -6684,10 +6684,23 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-card.is-steps .sheet-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 24px; align-content: start; }
 .qb-card.is-steps .sheet-body > * { grid-column: 1; min-width: 0; }
 .qb-card.is-steps .sheet-body > .qb-side { grid-column: 2; grid-row: 1 / span 9; align-self: start; position: sticky; top: 0; }
-.qb-side { background: var(--sunk); border-radius: var(--radius); padding: 16px; margin-top: 16px; }
+.qb-side { background: var(--sunk); border-radius: var(--radius); padding: 16px; margin-top: 16px; max-height: var(--qb-side-max, none); overflow-y: auto; overscroll-behavior: contain; }
 .qb-sidehead { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 0 0 4px; }
-.qb-sideline { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
-.qb-sidetotal { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; font-weight: 600; padding-top: 10px; border-top: 1px solid var(--line); margin-top: 4px; }
+/* The cart (2026-11-25): a line a row, its name, its figure and its ⋯ in
+   one column on every row, the ⋯'s track kept where a line has none. */
+.qb-sidegroup + .qb-sidegroup { margin-top: 12px; }
+.qb-sidegh { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 8px 0 0; }
+.qb-sideline, .qb-sidesub { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--ctl-h-sm); gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line-soft); }
+.qb-sidename { overflow-wrap: anywhere; }
+.qb-sidesub { font-weight: 500; }
+.qb-sideact { position: relative; display: flex; justify-content: flex-end; }
+.qb-sideact .kmenu-btn { margin-block: -4px; }
+.qb-sidetot { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
+.qb-sidetot > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px calc(var(--ctl-h-sm) + 8px) 2px 0; }
+.qb-sidetot dt, .qb-sidetot dd { margin: 0; }
+.qb-sidetot dt { min-width: 0; }
+.qb-sidetot dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qb-sidetot > .is-total { font-size: 14px; font-weight: 600; }
 .qb-sidenote { font-size: 12px; color: var(--ink-mute); margin: 8px 0 0; }
 .qb-fig { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .qb-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
