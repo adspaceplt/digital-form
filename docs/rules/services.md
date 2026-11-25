@@ -346,6 +346,27 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   figure incl. SST); on a phone Step n of 4 heads the track and the foot
   holds the figure over Back and Continue as equal halves. The suites
   open a step through `ADspaceQuotes.stepTo(n, kind)`.
+- A quote part-built is kept as a draft (`2026-11-25-quotation-drafts.sql`;
+  the user, 2026-11-25): a new quotation's Build quote closed before
+  Create (the close mark, Cancel, Escape, the scrim) keeps what was entered
+  (`draftOut`: the type's choices, brands, lines, extras, term, the step it
+  was on; the date only where typed back from today) through
+  `quotation_draft_save`, one a client a colleague (`quotation_drafts`, RLS
+  on, no policy, no grant; the three functions ask a colleague at Work on
+  `clients.quotes` and the client in scope, `denied`, `client-scope`,
+  `bad-request`, `too-long` past 200 KB), said Draft saved. under the
+  pane; a close that changed nothing since the sheet opened saves nothing,
+  and Edit or Adjust and send keep none. Build quote opened again on the
+  same client draws `#qbDraft` (`.draftline`) at the top of step 1: Draft
+  saved {date}, {time}, Discard (asks Discard draft?, This cannot be
+  undone., the draft's selection emptied) and Continue draft (opens at its
+  step, priced on the version live on its date unless one was chosen;
+  priced on another version than it was saved on, `#qbMsg` reads
+  Repriced on Rate Card v.{new}. The draft was priced on v.{old}.). A draft
+  keeps no number and no PDF. A console quotation made clears its maker's
+  draft on the client (`quotation_drafts_clear`, on insert), so Create
+  clears it. The phone's own sheet draft (`js/sheet.js`) leaves `#qbBox`
+  alone (`tests/quotedraft.js`).
   The foot reads the monthly total incl. SST (with `· n
   brands`), View lines on steps 1 to 3 (the sheet turned to the priced
   lines, every brand's under its name, the brand on the board changed
@@ -640,10 +661,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
   "Quotation is a serious one so it must be accurate", Download never
   locks it): `quotations.sent_out_at`, stamped by trigger when a website
-  quotation is released, a team's quotation is given its link, or a
-  WhatsApp for it is queued, sent or not confirmed, or an email for it
-  sent, never while only filed or once failed
-  (`2026-11-07-quotation-sent-when-it-went.sql`). Until then a team's quotation's ⋯
+  quotation is released, or a WhatsApp for it is queued, sent or not
+  confirmed, or an email for it sent, never while only filed or once
+  failed (`2026-11-07-quotation-sent-when-it-went.sql`); a team's
+  quotation also when its own link is first opened by anyone but a
+  signed-in colleague (`quote_opened`, the console's Preview never asking
+  it), never when it is only given its link: Copy link is not sending
+  (`2026-11-25-quotation-sent-when-opened.sql`). Until then a team's quotation's ⋯
   and an awaiting website quotation's row offer Edit, Build quote opened
   as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
   Quotations at Work, in scope; priced again from the live card into the
