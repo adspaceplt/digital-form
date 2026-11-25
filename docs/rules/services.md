@@ -232,7 +232,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
-  console, the type as seeded on /quote/; signed off by who prepared it);
+  console, the type as seeded on /quote/; signed off by who prepared it;
+  never issued on its own, `docs/rules/documents.md`);
   the quotation on a continuation page with no second letterhead (a lead
   sentence, Description · Qty · Rate · Amount between hairlines, a line's
   inclusions under its name a point each as the service lists them (a
