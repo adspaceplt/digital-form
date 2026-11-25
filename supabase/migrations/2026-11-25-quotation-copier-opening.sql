@@ -20,6 +20,10 @@
 --   * `quote_opened`: an opening from an address a colleague copied that
 --     quotation's link from in the last 30 days neither stamps it sent nor
 --     moves the stage; it is still filed, `{ref} · Opened by the team`.
+--   * `quote_opened` stamps the quotation the opened key belongs to, never
+--     the newest revision `quote_shown` reads (a revision still being
+--     edited was stamped sent when the old link was opened again), nor one
+--     not proceeding (review of QUOTATION SENT WHEN IT REACHES THE CLIENT).
 --   Each restated from its last section with those lines alone added.
 --
 -- ORDER: the pages first (Copy link asks the function at every press),
@@ -93,10 +97,12 @@ begin
   -- last 30 days is the team's own, never the client's.
   v_team := v_ip is not null and exists (select 1 from public.quotation_link_copies c
               where c.quotation_id in (w.id, q.id) and c.ip = v_ip and c.at > now() - interval '30 days');
-  -- A team's quotation reaches the client the first time its link is
-  -- opened by anyone but a colleague: it is sent out then, once.
-  if q.source = 'console' and q.sent_out_at is null and not v_team then
-    update public.quotations set sent_out_at = now() where id = q.id and sent_out_at is null;
+  -- A team's quotation reaches the client the first time its own link is
+  -- opened by anyone but a colleague: it is sent out then, once. The
+  -- quotation the key belongs to, never a revision still being made, nor
+  -- one not proceeding.
+  if w.source = 'console' and w.sent_out_at is null and w.status <> 'not_proceeding' and not v_team then
+    update public.quotations set sent_out_at = now() where id = w.id and sent_out_at is null;
   end if;
   if exists (select 1 from public.signing_steps s
               where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened'
