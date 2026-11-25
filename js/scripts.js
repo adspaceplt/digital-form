@@ -1916,7 +1916,7 @@
       var m = $('vsRecMsg');
       var tab = save ? (window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null) : openTab();
       btn.disabled = true;
-      say(m, 'Drawing the PDF…', 'ok');
+      say(m, 'Generating the PDF…', 'ok');
       var ids = whole ? st.series.map(function (x) { return x.id; }) : [st.open.id];
       var c = (st.open.clients || {}).name || 'Client';
       var name = c + ' Video Script ' + (whole && st.series.length > 1 ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(whole ? st.series[0] : st.open)) + '.pdf';

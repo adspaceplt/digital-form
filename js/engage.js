@@ -378,7 +378,7 @@
       var R = window.ADspaceReports;
       if (!R || !R.clientFile) return;
       b.disabled = true;
-      say(msgEl, 'Drawing the PDF…');
+      say(msgEl, 'Generating the PDF…');
       R.clientFile(row.id, c.id).then(function (warn) {
         b.disabled = false;
         say(msgEl, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');

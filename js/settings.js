@@ -382,8 +382,8 @@
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months'),
           'Office radius ' + num('outstation_office_radius_m') + ' m',
-          'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) },
-      biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
+          'Open trip reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) },
+      biz && { id: 'tripno', name: 'Trip numbering', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -1005,7 +1005,7 @@
         return;
       }
       window.ADspaceConfirm.ask({
-        title: 'Outstation trip numbers', go: 'Save', wait: true,
+        title: 'Trip numbering', go: 'Save', wait: true,
         fields: [
           { name: 'prefix', label: 'Prefix', half: true, value: f.prefix || '', required: true },
           { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true,
@@ -1557,7 +1557,7 @@
      select all"). */
   var pg = { rows: null, err: null, picking: false, picked: {} };
   var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details', 'feedback']],
-    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
+    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['Other pages', ['home', 'notfound', 'card']]];
   var PG_SYS = { home: '/', notfound: 'Page not found', card: '/card/' };
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
   function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
@@ -1649,7 +1649,7 @@
   }
   /* What setting the page does, said under the choice. */
   function pgNote(keys) {
-    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is unavailable.';
+    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent remain open while the Quotation portal is unavailable.';
     if (keys.indexOf('admin') >= 0) return 'Admins continue to work under a notice bar; every other colleague sees the notice page.';
     return 'Visitors see the notice page in its place. Nothing on the page is changed.';
   }
@@ -1836,7 +1836,7 @@
     if (d.error === 'in-use') {
       var c = d.codes || [];
       return c.join(', ') + (c.length === 1 ? ' is' : ' are') + ' used on a service line, a quotation or a letter, so ' +
-        (c.length === 1 ? 'it cannot be deleted. Untick Offered on new lines to stop offering it.' : 'they cannot be deleted. Untick Offered on new lines to stop offering them.');
+        (c.length === 1 ? 'it cannot be deleted. Untick Offered on new service lines to stop offering it.' : 'they cannot be deleted. Untick Offered on new service lines to stop offering them.');
     }
     return TAX_SAID[d.error] || d.error;
   }
@@ -1941,7 +1941,7 @@
       fields: [t ? null : { name: 'code', label: 'Code', placeholder: 'SV8', required: true },
         { name: 'rate', label: 'Rate (%)', value: t ? String(t.rate) : '', placeholder: '8', required: true },
         { name: 'name', label: 'Name', value: t ? t.name : '', placeholder: 'Service tax 8%' },
-        { name: 'active', label: 'Offered on new lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
+        { name: 'active', label: 'Offered on new service lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
       check: function (v) {
         if (!t && !/^[A-Za-z0-9._ -]{1,30}$/.test(String(v.code || '').trim())) return TAX_SAID['bad-row'];
         if (String(v.name || '').trim().length > 80) return 'Enter a name of up to 80 characters.';

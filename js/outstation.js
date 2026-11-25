@@ -346,7 +346,7 @@
       var here = !s.left_at && trip.state === 'open';
       if (s.km_from_prev != null) rows += legRow(s.km_from_prev);
       var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>' +
-        (s.left_how === 'office' ? '<span class="ost-how">worked out from the drive back</span>' : ''),
+        (s.left_how === 'office' ? '<span class="ost-how">Estimated from the drive back</span>' : ''),
         GLYPH.target + '<span>' + esc(Math.round(Number(s.accuracy_m)) + ' m') + '</span>',
         GLYPH.camera + '<span>' + esc(plural(live(s).length, 'photo', 'photos')) + '</span>'];
       rows += '<li class="stl-row ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '">' +

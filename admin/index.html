@@ -159,7 +159,7 @@
 <script src="/js/announce.js?v=20261124ts"></script>
 <script src="/js/notice.js?v=20261122zzzu"></script>
 <script src="/js/whatsapp.js?v=20261124a"></script>
-<script src="/js/mailtpl.js?v=20261125tpl"></script>
+<script src="/js/mailtpl.js?v=20261125ts"></script>
 <script src="/js/docmail.js?v=20261121zzzz"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261125ap"></script>
@@ -1643,7 +1643,7 @@
                 <div class="qb-types" id="qbTypes" role="radiogroup" aria-labelledby="qbTypesLabel">
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="plan"><span class="qb-typemark" data-mark="layers"></span><b>Plan</b><span>Social media management on a monthly plan, with platforms and advertising.</span></button>
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="package"><span class="qb-typemark" data-mark="box"></span><b>Package</b><span>Content planning and production at one price, without account management.</span></button>
-                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card lines, such as a one-time video or a KOC campaign.</span></button>
+                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card services, such as a one-time video or a KOC campaign.</span></button>
                 </div>
                   <div class="row qb-billrow" id="qbBillBox" hidden><div>
                     <label class="field-label" for="qbBillTo">Bill to</label>
@@ -1696,19 +1696,19 @@
                 <h4 class="fsec-h">Package</h4>
                 <div class="row fgrid qb-pkghead"><div><label class="field-label" for="qbPkgName">Package name</label>
                   <input class="input" id="qbPkgName" type="text" maxlength="120" data-noenter data-nodraft></div>
-                  <div><span class="field-label" id="qbPkgBasisLabel">Basis</span>
-                  <select class="select select-sm" id="qbPkgBasis" data-seg data-seg-value aria-labelledby="qbPkgBasisLabel"><option value="month">Per month</option><option value="once">One-time</option></select></div></div>
+                  <div><span class="field-label" id="qbPkgBasisLabel">Billing</span>
+                  <select class="select select-sm" id="qbPkgBasis" data-seg data-seg-value aria-labelledby="qbPkgBasisLabel"><option value="month">Monthly</option><option value="once">One-time</option></select></div></div>
                 <div class="qb-pkgtable" id="qbPkgRows"></div>
                 <div class="row"><div><label class="field-label" for="qbPkgAdd">Add from Rate Card</label>
                   <select class="select" id="qbPkgAdd"></select></div></div>
-                <div class="row fgrid-3 qb-pkgfig"><div><span class="field-label">Rate Card value</span><p class="readfield" id="qbPkgList">—</p></div>
+                <div class="row fgrid-3 qb-pkgfig"><div><span class="field-label">Rate Card total</span><p class="readfield" id="qbPkgList">—</p></div>
                   <div><label class="field-label" for="qbPkgPrice">Package price</label>
                   <input class="input" id="qbPkgPrice" type="text" inputmode="decimal" data-noenter data-nodraft></div>
                   <div><span class="field-label">Discount</span><p class="readfield" id="qbPkgOff">—</p></div></div>
                 <div class="qb-pkgincl"><span class="field-label">Inclusions</span>
                   <div id="qbPkgIncl"></div>
-                  <button class="btn btn-sm" id="qbPkgInclAdd" type="button">Add line</button>
-                  <p class="qb-hint">Unticked lines print under Not included.</p></div>
+                  <button class="btn btn-sm" id="qbPkgInclAdd" type="button">Add inclusion</button>
+                  <p class="qb-hint">Unticked inclusions appear under Not included.</p></div>
               </section>
               <div class="qb-for-items" id="qbItemsSlot"></div>
               </div>
@@ -6854,29 +6854,29 @@ raya-2026        https://example.com/raya"></textarea>
   "documents": {"src": "/js/documents.js?v=20261125ot"},
   "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
-  "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
+  "reports": {"src": "/js/reports.js?v=20261125ts", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261123d", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261124s", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261124za", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261124"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
-  "engage": {"src": "/js/engage.js?v=20261125nx", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261125vr", "uses": ["documents", "bukku", "quotepdf", "seal"]},
-  "quotepdf": {"src": "/js/quotepdf.js?v=20261125ap", "uses": ["documents", "seal"]},
+  "engage": {"src": "/js/engage.js?v=20261125ts", "uses": ["smreport", "reports"]},
+  "quotes": {"src": "/js/quotes.js?v=20261125ts", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261125ts", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261125nx", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
-  "team": {"src": "/js/team.js?v=20261125tse", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261125ts", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
   "frames": {"src": "/js/frames.js?v=20261117zzzf"},
   "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
-  "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
+  "scripts": {"src": "/js/scripts.js?v=20261125ts", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261124zd", "uses": ["bukku"]},
@@ -6884,9 +6884,9 @@ raya-2026        https://example.com/raya"></textarea>
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
-  "outstation": {"src": "/js/outstation.js?v=20261125osl"},
-  "settings": {"src": "/js/settings.js?v=20261125ofc", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "analytics": {"src": "/js/analytics.js?v=20261125ts", "uses": ["documents", "crm", "sales"]},
+  "outstation": {"src": "/js/outstation.js?v=20261125ts"},
+  "settings": {"src": "/js/settings.js?v=20261125ts", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
@@ -6894,6 +6894,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261124zqc"></script>
-<script src="/js/overview.js?v=20261125fh"></script>
+<script src="/js/overview.js?v=20261125ts"></script>
 </body>
 </html>

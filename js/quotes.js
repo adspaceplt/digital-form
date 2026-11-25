@@ -40,7 +40,7 @@
     'bad-valid': 'Choose how many days the quotation is valid for.',
     'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the lines could not be read. Refresh the page.',
     'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
-    'bad-package': 'Enter the package name, its price and at least one Rate Card line, each with a quantity.',
+    'bad-package': 'Enter the package name, its price and at least one service, each with a quantity.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
@@ -2535,7 +2535,7 @@
       if (B.kind === 'package') {
         var k = B.pkg || {};
         if (!String(k.name || '').trim()) return 'Enter the package name.';
-        if (!(k.items || []).length) return 'Add a Rate Card line to the package.';
+        if (!(k.items || []).length) return 'Add a service to the package.';
         if (!/^\d{1,7}(\.\d{1,2})?$/.test(String(k.price || '').replace(/,/g, ''))) return 'Enter the package price.';
       }
       if (B.kind === 'items' && !Array.prototype.some.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return Number(i.value) > 0; }) &&
@@ -2575,7 +2575,7 @@
     $('qbPkgBasis').dispatchEvent(new Event('input'));
     $('qbPkgPrice').value = k.price || '';
     var list = 0;
-    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Value</span><span></span></div>' : '') +
+    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Amount</span><span></span></div>' : '') +
       k.items.map(function (it) {
         var s = pkgSvc(it.slug) || { name: it.slug, rate: 0 }, r = cv(s.rate || 0), id = 'qbPk-' + esc(it.slug), nm = esc(s.name);
         list += r * (Number(it.qty) || 0);
@@ -2587,7 +2587,7 @@
           '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove ' + nm + '">' + X_ICON + '</button></div>';
       }).join('');
     var taken = k.items.map(function (it) { return it.slug; });
-    $('qbPkgAdd').innerHTML = '<option value="">Choose a Rate Card line</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
+    $('qbPkgAdd').innerHTML = '<option value="">Choose a service</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
       return s.active !== false && s.rate != null && !(s.spec && s.spec.role === 'plan') && taken.indexOf(s.slug) < 0;
     }).map(function (s) { return '<option value="' + esc(s.slug) + '">' + esc(s.name) + '</option>'; }).join('');
     var price = Number(String(k.price || '').replace(/,/g, ''));
@@ -2596,8 +2596,8 @@
       ? CUR + ' ' + rm(list - price) + ' (' + (Math.round((list - price) / list * 1000) / 10) + '%)' : '—';
     $('qbPkgIncl').innerHTML = (k.incl || []).map(function (x, i) {
       return '<div class="qb-pkgline" data-in="' + i + '"><label class="tickline"><input type="checkbox"' + (x.on ? ' checked' : '') + ' aria-label="Included"></label>' +
-        '<input class="input" type="text" maxlength="300" data-noenter data-nodraft value="' + esc(x.text || '') + '" aria-label="Line ' + (i + 1) + '">' +
-        '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>';
+        '<input class="input" type="text" maxlength="300" data-noenter data-nodraft value="' + esc(x.text || '') + '" aria-label="Inclusion ' + (i + 1) + '">' +
+        '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove inclusion">' + X_ICON + '</button></div>';
     }).join('');
     /* The rate for one more piece in the same month: a content piece's,
        prefilled from the card, the team's where typed (step 3). */
@@ -2688,7 +2688,7 @@
       '<div class="qb-sidetotal"><span>' + (t.month || !t.once ? 'Monthly' : 'One-time') + (MON.sstOf(d ? d.lines : [], t.sst_pct).on ? ' incl. SST' : '') + '</span><span class="qb-fig">' +
         (t.month ? esc(CUR + ' ' + acct(t.month.incl)) : t.once ? esc(CUR + ' ' + acct(t.once.incl)) : '—') + '</span></div>' +
       (t.month && t.once ? '<p class="qb-sidenote">One-time ' + esc(CUR + ' ' + acct(t.once.incl)) + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') + '.</p>'
-        : !d ? '<p class="qb-sidenote">No lines.</p>' : '');
+        : !d ? '<p class="qb-sidenote">No items.</p>' : '');
   }
 
   function wire() {

@@ -2886,7 +2886,7 @@
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
     var tab = save ? window.ADspaceDocs.tabFor() : openTab();
     btn.disabled = true;
-    say(m, 'Drawing the PDF…');
+    say(m, 'Generating the PDF…');
     /* A published report hands over the file kept as it went out. */
     var job = r.status === 'published' && live
       ? versionFile(live, r.client_id, function () { return versionSnap(live.id); }, fileNameOf(r, st.client && st.client.name))
@@ -3001,7 +3001,7 @@
         var v = vers.filter(function (x) { return x.id === b.closest('[data-v]').getAttribute('data-v'); })[0];
         if (!v) return;
         var tab = window.ADspaceDocs.tabFor();
-        b.disabled = true; say(m, 'Drawing the PDF…');
+        b.disabled = true; say(m, 'Generating the PDF…');
         versionFile(v, r.client_id, function () { return versionSnap(v.id); }, fileNameOf(r, st.client && st.client.name))
           .then(function (f) { return handOver(f, tab); })
           .then(function (warn) { b.disabled = false; say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok'); })

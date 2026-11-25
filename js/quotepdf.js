@@ -535,7 +535,7 @@
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
           ? 'Any Advertising Budget is not included in the fees in this Quotation and shall be invoiced separately.' : '']);
       /* Files and further filming (2026-11-12, the user's own sentence). */
-      grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : 'Additional footage, working files and raw files are not included and shall be charged separately upon request.',
+      grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : 'Additional footage, working files and raw footage are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
           var w = t.on_request.map(function (x) { return x === 'budget' ? 'An advertising budget above the highest tier of the ' + agency() + ' Rate Card' : x; });
           return w.join(', ') + ' shall be quoted separately upon request.';

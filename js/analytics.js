@@ -95,7 +95,7 @@
     var moved = Math.abs(slope * (n - 1)), flat = !slope || moved < 1 || (my && moved / my < thr);
     var ok = good === 'up' ? slope > 0 : slope < 0;
     return { slope: slope, tone: flat ? 'off' : ok ? 'ok' : 'late', word: flat ? 'Steady' : slope > 0 ? 'Rising' : 'Falling',
-      line: flat ? 'Level across the last 6 full months' : (slope > 0 ? '+' : '−') + one(Math.abs(slope)) + ' per month across the last 6 full months' };
+      line: flat ? 'Steady across the last 6 full months' : (slope > 0 ? '+' : '−') + one(Math.abs(slope)) + ' per month across the last 6 full months' };
   }
   function directionHtml(list) {
     list = list.filter(function (x) { return x && x.d; });
@@ -413,7 +413,7 @@
 
   function changeWord(now, before, digits) {
     var d = now - before;
-    if (!d) return 'Level with ' + prevWord(period);
+    if (!d) return 'Unchanged from ' + prevWord(period);
     var f = digits ? one(Math.abs(d)) : plain(Math.abs(d));
     return (d > 0 ? '+' : '−') + f + ' on ' + prevWord(period);
   }
@@ -783,7 +783,7 @@
         if (!ppl.length) { UI.emptyLine(body, 'No requests.'); return; }
         body.innerHTML = '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl anl-fb"><thead><tr><th scope="col">Person in charge</th>' +
           '<th scope="col" class="is-end">Requested</th><th scope="col" class="is-end">Answered</th><th scope="col" class="is-end">Service rating</th>' +
-          '<th scope="col" class="is-end">NPS</th><th scope="col" class="is-end">Account manager score</th></tr></thead><tbody>' +
+          '<th scope="col" class="is-end">Net Promoter Score</th><th scope="col" class="is-end">Account manager score</th></tr></thead><tbody>' +
           ppl.map(function (p) {
             return '<tr><th scope="row">' + esc(p.name || 'Former colleague') + '</th><td class="is-end">' + (Number(p.requested) || 0) +
               '</td><td class="is-end">' + (Number(p.answered) || 0) + '</td><td class="is-end">' + num(p.rating, function (v) { return v.toFixed(1); }) +
@@ -923,7 +923,7 @@
         (a.forecast.detail ? '<p>' + esc(a.forecast.detail) + '</p>' : '') + '</div></section>' : '') +
       (a.actions && a.actions.length ? '<section class="anl-ai-sec"><h4 class="fsec-h">Recommended actions</h4><ol class="anl-ai-acts-list">' +
         a.actions.map(function (x) { return '<li><b>' + esc(x.action) + '</b><span>' + esc(x.why) + '</span></li>'; }).join('') + '</ol></section>' : '') +
-      list('Caveats', a.caveats, function (x) { return '<p class="anl-ai-cav">' + esc(x) + '</p>'; }) +
+      list('Limitations', a.caveats, function (x) { return '<p class="anl-ai-cav">' + esc(x) + '</p>'; }) +
       '</details>' +
       '<p class="anl-ai-meta">Version ' + v.version + ' · ' + esc(v.period) + ' · Written by AI for ' + esc(v.by || 'a colleague') + ', ' +
         esc(CK.date(v.created_at) + ', ' + CK.clock(v.created_at, { space: true })) + '. Read before using.</p>';
@@ -1107,7 +1107,7 @@
         if ((a.working || []).length) { head('What Is Working'); a.working.forEach(function (x, i) { para((i + 1) + '. ' + x.title, 10.5, med, dark, 0, 2); para(x.detail, 10, book, ink, 12, 6); }); }
         if (a.forecast) { head('Forecast'); para(CREDIBLE[a.forecast.verdict] || '', 10.5, med, dark, 0, 2); if (a.forecast.detail) para(a.forecast.detail, 10, book, ink, 0, 6); }
         if ((a.actions || []).length) { head('Recommended Actions'); a.actions.forEach(function (x, i) { para((i + 1) + '. ' + x.action, 10.5, med, dark, 0, 2); para(x.why, 10, book, ink, 12, 6); }); }
-        if ((a.caveats || []).length) { head('Caveats'); a.caveats.forEach(function (x) { para(x, 9.5, book, mute, 0, 4); }); }
+        if ((a.caveats || []).length) { head('Limitations'); a.caveats.forEach(function (x) { para(x, 9.5, book, mute, 0, 4); }); }
         docs.letterFoot(pn, pages, 'Analytics Analysis, Version ' + v.version, 'PRIVATE & CONFIDENTIAL');
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
