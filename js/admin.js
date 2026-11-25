@@ -7118,12 +7118,66 @@
     if (!ids) return team;
     return team.filter(function (m) { return ids.indexOf(m.id) > -1 || (keep && (m.id === keep || m.name === keep)); });
   }
+  /* Figures hidden (the user, 2026-11-25): one eye in the bar of every
+     section that shows figures (the Dashboard, Analytics, Clients and its
+     Overdue invoices and Payments, the Creators List and Creators'
+     Payments, Suppliers and its Payments) hides every figure and amount
+     they draw as dots, for a screen read where others can see it. One
+     choice a device for every section (`adspace-figs-hidden`), kept over a
+     reload and followed by every open tab. What hides is one list in
+     `css/console.css` under `:root.figs-off`: each box kept unseen with
+     dots over it, so nothing moves and a screen reader is read none of
+     it. A bar holds the eye as markup (`.figs-eye`) or asks for it
+     (`figsEye()`); this one listener answers every press. */
+  var FIGS_KEY = 'adspace-figs-hidden';
+  function figsHidden() {
+    try { return localStorage.getItem(FIGS_KEY) === '1'; } catch (e) { return false; }
+  }
+  function figsGlyph(off) {
+    var I = window.ADspaceIcons, A = window.ADspaceActs;
+    return off ? (A ? A.glyph('hide') : '') : (I ? I.svg('eye') : '');
+  }
+  function figsWord(off) { return off ? 'Show figures' : 'Hide figures'; }
+  function figsPaint(b, off) {
+    b.innerHTML = figsGlyph(off);
+    b.setAttribute('aria-pressed', off ? 'true' : 'false');
+    b.setAttribute('aria-label', figsWord(off));
+    b.title = figsWord(off);
+  }
+  function figsWear() {
+    var off = figsHidden();
+    document.documentElement.classList.toggle('figs-off', off);
+    Array.prototype.forEach.call(document.querySelectorAll('.figs-eye'), function (b) { figsPaint(b, off); });
+    /* A name that carries figures (`data-figs-say`) gives way to its bare
+       words (`data-figs-bare`) while they are hidden. */
+    Array.prototype.forEach.call(document.querySelectorAll('[data-figs-say]'), function (el) {
+      el.setAttribute('aria-label', el.getAttribute(off ? 'data-figs-bare' : 'data-figs-say'));
+    });
+  }
+  /* The eye as markup, for a bar a section draws itself. */
+  function figsEye() {
+    var off = figsHidden();
+    return '<button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="' + off + '" aria-label="' + figsWord(off) +
+      '" title="' + figsWord(off) + '">' + figsGlyph(off) + '</button>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.figs-eye');
+    if (!b) return;
+    var off = !figsHidden();
+    try { if (off) localStorage.setItem(FIGS_KEY, '1'); else localStorage.removeItem(FIGS_KEY); } catch (x) {}
+    figsWear();
+  });
+  figsWear();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', figsWear);
+  window.addEventListener('storage', function (e) { if (!e.key || e.key === FIGS_KEY) figsWear(); });
 
   /* Creator Campaigns lives in its own file, because this one is long enough.
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
     GRANTED: OPS_GRANTED,
+    figsEye: figsEye,
+    figsHidden: figsHidden,
     undoHere: undoHere,
     /* The latest build (2026-11-17): what this page loaded, what Pages
        serves now, and the build required. */

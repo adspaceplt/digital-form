@@ -1127,7 +1127,9 @@
       }).join('') + '</nav>' +
       '<span class="ovw-when"><select class="select select-sm" id="anlPeriod" data-nofind aria-label="Period">' +
       PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
-      '</select><span class="ovw-span" id="anlSpan"></span></span>';
+      '</select><span class="ovw-span" id="anlSpan"></span></span>' +
+      /* The eye that hides every figure (js/admin.js), at the bar's end. */
+      (window.ADspaceAdmin && window.ADspaceAdmin.figsEye ? window.ADspaceAdmin.figsEye() : '');
     box.appendChild(head);
     var strip = head.querySelector('#anlTabs');
     var sec = $('sectionAnalytics');
