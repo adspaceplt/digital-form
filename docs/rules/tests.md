@@ -65,7 +65,7 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     made, and every schema change runs it (2026-11-19: `public.ops_me().id`
     passed `sql`, which sets `check_function_bodies` off, and the live
     database refused the whole migration).
-  - uxaudit and matrix have an hour each (`gate.sh`); a suite measuring
+  - uxaudit and each half of matrix have an hour each (`gate.sh`); a suite measuring
     what a page refits a frame later waits for the frames, never a fixed
     time (2026-10-30: geom read 144 segments 400ms after unhiding them).
   - A suite types a date from today (`todayKey()`, a day ahead), never a
@@ -140,8 +140,11 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
   starting its own Postgres takes that lane, and a helper is named there
   or fails the gate (2026-11-22: hiring and 24 more never ran in a full gate).
 - It runs browser suites three at a time, the Postgres suites in their own
-  lane, then uxaudit and matrix side by side (each its own browser, output
-  and server).
+  lane, then three walks side by side: uxaudit, and matrix in two halves
+  (`MATRIX_PART=1` the Duo, `OWN` and the keyboard; `2` the four widths and
+  200% zoom), each its own browser and output, the halves on the walks'
+  second server; whole, matrix took 3,549 of a 6,933-second gate against
+  the two-hour limit (2026-11-25; split, the gate ran 5,503 s).
 - The slowest suites wait for what the page shows, never for time
   (`tests/settle.js`: `settle(p)` after an act, `ready(p)` after a load or a
   sign-in, ten seconds at most; `settle` lets two frames render first, so a
