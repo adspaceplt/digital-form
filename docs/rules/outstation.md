@@ -119,7 +119,7 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   ring; a tile that cannot load stays shaded.
 - A tile opens the photo full size in a sheet (sheets never stack: from a
   trip read whole it closes back to that trip), titled by the stop's place,
-  with Taken, Accuracy and the stop's Address; it offers no Download or
+  with Taken, Accuracy (in metres) and the stop's Address; it offers no Download or
   Share of its own (the image is not draggable and carries no iPhone
   callout).
 - Remove (OUTSTATION PHOTOS SHOWN AND REMOVED, 2026-11-25): the photo's ⋯

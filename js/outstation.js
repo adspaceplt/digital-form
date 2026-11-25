@@ -386,7 +386,7 @@
     return Boolean(m && trip.driver_id === m.id && trip.state === 'open' && !x.p.removed_at && may('ops', 'work') && live(x.s).length > 1);
   }
   var REMOVE_SAID = {
-    'no-photo': 'A stop keeps at least one photo. Take another photo before you remove this one.',
+    'no-photo': 'A stop must keep at least one photo. Take another photo before you remove this one.',
     closed: SAID.closed, denied: 'Only the colleague who took this photo can remove it.', 'not-found': 'This photo no longer exists.'
   };
 
@@ -407,7 +407,7 @@
     var p = x.p, s = x.s, n = shown(s).indexOf(p) + 1;
     var can = mayRemove(trip, x);
     var facts = [['Taken', C.date(p.taken_at) + ', ' + C.clock(p.taken_at)],
-      ['Accuracy', p.accuracy_m != null ? 'Accurate to ' + Math.round(Number(p.accuracy_m)) + ' m' : 'Not available']]
+      ['Accuracy', p.accuracy_m != null ? Math.round(Number(p.accuracy_m)) + ' m' : 'Not available']]
       .concat(s.address ? [['Address', s.address + (s.zone ? ' · ' + ZONE[s.zone] : '')]] : [])
       .concat(p.removed_at ? [['Removed', (p.removed_by || 'Former colleague') + ' · ' + C.date(p.removed_at) + ', ' + C.clock(p.removed_at)]] : []);
     viewer.innerHTML = '<div class="sheet-card formsheet ost-viewer" role="dialog" aria-modal="true" aria-labelledby="ostPhotoH" data-narrow="560">' +
@@ -416,7 +416,7 @@
           '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [], [], [], [], [{ a: 'remove', label: 'Remove', need: 'ops:work' }]], 'data-o') + '</div></span>' : '') +
         '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<div class="ost-view' + (p.removed_at ? ' is-removed' : '') + '" id="ostPhotoBox"><span class="ost-view-note">Loading</span></div>' +
+        '<div class="ost-view' + (p.removed_at ? ' is-removed' : '') + '" id="ostPhotoBox"><span class="pageload-spin ost-view-spin" role="status" aria-label="Loading"></span></div>' +
         '<dl class="ovfacts ost-view-facts">' + facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>' +
         '<p class="msg" id="ostPhotoMsg" role="status"></p>' +
       '</div></div>';
@@ -431,7 +431,7 @@
       if (!u) { none(); return; }
       var img = document.createElement('img');
       img.alt = 'Photo ' + n + ', ' + placeName(s) + ', ' + C.clock(p.taken_at); img.draggable = false;
-      img.onload = function () { var w = box.querySelector('.ost-view-note'); if (w) w.remove(); };
+      img.onload = function () { var w = box.querySelector('.ost-view-spin'); if (w) w.remove(); };
       img.onerror = none;
       img.src = u;
       box.appendChild(img);
