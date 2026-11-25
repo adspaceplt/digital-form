@@ -173,7 +173,7 @@
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
-      placements: 'Placements', cpe: 'Cost per engagement',
+      placements: 'Posts', cpe: 'Cost per engagement',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
       noneYet: 'No creators.',
       /* The campaign room (2026-10-07, the client pages refresh). */

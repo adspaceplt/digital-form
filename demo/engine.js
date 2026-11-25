@@ -876,7 +876,7 @@
   function qtStampOut() {
     (DB.quotations || []).forEach(function (q) {
       if (q.sent_out_at) return;
-      var out = q.released_at || (q.source === 'console' && q.access_key) ||
+      var out = q.released_at ||
         (DB.wa_outbox || []).some(function (w) { return w.ref_id === q.id && w.state !== 'failed' && w.status !== 'failed'; }) ||
         (DB.client_emails || []).some(function (e) { return e.ref_id === q.id && e.kind === 'quotation'; });
       if (!out) return;
@@ -14447,6 +14447,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var oq = sealOf(args.p_key);
         if (!oq) return qtOk({ error: 'not-found' });
         if (oq.source === 'website' && !oq.released_at) return qtOk({ ok: true, kept: false });
+
+        if (oq.source === 'console' && !oq.sent_out_at) {
+          oq.sent_out_at = qtNow.toISOString();
+          if (!oq.removed_at && !oq.signed_at) proposalSent(oq.client_id, oq.ref + ' sent out');
+        }
         DB.signing_steps = DB.signing_steps || [];
         var oip = window.__callerIp || '203.0.113.24', odev = sealDevice(args.p_device);
         var six = qtNow.getTime() - 6 * 3600e3;
