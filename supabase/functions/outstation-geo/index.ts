@@ -16,7 +16,8 @@
  *                 Work), on the same one request a second.
  *   { trip: id }  the road km of each leg from openrouteservice's matrix:
  *                 the office to the first stop, each stop to the next and,
- *                 once the trip is checked out, back to the office. (The
+ *                 once the trip is checked out, back to the office, each
+ *                 the shorter of its two directions (2026-11-25). (The
  *                 directions answer, asked without instructions, carried no
  *                 legs, and every trip read Not available; 2026-11-24.)
  *                 With the distance the matrix answers the drive's time:
@@ -146,8 +147,13 @@ Deno.serve(async (req) => {
   const coords = [office, ...stops.map((s: { lat: number; lng: number }) => [Number(s.lng), Number(s.lat)])];
   const closed = t.state === 'closed';
   if (closed) coords.push(office);
-  /* Each leg is the road distance from one point to the next: the
-     matrix's row i, column i (sources 0..n-2, destinations 1..n-1). */
+  /* Each leg is the shorter of the two directions between its points, A to
+     B and B to A, both read from one full matrix over every point (one
+     request): OpenStreetMap's border crossings can be one-way, and the
+     Woodlands crossing read so towards Malaysia, which routed #OS261101's
+     return through Tuas, 63.0 km for a 25.8 km drive out (2026-11-25). The
+     team crosses at Woodlands both ways. The drive's minutes are the
+     chosen direction's. */
   const n = coords.length;
   let km: (number | null)[] = [];
   let mins: (number | null)[] = [];
@@ -155,15 +161,21 @@ Deno.serve(async (req) => {
     const r = await fetch(`${ORS_BASE}/openrouteservice/v2/matrix/driving-car`, {
       method: 'POST',
       headers: { 'Authorization': key, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ locations: coords, metrics: ['distance', 'duration'], units: 'km',
-        sources: Array.from({ length: n - 1 }, (_, i) => i), destinations: Array.from({ length: n - 1 }, (_, i) => i + 1) })
+      body: JSON.stringify({ locations: coords, metrics: ['distance', 'duration'], units: 'km' })
     });
     if (!r.ok) throw new Error('ors ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
     const m = (d.distances || []) as (number | null)[][];
-    km = Array.from({ length: n - 1 }, (_, i) => (m[i] && m[i][i] != null ? Math.round(Number(m[i][i]) * 10) / 10 : null));
     const du = (d.durations || []) as (number | null)[][];
-    mins = Array.from({ length: n - 1 }, (_, i) => (du[i] && du[i][i] != null ? Math.round(Number(du[i][i]) / 6) / 10 : null));
+    const cell = (g: (number | null)[][], a: number, b: number) => (g[a] && g[a][b] != null && isFinite(Number(g[a][b])) ? Number(g[a][b]) : null);
+    for (let i = 0; i < n - 1; i++) {
+      const go = cell(m, i, i + 1), ret = cell(m, i + 1, i);
+      const rev = go == null || (ret != null && ret < go);
+      const dist = rev ? ret : go;
+      const secs = rev ? cell(du, i + 1, i) : cell(du, i, i + 1);
+      km.push(dist == null ? null : Math.round(dist * 10) / 10);
+      mins.push(secs == null ? null : Math.round(secs / 6) / 10);
+    }
   } catch (e) {
     console.error('outstation-geo: route failed', String((e as Error)?.message || e));
     return json({ error: 'route_failed' }, 502, origin);
