@@ -84,9 +84,9 @@
 <link rel="apple-touch-startup-image" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/admin/launch/launch-1488x2266.png?v=20261117zzzf">
 <link rel="apple-touch-startup-image" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/admin/launch/launch-2266x1488.png?v=20261117zzzf">
 <!-- The colour Safari and the installed app paint behind the status bar: the
-     console bar's own, so the two read as one surface. The head script below
-     sets it from the console's resolved theme, which can differ from the
-     device's once somebody has chosen. -->
+     bar's own, so the two read as one surface. The head script below sets it
+     from the resolved theme and the boot state (--card on the plain sign-in,
+     --chrome-solid on the console); js/admin.js wearToolbar() keeps it after. -->
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
@@ -98,20 +98,20 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261125ap">
-<link rel="stylesheet" href="/css/console.css?v=20261125osl">
+<link rel="stylesheet" href="/css/console.css?v=20261125tbc">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
      which is what a tool the team sits in all day should do. The client pages
      are untouched and have no dark at all: nobody decides on a proposal in a
      register they did not choose, which is what that rule was always about. -->
-<script>try{var t=localStorage.getItem('adspace-theme'),d=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++){m[i].removeAttribute('media');m[i].setAttribute('content',d?'#171717':'#ffffff');}}catch(e){}</script>
+<script>try{var t=localStorage.getItem('adspace-theme'),d=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <!-- Signed in or not is known for certain only once the library has read its
      session, a moment after the first paint. Whether a session is kept in
      this browser is known now, so the first paint is already the right page:
      white under the sign-in card, and no sign-in bar over a console that is
      about to open. js/admin.js takes the attribute off once it knows. -->
-<script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}try{var dq=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dq&&dq.until>Date.now())s=true;}catch(e){}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
+<script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}try{var dq=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dq&&dq.until>Date.now())s=true;}catch(e){}document.documentElement.setAttribute('data-boot',s?'in':'out');var c=getComputedStyle(document.documentElement).getPropertyValue(s?'--chrome-solid':'--card').trim(),m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;c&&i<m.length;i++){m[i].removeAttribute('media');m[i].setAttribute('content',c);}setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
 <!-- The phone tab bar's one media query (js/admin.js reads it), so the bar's
      room and the head without its menu toggle are drawn from first paint.
      Where a phone's page stands upright and narrower than its screen (the
@@ -6890,7 +6890,7 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261125ofc"></script>
+<script src="/js/admin.js?v=20261125tbc"></script>
 <script src="/js/ops.js?v=20261124w"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261124zqc"></script>

@@ -279,12 +279,28 @@
   function wearTheme(dark) {
     if (dark) document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
-    /* The status bar follows the console's register, not the device's. */
+    wearToolbar();
+    paintTheme();
+  }
+  /* The browser's toolbar takes the colour of the bar under it: the
+     console's --chrome-solid once signed in, the page's own --card on a
+     plain page (the sign-in, a cover, the whole-screen Upgrade), read from
+     the tokens so the theme decides the value (2026-11-25). */
+  function wearToolbar() {
+    var b = document.body, root = document.documentElement;
+    var plain = b ? b.classList.contains('is-plain') || b.classList.contains('is-maint') : root.getAttribute('data-boot') === 'out';
+    var tint = getComputedStyle(root).getPropertyValue(plain ? '--card' : '--chrome-solid').trim();
+    if (!tint) return;
     Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
       m.removeAttribute('media');
-      m.setAttribute('content', dark ? '#171717' : '#ffffff');
+      if (m.getAttribute('content') !== tint) m.setAttribute('content', tint);
     });
-    paintTheme();
+  }
+  /* Whatever makes the page plain or the console (gate(), Access denied,
+     the Upgrade cover), the toolbar follows it, both ways. */
+  if (window.MutationObserver && document.body) {
+    new MutationObserver(wearToolbar).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    wearToolbar();
   }
   if ($('themePick')) $('themePick').addEventListener('change', function () {
     var v = this.value;
