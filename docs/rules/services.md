@@ -359,7 +359,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Translation (the user, 2026-11-25, reversing 2026-11-24); budget;
   Choose your commitment of 6, 12 or 24 months alone, a segment, 3 and 18
   Build quote's (`quote_web_terms`); with a plan, Content production lists
-  only the formats its additional contents do not; Choose your files, the
+  only the formats its additional contents do not; Additional files with
+  the grey Optional tag (an optional add-on, the user, 2026-11-25), the
   card's File Release add-ons (Working files, Raw footage) as steppers
   wherever content is made, a count of content pieces, Working files at
   most the graphics the selection makes and Raw footage at most its reels
@@ -370,9 +371,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `quote_website_sel` and `quote_change_sel`, what a sent quotation held
   staying allowed; Build quote warns, `quote_preview` `files_over`, never
   refuses; `2026-11-25-quote-files-capped.sql`), under one note in
-  the user's words (`filesNote`: delivered in high definition to each
-  platform's specifications; the files on request, charged per content
-  piece; no figure; 2026-11-25), every other add-on and an outstation fee Build
+  the user's words (`filesNote`: may be added now or requested later;
+  charged per content piece; no figure), the change editor's alike; the
+  delivery promise (`delivered`, high definition, formatted for the
+  platform it is posted on) the plan's last included tick, and the one
+  tick of one-time content without a plan; every other add-on and an outstation fee Build
   quote's; verification only for the platforms chosen),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page

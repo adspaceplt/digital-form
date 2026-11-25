@@ -869,6 +869,9 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   - The heading and the controls are the explanation.
   - Where a line is unavoidable, one neutral corporate sentence; no "we", no
     "you should".
+  - A note on a client page reads one sentence a line (`ADspaceWords.note`,
+    every `.qs-note`, `.qs-notes` and `.rcv-note`), never two run on (the
+    user, 2026-11-25).
   - Nothing says the same thing twice (a cover line never restates its title;
     a chip never repeats its column).
   - The one exception is the route's one-sentence purpose, which opens from

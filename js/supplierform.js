@@ -124,7 +124,7 @@
         field('sfMobile', 'Mobile number (WhatsApp)', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
       '</section>';
     if (n === 3) return '<section class="qs-sec">' +
-        (keepBank ? '<p class="qs-note">Leave the account number blank to keep the current bank details. A new bank account must be approved by ADspace before any payment is made to it.</p>' : '') +
+        (keepBank ? '<p class="qs-note">' + window.ADspaceWords.note('Leave the account number blank to keep the current bank details. A new bank account must be approved by ADspace before any payment is made to it.') + '</p>' : '') +
         field('sfTerm', 'Payment term', select('sfTerm', 'payment_term', true, TERMS, 'Choose a term'), 'Subject to approval.') +
         field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
         field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As shown on the bank account.') +

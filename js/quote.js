@@ -35,6 +35,8 @@
   var KEEP = 'adspace-quote', LANG_KEY = 'adspace.quote.lang';
   function $(id) { return document.getElementById(id); }
   function esc(s) { return window.ADspaceWords.esc(s); }
+  /* A note one sentence a line, as every client form draws it (js/words.js). */
+  function noteH(s) { return window.ADspaceWords.note(s); }
 
   var WORDS = {
     en: {
@@ -56,14 +58,15 @@
       reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform',
-      ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
+      ratesLater: 'The rates will be shown on the quotation.', budgetSep: 'The advertising budget is billed separately.',
       recommended: 'Recommended', piecesN: '{n} content pieces', platsN: '{n} platforms', adUpTo: 'Advertising budget up to RM\u00a0{b}',
       piecesHead: '{n} content pieces per month', piecesPick: '{n} content pieces per month. Please choose one combination.',
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
       platHead1: 'Plan {p} includes 1 platform. Each additional platform is charged per month.',
       platHeadN: 'Plan {p} includes {n} platforms. Each additional platform is charged per month.',
-      files: 'Choose the files to receive',
-      filesNote: 'Every content piece is delivered in high definition, formatted to each platform\'s specifications. Working files and raw footage are available on request at a charge per content piece.',
+      files: 'Additional files', filesOpt: 'Optional',
+      filesNote: 'Working files and raw footage may be added now or requested at a later date. Each is charged per content piece.',
+      delivered: 'Every content piece is delivered in high definition, formatted for the platform it is posted on.',
       termMin: 'The minimum commitment is 6 months.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
@@ -202,14 +205,15 @@
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台',
-      ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
+      ratesLater: '价格将在报价单中列明。', budgetSep: '广告预算另行收费。',
       recommended: '推荐', piecesN: '{n}条内容', platsN: '{n}个平台', adUpTo: '广告预算最高 RM\u00a0{b}',
       piecesHead: '每月{n}条内容', piecesPick: '每月{n}条内容，请选择一种组合',
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
-      platHead1: '方案 {p} 包含1个平台，每增加一个平台按月收费。',
-      platHeadN: '方案 {p} 包含{n}个平台，每增加一个平台按月收费。',
-      files: '选择需交付的文件',
-      filesNote: '所有内容均以高清格式交付，并符合各平台的规格要求。工作文件与原始素材可按需提供，按每件内容收费。',
+      platHead1: '方案 {p} 包含1个平台。每增加一个平台按月收费。',
+      platHeadN: '方案 {p} 包含{n}个平台。每增加一个平台按月收费。',
+      files: '附加文件', filesOpt: '可选',
+      filesNote: '工作文件与原始素材可现在添加，也可日后另行申请。均按每件内容收费。',
+      delivered: '所有内容均以高清交付，并按发布平台的格式制作。',
       termMin: '最低合约期为6个月。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
@@ -494,9 +498,9 @@
     filesFit();
     var n = stepPieces(), list = CAT.files.filter(function (x) { return fileCap(x, n) > 0; });
     if (!list.length) return '';
-    return sec(t().files, '<p class="qs-note">' + esc(t().filesNote) + '</p>' + list.map(function (x) {
+    return sec(t().files, '<p class="qs-note">' + noteH(t().filesNote) + '</p>' + list.map(function (x) {
       return stepper('files', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, S.files[x.slug] || 0, '', fileCap(x, n));
-    }).join(''));
+    }).join(''), null, t().filesOpt);
   }
   function filesRepaint() { var b = $('qsFilesBox'); if (b) b.innerHTML = filesHtml(); }
   /* A verification for the platforms chosen, where platforms are chosen;
@@ -567,9 +571,10 @@
       '</select></div>';
   }
   // A category of choices: its heading over its items, set apart from the next by a hairline.
-  function sec(head, body, forId) {
+  /* `tag`: a grey fact beside the heading (Optional). */
+  function sec(head, body, forId, tag) {
     return '<section class="qs-sec">' + (forId ? '<label class="qs-sec-h" for="' + forId + '">' : '<h2 class="qs-sec-h">') + esc(head) +
-      (forId ? '</label>' : '</h2>') + body + '</section>';
+      (tag ? ' <span class="chip">' + esc(tag) + '</span>' : '') + (forId ? '</label>' : '</h2>') + body + '</section>';
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
@@ -645,12 +650,16 @@
       sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
         '<div class="qs-plans">' + plans.map(function (x, i) { return planCard(x, i, plans.length); }).join('') + '</div>' +
         '<div class="qs-xbox" id="qsPlanBox">' + planBox() + '</div>' +
-        '<p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
+        '<p class="qs-note">' + noteH((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
       '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div>' +
-      sec(t().platsH, (p ? '<p class="qs-note">' + esc(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
+      sec(t().platsH, (p ? '<p class="qs-note">' + noteH(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
       '</div>', navFoot());
   }
   // A tick before each of the chosen plan's inclusions (the boards).
+  /* What is included, a tick each; the delivery promise is the last (the user, 2026-11-25). */
+  function inclList(items) {
+    return items.length ? '<ul class="qs-incl">' + items.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '';
+  }
   var INCL_TICK = '<svg class="qs-incl-tick" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   /* The plan chosen, under the cards: what it is best for, its content
      each month (a segment where it holds two options, else the one), then
@@ -665,7 +674,7 @@
       (mixes.length > 1 ? '<select class="select" id="qsMix" data-seg data-seg-value aria-labelledby="qsMixL">' + mixes.map(function (m, i) {
           return '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + esc(mixShort(m)) + '</option>'; }).join('') + '</select>'
         : '<span class="qs-mixone">' + esc(mixes[0] ? mixShort(mixes[0]) : '') + '</span>') + '</div>' +
-      ((p.included || []).length ? '<ul class="qs-incl">' + p.included.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '') +
+      inclList((p.included || []).concat(w.delivered)) +
       '</div>';
   }
   /* Additional contents sit under the plan they add to (the user,
@@ -690,7 +699,7 @@
     if (p) {
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
-        '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
+        '<p class="qs-note">' + noteH(t().langsNote) + '</p>' +
         (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : ''));
     }
     if (adsAsked()) {
@@ -699,16 +708,16 @@
       S.budget = Number(cur);
       h += sec(t().budget, '<select class="select" id="qsBudget">' +
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-        '<p class="qs-note">' + esc(t().budgetSep) + '</p>', 'qsBudget');
+        '<p class="qs-note">' + noteH(t().budgetSep) + '</p>', 'qsBudget');
     }
     // 6, 12 or 24 months: a segment of three (DESIGN.md §4, a choice of two to four).
     if (monthly()) {
       if (TERMS.indexOf(S.term) < 0) S.term = TERMS.indexOf(12) >= 0 ? 12 : TERMS[0];
       h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true) +
-        '<p class="qs-note">' + esc(t().termMin) + '</p>');
+        '<p class="qs-note">' + noteH(t().termMin) + '</p>');
     }
     if (S.need.content && onceList().length) {
-      h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
+      h += sec(t().once, '<p class="qs-note">' + noteH(t().onceNote) + '</p>' + (p ? '' : inclList([t().delivered])) +
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (filesAsked()) h += '<div class="qs-xbox" id="qsFilesBox">' + filesHtml() + '</div>';
@@ -866,7 +875,7 @@
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
-      '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
+      '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + noteH(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
   function paintBare() {
@@ -1075,9 +1084,9 @@
     var w = t(), card = (CH.P && CH.P.card) || {};
     Object.keys(CH.sel.files).forEach(function (k) { if (CH.sel.files[k] > chFileLim(k)) CH.sel.files[k] = chFileLim(k); });
     var list = (card.files || []).filter(function (x) { return chFileLim(x.slug) > 0; });
-    return list.length ? sec(w.files, list.map(function (x) {
+    return list.length ? sec(w.files, '<p class="qs-note">' + noteH(w.filesNote) + '</p>' + list.map(function (x) {
       return stepper('chf', x.slug, (lang === 'zh' && FILE_ZH[x.name]) || x.name, CH.sel.files[x.slug] || 0, f(w.each, { a: chMoney(x.rate) }), chFileLim(x.slug));
-    }).join('')) : '';
+    }).join(''), null, w.filesOpt) : '';
   }
   function chFilesRepaint() { var b = $('qsChFilesBox'); if (b) b.innerHTML = chFilesHtml(); }
   function chOpen() {
@@ -1156,7 +1165,7 @@
     if (terms.length) {
       var off = (card.terms || []).filter(function (x) { return Number(x.pct) < 0; }).map(function (x) { return f(w.termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
       h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true) +
-        (off.length ? '<p class="qs-note">' + esc(off.join(lang === 'zh' ? '' : ' ')) + '</p>' : ''));
+        (off.length ? '<p class="qs-note">' + noteH(off.join(lang === 'zh' ? '' : ' ')) + '</p>' : ''));
     }
     return h;
   }
@@ -1362,7 +1371,7 @@
         '<div class="qs-otp" role="group" aria-labelledby="sgCodeL">' + boxes + '</div><span class="msg" id="sgCodeMsg" role="status"></span></div>' +
       '<div class="qs-resend"><span>' + esc(s.resendQ) + '</span><button class="btn btn-quiet btn-sm" type="button" data-a="signresend">' + esc(s.resend) + '</button></div>' +
       '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signfinish', s.finish) +
-      '<p class="qs-note">' + esc(s.rec) + '</p></form>';
+      '<p class="qs-note">' + noteH(s.rec) + '</p></form>';
   }
   var LEAVE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
   /* What the signer typed, read into the page's copy before any redraw. */
