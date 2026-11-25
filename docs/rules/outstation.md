@@ -102,9 +102,12 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   2026-11-24): the address and zone (Johor, Singapore, Beyond Johor) from
   its geocoder, once a stop and once for a reading before it is saved
   (`near`, My Work at Work, nothing written), one request a second across
-  the portal (`outstation_geo_turn`); the road km from its matrix (each
-  leg its row i, column i; the directions answer asked without
-  instructions carried no legs), office to each stop in order and, once
+  the portal (`outstation_geo_turn`); the road km from its matrix (one full
+  matrix over every point in one request, each leg the shorter of its two
+  directions, A to B and B to A, the drive back's minutes the chosen
+  direction's: OpenStreetMap's border crossings can be one-way, and the
+  team crosses at Woodlands both ways, 2026-11-25; the directions answer
+  asked without instructions carried no legs), office to each stop in order and, once
   checked out, back to the office (`km_from_prev`, `km_back`, `km_total`);
   credited under the route (© openrouteservice.org by HeiGIT · Map data ©
   OpenStreetMap contributors). Its one address is `ORS_BASE`
