@@ -10,6 +10,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   stays open with its refusal, a database refusal said on the row
   (2026-10-27, SVC-10).
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
+- A category's order is `position`, then slug (`2026-11-25-rate-card-line-order.sql`):
+  a line added, or moved to another category by its Edit, goes after that
+  category's last (`services_place`); each line's ⋯ offers Move up and Move
+  down after Edit (Services Full Access, only where the move stays in its
+  category and state), through `rate_card_move`, refused `stale` over an
+  order the page does not hold, Undo under the category; the draft's review
+  compares a line's rank in its category (Order changed), never the figure.
 - A line's key is its slug, made from its name: a name already on the card
   is refused as such ("A service with this name is already on the Rate Card."),
   the SKU's own clash as the SKU's; Set inactive, Save and Delete repaint

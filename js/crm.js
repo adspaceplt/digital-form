@@ -6328,7 +6328,9 @@
   var catalog = null;
   function loadCatalog(then) {
     if (catalog) { then(catalog); return; }
-    db.from('services').select('*').order('position').then(function (r) {
+    /* A category's order is position, then slug, as `rate_card_move` reads
+       it (2026-11-25). */
+    db.from('services').select('*').order('position').order('slug').then(function (r) {
       catalog = r.data || [];
       then(catalog);
     }, function () { catalog = []; then(catalog); });
@@ -7981,7 +7983,7 @@
   /* The card's words are edited from Settings' Templates (2026-10-29):
      an older `tab=words` address opens the card. */
   var SVC_TABS = [['card', 'Rate Card'], ['versions', 'Versions']];
-  var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, words: {}, n: 0 };
+  var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, order: {}, words: {}, n: 0 };
   /* Review n changes (2026-10-22, SVC2-M1): the card shows only what the
      draft holds that the live version does not. */
   var svcReview = false;
@@ -8006,11 +8008,24 @@
   var SVC_TERMS = [['sst_pct', 'SST'], ['term_1_3', 'Under 3 months'], ['term_4_5', '3-month commitment'], ['term_6_11', '6-month commitment'],
     ['term_12_23', '12-month commitment'], ['term_18_23', '18-month commitment'], ['term_24', '24-month commitment']];
   function pctWord(v) { return v == null || v === '' ? 'not set' : Number(v) + '%'; }
-  var SVC_CMP = ['category', 'name', 'rate', 'unit', 'position', 'active', 'note', 'detail', 'min_months', 'spec'];
+  var SVC_CMP = ['category', 'name', 'rate', 'unit', 'active', 'note', 'detail', 'min_months', 'spec'];
+  /* A line's place is its rank in its category, never the figure: a line
+     added after its kind moves the figures of the lines after it, which is
+     no change to their order (2026-11-25). */
+  function svcRanks(list) {
+    var by = {}, out = {};
+    (list || []).slice().sort(function (a, b) {
+      return (Number(a.position || 0) - Number(b.position || 0)) || String(a.slug).localeCompare(String(b.slug));
+    }).forEach(function (x) {
+      by[x.category] = (by[x.category] || 0) + 1;
+      out[x.slug] = x.category + '#' + by[x.category];
+    });
+    return out;
+  }
   /* What the draft holds that the live version does not: each line New or
      Changed, a line gone, each block of words changed. */
   function svcDiff() {
-    var out = { lines: {}, was: {}, gone: 0, goneNames: [], words: {}, terms: [], n: 0 };
+    var out = { lines: {}, was: {}, order: {}, gone: 0, goneNames: [], words: {}, terms: [], n: 0 };
     if (!live) return out;
     /* SST and the term percentages publish with the card, as
        rate_card_publish counts them (2026-11-06: a term changed in Settings
@@ -8022,10 +8037,13 @@
     });
     var was = {};
     (live.snapshot.services || []).forEach(function (x) { was[x.slug] = x; });
+    var rankWas = svcRanks(live.snapshot.services), rankNow = svcRanks(catalog);
     (catalog || []).forEach(function (s) {
       var w = was[s.slug];
       if (!w) { out.lines[s.slug] = 'New'; out.n++; return; }
-      if (SVC_CMP.some(function (k) { return canon(s[k]) !== canon(w[k]); })) { out.lines[s.slug] = 'Changed'; out.was[s.slug] = w; out.n++; }
+      var moved = rankWas[s.slug] !== rankNow[s.slug];
+      if (moved) out.order[s.slug] = true;
+      if (moved || SVC_CMP.some(function (k) { return canon(s[k]) !== canon(w[k]); })) { out.lines[s.slug] = 'Changed'; out.was[s.slug] = w; out.n++; }
       delete was[s.slug];
     });
     out.gone = Object.keys(was).length; out.n += out.gone;
@@ -8144,7 +8162,7 @@
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
   var SVC_LIST = 5;
-  function svcMoved(was, now) {
+  function svcMoved(was, now, ordered) {
     var view = function (x) {
       return { name: x.name, category: x.category, rate: x.rate == null ? 'On quote' : MON.money2(x.rate, 'MY'),
         unit: x.unit, min_months: x.min_months, active: x.active === false ? 'Inactive' : 'Active', detail: x.detail, note: x.note };
@@ -8153,14 +8171,14 @@
       ['unit', 'Unit'], ['min_months', 'Minimum months'], ['active', 'State'], ['detail', 'Inclusions'], ['note', 'Note']]);
     var more = [];
     if (canon(was.spec) !== canon(now.spec)) more.push('Quotation details changed');
-    if (canon(was.position) !== canon(now.position)) more.push('Order changed');
+    if (ordered) more.push('Order changed');
     return [said].concat(more).filter(Boolean).join('; ');
   }
   function changeList(d) {
     var out = [];
     (catalog || []).forEach(function (s) {
       if (d.lines[s.slug] === 'New') out.push(s.name + ': new line');
-      else if (d.lines[s.slug]) out.push(s.name + ': ' + (svcMoved(d.was[s.slug] || {}, s) || 'changed'));
+      else if (d.lines[s.slug]) out.push(s.name + ': ' + (svcMoved(d.was[s.slug] || {}, s, d.order[s.slug]) || 'changed'));
     });
     (d.goneNames || []).forEach(function (n) { out.push(n + ': removed'); });
     (svcText || []).forEach(function (b) {
@@ -8701,7 +8719,7 @@
             var table = GRP.table('svc-row cat-row', ['Service', { text: 'Price', cls: 'svc-rate' }, { text: '', cls: 'svc-unit' }, '']);
             lines.forEach(function (s) {
               var row = catalogRow(s);
-              var moved = d.lines[s.slug] === 'Changed' ? svcMoved(d.was[s.slug] || {}, s) : '';
+              var moved = d.lines[s.slug] === 'Changed' ? svcMoved(d.was[s.slug] || {}, s, d.order[s.slug]) : '';
               if (moved) row.querySelector('.svc-name').insertAdjacentHTML('beforeend', '<small class="svc-moved">' + esc(moved) + '</small>');
               table.appendChild(row);
             });
@@ -8775,6 +8793,10 @@
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>' +
+            /* A line moves one place within its category, among the lines in
+               its own state, as the list draws them (2026-11-25). */
+            (svcNext(s, -1) ? '<button class="kmenu-item" data-g="2" data-a="up" type="button" role="menuitem">Move up</button>' : '') +
+            (svcNext(s, 1) ? '<button class="kmenu-item" data-g="2" data-a="down" type="button" role="menuitem">Move down</button>' : '') +
             // Taking a line off the card is a decision of the year, not a select.
             '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' +
               (off ? 'Set active' : 'Set inactive') + '</button>' +
@@ -8792,6 +8814,10 @@
       rb.addEventListener('click', function () { rateInPlace(s, rb); });
       var del = row.querySelector('[data-a="del"]');
       if (del) del.addEventListener('click', function () { purgeSvc(s); });
+      [['up', -1], ['down', 1]].forEach(function (m) {
+        var b = row.querySelector('[data-a="' + m[0] + '"]');
+        if (b) b.addEventListener('click', function () { moveSvc(s, m[1], true); });
+      });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
         patchSvc(s, { active: off }, off ? 'service.on' : 'service.off');
@@ -8843,6 +8869,62 @@
         }).catch(function () { paintServicesPage(); onRow('Not saved. Please try again.', 'err'); });
       }
     });
+  }
+  /* Move up and Move down (2026-11-25): a line changes places with the next
+     line of its category in its own state, through `rate_card_move`, which
+     refuses an order other than the one this page holds; the list repaints
+     from the order it answers, with Undo under the category. */
+  function svcOrder(cat) {
+    return (catalog || []).filter(function (x) { return x.category === cat; }).slice()
+      .sort(function (a, b) { return (Number(a.position || 0) - Number(b.position || 0)) || String(a.slug).localeCompare(String(b.slug)); });
+  }
+  function svcNext(s, dir) {
+    var list = svcOrder(s.category).filter(function (x) { return (x.active === false) === (s.active === false); });
+    var at = list.indexOf(s);
+    return at < 0 ? null : list[at + dir] || null;
+  }
+  var MOVE_SAID = { denied: 'You do not have permission to change the Rate Card. Please ask an admin.',
+    gone: 'This service no longer exists.', stale: STALE_LINE };
+  function moveSvc(s, dir, undoable) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    var seen = svcOrder(s.category).map(function (x) { return x.slug; });
+    var cat = s.category;
+    var take = function (order) {
+      (order || []).forEach(function (o) {
+        (catalog || []).forEach(function (x) { if (x.slug === o.slug) x.position = o.position; });
+      });
+      /* The list draws the card in the order it holds. */
+      (catalog || []).sort(function (a, b) {
+        return (Number(a.position || 0) - Number(b.position || 0)) || String(a.slug).localeCompare(String(b.slug));
+      });
+    };
+    var group = function () {
+      var key = String(cat).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      var row = document.querySelector('#svcList .svc-row[data-slug="' + (window.CSS && CSS.escape ? CSS.escape(s.slug) : s.slug) + '"]');
+      return (row && row.closest('.crm-group')) || document.querySelector('#svcList [data-band="' + key + '"]');
+    };
+    db.rpc('rate_card_move', { p_slug: s.slug, p_dir: dir, p_seen: seen }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) {
+        msg('svcListMsg', /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : 'Not saved. Please try again.', 'err');
+        return;
+      }
+      if (d.error) {
+        if (d.error === 'gone') catalog = (catalog || []).filter(function (x) { return x.slug !== s.slug; });
+        take(d.order);
+        paintServicesPage();
+        msg('svcListMsg', MOVE_SAID[d.error] || 'Not saved. Please try again.', 'err');
+        return;
+      }
+      take(d.order);
+      paintServicesPage();
+      msg('svcListMsg', '');
+      var host = group();
+      if (!host) return;
+      if (undoable) {
+        window.ADspaceAdmin.undoHere(dir < 0 ? 'Moved up.' : 'Moved down.', function () { moveSvc(s, -dir, false); }, host);
+      }
+    }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
   }
   /* A rate card line a client is on stays, because the card is what a person
      picks from and a line that vanishes mid-quote is a line somebody has to
@@ -8967,15 +9049,18 @@
       shutSheet('svcBox'); editingSvc = null;
       /* An edit is repainted from the row as written; a new line reads the
          rate card again, nothing else (SVC2-7). */
-      if (was) { Object.keys(row).forEach(function (k) { was[k] = row[k]; }); paintServicesPage(); return; }
+      /* A line moved to another category is placed after its last line by
+         `services_place`, so the card is read again (2026-11-25). */
+      if (was && was.category === row.category) { Object.keys(row).forEach(function (k) { was[k] = row[k]; }); paintServicesPage(); return; }
       catalog = null;
       loadCatalog(function () { paintServicesPage(); });
     };
     var failed = function () { go.disabled = false; msg('svcMsg', 'Not saved. Please try again.', 'err'); };
     if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).select('slug').then(after).catch(failed); return; }
     row.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('svc-' + Date.now());
-    row.position = (catalog || []).length
-      ? Math.max.apply(null, catalog.map(function (s) { return Number(s.position || 0); })) + 1 : 1;
+    /* No position: `services_place` puts a new line after the last of its
+       own category (2026-11-25: one numbered after the whole card stood
+       apart from its kind). */
     row.active = true;
     db.from('services').insert(row).select('slug').then(after).catch(failed);
   });

@@ -680,6 +680,7 @@
     quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
     rate_card_publish: 'p_version p_valid_until p_note',
+    rate_card_move: 'p_slug p_dir p_seen',
     rate_card_text_save: 'p_key p_value',
     team_notices_list: '',
     team_notice_withdraw: 'p_id p_restore',
@@ -1936,7 +1937,10 @@
           if (table === 'campaign_deliverables' && 'removed_at' in pending && (pending.removed_at || null) !== (r.removed_at || null)) qcVoid(r.option_id);
           var wasPub = r.published;
           (api.__before = api.__before || []).push([r, JSON.parse(JSON.stringify(r))]);
+          var svcCat = table === 'services' && 'category' in pending && pending.category !== r.category && !('position' in pending);
           Object.assign(r, withOwner(table, r, pending));
+
+          if (svcCat) r.position = svcPlace(r.category, r.slug);
           if (table === 'clients') entSync(r, api.__before[api.__before.length - 1][1]);
 
           if (table === 'client_contacts' && ((pending.is_primary === false && api.__before[api.__before.length - 1][1].is_primary) ||
@@ -2010,6 +2014,8 @@
         if (table === 'services' && DB.services.some(function (o) { return o.slug === x.slug; })) {
           err = { code: '23505', message: 'duplicate key value violates unique constraint "services_pkey"', details: 'Key (slug)=(' + x.slug + ') already exists.' };
         }
+
+        if (table === 'services' && !err && !Number(x.position)) x.position = svcPlace(x.category, null);
         if (table === 'services' && !err && x.sku && DB.services.some(function (o) { return o.sku && String(o.sku).toLowerCase() === String(x.sku).toLowerCase(); })) {
           err = { code: '23505', message: 'duplicate key value violates unique constraint "services_sku_idx"' };
         }
@@ -10397,6 +10403,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return { contacts: out };
   }
 
+  function svcPlace(cat, self) {
+    var others = DB.services.filter(function (x) { return x.slug !== self; });
+    var mine = others.filter(function (x) { return x.category === cat; }).map(function (x) { return Number(x.position || 0); });
+    var last = mine.length ? Math.max.apply(null, mine) : Math.max.apply(null, [0].concat(others.map(function (x) { return Number(x.position || 0); })));
+    if (others.some(function (x) { return Number(x.position || 0) === last + 1; })) {
+      others.forEach(function (x) { if (Number(x.position || 0) > last) x.position = Number(x.position) + 1; });
+    }
+    return last + 1;
+  }
   function rpc(name, args) {
     try { return rpcCall(name, args); }
     catch (e) { if (e && e.__rpcErr) return Promise.resolve({ data: null, error: e.__rpcErr }); throw e; }
@@ -14791,6 +14806,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
           published_at: rcL.published_at, published_by: rcL.published_by, snapshot: rcL.snapshot })) : null);
       }
       if (!rcMe || !opsAllowed('services', 'manage')) return rcOk({ error: 'denied' });
+
+      if (name === 'rate_card_move') {
+        var mvOrder = function (cat) {
+          return DB.services.filter(function (x) { return x.category === cat; }).sort(function (a, b) {
+            return (Number(a.position || 0) - Number(b.position || 0)) || String(a.slug).localeCompare(String(b.slug)); });
+        };
+        var mvSaid = function (cat) { return mvOrder(cat).map(function (x) { return { slug: x.slug, position: x.position }; }); };
+        if (args.p_dir !== -1 && args.p_dir !== 1) return rcOk({ error: 'bad-dir' });
+        var mvRow = DB.services.filter(function (x) { return x.slug === args.p_slug; })[0];
+        if (!mvRow) return rcOk({ error: 'gone' });
+        var mvList = mvOrder(mvRow.category);
+        if (JSON.stringify(mvList.map(function (x) { return x.slug; })) !== JSON.stringify(args.p_seen || null)) return rcOk({ error: 'stale', order: mvSaid(mvRow.category) });
+        var mvI = mvList.indexOf(mvRow), mvJ = mvI + args.p_dir;
+        while (mvJ >= 0 && mvJ < mvList.length && (mvList[mvJ].active !== false) !== (mvRow.active !== false)) mvJ += args.p_dir;
+        if (mvJ < 0 || mvJ >= mvList.length) return rcOk({ error: 'edge' });
+        var mvPos = mvList.map(function (x) { return Number(x.position || 0); });
+        for (var mvK = 1; mvK < mvPos.length; mvK++) if (mvPos[mvK] <= mvPos[mvK - 1]) mvPos[mvK] = mvPos[mvK - 1] + 1;
+        var mvSlots = mvList.slice(); mvSlots[mvI] = mvList[mvJ]; mvSlots[mvJ] = mvRow;
+        mvSlots.forEach(function (x, k) { x.position = mvPos[k]; });
+        DB.activity_log.unshift({ id: nid('al'), actor: rcMe.name, action: 'service.changed', subject: mvRow.name,
+          detail: (args.p_dir < 0 ? 'Moved up' : 'Moved down') + ' in ' + mvRow.category, created_at: new Date().toISOString() });
+        return rcOk({ ok: true, order: mvSaid(mvRow.category) });
+      }
       if (name === 'rate_card_text_save') {
         var rcB = DB.rate_card_text.filter(function (b) { return b.key === args.p_key; })[0];
         if (!rcB) return rcOk({ error: 'bad-key' });
