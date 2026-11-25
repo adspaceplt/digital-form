@@ -1,10 +1,10 @@
 ---
 name: copy-review
-description: Have every word on every screen or PDF a change touches (a label, button, menu item, message, refusal, empty line, cover, email, WhatsApp template, PDF line), the standing words as well as the new, read by a second reader against DESIGN.md §6 before the change is pushed, then fix what it finds. Run on every release that touches a screen, before the push and again before the merge if the words moved, or when the user types /copy-review.
+description: Have every word on every screen or PDF a change touches (a label, button, menu item, message, refusal, empty line, cover, email, WhatsApp template, PDF line), the standing words as well as the new, read by a second reader against DESIGN.md §6 once, before the change merges, then fix what it finds. Run on every release that touches a screen, before its merge, or when the user types /copy-review. Never a scan of the whole repo.
 argument-hint: "[base, default origin/main]"
 ---
 
-# Copy review before push
+# Copy review before merge
 
 Why it exists (the user, 2026-11-04: "every new build didnt follow your tone
 etc. rules and why is it this case"): the session that writes a line reads
@@ -27,8 +27,11 @@ the new ones.
    and migration read whole, `admin/index.html` the region round each
    change, the change's own lines marked `+`. Nothing listed (a change to
    no screen): say so in the PR's Test plan ("Copy review: no screen
-   touched") and stop. Run it before the push, so a finding is fixed in
-   the push that would otherwise carry it.
+   touched") and stop. It runs once a change, before its merge, on the
+   screens that change touches; never the whole repo (the user,
+   2026-11-25: "stricter tone checks only apply for new build, and do a
+   checks before merging right, not every time run the whole repo
+   checks").
 2. Hand the list to a fresh reviewer with the Agent tool
    (`subagent_type: general-purpose`), never one that saw the change being
    built. Give it this brief and nothing about why the words were chosen:
@@ -65,7 +68,6 @@ the new ones.
    joins PATTERNS, and a line two screens say joins `ADspaceWords.line`
    (`js/words.js`), in the same push.
 4. Run `node tests/words.js tests` and the suites that read the changed
-   words, then push. If the words changed again after the review, list
-   them again and hand the new list over before the merge. The PR's Test
+   words, then merge. The PR's Test
    plan names the review: "Copy review: n strings on n touched files read,
    n fixed".

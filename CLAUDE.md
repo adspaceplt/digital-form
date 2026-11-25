@@ -228,16 +228,17 @@ is empty and only shrinks (`--write` refuses to add).
 - Before a push, every word the diff puts in front of a person is drafted
   and checked by DESIGN.md §6, How copy is drafted, and `tests/words.js`
   passes (a word the user rejects is added to it in the same push); copy is
-  never left for the user to review (2026-10-29). Before the push, every
-  word on every screen or PDF the change touches, the standing words with
-  the new, is read by a second reader: the `/copy-review` skill lists them
+  never left for the user to review (2026-10-29). Once a change, before
+  its merge, every word on every screen or PDF that change touches, the
+  standing words with the new, is read by a second reader (never a scan
+  of the whole repo): the `/copy-review` skill lists them
   (`tests/copyscan.js`) and hands them, with §6 alone, to a fresh agent
   that did not build the change, asking also whether a newcomer would
   understand each label at once as a familiar app's word; every finding is
-  fixed or answered, a list moved since read again before the merge, and
-  the PR's Test plan names the review (2026-11-04, the user: "every new
+  fixed or answered, and the PR's Test plan names the review (2026-11-04, the user: "every new
   build didnt follow your tone etc. rules"; 2026-11-25: "Please do not
-  give me weird naming again", Build quote's View lines). A line two screens say lives
+  give me weird naming again", Build quote's View lines; "not every time
+  run the whole repo checks"). A line two screens say lives
   once in `ADspaceWords.line` (`js/words.js`); `tests/words.js` fails a
   script that types one, and its PATTERNS stop kinds of wording (a system
   word, a refusal that is no instruction, a tab named wrongly), not only
