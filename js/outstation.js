@@ -91,7 +91,7 @@
   function placeName(s) { return s.client ? s.client + (s.venue ? ' · ' + s.venue : '') : (s.venue || 'Deleted client'); }
 
   /* ---- State and the address ------------------------------------------- */
-  var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null };
+  var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null, pending: [] };
   (function fromUrl() {
     var q = new URLSearchParams(location.search);
     if (q.get('ov') === 'all') st.mode = 'all';
@@ -301,18 +301,189 @@
     var rows = '';
     (trip.stops || []).forEach(function (s) {
       var here = !s.left_at && trip.state === 'open';
-      var facts = ['Accurate to ' + Math.round(Number(s.accuracy_m)) + ' m', plural((s.photos || []).length, 'photo', 'photos'),
+      var facts = ['Accurate to ' + Math.round(Number(s.accuracy_m)) + ' m', plural(live(s).length, 'photo', 'photos'),
         C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')];
       rows += '<li class="ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '"><span class="ost-dot" aria-hidden="true"></span>' +
         '<span class="ost-place"><span class="ost-name"><b>' + esc(placeName(s)) + '</b>' + (s.km_from_prev != null ? '<span class="ost-km"> · ' + esc(km(s.km_from_prev)) + '</span>' : '') + '</span>' +
         '<small>' + facts.map(function (f) { return '<span class="inv-part">' + esc(f) + '</span>'; }).join(' · ') + '</small>' +
-        (s.address ? '<small>' + esc(s.address) + (s.zone ? ' · ' + esc(ZONE[s.zone]) : '') + '</small>' : '') + '</span>' +
+        (s.address ? '<small>' + esc(s.address) + (s.zone ? ' · ' + esc(ZONE[s.zone]) : '') + '</small>' : '') + thumbsHtml(s) + '</span>' +
         '<span class="ost-time">' + esc(here ? 'On site' : span(s.arrived_at, s.left_at)) + '</span></li>';
     });
     var credited = (trip.stops || []).some(function (s) { return s.address || s.km_from_prev != null; });
     return '<ol class="ost-route">' + rows + '</ol>' +
       (credited ? '<p class="ost-credit">© openrouteservice.org by HeiGIT · Map data © OpenStreetMap contributors</p>' : '');
   }
+  /* ---- The photos under each stop (2026-11-25) ------------------------- */
+  /* The user, 2026-11-25: a stop read only "1 photo"; the photos are drawn
+     instead, a tile each. A removed photo leaves the colleague's own view
+     and the count; under All trips it stays, faded and marked. */
+  function live(s) { return (s.photos || []).filter(function (p) { return !p.removed_at; }); }
+  function shown(s) { return (s.photos || []).filter(function (p) { return !p.removed_at || st.mode === 'all'; }); }
+  function thumbsHtml(s) {
+    var ph = shown(s), pend = st.pending.filter(function (x) { return x.stop === s.id; });
+    if (!ph.length && !pend.length) return '';
+    return '<span class="ost-thumbs" data-thumbs="' + esc(s.id) + '">' + ph.map(function (p, i) {
+      return '<button class="ost-thumb' + (p.removed_at ? ' is-removed' : '') + '" type="button" data-photo="' + esc(p.id) + '" aria-label="' +
+        esc('Photo ' + (i + 1) + ', ' + placeName(s) + ', ' + C.clock(p.taken_at) + (p.removed_at ? ', removed' : '')) + '">' +
+        (p.removed_at ? '<span class="ost-thumb-tag">Removed</span>' : '') + '</button>';
+    }).join('') + pend.map(function (x) {
+      return '<span class="ost-thumb is-busy" role="status" aria-label="Saving the photo"><img alt="" src="' + esc(x.url) + '"></span>';
+    }).join('') + '</span>';
+  }
+  /* Every photo of a trip is signed in one request (sign-download
+     `outstation.trip`), never one a photo; a repaint reads nothing again
+     until the links near their hour or a photo is new. */
+  var signed = {};
+  function photoUrls(trip) {
+    var ids = [];
+    (trip.stops || []).forEach(function (s) { shown(s).forEach(function (p) { ids.push(p.id); }); });
+    var had = signed[trip.id];
+    var fresh = had && Date.now() - had.at < 50 * 60000 && ids.every(function (id) { return Object.prototype.hasOwnProperty.call(had.urls, id); });
+    if (fresh) return Promise.resolve(had.urls);
+    if (had && had.p) return had.p;
+    var entry = { at: 0, urls: {}, p: null };
+    entry.p = db.functions.invoke('sign-download', { body: { outstation: { trip: trip.id } } }).then(function (r) {
+      if (r.error || !r.data || !r.data.urls) throw new Error('unsigned');
+      entry.urls = r.data.urls; entry.at = Date.now(); entry.p = null;
+      ids.forEach(function (id) { if (!Object.prototype.hasOwnProperty.call(entry.urls, id)) entry.urls[id] = null; });
+      return entry.urls;
+    }).catch(function () { delete signed[trip.id]; return {}; });
+    signed[trip.id] = entry;
+    return entry.p;
+  }
+  /* A tile shaded until its picture arrives; one that cannot load stays
+     the shaded tile. */
+  function fillThumbs(host, trip, from) {
+    var btns = host.querySelectorAll('[data-photo]');
+    Array.prototype.forEach.call(btns, function (b) {
+      b.addEventListener('click', function () { openPhoto(trip, b.getAttribute('data-photo'), b, from); });
+    });
+    if (!btns.length) return;
+    photoUrls(trip).then(function (urls) {
+      Array.prototype.forEach.call(btns, function (b) {
+        var u = urls[b.getAttribute('data-photo')];
+        if (!u) { b.classList.add('is-gone'); return; }
+        var img = document.createElement('img');
+        img.alt = ''; img.decoding = 'async'; img.draggable = false;
+        img.onerror = function () { img.remove(); b.classList.add('is-gone'); };
+        img.src = u;
+        b.insertBefore(img, b.firstChild);
+      });
+    });
+  }
+  function findPhoto(trip, id) {
+    var hit = null;
+    (trip.stops || []).forEach(function (s) { (s.photos || []).forEach(function (p) { if (p.id === id) hit = { p: p, s: s }; }); });
+    return hit;
+  }
+  function tripNow(trip) {
+    return ((st.d && st.d.trips) || []).filter(function (t) { return t.id === trip.id; })[0] || trip;
+  }
+  /* Remove: the driver's own photo, while the trip is in progress, and only
+     while another stays at its stop (the database holds the same). */
+  function mayRemove(trip, x) {
+    var m = me();
+    return Boolean(m && trip.driver_id === m.id && trip.state === 'open' && !x.p.removed_at && may('ops', 'work') && live(x.s).length > 1);
+  }
+  var REMOVE_SAID = {
+    'no-photo': 'A stop keeps at least one photo. Take another photo before you remove this one.',
+    closed: SAID.closed, denied: 'Only the colleague who took this photo can remove it.', 'not-found': 'This photo no longer exists.'
+  };
+
+  /* The photo full size: the stop's place, the time and the accuracy it was
+     taken at; its ⋯ holds Remove where it may. No download or share of its
+     own. Sheets never stack, so from a trip read whole it closes back to
+     that trip. */
+  var viewer = null;
+  function openPhoto(trip, id, opener, from) {
+    trip = tripNow(trip);
+    var x = findPhoto(trip, id);
+    if (!x) return;
+    if (!viewer) {
+      viewer = document.createElement('div');
+      viewer.className = 'sheet'; viewer.id = 'ostPhotoSheet'; viewer.hidden = true;
+      document.body.appendChild(viewer);
+    }
+    var p = x.p, s = x.s, n = shown(s).indexOf(p) + 1;
+    var can = mayRemove(trip, x);
+    var facts = [['Taken', C.date(p.taken_at) + ', ' + C.clock(p.taken_at)],
+      ['Accuracy', p.accuracy_m != null ? 'Accurate to ' + Math.round(Number(p.accuracy_m)) + ' m' : 'Not available']]
+      .concat(s.address ? [['Address', s.address + (s.zone ? ' · ' + ZONE[s.zone] : '')]] : [])
+      .concat(p.removed_at ? [['Removed', (p.removed_by || 'Former colleague') + ' · ' + C.date(p.removed_at) + ', ' + C.clock(p.removed_at)]] : []);
+    viewer.innerHTML = '<div class="sheet-card formsheet ost-viewer" role="dialog" aria-modal="true" aria-labelledby="ostPhotoH" data-narrow="560">' +
+      '<div class="sheet-head"><h3 id="ostPhotoH">' + esc(placeName(s)) + '</h3>' +
+        (can ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="pmenu" aria-expanded="false" aria-label="More actions for photo ' + n + '">' + DOTS + '</button>' +
+          '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [], [], [], [], [{ a: 'remove', label: 'Remove', need: 'ops:work' }]], 'data-o') + '</div></span>' : '') +
+        '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
+      '<div class="sheet-body">' +
+        '<div class="ost-view' + (p.removed_at ? ' is-removed' : '') + '" id="ostPhotoBox"><span class="ost-view-note">Loading</span></div>' +
+        '<dl class="ovfacts ost-view-facts">' + facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>' +
+        '<p class="msg" id="ostPhotoMsg" role="status"></p>' +
+      '</div></div>';
+    var v = { trip: trip, from: from, after: null };
+    viewer.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    window.ADspaceSheet.show(viewer, { opener: from === 'detail' ? null : opener, onClose: function () { closedPhoto(v); } });
+    photoUrls(trip).then(function (urls) {
+      var box = $('ostPhotoBox');
+      if (!box || !viewer.contains(box)) return;
+      var u = urls[p.id];
+      var none = function () { box.classList.add('is-gone'); box.innerHTML = '<span class="ost-view-note">Not available</span>'; };
+      if (!u) { none(); return; }
+      var img = document.createElement('img');
+      img.alt = 'Photo ' + n + ', ' + placeName(s) + ', ' + C.clock(p.taken_at); img.draggable = false;
+      img.onload = function () { var w = box.querySelector('.ost-view-note'); if (w) w.remove(); };
+      img.onerror = none;
+      img.src = u;
+      box.appendChild(img);
+    });
+    if (!can) return;
+    var mb = viewer.querySelector('[data-a="pmenu"]'), menu = mb.nextElementSibling;
+    mb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      if (bridge.shutMenus) bridge.shutMenus();
+      menu.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+      if (open) { if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu); window.ADspaceMenu.place(mb, menu); }
+    });
+    var rm = menu.querySelector('[data-o="remove"]');
+    rm.addEventListener('click', function () {
+      menu.hidden = true; mb.setAttribute('aria-expanded', 'false');
+      var msg = $('ostPhotoMsg');
+      msg.className = 'msg'; msg.textContent = '';
+      db.rpc('outstation_photo_remove', { p_photo: p.id }).then(function (r) {
+        if (r.error || !r.data || r.data.error || !r.data.trip) {
+          msg.className = 'msg err'; msg.textContent = (r.data && REMOVE_SAID[r.data.error]) || 'Not removed. Please try again.';
+          return;
+        }
+        keep(r.data.trip);
+        v.trip = r.data.trip; v.after = { stop: s.id, photo: p.id };
+        window.ADspaceSheet.close();
+      }).catch(function () { msg.className = 'msg err'; msg.textContent = 'Not removed. Please try again.'; });
+    });
+  }
+  /* Closing the photo goes back to where it was opened, and a removal
+     offers its Undo there, under the stop's photos. */
+  function closedPhoto(v) {
+    var t = tripNow(v.trip);
+    if (v.from === 'detail') openDetail(t, null); else paint();
+    if (!v.after) return;
+    var a = v.after;
+    var host = document.querySelector((v.from === 'detail' ? '#ostTripSheet ' : '#ostBody ') + '[data-thumbs="' + a.stop + '"]');
+    if (!host || !bridge.undoHere) return;
+    bridge.undoHere('Photo removed.', function () {
+      db.rpc('outstation_photo_restore', { p_photo: a.photo }).then(function (r) {
+        if (r.error || !r.data || r.data.error || !r.data.trip) throw new Error((r.data && REMOVE_SAID[r.data.error]) || 'Not undone. Please try again.');
+        keep(r.data.trip);
+        if (v.from === 'detail') { if (window.ADspaceSheet.isOpen(detail)) openDetail(r.data.trip, null); }
+        else { st.msg = { text: 'Undone.', tone: 'ok' }; paint(); st.msg = null; }
+      }).catch(function (e) {
+        st.msg = { text: (e && e.message) || 'Not undone. Please try again.', tone: 'err' };
+        if (v.from !== 'detail') paint();
+        st.msg = null;
+      });
+    }, host);
+  }
+
   function legsSoFar(trip) {
     var legs = (trip.stops || []).map(function (s) { return s.km_from_prev; });
     if (!legs.length || legs.some(function (v) { return v == null; })) return null;
@@ -351,19 +522,26 @@
     box.querySelector('[data-a="out"]').addEventListener('click', function (e) { openOutSheet(trip, e.currentTarget); });
     box.querySelector('[data-a="claim"]').addEventListener('click', function (e) { e.preventDefault(); });
     wire(box, trip);
+    fillThumbs(box, trip, 'card');
     var file = box.querySelector('[data-a="photo"]');
     file.addEventListener('change', function () {
       var f = file.files && file.files[0];
       file.value = '';
       if (!f) return;
       var stop = (trip.stops || [])[trip.stops.length - 1];
-      var msg = $('ostTripMsg');
-      msg.className = 'msg'; msg.textContent = 'Saving the photo…';
+      /* The photo shows at once from the phone, its ring turning until it
+         is saved. */
+      var wait = { stop: stop.id, url: URL.createObjectURL(f) };
+      var done = function () { st.pending = st.pending.filter(function (x) { return x !== wait; }); URL.revokeObjectURL(wait.url); };
+      st.pending.push(wait);
+      paint();
       quickSpot().then(function (spot) {
         return addPhoto(trip.id, stop.id, { file: f, at: new Date().toISOString(), spot: spot });
       }).then(function (t) {
-        keep(t); st.msg = { text: 'Photo added.', tone: 'ok' }; paint(); st.msg = null;
-      }).catch(function (e) { msg.className = 'msg err'; msg.textContent = (e && e.message) || 'The photo could not be saved. Take it again.'; });
+        done(); keep(t); st.msg = { text: 'Photo added.', tone: 'ok' }; paint(); st.msg = null;
+      }).catch(function (e) {
+        done(); st.msg = { text: (e && e.message) || 'The photo could not be saved. Take it again.', tone: 'err' }; paint(); st.msg = null;
+      });
     });
     return box;
   }
@@ -540,6 +718,8 @@
       });
     };
     o.reset = function () { o.list.forEach(function (p) { URL.revokeObjectURL(p.url); }); o.list = []; paintShots(); };
+    /* While the stop is sent, each photo's ring turns over it. */
+    o.busy = function (on) { host.classList.toggle('is-busy', !!on); };
     paintShots();
     return o;
   }
@@ -669,6 +849,7 @@
     }
     go.disabled = true;
     stopMsg('');
+    stopKit.shots.busy(true);
     var shots = stopKit.shots.list.slice();
     call.then(function (r) {
       if (r.error || !r.data || r.data.error) throw new Error(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || W.notSaved);
@@ -684,6 +865,7 @@
       return chain.then(function (cur) {
         keep(cur);
         go.disabled = false;
+        stopKit.shots.busy(false);
         if (window.ADspaceSheet.clean) window.ADspaceSheet.clean();
         window.ADspaceSheet.close();
         stopKit.shots.reset();
@@ -694,6 +876,7 @@
       });
     }).catch(function (e) {
       go.disabled = false;
+      stopKit.shots.busy(false);
       stopMsg((e && e.message) || W.notSaved, 'err');
     });
   }
@@ -879,8 +1062,6 @@
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
       .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);
-    var photos = [];
-    (trip.stops || []).forEach(function (s) { (s.photos || []).forEach(function (p) { photos.push({ p: p, s: s }); }); });
     detail.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostTripH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="ostTripH">Trip · ' + esc(C.date(trip.started_at)) + '</h3>' + menuHtml(trip) +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
@@ -888,33 +1069,11 @@
         '<section class="fsec"><dl class="ovfacts">' + (trip.ref ? '<div><dt>Trip number</dt><dd>' + refHtml(trip, true) + '</dd></div>' : '') +
           facts.map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl></section>' +
         '<section class="fsec"><h4 class="fsec-h">Route</h4>' + routeHtml(trip) + '</section>' +
-        (photos.length ? '<section class="fsec"><h4 class="fsec-h">Photos</h4><div class="ost-gallery">' + photos.map(function (x) {
-          return '<figure class="ost-photo" data-photo="' + esc(x.p.id) + '"><span class="ost-photo-img" aria-hidden="true"></span>' +
-            '<figcaption>' + esc(placeName(x.s)) + ' · ' + esc(C.clock(x.p.taken_at)) + '</figcaption></figure>';
-        }).join('') + '</div></section>' : '') +
       '</div></div>';
     detail.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     wire(detail, trip);
     window.ADspaceSheet.show(detail, { opener: opener });
-    Array.prototype.forEach.call(detail.querySelectorAll('[data-photo]'), function (fig) {
-      db.functions.invoke('sign-download', { body: { outstation: { photo: fig.getAttribute('data-photo') } } }).then(function (r) {
-        if (r.error) { gone(fig); return; }
-        return window.ADspaceAPI.fileOf(r.data).then(function (b) {
-          if (!b || !/^image\//.test(b.type)) { gone(fig); return; }
-          var img = document.createElement('img');
-          img.alt = fig.querySelector('figcaption').textContent;
-          img.src = URL.createObjectURL(b);
-          fig.querySelector('.ost-photo-img').replaceWith(img);
-        });
-      }).catch(function () { gone(fig); });
-    });
-  }
-
-  /* A photo that could not be read says so in its own tile. */
-  function gone(fig) {
-    fig.classList.add('is-gone');
-    var t = fig.querySelector('.ost-photo-img');
-    if (t) t.textContent = 'Not available';
+    fillThumbs(detail, trip, 'detail');
   }
 
   /* ---- Download (All trips) --------------------------------------------- */
@@ -929,7 +1088,7 @@
         rows.push([t.ref || '', C.day(t.started_at), t.driver || '', t.driver_code || '', withWord(t), PURPOSE[t.purpose] || '', s.seq, s.client_code || '',
           placeName(s), s.address || '', ZONE[s.zone] || '', C.clock(s.arrived_at), s.left_at ? C.clock(s.left_at) : '',
           s.left_at ? (Math.round((Date.parse(s.left_at) - Date.parse(s.arrived_at)) / 36e4) / 10).toFixed(1) : '',
-          s.accuracy_m, s.lat, s.lng, (s.photos || []).length, s.km_from_prev == null ? '' : s.km_from_prev,
+          s.accuracy_m, s.lat, s.lng, live(s).length, s.km_from_prev == null ? '' : s.km_from_prev,
           last && t.km_back != null ? t.km_back : '', last && t.km_total != null ? t.km_total : '',
           last && t.ended_at ? C.clock(t.ended_at) : '', last && t.rating ? t.rating : '', i === 0 ? t.note || '' : '', last ? t.end_note || '' : '']);
       });

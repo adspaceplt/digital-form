@@ -38,7 +38,11 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   reading) with the way to turn precise location on (iPhone: Precise
   Location; Android: Google Location Accuracy). A new read cancels the one
   before, and a sheet shut stops its read. Never an IP lookup.
-- Photos: the camera alone (`accept=image/*`, `capture=environment`), drawn
+- Photos: the camera alone (`accept=image/*`, `capture=environment`) on
+  every Add photo, Check in and Add stop alike, never a picker of the
+  album: an iPhone opens the camera directly; Android may offer the gallery
+  beside the camera on some devices, which the page cannot prevent
+  (2026-11-25). Drawn
   down to a 1600px JPEG (the picture's own metadata left behind), each with
   its time and the location at capture, private under
   `private/outstation/{trip}/` (sign-upload `outstation`, asked of
@@ -103,3 +107,30 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
 - A client's stop is filed on its Calls and visits as it begins ("from
   2:00pm (in progress)", the venue named) and completed with its end time
   once left (`outstation_file_visit`; OUTSTATION VISITS FOR THE CLIENT).
+- A stop's photos are drawn under it as tiles (`.ost-thumbs`, the sheet's
+  photo tile, 64px at a desk and 56px on a phone, wrapping), on the trip in
+  progress and on a trip read whole, My trips and All trips alike, and the
+  count beside them counts the photos shown (the user, 2026-11-25: "1
+  photo" alone). Every photo of a trip is signed in one request
+  (sign-download `outstation.trip`, an hour's S3 link a photo, the keys
+  `outstation_photo_keys` answers the caller), never one a photo; a repaint
+  asks nothing again until the links near their hour or a photo is new. A
+  photo still being saved shows at once from the phone with the turning
+  ring; a tile that cannot load stays shaded.
+- A tile opens the photo full size in a sheet (sheets never stack: from a
+  trip read whole it closes back to that trip), titled by the stop's place,
+  with Taken, Accuracy and the stop's Address; it offers no Download or
+  Share of its own (the image is not draggable and carries no iPhone
+  callout).
+- Remove (OUTSTATION PHOTOS SHOWN AND REMOVED, 2026-11-25): the photo's ⋯
+  in that sheet, offered only to the driver (who alone adds photos), only
+  while the trip is in progress, and only while another photo stays at the
+  stop: a stop always keeps one (`no-photo`; `outstation_photo_remove`
+  refuses the same, the trip row locked so two removes cannot take a
+  stop's last two). A soft remove: `removed_at`, `removed_by` on
+  `outstation_photos`, asked nothing, with Undo where it happened
+  (`outstation_photo_restore`, the same driver, the trip still open); the
+  row and the S3 file stay. A removed photo is no photo for the next stop
+  or check-out, leaves the driver's and the companions' reads and the
+  count, and is answered only at `ops.outstation`: under All trips it is
+  drawn faded, marked Removed, its sheet naming who removed it and when.
