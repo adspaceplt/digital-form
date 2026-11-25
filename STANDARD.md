@@ -758,8 +758,9 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   a Business setting the monthly `privacy_retention` reads; WhatsApp
   messages' personal fields 12 months; a caller's address against a link's
   passcode 30 days after it was last used (audit 2026-10-18, item 14), and
-  against /verify/ 30 days after its hour began (2026-10-19); the
-  Activity record three years.
+  against /verify/ 30 days after its hour began (2026-10-19); where a
+  colleague copied a quotation's link 30 days after the copy (2026-11-25);
+  the Activity record three years.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
