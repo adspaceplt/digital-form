@@ -8884,7 +8884,7 @@
     return at < 0 ? null : list[at + dir] || null;
   }
   var MOVE_SAID = { denied: 'You do not have permission to change the Rate Card. Please ask an admin.',
-    gone: 'This service no longer exists.', stale: 'Not saved. This record was changed by someone else. The latest version is now shown.' };
+    gone: 'This service no longer exists.', stale: STALE_LINE };
   function moveSvc(s, dir, undoable) {
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     var seen = svcOrder(s.category).map(function (x) { return x.slug; });
