@@ -341,7 +341,7 @@
             '<input type="file" accept="image/*" capture="environment" data-a="photo" class="ost-file"></label>' +
         '</div><p class="msg" id="ostTripMsg" role="status"></p></section>' +
       '<section class="rec-part ost-part"><div class="viewhead"><div class="headmark"><h2>Distance</h2></div></div>' +
-        '<dl class="ovfacts"><div><dt>Road distance</dt><dd>' + (so != null ? esc(km(so)) + ' so far' : '<span class="muted">Not available</span>') + '</dd></div>' +
+        '<dl class="ovfacts"><div><dt>Distance</dt><dd>' + (so != null ? esc(km(so)) + ' so far' : '<span class="muted">Not available</span>') + '</dd></div>' +
         '<div><dt>Return</dt><dd>Added at check-out</dd></div></dl></section>' +
       '<div class="ost-foot">' +
         '<button class="btn btn-primary" type="button" data-a="out">Check out</button>' +
@@ -875,7 +875,7 @@
     var facts = [['Purpose', PURPOSE[trip.purpose]], ['Driver', m && trip.driver_id === m.id ? 'You' : F.named(trip.driver_code, trip.driver)]]
       .concat(w ? [['Colleagues', w]] : [])
       .concat([['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress'],
-        ['Road distance', trip.km_total != null ? km(trip.km_total) : 'Not available']])
+        ['Distance', trip.km_total != null ? km(trip.km_total) : 'Not available']])
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
       .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);
