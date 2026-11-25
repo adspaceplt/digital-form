@@ -4153,9 +4153,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   /* One line under the name (the user, 2026-10-31): Tax, Qty (a figure
      of two digits), Rate and Months (up to 99), each under its label. */
   .qb-row { grid-template-columns: minmax(0, 1.1fr) 40px minmax(0, 1fr) 44px; grid-template-areas: "name name amt amt" "tax qty rate mo"; column-gap: 6px; row-gap: 8px; padding-inline: 12px; align-items: end; }
-  .qb-row:not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
+  .qb-row:not(:has(> .qb-taxc:not(:empty))) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
+  .qb-row > .qb-taxc:empty { display: none; }
   .qb-row:has(> .qb-incl) { grid-template-areas: "name name amt amt" "incl incl incl incl" "tax qty rate mo"; }
-  .qb-row:has(> .qb-incl):not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
+  .qb-row:has(> .qb-incl):not(:has(> .qb-taxc:not(:empty))) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
   .qb-row > .qb-incl { margin-top: -4px; }
   /* A name being changed takes the line's width, Cancel and Done equal
      halves under it (2026-11-16). */
