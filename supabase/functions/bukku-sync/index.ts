@@ -871,8 +871,8 @@ export function accountOf(raw: any, code: string): number | null {
   return hit;
 }
 /* The item a creator's bill is made on, from the Business settings the
-   database answered: the product by its SKU, the account by its code. */
-/* What a bill is made of; a run of bills reads it once (see createbill). */
+   database answered: the product by its SKU, the account by its code; a run
+   of bills reads it once (see createbill). */
 async function billItem(p: any, seen?: Map<string, any>): Promise<any> {
   const key = [p.sku, p.account_code, p.class_code].join('|');
   if (seen && seen.has(key)) return seen.get(key);
@@ -1725,7 +1725,8 @@ Deno.serve(async (req) => {
       if (run.length === 1 && !Array.isArray(body.options)) {
         const x = results[0];
         if (!x.made && !x.had && x.error) return json(Object.assign({}, x, { option: undefined, creator: undefined }), 200, origin);
-        if (x.note === 'list-not-read' || !listed) return json({ made: x.made || x.had, note: 'list-not-read' }, 200, origin);
+        if (!x.made && x.had) return json(Object.assign({}, listed || {}, { error: 'in-bukku', number: x.had }), 200, origin);
+        if (x.note === 'list-not-read' || !listed) return json({ made: x.made, note: 'list-not-read' }, 200, origin);
         return json(Object.assign({}, listed, x.had ? { error: 'in-bukku', number: x.had } : { made: x.made }), 200, origin);
       }
       return json(Object.assign({ ok: true, results: results.map((x) => ({ option: x.option, made: x.made || null, error: x.error, number: x.number,
