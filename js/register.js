@@ -202,7 +202,7 @@
     var bar = $('regIssue'), add = $('regAdd');
     var vl = $('regVerifyLink');
     if (vl) vl.textContent = location.host + '/verify';
-    if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
+    if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
     load();
   }
@@ -488,7 +488,7 @@
               [d.source === 'manual' && { a: 'edit', label: 'Edit', need: need + ':work' },
                /* A portal document is corrected by reissuing it: the same
                   serial, the earlier version kept and voided as Reissued. */
-               d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') && { a: 'reissue', label: 'Reissue', need: need + ':work' }],
+               d.source === 'portal' && d.family !== 'quote_cover' && !(d.voided_at && d.void_reason === 'Reissued') && { a: 'reissue', label: 'Reissue', need: need + ':work' }],
               /* An HR letter is the colleague's to read once shared (My
                  records, Letters); shared later, or taken back. */
               [d.family === 'hr' && d.member_id && !d.voided_at &&
@@ -703,6 +703,9 @@
   function fillKinds() {
     var sel = $('docKind');
     var allowed = state.types.filter(function (t) {
+      /* A Quotation Cover opens every quotation's PDF and is never issued
+         on its own (2026-11-25); its type still writes that cover. */
+      if (t.family === 'quote_cover') return false;
       if (issuing.families && issuing.families.indexOf(t.family) < 0) return false;
       return mayFamily(t.family, 'work');
     });
@@ -1420,6 +1423,8 @@
     if (out) out.textContent = 'Reference: ' + hrRef(v || '{code}');
   }
   function typeMeta(t) {
+    /* The cover's words are read by every quotation's PDF, never issued. */
+    if (t.family === 'quote_cover') return 'First page of every quotation';
     var n = typeFields(t).length;
     return [t.family === 'hr' && t.code ? hrRef(t.code) : '', t.signed === false ? 'Not signed' : 'To be signed',
       n ? n + (n === 1 ? ' field' : ' fields') : ''].filter(Boolean).join(' · ');

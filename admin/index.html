@@ -6427,7 +6427,6 @@ raya-2026        https://example.com/raya"></textarea>
             <select class="select" id="dtFamily" data-seg data-seg-value>
               <option value="client">Client letter</option>
               <option value="hr">HR letter</option>
-              <option value="quote_cover">Quotation</option>
             </select></div>
         </div>
         <div class="row fgrid">
@@ -6848,23 +6847,23 @@ raya-2026        https://example.com/raya"></textarea>
 <script type="application/json" id="lazyScripts">
 {
   "documents": {"src": "/js/documents.js?v=20261125ot"},
-  "letters": {"src": "/js/letters.js?v=20261120zzzzzd", "first": ["documents"], "uses": ["documents"]},
+  "letters": {"src": "/js/letters.js?v=20261125wh", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
-  "register": {"src": "/js/register.js?v=20261123d", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "register": {"src": "/js/register.js?v=20261125wh", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261124s", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261124za", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261125bmp"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261125nx", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261125cnq", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261125wg", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261125qsh", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261125cnq", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261125wh", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
   "team": {"src": "/js/team.js?v=20261125tse", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
