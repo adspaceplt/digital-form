@@ -87,7 +87,7 @@
       /* What changed since the page read the Rate Card (QUOTATION PREFLIGHT, 2026-11-25). */
       pf: {
         pfHead: 'Changes to your selection', pfEdit: 'Edit', pfCont: 'Continue', pfThing: 'A selected item',
-        pfWait: 'Please review the changes above before you submit.',
+        pfWait: 'Please review the changes above to continue.',
         pageOff: 'The quotation portal is temporarily unavailable. Please try again later.',
         cardMoved: 'The Rate Card was updated while this page was open. Your quotation will be prepared on the current Rate Card.',
         gonePlan: '{x} is no longer offered. Please choose another plan.',
@@ -97,7 +97,7 @@
         goneTranslate: 'Bilingual content is no longer offered. Please review your languages.',
         goneTerm: 'The {x}-month commitment is no longer offered. Please choose another commitment.',
         goneOnce: '{x} is no longer offered. Please review your selection.',
-        priceMoved: 'The price of these changes has been updated. Please review it before you send.',
+        priceMoved: 'The price of these changes has been updated. Please review it before you request the changes.',
         choiceGone: 'A choice is no longer offered on this quotation. Please review your changes.'
       },
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
@@ -231,7 +231,7 @@
       make: '查看报价',
       pf: {
         pfHead: '您的选择有变动', pfEdit: '修改', pfCont: '继续', pfThing: '所选项目',
-        pfWait: '提交前，请先处理以上变动。',
+        pfWait: '请先查看以上变动，再继续。',
         pageOff: '报价门户暂时无法使用，请稍后再试。',
         cardMoved: '本页打开期间，价目表已更新。您的报价将按最新价目表编制。',
         gonePlan: '{x}已不再提供，请选择其他方案。',
@@ -241,7 +241,7 @@
         goneTranslate: '双语内容已不再提供，请检查语言选择。',
         goneTerm: '{x}个月的合约期已不再提供，请选择其他合约期。',
         goneOnce: '{x}已不再提供，请检查您的选择。',
-        priceMoved: '这些修改的价格已更新，请先查看再提交。',
+        priceMoved: '这些修改的价格已更新，请先查看再提交修改请求。',
         choiceGone: '本报价已不再提供您所选的某项内容，请检查您的修改。'
       },
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
