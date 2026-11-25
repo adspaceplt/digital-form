@@ -111,7 +111,7 @@
   function placeName(s) { return s.client ? s.client + (s.venue ? ' · ' + s.venue : '') : (s.venue || 'Deleted client'); }
 
   /* ---- State and the address ------------------------------------------- */
-  var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null, pending: [] };
+  var st = { mode: 'mine', month: C.today().slice(0, 7), d: null, err: null, host: null, seq: 0, msg: null, pending: [], office: null };
   (function fromUrl() {
     var q = new URLSearchParams(location.search);
     if (q.get('ov') === 'all') st.mode = 'all';
@@ -288,7 +288,7 @@
           row.className = 'crm-row ost-row prow';
           var route = (trip.stops || []).map(placeName);
           var who = m && trip.driver_id === m.id ? 'You' : trip.driver || '—';
-          var hours = trip.ended_at ? span(trip.started_at, trip.ended_at) : '';
+          var hours = trip.ended_at ? span(trip.started_at, lastEnd(trip)) : '';
           var dist = trip.km_total != null ? km(trip.km_total) : '';
           row.setAttribute('aria-label', (trip.ref ? trip.ref + ', ' : '') + C.date(trip.started_at) + ', ' + route.join(', ') + ', open trip');
           /* On a phone (2026-11-25): who and when over the number, the
@@ -300,7 +300,7 @@
             '<span class="ost-who">' + esc(who) + '</span>' +
             '<span class="ost-n">' + (hours ? esc(hours) : '<span class="muted">—</span>') + '</span>' +
             '<span class="ost-n pr-end">' + (dist ? esc(dist) : '<span class="muted">—</span>') + '</span>' +
-            '<span class="pr-state">' + stateChip(trip) + '</span>';
+            '<span class="pr-state">' + stateChip(trip, true) + '</span>';
           row.addEventListener('click', function () { openDetail(trip, row); });
           return row;
         });
@@ -308,9 +308,11 @@
       }
     });
   }
-  function stateChip(trip) {
+  /* A list row reads its state alone; the trip itself says it closed
+     automatically. */
+  function stateChip(trip, row) {
     return trip.state === 'open' ? '<span class="chip chip-state is-warn">In progress</span>'
-      : '<span class="chip chip-state is-ok">Checked out</span>';
+      : '<span class="chip chip-state is-ok">Checked out</span>' + (!row && closedAuto(trip) ? '<span class="chip ost-auto">Closed automatically</span>' : '');
   }
 
   /* The route as a timeline (the user, 2026-11-25: the card read as lines
@@ -337,7 +339,8 @@
     stops.forEach(function (s) {
       var here = !s.left_at && trip.state === 'open';
       if (s.km_from_prev != null) rows += legRow(s.km_from_prev);
-      var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>',
+      var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>' +
+        (s.left_how === 'office' ? '<span class="ost-how">worked out from the drive back</span>' : ''),
         GLYPH.target + '<span>' + esc(Math.round(Number(s.accuracy_m)) + ' m') + '</span>',
         GLYPH.camera + '<span>' + esc(plural(live(s).length, 'photo', 'photos')) + '</span>'];
       rows += '<li class="stl-row ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '">' +
@@ -612,6 +615,15 @@
     }, host);
   }
 
+  /* A trip's hours run from its check-in to the last stop's end (a trip
+     checked out at the office ends its last visit a drive earlier). */
+  function lastEnd(trip) {
+    var st0 = (trip.stops || [])[(trip.stops || []).length - 1];
+    return (st0 && st0.left_at) || trip.ended_at;
+  }
+  function closedAuto(trip) {
+    return trip.state === 'closed' && (trip.stops || []).some(function (x) { return x.left_how === 'auto'; });
+  }
   function legsSoFar(trip) {
     var legs = (trip.stops || []).map(function (s) { return s.km_from_prev; });
     if (!legs.length || legs.some(function (v) { return v == null; })) return null;
@@ -637,6 +649,7 @@
       '<section class="rec-part ost-part">' + partHead(GLYPH.road, 'Distance') + distanceHtml(trip) + '</section>' +
       /* Go on to another site or finish (2026-11-25): Add stop then
          Check out, equal, Check out nearest the thumb. */
+      (st.office && st.office.trip === trip.id && st.office.at ? '<p class="msg ost-office-line" role="status">You are at the office.</p>' : '') +
       '<div class="ost-foot">' +
         '<button class="btn btn-primary" type="button" data-a="out"' + GATE + '>Check out</button>' +
         '<button class="btn" type="button" data-a="next"' + GATE + '>' + PLUS + '<span class="btn-word">Add stop</span></button>' +
@@ -647,6 +660,7 @@
     wireLines(box);
     wireNotes(box, trip);
     fillThumbs(box, trip, 'card');
+    readOffice(trip);
     var file = box.querySelector('[data-a="photo"]');
     if (file) file.addEventListener('change', function () {
       var f = file.files && file.files[0];
@@ -668,6 +682,31 @@
       });
     });
     return box;
+  }
+
+  /* ---- At the office (2026-11-25) --------------------------------------- */
+  /* An iPhone web app cannot read the location in the background, so the
+     trip in progress takes one reading when it is opened, on a phone alone
+     (`ADspaceAdmin.onTravelDevice`), through the one watcher. Within the
+     office radius of Settings' pin, Check out is a check-out at the office. */
+  function metres(a, b) {
+    var r = function (d) { return d * Math.PI / 180; };
+    return 2 * 6371000 * Math.asin(Math.sqrt(Math.pow(Math.sin(r(b.lat - a.lat) / 2), 2) +
+      Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.pow(Math.sin(r(b.lng - a.lng) / 2), 2)));
+  }
+  function readOffice(trip) {
+    if (!bridge.onTravelDevice || !bridge.onTravelDevice()) return;
+    if (st.office && st.office.trip === trip.id) return;
+    st.office = { trip: trip.id, at: null };
+    var mine = st.office;
+    quickSpot().then(function (spot) {
+      if (st.office !== mine || !spot) return;
+      var pin = { lat: Number(setting('outstation_office_lat', NaN)), lng: Number(setting('outstation_office_lng', NaN)) };
+      var limit = Number(setting('outstation_accuracy_m', 50)), radius = Number(setting('outstation_office_radius_m', 100));
+      if (!isFinite(pin.lat) || !isFinite(pin.lng) || spot.acc > limit || metres(spot, pin) > radius) return;
+      mine.at = { lat: spot.lat, lng: spot.lng, acc: spot.acc, read: new Date().toISOString() };
+      if (!window.ADspaceSheet.isOpen()) paint();
+    });
   }
 
   /* ---- The phone's location -------------------------------------------- */
@@ -1020,6 +1059,7 @@
         /* No reading at check-out (the user, 2026-11-24: "checkout doesnt
            need to read location again. Only on-site needs to check once"):
            the way back is measured to the office pin. */
+        '<dl class="ovfacts ost-out-facts" id="ostOutFacts" hidden><div><dt>Location</dt><dd>At the office</dd></div></dl>' +
         '<div class="row"><div><label class="field-label" for="ostOutNote">Note</label>' +
           '<textarea class="input" id="ostOutNote" rows="2" maxlength="2000" placeholder="Optional" data-nodraft></textarea></div></div>' +
         '<div class="row"><div><span class="field-label" id="ostRateL">Rate your trip</span>' +
@@ -1051,12 +1091,17 @@
     });
   }
   function outMsg(text, tone) { var m = $('ostOutMsg'); m.textContent = text || ''; m.className = 'msg' + (tone ? ' ' + tone : ''); }
-  function openOutSheet(trip, opener) {
+  function openOutSheet(trip, opener, edit) {
     buildOutSheet();
     outSheet.trip = trip;
-    outSheet.rating = null;
+    outSheet.edit = !!edit;
+    outSheet.office = !edit && st.office && st.office.trip === trip.id ? st.office.at : null;
+    outSheet.rating = edit ? trip.rating || null : null;
     paintStars();
-    $('ostOutNote').value = '';
+    $('ostOutNote').value = edit ? trip.end_note || '' : '';
+    $('ostOutH').textContent = edit ? 'Edit check-out' : 'Check out';
+    $('ostOutGo').textContent = edit ? 'Save' : 'Check out';
+    $('ostOutFacts').hidden = !outSheet.office;
     outMsg('');
     window.ADspaceSheet.show(outSheet, { opener: opener });
   }
@@ -1064,16 +1109,29 @@
     var trip = outSheet.trip, go = $('ostOutGo');
     go.disabled = true;
     outMsg('');
-    db.rpc('outstation_check_out', { p_trip: trip.id, p_lat: null, p_lng: null, p_accuracy: null, p_read_at: null,
-      p_note: $('ostOutNote').value.trim() || null, p_rating: outSheet.rating || null }).then(function (r) {
+    var note = $('ostOutNote').value.trim() || null, rating = outSheet.rating || null, at = outSheet.office, edit = outSheet.edit;
+    /* A reading is good for ten minutes in the database: one older than
+       nine is not sent, and Check out is the ordinary one. */
+    if (at && Date.now() - Date.parse(at.read) > STALE_MS) at = null;
+    var call = edit ? db.rpc('outstation_checkout_edit', { p_trip: trip.id, p_note: note, p_rating: rating })
+      : at ? db.rpc('outstation_check_out_office', { p_trip: trip.id, p_lat: at.lat, p_lng: at.lng, p_accuracy: at.acc, p_read_at: at.read, p_note: note, p_rating: rating })
+      : db.rpc('outstation_check_out', { p_trip: trip.id, p_lat: null, p_lng: null, p_accuracy: null, p_read_at: null, p_note: note, p_rating: rating });
+    call.then(function (r) {
       go.disabled = false;
+      if (r.data && (r.data.error === 'not-office' || r.data.error === 'bad-location')) {
+        /* Moved away from the office meanwhile: the sheet says so and the
+           next press is the ordinary check-out. */
+        st.office = { trip: trip.id, at: null }; outSheet.office = null; $('ostOutFacts').hidden = true;
+        outMsg('This device is no longer at the office. Press Check out again.', 'warn');
+        return;
+      }
       if (r.error || !r.data || r.data.error) { outMsg(r.data && r.data.error ? said(r.data) : (r.error && r.error.message) || W.notSaved, 'err'); return; }
       keep(r.data.trip);
       if (window.ADspaceSheet.clean) window.ADspaceSheet.clean();
       window.ADspaceSheet.close();
-      st.msg = { text: 'Checked out.', tone: 'ok' };
+      st.msg = { text: edit ? 'Saved.' : 'Checked out.', tone: 'ok' };
       paint(); st.msg = null;
-      geo({ trip: trip.id }).then(reread);
+      if (!edit) geo({ trip: trip.id }).then(reread);
     }).catch(function (e) { go.disabled = false; outMsg((e && e.message) || W.notSaved, 'err'); });
   }
 
@@ -1106,7 +1164,17 @@
     var own = Boolean(m && trip.driver_id === m.id);
     return (own || Boolean(bridge.isAdmin && bridge.isAdmin())) && may('ops', 'work');
   }
+  function mayEditOut(trip) {
+    var m = me();
+    return Boolean(m && trip.driver_id === m.id && closedAuto(trip) && may('ops', 'work'));
+  }
   function menuHtml(trip) {
+    if (mayEditOut(trip)) {
+      return '<span class="team-act ost-menu"><button class="kmenu-btn" type="button" data-a="menu" aria-expanded="false" ' +
+        'aria-label="More actions for ' + esc(trip.ref || 'this trip') + '">' + DOTS + '</button>' +
+        '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'editout', label: 'Edit check-out', need: 'ops:work' }], [], [], [],
+          mayDelete(trip) ? [{ a: 'delete', label: 'Delete', need: 'ops:manage' }] : []], 'data-o') + '</div></span>';
+    }
     if (!mayDelete(trip)) return '';
     return '<span class="team-act ost-menu"' + (may('ops', 'manage') ? '' : ' hidden') + '><button class="kmenu-btn" type="button" data-a="menu" aria-expanded="false" ' +
       'aria-label="More actions for ' + esc(trip.ref || 'this trip') + '">' + DOTS + '</button>' +
@@ -1118,13 +1186,20 @@
     var wrap = host.querySelector('.ost-menu');
     if (!wrap) return;
     var mb = wrap.querySelector('.kmenu-btn'), menu = wrap.querySelector('.kmenu'), del = menu.querySelector('[data-o="delete"]');
-    /* At Edit the ⋯ shows once the request is known to be open to it. */
-    if (wrap.hidden && window.ADspaceDelReq) {
+    var editOut = menu.querySelector('[data-o="editout"]');
+    /* At Edit the Delete is a request, shown once it is known to be open
+       to the reader (beside Edit check-out, which stands either way). */
+    if (del && !may('ops', 'manage') && window.ADspaceDelReq) {
       window.ADspaceDelReq.load().then(function () {
         if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu);
-        if (window.ADspaceDelReq.liveItem(del) || del.getAttribute('data-req')) wrap.hidden = false;
+        var open = window.ADspaceDelReq.liveItem(del) || del.getAttribute('data-req');
+        if (open) wrap.hidden = false; else if (editOut) del.hidden = true;
       });
     }
+    if (editOut) editOut.addEventListener('click', function () {
+      menu.hidden = true; mb.setAttribute('aria-expanded', 'false');
+      openOutSheet(trip, mb, true);
+    });
     mb.addEventListener('click', function (e) {
       e.stopPropagation();
       var open = menu.hidden;
@@ -1132,7 +1207,7 @@
       menu.hidden = !open; mb.setAttribute('aria-expanded', String(open));
       if (open) { if (window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu); window.ADspaceMenu.place(mb, menu); }
     });
-    del.addEventListener('click', function () {
+    if (del) del.addEventListener('click', function () {
       menu.hidden = true; mb.setAttribute('aria-expanded', 'false');
       askDelete(trip);
     });
@@ -1178,7 +1253,7 @@
       detail.className = 'sheet'; detail.id = 'ostTripSheet'; detail.hidden = true;
       document.body.appendChild(detail);
     }
-    var more = [['Hours', trip.ended_at ? span(trip.started_at, trip.ended_at) : 'In progress']]
+    var more = [['Hours', trip.ended_at ? span(trip.started_at, lastEnd(trip)) : 'In progress']]
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
       .concat(trip.note ? [['Note', trip.note]] : [])
       .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);

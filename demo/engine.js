@@ -709,6 +709,8 @@
     outstation_photo_remove: 'p_photo',
     outstation_photo_restore: 'p_photo',
     outstation_stop_note: 'p_stop p_note',
+    outstation_check_out_office: 'p_trip p_lat p_lng p_accuracy p_read_at p_note p_rating',
+    outstation_checkout_edit: 'p_trip p_note p_rating',
     outstation_trip_delete: 'p_trip p_confirm',
     outstation_geo_may: 'p_stop p_trip',
     team_session_end: 'p_id p_session',
@@ -3589,6 +3591,7 @@ function cardSlugFree(name, self, email) {
     stage_back_days: 7,
 
     outstation_office_lat: 1.553501, outstation_office_lng: 103.784857, outstation_accuracy_m: 50, outstation_keep_months: 24,
+    outstation_office_radius_m: 100, outstation_remind_hours: 3,
 
     quote_valid_days: 30, details_form_days: 14,
 
@@ -4275,6 +4278,7 @@ function cardSlugFree(name, self, email) {
             : /^outstation_office_/.test(k) ? Math.round(v * 1e6) / 1e6 !== v : Math.round(v * 100) / 100 !== v) ||
           (k === 'outstation_office_lat' && (v < -90 || v > 90)) || (k === 'outstation_office_lng' && (v < -180 || v > 180)) ||
           (k === 'outstation_accuracy_m' && (v < 5 || v > 500 || v % 1)) || (k === 'outstation_keep_months' && (v < 6 || v > 120 || v % 1)) ||
+          (k === 'outstation_office_radius_m' && (v < 20 || v > 1000 || v % 1)) || (k === 'outstation_remind_hours' && (v < 1 || v > 12 || v % 1)) ||
           ((k === 'lead_followup_hours' || k === 'vic_lead_followup_hours') && (v < 1 || v > 720 || v % 1)) ||
           ((k === 'proposal_followup_days' || k === 'vic_proposal_followup_days') && (v < 1 || v > 365 || v % 1)) ||
           (k === 'report_due_days' && (v < 1 || v > 60 || v % 1)) || (k === 'revision_due_days' && (v < 1 || v > 60 || v % 1)) ||
@@ -10664,7 +10668,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           stops: OST.stops.filter(function (x) { return x.trip_id === t.id; }).sort(function (a, b) { return a.seq - b.seq; }).map(function (x) {
             return { id: x.id, seq: x.seq, client_id: x.client_id, client: x.client_id ? cl(x.client_id).name || null : null,
               client_code: x.client_id ? cl(x.client_id).client_code || null : null, client_logo: x.client_id ? cl(x.client_id).logo_url || null : null, venue: x.venue, lat: x.lat, lng: x.lng,
-              accuracy_m: x.accuracy_m, read_at: x.read_at, address: x.address, zone: x.zone, arrived_at: x.arrived_at, left_at: x.left_at,
+              accuracy_m: x.accuracy_m, read_at: x.read_at, address: x.address, zone: x.zone, arrived_at: x.arrived_at, left_at: x.left_at, left_how: x.left_how || null,
               km_from_prev: x.km_from_prev, filed: !!x.touch_id, note: x.note || null,
 
               photos: OST.photos.filter(function (p) { return p.stop_id === x.id && (!p.removed_at || opsGranted('ops.outstation', 'view')); })
@@ -10744,6 +10748,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var kyS = OST.stops.filter(function (x) { return x.trip_id === kyT.id; }).map(function (x) { return x.id; });
         return oOk({ trip: kyT.id, photos: OST.photos.filter(function (p) { return kyS.indexOf(p.stop_id) > -1 && (!p.removed_at || kyAll); })
           .sort(function (a, b) { return a.taken_at < b.taken_at ? -1 : 1; }).map(function (p) { return { id: p.id, key: p.path }; }) });
+      }
+
+      if (name === 'outstation_check_out_office') {
+        if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
+        var coT = oOwn(args.p_trip);
+        if (!coT) return oNo('no-trip');
+        if (coT.state !== 'open') return oNo('closed');
+        if (String(args.p_note || '').length > 2000) return oNo('too-long');
+        if (args.p_rating != null && (args.p_rating < 1 || args.p_rating > 5 || args.p_rating % 1)) return oNo('bad-rating');
+        var coR = oReading(); if (coR) return oNo(coR.error, coR);
+        var coDay = appToday(), coLat = Number(appSet('outstation_office_lat', coDay)), coLng = Number(appSet('outstation_office_lng', coDay));
+        var coRad = Number(appSet('outstation_office_radius_m', coDay)) || 100;
+        var rad = function (d) { return d * Math.PI / 180; };
+        var coM = 2 * 6371000 * Math.asin(Math.sqrt(Math.pow(Math.sin(rad(coLat - args.p_lat) / 2), 2) +
+          Math.cos(rad(args.p_lat)) * Math.cos(rad(coLat)) * Math.pow(Math.sin(rad(coLng - args.p_lng) / 2), 2)));
+        if (!(coM <= coRad)) return oNo('not-office', { radius: coRad });
+        var coL = oLast(coT);
+        if (!oHasPhoto(coL)) return oNo('no-photo');
+        coL.left_at = new Date().toISOString(); coL.left_how = 'office';
+        oFile(coL);
+        coT.state = 'closed'; coT.ended_at = coL.left_at; coT.end_lat = args.p_lat; coT.end_lng = args.p_lng; coT.end_accuracy_m = args.p_accuracy;
+        coT.end_note = String(args.p_note || '').trim() || null; coT.rating = args.p_rating == null ? null : args.p_rating;
+        persist();
+        return oOk({ ok: true, trip: oJson(coT) });
+      }
+      if (name === 'outstation_checkout_edit') {
+        if (!oMe || !opsAllowed('ops', 'work')) return oNo('denied');
+        var ceT = oOwn(args.p_trip);
+        if (!ceT) return oNo('no-trip');
+        if (ceT.state !== 'closed' || !OST.stops.some(function (x) { return x.trip_id === ceT.id && x.left_how === 'auto'; })) return oNo('not-auto');
+        if (String(args.p_note || '').length > 2000) return oNo('too-long');
+        if (args.p_rating != null && (args.p_rating < 1 || args.p_rating > 5 || args.p_rating % 1)) return oNo('bad-rating');
+        ceT.end_note = String(args.p_note || '').trim() || null; ceT.rating = args.p_rating == null ? null : args.p_rating;
+        persist();
+        return oOk({ ok: true, trip: oJson(ceT) });
       }
 
       if (name === 'outstation_stop_note') {
@@ -19606,7 +19645,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
             sts.forEach(function (x, i) { x.km_from_prev = legs[i]; });
             t.km_back = back;
             t.km_total = back == null ? null : Math.round((legs.reduce(function (a, b) { return a + b; }, 0) + back) * 10) / 10;
-            return { data: { ok: true, legs: legs, back: back }, error: null };
+
+            var bm = back == null ? null : (window.__ostBackMins == null ? 20 : window.__ostBackMins);
+            var lastS = sts[sts.length - 1];
+            if (bm != null && lastS && lastS.left_how === 'office' && t.ended_at) {
+              var lastAct = Math.max(Date.parse(lastS.arrived_at), O.photos.filter(function (p) { return p.stop_id === lastS.id && !p.removed_at; })
+                .reduce(function (m, p) { return Math.max(m, Date.parse(p.taken_at)); }, 0));
+              lastS.left_at = new Date(Math.min(Date.parse(t.ended_at), Math.max(Date.parse(t.ended_at) - bm * 60000, lastAct))).toISOString();
+            }
+            persist();
+            return { data: { ok: true, legs: legs, back: back, back_mins: bm }, error: null };
           });
         }
         if (name === 'sign-download' && opts && opts.body && opts.body.personnel) {

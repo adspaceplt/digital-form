@@ -5,7 +5,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 
 - Every tag written is named in `ACTION_LABEL` (`js/admin.js`).
   `activity_section()` in SQL restates the map, and `tests/sql.js` §21 compares
-  the two.
+  the two. A new tag is written into its first copy in `schema.sql` as well as
+  the release's restatement: `sql` and `ops` hold the two the same.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per section (`activity.clients`, `.whatsapp`, `.ops`, `.team`,
   `.review`, `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`,

@@ -181,3 +181,35 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   or check-out, leaves the driver's and the companions' reads and the
   count, and is answered only at `ops.outstation`: under All trips it is
   drawn faded, marked Removed, its sheet naming who removed it and when.
+- Check out at the office (OUTSTATION CHECK-OUT AT THE OFFICE, 2026-11-25;
+  an iPhone web app cannot read the location in the background, so the
+  portal acts when it is opened): the trip in progress takes one reading
+  when it is drawn, on a phone alone (`ADspaceAdmin.onTravelDevice`),
+  through the one watcher (`quickSpot`). Within the accuracy limit and
+  Settings' Office radius (`outstation_office_radius_m`, 100 m, effective
+  from a date) of the office pin, one `.msg` line above Check out reads
+  You are at the office., the sheet states At the office first, and Check
+  out is `outstation_check_out_office` (the reading sent, refused
+  `not-office` beyond the radius; a reading older than nine minutes is not
+  sent and Check out is the ordinary one). The last stop is left 'office'
+  (`outstation_stops.left_how`: 'site', 'office', 'auto'; null reads
+  site); once outstation-geo has the drive back (the matrix's duration
+  with its distance) the database ends it that many minutes before the
+  arrival, never before its check-in nor its last photo kept
+  (`outstation_back_drive`, the service role's, the same asked twice);
+  the client's visit, the trip's hours and the CSV read that end, and the
+  stop says worked out from the drive back. A check-out away from the
+  office ends the last stop at the check-out, as before.
+- A trip left open: one push to its driver (`ops_notifications`, kind
+  `outstation`, Your trip is still open. Check out?, opening My Work's
+  Outstation) once it has stood open Settings' Reminder for open trips
+  (`outstation_remind_hours`, 3) after its last stop's check-in or last
+  photo; never again for that trip (`reminded_at`; `outstation-remind`,
+  every 15 minutes). At 00:00 Malaysia time a trip still open from an
+  earlier day closes itself at its last stop's last activity, left 'auto',
+  with no return leg until its driver opens the list (the heal above asks
+  it), filed `ops.trip_closed` in the Activity record under My Work
+  (`outstation_close_open`, `outstation-close`; a second run closes
+  nothing). It reads Closed automatically (a grey tag beside Checked out),
+  and its driver adds a note and a rating from its ⋯, Edit check-out
+  (`outstation_checkout_edit`, refused `not-auto` on any other trip).

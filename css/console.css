@@ -4951,6 +4951,10 @@ span.inv-amt { font-weight: 600; }
 .ost-vh-end { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 .ost-vh-end > .team-act { display: inline-flex; align-items: center; }
 .ost-vh-end > * { align-self: center; margin-block: 0; }
+.ost-vh-end .ost-auto, .ost-sheet-head .ost-auto { margin-left: 4px; }
+.ost-how { color: var(--ink-mute); font-size: 12px; margin-left: 4px; white-space: normal; }
+.ost-office-line { margin: 0; }
+.ost-out-facts { margin: 0 0 16px; }
 .ost-vh-end .kmenu-btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 .ost-part > .ost-facts { margin-top: 4px; margin-bottom: 15px; }
 .ost-facts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
