@@ -11645,6 +11645,10 @@ Found from the live logs at 09:03 UTC: every `outstation-geo` call failed, so a 
 
 The user, reviewing My Work › Outstation on an iPhone: the trip card read as a title, one run-on meta line (reference, purpose, driver and colleagues joined by dots), then Route, Distance and Add claim as plain text, "crumpled together with just text". Its first release had built the flow and left the look for a later review, so the user had to ask for a redesign. The user: when something is asked to be built, it is built in the existing revamp from the first release; a redesign request is for changing a design, never for receiving one. The rule joins CLAUDE.md's guardrails: every new screen takes the v3 components it needs in its first release, and its screenshots are read for runs of text a component would carry. The trip card's redesign ships with the photo thumbnails release.
 
+### 2026-11-25 · The build number is cut from the short hash
+
+Two sessions reported their release's build from the full commit hash's last four characters (#1453 as 261125.6618, #1454 as 261125.d3f5), while the rail reads the last four of the seven-character short hash (`js/admin.js`: `sha.slice(0, 7)` then `slice(-4)`), 261125.0e92 and 261125.08c6. CLAUDE.md said "the merge commit's last four characters", which reads either way. It now names the seven-character short hash with an example and the command that gives it.
+
 
 ### 2026-11-25 · Build quote in four steps, and a package built in it
 
