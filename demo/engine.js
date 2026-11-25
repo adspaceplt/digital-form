@@ -13652,17 +13652,74 @@ function opsCodeRange(cid, period, ty, src, seq) {
           commitment: qtR2((!month ? 0 : even ? (sub + off + tx) * term : spanIncl) + once + otx) };
       };
       var qtDay = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v + 'T00:00:00Z')); };
-      var qtCustom = function (pr, sel) {
-        sel = sel || {};
 
-        if (pr && pr.error === 'empty' && Array.isArray(sel.custom) && sel.custom.length) {
+      var qtPackages = function (pr, sel, snap) {
+        if (!pr || pr.error || !Array.isArray(pr.lines) || sel.packages == null) return pr;
+        if (!Array.isArray(sel.packages) || sel.packages.length > 5) return { error: 'bad-package' };
+        var t = pr.totals || {}, term = Number(t.term || 1), lines = pr.lines.slice(), RX = /^\d{1,7}(\.\d{1,2})?$/;
+        var svc = function (sl) { return ((snap && snap.services) || []).filter(function (x) { return x.slug === sl && x.active !== false; })[0]; };
+        for (var i = 0; i < sel.packages.length; i++) {
+          var r = sel.packages[i], nm = r && typeof r === 'object' && typeof r.name === 'string' ? r.name.trim() : '';
+          if (!nm || nm.length > 120 || ['month', 'once'].indexOf(r.basis) < 0 || !RX.test(String(r.price)) || !Array.isArray(r.items) ||
+              r.items.length < 1 || r.items.length > 30 || (r.incl != null && (!Array.isArray(r.incl) || r.incl.length > 20))) return { error: 'bad-package', line: nm || String(i + 1) };
+          var mo = 1;
+          if (r.basis === 'month') {
+            if (r.months == null || r.months === '') mo = term;
+            else if (!/^\d{1,2}$/.test(String(r.months)) || Number(r.months) < 1 || Number(r.months) > 36) return { error: 'bad-package', line: nm };
+            else mo = Number(r.months);
+            if (mo > term) return { error: 'over-term', line: nm, term: term };
+          }
+          var list = 0, det = [], out = [], cont = [], extra = [];
+          for (var j = 0; j < r.items.length; j++) {
+            var it = r.items[j], sv = it && typeof it === 'object' ? svc(it.slug) : null;
+            if (!sv || (sv.spec && sv.spec.role === 'plan') || typeof sv.rate !== 'number' || !/^\d{1,3}$/.test(String(it.qty)) || Number(it.qty) < 1 ||
+                (it.extra != null && it.extra !== '' && !RX.test(String(it.extra))) || cont.some(function (c) { return c.slug === sv.slug; })) return { error: 'bad-package', line: nm };
+            list += Number(it.qty) * sv.rate;
+            var c0 = { slug: sv.slug, label: sv.name, qty: Number(it.qty) }, pc = qtPiece(sv.spec && sv.spec.kind);
+            if (pc) c0.piece = pc;
+            cont.push(c0);
+            det.push(Number(it.qty) + ' × ' + sv.name);
+            if (sv.spec && sv.spec.role === 'content') extra.push({ slug: sv.slug, label: sv.name, rate: it.extra != null && it.extra !== '' ? Number(it.extra) : sv.rate });
+          }
+          for (var k = 0; k < (r.incl || []).length; k++) {
+            var inc = r.incl[k], tx = inc && typeof inc.text === 'string' ? inc.text.trim() : '';
+            if (!tx || tx.length > 300 || typeof inc.on !== 'boolean') return { error: 'bad-package', line: nm };
+            (inc.on ? det : out).push(tx);
+          }
+          var pl = { kind: 'package', key: 'package|' + (i + 1) + '|' + nm, label: nm, detail: det, contents: cont, list_amount: qtR2(list),
+            qty: 1, rate: Number(r.price), basis: r.basis, months: mo, amount: qtR2(Number(r.price)) };
+          if (out.length) pl.excluded = out;
+          if (extra.length) pl.extra = extra;
+          lines.push(pl);
+        }
+        if (!sel.packages.length) return pr;
+        var cset = t.bands || ((qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {});
+        lines.forEach(function (l) { if (l.basis === 'month') l.pct = Number(qtTermPct(cset, l.months || term) || 0); });
+        var tt = qtTotals(lines, term, Number(t.term_pct || 0), Number(t.sst_pct || 0));
+        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) });
+      };
+
+      var qtTermOff = function (pr) {
+        if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
+        var t = pr.totals || {}, pct = Math.max(Number(t.term_pct || 0), 0);
+        var lines = pr.lines.map(function (l) { return l.basis === 'month' && Number(l.pct != null ? l.pct : t.term_pct || 0) < 0 ? Object.assign({}, l, { pct: 0 }) : l; });
+        var tt = qtTotals(lines, Number(t.term || 1), pct, Number(t.sst_pct || 0));
+        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { term_pct: pct, term_off: true, month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) });
+      };
+      var qtCustom = function (pr, sel, snap) {
+        sel = sel || {};
+        var more = (Array.isArray(sel.custom) ? sel.custom : []).concat(Array.isArray(sel.packages) ? sel.packages : []);
+
+        if (pr && pr.error === 'empty' && more.length) {
           var bset = (qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {}, bterm = /^\d{1,2}$/.test(String(sel.term)) ? Number(sel.term) : 6;
-          var bmon = sel.custom.some(function (x) { return x && x.basis === 'month'; });
+          var bmon = more.some(function (x) { return x && x.basis === 'month'; });
           if (bmon && bterm === 1) return { error: 'bad-term' };
           var bpct = !bmon ? 0 : qtTermPct(bset, bterm);
           pr = { lines: [], on_request: [], extra_rates: {}, totals: { term: bterm, term_pct: Number(bpct || 0), sst_pct: Number(bset.sst_pct || 0), budget: 0 } };
         }
         if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
+        pr = qtPackages(pr, sel, snap || (qtCard && qtCard.snapshot));
+        if (!pr || pr.error) return pr;
         var any = false, lines = pr.lines.map(function (l0) { return Object.assign({}, l0); });
         if (sel.custom != null) {
           if (!Array.isArray(sel.custom) || sel.custom.length > 30) return { error: 'bad-custom' };
@@ -13702,16 +13759,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var qtCompose = function (snap, sel, console) {
         sel = sel || {};
-        if (sel.brands == null) return qtCustom(qtPrice(snap, sel, sel.edits), console ? sel : {});
+        if (!console && (Array.isArray(sel.packages) || (Array.isArray(sel.brands) && sel.brands.some(function (b) { return b && Array.isArray(b.packages); })))) return { error: 'bad-package' };
+        var off = false;
+        if (console && sel.term_disc != null) { if (typeof sel.term_disc !== 'boolean') return { error: 'bad-term' }; off = !sel.term_disc; }
+        if (sel.brands == null) { var p1 = qtCustom(qtPrice(snap, sel, sel.edits), console ? sel : {}, snap); return off ? qtTermOff(p1) : p1; }
         if (!console || !Array.isArray(sel.brands) || sel.brands.length < 1 || sel.brands.length > 10) return { error: 'bad-brands' };
-        var KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order'];
+        var KEYS = ['plan', 'mix', 'platforms', 'extra', 'langs', 'translate', 'budget', 'once', 'edits', 'custom', 'order', 'packages'];
         var lines = [], req = [], names = [], rates = [], first = null, pct = 0, budget = 0, adj = 0;
         for (var i = 0; i < sel.brands.length; i++) {
           var b = sel.brands[i], nm = b && typeof b === 'object' && typeof b.name === 'string' ? b.name.trim() : '';
           if (!nm || nm.length > 120) return { error: 'bad-brands', brand: i };
           var bs = { term: sel.term };
           KEYS.forEach(function (k) { if (Object.prototype.hasOwnProperty.call(b, k)) bs[k] = b[k]; });
-          var p = qtCustom(qtPrice(snap, bs, bs.edits), bs);
+          var p = qtCustom(qtPrice(snap, bs, bs.edits), bs, snap);
+          if (off) p = qtTermOff(p);
           if (p.error) return Object.assign({}, p, { brand: i, brand_name: nm });
           var t = p.totals || {};
           if (!first) first = t;
@@ -13774,6 +13835,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           Object.keys(m).forEach(function (k) { add(qtPiece(k), m[k]); });
           if (sel.extra && typeof sel.extra === 'object') Object.keys(sel.extra).forEach(function (k) { var s = svc(k); if (s && s.spec && s.spec.role === 'content') add(qtPiece(s.spec.kind), sel.extra[k]); });
         }
+        (Array.isArray(sel.packages) ? sel.packages : []).forEach(function (pk) {
+          (pk && Array.isArray(pk.items) ? pk.items : []).forEach(function (o) { var s = o && svc(o.slug); if (s && s.spec && s.spec.role === 'content') add(qtPiece(s.spec.kind), o.qty); });
+        });
         (Array.isArray(sel.once) ? sel.once : []).forEach(function (o) { var s = o && svc(o.slug); if (s && s.spec && s.spec.role === 'content') add(qtPiece(s.spec.kind), o.qty); });
         return n;
       };

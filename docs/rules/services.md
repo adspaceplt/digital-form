@@ -270,6 +270,28 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   a Letter of Offer's To quote line, each cycle's invoice line to Bukku) is
   named after its brand, `{brand} · {line}` (`quote_line_label`,
   `2026-11-24-quotation-brands-lines.sql`); one brand reads as before.
+- A package (`2026-11-25-quotation-packages.sql`; the user, 2026-11-25):
+  `p_sel.packages` (per brand where several, 1 to 5, console only, a
+  website selection holding one `bad-package`), each a name, a basis
+  (month or once), its months (the term where none, never past it,
+  `over-term`), its price (the team's), its items (Rate Card lines of the
+  quotation's card, never a plan nor a line on request, each once, a qty)
+  with a content piece's `extra` (one more in the same month, the card's
+  rate unless typed) and its `incl` (`{text, on}`, 20 at most), priced by
+  `quote_packages` as ONE line, `kind` package, qty 1 at its price: detail
+  the contents then the ticked lines, `excluded` the unticked, `extra`,
+  `contents` (no rate: the client never reads a piece's rate inside a
+  package) and `list_amount` (the contents at the card's rates). It leaves
+  the quotation as any line (a service line, each cycle's invoice line,
+  `{brand} · {package}` with brands); `ADspaceMoney.planFold(lines, cur,
+  words)` prints its extra rates and Not included under it, once, on the
+  PDF and the link. `quote_files_cap` counts its graphics and reels.
+- The term discount is the team's choice per quotation (`p_sel.term_disc`;
+  2026-11-25): false takes every negative term percentage to 0
+  (`quote_term_off`, kept as `totals.term_off`), a short term's surcharge
+  kept; absent or true prices as before. Build quote's Term step draws
+  Apply the term discount (`#qbTermDisc`) only where the term has one,
+  ticked unless a quotation reopened kept it off.
 - Build quote (the user, 2026-11-24, the approved basket and sheet): one
   column in the order a quote is built, a numbered step each (`.qb-num`):
   1 Plan (Without ads / With ads, the plan cards, Content, Advertising
