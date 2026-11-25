@@ -4973,9 +4973,19 @@ span.inv-amt { font-weight: 600; }
 .ost-office-mark svg { width: 14px; height: 14px; }
 .ost-office .stl-name { font-weight: 500; }
 .ost-dot-here { background: var(--card); box-shadow: inset 0 0 0 2px var(--dot-wait); }
-.ost-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* A client's stop is led by the Clients list's own mark at its size (32,
+   28 under 760) with its gap to the name (12, 10): a size of the stop's own
+   kept the list's flex basis and drew an oval against the name (2026-11-25).
+   The dot and the state stand on the mark's line (`--ost-line`). */
+.ost-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .ost-name .cl-markbox { flex: 0 0 auto; }
-.ost-name .cl-mark { width: 20px; height: 20px; font-size: 8px; }
+.ost-stop:has(> .ost-name .cl-mark) { --ost-line: 32px; }
+.ost-stop > .stl-dot { margin-top: calc((var(--ost-line, 21px) - 9px) / 2); }
+.ost-stop > .ost-time { display: flex; align-items: center; justify-content: flex-end; min-height: var(--ost-line, 0px); }
+@media (max-width: 760px) {
+  .ost-name { gap: 10px; }
+  .ost-stop:has(> .ost-name .cl-mark) { --ost-line: 28px; }
+}
 .ost-name-w { min-width: 0; }
 .ost-time { color: var(--ink-mute); font-size: 12.5px; text-align: right; white-space: nowrap; }
 .ost-under { display: grid; gap: 4px; margin-top: 2px; min-width: 0; }
@@ -4985,17 +4995,24 @@ span.inv-amt { font-weight: 600; }
 .ost-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .ost-sfact { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .ost-sfact svg { width: 13px; height: 13px; flex: 0 0 auto; }
-.ost-credit { margin-top: 12px; color: var(--ink-mute); font-size: 11px; }
+.ost-credit-line { min-width: 0; margin-top: 12px; }
+.ost-credit { color: var(--ink-mute); font-size: 11px; }
 .ost-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 8px; margin-top: 8px; }
 .ost-note { display: flex; align-items: flex-start; gap: 4px; margin-top: 4px; color: var(--ink-soft); font-size: 13px; white-space: pre-line; overflow-wrap: anywhere; }
 .ost-note > span { flex: 1 1 auto; min-width: 0; padding-top: 2px; }
 .ost-note-pen { flex: 0 0 auto; margin-block: calc((22px - var(--ctl-h)) / 2); }
 .ost-under > .asknote { margin-top: 8px; }
-.ost-acts > .btn { width: 100%; }
+.ost-acts > .btn { width: 100%; min-width: 0; padding-inline: 8px; white-space: nowrap; }
 .ost-part > .ost-tally { margin-top: 4px; }
 .ost-tally { grid-template-columns: minmax(140px, max-content); }
 .ost-tally .tally-cell { min-width: 160px; }
+/* Each leg a row: the place takes what is spare, the distance at the
+   right edge, so a long name never wraps inside a label column. */
 .ost-legs { margin-top: 12px; }
+.ost-legs.ovfacts { max-width: 420px; }
+.ost-legs.ovfacts > div { grid-template-columns: minmax(0, 1fr) auto; }
+.ost-legs dt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-legs dd { text-align: right; font-variant-numeric: tabular-nums; }
 .fsec > .ost-legs { margin-bottom: 0; }
 .ost-shot { position: relative; cursor: pointer; }
 .ost-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
@@ -5052,6 +5069,9 @@ button.ost-row { font: inherit; color: inherit; cursor: pointer; text-align: lef
   .ost-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ost-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ost-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* The figure alone on its row takes the row, as a lone tally does. */
+  .ost-tally { grid-template-columns: minmax(0, 1fr); }
+  .ost-tally .tally-cell { min-width: 0; }
   /* The sheet's head keeps the date whole beside the state, ⋯ and close. */
   .ost-tw { display: none; }
   /* Add stop and Check out as equal halves, Check out nearest the thumb. */

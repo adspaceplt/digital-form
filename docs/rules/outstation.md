@@ -40,14 +40,18 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   (`.stl`): the office's start mark, each leg's road km on the line before
   its stop, each stop a dot (filled once left, ringed amber while on site,
   On site as its state at the right, else its time there), the client's
-  logo before its name, the address on one line with an ellipsis (a press
+  mark before its name (`clientMark`, the Clients list's own at its size,
+  32 and 28 under 760, round, its VIC ring and crown, 12px from the name,
+  10 on a phone; the dot and the state on the mark's line; never a size of
+  the stop's own, which drew an oval against the name, 2026-11-25), the address on one line with an ellipsis (a press
   shows it whole), its time, accuracy and photo count as small facts with
   their glyphs, the zone a grey tag only where the address does not
-  already end with it, the thumbnails; the return's leg and the office (End)
+  already name it as one of its parts (the photo sheet's Address alike), the thumbnails; the return's leg and the office (End)
   once checked out. Under the stop on site, Add note (or Edit note) and
-  Add photo, two equal tonal buttons with their glyphs; the map credit last, 11px mute, one line on a phone (a press shows
+  Add photo, two equal tonal buttons with their glyphs; the map credit last, 11px mute, in a block of its own inside the card's content box (`.ost-credit-line`), one line on a phone (a press shows
   it whole), never dropped. Distance: its glyph, the figure (`.tally`, So
-  far, or Total once checked out), each leg and Back to office as rows under it.
+  far, or Total once checked out; the row's width on a phone), each leg and Back to office as rows under it
+  (the place at the left on one line, the km at the right edge).
   The trip's foot: Add stop (tonal, its plus) and Check out (blue) as
   equal halves, Check out on the right, at a desk and on a phone alike: at
   the end of a visit the choice is another site or finish.
