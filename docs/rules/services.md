@@ -295,8 +295,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `totals.addons` (`{key, kind, group, name, rate, unit}`; the package's
   extras first in its order, then the card's add-ons in the card's order,
   from the quotation's own card and currency); never added to a line or a
-  total. Build quote's Extras step ticks them (`#qbAddons`, all ticked by
-  default, a reopened quotation keeping its choice); the PDF prints them as
+  total. Build quote's Extras step ticks them (`#qbAddons`, none ticked on a
+  new quotation, a reopened quotation keeping what it saved; the user,
+  2026-11-25); the PDF prints them as
   a block anchored above the foot of the fees page (on the next page where
   it does not fit, running on under the same head), and the link reads
   them read only under its notes; none ticked, no block. A rate whose unit

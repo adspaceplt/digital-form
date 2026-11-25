@@ -672,29 +672,17 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
-  1. Tone sweep 6, the wider copy review and Build quote's View quote
-     (the user, 2026-11-25: "View lines" read as a builder's word; the
-     button is View quote with its line count as a cart's, drawn once a
-     line is priced; View lines and Show summary retired): branch
-     `claude/tone-sweep-6`, not merged. The copy review is to read every
-     word on each screen a change touches, before the push, and its brief
-     to ask whether a newcomer understands a label as a word Apple, Google
-     or a bank uses (lines, board, pane, basket, block, row, slot are
-     findings). Continue the branch, merge each area as its own release.
+  1. Tone sweep 9's findings (#1434 to #1461, every word on the 51
+     files they touched, read by three fresh readers): fixed on branch
+     `claude/tone-sweep-9-fixes`, merged as their own release. View quote and
+     the copy review's wider reading are merged.
   2. The day's full gate on main (`bash tests/snap.sh all`, two-hour
      limit) after item 1 merges; its findings are the next batch.
-  3. Asked of the user, not yet answered: whether a console quotation's
-     Add-on Rates start ticked (they do; a full fees page then runs to
-     four pages) or unticked.
-  4. Waiting on the user's hand: run
-     `supabase/migrations/2026-11-25-outstation-office-checkout-editor.sql`
-     whole in the SQL Editor (until then Settings refuses the office
-     radius and the reminder hours, and the midnight close files under
-     Other); approve the PRs' Expectations changed; publish Rate Card
-     v.2.0.11; rotate the Bukku token; set the email code's expiry.
-  5. The Activity record's quotation sessions: a city on a live
+  3. Waiting on the user's hand: approve the PRs' Expectations changed;
+     publish Rate Card v.2.0.11; rotate the Bukku token; set the email code's expiry.
+  4. The Activity record's quotation sessions: a city on a live
      quotation link's visit is still to be seen once.
-  6. Build quote keeps no draft of a quote part-built (not built; asked
+  5. Build quote keeps no draft of a quote part-built (not built; asked
      of the user only if raised).
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

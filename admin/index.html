@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261125ap">
-<link rel="stylesheet" href="/css/console.css?v=20261125tbc">
+<link rel="stylesheet" href="/css/console.css?v=20261125vr">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1790,7 +1790,7 @@
                 </div>
               </details>
               </div>
-              <!-- The quotation's priced lines (2026-11-24): View lines in the foot
+              <!-- The quotation's priced lines (2026-11-24): View quote in the foot
                    turns the sheet to them, every brand's lines under its name,
                    the brand on the board changed where read; Back returns. -->
               <section class="fsec qb-linesbox" id="qbLinesBox" hidden>
@@ -1802,7 +1802,7 @@
               <div class="msg" id="qbMsg"></div>
             </div>
             <div class="sheet-foot">
-              <span class="lpicksum qb-sumrow"><span id="qbSum" aria-live="polite"></span><button class="btn btn-sm" id="qbView" type="button" aria-controls="qbLinesBox" aria-expanded="false">View lines</button></span>
+              <span class="lpicksum qb-sumrow"><span id="qbSum" aria-live="polite"></span><button class="btn btn-sm" id="qbView" type="button" aria-controls="qbLinesBox" aria-expanded="false" hidden>View quote</button></span>
               <button class="btn btn-primary" id="qbSave" type="button" hidden>Create quotation</button>
               <button class="btn btn-primary" id="qbNext" type="button">Continue</button>
               <button class="btn btn-quiet" id="qbBack" type="button" hidden>Back</button>
@@ -6862,7 +6862,7 @@ raya-2026        https://example.com/raya"></textarea>
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261125nx", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261125ap", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261125vr", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261125qsh", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
