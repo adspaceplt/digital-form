@@ -84,23 +84,38 @@ Deno.serve(async (req) => {
   if (!(await human(String(body.token || ''), ip))) return json({ error: 'captcha' }, 200, origin);
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  /* The caller's own address rides beside the relay secret, the only way
+     request_ip() takes it: ten codes an hour from one address are counted
+     against the person asking, never against this function's own address,
+     which every caller shares (audit 2026-11-15). Their browser and the
+     country and city Cloudflare saw ride with it, read by request_visit()
+     for the Activity record's line (QUOTATION LINK ACTIVITY, 2026-11-25);
+     the address itself is never filed with a line. */
+  const relay: Record<string, string> = {};
+  if (ip && /^[0-9A-Fa-f.:]{3,45}$/.test(ip)) {
+    const { data: rs } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
+    if (rs && rs.value) {
+      relay['x-adspace-ip'] = ip; relay['x-adspace-relay'] = String(rs.value);
+      const plain = (v: string | null, n: number) => {
+        const t = (v || '').trim();
+        return t && t.length <= n && /^[\x20-\x7e]+$/.test(t) ? t : '';
+      };
+      const agent = plain(req.headers.get('User-Agent'), 400);
+      const country = plain(req.headers.get('CF-IPCountry'), 2);
+      const city = plain(req.headers.get('CF-IPCity'), 80);
+      if (agent) relay['x-adspace-agent'] = agent;
+      if (country) relay['x-adspace-country'] = country;
+      if (city) relay['x-adspace-city'] = city;
+    }
+  }
+  const signer = Object.keys(relay).length
+    ? createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { global: { headers: relay } })
+    : admin;
   if (signing) {
     if (!secret('RESEND_API_KEY')) {
       console.error('quote-request: RESEND_API_KEY is not set; no signing code can be sent');
       return json({ error: 'failed' }, 200, origin);
     }
-    /* The caller's own address rides beside the relay secret, the only way
-       request_ip() takes it: ten codes an hour from one address are counted
-       against the person asking, never against this function's own address,
-       which every caller shares (audit 2026-11-15). */
-    const relay: Record<string, string> = {};
-    if (ip && /^[0-9A-Fa-f.:]{3,45}$/.test(ip)) {
-      const { data: rs } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
-      if (rs && rs.value) { relay['x-adspace-ip'] = ip; relay['x-adspace-relay'] = String(rs.value); }
-    }
-    const signer = Object.keys(relay).length
-      ? createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { global: { headers: relay } })
-      : admin;
     const r = await signer.rpc('quote_sign_code', { p_key: body.key, p_payload: body.payload });
     if (r.error) {
       console.error('quote-request: quote_sign_code failed', r.error.message);
@@ -124,7 +139,7 @@ Deno.serve(async (req) => {
     }
     return json({ ok: true, email: d.email }, 200, origin);
   }
-  const { data, error } = await admin.rpc('quote_website_create', {
+  const { data, error } = await signer.rpc('quote_website_create', {
     p_sel: body.sel, p_contact: body.contact, p_idem: String(body.idem || '')
   });
   if (error) {
