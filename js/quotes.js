@@ -2233,7 +2233,7 @@
       build(ctx, s, B.opener);
       return;
     }
-    window.ADspaceConfirm.ask({ title: 'Discard draft?', body: 'The draft saved ' + window.ADspaceClock.date(d.saved_at) + ' will be discarded. This cannot be undone.',
+    window.ADspaceConfirm.ask({ title: 'Discard draft?', body: 'The draft saved on ' + window.ADspaceClock.date(d.saved_at) + ' will be discarded. This cannot be undone.',
       go: 'Discard', tone: 'danger', wait: true }, function () {
       return ctx.db.rpc('quotation_draft_discard', { p_client: ctx.client.id }).then(function (r) {
         var x = r.error || (r.data && r.data.error);
