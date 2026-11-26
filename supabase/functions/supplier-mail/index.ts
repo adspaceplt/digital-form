@@ -314,7 +314,7 @@ async function feedbackMail(req: Request, body: Record<string, any>, origin: str
   if (!uuid.test(client) || !['quick', 'review'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
-  const begun = await db.rpc('feedback_mail_begin', { p_client: client, p_kind: kind });
+  const begun = await db.rpc('feedback_mail_begin', { p_client: client, p_kind: kind, p_again: body.again === true });
   if (begun.error) return json({ error: 'needs-update' }, 200, origin);
   const b = (begun.data || {}) as Record<string, any>;
   if (b.error) return json(b, 200, origin);

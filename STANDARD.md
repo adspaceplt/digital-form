@@ -669,6 +669,20 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
+- 2026-11-26, `cmdbar` (review fixes S3, which touches neither the Clients
+  bar nor cmdbar.js): "Clients: a second action goes behind a ⋯" reads
+  more=1 buttons=3; it fails the same on main a6157c5 with main's suites.
+  Its cause is to be found; held here until it ships.
+- 2026-11-26, `waapprove` (the same release): Settings › Due dates' sheet
+  holds no field labelled Remind after, so the suite times out; it fails
+  the same on main a6157c5, likely from #1479's relabelled sheets. Held
+  here until it ships.
+- 2026-11-26, `weight` (review fixes S4, whose always-loaded scripts are
+  108 bytes smaller than main's by gzip): the console reads 1328.8 to
+  1328.9 KB against its 1328.8 KB budget on main 2800345 itself; the
+  hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
+  time field under its old label) fail the same on main, likely with
+  `waapprove` from #1479's relabelled sheets. Held here until they ship.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
@@ -752,7 +766,8 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   the personal data the database has since cleared (`privacy_retention`);
   an Object Lock added later must hold a dump for less than 90 days.
 - Retention (2026-10-18, Team audit 12, PDPA 2010): health check-ins are
-  kept 24 months and a leaver's health data 6 months after they left, each
+  kept 24 months and a leaver's health data 6 months after they left
+  (removed, expired or set inactive: `inactive_at`, 2026-11-25), each
   a Business setting the monthly `privacy_retention` reads; WhatsApp
   messages' personal fields 12 months; a caller's address against a link's
   passcode 30 days after it was last used (audit 2026-10-18, item 14), and

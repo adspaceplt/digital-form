@@ -46,7 +46,7 @@
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
         'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ADspace will then confirm your start date.'],
       introNote: 'This takes approximately three minutes.',
-      needT: 'What do you need?',
+      needT: 'Choose your services',
       need: {
         social: ['Social media management', 'Monthly content and account management'],
         ads: ['Advertising', 'Meta and TikTok campaigns, managed monthly'],
@@ -152,7 +152,8 @@
         any: 'Not sent. Please try again.',
         changes: 'This quotation cannot be signed while your changes are being reviewed. Withdraw the request to sign it as it stands.',
         brands: 'Changes to this quotation cannot be requested online. Please contact ADspace on WhatsApp.',
-        recent: 'Your changes were sent a moment ago. Please try again in a minute.'
+        recent: 'Your changes were submitted recently. Please try again in a minute.',
+        busy: 'Too many requests have been made on this quotation in the past hour. Please try again later, or contact ADspace on WhatsApp.'
       },
       /* Accepting the quotation on its link (2026-10-31). */
       sg: {
@@ -193,7 +194,7 @@
       introP: '选择品牌所需的服务，即可申请报价。',
       introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
       introNote: '整个流程约需三分钟。',
-      needT: '您需要什么服务？',
+      needT: '请选择您的服务',
       need: {
         social: ['社交媒体管理', '每月内容制作与账号管理'],
         ads: ['广告投放', 'Meta 与 TikTok 广告，按月管理'],
@@ -300,7 +301,8 @@
         any: '未能提交，请重试。',
         changes: '您的修改请求正在审核中，暂时无法签署此报价。如需按原报价签署，请先撤回请求。',
         brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ADspace。',
-        recent: '刚刚已提交修改请求，请一分钟后再试。'
+        recent: '您的修改请求刚已提交，请一分钟后再试。',
+        busy: '过去一小时内此报价的请求次数过多，请稍后再试，或通过 WhatsApp 联系 ADspace。'
       },
       sg: {
         title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',
@@ -848,7 +850,9 @@
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + adsOf(tt).map(function (r) {
       var once = r.freq === 'once';
-      return '<div class="qs-row"><span class="qs-what">' + esc(f(t().adLine, { p: window.ADspaceMoney.adWord(r.platform) })) +
+      /* A brand's own budget named after its brand (2026-11-26). */
+      var bn = Array.isArray(tt.brands) && tt.brands.length > 1 && r.brand != null && tt.brands[r.brand] ? String(tt.brands[r.brand].name || '').trim() : '';
+      return '<div class="qs-row"><span class="qs-what">' + esc((bn ? bn + ' · ' : '') + f(t().adLine, { p: window.ADspaceMoney.adWord(r.platform) })) +
         '<small>' + esc(once ? t().onceTag : f(t().months, { n: r.months })) + '</small></span>' +
         '<span class="qs-num qs-q">' + esc(once ? 1 : r.months) + '</span><span class="qs-num qs-r">' + esc(n2(r.budget)) + '</span><span class="qs-num">' + esc(n2(r.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {

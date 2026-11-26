@@ -23,7 +23,10 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   (`feedback_mail_begin`, refused `send-off` or `email-off` before anything
   is made), emails its words in the primary contact's language with the link
   as its one button, and closes it (`feedback_mail_done`); a failed send
-  withdraws the request. The WhatsApp feedback template is no longer offered
+  withdraws the request. One still going out is refused `sending`, and one
+  of the same form within the repeat hours (`wa_repeat_hours`) asks first
+  as Sent recently (when, by whom, to whom), sent on Send again
+  (`again`, `p_again`; RETENTION AND JOBS HELD, 2026-11-25). The WhatsApp feedback template is no longer offered
   from the record.
 - Its words are Clients' Email templates, Feedback (`feedback_email_templates`,
   2026-11-24): each form in English and 中文, a subject, a message and a

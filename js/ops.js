@@ -2915,7 +2915,6 @@
     if (isEveryday(t)) return (PLAIN[plainOfKey(s.key)] || {}).word || s.label;
     return stepWord(s, t.engagement_id) || s.label;
   }
-  function statusCell(t) { return stageCell(t); }
   /* A row's stage: the select, and over it on a phone its word as a status
      (the dot and its word), the select laid unseen over the word so a press
      still opens the stages (2026-11-18, the user: the stage on the title's
@@ -6490,7 +6489,7 @@
     if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
     if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be created (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
-      ? 'This feature is not available yet. Please contact an admin.' : m;
+      ? window.ADspaceWords.line.notYet : m;
   }
   function call(fn, args, msgId, then, onFail) {
     db.rpc(fn, args).then(function (r) {
@@ -7422,9 +7421,6 @@
     return when + (e.meeting_channel ? ' · ' + (CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel)) : '') +
       (e.meeting_owner_id ? ' · ' + nameOf(e.meeting_owner_id) : '');
   }
-  function meetingHeld(e) {
-    return Boolean(e && (e.meeting_na || (e.meeting_at && new Date(e.meeting_at) <= new Date())));
-  }
   /* 11:30am, the way the message to a client writes a time. */
   function clock(v) {
     var p = CK.parts(v);
@@ -7500,7 +7496,7 @@
   }
   function openMeetMessage(btn, say) {
     readMeetMsg(function (d) {
-      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? 'This feature is not available yet. Please contact an admin.' : MEET_SAID[d.error] || d.error, 'err'); return; }
+      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? window.ADspaceWords.line.notYet : MEET_SAID[d.error] || d.error, 'err'); return; }
       window.ADspaceConfirm.ask({
         title: 'Meeting message', go: 'Save', wait: true,
         body: 'Fields: {meeting}, {date}, {time}, {month}, {channel}, {link}. A line whose field has no value is left out.',
@@ -7517,7 +7513,7 @@
         }
       }, function (v) {
         return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
-          if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+          if (r.error) return /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message;
           if (r.data && r.data.error === 'unknown-field') return window.ADspaceWords.line.unknownField(r.data.field, r.data.fields);
           if (r.data && r.data.error) return MEET_SAID[r.data.error] || r.data.error;
           meetMsg.body = String(v.body || '').replace(/\r/g, '').trim();
