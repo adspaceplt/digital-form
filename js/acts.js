@@ -37,7 +37,6 @@
     [/^(Preview|Preview PDF)$/, 'out', true, true],
     [/^(Use passkey|Sign in with a passkey)$/, 'key', false, true],
     [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus'],
-    [/^Issue Letter of Offer$/, 'letter'],
     /* What goes out by email from a screen: an invoice and a reminder
        (2026-11-04), a candidate's interview invitation and an email of
        one's own (2026-11-19, the user: Invite drawn as words alone). */

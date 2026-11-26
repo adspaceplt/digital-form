@@ -680,7 +680,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   after a way to another console page. A form's own commit (Save, Cancel, a
   submit, a sheet's foot, a confirm) is words. The act table is
   `js/acts.js` (Publish the plane, Unpublish the struck eye, Edit the pen,
-  Download the file, Copy, Preview after the words, Add and New the plus, Issue Letter of Offer the letter, Invite, an email sent and Send code the envelope, Use passkey the key, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one):
+  Download the file, Copy, Preview after the words, Add and New the plus, Invite, an email sent and Send code the envelope, Use passkey the key, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one):
   a button drawn as words alone takes its act's mark, so a new screen
   follows it untold. `uxaudit` `glyph` fails a label drawn both ways.
 - A press is answered on the button (Doherty): while its write is out the
@@ -752,8 +752,8 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
    of one item stays only where it is a lifecycle or destroy act and
    nothing stands beside it. `tests/menus.js` holds it.
 9. Words: verb first, one to three words, no object the context gives; the
-   same act the same word everywhere (Reset link, Void, Issue Letter of
-   Offer, Make primary, Duplicate, Cancel); never a mood (Mark not signed);
+   same act the same word everywhere (Reset link, Void, Issue
+   document, Make primary, Duplicate, Cancel); never a mood (Mark not signed);
    the short word a familiar app uses, never a phrase where one word says
    it (Duplicate, never Make a copy; Cancel, never Not proceeding; Submit,
    never Submit for review; the user, 2026-10-31).
@@ -1098,8 +1098,7 @@ screenshotted, and the push names any line it could not settle.
    | Use passkey | Unlock with a passkey |
 
    Extra words stay only where they change what the act is (Confirm
-   without letter, Send on WhatsApp beside Resend on WhatsApp, Issue Letter
-   of Offer). A question's title may still name its object (Remove from
+   without letter, Send on WhatsApp beside Resend on WhatsApp). A question's title may still name its object (Remove from
    Content Review?).
 10. **Standard lines.** A delete question ends This cannot be undone.
    (never There is no restore); a record changed meanwhile reads Not saved.
