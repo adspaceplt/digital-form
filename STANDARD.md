@@ -669,6 +669,12 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
+- 2026-11-26, `hiringiv` (the five list fixes, which touch neither
+  Settings nor Hiring's settings): "its Edit opens the figures, the reply
+  time among them" fails at 1280 and 390, and failed the same on the
+  branch's base (c881fdb, main with #1479, Settings sheets on one line):
+  the Time limits sheet no longer reads its three figures' words as the
+  suite asks. Held here until it ships.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
