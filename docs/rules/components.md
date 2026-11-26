@@ -110,14 +110,14 @@ A page's surface is one attribute on `<html>`, never a page's own ground or a fa
 
 | Token | `v3` (console) | `cards` | `shaded` |
 |---|---|---|---|
-| `--ground` | `--page`; `--frame` at a desk (861 and over, no tab bar) | `--page` | `--card` |
+| `--ground` | `--page`; `--frame` at a desk (861 and over, no tab bar); `--card` on a client page | `--page` | `--card` |
 | `--section-bg` | `--card` | `--card` | `--sunk` |
-| `--section-edge` | transparent; `--card-edge` on the desk sheet (`.console`), `--part-edge` inside a record | transparent | transparent |
+| `--section-edge` | transparent; `--card-edge` on the desk sheet (`.console`), `--part-edge` inside a record and on a client page | transparent | transparent |
 | `--section-radius` | `--radius-lg` | `--radius` | `--radius-lg` |
 | `--section-pad` | 18px 20px | 18px 20px | 18px 20px |
 | `--section-gap` | 12px | 12px | 12px |
 
-v3 on a client page (`data-face="client"`, V3 CLIENT SHEET in `css/portal.css`, 2026-11-26): the frame's grey ground, the page's column one white sheet (`--radius-lg`, `--card-edge` drawn inside, no shadow; edge to edge on a phone, as the console's phone draws no inset sheet), every part on it a white card edged by `--part-edge` 16px apart (the section cards through the tokens, and `.cs-card`, `.booking`, `.cp-tile`, a booking's `.queue .qrow`, `.cardpair`, a quotation's `.qs-table`, `.qs-tot`, `.qs-addons`), a card inside a part one surface with it; a quotation's sheet is its `.qs-main` (the head to Back) with `.qs-side` beside it on the frame, a form's sheet the 560px column's width; a cover keeps its own ground.
+v3 on a client page (`data-face="client"`, V3 CLIENT PARTS in `css/portal.css`, 2026-11-26): the ground white (`--card`) to the edge, no sheet (the column keeps only its width), every part a white card edged by `--part-edge` 16px apart (the section cards through the tokens, and `.cs-card`, `.booking`, `.cp-tile`, a booking's `.queue .qrow`, `.cardpair`, a quotation's `.qs-table`, `.qs-tot`, `.qs-addons`), a card inside a part one surface with it; a quotation's Summary (`.qs-side`) such a card beside its column, under it on a phone; the same on a phone; a cover keeps its own ground.
 
 | Page | `data-layout` |
 |---|---|
