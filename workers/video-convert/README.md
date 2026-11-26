@@ -190,3 +190,14 @@ bucket beside its original. Open a review link in Chrome: the reels play.
 
 A job marked **Error** names the reason in its detail. The portal keeps
 playing the original meanwhile, so nothing is worse than before.
+
+## 6. Updating the function
+
+When this folder's `index.mjs` or `logic.mjs` changes, the Lambda is
+updated by hand: Lambda → `adspace-video-convert` → Code tab → open each of
+the two files, replace its whole contents with this folder's file of the
+same name → **Deploy**. Nothing else changes.
+
+Update of 25 Nov 2026: each job carries an idempotency token made from the
+file's key and its ETag (`ClientRequestToken`), so S3 delivering the same
+upload event twice asks for one job, not two. No new permission is needed.

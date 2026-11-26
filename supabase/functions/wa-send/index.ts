@@ -169,8 +169,9 @@ async function keptReport(db: any, auth: string, reportId: string): Promise<Uint
   const res = await fetch(Deno.env.get('SUPABASE_URL')! + '/functions/v1/sign-download', {
     method: 'POST',
     headers: { 'Authorization': auth, 'apikey': Deno.env.get('SUPABASE_ANON_KEY')!, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reportVersion: live.id })
-  }).catch(() => null);
+    body: JSON.stringify({ reportVersion: live.id }),
+    signal: AbortSignal.timeout(20000)
+  }).catch((e) => { console.error('wa-send: the report PDF was not read', String((e as Error)?.name || e)); return null; });
   if (!res || !res.ok) return null;
   const b = new Uint8Array(await res.arrayBuffer().catch(() => new ArrayBuffer(0)));
   return isPdf(b) ? b : null;
@@ -182,8 +183,8 @@ async function uploadPdf(bytes: Uint8Array, filename: string): Promise<{ id?: st
   form.append('type', 'application/pdf');
   form.append('file', new Blob([bytes], { type: 'application/pdf' }), filename);
   const res = await fetch(await graphUrl('/media'), {
-    method: 'POST', headers: { 'Authorization': 'Bearer ' + TOKEN() }, body: form
-  }).catch(() => null);
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + TOKEN() }, body: form, signal: AbortSignal.timeout(20000)
+  }).catch((e) => { console.error('wa-send: media upload failed', String((e as Error)?.name || e)); return null; });
   if (!res) return { error: 'upload' };
   const body = await res.json().catch(() => ({})) as Record<string, any>;
   if (!res.ok || !body.id) return { error: [res.status, body.error && body.error.message].filter(Boolean).join(' ').slice(0, 480) };
@@ -284,7 +285,8 @@ async function readTemplates(name?: string): Promise<{ list?: Shape[]; error?: s
   if (name) first.searchParams.set('name', name);
   let next: string | null = first.toString();
   for (let page = 0; next && page < 5; page++) {
-    const res: Response | null = await fetch(next, { headers: { 'Authorization': 'Bearer ' + TOKEN() } }).catch(() => null);
+    const res: Response | null = await fetch(next, { headers: { 'Authorization': 'Bearer ' + TOKEN() }, signal: AbortSignal.timeout(20000) })
+      .catch((e) => { console.error('wa-send: templates not read', String((e as Error)?.name || e)); return null; });
     if (!res) return { error: 'wa-failed' };
     const body = await res.json().catch(() => ({})) as Record<string, any>;
     if (!res.ok || body.error) {
