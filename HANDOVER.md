@@ -4,22 +4,21 @@ The single source of truth for work in flight. A fresh session reads this file,
 then CLAUDE.md (§3 **Token economy** is binding), then the PR or branch of the
 item it takes. The previous coordinator session ended here; nothing lives in it.
 
-## Running now (sessions started by the old coordinator; at most four at once)
+## Running now (coordinator session_01RVzkaP4WzcjZDWEysZw37c; at most four sessions)
 
 | Session | Work | When done |
 |---|---|---|
-| C `session_01RVzkaLum5dPvcA9b8Pkfzv` | F8: a team quotation is a draft (`ADP/QT{YYMM}-DRAFT`, only Preview PDF, Edit, Confirm, Remove) until **Confirm quotation** assigns its serial; a website request takes `ADP/REQ{YYMM}-{AAA}` (three random letters) and its serial at Send quotation; a revision after Sent is `-R1`, `-R2` under its family root. `quotation_issued(q)` becomes "confirmed". | Merges itself, reports builds |
-| F `session_01RVzkaPPWFkP4TvAS61BgEd` | Team groups (What this group can do, switches renamed after their Settings rows, presets with summaries), then Settings (Portal and Company split, one Numbering part once F8 merges, small fixes) | Merges itself |
-| G `session_01RVzkaNbZ2662GKRQQPLLtR` | Second unslop pass: PDFs and emails (one email button, money never split), remaining sections, sheets and editors; deploys supplier-mail with the email functions | Merges itself |
+| C `session_01RVzkaLum5dPvcA9b8Pkfzv` | F8: quotation drafts (`ADP/QT{YYMM}-DRAFT`, Confirm quotation assigns the serial; website requests `ADP/REQ{YYMM}-{AAA}`; revisions `-R1`). Its worker dropped at 13:27; told at 14:20 to merge main, re-run affected and merge | Merges itself |
+| F `session_01RVzkaPPWFkP4TvAS61BgEd` | #1496 and #1500 merged. Left: Numbering (one part in Settings), once F8 is on main | Message F when F8 merges |
+| H `session_01RVzkaMzHTsWjccfqE6Hemb` | The surface comparison Artifact (6 screens × v3, cards, shaded, 1280 and 390); no repo change | Sends the link to the coordinator |
 
-The coordinator checks them every 30 minutes by their status line alone and
-archives one whose work is all merged.
+G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 (index.ts 140 KB, too large for one connector call) is being deployed by session `session_01RVzkaQdpVPqkzAb7ChdveC` through the Management API; `SUPABASE_ACCESS_TOKEN` is now set in the environment for later deploys. PDF item 13 (the Rate Card discount sign, as G proposed in #1499/#1501's handover) is approved by the user ("2 ok"): build it, with its suite edit, on the next documents/PDF train.
 
 ## Queue (in order, as release trains; coordinator session_01RVzkaP4WzcjZDWEysZw37c)
 
 1. **Build quote and TERMS fit**: merged, #1497.
-2. **Surface tokens and `data-layout`** (built on branch `claude/surface-tokens`; the user: run it in a fresh session in G's slot once G's releases merge and G is archived, which also builds item 3 and merges main in first, as F and G touched the card rules) (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
-3. **Style comparison** on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
+2. **Surface tokens and `data-layout`**: merged, #1502 (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
+3. **Style comparison** (session H) on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
 4. **Client pages** (held for the user's pick from 3): branch `claude/portal-six-tabs` (both repos): the portal at six tabs (Overview, Content, Reports, Services, Meetings, Account; old `?tab=` names land on their card), and `/creators/`, `/creator/` and the portal's campaign view in sections (identity head; Summary, Brief, Amount, Creators cards; each creator a card collapsed to name, state, next date, opening to track and facts two across; on a phone the track reads the current step's word). Its commit 6c0367b5 (portal shaded by CSS) is reverted in favour of the attribute. Screenshots of the portal, `/creators/` and `/quote/` at 390 and 1280 to the user before merging.
 5. **Linked sections** (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
    - Content Review → My Work: a client's approval or request for changes on a set moves its task's stage (derived on load where the rules prefer it).
@@ -61,6 +60,11 @@ archives one whose work is all merged.
 | #1494 Rules 207 KB → 81 KB; Token economy | 261126.baf3 |
 | #1496 Team groups (F) | 261126.9856 |
 | #1497 Build quote one sheet at a desk; TERMS fit | 261126.9c59 |
+| #1498 Handover queue | 261126.4769 |
+| #1499 PDFs and emails (G) | 261126.f4e8 |
+| #1500 Settings (F) | 261126.169c |
+| #1501 Sections and sheets (G) | 261126.3a98 |
+| #1502 Surface tokens, `data-layout` | 261126.22df |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
@@ -72,5 +76,4 @@ Also done:
 Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
 1. go.adspace.me's DNS stays for now; its removal is a future update.
-2. The outstation notification still links go.adspace.me/outstation, a database value. Move it to hi.adspace.me/outstation.
-3. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
+2. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
