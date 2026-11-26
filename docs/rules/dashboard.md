@@ -22,7 +22,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   9pm to 3:59am, Malaysia's clock, by their whole name, in place of the
   section's name; the date (`Fri, 13 Nov`) where the rail's group stands.
 - Me (`pg=` left out; the strip's first tab): the colleague's own work,
-  never anyone else's: four figures as v3 tiles (`#ovwMeLead`: My open
+  never anyone else's: four figures as v3 tiles, no section mark since all
+  four read one section (`oneSection`; 2026-11-26) (`#ovwMeLead`: My open
   tasks, Late, Due today, Waiting for you, from `ADspaceOps.mine()`, the
   tasks they own read as My Work reads them and Waiting for you's own
   reads; a colleague without My Work who may see leads reads My leads,
@@ -33,9 +34,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Approve on an extension, else Open; chips by kind where there are two
   or more; their leads past follow-up and their published reports not
   sent join it) beside Next 5 days (`#ovwWeek`: five working days, their
-  tasks by due date and the client meetings they lead) and My clients this
+  tasks by due date and the client meetings they lead; a week holding none is one line, Nothing is due., never five rows; 2026-11-26) and My clients this
   month (`#ovwMyClients`: the clients they are person in charge of whose
-  month is this month, done and late on one bar). Each of their tasks on
+  month is this month, done and late on one bar); at a desk Today and the
+  side column end on one line (`.ovw-me-cols`, 2026-11-26). Each of their tasks on
   Today and Next 5 days leads with its ring (phase 4, the user,
   2026-11-13: `ringOf`, the outer line the time used from its owner's
   assignment to the end of its final date, the inner arc its checklist

@@ -11761,3 +11761,16 @@ The fix is in the two shared pieces. `ADspaceConfirm` stands side-by-side fields
 ### 2026-11-25 · Build quote says items, custom items and service lines, never the builder's lines
 
 The copy review of Build quote's Summary (#1473) read every word on the sheet and found the builder's word "lines" still standing after the user retired it with View lines: Custom lines and Add line, Renew lines, Rate Card line, the Line column of the lines view, and refusals saying "line". The starting session gave them to this session as their own release, in the reviewer's words: an item on the quotation is an item (Item, Custom items, Add custom item, An item cannot run longer than the term, Its items will become confirmed service lines), a confirmed one is a service line (Renew service lines, No confirmed service lines to renew.), and what the Rate Card offers is a Rate Card service (Choose a Rate Card service, Add a Rate Card service to the package.). A package's inclusion is added by Add inclusion. The phrases join `tests/words.js` RETIRED. No suite read them as text; only check names held them.
+
+### 2026-11-26 · The Dashboard's Me page: no repeated mark, one line for an empty week, columns level
+
+The user ran an unslop audit of the Dashboard (Me) and approved three of its
+findings. The four figure tiles each carried My Work's mark, the same glyph
+four times, telling the reader nothing: tiles read from one section now carry
+none (`oneSection` in `js/overview.js`; a tile drawing a trend already gave its
+mark up). An empty Next 5 days drew five rows of Nothing due; a week holding
+none of the colleague's work or meetings is now one line, Nothing is due., as
+Today's own, while a refused meeting read keeps the days. Today ended about
+180px above Next 5 days at a desk, leaving a dead band; the two columns now end
+on one line (`.ovw-me-cols`). Kept as decided: the greeting (2026-11-13) and
+the task ring (2026-11-14). `tests/overview.js` asserts all three.

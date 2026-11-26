@@ -6194,6 +6194,12 @@ svg.sec {
 .ovw-me-cols.is-one, .is-narrow .ovw-me-cols { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1100px) { .ovw-me-cols { grid-template-columns: minmax(0, 1fr); } }
 .ovw-me-main, .ovw-me-side { display: grid; gap: 12px; min-width: 0; }
+/* The two columns end on one line: Today, the main column's first card,
+   takes what the side column's height leaves (the user, 2026-11-26). */
+.ovw-me-cols:not(.is-one) { align-items: stretch; }
+.ovw-me-main { grid-template-rows: minmax(0, 1fr); align-content: stretch; }
+.ovw-me-today { display: grid; }
+.ovw-me-main > .msg:empty { display: none; }
 .ovw-today .chart-head, .ovw-week .chart-head, .ovw-mycl .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .ovw-today-n { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
 .ovw-today-chips { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }

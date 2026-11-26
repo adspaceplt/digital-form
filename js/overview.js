@@ -2218,7 +2218,7 @@
         if (!may('clients.leads', 'view')) { grid.remove(); return; }
         var lg = function (f) { return function () { return myLeads().then(f); }; };
         var monthStart = CK.today().slice(0, 7) + '-01';
-        [{ key: 'me-leads', title: 'My leads', sec: 'clients', load: lg(function (l) {
+        oneSection([{ key: 'me-leads', title: 'My leads', sec: 'clients', load: lg(function (l) {
             var open = l.filter(function (c) { return c.stage !== 'active'; });
             var prop = open.filter(function (c) { return c.stage === 'proposal'; }).length;
             return { fig: String(open.length), sub: prop ? prop + ' proposal' + (prop === 1 ? '' : 's') + ' sent' : 'No proposals sent' };
@@ -2234,10 +2234,10 @@
          { key: 'me-won', title: 'Won this month', sec: 'clients', load: lg(function (l) {
             var n = l.filter(function (c) { return c.stage === 'active' && CK.day(c.stage_since) >= monthStart; }).length;
             return { fig: String(n), sub: n ? 'Active since ' + CK.month(monthStart) : 'None this month' };
-          }) }].forEach(function (t) { tile(grid, t); });
+          }) }]).forEach(function (t) { tile(grid, t); });
         return;
       }
-      [{ key: 'me-open', title: 'My open tasks', sec: 'work', load: get(function (d) {
+      oneSection([{ key: 'me-open', title: 'My open tasks', sec: 'work', load: get(function (d) {
           var week = d.tasks.filter(function (t) { return t.days !== null && t.days >= 0 && t.days <= 7 && !t.late; }).length;
           return { fig: String(d.tasks.length), sub: week ? week + ' due within 7 days' : 'None due within 7 days' };
         }, 'tasks') },
@@ -2256,7 +2256,14 @@
           d.waiting.forEach(function (r) { by[r.state] = (by[r.state] || 0) + 1; });
           var parts = Object.keys(by).map(function (k) { return by[k] + ' ' + k.toLowerCase(); });
           return { fig: String(d.waiting.length), sub: parts.length ? parts.slice(0, 2).join(', ') : 'Nothing waiting' };
-        }, 'wait') }].forEach(function (t) { tile(grid, t); });
+        }, 'wait') }]).forEach(function (t) { tile(grid, t); });
+    }
+    /* Tiles read from one section carry no section mark: the same glyph on
+       every tile tells the reader nothing (the user, 2026-11-26). */
+    function oneSection(list) {
+      var s = list[0] && list[0].sec;
+      if (list.every(function (t) { return t.sec === s; })) list.forEach(function (t) { delete t.sec; });
+      return list;
     }
     /* The Assistant as one field (⌘ J): what is typed opens it with the
        question asked; two suggested questions under it. */
@@ -2379,6 +2386,7 @@
         .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00+08:00').toISOString())
         .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()); }).then(rows).catch(function () { return null; }) : Promise.resolve([]);
       meet.then(function (ms) {
+        var any = false;
         var html = days.map(function (day, i) {
           var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
             var rg = ringOf(t);
@@ -2388,11 +2396,16 @@
             if (CK.day(m.meeting_at) !== day) return;
             ts.push('<span class="ovw-ev is-meet">' + esc(CK.clock(m.meeting_at, { space: false })) + ' · ' + esc((m.clients && m.clients.name) || 'Meeting') + '</span>');
           });
+          if (ts.length) any = true;
           var wdw = CK.date(day, { weekday: true }).split(',')[0];
           return '<div class="ovw-day' + (i === 0 ? ' is-today' : '') + '"><span class="ovw-day-d">' + esc(wdw) + '<b>' + Number(day.slice(8, 10)) + '</b></span>' +
             '<div class="ovw-day-evs">' + (ts.length ? ts.slice(0, 4).join('') + (ts.length > 4 ? '<span class="ovw-ev is-more">' + (ts.length - 4) + ' more</span>' : '') : '<span class="ovw-ev is-none">Nothing due</span>') + '</div></div>';
         }).join('');
-        card.querySelector('.ovw-days').innerHTML = html;
+        /* A week with nothing in it is one line, never five rows of
+           Nothing due (the user, 2026-11-26); a refused meeting read keeps
+           the days, since a free day is then not known. */
+        if (!any && ms !== null) UI.emptyLine(card.querySelector('.ovw-days'), 'Nothing is due.');
+        else card.querySelector('.ovw-days').innerHTML = html;
         /* A refused read of the meetings is said, never drawn as a free day. */
         if (ms === null) {
           var f = document.createElement('div');
