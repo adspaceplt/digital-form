@@ -62,7 +62,9 @@ window.ADSPACE_CONFIG = {
   // shared on never carries it.
   // page is the address a sealed copy's QR code and Record page name, with
   // the reference after `?s=` (js/quotes.js, js/hiring.js, js/hrdocs.js).
-  verify: { passMinutes: 30, page: 'https://digital.adspace.me/verify/' },
+  // The address is ADSPACE_ORG.verifyUrl's, so a sealed copy, its QR code
+  // and every letter's foot name one page.
+  verify: { passMinutes: 30, page: 'https://' + window.ADSPACE_ORG.verifyUrl + '/' },
 
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change

@@ -69,7 +69,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { pdfFrom, namesRef } from '../_shared/pdfref.ts';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, sender, button } from '../_shared/mail.ts';
+import { layout, resend, sender, button, VERIFY_URL } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 /* Who each email is from and where its replies go (EVERY EMAIL IN
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
   const html = layout({
     heading,
     body: String(b.body || ''),
-    foot: doc ? 'Verify this document at digital.adspace.me/verify.' : '',
+    foot: doc ? 'Verify this document at ' + VERIFY_URL + '.' : '',
     preheader: String(b.subject || '')
   });
   const who = await sender('suppliers');
@@ -228,7 +228,7 @@ async function clientMail(req: Request, body: Record<string, any>, origin: strin
   const html = layout({
     heading,
     body: String(b.body || ''),
-    foot: kind === 'quotation' ? '' : 'Verify this document at digital.adspace.me/verify.',
+    foot: kind === 'quotation' ? '' : 'Verify this document at ' + VERIFY_URL + '.',
     preheader: String(b.subject || '')
   });
   const who = await sender('clients');
