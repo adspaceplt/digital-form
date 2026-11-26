@@ -19,7 +19,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 1. **Build quote and TERMS fit**: merged, #1497.
 2. **Surface tokens and `data-layout`**: merged, #1502 (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
 3. **Style comparison** (session H) on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
-4. **Client pages** (held for the user's pick from 3): branch `claude/portal-six-tabs` (both repos): the portal at six tabs (Overview, Content, Reports, Services, Meetings, Account; old `?tab=` names land on their card), and `/creators/`, `/creator/` and the portal's campaign view in sections (identity head; Summary, Brief, Amount, Creators cards; each creator a card collapsed to name, state, next date, opening to track and facts two across; on a phone the track reads the current step's word). Its commit 6c0367b5 (portal shaded by CSS) is reverted in favour of the attribute. Screenshots of the portal, `/creators/` and `/quote/` at 390 and 1280 to the user before merging.
+4. **Client pages**: merged, #1507 (J): the portal at six tabs, `/creators/` and `/creator/` in sections, `data-layout="v3"` on every client page, the 404 and the page template (the front door stays `shaded`); the selection page's view strip full width on a phone. J's review of main since 25 Nov (19 findings, 2 must fix: the health retention trigger, Build quote's key on a tab switch) is with the coordinator.
 5. **Linked sections** (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
    - Content Review → My Work: a client's approval or request for changes on a set moves its task's stage (derived on load where the rules prefer it).
    - Creator campaign → Bukku bills: a completed booking creates the creator's payable bill in Bukku (check `creator_bill_made` first).
@@ -65,6 +65,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1500 Settings (F) | 261126.169c |
 | #1501 Sections and sheets (G) | 261126.3a98 |
 | #1502 Surface tokens, `data-layout` | 261126.22df |
+| #1507 Client pages train (J): six portal tabs, creator pages in sections, v3 plain white on every client page | 261126.f307 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
