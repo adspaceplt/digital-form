@@ -20,13 +20,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - Under it one tab strip (`#cpTabs`, the view strip, `role="tablist"`, the
   arrows and Home/End move along it) and one pane at a time
   (`.cp-panes`, `data-swipe="cpTabs"`, `data-narrow="640"`). The pane rides in
-  `?tab=` (Overview left out) and pushes history; a refresh lands on it. Every
+  `?tab=` (Overview left out) and pushes history; a refresh lands on it.
+  **Six tabs at most** (2026-11-26): Overview; Content (Content Review,
+  Video Scripts, Creator Campaigns); Reports; Services (Services, Invoices,
+  Requests, Letters); Meetings (Meetings, Feedback); Account. A part of the
+  client's work joins the tab it belongs to as a card, never a seventh tab
+  (`TABS` in `js/portal.js`). Each part keeps its own address: `?tab=review`,
+  `scripts`, `campaigns`, `letters`, `feedback` open its tab and bring its
+  card into view. A card is drawn once it holds something, a tab once any
+  of its cards is; an address naming one not drawn yet opens it when it is. Every
   section is a white card (`.panel.cp-card`) with its title inside
   (`.cp-card-head`); a table inside a card is the card's rows.
   - Overview (the approved boards, 2026-11-25): on the left on the
     record's proportion, Rate your experience while asked, a tile a tab
     drawn (`#ovTiles`, `.cp-tile`: its glyph, its name, where it stands, one
-    fact; the whole tile opens its tab; three across, two where four would
+    fact; the whole tile opens its tab on its part; three across, two where four would
     leave one alone, two on a phone), Services (Confirmed and To quote as
     lines, open requests, each line of two months or more as a month a part
     of `.cx-track`), Engagements (Content Review over its latest month's
@@ -54,8 +62,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
   - Invoices (2026-11-25, read from Bukku): a card in Services, after the
-    lines and before Requests, never a tab of its own: a part of the
-    client's work joins the tab it belongs to before the strip grows. Each
+    lines and before Requests, never a tab of its own (the six-tab cap). Each
     invoice its number over its date, due date (until paid) and balance
     where part is paid, its amount, Paid, Outstanding or Overdue, and
     Download PDF (Bukku's own copy, a new tab); overdue first, then
@@ -69,14 +76,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Feedback read does under the tab's name, never a hidden card
     (2026-11-25, review fixes S3; `tests/portalinvoices.js`, `tests/portalpastsql.js`).
   - Letters: Download redraws the snapshot.
-  - Content Review's tab groups its sets by content month (`.cp-group-head`,
+  - Content Review's card groups its sets by content month (`.cp-group-head`,
     the month and its count), newest first.
   - Content Review, Video Scripts and Creator Campaigns (one sign-in,
     `2026-11-08-client-portal-one-sign-in.sql`; the user, 2026-11-08,
-    approving the portal's release 1): tabs after Overview, each drawn only
-    once it holds something, read by `portal_work(p_client)` (the published
+    approving the portal's release 1): the Content tab's cards, each drawn
+    only once it holds something, read by `portal_work(p_client)` (the published
     sets with posts, approved, changes and waiting, the waiting count on
-    the tab; the shared scripts) beside `get_portal`'s campaigns; each row
+    the Content tab; the shared scripts) beside `get_portal`'s campaigns; each row
     its name over its month, its state, and Open, its page in this tab
     (`/review/?k=…#s-{set}`, `/script/?k=…#{id}`, `/creators/?k=…`). Opened
     by a signed-in contact of its client, the review and selection pages
@@ -87,8 +94,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     decision on `reviews` or `option_reviews` under the contact's own name
     whatever name was sent. A link opened with no sign-in, or by a
     colleague, asks its code as before.
-  - Reports and Meetings: tabs drawn only once there is one; an address
-    naming one before it is drawn opens it when it is. A meeting ahead with
+  - Reports, Meetings and Feedback: cards drawn only once there is one. A meeting ahead with
     a link offers Join on its row, never in a ⋯ (2026-10-20, POR-2).
   - Account: Contacts read-only, Portal access (Person · Sign-in email),
     Payment only once `ADSPACE_ORG.bank` is set.

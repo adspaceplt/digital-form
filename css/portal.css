@@ -6302,6 +6302,8 @@ body.is-canvas { overflow: hidden; }
 .cp-tabs { margin-bottom: 12px; }
 .cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-pane[hidden] { display: none; }
+/* A part named in the address (`?tab=scripts`) is brought into view clear of the bar (2026-11-26). */
+.cp-pane > .cp-card { scroll-margin-top: calc(var(--head-h) + 12px); }
 /* Overview: the summary on the left, who to reach and the company on the
    right, on the record's own proportion; one column once the pane is narrow. */
 .cp-overview { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); gap: 12px 16px; }
