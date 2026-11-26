@@ -1579,6 +1579,17 @@
     if (!TABS[key] && parts[0] !== key) {
       var el = document.querySelector('#crmWork .rec-pane[data-pane="' + key + '"]');
       if (el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+    } else if (visit) {
+      /* A pane opened from low on the page (the rail's View all, a part's
+         View all) starts at its top, under the console's head, never above
+         the screen where the press left it (2026-11-26, the user: "I have
+         to scroll up to view it"). A pane already in view stays put. */
+      requestAnimationFrame(function () {
+        var strip = $('crmTabs'), bar = document.querySelector('.console-head');
+        if (!strip) return;
+        var off = bar ? bar.getBoundingClientRect().bottom : 0, top = strip.getBoundingClientRect().top;
+        if (top < off) window.scrollTo(0, Math.max(0, top + window.pageYOffset - off - 12));
+      });
     }
   }
   var ckFor = null;

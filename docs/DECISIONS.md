@@ -11788,3 +11788,12 @@ Found while building: the steps' Term and review was where a line's quantity, ra
 ### 2026-11-26 · Review fixes S4: retention and scheduled jobs held
 
 From the same review. A colleague set inactive (neither removed nor expired) kept their health data for good: `team_members.inactive_at` is stamped and cleared by a trigger, and `privacy_retention` counts from `coalesce(removed_at, expired_at, inactive_at)`; it runs daily, not monthly. `hiring_retention` left a candidate's email and address in their signing steps; they go first. `health_daily` reminded only on the exact day, so a holiday or a missed run lost it; it reminds on any day to the period's end, the dedupe key still sending one. `supplier_email_begin` and the feedback request had no lock against a send still going out (`sending`), and a feedback request could go again at once (`recent`, unless Send again). The candidate email claims mark a send stuck for ten minutes not confirmed, the kick wakes for a queued expiry email, and `jobs_watch` tells failed candidate emails. My Work's nudge and reminder were sent on a public holiday; the access end ended access a colleague had meanwhile been given back; two presses could make a recurring rule's date twice; an index was missing. The handover's builder carried, inside `ops_generate_recurring`, an older `jobs_watch` that stood between that function and its grant in the schema, which would have replaced the new one; it was found by comparing each function in the band with its last version and cut at the function's end (`tests/retentionsql.js` holds jobs_watch the newest and every function made once). RETENTION AND JOBS HELD.
+
+### 2026-11-26 · A client's pane opened from low on the page starts at its top
+
+The user pressed the rail's Recent activity View all and had to scroll up to
+find the Activity record: `showPane` swapped the pane but kept the scroll, so
+the new pane began above the screen. A pane opened by a press now brings the
+record's tab strip under the console's head where it had scrolled away; a pane
+already in view stays where it is. Every View all on the Overview and the rail
+goes through the same `showPane`, so all of them gain it.
