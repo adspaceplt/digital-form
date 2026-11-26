@@ -5653,8 +5653,8 @@ svg.sec {
 /* The frame is the brand's own off white, #f5f5f5 (the user, 2026-11-15:
    "instead of our brand color monochrome palette"); the hairline a neutral
    grey, never a warm one. */
-:root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
-:root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
+/* The frame and the two hairlines are tokens in css/portal.css, where a
+   client page in `v3` reads them too (2026-11-26). */
 /* The console's surface (`data-layout="v3"`, css/portal.css SECTION CARDS):
    white cards on the grey ground, the large corner; at a desk the ground is
    the frame and a card on the sheet is edged by its hairline. */
