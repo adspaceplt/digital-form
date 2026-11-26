@@ -399,6 +399,9 @@
     /* The S$ rate not set (2026-11-25, copy review): one refusal for
        every screen that prices a Singapore client. */
     fxUnset: 'Set the S$ exchange rate in Settings, Accounting, Tax and terms.',
+    /* A client not linked to Bukku (2026-11-25): Build quote's and a
+       campaign invoice's refusal alike. */
+    bukkuLinkClient: 'Link this client to Bukku in Billing first.',
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
        PDF and the quotation link say them alike; Build quote's ticks read
        the group words. */
@@ -448,8 +451,8 @@
     phoneOnly: 'Trips are recorded on a phone. Open My Work on your phone to record a trip.',
     metaOff: 'Meta is not connected to the portal. Please contact an admin.',
     metaChecksOff: 'Meta checks are turned off. An admin can turn them on in Settings → Reports.',
-    quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
-    quoteWaOffAll: 'Website quotations are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
+    quoteWaOff: 'Quotations from the Quotation portal are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
+    quoteWaOffAll: 'Quotations from the Quotation portal are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
     pageOff: function (name, kind, until) {
       return name + ' is set to ' + kind + (until ? ' until ' + until : '') + '. Anyone opening this link will see the notice page instead.';
     },
@@ -490,6 +493,9 @@
     /* A PDF that could not be generated, and one whose Chinese could not be
        drawn (2026-11-20, tone sweep 3: each PDF worded them its own way). */
     pdfLib: 'The PDF could not be generated. Check the connection and refresh the page.',
+    pdfFail: 'The PDF could not be generated. Please try again.',
+    issuedNoPdf: 'Issued. The PDF could not be generated. Download it from Documents.',
+    reissuedNoPdf: 'Reissued. The PDF could not be generated. Download it from Documents.',
     pdfCjk: 'The Chinese text could not be added to the PDF. Check the connection and try again.',
     /* A document's reference out of shape (the letters and the register). */
     serialShape: 'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots, underscores or dashes.',
