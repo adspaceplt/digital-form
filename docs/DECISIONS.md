@@ -11842,3 +11842,17 @@ The user reported Build quote's four steps (2026-11-25) as the wrong flow: editi
 Built: no steps; a card a brand, the first named after the client, one open at a time holding the one board the page already had (moved into the open card, so every control kept its wiring); Duplicate and Remove (with Undo) in each card's ⋯; Add brand opens a ready card; Create checks every card and opens the first with a fault. Save brand, Editing, `B.was`, `stepGo`, `stepNext`, `stepWrong` and the track are gone; a draft keeps its brands and the open card (`_bi`), no `_step`. The advertising budget moved from the quotation to each brand: the page keeps a brand's rows on its card and sends them with the brand's place, `quote_extras` keeps the place (six rows a brand) and `quotation_cycle_lines` invoices a brand's row under its name (QUOTATION ADVERTISING PER BRAND); the PDF and /quote/ name the brand over its rows; One per brand gives each quotation its own rows.
 
 Found while building: the steps' Term and review was where a line's quantity, rate and months were typed at a desk; the approved boards dropped View quote at a desk, which would have left nowhere to type them, so View quote stands at every width (said to the user with the release). A selection the database refused (a package with no price) disabled Create, so Create could not name the card's fault; Create now stays pressable, names the card's own fault first, else the refusal. `quotedraft` found the draft line touching the brands under it (0px); it stands 12px above them.
+
+### 2026-11-26 · References: a draft until confirmed, a request number nobody can count, and the house scheme
+
+The user asked that a team's quotation hold every act but Preview PDF, Edit
+and Confirm until a colleague confirms it, showing `ADP/QT{YYMM}-DRAFT`, and
+that a website request take `ADP/REQ{YYMM}-{AAA}`, three random letters, "so
+people wont guess how many requests submitted to us"; the real serial is spent
+only at Confirm (or a request's Send quotation), so a test or a declined
+request never takes one (session C, F8). The user then set the scheme every new
+reference follows: the shortest prefix at the top (AD a team member, AC a
+client, AS a supplier, NNN each), ADHR for HR (EMP filed under it), ADCL a
+public cover letter, ADP what the portal issued, REQ a request; every other
+reference built from the record it belongs to, as one loop. Existing
+references (AQL, ACL, ADC, CC) keep their form; DESIGN.md §7 Numbering.

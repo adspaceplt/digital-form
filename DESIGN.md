@@ -1189,7 +1189,20 @@ screenshotted, and the push names any line it could not settle.
   - Creator ID `ADC0001`, Campaign ID `CC001`, a booking's Job reference
     `ADC0001/CC001`, a creator's payment details `ADC0001/R001`, each
     prefix, width, next number and the references' shape a setting
-    (`id_formats`).
+    (`id_formats`);
+  - a website quotation request `ADP/REQ{YYMM}-{AAA}`, three random
+    letters, never a running count, so nobody can read how many requests
+    came in; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
+    confirmed.
+  - A new reference follows the house scheme (the user, 2026-11-26):
+    the shortest prefix is the top of the structure and the longer ones
+    hang under it. `ADP` names what the ADspace Digital Portal issued;
+    `AD` a team member, `AC` a client, `AS` a supplier, each with an
+    `NNN` serial; `ADHR` HR use (employment, `EMP`, files under HR);
+    `ADCL` a cover letter facing the public. Every other reference is
+    built from the record it belongs to, as a booking's
+    `ADC0001/CC001` is: references link into one loop, never stand
+    alone. References already issued keep their form.
 - Row ⋯ menus are placed on the viewport. A faded row fades its content, never
   its ⋯. The global click handler spares `.kcard-head`, `.kmenu` and
   `.team-act`. A modal that filters keeps one height.
