@@ -65,3 +65,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   nosign) fail "its head and foot at the template's places on every
   page" (the foot's reference at 6pt, 794.5 down); the same three fail
   on main 8e9224f. Held here until it ships.
+- 2026-11-26, `sql` (the received page's centring, which touches no
+  function): "the schema's last wa_compose_prepare is this one, refusing
+  feedback to a lead…" fails since F8 (#1504) redefined
+  `wa_compose_prepare` after that band. Held here until it ships.
