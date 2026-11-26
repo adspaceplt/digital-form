@@ -752,7 +752,8 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   the personal data the database has since cleared (`privacy_retention`);
   an Object Lock added later must hold a dump for less than 90 days.
 - Retention (2026-10-18, Team audit 12, PDPA 2010): health check-ins are
-  kept 24 months and a leaver's health data 6 months after they left, each
+  kept 24 months and a leaver's health data 6 months after they left
+  (removed, expired or set inactive: `inactive_at`, 2026-11-25), each
   a Business setting the monthly `privacy_retention` reads; WhatsApp
   messages' personal fields 12 months; a caller's address against a link's
   passcode 30 days after it was last used (audit 2026-10-18, item 14), and
