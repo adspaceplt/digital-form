@@ -28,7 +28,8 @@
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
-    'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
+    'not-proceeding': 'This quotation is cancelled. Restore it first.',
+    'not-confirmed': 'This quotation is still a draft. Confirm it first.', website: 'This quotation came from a website request. Use Send quotation to confirm it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimal places, and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
     'over-term': 'An item cannot run longer than the term. Set its months to the term or fewer.',
@@ -98,6 +99,7 @@
      past its day. */
   function stateOf(q, live) {
     if (q.removed_at) return ['Removed', 'is-off'];
+    if (isDraft(q)) return ['Draft', 'is-off'];
     /* Withdrawn after signing (QUOTATION WAYS OUT, 2026-11-17): kept, its
        sealed copy too, never deleted. */
     if (q.withdrawn_at) return ['Withdrawn', 'is-off', 'From ' + window.ADspaceClock.date(q.withdrawn_on).replace(/ \d{4}$/, '')];
@@ -135,6 +137,14 @@
      link given, a WhatsApp or an email); after that Edit makes its next
      revision. Download never locks it. */
   function sentOut(q) { return Boolean(q.sent_out_at || q.released_at); }
+  /* A team's quotation is a draft until a colleague confirms it (the user,
+     2026-11-26): it reads ADP/QT{YYMM}-DRAFT, offers Preview PDF, Edit,
+     Confirm quotation and Remove, and goes nowhere until then; the
+     database refuses every send (`not-confirmed`). A website request is
+     confirmed by Send quotation. Its reference as people read it. */
+  function isDraft(q) { return !!q && !q.confirmed_at && q.source !== 'website'; }
+  function refOf(q) { return isDraft(q) ? dref(q.ref) : q.ref; }
+  function dref(r) { return String(r || '').replace(/-DRAFT-[A-Z]+$/, '-DRAFT'); }
   function editable(q) {
     return !q.removed_at && !q.signed_at && !q.reviewed_at && q.status !== 'not_proceeding' && !q._revised;
   }
@@ -147,6 +157,21 @@
     return st[1] === 'is-live' || st[0] === 'Letter of Offer requested' || st[0] === 'Ready to proceed';
   }
   function monthly(q) { var m = q.totals && q.totals.month; return m ? m.incl : null; }
+  /* A draft's row: Preview PDF and Confirm quotation on it, Edit and Remove
+     in its ⋯ (2026-11-26). */
+  function draftRow(q, st, h, maySet) {
+    var items = maySet ? ['<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>',
+      '<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>'] : [];
+    return '<div class="svc-row qt-row has-acts" data-id="' + esc(q.id) + '">' +
+      '<span class="svc-name qt-name"><b class="qt-ref">' + esc(refOf(q)) + '</b>' +
+        '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small></span>' +
+      '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
+      '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
+      '<span class="qt-dl"><button class="btn btn-sm" data-a="view" type="button">Preview PDF</button>' +
+        (maySet ? '<button class="btn btn-sm btn-primary" data-a="confirm" type="button">Confirm quotation</button>' : '') + '</span>' +
+      '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
+        DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';
+  }
   /* A monthly line running months of its own makes the month's figures the
      first month's, named so (the user, 2026-10-18), as the Letter of Offer
      and the quotation's PDF name them. */
@@ -167,7 +192,8 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at, ' +
+    'confirmed_at, confirmed_by, revises, request_ref';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -259,6 +285,7 @@
         '<span class="svc-rate">Amount</span><span>Status</span><span></span><span></span></div>' +
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
+          if (isDraft(q)) return draftRow(q, st, h, maySet);
           var items = [];
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>');
           /* The quotation's link (2026-11-08): one item opening a card with
@@ -714,8 +741,9 @@
       if (!window.ADspaceQuotePdf) return;
       var tab = a === 'view' ? window.ADspaceDocs.previewTab()
         : window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
-      drawPdf(q, ctx).then(function (blob) {
-        window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
+      var dq = isDraft(q) ? Object.assign({}, q, { ref: refOf(q) }) : q;
+      drawPdf(dq, ctx, isDraft(q) ? { draft: true } : null).then(function (blob) {
+        window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(dq), tab);
       }).catch(function (e) {
         if (tab) try { tab.close(); } catch (x) {}
         ctx.msg('qtMsg', said(e) || 'The PDF could not be generated.', 'err');
@@ -729,6 +757,22 @@
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
         onSent: function (line) { ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); }); } });
+      return;
+    }
+    if (a === 'confirm') {
+      window.ADspaceConfirm.ask({ title: 'Confirm quotation?',
+        body: 'This quotation will take its reference' + (q.revises ? ' as the next revision of the quotation it revises' : '') +
+          '. It can then be sent to the client. A confirmed quotation cannot be returned to a draft.',
+        go: 'Confirm quotation', wait: true }, function () {
+        return ctx.db.rpc('quotation_confirm', { p_id: q.id }).then(function (r) {
+          var d = r.data || {};
+          if (r.error) return said(r.error);
+          if (d.error === 'revised') return 'The quotation it revises has since been revised as ' + d.ref + '. Remove this draft, or edit ' + d.ref + ' instead.';
+          if (d.error) return said(d.error);
+          ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' confirmed.', 'ok'); });
+          return '';
+        }).catch(function (e) { return said(e); });
+      });
       return;
     }
     if (a === 'wa') {
@@ -3406,7 +3450,7 @@
           var ctx = B.ctx;
           window.ADspaceSheet.close();
           B = null;
-          ctx.reload(function () { ctx.msg('qtMsg', ed.ref + ' saved.', 'ok'); markNew(ed.ref); });
+          ctx.reload(function () { ctx.msg('qtMsg', refOf(ed) + ' saved.', 'ok'); markNew(refOf(ed)); });
         }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
         return;
       }
@@ -3436,7 +3480,7 @@
           if (B) B.made = true;
           window.ADspaceSheet.close();
           B = null;
-          ctx.reload(function () { ctx.msg('qtMsg', made.join(', ') + ' made.', 'ok'); made.forEach(markNew); });
+          ctx.reload(function () { ctx.msg('qtMsg', made.length + ' drafts saved.', 'ok'); made.map(dref).forEach(markNew); });
           return;
         }
         var one = Object.assign({}, sel, { brands: [sel.brands[at]] });
@@ -3447,7 +3491,7 @@
           if (r.error || d.error) {
             go.disabled = false;
             if (!B) return;
-            $('qbMsg').textContent = (made.length ? made.join(', ') + ' made. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
+            $('qbMsg').textContent = (made.length ? made.length + (made.length === 1 ? ' draft' : ' drafts') + ' saved. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
             $('qbMsg').className = 'msg err';
             return;
           }
@@ -3466,14 +3510,14 @@
         B.made = true;
         window.ADspaceSheet.close();
         B = null;
-        if (!revises) { ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' made.', 'ok'); markNew(d.ref); }); return; }
+        if (!revises) { ctx.reload(function () { ctx.msg('qtMsg', 'Draft saved.', 'ok'); markNew(dref(d.ref)); }); return; }
         ctx.db.rpc('quotation_replace', { p_new: d.id, p_old: revises.id }).then(function (r2) {
           var e2 = (r2 && r2.error) || (r2 && r2.data && r2.data.error);
           ctx.reload(function (rows) {
-            if (e2) { ctx.msg('qtMsg', d.ref + ' created, but not linked to ' + revises.ref + ': ' + said(e2), 'err'); return; }
-            ctx.msg('qtMsg', d.ref + ' revises ' + revises.ref + '.', 'ok'); markNew(d.ref);
-            var made = (rows || []).filter(function (x) { return x.id === d.id; })[0];
-            if (made && WA() && WA().may('quotation')) WA().on('quotation').then(function (yes) { if (yes) act('wa', made, ctx, opener); });
+            if (e2) { ctx.msg('qtMsg', 'Draft saved. It is not recorded as a revision of ' + revises.ref + ' (' + said(e2) + '). Remove it and edit ' + revises.ref + ' again.', 'err'); return; }
+            /* The revision is a draft: confirmed, it takes the next -Rn under
+               its family and revises the earlier then (2026-11-26). */
+            ctx.msg('qtMsg', 'Draft revision saved.', 'ok'); markNew(dref(d.ref));
           });
         }).catch(function (e) { ctx.reload(function () { ctx.msg('qtMsg', said(e), 'err'); }); });
       }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });

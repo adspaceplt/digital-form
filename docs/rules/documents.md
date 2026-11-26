@@ -175,8 +175,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - The Register lists `documents` and `client_documents` (`asOffer()`, family
   `offer`), banded Quotation Covers / Letters of Offer / Client Letters / HR
   Letters / Other, a band drawn only while it holds any; and every
-  quotation, issued as it is created whether or not it was sent (the user,
-  2026-11-26: "issued means created"), a removed one reading Void once it
+  quotation once confirmed, whether or not it was sent (the user,
+  2026-11-26: "issued means created", then a draft until confirmed:
+  `confirmed_at`), a removed one reading Void once it
   was sent or signed, else Removed, as the client's quotations say it
   (`quoteRows`).
   - A Quotation Cover is never issued on its own (2026-11-25): every

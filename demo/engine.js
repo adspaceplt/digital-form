@@ -630,7 +630,7 @@
     quotation_draft_save: 'p_client p_sel p_card',
     quotation_draft_discard: 'p_client',
     quotation_set: 'p_id p_what',
-    quotation_delete: 'p_id p_ref',
+    quotation_delete: 'p_id p_ref', quotation_confirm: 'p_id',
     client_request_add: 'p_client p_kind p_service p_contact p_note p_idem',
     client_request_delete: 'p_id',
     quotation_offer: 'p_id',
@@ -1425,6 +1425,8 @@
     if (table === 'creators' || table === 'campaigns' || table === 'campaign_options') idBackfill();
 
     if (table === 'clients') clientsStageDue();
+
+    if (table === 'quotations') (DB.quotations || []).forEach(function (q) { if (q.confirmed_at === undefined) q.confirmed_at = q.issued_at || new Date().toISOString(); });
     var rows = (DB[table] || []).slice();
 
     if (table === 'documents') {
@@ -2637,7 +2639,7 @@ function cardSlugFree(name, self, email) {
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
     }
 
-    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref); })
+    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref) && x.confirmed_at !== null; })
       .sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
     if (qt) {
       var rev = (DB.quotations || []).filter(function (r) { return r.replaces === qt.id && !r.removed_at; })
@@ -2692,7 +2694,7 @@ function cardSlugFree(name, self, email) {
           steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
       }
 
-      var vq = (DB.quotations || []).filter(function (x) { return x.ref && x.doc_code === vc; })[0];
+      var vq = (DB.quotations || []).filter(function (x) { return x.ref && x.doc_code === vc && x.confirmed_at !== null; })[0];
       if (vq) { var fq = verifyFind(vq.ref); if (fq) { fq.serial = vser; fq.by_code = true; return fq; } }
       var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
       if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
@@ -5924,8 +5926,15 @@ function cardSlugFree(name, self, email) {
   }
 
   function idFormats() {
-    if (DB.id_formats) { if (!DB.id_formats.trip) DB.id_formats.trip = { prefix: 'OS', width: 2, next_no: 1 }; return DB.id_formats; }
-    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' }, trip: { prefix: 'OS', width: 2, next_no: 1 } };
+    if (DB.id_formats) {
+      if (!DB.id_formats.trip) DB.id_formats.trip = { prefix: 'OS', width: 2, next_no: 1 };
+
+      if (!DB.id_formats.request) DB.id_formats.request = { prefix: 'REQ', width: 3, next_no: 1 };
+      if (!DB.id_formats.revision) DB.id_formats.revision = { prefix: 'R', width: 1, next_no: 1 };
+      return DB.id_formats;
+    }
+    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1, pattern: '{creator}/R{nnn}' }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' }, trip: { prefix: 'OS', width: 2, next_no: 1 },
+      request: { prefix: 'REQ', width: 3, next_no: 1 }, revision: { prefix: 'R', width: 1, next_no: 1 } };
     idBackfill();
     return DB.id_formats;
   }
@@ -11302,7 +11311,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (dfr) return Promise.resolve({ data: null, error: { message: dfr } });
       var da = args || {}, dOut;
       idFormats();
-      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
+      if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip', 'request', 'revision'].map(function (k) { var f = DB.id_formats[k];
 
         var dTm = new Date(Date.now() + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
         var dNx = k === 'trip' ? ((((DB.__ost || {}).refs) || {})[dTm] || 0) + 1 : (f.next_no || null);
@@ -11314,7 +11323,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = dO && opsMe() ? DB.id_formats.job.pattern.replace('{creator}', (dC && dC.creator_code) || '').replace('{campaign}', (dM && dM.campaign_code) || '') : null;
       } else if (!opsGranted('team.settings', 'work')) dOut = { error: 'denied' };
       else {
-        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number' })[da.p_kind];
+        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number', request: 'Quotation request number', revision: 'Quotation revision' })[da.p_kind];
         if (!dF) dOut = { error: 'not-found' };
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
@@ -11323,11 +11332,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else {
           var dP = String(da.p_prefix || '').trim().toUpperCase(), dWd = Number(da.p_width), dN = Number(da.p_next);
           var dRows = da.p_kind === 'creator' ? (DB.creators || []).map(function (c) { return c.creator_code; }) : (DB.campaigns || []).map(function (m) { return m.campaign_code; });
-          if (da.p_kind === 'trip') { dRows = []; dN = dF.next_no; }
+          if (da.p_kind === 'trip' || da.p_kind === 'request' || da.p_kind === 'revision') { dRows = []; dN = dF.next_no; }
           var dTop = dRows.filter(function (c) { return c && new RegExp('^' + dP + '[0-9]+$').test(c); }).map(function (c) { return Number(c.slice(dP.length)); })
             .reduce(function (a, b) { return Math.max(a, b); }, 0);
           if (!/^[A-Z]{1,6}$/.test(dP)) dOut = { error: 'bad-prefix' };
-          else if (!(dWd >= 2 && dWd <= 6)) dOut = { error: 'bad-width' };
+          else if (!(dWd >= (da.p_kind === 'revision' ? 1 : da.p_kind === 'request' ? 3 : 2) && dWd <= (da.p_kind === 'revision' ? 3 : 6))) dOut = { error: 'bad-width' };
           else if (!(dN >= 1)) dOut = { error: 'bad-next' };
           else if (dTop && dN <= dTop) dOut = { error: 'bad-next', top: dTop };
           else if (da.p_kind === 'creator' && String(da.p_pattern || '').trim() && (String(da.p_pattern).trim().length > 40 || String(da.p_pattern).indexOf('{creator}') < 0 || !/\{n{1,6}\}/.test(da.p_pattern))) dOut = { error: 'bad-request-pattern' };
@@ -13577,6 +13586,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return head + (n < 10 ? '0' : '') + n;
       };
 
+      var qtIssued = function (q) { return q && q.confirmed_at !== null; };
+      var qtLetters = function (n) { var A = 'BCDFGHJKLMNPQRSTVWXZ', o = ''; while (o.length < n) o += A.charAt(Math.floor(Math.random() * 20)); return o; };
+      var qtYm = function () { return qtToday.slice(2, 4) + qtToday.slice(5, 7); };
+      var qtDraftRef = function () { var r; do { r = 'ADP/QT' + qtYm() + '-DRAFT-' + qtLetters(4); } while (DB.quotations.some(function (q) { return q.ref === r; })); return r; };
+      var qtRequestRef = function () {
+        var f = (idFormats().request) || { prefix: 'REQ', width: 3 }, r;
+        do { r = 'ADP/' + (f.prefix || 'REQ') + qtYm() + '-' + qtLetters(Math.max(3, f.width || 3)); }
+        while (DB.quotations.some(function (q) { return q.ref === r || q.request_ref === r; }));
+        return r;
+      };
+      var qtRevisionRef = function (ofId) {
+        var at = DB.quotations.filter(function (q) { return q.id === ofId; })[0], seen = {};
+        if (at && at.confirmed_at === null) return null;
+        while (at && at.replaces && !seen[at.id]) {
+          seen[at.id] = 1;
+          var up = DB.quotations.filter(function (q) { return q.id === at.replaces; })[0];
+          if (!up || up.confirmed_at === null || seen[up.id]) break;
+          at = up;
+        }
+        if (!at) return null;
+        var f = (idFormats().revision) || { prefix: 'R', width: 1 }, pre = '-' + (f.prefix || 'R'), root = at.ref;
+        var top = DB.quotations.map(function (q) { return q.ref; }).concat((DB.quotation_refs_kept || []).map(function (k) { return k.ref; }))
+          .filter(function (r) { return r.indexOf(root + pre) === 0 && /^[0-9]{1,6}$/.test(r.slice(root.length + pre.length)); })
+          .reduce(function (m, r) { return Math.max(m, Number(r.slice(root.length + pre.length))); }, 0);
+        var n = String(top + 1); while (n.length < (f.width || 1)) n = '0' + n;
+        return root + pre + n;
+      };
+
       var qtTermPct = function (set, term) {
         return Number((term <= 2 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
           : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
@@ -14168,7 +14205,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var whead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + wz;
         var wv = new Date(qtToday + 'T00:00:00Z'); wv.setUTCDate(wv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         var wkey = ''; while (wkey.length < 8) wkey += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
-        var wrow = { id: nid('qt'), ref: qtNextRef(whead), client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
+        var wreq = qtRequestRef();
+        var wrow = { id: nid('qt'), ref: wreq, request_ref: wreq, confirmed_at: null, confirmed_by: null, revises: null, client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
           selection: wsel, lines: wp.lines, totals: Object.assign({ layout: 2, pay_days: 7, ads: [], ads_total: 0 }, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
           contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
@@ -14182,7 +14220,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           ['lead', 'contacted', 'proposal'].indexOf(wcl.stage) >= 0 ? 'Existing lead' : 'Existing client') +
           (wrow.version ? ' \u00b7 Rate Card v.' + wrow.version : ''), wrow.contact);
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: 'client.quotation', subject: wcl.name,
-          detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
+          detail: wrow.ref + ' requested · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         var wbody =
           wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-time') + ' · ' + wn +
           (won ? ' · Preferred start date ' + wonWord(won)
@@ -14653,6 +14691,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         };
         var qsLater = DB.quotations.some(function (x) { return x.replaces === sq2.id && !x.removed_at; });
         if (name === 'quotation_link') {
+          if (sq2.confirmed_at === null) return qtOk({ error: 'not-confirmed' });
           if (!sq2.access_key) sq2.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
 
           var cip = window.__callerIp || '203.0.113.24';
@@ -14670,6 +14709,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         if (name === 'quotation_paper') {
           if (sq2.signed_at) return qtOk({ error: 'signed' });
+          if (sq2.confirmed_at === null) return qtOk({ error: 'not-confirmed' });
           var pp = args.p_payload || {};
           var p1 = qsCompany(pp.company); if (p1.error) return qtOk(p1);
           var p2 = qsContact(pp.contact); if (p2.error) return qtOk(p2);
@@ -14989,14 +15029,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qvSel != null && qvSel !== '' && [14, 30, 45, 60, 90].indexOf(Number(qvSel)) < 0) return qtOk({ error: 'bad-valid' });
         var qdays = Number(qvSel) || Number(appSet('quote_valid_days', qtToday) || 30);
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
-        var qrow = { id: nid('qt'), ref: qtNextRef(qhead), client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
+        var qrow = { id: nid('qt'), ref: qtDraftRef(), confirmed_at: null, confirmed_by: null, revises: null, request_ref: null, client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         DB.quotations.push(qrow);
 
         (DB.quotation_drafts || []).forEach(function (d) { if (d.client_id === qc.id && qtMe && d.member_id === qtMe.id) { d.selection = null; d.card = null; d.saved_at = qtNow.toISOString(); } });
-        qtLog(qc.name, qrow.ref + ' sent · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + qrow.version +
+        qtLog(qc.name, qrow.ref + ' drafted · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + qrow.version +
           (qpr.adjusted ? ' · ' + qpr.adjusted + (qpr.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qrow.id, ref: qrow.ref, key: null });
       }
@@ -15038,19 +15078,40 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeOld = qq.ref;
         if (qq.source === 'console' && qq.ref.indexOf('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-') !== 0) {
           DB.quotation_refs_kept = DB.quotation_refs_kept || [];
-          if (!DB.quotation_refs_kept.some(function (k) { return k.ref === qeOld; })) DB.quotation_refs_kept.push({ ref: qeOld, deleted_at: new Date().toISOString(), deleted_by: qtMe ? qtMe.name : null });
-          qq.ref = qtNextRef('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
+          if (qtIssued(qq) && !DB.quotation_refs_kept.some(function (k) { return k.ref === qeOld; })) DB.quotation_refs_kept.push({ ref: qeOld, deleted_at: new Date().toISOString(), deleted_by: qtMe ? qtMe.name : null });
+          qq.ref = !qtIssued(qq) ? qtDraftRef() : qtNextRef('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
         }
         var m2 = function (v) { return v == null ? 'not set' : cur + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
         qtLog(qq.brand, (qeOld !== qq.ref ? qeOld + ' → ' : '') + qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
           (qe.adjusted ? ' · ' + qe.adjusted + (qe.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qq.id, ref: qq.ref });
       }
+      if (name === 'quotation_confirm') {
+        if (qq.removed_at) return qtOk({ error: 'not-found' });
+        if (qtIssued(qq)) return qtOk({ ok: true, same: true, ref: qq.ref });
+        if (qq.source !== 'console') return qtOk({ error: 'website' });
+        if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+        var qco = qq.revises && DB.quotations.filter(function (x) { return x.id === qq.revises; })[0];
+        if (qco && !qco.removed_at) {
+          if (qco.signed_at || qco.reviewed_at) return qtOk({ error: 'signed' });
+          var qcBy = DB.quotations.filter(function (x) { return x.replaces === qco.id && !x.removed_at && x.id !== qq.id; })[0];
+          if (qcBy) return qtOk({ error: 'revised', ref: qcBy.ref });
+          qq.ref = qco.confirmed_at === null ? qtNextRef('ADP/QT' + qtYm() + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase()) : qtRevisionRef(qco.id); qq.replaces = qco.id;
+          qtLog(qq.brand, qq.ref + ' confirmed · revises ' + qco.ref);
+        } else {
+          qq.ref = qtNextRef('ADP/QT' + String(qq.issued_at || qtNow.toISOString()).slice(2, 4) + String(qq.issued_at || qtNow.toISOString()).slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
+          qtLog(qq.brand, qq.ref + ' confirmed');
+        }
+        qq.confirmed_at = qtNow.toISOString(); qq.confirmed_by = qtMe.name; qq.revises = null;
+        return qtOk({ ok: true, ref: qq.ref });
+      }
       if (name === 'quotation_replace') {
         var qold = DB.quotations.filter(function (q) { return q.id === args.p_old; })[0];
         if (!qold || qold.client_id !== qq.client_id || qold.id === qq.id || qq.removed_at || qold.removed_at) return qtOk({ error: 'not-found' });
         if (qq.source !== 'console' || qq.replaces) return qtOk({ error: 'bad-quotation' });
         if (qold.signed_at || qold.reviewed_at) return qtOk({ error: 'signed' });
+        if (!qtIssued(qold) && qold.source === 'console') return qtOk({ error: 'not-confirmed' });
+        if (!qtIssued(qq)) { qq.revises = qold.id; return qtOk({ ok: true, draft: true }); }
         qq.replaces = qold.id;
         qtLog(qq.brand, qq.ref + ' revises ' + qold.ref);
         return qtOk({ ok: true });
@@ -15080,6 +15141,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
 
+        if (!qtIssued(qq)) { qq.ref = qtNextRef('ADP/QT' + qtYm() + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase()); qq.confirmed_at = qtNow.toISOString(); qq.confirmed_by = qtMe.name; }
+
         var qsT = (DB.wa_templates || []).filter(function (t) { return t.purpose === 'quote_ready'; })[0] || (window.__waTemplates || {}).quote_ready;
         var qsWa = qsSend && !!(qsT && qsT.active && qsT.name) && /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
         if (qsWa) (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quotation', ref_id: qq.id, client_id: qq.client_id,
@@ -15092,6 +15155,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         if (!sendOk('whatsapp')) return qtOk({ error: 'send-off' });
         if (qq.removed_at) return qtOk({ error: 'not-found' });
+        if (!qtIssued(qq)) return qtOk({ error: 'not-confirmed' });
         var qrTeam = qq.source !== 'website';
         if (!qrTeam && !qq.access_key) return qtOk({ error: 'bad-quotation' });
         if (!qrTeam && !qq.released_at) return qtOk({ error: 'not-sent' });
@@ -15142,6 +15206,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'quotation_offer') {
         if (qq.removed_at) return qtOk({ error: 'not-found' });
+        if (!qtIssued(qq)) return qtOk({ error: 'not-confirmed' });
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         var qhave = DB.client_services.filter(function (l) { return l.quotation_id === qq.id && !l.archived_at; }).map(function (l) { return l.id; });
         if (qhave.length) return qtOk({ ok: true, ids: qhave, again: true });
@@ -15859,6 +15924,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var dq = (DB.quotations || []).filter(function (x) { return x.id === args.p_ref; })[0];
               if (!dq || dq.client_id !== c.id || dq.removed_at) return { error: 'not-found' };
               if (dq.status === 'not_proceeding') return { error: 'void' };
+              if (dq.confirmed_at === null) return { error: 'not-confirmed' };
               apKind = 'quotation';
             }
             if (wpPur === 'offer') {
@@ -17200,6 +17266,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!q || q.removed_at) return { error: 'not-found' };
           if (q.status === 'not_proceeding') return { error: 'void' };
           if (q.source === 'website' && !q.released_at) return { error: 'unreleased' };
+          if (q.confirmed_at === null) return { error: 'not-confirmed' };
           if (q.no_contact_at) return { error: 'no-contact' };
           cid = q.client_id; sref = q.ref; title = 'Quotation'; dday = q.issued_at; valid = q.valid_until;
         } else if (kind === 'offer') {

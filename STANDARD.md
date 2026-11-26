@@ -61,6 +61,11 @@ section holds only what is true of the project as a whole.
 
 ### Logged defects
 Found by a test in code a release did not touch: `docs/rules/logged-defects.md` (held there until each ships).
+- 2026-11-26, `pdfreal` (F8, which touches no letter): the Letter of
+  Offer and both client letters fail "its head and foot at the template's
+  places on every page" (the foot's reference row at 54pt), with
+  `letters.js` and `documents.js` as main holds them, likely from #1493's
+  verify address. Held here until it ships.
 ### Not built, or waiting on the user
 - Linking sections, on hold (the user, 2026-11-26: "1 2 6 8 on hold until
   further notice"): quotation → Bukku invoices, Outstation → My Work and
