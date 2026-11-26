@@ -109,9 +109,13 @@
   }
   /* Only a page that has read the figures asks again. */
   function again() { if (loading && !fresh(ONVIEW)) read(); }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') again(); });
-  window.addEventListener('focus', again);
-  window.addEventListener('storage', function (e) { if (e.key === 'adspace-settings-at' && loading) read(); });
+  /* A script read with no page around it (a Postgres suite's figures)
+     listens to nothing. */
+  if (typeof document !== 'undefined' && document.addEventListener && typeof window !== 'undefined' && window.addEventListener) {
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') again(); });
+    window.addEventListener('focus', again);
+    window.addEventListener('storage', function (e) { if (e.key === 'adspace-settings-at' && loading) read(); });
+  }
 
   /* The tax codes a line may carry (2026-10-22, tax_codes_list): the team's
      alone, read once a page and again after a change. Each is { code, name,
