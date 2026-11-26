@@ -811,6 +811,10 @@
               <div><label class="field-label" for="crmIndustry">Industry</label>
                 <select class="select" id="crmIndustry" aria-describedby="crmIndMsg"></select>
                 <p class="msg err" id="crmIndMsg" role="status" hidden></p></div>
+              <div class="span-all"><label class="field-label" for="crmEnquiry">Enquiry</label>
+                <textarea class="input textarea" id="crmEnquiry" rows="2" placeholder="Service or package enquired"></textarea></div>
+              <div><label class="field-label" for="crmCommence">Urgency to commence</label>
+                <select class="select" id="crmCommence"></select></div>
             </div>
           </section>
           <!-- The person who asked belongs to intake only: after that they are
@@ -830,14 +834,6 @@
                 <input class="input is-pre" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="crmContactEmail">Email</label>
                 <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
-            </div>
-          </section>
-          <section class="fsec">
-            <div class="row fgrid">
-              <div class="span-all"><label class="field-label" for="crmEnquiry">Enquiry</label>
-                <textarea class="input textarea" id="crmEnquiry" rows="2" placeholder="Service or package enquired"></textarea></div>
-              <div><label class="field-label" for="crmCommence">Urgency to commence</label>
-                <select class="select" id="crmCommence"></select></div>
             </div>
           </section>
           <details class="fmore" id="crmMore">
@@ -4944,8 +4940,6 @@
             <div class="row" id="waNumberRow" hidden><div><label class="field-label" for="waNumber">Number</label>
               <input class="input readfield" id="waNumber" readonly data-nodraft></div></div>
             <p class="msg" id="waToNote" role="status" hidden></p>
-          </section>
-          <section class="fsec">
             <div class="row"><div><label class="field-label" for="waTpl">Template</label>
               <select class="select" id="waTpl" aria-required="true" data-nodraft></select></div></div>
             <div class="row" id="waReportRow" hidden><div><label class="field-label" for="waReport" id="waReportLabel">Report</label>
