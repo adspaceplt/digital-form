@@ -1536,7 +1536,7 @@
     }
     var bi = Math.min(Math.max(0, Number(sel._bi) || 0), brands.length - 1);
     var s1 = Object.assign({}, sel, { ads: [] }, brands[bi]);
-    B = { ctx: ctx, seq: 0, idem: null, plan: s1.plan || null, edits: JSON.parse(JSON.stringify(s1.edits || {})), revises: revises || null, editing: editing || null, opener: opener,
+    B = { ctx: ctx, seq: 0, idem: null, rates: rates(), plan: s1.plan || null, edits: JSON.parse(JSON.stringify(s1.edits || {})), revises: revises || null, editing: editing || null, opener: opener,
       /* The order the team arranged the lines in (2026-11-16), by the lines' keys. */
       order: Array.isArray(s1.order) ? s1.order.slice() : null, brands: brands, bi: bi, open: true };
     /* The tax codes a line may take (2026-10-22), drawn once read. */
@@ -2512,16 +2512,24 @@
      turned; js/money.js): a build in hand takes the S$ rate in force and
      prices again, so its foot and its lines never keep the old rate
      (2026-11-26, F4). */
+  /* Every read of the figures says so (a tab shown again after a minute),
+     so only a changed S$ rate or SST reprices, never during a save, and
+     the same build keeps its key: a Create that timed out after its row
+     was made is never made twice (2026-11-27). */
+  function rates() { return String(MON.setting('fx_sgd')) + '|' + String(MON.setting('sst_pct')); }
   document.addEventListener('adspace-settings', function () {
-    if (!B || !B.ctx) return;
+    if (!B || !B.ctx || B.saving) return;
+    var now = rates();
+    if (now === B.rates) return;
+    B.rates = now;
     if (FX != null) { var fx = Number(MON.setting('fx_sgd')) || 0; if (fx > 0) FX = fx; }
-    if (B.priced) preview();
+    if (B.priced) preview(true);
   });
   var timer = null;
-  function preview() {
+  function preview(keepKey) {
     clearTimeout(timer);
     /* A changed selection is a new quotation: its own key (audit 15, 2026-10-19). */
-    if (B) { B.idem = null; B.priced = null; $('qbSave').disabled = true; $('qbPreview').disabled = true; $('qbPreviewFoot').disabled = true; }
+    if (B) { if (!keepKey) B.idem = null; B.priced = null; $('qbSave').disabled = true; $('qbPreview').disabled = true; $('qbPreviewFoot').disabled = true; }
     timer = setTimeout(function () {
       if (!B) return;
       var seq = ++B.seq;
@@ -3428,12 +3436,12 @@
       }
       if (!B.priced) { if (B.err) brandSay(B.err); return; }
       B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)));
-      go.disabled = true;
+      go.disabled = true; B.saving = true;
       if (B.editing) {
         var ed = B.editing;
         B.ctx.db.rpc('quotation_edit', { p_id: ed.id, p_sel: B.sel }).then(function (r) {
           var d = r.data || {};
-          go.disabled = false;
+          go.disabled = false; if (B) B.saving = false;
           /* Lines or a letter came from it (removed lines and voided
              letters count too, as the database holds them): the same sheet
              becomes its revision, kept as typed, Save making the next
@@ -3451,14 +3459,14 @@
           window.ADspaceSheet.close();
           B = null;
           ctx.reload(function () { ctx.msg('qtMsg', refOf(ed) + ' saved.', 'ok'); markNew(refOf(ed)); });
-        }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
+        }).catch(function (e) { go.disabled = false; if (B) B.saving = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
         return;
       }
       /* Two brands or more (the user, 2026-11-24: "give option to split"):
          Create asks whether they make one quotation or a quotation each,
          one quotation the answer it opens on. A revision stays one. */
       if (B.sel.brands && B.sel.brands.length > 1 && !B.revises && window.ADspaceConfirm) {
-        go.disabled = false;
+        go.disabled = false; if (B) B.saving = false;
         window.ADspaceConfirm.ask({ title: 'Create quotation', go: 'Create',
           field: { name: 'split', label: 'Quotations', seg: true, value: 'one', required: true,
             choices: [['one', 'One for all brands'], ['each', 'One per brand']] } }, function (v) {
@@ -3474,7 +3482,7 @@
        a second press makes none twice. */
     function makeEach(go) {
       var sel = B.sel, ctx = B.ctx, idem = B.idem, made = [], at = 0;
-      go.disabled = true;
+      go.disabled = true; B.saving = true;
       var next = function () {
         if (at >= sel.brands.length) {
           if (B) B.made = true;
@@ -3489,22 +3497,22 @@
         ctx.db.rpc('quotation_create', { p_client: ctx.client.id, p_sel: one, p_idem: idem + '-' + (at + 1) }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) {
-            go.disabled = false;
+            go.disabled = false; if (B) B.saving = false;
             if (!B) return;
             $('qbMsg').textContent = (made.length ? made.length + (made.length === 1 ? ' draft' : ' drafts') + ' saved. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
             $('qbMsg').className = 'msg err';
             return;
           }
           made.push(d.ref); at++; next();
-        }).catch(function (e) { go.disabled = false; if (B) { $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; } });
+        }).catch(function (e) { go.disabled = false; if (B) B.saving = false; if (B) { $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; } });
       };
       next();
     }
     function makeOne(go) {
-      go.disabled = true;
+      go.disabled = true; B.saving = true;
       B.ctx.db.rpc('quotation_create', { p_client: B.ctx.client.id, p_sel: B.sel, p_idem: B.idem }).then(function (r) {
         var d = r.data || {};
-        go.disabled = false;
+        go.disabled = false; if (B) B.saving = false;
         if (r.error || d.error) { $('qbMsg').textContent = said(r.error || d.error); $('qbMsg').className = 'msg err'; return; }
         var ctx = B.ctx, revises = B.revises, opener = B.opener;
         B.made = true;
@@ -3520,7 +3528,7 @@
             ctx.msg('qtMsg', 'Draft revision saved.', 'ok'); markNew(dref(d.ref));
           });
         }).catch(function (e) { ctx.reload(function () { ctx.msg('qtMsg', said(e), 'err'); }); });
-      }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
+      }).catch(function (e) { go.disabled = false; if (B) B.saving = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();

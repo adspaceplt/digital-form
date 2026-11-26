@@ -141,3 +141,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   row alone, never a button in AI usage (SET2-5).
 - Row level security is stated one `alter table … enable row level security`
   line per table, never in a `do $$` loop.
+- A trigger that stamps a column's change fires `before update` and compares
+  old with new itself, never `update of {column}`: another trigger may set
+  the column (`team_access_guard` sets `active`), and a stamp is set afresh,
+  never kept with `coalesce` (`team_members_inactive_stamp`).
