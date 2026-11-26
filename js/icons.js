@@ -219,7 +219,10 @@
   function received(o) {
     var esc = window.ADspaceWords.esc;
     var steps = (o.steps || []).filter(Boolean);
-    return '<div class="qs-step rcv" data-shown><div class="rcv-head"><span class="rcv-tick">' + svg('check') + '</span>' +
+    /* With no track, card or foot under it (a form already sent), the head
+       stands alone at the optical centre, as a cover does. */
+    var alone = !steps.length && !(o.cards || []).filter(Boolean).length && !o.foot;
+    return '<div class="qs-step rcv' + (alone ? ' rcv-alone' : '') + '" data-shown><div class="rcv-head"><span class="rcv-tick">' + svg('check') + '</span>' +
         '<h1 class="qs-title">' + esc(o.title) + '</h1>' +
         (o.line ? '<p class="rcv-line">' + esc(o.line) + '</p>' : '') +
         (o.note ? '<p class="rcv-note">' + (window.ADspaceWords && window.ADspaceWords.note ? window.ADspaceWords.note(o.note) : esc(o.note)) + '</p>' : '') +
