@@ -430,7 +430,7 @@
           meta: !waOn ? L.portalOffRow : autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
         /* Sent again (2026-10-14): the same message sent within the window
            asks again before it goes, WhatsApp and emails alike (SET2-1). */
-        biz && { id: 'resend', name: 'Sent again', kind: 'edit',
+        biz && { id: 'resend', name: 'Repeat messages', kind: 'edit',
           meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
       ['Email', [
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
@@ -466,7 +466,7 @@
           open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } },
         /* Website quotations (2026-10-29): how many a day are sent on
            WhatsApp, each a message ADspace pays for. */
-        biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
+        biz && { id: 'quotewa', name: 'Quotations from the website', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('partners', 'Partners', 'clients', [

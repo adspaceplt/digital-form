@@ -7015,10 +7015,10 @@
        Analytics' targets for work on time or early and its lateness. */
     timely: { title: 'Delivery targets', keys: [['timely_pct', 'On time or early, at least', 'share', '', 'On time', pctOf],
       ['timely_late_days', 'Average lateness at most', 'lateby', '', 'Average lateness', per('day')]] },
-    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask before sending again within', 'week', '', 'Asks again within', per('hour')]] },
+    resend: { title: 'Repeat messages', keys: [['wa_repeat_hours', 'Ask before sending again within', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */
-    quotewa: { title: 'Website quotations', keys: [['quote_wa_day', 'WhatsApp messages per day', 'cap', '', 'On WhatsApp', per('quotation')]] },
+    quotewa: { title: 'Quotations from the website', keys: [['quote_wa_day', 'WhatsApp messages per day', 'cap', '', 'On WhatsApp', per('quotation')]] },
     /* Before this month the portal held clients typed in later, never the
        leads that came to nothing (2026-10-25). */
     /* When a figure reads better or worse, and when churn is an alert
