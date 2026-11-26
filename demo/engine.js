@@ -279,7 +279,7 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
-    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    feedback_request: 'p_client p_kind p_again', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind p_again', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
     portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
@@ -13006,6 +13006,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
         var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && String(k.email || '').trim(); })[0];
         if (!rk2) return fbNo('no-contact');
+
+        if (DB.feedback_requests.some(function (r) { return r.client_id === rc.id && r.kind === args.p_kind && r.mail_status === 'sending' &&
+            Date.now() - Date.parse(r.created_at) < 600e3; })) return fbNo('sending');
+        var fbH = appSet('wa_repeat_hours', appToday()); if (fbH == null) fbH = 24;
+        var fbRec = DB.feedback_requests.filter(function (r) { return r.client_id === rc.id && r.kind === args.p_kind &&
+            ['failed', 'sending'].indexOf(r.mail_status || 'sent') < 0 && r.closed_reason !== 'withdrawn' &&
+            Date.now() - Date.parse(r.created_at) < Number(fbH) * 3600e3; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        if (fbRec && !args.p_again) return Promise.resolve({ data: { error: 'recent', recent: { at: fbRec.created_at, by: fbRec.sent_by_name, to: fbRec.sent_to_name } }, error: null });
         var rm = DB.team_members.filter(function (m) { return m.active && String(m.name || '').trim().toLowerCase() === String(rc.owner || '').trim().toLowerCase(); })[0];
         DB.feedback_requests.forEach(function (r) { if (r.client_id === rc.id && r.kind === args.p_kind && !r.closed_at) { r.closed_at = fbNow; r.closed_reason = 'replaced'; } });
         var key = ''; while (key.length < 16) key += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
@@ -13033,7 +13042,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (typeof sendOk === 'function' && !sendOk('email')) return fbNo('send-off');
         if (Number(appSet('client_email_on', fbNow.slice(0, 10)) || 0) !== 1) return fbNo('email-off');
         if (/^(quick|review)$/.test(args.p_kind) && fbTpls().filter(function (x) { return x.kind === args.p_kind; }).length < 2) return fbNo('not-found');
-        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind }).then(function (rr) {
+        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind, p_again: args.p_again === true }).then(function (rr) {
           var r = rr.data || {};
           if (r.error) return { data: r, error: null };
           var q = DB.feedback_requests.filter(function (x) { return x.id === r.id; })[0];
@@ -14901,7 +14910,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sel.valid != null && sel.valid !== '' && (!/^\d{1,3}$/.test(String(sel.valid)) || [14, 30, 45, 60, 90].indexOf(Number(sel.valid)) < 0)) return { error: 'bad-valid' };
         var rows = [], tot = 0;
         if (sel.ads != null) {
-          if (!Array.isArray(sel.ads) || sel.ads.length > 6) return { error: 'bad-ads' };
+
+          var nb = Array.isArray(sel.brands) ? sel.brands.length : 0, per = {};
+          if (!Array.isArray(sel.ads) || sel.ads.length > 6 * Math.max(nb, 1)) return { error: 'bad-ads' };
+          for (var j = 0; j < sel.ads.length; j++) {
+            var bx = sel.ads[j] && sel.ads[j].brand;
+            if (bx != null && (!/^\d{1,2}$/.test(String(bx)) || Number(bx) >= nb)) return { error: 'bad-ads' };
+            per[String(bx)] = (per[String(bx)] || 0) + 1;
+            if (per[String(bx)] > 6) return { error: 'bad-ads' };
+          }
           for (var i = 0; i < sel.ads.length; i++) {
             var r = sel.ads[i] || {};
             if (['meta', 'tiktok', 'google', 'xhs', 'youtube', 'linkedin'].indexOf(r.platform) < 0 || ['monthly', 'once'].indexOf(r.freq) < 0 ||
@@ -14912,7 +14929,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               mo = Number(r.months);
             }
             var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;
-            rows.push({ platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am });
+            var row = { platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am };
+            if (r.brand != null && r.brand !== '') row.brand = Number(r.brand);
+            rows.push(row);
             tot += am;
           }
         }
@@ -16413,7 +16432,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var mo = (e.freq || 'monthly') === 'monthly', n = Math.max(1, Number(e.months || 1));
             if ((mo && cyc <= n) || (!mo && cyc === 1)) {
               var u = Math.round(Number(e.budget != null ? e.budget : e.amount || 0) * 100) / 100;
-              if (u > 0) out.push({ label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other'), qty: 1, unit: u, sst: 0 });
+              if (u > 0) out.push({ label: qtLineLabel(tot, { brand: e.brand, label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other') }), qty: 1, unit: u, sst: 0 });
             }
           });
           return out;
@@ -18457,6 +18476,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'supplier_email_begin') {
           var bp = emPrep();
           if (bp.error) return spNo(bp.error);
+
+          if ((DB.supplier_emails || []).some(function (x) { return x.supplier_id === args.p_supplier && x.purpose === args.p_purpose &&
+              (x.document_id || null) === (args.p_document || null) && x.status === 'sending' && Date.now() - Date.parse(x.created_at) < 600e3; })) return spNo('sending');
           if (bp.recent && !args.p_again) return spNo('recent', { recent: bp.recent });
           var bs = String(args.p_subject || '').trim(), bb = String(args.p_body || '').trim();
           if (bs.length < 2 || bs.length > 200) return spNo('bad-subject');
@@ -20675,7 +20697,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var fmb = opts.body;
           window.__fbMailAsked = { client: fmb.client, kind: fmb.kind };
           if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
-          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind }).then(function (r) {
+          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind, p_again: fmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
