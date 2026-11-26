@@ -1,5 +1,5 @@
 <!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
-# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `2026-11-22-interview-time-pending.sql`, `2026-11-22-interview-time-changed-email.sql`, `hiring-mail`)
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `2026-11-20-interview-held.sql`, `2026-11-20-hiring-emails-confirmed-cancelled.sql`, `2026-11-20-hiring-before-first-hire.sql`, `2026-11-22-interview-time-pending.sql`, `2026-11-22-interview-time-changed-email.sql`, `2026-11-26-interview-missed.sql`, `hiring-mail`)
 
 Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
 
@@ -149,9 +149,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   No email before the confirmation names the place: hiring-mail fills
   `{place}` in the confirmation alone, whatever a template holds. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
-- Interview held (`2026-11-20-interview-held.sql`; the user, 2026-11-20):
-  a confirmed interview whose time has begun offers Interview held (the
-  part or an Owner, the card's one blue; `hiring_interview_held`,
+- Interview completed (`2026-11-20-interview-held.sql`; the user, 2026-11-20;
+  read Interview held until 2026-11-26, its keys `held_at`, `held` and
+  `hiring_interview_held` kept): a confirmed interview whose time has
+  begun offers Interview completed (the part or an Owner, the card's one
+  blue, Did not attend beside it; `hiring_interview_held`,
   `not-yet`, `decided`), asked first with the decision date and time
   prefilled from `hiring_decide_by_suggest()` (`hiring_decision_days`, 7,
   1 to 30 working days, Settings, Hiring: Time limits; Monday to Friday,
@@ -165,13 +167,35 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `too-far`; a note to the candidate, 500) emails the new date
   (`hiring-mail` `moved`, its key carrying the date) and is filed in the
   history; Email candidate stands on the card while its email did not go.
-  The candidate's page reads Status Interview held, the interview's date
+  The candidate's page reads Status Interview completed, the interview's date
   and ADspace will inform you of the outcome by {date in full}., never the
   way to join. `hiring_decide_remind()` (pg_cron `hiring-decide-remind`,
   8:30am MYT) tells the Owners two working days before and on the day,
   each once (`hiring.decide_soon`, `hiring.decide_due`, the position
   alone); any decision clears the date and its reminders, and Reopen keeps
   them cleared.
+- Did not attend (`2026-11-26-interview-missed.sql`; the user, 2026-11-26:
+  "interview flow ok"): beside Interview completed, the part or an Owner
+  (`hiring_interview_missed`, `not-yet`, `held`, `decided`, `bad-next`);
+  one question, What next?: Offer a new time (the interview `missed`,
+  `missed_at`, the candidate where their interviews now leave them by
+  `hiring_interview_stage`, else New, and the new times opened at once)
+  or Close application (Do not proceed at the same moment through
+  `hiring_decide`, Email {name} ticked under it alone, queued as a
+  decision's email: `hiring-mail` `missed`, We missed you at your
+  interview for {position}, the time and the careers mailbox, no button;
+  `hiring_closed_missed` names the miss whose moment is the decision's).
+  The card reads Did not attend and Recorded by, with no act or ⋯; the
+  history files each miss and counts a second (Interviews missed: 2.),
+  and the Scores tab states Interviews missed beside the decision. A
+  missed interview is never completed or cancelled (`missed`); Undo where
+  it happened, two minutes at most, while no newer interview was sent and
+  no email went (`hiring_interview_missed_undo`: `too-late`, `moved-on`,
+  `mail-sent`; a close reopened first). The page reads Interview missed
+  and its date, then the new times, the closing line (As you did not
+  attend, your application has been closed.) or ADspace will contact you
+  to arrange another time. (`careers_read` `missed`: its time, and
+  `closed`). Candidate emails are English alone, as the page is.
 - The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
   user, 2026-11-17, the team's paper sheet: "a slide window or so so the
   record could stay right"): the Scores tab's Interview sheet opens a panel

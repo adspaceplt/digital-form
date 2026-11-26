@@ -54,10 +54,13 @@
     'bad-recommend': 'Choose a recommendation.', 'bad-outcome': 'Please refresh the page and try again.',
     'no-email': 'This decision sends no email.', 'bad-criteria': 'Enter 3 to 8 criteria, each 2 to 60 characters, none twice.',
     'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.',
-    'not-yet': 'The interview has not taken place. Mark it held after it ends.',
+    'not-yet': 'The interview has not taken place. Mark it after it ends.',
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
     'not-workday': 'Choose a working day.',
-    'held': 'This interview has been held. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview held first.',
+    'held': 'This interview has been completed. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview completed first.',
+    'missed': 'The candidate did not attend this interview. Send new times or close the application.',
+    'bad-next': 'Choose Offer a new time or Close application.', 'too-late': 'This can no longer be undone.',
+    'moved-on': 'Not undone. New times have been sent to the candidate since.', 'mail-sent': 'Not undone. The candidate has already been emailed.',
     'decided': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'not-cancelled': 'Not sent. This interview was not confirmed before it was cancelled. Send new times to arrange another interview.',
     'replaced': 'Not sent. New times have been sent to the candidate since this interview was cancelled.',
@@ -392,7 +395,10 @@
       var v = o.scores.map(function (x) { return Number((x.scores || {})[k]); }).filter(function (n) { return n > 0; });
       return [k, v.length ? Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10 : null];
     });
-    var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' + decide + '</section>';
+    /* Every interview missed is in sight when deciding (2026-11-26). */
+    var missN = (state.interviews || []).filter(function (x) { return x.state === 'missed'; }).length;
+    var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + (!out.outcome && keeps && open ? 'Decide the outcome' : 'Decision') + '</h4></div>' +
+      (missN ? '<dl class="ovfacts">' + fact('Interviews missed', esc(missN)) + '</dl>' : '') + decide + '</section>';
     if (!state.sheets) return head + '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4></div><div id="hirShFail"></div></section>';
     return head +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
@@ -656,11 +662,12 @@
   }
 
   var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['New times requested', 'is-warn'],
-    confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'] };
+    confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'], expired: ['Expired', 'is-off'], missed: ['Did not attend', 'is-off'] };
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed', queued: 'Queued', sending: 'Sending' };
-  /* Interview held (2026-11-20): a confirmed interview once it has taken
-     place, its decision date while no decision is made. */
-  var HELD = ['Interview held', 'is-ok'];
+  /* Interview completed (Interview held, 2026-11-20; renamed 2026-11-26): a
+     confirmed interview once it has taken place, its decision date while no
+     decision is made. Did not attend (2026-11-26) stays as it was marked. */
+  var HELD = ['Interview completed', 'is-ok'];
   function undecided() { return state.rec && state.rec.stage === 'interview'; }
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
   /* A time the candidate or the team waits on (an interview, a reply-by, a
@@ -670,14 +677,14 @@
   function interviewPane(c, can) {
     if (state.interviews == null) return '<section class="readgroup"><div id="hirIvFail"></div></section>';
     var open = state.interviews.filter(function (i) { return i.state !== 'cancelled'; })[0];
-    var invite = can && (!open || open.state === 'none' || open.state === 'confirmed' || open.state === 'expired');
+    var invite = can && (!open || open.state === 'none' || open.state === 'confirmed' || open.state === 'expired' || open.state === 'missed');
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
       (invite ? '<button class="btn btn-sm' + (open ? ' btn-quiet' : '') + '" type="button" data-h="invite">' + (!open ? 'Invite' : open.state === 'expired' ? 'Invite again' : 'Send new times') + '</button>' : '') + '</div>' +
       (state.interviews.length ? '<div class="hir-ivs">' + state.interviews.map(function (i) { return ivCard(i, can); }).join('') + '</div>'
         : '<p class="emptyline">No interviews.</p>') + '</section>';
   }
   function ivCard(i, can) {
-    var st = i.held_at ? HELD : IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired';
+    var st = i.held_at ? HELD : IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled' && i.state !== 'expired' && i.state !== 'missed';
     var times = (i.slots || []).map(function (t, n) {
       var chosen = i.picked === n + 1;
       return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(due(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
@@ -686,8 +693,11 @@
     var acts = '';
     if (live && i.state === 'picked') acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivapprove" data-id="' + esc(i.id) + '">Approve</button>';
     if (live && i.state === 'confirmed' && i.mode === 'online' && !i.meeting_link) acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivmeet" data-gate="meet" data-id="' + esc(i.id) + '">Create Google Meet</button>';
+    /* Once its time has begun: Interview completed, or Did not attend
+       (2026-11-26, the user: "interview flow ok"). */
     if (live && i.state === 'confirmed' && !i.held_at && i.picked && Date.parse(i.slots[i.picked - 1]) <= Date.now() && undecided())
-      acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview held</button>';
+      acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivheld" data-id="' + esc(i.id) + '">Interview completed</button>' +
+        '<button class="btn btn-sm" type="button" data-h="ivmissed" data-id="' + esc(i.id) + '">Did not attend</button>';
     if (live && i.held_at && i.decide_by && undecided()) {
       acts += '<button class="btn btn-sm" type="button" data-h="ivmove" data-id="' + esc(i.id) + '">Change decision date</button>';
       if (i.held_mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-gate="email" data-kind="' + (i.decide_moved ? 'moved' : 'held') + '" data-id="' + esc(i.id) + '">Email candidate</button>';
@@ -708,7 +718,7 @@
       '<div class="kmenu" hidden>' + (i.state === 'picked' || i.state === 'confirmed'
         ? '<button class="kmenu-item" data-g="2" type="button" data-h="ivtime" data-id="' + esc(i.id) + '" role="menuitem">Change interview time</button>' : '') +
       '<button class="kmenu-item" data-g="5" type="button" data-h="ivcancel" data-id="' + esc(i.id) + '" role="menuitem">Cancel</button></div></span>' : '';
-    return '<div class="hir-iv' + (i.state === 'cancelled' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>Interview ' + esc(i.round) + '</b>' +
+    return '<div class="hir-iv' + (i.state === 'cancelled' || i.state === 'missed' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>Interview ' + esc(i.round) + '</b>' +
         '<span class="hir-iv-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' + menu + '</span></div>' +
       '<dl class="ovfacts">' +
         fact(i.picked ? 'Times offered' : 'Times', '<ul class="hir-times">' + times + '</ul>') +
@@ -720,7 +730,8 @@
         (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
         fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
-        (i.held_at ? fact('Marked held by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
+        (i.held_at ? fact('Marked completed by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
+        (i.missed_at ? fact('Recorded by', esc([i.missed_by, when(i.missed_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(due(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
         mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('reschedule', 'Time change') + mail('cancel', 'Cancellation') + mail('held', 'Decision date') +
@@ -1216,12 +1227,12 @@
      its email will not go (`hiring_mail_gate`: the portal's Email,
      Automatic emails and the email's own template). Read with the record;
      a failed read warns of nothing. */
-  var GATE_KINDS = ['invite', 'confirm', 'rescheduled', 'held', 'moved', 'cancelled', 'pool', 'not', 'doc', 'doc_again', 'confirmed'];
+  var GATE_KINDS = ['invite', 'confirm', 'rescheduled', 'held', 'moved', 'cancelled', 'pool', 'not', 'missed', 'doc', 'doc_again', 'confirmed'];
   var MAIL_NOUN = { invite: 'the interview invitation', confirm: 'the interview confirmation', rescheduled: 'the new interview time', cancelled: 'the cancellation',
-    held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision',
+    held: 'the decision date', moved: 'the new decision date', pool: 'the decision', not: 'the decision', missed: 'the decision',
     confirmed: 'the confirmation' };
   var MAIL_NAME = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful',
+    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', missed: 'Interview missed',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed' };
   function readGate() {
     state.gate = null;
@@ -1500,7 +1511,7 @@
   function heldIv(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
     if (!i) return;
-    decideAsk(i, 'Interview held', 'Interview held', null, [], function (at, v) {
+    decideAsk(i, 'Interview completed', 'Interview completed', null, [], function (at, v) {
       return rpc('hiring_interview_held', { p_interview: id, p_decide_by: at }).then(function (r) {
         if (r.error || (r.data || {}).error) return said(r);
         state.pane = 'interview';
@@ -1510,6 +1521,67 @@
         return '';
       });
     });
+  }
+  /* Did not attend (2026-11-26, the user: "interview flow ok"): one
+     question, What next? Offer a new time keeps the candidate and opens the
+     new times; Close application decides Do not proceed, the candidate
+     emailed once its Undo's 30 seconds pass (queued, as a decision). The
+     miss stays in the history; Undo where it happened, two minutes at most. */
+  function missedIv(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
+    if (!i) return;
+    var before = state.interviews.filter(function (x) { return x.state === 'missed'; }).length;
+    var f = [{ name: 'next', label: 'Next step', choices: [['times', 'Offer a new time'], ['close', 'Close application']], seg: true, value: 'times' }]
+      .concat(mailFields('missed', true));
+    window.ADspaceConfirm.ask({ title: 'What next?', go: 'Continue', wait: true, fields: f,
+      body: c.name + ' did not attend the interview on ' + when(i.slots[i.picked - 1]) + '.' + (before ? ' Interviews missed before: ' + before + '.' : ''),
+      /* The Email tick belongs to Close application alone. */
+      change: function (name) { if (name === 'next') showTick(); } },
+    function (v) {
+      return rpc('hiring_interview_missed', { p_interview: id, p_next: v.next }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return said(r);
+        state.pane = 'interview';
+        var undo = function () {
+          return rpc('hiring_interview_missed_undo', { p_interview: id }).then(function (x) {
+            if (x.error || (x.data && x.data.error)) { msg('hirRecMsg', said(x), 'err'); return; }
+            return openRec(c.id).then(function () { msg('hirRecMsg', 'Undone.', 'ok'); });
+          });
+        };
+        if (v.next !== 'close') {
+          openRec(c.id).then(function () {
+            msg('hirRecMsg', 'Saved.', 'ok');
+            if (bridge.undoHere) bridge.undoHere('Marked Did not attend.', undo, $('hirRecMsg'));
+            invite(null);
+          });
+          return '';
+        }
+        var wait = mailWanted('missed', v);
+        return Promise.all((d.meets || []).map(function (m) { return fnCall('meet-create', { interviewId: m, action: 'delete' }); })).then(function (offs) {
+          var kept = offs.some(function (m) { return m && m.error; });
+          return (wait ? rpc('hiring_outcome_mail_queue', { p_id: c.id }) : Promise.resolve({ data: {} })).then(function (q) {
+            var qd = (q && q.data) || {}, queued = wait && !q.error && !qd.error;
+            load().then(function () {
+              msg('hirRecMsg', (queued && !mailOff('missed') ? 'Application closed. The candidate will be emailed.' : 'Application closed.') +
+                (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
+                kept || (wait && !queued) ? 'warn' : 'ok');
+              if (bridge.undoHere) bridge.undoHere('Application closed.', undo, $('hirRecMsg'), queued ? UNDO_MS : 0);
+            });
+            return '';
+          });
+        });
+      });
+    });
+    showTick();
+  }
+  /* The question's first field is What next?; its tick or warning shows
+     under Close application alone. */
+  function showTick() {
+    var nx = $('askSheetField0'), tk = document.querySelector('#askSheet input[type=checkbox]');
+    var row = tk && tk.closest('.askentry'), warn = document.querySelector('#askSheet .msg.warn.askrow');
+    var close = nx && nx.value === 'close';
+    if (row) row.hidden = !close;
+    if (warn) warn.hidden = !close;
   }
   function moveDecision(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
@@ -1648,6 +1720,7 @@
     on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
     on('ivtime', function (b) { moveTime(b.getAttribute('data-id')); });
     on('ivheld', function (b) { heldIv(b.getAttribute('data-id')); });
+    on('ivmissed', function (b) { missedIv(b.getAttribute('data-id')); });
     on('ivmove', function (b) { moveDecision(b.getAttribute('data-id')); });
     on('score', score);
     on('ivpdf', function (b) { window.ADspaceHrForms.download(b, 'sheet', c.name, function () { return Promise.resolve(sheetForm(c)); }, $('hirRecMsg')); });

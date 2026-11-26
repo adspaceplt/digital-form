@@ -45,7 +45,7 @@
      email with its own switch, hiring-mail's words before they were
      editable. */
   var HM_WORD = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful',
+    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', missed: 'Interview missed',
     doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired' };
   /* The two Supabase sends: their words are set in Supabase's dashboard
      (docs/SIGN-IN-EMAILS.md), so they are listed and never edited here. */
