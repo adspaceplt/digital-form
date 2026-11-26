@@ -100,7 +100,7 @@
       return db.rpc('usage_report').then(function (r) {
         var d = r.data || {};
         if (r.error || d.error || !d.db) throw r.error || new Error(d.error || 'usage');
-        return parts([mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB', 'AI cost US$ ' + usd((d['this'] || {}).ai_usd) + ' this month']);
+        return mb(d.db.bytes) + ' of ' + d.db.limit_mb + ' MB';
       });
     },
     /* The latest build required (2026-11-17): the build in force, else
@@ -148,7 +148,7 @@
         var on = (r.data || []).filter(function (d) { return d.active; });
         var inp = on.filter(function (d) { return d.in_prize; }).length;
         return parts([on.length <= 3 ? on.map(function (d) { return d.name; }).join(', ') : plural(on.length, 'department', 'departments'),
-          plural(inp, 'in the prize', 'in the prize')]);
+          inp + ' in the performance prize']);
       });
     },
     /* What the Industries row holds (2026-11-04). */
@@ -225,8 +225,8 @@
         var d = r.data || {};
         if (r.error || d.error) throw new Error('unread');
         if (!d.on) return 'Off';
-        return parts(['On', plural(Number(d.added || 0), 'row added', 'rows added'),
-          Number(d.failed || 0) ? plural(Number(d.failed), 'row not added', 'rows not added') : ''].filter(Boolean));
+        return parts(['On', plural(Number(d.added || 0), 'payment added', 'payments added'),
+          Number(d.failed || 0) ? plural(Number(d.failed), 'payment not added', 'payments not added') : ''].filter(Boolean));
       });
     },
     /* The meeting message (2026-10-29): who last changed its words. */
@@ -236,7 +236,7 @@
       return db.from('ops_task_templates').select('id, active').then(function (r) {
         if (r.error) throw r.error;
         var all = r.data || [], on = all.filter(function (t) { return t.active !== false; }).length;
-        return parts([plural(all.length, 'template', 'templates'), on + ' active']);
+        return on + ' of ' + all.length + ' on';
       });
     },
     /* Rate card wording (2026-10-29): its blocks, published with the card. */
@@ -249,7 +249,8 @@
     types: function () {
       return db.from('doc_types').select('id, active').then(function (r) {
         if (r.error) throw r.error;
-        return plural((r.data || []).filter(function (t) { return t.active !== false; }).length, 'type', 'types') + ' offered';
+        var all = r.data || [];
+        return all.filter(function (t) { return t.active !== false; }).length + ' of ' + all.length + ' on';
       });
     }
   };
@@ -313,7 +314,9 @@
         may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
         /* Require latest build (2026-11-17): every open console below the
            live build refreshes once nothing is open in it (js/admin.js). */
-        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
+        /* Edit with the pen, as every row that opens a question (the
+           Settings review, 2026-11-26); Off while no version is required. */
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'edit', meta: line('build'),
           open: function (btn) { requireBuild(btn); } },
         may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
           open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
@@ -322,17 +325,28 @@
         /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
            that opens the console on sample data (js/demo.js). */
         biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
-      ['Company', [
+      /* Storage and plan (2026-11-18, the user: "the usage, the limits,
+         the charges"; renamed 2026-11-26, the Settings review): the
+         database and files against the plan, and what was sent; the AI's
+         cost is AI usage and limits'. */
+      ['Plan', [biz && { id: 'usage', name: 'Storage and plan', kind: 'open', meta: line('usage'), open: openUsage }]]]);
+    /* Company (the Settings review, 2026-11-26): the office, its security
+       and health, out of Portal, which keeps what changes the portal
+       itself; no card holds more than five rows. Its mark is the building
+       (Suppliers' glyph): Hiring holds Team's. */
+    add('company', 'Company', 'suppliers', [
+      ['Office', [
         biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta(), open: openHol },
         biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts'), open: openDepts },
-        /* The AutoCount HRMS company defaults (2026-11-16): what every
-           colleague's row of the import takes. */
-        biz && W.ADspacePersonnel && { id: 'autocount', name: 'AutoCount HRMS', kind: 'open', meta: line('autocount'),
-          open: function (btn) { W.ADspacePersonnel.openSettings(btn); } },
         /* Working hours (2026-11-20): the team's week, weekend and lunch,
            read by the Welcome Kit; never the front door's Service hours. */
         biz && { id: 'hours', name: 'Working hours', kind: 'edit',
           meta: (bridge.workHours && bridge.workHours() || {}).row || '' },
+        /* The AutoCount HRMS company defaults (2026-11-16): what every
+           colleague's row of the import takes. */
+        biz && W.ADspacePersonnel && { id: 'autocount', name: 'AutoCount HRMS', kind: 'open', meta: line('autocount'),
+          open: function (btn) { W.ADspacePersonnel.openSettings(btn); } }]],
+      ['Security', [
         /* Overseas approval (2026-10-24): how long an approval runs at most
            and how often a waiting request reminds. */
         biz && { id: 'abroadays', name: 'Overseas approval', kind: 'edit',
@@ -351,18 +365,18 @@
         /* Delete requests (2026-11-17): a Delete pressed at Edit waits
            here for an admin (js/delreq.js). */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
-          { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
+          { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } }]],
+      ['Health', [
         /* Health check-ins (2026-11-22): weekly near capacity, else monthly. */
         biz && { id: 'healthcheck', name: 'Health check-ins', kind: 'edit',
           meta: num('health_near_pct') == null ? '' : 'Weekly from ' + num('health_near_pct') + '% of capacity · Monthly below it' },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
-      /* Usage and limits (2026-11-18, the user: "the usage, the limits,
-         the charges"): what the portal uses against its plans. */
-      ['Plan', [biz && { id: 'usage', name: 'Usage and limits', kind: 'open', meta: line('usage'), open: openUsage }]]]);
+            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]]]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
-    add('work', 'My Work', 'ops', [['', [
+    /* Two parts and the task numbers (the Settings review, 2026-11-26):
+       a card held eight rows. */
+    add('work', 'My Work', 'ops', [['Deadlines', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
         meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'working day', 'working days')]
           .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])
@@ -377,14 +391,16 @@
             num('task_start_days') === 0 ? 'No reminder for tasks not started' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       biz && { id: 'timely', name: 'Delivery targets', kind: 'edit',
         meta: num('timely_pct') == null ? '' : parts(['On time or early ' + num('timely_pct') + '%',
-          'Average lateness at most ' + plural(num('timely_late_days'), 'day', 'days')]) },
+          'Average lateness at most ' + plural(num('timely_late_days'), 'day', 'days')]) }]],
+      ['Outstation', [
       /* OUTSTATION RECORD (2026-11-23). */
       biz && { id: 'outstation', name: 'Outstation', kind: 'edit',
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months'),
           'Office radius ' + num('outstation_office_radius_m') + ' m',
           'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) },
-      biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
+      biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } }]],
+      ['Numbering', [
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -404,7 +420,8 @@
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
         meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%'].concat(num('quote_valid_days') == null ? [] : ['Quotation ' + plural(num('quote_valid_days'), 'day', 'days')])) },
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes'), open: openTax },
-      biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', mark: W.ADspaceBukku.mark, kind: 'edit', meta: line('bukku'),
+      /* Named by its word, as every row is (the Settings review, 2026-11-26). */
+      biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku'),
         open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } }]]]);
     add('ai', 'AI', 'ai', [['', [
       may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse'),
@@ -535,7 +552,7 @@
     return out.sort(function (a, b) { return ORDER.indexOf(a.key) - ORDER.indexOf(b.key); });
   }
 
-  var ORDER = ['portal', 'ai', 'work', 'reports', 'messages', 'partners', 'templates', 'accounting', 'performance', 'hiring'];
+  var ORDER = ['portal', 'ai', 'work', 'reports', 'messages', 'partners', 'company', 'templates', 'accounting', 'performance', 'hiring'];
   /* What each Performance part holds, as its sheet heads them. */
   var PERF_META = { months: 'Grades, issue points, queries, reminders', quarters: 'Prizes, flexible hours',
     company: 'Bonus pool, company trip, shares', commission: 'Score needed' };
@@ -766,7 +783,7 @@
     var t = Date.parse(m.built);
     return isNaN(t) ? '' : new Date(t + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '') + '.' + String(m.commit).slice(0, 7);
   }
-  function buildLine(m) { return buildWord(m) || 'Not set'; }
+  function buildLine(m) { return buildWord(m) || 'Off'; }
   function requireBuild(btn) {
     var tell = rowSay('build');
     fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (v) {
@@ -835,7 +852,7 @@
     if (READ[a]) reread = a;
     if (SPECS[a]) {
       var sp = SPECS[a];
-      bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3], k[4], k[5]]; }), msg: rowSay(a), done: paint }, btn);
+      bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3], k[4], k[5]]; }), notes: sp.notes, acts: sp.acts, msg: rowSay(a), done: paint }, btn);
       return;
     }
     var row = rowOf(a);
@@ -1051,7 +1068,10 @@
         var f = by[k[0]] || {};
         fields.push({ name: k[0] + '_prefix', label: 'Prefix', head: k[1], third: true, value: f.prefix || '', required: true });
         fields.push({ name: k[0] + '_width', label: 'Digits', third: true, value: String(f.width || ''), required: true });
+        /* Each part's example beside it (the Settings review, 2026-11-26):
+           the ID its next record takes, as stored. */
         fields.push({ name: k[0] + '_next', label: 'Next number', third: true, value: String(f.next || ''), required: true });
+        fields[fields.length - 3].head = k[1] + ' · Next ' + (f.prefix ? idNext(f) : '');
       });
       fields.push({ name: 'job', label: 'Format', head: 'Job reference', value: (by.job || {}).pattern || '', required: true });
       /* A creator's payment details reference (2026-11-08): its Creator ID
@@ -1070,8 +1090,9 @@
         title: 'Creator and campaign IDs', go: 'Save', wait: true, fields: fields,
         preview: function (get) {
           var cr = typed(get, 'creator'), job = String(get('job').value || '').trim() || (by.job || {}).pattern || '';
-          return ['Job reference:', job.replace('{creator}', cr).replace('{campaign}', typed(get, 'campaign')),
-            'A creator\'s first payment details reference reads ' + payRefOf(String(get('payref').value || '').trim() || payPat, cr, 1) + '.'];
+          /* One preview shape, as the trip numbers' (Next: and the token). */
+          return ['Next:', job.replace('{creator}', cr).replace('{campaign}', typed(get, 'campaign')),
+            'Creator ' + cr + ', campaign ' + typed(get, 'campaign') + ', first payment details ' + payRefOf(String(get('payref').value || '').trim() || payPat, cr, 1) + '.'];
         },
         check: function (v) {
           var bad = '';
@@ -1314,7 +1335,9 @@
           '<span class="ind-name dep-name">' + esc(d.name) + (d.ac_code ? '<span class="dep-code">' + esc(d.ac_code) + '</span>' : '') + '</span>' +
           '<span class="ind-n dep-n">' + n + '<span class="ind-unit"> ' + (n === 1 ? 'colleague' : 'colleagues') + (d.in_prize ? ' · In the department prize' : '') + '</span></span>' +
           '<span class="dep-prize">' + (d.in_prize ? 'Included' : '<span class="ind-none">—</span>') + '</span>' +
-          '<span class="dep-on"><span class="chip-state ' + (d.active ? 'is-ok' : 'is-off') + '">' + (d.active ? 'Active' : 'Inactive') + '</span></span>' +
+          /* The exception alone (the Settings review, 2026-11-26): an
+             active department says nothing, an inactive one says so. */
+          '<span class="dep-on">' + (d.active ? '' : '<span class="chip-state is-off">Inactive</span>') + '</span>' +
           '<span class="ind-acts"><button class="iconbtn" type="button" data-d="edit" aria-label="Edit ' + esc(d.name) + '" title="Edit">' + PEN + '</button>' +
           '<span class="team-act"><button class="kmenu-btn" type="button" data-d="menu" aria-label="More actions for ' + esc(d.name) + '" aria-expanded="false">' +
             '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
@@ -2036,15 +2059,12 @@
             fact('Size', mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB (' + db1.pct + '%)') +
             fact('Alert at', db1.alert_pct + '%') + '</dl></section>' +
           '<section class="fsec"><h4 class="fsec-h">' + esc(month) + ' to date</h4><dl class="ovfacts">' +
-            fact('AI cost', pair('US$ ' + usd(t.ai_usd), 'US$ ' + usd(l.ai_usd))) +
-            fact('AI runs', pair(count(t.ai_runs), count(l.ai_runs))) +
-            fact('AI tokens', pair(count(Number(t.ai_tokens_in || 0) + Number(t.ai_tokens_out || 0)), count(Number(l.ai_tokens_in || 0) + Number(l.ai_tokens_out || 0)))) +
             fact('Emails sent', pair(count(t.emails), count(l.emails))) +
             fact('WhatsApp sent', pair(count(t.whatsapp), count(l.whatsapp))) + '</dl></section>' +
           (s3 ? '<section class="fsec"><h4 class="fsec-h">Files</h4><dl class="ovfacts">' +
             fact('Stored', count(s3.files) + ' files · ' + (Math.round(Number(s3.bytes || 0) / 1073741824 * 100) / 100) + ' GB') +
             fact('Last counted', window.ADspaceClock ? window.ADspaceClock.date(s3.ran_at) : String(s3.ran_at).slice(0, 10)) + '</dl></section>' : '');
-        fillLine('usage', parts([mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB', 'AI cost US$ ' + usd(t.ai_usd) + ' this month']));
+        fillLine('usage', mb(db1.bytes) + ' of ' + db1.limit_mb + ' MB');
       }).catch(function () { window.ADspaceState.failLine(host, 'Usage', 'Usage could not be loaded.', paint); });
     };
     paint();

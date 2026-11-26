@@ -917,6 +917,9 @@
   var ORDER = ['branch', 'calendar', 'entitlement_group', 'payment_by', 'wages_type', 'pay_frequency', 'epf_code', 'socso_category',
     'socso_status', 'tax_status', 'pay_eis', 'pay_hrdf', 'eclaim', 'eleave', 'epf_borne', 'socso_borne', 'eis_borne',
     'tax_by_employer', 'socso_eis_relief', 'skbbk_exempted'];
+  var SW_NOTE = { eclaim: 'Colleagues submit claims in AutoCount\'s EClaim app.',
+    eleave: 'Colleagues apply for leave in AutoCount\'s ELeave app.',
+    skbbk_exempted: 'SKBBK (Lindung 24 Jam) is not deducted from salary.' };
   function settingsLine() {
     return new Promise(function (ok, no) {
       call('personnel_settings_get', {}, function (d) {
@@ -934,8 +937,10 @@
         title: 'AutoCount HRMS', go: 'Save', wait: true, opener: opener,
         fields: ORDER.map(function (k, i) {
           var list = String(spec[k] || '*');
-          var f = { name: k, label: LABEL[k], value: v[k] || '', head: i === 0 ? 'Company' : i === 3 ? 'Pay' : i === 10 ? 'Switches' : undefined };
-          if (list === '0|1') { f.choices = [['1', 'Yes'], ['0', 'No']]; f.seg = true; f.half = true; }
+          var f = { name: k, label: LABEL[k], value: v[k] || '', head: i === 0 ? 'Company' : i === 3 ? 'Pay' : i === 10 ? 'Contributions and claims' : undefined };
+          /* Each Yes or No is a switch (the Settings review, 2026-11-26),
+             the three a newcomer would not read at once with one line. */
+          if (list === '0|1') { f.sw = true; f.note = SW_NOTE[k]; }
           else if (list !== '*') f.choices = list.split('|').map(function (o) { return [o, o]; });
           else { f.required = true; f.third = true; }
           return f;
