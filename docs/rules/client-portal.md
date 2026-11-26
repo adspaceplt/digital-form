@@ -29,7 +29,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `scripts`, `campaigns`, `letters`, `feedback` open its tab and bring its
   card into view. A card is drawn once it holds something, a tab once any
   of its cards is; an address naming one not drawn yet opens it when it is. Every
-  section is a white card (`.panel.cp-card`) with its title inside
+  section is a shaded card on the white page (`.panel.cp-card`, the client pages' one surface with `.sumcard`; `body.qs-page`; 2026-11-26) with its title inside
   (`.cp-card-head`); a table inside a card is the card's rows.
   - Overview (the approved boards, 2026-11-25): on the left on the
     record's proportion, Rate your experience while asked, a tile a tab

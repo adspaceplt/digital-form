@@ -623,7 +623,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    (`--field-edge`, --line-ctl, 3:1 on --sunk in both themes; the user,
    2026-10-31, option A). Every grey card that holds a field is named here,
    one list. */
-:where(.qs-side, .verify-ask, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .qb-cus, .is-narrow .ck-tr:not(.ck-th)) {
+:where(.qs-side, .cp-card, .verify-ask, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .qb-cus, .is-narrow .ck-tr:not(.ck-th)) {
   --field: var(--card); --select-ground: var(--card); --field-edge: var(--line-ctl);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
@@ -9737,7 +9737,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .stephead-mark .ic { width: 22px; height: 22px; }
 .stephead .qs-top { gap: 2px; min-width: 0; }
 .stephead .qs-title { overflow-wrap: anywhere; }
-.sumcard { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); min-width: 0; }
+.sumcard { display: grid; gap: 14px; padding: 18px 20px; min-width: 0; }
+/* One client-page layout (2026-11-26, the user: "White + shaded cards"):
+   the page white to its edges (`body.qs-page`), each section a shaded card
+   with no edge and no shadow. The quotation's and the details forms' cards
+   and the client portal's (`.cp-card`, a `.panel`) take this one surface. */
+.sumcard, .cp-card { border-radius: var(--radius-lg); background: var(--sunk); box-shadow: none; }
 .sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .sumcard-head .btn { flex: 0 0 auto; }
@@ -10090,12 +10095,13 @@ body.qs-page { background: var(--card); }
 .cp-tiles[hidden] { display: none; }
 .cp-tile {
   display: grid; align-content: start; gap: 2px; min-width: 0; text-align: left; font: inherit; color: var(--ink);
-  background: var(--card); border: 0; border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
+  background: var(--sunk); border: 0; border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
   transition: background var(--t-fast), transform var(--t-fast);
 }
 .cp-tile:active { transform: scale(.97); }
 .cp-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
-@media (hover: hover) { .cp-tile:hover { background: var(--sunk); } }
+/* A tile is shaded on the white page, as every card; a hover on --sunk is --line-soft. */
+@media (hover: hover) { .cp-tile:hover { background: var(--line-soft); } }
 .cp-tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cp-tile-top > .ic { width: 15px; height: 15px; color: var(--ink-mute); }
 .cp-tile-label { font-size: 12.5px; color: var(--ink-mute); }

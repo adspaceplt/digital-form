@@ -32,7 +32,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   focus at a desk, always under a finger. Phones
   keep their solid head and one-line title. What holds words over other
   words (a menu, a popover, the finder, a sheet, a question) is solid
-  `--raised`. Client pages keep their white.
+  `--raised`. A client page is one layout: white to its edges (`body.qs-page`), each section a shaded card (`--sunk`, no edge, no shadow: `.sumcard`, `.cp-card`).
 - Marks stay light: a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never
