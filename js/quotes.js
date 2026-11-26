@@ -26,7 +26,7 @@
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
     'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-time item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
+    empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
@@ -1243,7 +1243,7 @@
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
     creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Accounting, Bukku.',
     nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'An item\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
-    'no-fx': window.ADspaceWords.line.fxUnset, 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
+    'no-fx': window.ADspaceWords.line.fxUnset, 'no-sku': 'An item has no SKU on the Rate Card. Add its SKU in Services.',
     'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Accounting, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
     withdrawn: 'This quotation has been withdrawn. No further invoices can be created from it.',
@@ -1661,7 +1661,7 @@
     if ((b.packages || []).length) bits.push(String(b.packages[0].name || 'Package'));
     if (p) bits.push('Plan ' + p.spec.plan);
     if (pl.length) bits.push(pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0]);
-    if (!p && !pl.length && (b.once || []).length) bits.push('One-time items');
+    if (!p && !pl.length && (b.once || []).length) bits.push('Items');
     if (!bits.length && (b.custom || []).length) bits.push('Custom items');
     return bits.join(' · ');
   }
@@ -2018,14 +2018,14 @@
     var once = r.basis === 'once';
     return '<div class="qb-cus" data-cus' + (r.renews ? ' data-renews="' + esc(r.renews) + '"' : '') + '>' +
       '<div class="qb-cusrow">' +
-      '<input class="input qb-cusname" type="text" data-noenter data-nodraft aria-label="Line" placeholder="Line" maxlength="120" value="' + esc(r.label || '') + '">' +
+      '<input class="input qb-cusname" type="text" data-noenter data-nodraft aria-label="Item" placeholder="Item" maxlength="120" value="' + esc(r.label || '') + '">' +
       '<input class="input qb-cusqty" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Quantity" placeholder="Qty" value="' + esc(String(r.qty || 1)) + '">' +
       '<input class="input qb-cusrate" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Rate (' + CUR + ')" placeholder="Rate (' + CUR + ')" value="' + esc(r.rate != null && r.rate !== '' ? rm(r.rate) : '') + '">' +
       '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-time" placeholder="One-time" value="' + esc(once ? '' : String(r.months || '')) + '">' +
       '<input class="input qb-cusstart" type="date" aria-label="Start date" value="' + esc(r.start || '') + '">' +
-      '<button class="iconbtn qb-cusx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>' +
+      '<button class="iconbtn qb-cusx" type="button" aria-label="Remove item">' + X_ICON + '</button></div>' +
       '<textarea class="textarea qb-cusdesc" rows="2" data-nodraft aria-label="Description" placeholder="Description, one point per line">' + esc((r.detail || []).join('\n')) + '</textarea>' +
-      (r.renews ? '<span class="qb-cusnote">Renews the confirmed line</span>' : '') + '</div>';
+      (r.renews ? '<span class="qb-cusnote">Renews the confirmed service line</span>' : '') + '</div>';
   }
   function cusRead() {
     return Array.prototype.map.call(document.querySelectorAll('#qbCusRows [data-cus]'), function (box) {
@@ -2686,7 +2686,7 @@
           '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove ' + nm + '">' + X_ICON + '</button></div>';
       }).join('');
     var taken = k.items.map(function (it) { return it.slug; });
-    $('qbPkgAdd').innerHTML = '<option value="">Choose a Rate Card service</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
+    $('qbPkgAdd').innerHTML = '<option value="">Choose a service</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
       return s.active !== false && s.rate != null && !(s.spec && s.spec.role === 'plan') && taken.indexOf(s.slug) < 0;
     }).map(function (s) { return '<option value="' + esc(s.slug) + '">' + esc(s.name) + '</option>'; }).join('');
     var price = Number(String(k.price || '').replace(/,/g, ''));
@@ -2695,8 +2695,8 @@
       ? CUR + ' ' + rm(list - price) + ' (' + (Math.round((list - price) / list * 1000) / 10) + '%)' : '—';
     $('qbPkgIncl').innerHTML = (k.incl || []).map(function (x, i) {
       return '<div class="qb-pkgline" data-in="' + i + '"><label class="tickline"><input type="checkbox"' + (x.on ? ' checked' : '') + ' aria-label="Included"></label>' +
-        '<input class="input" type="text" maxlength="300" data-noenter data-nodraft value="' + esc(x.text || '') + '" aria-label="Line ' + (i + 1) + '">' +
-        '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>';
+        '<input class="input" type="text" maxlength="300" data-noenter data-nodraft value="' + esc(x.text || '') + '" aria-label="Inclusion ' + (i + 1) + '">' +
+        '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove inclusion">' + X_ICON + '</button></div>';
     }).join('');
     /* The rate for one more piece in the same month: a content piece's,
        prefilled from the card, the team's where typed (step 3). */
