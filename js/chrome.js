@@ -33,7 +33,7 @@
 (function () {
   /* The one set's glyph where the page holds it (js/icons.js); the front
      door and the 404 hold none, and draw their words alone. */
-  function icGlyph(n, c, a) { return window.ADspaceIcons ? window.ADspaceIcons.glyph(n, c, a) : ''; }
+  function icGlyph(n, c, a) { return window.ADspaceIcons ? (window.ADspaceIcons).glyph(n, c, a) : ''; }
   var tag = document.currentScript;
   if (!tag) return;
 
@@ -231,7 +231,7 @@
     paint();
     /* A page holding no glyph set (the front door) has its close drawn once
        the set is fetched (js/maintenance.js). */
-    if (!window.ADspaceIcons && window.ADspaceMaintenance && window.ADspaceMaintenance.icons) window.ADspaceMaintenance.icons(paint);
+    if (!(window.ADspaceIcons) && window.ADspaceMaintenance && window.ADspaceMaintenance.icons) window.ADspaceMaintenance.icons(paint);
     if (window.MutationObserver) new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     var up = document.getElementById('upgradeBar'), top = document.getElementById('topbar');
     if (up && up.parentNode) up.parentNode.insertBefore(bar, up);
