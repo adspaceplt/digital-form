@@ -4977,9 +4977,7 @@ body > .shell { width: 100%; }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* What differs from the section, said while its parts are shut. */
 .permsec-diff { grid-area: diff; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
-/* On a phone the name stands over its segment, the segment at the right
-   edge and Advanced under it; too wide for the panel, the segment's own
-   measure wraps it into two columns. */
+/* A phone: the name, then its segment at the right edge, Advanced under. */
 .is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "seg seg" "desc tog" "diff diff" "parts parts"; row-gap: 8px; }
 /* The fold names how many differ; it clears the control floor with the
    negative block margin the ⋯ uses, so its line keeps the words' height. */
