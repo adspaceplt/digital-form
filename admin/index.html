@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261126y">
-<link rel="stylesheet" href="/css/console.css?v=20261126y">
+<link rel="stylesheet" href="/css/console.css?v=20261126cid">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -132,7 +132,7 @@
 <script src="/js/config.js?v=20261124zzfb"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261126y"></script>
+<script src="/js/words.js?v=20261126cid"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/icons.js?v=20261125ct"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
@@ -2730,22 +2730,7 @@
             <span class="muted" id="invoiceSummary">Not issued</span>
           </button>
           <div class="disclosure-body" id="invoiceBody" hidden>
-            <div class="row" id="invEdit" data-need="campaigns.finance:work">
-              <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
-                <div class="slugfield">
-                  <span class="slugfield-pre">AINV</span>
-                  <input class="input is-pre" id="invNo" placeholder="000123" autocomplete="off">
-                </div></div>
-              <div><label class="field-label" for="invFile">Invoice PDF</label>
-                <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
-            </div>
-            <!-- What is attached now belongs with the field that changes it,
-                 above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row acts invacts" id="invActs" data-need="campaigns.finance:work">
-              <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
-              <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
-            </div>
             <div class="msg" id="invMsg"></div>
           </div>
         </section>
@@ -6843,7 +6828,7 @@ raya-2026        https://example.com/raya"></textarea>
   "register": {"src": "/js/register.js?v=20261126s", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261126y", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261126y", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261125bmp"},
+  "bukku": {"src": "/js/bukku.js?v=20261126cid"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
@@ -6864,7 +6849,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scripts": {"src": "/js/scripts.js?v=20261126y", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261126y", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261126cid", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261124ru", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
