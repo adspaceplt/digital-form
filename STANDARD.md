@@ -669,6 +669,14 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
+- 2026-11-26, `cmdbar` (review fixes S3, which touches neither the Clients
+  bar nor cmdbar.js): "Clients: a second action goes behind a ⋯" reads
+  more=1 buttons=3; it fails the same on main a6157c5 with main's suites.
+  Its cause is to be found; held here until it ships.
+- 2026-11-26, `waapprove` (the same release): Settings › Due dates' sheet
+  holds no field labelled Remind after, so the suite times out; it fails
+  the same on main a6157c5, likely from #1479's relabelled sheets. Held
+  here until it ships.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):

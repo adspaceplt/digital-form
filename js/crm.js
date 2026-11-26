@@ -3114,7 +3114,7 @@
       }, function (v) { return then(codeOf(v.code)); });
     });
   }
-  function todayDay() { return window.ADspaceClock ? ADspaceClock.today() : new Date().toISOString().slice(0, 10); }
+  function todayDay() { return ADspaceClock.today(); }
   /* `edit`: the stage set ahead, its day, reason and note filled in, Save
      keeping the question open until the database answers. Otherwise the
      move, from today unless a later day is chosen (CLIENT STAGE AHEAD). */

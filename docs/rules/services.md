@@ -335,10 +335,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   files held to their cap as before; Add advertising budget; Add to
   quotation), 4 Term and review (Term, Date, Payment terms, Valid for,
   Apply the term discount, More details: Title, Rate Card version,
-  bilingual content, custom lines with Renew lines, Terms; then the lines
+  bilingual content, Custom items with Renew service lines and Add custom item, Terms; then the lines
   as the client reads them, Move up and Move down, Preview PDF). Continue
   checks its own step alone (`stepWrong`: Choose what to quote.; Choose a
-  plan.; Enter the package name.; Add a Rate Card line to the package.;
+  plan.; Enter the package name.; Add a Rate Card service to the package.;
   Enter the package price.; Choose at least one item.), Back keeps what
   was entered, and a quotation opened again (Edit, Adjust and send) opens
   at Term and review. A package's line is changed in its builder alone,
@@ -537,7 +537,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Card, every line the team added kept (`quote_website_preview` by the
   link's key, anon, writing nothing); a changed selection is never signed:
   Request these changes keeps it on the quotation (`change_request`,
-  `change_requested_at`, a minute apart, `unchanged` refused, the reply due
+  `change_requested_at`, a minute apart, ten requests or withdrawals a link
+  an hour then `busy` (MINOR ABUSE PATHS HELD), `unchanged` refused, the reply due
   by `quote_reply_by`, the team told `quote.changes`), Accept and sign
   waits (`quote_sign_open` refuses `changes`) and Withdraw request clears
   it; the console row reads Changes requested, Reply by its day, and Adjust
@@ -644,7 +645,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   row a discount or a surcharge (`ADspaceMoney.termLine`, in Chinese on
   /quote/'s 中文, a row whose lines run different months naming none); an older one redraws
   as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
-  subject to ADspace's approval, `payLine`) and Include advertising budget (a
+  subject to ADspace's approval) and Include advertising budget (a
   row a platform, Monthly or One-time; the client's money, kept in the totals,
   never a service line or revenue; `quote_extras`; in an S$ quotation the
   Singapore ad account's own S$ figure, typed, never a ringgit tier turned

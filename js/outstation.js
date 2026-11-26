@@ -81,6 +81,7 @@
     'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
     'bad-location': 'The location could not be read. Press Locate again.',
+    'bad-time': 'The photo\'s time does not match this trip. Take the photo again.',
     'no-photo': 'Take a photo at this stop first.',
     'too-many': 'This trip has reached the maximum number of stops or photos. Check out and start a new trip.',
     'bad-key': 'The photo could not be saved. Take it again.',
@@ -163,7 +164,13 @@
       if (t.driver_id !== m.id || healed[t.id]) return;
       var stops = t.stops || [];
       var noPlace = stops.filter(function (s) { return !s.address; });
-      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null);
+      /* A check-out at the office whose drive back was never saved (the
+         last stop still left at the arrival itself) is asked again too
+         (2026-11-25): outstation_back_drive answers the same twice. */
+      var last = stops[stops.length - 1];
+      var noBack = t.state === 'closed' && last && last.left_how === 'office' && last.left_at && t.ended_at &&
+        Date.parse(last.left_at) >= Date.parse(t.ended_at);
+      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null) || noBack;
       if (!noPlace.length && !noKm) return;
       healed[t.id] = true;
       noPlace.forEach(function (s) { asks.push({ stop: s.id }); });
@@ -346,7 +353,7 @@
       var here = !s.left_at && trip.state === 'open';
       if (s.km_from_prev != null) rows += legRow(s.km_from_prev);
       var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>' +
-        (s.left_how === 'office' ? '<span class="ost-how">worked out from the drive back</span>' : ''),
+        (s.left_how === 'office' ? '<span class="ost-how">Estimated from the return drive</span>' : ''),
         GLYPH.target + '<span>' + esc(Math.round(Number(s.accuracy_m)) + ' m') + '</span>',
         GLYPH.camera + '<span>' + esc(plural(live(s).length, 'photo', 'photos')) + '</span>'];
       rows += '<li class="stl-row ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '">' +
@@ -434,8 +441,8 @@
     cells.push(['Purpose', '<span class="ost-purpose">' + (GLYPH[trip.purpose] || '') + '<span>' + esc(PURPOSE[trip.purpose] || '') + '</span></span>']);
     cells.push(['Driver', mine ? person(trip.driver || 'You', 'You') : person(F.named(trip.driver_code, trip.driver))]);
     if ((trip.companions || []).length) cells.push(['Colleagues', '<span class="ost-people">' + trip.companions.map(function (c) { return person(c.name); }).join('') + '</span>']);
-    (more || []).forEach(function (f) { cells.push([f[0], esc(f[1])]); });
-    return '<dl class="facts ost-facts">' + cells.map(function (c) { return '<div><dt>' + esc(c[0]) + '</dt><dd>' + c[1] + '</dd></div>'; }).join('') + '</dl>';
+    (more || []).forEach(function (f) { cells.push([f[0], esc(f[1]), f[2]]); });
+    return '<dl class="facts ost-facts">' + cells.map(function (c) { return '<div' + (c[2] ? ' class="facts-wide"' : '') + '><dt>' + esc(c[0]) + '</dt><dd>' + c[1] + '</dd></div>'; }).join('') + '</dl>';
   }
   /* The road distance as a figure, so far or in total, its legs as rows
      under it and the return once checked out. */
@@ -651,7 +658,7 @@
       '<section class="rec-part ost-part"><div class="viewhead ost-vh"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' +
           '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span></div>' +
         headFacts(trip) +
-        (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
+        (long ? '<p class="msg warn ost-break" role="status">You have been driving for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part">' + partHead(GLYPH.pin, 'Route') + routeHtml(trip) +
         '<p class="msg" id="ostTripMsg" role="status"></p>' + credit(trip) + '</section>' +
@@ -703,17 +710,22 @@
     return 2 * 6371000 * Math.asin(Math.sqrt(Math.pow(Math.sin(r(b.lat - a.lat) / 2), 2) +
       Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.pow(Math.sin(r(b.lng - a.lng) / 2), 2)));
   }
-  function readOffice(trip) {
-    if (!bridge.onTravelDevice || !bridge.onTravelDevice()) return;
-    if (st.office && st.office.trip === trip.id) return;
+  /* `fresh` reads again whatever was read before: each check-out asks
+     where the device is now, never where it stood when the page opened
+     (2026-11-25); `then` hears the reading, or null. */
+  function readOffice(trip, fresh, then) {
+    var tell = function (at) { if (then) then(at); };
+    if (!bridge.onTravelDevice || !bridge.onTravelDevice()) { tell(null); return; }
+    if (!fresh && st.office && st.office.trip === trip.id) return;
     st.office = { trip: trip.id, at: null };
     var mine = st.office;
     quickSpot().then(function (spot) {
-      if (st.office !== mine || !spot) return;
+      if (st.office !== mine) return;
       var pin = { lat: Number(setting('outstation_office_lat', NaN)), lng: Number(setting('outstation_office_lng', NaN)) };
       var limit = Number(setting('outstation_accuracy_m', 50)), radius = Number(setting('outstation_office_radius_m', 100));
-      if (!isFinite(pin.lat) || !isFinite(pin.lng) || spot.acc > limit || metres(spot, pin) > radius) return;
+      if (!spot || !isFinite(pin.lat) || !isFinite(pin.lng) || spot.acc > limit || metres(spot, pin) > radius) { tell(null); return; }
       mine.at = { lat: spot.lat, lng: spot.lng, acc: spot.acc, read: new Date().toISOString() };
+      tell(mine.at);
       if (!window.ADspaceSheet.isOpen()) paint();
     });
   }
@@ -1113,6 +1125,11 @@
     $('ostOutFacts').hidden = !outSheet.office;
     outMsg('');
     window.ADspaceSheet.show(outSheet, { opener: opener });
+    if (!edit) readOffice(trip, true, function (at) {
+      if (outSheet.trip !== trip || outSheet.edit) return;
+      outSheet.office = at;
+      $('ostOutFacts').hidden = !at;
+    });
   }
   function sendOut() {
     var trip = outSheet.trip, go = $('ostOutGo');
@@ -1264,8 +1281,8 @@
     }
     var more = [['Hours', trip.ended_at ? span(trip.started_at, lastEnd(trip)) : 'In progress']]
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
-      .concat(trip.note ? [['Note', trip.note]] : [])
-      .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);
+      .concat(trip.note ? [['Note', trip.note, true]] : [])
+      .concat(trip.end_note ? [['Check-out note', trip.end_note, true]] : []);
     detail.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostTripH" data-narrow="560">' +
       '<div class="sheet-head ost-sheet-head"><h3 id="ostTripH"><span class="ost-tw">Trip · </span>' + esc(C.date(trip.started_at)) + '</h3>' + '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
