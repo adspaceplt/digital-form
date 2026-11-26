@@ -679,6 +679,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   holds no field labelled Remind after, so the suite times out; it fails
   the same on main a6157c5, likely from #1479's relabelled sheets. Held
   here until it ships.
+- 2026-11-26, `hiringheld` (the unslop pass, which touches no Settings
+  sheet): "its Edit asks the decision time" fails at 1280 and 390, as
+  `hiringiv` and `waapprove` do, from #1479's relabelled Settings sheets.
+  Held here until it ships.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
