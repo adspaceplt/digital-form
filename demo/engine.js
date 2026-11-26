@@ -17376,6 +17376,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hDays = Number(appSet('hiring_link_days', appToday())) || 30;
       var hKey = function () { var k = ''; while (k.length < 8) k += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31)); return k; };
       var hFind = function (id) { return DB.hiring_candidates.filter(function (x) { return x.id === id; })[0]; };
+
+      var hIvStage = function (cid, p) {
+        var ivs = (DB.hiring_interviews || []).filter(function (i) { return i.candidate_id === cid; });
+        return ivs.some(function (i) { return i.state === 'confirmed'; }) ? 'interview'
+          : ivs.some(function (i) { return ['invited', 'picked', 'none'].indexOf(i.state) > -1; }) ? 'invited' : p;
+      };
       DB.hiring_interviews = DB.hiring_interviews || [];
 
       var hWorkday = function (iso) {
@@ -17451,7 +17457,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (Date.parse(cc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired', { contact: cbox });
         var ci = hIvOf(cc.id)[0], civ = null;
 
-        if (ci && ci.state === 'cancelled' && ['invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) civ = { state: 'cancelled' };
+        if (ci && ci.state === 'cancelled' && ['new', 'invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) civ = { state: 'cancelled' };
 
         if (ci && ci.state !== 'cancelled' && hIvState(ci) === 'picked') civ = { state: 'picked', minutes: ci.minutes, mode: ci.mode, at: ci.slots[ci.picked - 1] };
         else if (ci && ci.state !== 'cancelled') {
@@ -17637,7 +17643,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'hiring_interview_cancel') {
           if (iv.state === 'cancelled' || iv.state === 'replaced') return hOk({ same: true });
           if (iv.held_at) return hNo('held');
-          iv.state = 'cancelled'; hLog(iv.candidate_id, 'candidate.interview', 'Interview cancelled');
+          iv.state = 'cancelled';
+
+          if (['invited', 'interview'].indexOf(icand.stage) > -1 && !icand.outcome) { icand.stage = hIvStage(icand.id, 'new'); icand.last_step_at = new Date().toISOString(); }
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview cancelled');
           return hOk({ event: iv.meeting_event_id || null, had_meet: !!iv.meeting_event_id });
         }
 
@@ -18096,8 +18105,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var was = hc.outcome || null, wnote = hc.outcome_note || null;
         if (oc === 'reopen') {
           if (!hc.outcome) return hOk({ same: true });
-          var ivs = DB.hiring_interviews.filter(function (i) { return i.candidate_id === hc.id; });
-          hc.stage = ivs.some(function (i) { return i.state === 'confirmed'; }) ? 'interview' : ivs.some(function (i) { return ['invited', 'picked', 'none'].indexOf(i.state) > -1; }) ? 'invited' : 'new';
+          hc.stage = hIvStage(hc.id, 'new');
           ['outcome', 'outcome_note', 'outcome_by', 'outcome_at', 'pool_consent', 'pool_until', 'outcome_mail', 'outcome_mail_at',
             'decide_by', 'decide_note', 'decide_soon_at', 'decide_due_at', 'decide_moved_at'].forEach(function (k) { hc[k] = null; });
           (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
@@ -18191,7 +18199,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           note: String(args.p_note || '').trim() || null, state: 'invited', idem: args.p_idem, invited_by: hMe.id, invited_at: hNowIso,
           reply_by: new Date(Math.min(Date.parse(hDayEnd(hNowIso, Number(appSet('hiring_reply_days', appToday())) || 3)), Date.parse(sl[sl.length - 1]))).toISOString() };
         DB.hiring_interviews.push(ni);
-        if (['new', 'pool', 'invited'].indexOf(hc.stage) > -1) hc.stage = 'invited';
+        if (['new', 'pool', 'invited', 'interview'].indexOf(hc.stage) > -1) hc.stage = hIvStage(hc.id, 'invited');
         hc.last_step_at = hNowIso;
         hLog(hc.id, 'candidate.invited', sl.length + (sl.length === 1 ? ' time' : ' times') + ' · ' + (ni.mode === 'online' ? 'Google Meet' : 'At the office') + ' · ' + ni.minutes + ' minutes');
         return hOk({ id: ni.id });
