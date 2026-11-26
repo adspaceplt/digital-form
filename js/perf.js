@@ -2101,8 +2101,7 @@
     para(res.grade ? ACTION[res.grade] : 'Not graded.');
 
     /* ---- Page two: the follow-up and the record of this copy ---- */
-    if (pageNo === 1) page(false); else y -= SP.block;
-    y += SP.block;                           // the page's first heading sits on its top line
+    if (pageNo === 1) page(false);           // the heading keeps its step under the head
 
     heading('Issues This Month', ROW * 2);
     var br = r.breaches || [];
@@ -2171,7 +2170,7 @@
       return [STEP[t.kind], t.auto ? 'Automatic, queries closed' : t.by || '', t.auto ? '' : t.email || '', stampTime(t.at)];
     });
     rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
-    /* The record is one block: its table and its Document ID line together. */
+    /* The record is one block: its table and its download reference line together. */
     heading('Record of This Document', ROW * (rows.length + 1) + SP.line + LH * 2);
     var stW = p.width('Acknowledged', TY.cell, book) + PADX * 2 + 2;
     var tmW = p.width('30 Sept 2026, 23:59:59 MYT', TY.cell, book) + PADX * 2 + 2;
@@ -2179,7 +2178,7 @@
     table([{ w: stW }, { w: rest / (1 + RPHI) }, { w: rest - rest / (1 + RPHI) }, { w: tmW }],
       ['Step', 'Name', 'Email', 'Date and time'], rows);
     y -= SP.line;
-    para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
+    para('Download reference ' + stamp.id + '. All times are in Malaysia time (GMT+8). ' +
       (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'digital.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
   }
 
