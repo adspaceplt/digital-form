@@ -45,13 +45,13 @@
     'serial-shape':   window.ADspaceWords.line.serialShape,
     'serial-taken':   'This reference is already used by another document. Enter another reference.',
     'bad-date':       window.ADspaceWords.line.docDate,
-    'bad-family':     'Choose the kind of document.',
+    'bad-family':     'Choose a document type.',
     'kind-required':  'Choose a document type.',
     'reason-required':'Enter a reason.',
-    'confirm-mismatch':'That is not this document\'s reference.',
+    'confirm-mismatch':'The reference does not match. Enter this document\'s reference exactly as shown.',
     'not-found':      'This document no longer exists.',
     'not-manual':     'A document issued by the portal cannot be edited. Reissue it instead.',
-    'not-portal':     'Only a document issued by the portal can be reissued.',
+    'not-portal':     'Only a document issued by the portal can be reissued. Edit this document instead.',
     'not-current':    'A later version of this document already exists. Reissue that version.'
   };
 
@@ -60,7 +60,7 @@
     if (/could not find|does not exist|schema cache|function public\.(issue_document|register_add|document_set_void|document_delete|serial_taken)/i.test(m)) {
       return 'This feature is not available yet. Please contact an admin.';
     }
-    return m || 'The request failed.';
+    return m || 'This could not be completed. Please try again.';
   }
 
   function call(fn, args, then) {
@@ -156,7 +156,7 @@
     call('issue_document', args, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {
-        if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be generated.' }); return; }
+        if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: window.ADspaceWords.line.issuedNoPdf }); return; }
         download(doc, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: doc, warn: warn }); });
       });
     });
@@ -172,7 +172,7 @@
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (d2, e2) {
-        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be generated. Download it from the list.' }); return; }
+        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: window.ADspaceWords.line.reissuedNoPdf }); return; }
         download(d2, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
       });
     });
@@ -220,12 +220,12 @@
 
   function render(doc) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('Please refresh the page and try again.'));
+    if (!D || !D.lib) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     return D.lib().then(function () { return doc.body && doc.body.agreement ? drawAgreement(doc) : drawLetter(doc); });
   }
   function drawLetter(doc) {
     var PDF = window.PDFLib;
-    if (!PDF) return Promise.reject(new Error('Please refresh the page and try again.'));
+    if (!PDF) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var langs = DOCS.letterLangs(doc);
     var wantsCjk = langs.indexOf('zh') > -1;
     var pdf, fonts, logo;
@@ -275,13 +275,9 @@
     });
     return out;
   }
-  function dmyOf(s) {
-    var d = String(s || '').slice(0, 10);
-    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '';
-  }
   function drawAgreement(doc) {
     var PDF = window.PDFLib;
-    if (!PDF) return Promise.reject(new Error('Please refresh the page and try again.'));
+    if (!PDF) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
     var a = (doc.body && doc.body.agreement) || {}, p1 = a.part1 || {}, p2 = a.part2 || {};
     var MON = window.ADspaceMoney;
     var pdf, fonts, logo;
@@ -305,7 +301,7 @@
       y = pn.ref(y, 'Our Ref', doc.serial);
       y = pn.ref(y, 'Date', DOCS.refDate(doc.issued_at));
       y -= pn.G.afterPc - pn.G.refLine;
-      wrap(String(doc.title || 'Service Agreement').toUpperCase(), R - M, 13, med).forEach(function (ln) {
+      wrap(String(doc.title || 'Supplier Service Agreement').toUpperCase(), R - M, 13, med).forEach(function (ln) {
         need(18); pn.centre(ln, y, 13, med, pn.strong); y -= 18;
       });
       y -= 8;
@@ -379,7 +375,7 @@
       newPage();
       heading('SCHEDULE A', 13);
       heading('Part 1: Supplier Details and Key Dates');
-      table([0.36, 0.64], ['Items', 'Details'], [
+      table([0.36, 0.64], ['Item', 'Details'], [
         ['Agreement Date', DOCS.letterDate(doc.issued_at)],
         ['Supplier Legal Name', p1.legal_name || ''],
         ['BRN / NRIC / Passport', p1.id_no || ''],
@@ -389,7 +385,7 @@
       ]);
       y -= 18;
       heading('Part 2: Services and Fees');
-      table([0.36, 0.64], ['Items', 'Details'], [
+      table([0.36, 0.64], ['Item', 'Details'], [
         ['Platforms', p2.platforms || ''], ['Tasks', p2.tasks || ''], ['Reporting', p2.reporting || ''],
         ['Response Time', p2.response || ''], ['Spend Approval Limit', p2.spend_limit || ''],
         ['Approved Budget per Account', 'As per Schedule B'], ['Budget Tolerance', p2.tolerance || ''],
@@ -398,7 +394,7 @@
 
       newPage();
       heading('SCHEDULE B', 13);
-      text('Latest update as at ' + DOCS.letterDate(a.as_at || doc.issued_at), M, y, BODY, bold); y -= LH + 4;
+      text('As at ' + DOCS.letterDate(a.as_at || doc.issued_at), M, y, BODY, bold); y -= LH + 4;
       String(a.notes || '').replace(/\r/g, '').split(/\n\s*\n/).forEach(function (para) {
         para = para.replace(/\s*\n\s*/g, ' ').trim();
         if (para) block('', para, M, M);
@@ -407,7 +403,7 @@
       table([0.07, 0.25, 0.22, 0.18, 0.14, 0.14], ['No.', 'Client', 'Ad Account', 'Ad Spend per Month', 'Start Date', 'End Date'],
         (a.accounts || []).map(function (r, i) {
           var spend = r.spend == null || r.spend === '' ? '' : MON ? MON.money2(r.spend, r.currency === 'SGD' ? 'SG' : 'MY') : String(r.spend);
-          return [String(i + 1), r.client || '', r.account || '', spend, dmyOf(r.start), dmyOf(r.end)];
+          return [String(i + 1), r.client || '', r.account || '', spend, r.start ? DOCS.letterDate(r.start) : '', r.end ? DOCS.letterDate(r.end) : ''];
         }));
 
       DOCS.letterFoot(pn, pages, doc.serial);
@@ -427,11 +423,11 @@
         say(DOCS.logoWarn());
       }).catch(function (e) {
         DOCS.shut(tab);
-        say('The file could not be generated: ' + ((e && e.message) || e));
+        say(e && e.message === window.ADspaceWords.line.pdfLib ? e.message : window.ADspaceWords.line.pdfFail);
       });
     } catch (e) {
       DOCS.shut(tab);
-      say('The file could not be generated: ' + ((e && e.message) || e));
+      say(e && e.message === window.ADspaceWords.line.pdfLib ? e.message : window.ADspaceWords.line.pdfFail);
     }
   }
 

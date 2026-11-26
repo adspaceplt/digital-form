@@ -918,7 +918,7 @@
       var to = (v && typeof v === 'object' ? v[0] : v) || '';
       if (!to) return;
       var moving = list.filter(function (c) { return (c.owner || '') !== to; });
-      if (!moving.length) { msg('crmBulkMsg', 'No change.', 'ok'); return; }
+      if (!moving.length) { msg('crmBulkMsg', 'No change. These clients are already assigned to ' + to + '.', 'ok'); return; }
       setOwners(moving, function () { return to; }, function (out) {
         setPicking(false);
         var badWord = out.bad.length ? ' ' + out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
@@ -1843,7 +1843,7 @@
   function ovSection(title, go, goWord, body, isEdit, part) {
     var need = part || OV_PART[go];
     if (need && !mayPart(need, 'view')) return '';
-    if (state.ovFail && state.ovFail[go]) { body = ovNone('Could not load.'); goWord = 'View all'; isEdit = false; }
+    if (state.ovFail && state.ovFail[go]) { body = ovNone('This part could not be loaded. Refresh the page.'); goWord = 'View all'; isEdit = false; }
     /* A colleague who may only read the pane is offered the way to it, never
        Edit or Manage (audit, 2026-10-03). */
     if (goWord !== 'View all' && state.client &&
@@ -1916,7 +1916,7 @@
     var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
     if (!rows.length) {
       return ovSection('Services', 'services', 'Manage services',
-        ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired.' : ' lines enquired.')
+        ovNone(all.length ? 'Enquired: ' + all.length + (all.length === 1 ? ' service line.' : ' service lines.')
                           : 'No service lines.'));
     }
     var body = '<div class="ovtable">' +
@@ -3330,7 +3330,7 @@
   function billPickSave(cid, ch) {
     if (!ch) return Promise.resolve('');
     return db.rpc('client_entity_contact', { p_client: cid, p_entity: ch.ent, p_contact: ch.value, p_every: ch.every }).then(function (r) {
-      if (r.data && r.data.error === 'held') return 'Bukku keeps this company\'s billing person. Change it in Bukku, or untick Use for every brand to choose this brand\'s own.';
+      if (r.data && r.data.error === 'held') return 'This company\'s billing contact is kept in Bukku. Change it in Bukku, or untick Use for every brand to choose a billing contact for this brand.';
       return r.error || (r.data && r.data.error) ? entSaid(r) : '';
     }).catch(function (x) { return (x && x.message) || String(x); });
   }
@@ -3374,7 +3374,7 @@
     var mainEnt = ents && ents.filter(function (e) { return e.main; })[0];
     var several = !!(ents && ents.length > 1);
     var company = [['Registered Company Name', t('legal_name'), true]];
-    if (mainEnt && mainEnt.brands.length) company.push(['Also bills', entBrands(mainEnt)]);
+    if (mainEnt && mainEnt.brands.length) company.push(['Other brands billed', entBrands(mainEnt)]);
     box.innerHTML =
       readGroup('Company', company).replace('<h4 class="fsec-h">Company</h4>',
         '<h4 class="fsec-h">' + (several ? 'Primary billing entity' : 'Company') + '</h4>') +
@@ -3383,7 +3383,7 @@
         ['Old Registration No.', t('company_no_old')],
         ['TIN', t('tin')],
         ['SST Registration No.', t('sst_no')],
-        ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
+        ['SST on quotations', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
         ['Billing contact', contactLine(mainEnt, pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Primary contact</span>' : '') : ''), true],
@@ -3528,7 +3528,7 @@
     'not-removed': 'This entity bills this client again. Refresh the page to see the current list.',
     'bills-others': 'This entity bills another client. Remove it there first.',
     'bukku': 'Bukku links this entity. Unlink it from Bukku first.',
-    'on-letter': 'A letter names this entity, so it cannot be deleted.',
+    'on-letter': 'A letter names this entity, so it cannot be deleted. Remove it instead.',
     'bad-name': 'The name does not match.',
     'not-found': 'This billing entity no longer exists. Refresh the page to see the current list.'
   };
@@ -3621,7 +3621,7 @@
     return first.then(function (x) {
       if (x.error) {
         if (x.error === 'stale') API.withBilling([state.client]).then(function () { paintBilling(state.client); });
-        return { error: { message: x.said || 'Not saved.' } };
+        return { error: { message: x.said || 'Not saved. Please try again.' } };
       }
       if (x.values) {
         /* Bukku's answer is what the record now holds. */
@@ -3643,12 +3643,12 @@
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
     'denied': 'You do not have permission to change billing entities. Please ask an admin.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
-    'taken': 'This entity already bills this client.', 'no-name': 'Enter the Registered Company Name.',
+    'taken': 'This entity already bills this client. Refresh the page to see the current list.', 'no-name': 'Enter the Registered Company Name.',
     'too-long': 'A field is too long. Shorten it and save again.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
+    'held': 'This entity\'s details are kept in Bukku. They have been read from Bukku; press Edit again to save to Bukku.',
     'brn-taken': 'An entity with this Business Registration No. already exists. Add that entity instead.'
   };
   function entSaid(r) {
@@ -3836,7 +3836,7 @@
         entClose();
         entReload();
         if (k.error) { msg('crmBillNote', 'Added. Not created in Bukku: ' + (window.ADspaceBukku ? window.ADspaceBukku.said(k) : k.error), 'warn'); return; }
-        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this Business Registration No.'
+        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which is listed in Bukku under this Business Registration No.'
           : 'Added and created in Bukku as ' + k.code + '.', 'ok');
       });
     };
@@ -3975,8 +3975,8 @@
       entBukku({ action: 'adopt', client: cid, contact: Number(v.slice(3)) }).then(function (d) {
         b.disabled = false;
         if (d.error || !d.id) {
-          msg('entAddMsg', d.error === 'bukku-gone' ? 'That customer is no longer in Bukku.'
-            : d.error === 'taken' && !d.held ? 'That Bukku contact is already linked to another record.'
+          msg('entAddMsg', d.error === 'bukku-gone' ? 'This company is no longer in Bukku. Choose another, or add it as a new entity.'
+            : d.error === 'taken' && !d.held ? 'This Bukku company is already linked to another billing entity. Choose another.'
             : window.ADspaceBukku && ['bukku-token', 'bukku-unreachable', 'bukku-refused', 'bukku-not-set-up'].indexOf(d.error) > -1 ? window.ADspaceBukku.said(d)
             : entSaid({ data: d }), 'err');
           return;
@@ -4094,7 +4094,7 @@
       if (!work && !f) { box.hidden = true; return; }
       var ua = f && f.state === 'used' && f.answers, uwho = ua ? dfWho(ua) : '', uin = ua ? dfContactOf(ua) : null;
       box.innerHTML = head(make) + '<dl class="ovfacts"><div><dt>State</dt><dd>' +
-        (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', taken into Billing' : 'Link expired ' + esc(day(f.expires_at))) +
+        (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', added to Billing' : 'Link expired ' + esc(day(f.expires_at))) +
         '</dd></div>' + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
         (uwho && !uin && work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
         '<div class="msg" id="crmDfMsg"></div>';
@@ -4206,7 +4206,14 @@
     var c = state.client || {}, live = (state.contacts || []).filter(function (k) { return !k.archived_at; });
     var to = live.filter(function (k) { return c.bill_contact_id && k.id === c.bill_contact_id; })[0] ||
              live.filter(function (k) { return k.is_primary; })[0] || null;
-    var day = f && f.expires_at && window.ADspaceClock ? window.ADspaceClock.date(f.expires_at) : '';
+    /* In Chinese where the contact prefers it (2026-11-26, review fixes S5). */
+    if (to && to.lang === 'zh') {
+      var dz = f && f.expires_at ? ADspaceClock.date(f.expires_at, { zh: true, named: true }) : '';
+      return '尊敬的' + (to.name || '客户') + '：\n\n' +
+        '请通过以下安全表格提供' + c.name + '的账单资料' + (dz ? '，表格开放至' + dz : '') + '。\n\n' +
+        url + '\n\n谢谢。';
+    }
+    var day = f && f.expires_at ? ADspaceClock.date(f.expires_at, { named: true }) : '';
     return 'Dear ' + (to ? ADspaceWords.person(to.salutation, to.name) : 'Sir or Madam') + ',\n\n' +
       'Please provide the billing details of ' + c.name + ' through the secure form below' + (day ? ', which is open until ' + day : '') + '.\n\n' +
       url + '\n\nThank you.';
@@ -4614,7 +4621,7 @@
     'ai-incomplete': 'No analysis came back. Try again.',
     denied: 'You do not have access to this client\'s Brand. Please ask an admin.',
     'client-scope': 'You do not have access to this client. Please ask an admin.',
-    'not-found': 'This analysis is no longer available.',
+    'not-found': 'This analysis no longer exists. Refresh the page.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
     'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.',
     ambiguous: 'More than one brand matches this client. Run the analysis again and choose the brand.'
@@ -4686,7 +4693,7 @@
     var e = a.entity || {}, f = a.fit || {}, out = '';
     var facts = a.facts || [];
     if (e.name || facts.length) {
-      out += baSec('What it is', [['Entity', esc(e.name || '')]]
+      out += baSec('Business', [['Business name', esc(e.name || '')]]
         .concat(e.parent ? [['Parent group', esc(e.parent)]] : [])
         .concat(e.place ? [['Where', esc(e.place)]] : [])
         .concat(facts.length ? [['Facts', '<ul class="ba-list ba-facts">' + facts.map(function (x) {
@@ -4695,15 +4702,15 @@
         }).join('') + '</ul>']] : []), [e.name, baN(facts.length, 'fact')].filter(Boolean).join(' · '));
     }
     if ((a.works || []).length || (a.weak || []).length) {
-      out += baSec('What works and what is weak', [['What works', baList(a.works)], ['What is weak', baList(a.weak)]],
-        [baN((a.works || []).length, 'that works', 'that work'), baN((a.weak || []).length, 'weak', 'weak')].filter(Boolean).join(' · '));
+      out += baSec('Strengths and weaknesses', [['Strengths', baList(a.works)], ['Weaknesses', baList(a.weak)]],
+        [baN((a.works || []).length, 'strength'), baN((a.weak || []).length, 'weakness', 'weaknesses')].filter(Boolean).join(' · '));
     }
     if ((f.channels || []).length || f.angle) {
       out += baSec('Where ADspace fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
           return '<li><span class="ba-name">' + esc(x.channel) + ' <span class="chip">' + esc(BA_WHEN[x.priority] || x.priority) + '</span></span>' + esc(x.why || '') + '</li>';
         }).join('') + '</ul>' : ''],
-        ['Fix before paid traffic', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
-        [baN((f.channels || []).length, 'channel'), baN((f.fix_first || []).length, 'to fix first', 'to fix first')].filter(Boolean).join(' · '));
+        ['Fixes before paid advertising', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
+        [baN((f.channels || []).length, 'channel'), baN((f.fix_first || []).length, 'fix', 'fixes')].filter(Boolean).join(' · '));
     }
     return out;
   }
@@ -4797,14 +4804,14 @@
         ['Version', esc('Version ' + v.version + ' · ' + baDay(v.created_at) + (v.by ? ' · ' + v.by : '')) +
           (latest ? '' : ' <button class="linkbtn" type="button" data-a="ba-latest">Show latest</button>')],
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
-        ['Read from', baRead(v.basis)],
+        ['Data used', baRead(v.basis)],
         ['Ad plan', baPlan(v.basis)]
       ].filter(function (r) { return (r[0] !== 'Confirmed' || v.confirmed_at) && (r[0] !== 'Ad plan' || r[1]); })) +
       (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
-        p.could_own ? 'Could own: ' + p.could_own : (p.now || '')) +
+        p.could_own ? 'Potential position: ' + p.could_own : (p.now || '')) +
       baFold('Target audiences', (a.audiences || []).map(function (s) { return s.name; }).filter(Boolean).join(' · '),
         baFacts((a.audiences || []).map(function (s) {
           return [s.name, [['Profile', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
@@ -5045,7 +5052,7 @@
         if (seq !== metaSheetSeq) return;
         var d = (res && res.data) || {};
         if ((res && res.error) || d.error) {
-          failLine(body, 'Meta accounts', META_SAID[d.error] || 'Meta did not answer.', load);
+          failLine(body, 'Meta accounts', META_SAID[d.error] || 'Meta did not answer. Try again in a few minutes.', load);
           return;
         }
         /* A link Meta no longer shows (an account no longer shared) stays
@@ -6549,7 +6556,7 @@
       db.from('client_services').delete().eq('id', l.id).select('id').then(function (r) {
         if (r.error) {
           msg('crmServiceMsg', r.error.code === '23503'
-            ? 'A Letter of Offer quotes this service, so it cannot be deleted.' : svSaid(r.error), 'err');
+            ? 'A Letter of Offer quotes this service, so it cannot be deleted. Remove it instead.' : svSaid(r.error), 'err');
           return;
         }
         if (!(r.data || []).length) { msg('crmServiceMsg', 'Not deleted. The database refused the request.', 'err'); return; }
@@ -6967,7 +6974,7 @@
     var m = (e && e.message) || '';
     if (/client_services_rate_check/.test(m)) return 'The rate cannot be below zero.';
     if (/client_services_qty_check/.test(m)) return 'The quantity cannot be below zero.';
-    return /confirm-needs-letter/.test(m) ? 'A service is confirmed when its signed letter is verified.' : (m || 'Not saved.');
+    return /confirm-needs-letter/.test(m) ? 'Not saved. Verify the signed Letter of Offer to confirm this service, or use Confirm without letter.' : (m || 'Not saved. Please try again.');
   }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */
@@ -7168,7 +7175,7 @@
         var d = r.data || {};
         if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
         if (d.error === 'denied') return 'You do not have permission to delete requests. Please ask an admin.';
-        if (d.error === 'not-found') return 'This request is no longer available.';
+        if (d.error === 'not-found') return 'This request no longer exists. Refresh the page.';
         if (d.error) return d.error;
         loadRequests();
         msg('crmReqMsg', 'Request deleted.', 'ok');
@@ -7631,7 +7638,7 @@
         '<select class="select" id="pickBillTo"></select>' +
       '</div>' +
       pickBlock('To quote', e.open, true, '') +
-      pickBlock('Already on a live letter', e.held, false,
+      pickBlock('Already on an issued letter', e.held, false,
         'Void that letter, or choose Replace from its ⋯, before quoting these again.') +
       pickBlock('Confirmed', e.confirmed, false,
         'Tick one only for a renewal, a variation or a replacement.') +
@@ -8210,8 +8217,8 @@
     return p.join('.');
   }
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
-    'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
-    'no-change': 'Nothing has changed since the live version.', 'too-long': 'Shorten the note.',
+    'version-taken': 'That version is already published. Enter a later version.', 'bad-date': 'Valid until cannot be in the past.',
+    'no-change': 'Nothing has changed since the live version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
     denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
@@ -8231,7 +8238,7 @@
   function changeList(d) {
     var out = [];
     (catalog || []).forEach(function (s) {
-      if (d.lines[s.slug] === 'New') out.push(s.name + ': new line');
+      if (d.lines[s.slug] === 'New') out.push(s.name + ': new service');
       else if (d.lines[s.slug]) out.push(s.name + ': ' + (svcMoved(d.was[s.slug] || {}, s, d.order[s.slug]) || 'changed'));
     });
     (d.goneNames || []).forEach(function (n) { out.push(n + ': removed'); });
@@ -8253,9 +8260,9 @@
     var parts = [];
     var lines = Object.keys(d.lines).length, words = Object.keys(d.words).length;
     /* "2 lines and 1 block of wording changed." (2026-10-22, SVC2-6). */
-    if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's') + ' changed');
-    if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
-    if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording changed');
+    if (lines) parts.push(lines + ' service' + (lines === 1 ? '' : 's') + ' changed');
+    if (d.gone) parts.push(d.gone + ' service' + (d.gone === 1 ? '' : 's') + ' removed');
+    if (words) parts.push(words + ' wording change' + (words === 1 ? '' : 's'));
     if (d.terms.length) parts.push(d.terms.length + ' tax or term figure' + (d.terms.length === 1 ? '' : 's') + ' changed');
     var said = parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
     /* The same changes Review shows, five, then how many more (SVC2-M1). */
@@ -8264,7 +8271,7 @@
       title: 'Publish the Rate Card',
       body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '.\n' : '') +
         (list.length ? list.slice(0, SVC_LIST).join('\n') + (more > 0 ? '\nand ' + more + ' more' : '') + '\n\n' : '') +
-        'Quotes, client service lines and the export use this version from now on.',
+        'Quotations, client service lines and the Rate Card download use this version from now on.',
       go: 'Publish', wait: true,
       fields: [
         { name: 'v', label: 'Version', value: live ? nextVersion(live.version) : '2.0.6', placeholder: '2.0.7', type: 'text',
@@ -8389,7 +8396,7 @@
     lines.forEach(function (l) { rcwRow(l); });
     var add = $('rcwAdd');
     add.parentNode.hidden = shape.kind === 'one' || (shape.kind === 'cols' && shape.fixed);
-    add.textContent = shape.kind === 'cols' ? 'Add row' : 'Add point';
+    add.textContent = shape.kind === 'cols' ? 'Add item' : 'Add point';
     if (window.ADspaceActs && window.ADspaceActs.mark) window.ADspaceActs.mark(add);
     msg('rcwMsg', '', '');
     rcwNumber();
@@ -8406,7 +8413,7 @@
           return '<span class="rcw-cell"><span class="field-label rcw-cl">' + esc(c) + '</span>' +
             '<textarea class="input" rows="1" data-oneline aria-label="' + esc(c) + '">' + esc(cells[i] || '') + '</textarea></span>';
         }).join('') + '</span>'
-      : '<textarea class="input" rows="1" data-oneline aria-label="' + (sh.kind === 'one' ? 'Words' : 'Point') + '">' + esc(cells[0] || '') + '</textarea>';
+      : '<textarea class="input" rows="1" data-oneline aria-label="' + (sh.kind === 'one' ? 'Wording' : 'Point') + '">' + esc(cells[0] || '') + '</textarea>';
     var fixed = sh.kind === 'one' || (sh.kind === 'cols' && sh.fixed);
     row.innerHTML = (sh.kind === 'list' ? '<span class="rcw-no"></span>' : sh.kind === 'cols' && !fixed ? '<span class="rcw-no rcw-rowno"></span>' : '') + fields +
       (fixed ? '' : '<span class="rcw-acts"><button class="iconbtn" data-a="up" type="button">' + UP + '</button>' +
@@ -8435,7 +8442,7 @@
     var rows = $('rcwRows').children, word = rcw.shape.kind === 'cols' ? 'row' : 'point';
     Array.prototype.forEach.call(rows, function (r, i) {
       var no = r.querySelector('.rcw-no');
-      if (no) no.textContent = rcw.shape.kind === 'cols' ? 'Row ' + (i + 1) : (i + 1) + '.';
+      if (no) no.textContent = rcw.shape.kind === 'cols' ? 'Item ' + (i + 1) : (i + 1) + '.';
       var up = r.querySelector('[data-a="up"]'), x = r.querySelector('[data-a="x"]');
       if (up) { up.classList.toggle('is-first', i === 0); up.disabled = i === 0; up.setAttribute('aria-label', 'Move ' + word + ' ' + (i + 1) + ' up'); }
       if (x) x.setAttribute('aria-label', 'Remove ' + word + ' ' + (i + 1));
@@ -9086,9 +9093,9 @@
       go.disabled = false;
       if (r.error) {
         var m = r.error.message || '';
-        if (/services_sku_idx/i.test(m)) { msg('svcMsg', 'That SKU is already on another line.', 'err'); $('svcSku').focus(); return; }
+        if (/services_sku_idx/i.test(m)) { msg('svcMsg', 'That SKU is used by another service. Enter another SKU.', 'err'); $('svcSku').focus(); return; }
         if (/duplicate key|services_pkey|23505/i.test(m) || r.error.code === '23505') {
-          msg('svcMsg', 'A service with this name is already on the Rate Card.', 'err'); $('svcName').focus(); return;
+          msg('svcMsg', 'A service with this name is already on the Rate Card. Enter another name.', 'err'); $('svcName').focus(); return;
         }
         msg('svcMsg', m || 'Not saved.', 'err');
         return;
