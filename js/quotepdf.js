@@ -419,8 +419,16 @@
           y -= 5; rule(y);
         };
         adHead();
+        /* A brand's own budget under its name (QUOTATION ADVERTISING PER
+           BRAND, 2026-11-26), as its lines are. */
+        var adBrand = null;
         ads.forEach(function (r) {
           if (room(24)) adHead();
+          if (brandNames && r.brand != null && r.brand !== adBrand && brandNames[r.brand]) {
+            adBrand = r.brand;
+            y -= 16;
+            text(brandNames[r.brand], M, y + 2, TB, reg, pn.strong);
+          }
           y -= 18;
           text(MONY.adWord(r.platform), M, y + 4, TB, reg);
           text(r.freq === 'once' ? 'One-time' : 'Monthly', xs.f, y + 4, TB);

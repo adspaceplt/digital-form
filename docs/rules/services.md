@@ -320,48 +320,70 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   kept; absent or true prices as before. Build quote's Term step draws
   Apply the term discount (`#qbTermDisc`) only where the term has one,
   ticked unless a quotation reopened kept it off.
-- Build quote in four steps (the user, 2026-11-25, the approved boards
-  "Build quote, step by step" and "Build quote on a phone"; `#qbTrack`,
-  `.qb-pane` a step, `stepGo`): 1 Type (the brands in this quotation and
-  the board's brand name, Choose what to quote as three tiles, Plan,
-  Package or Items (`#qbTypes`, `kindPick`, a brand's own: choosing one
-  lets go of the other's choices), Bill to where the client has two
-  billing entities or more), 2 Build (Plan: the plan cards, content,
-  budget, platforms, extra content and languages; Package: its builder
-  (`#qbPkgBox`: name, basis, Rate Card lines with quantities, Rate Card
-  value, Package price, Discount, Inclusions a tick a line);
-  Items: the one-time items), 3 Extras (Rate per additional content piece,
-  a package's, prefilled from the card; Add one-time item, the
-  files held to their cap as before; Add advertising budget; Add to
-  quotation), 4 Term and review (Term, Date, Payment terms, Valid for,
-  Apply the term discount, More details: Title, Rate Card version,
-  bilingual content, Custom items with Renew service lines and Add custom item, Terms; then the lines
-  as the client reads them, Move up and Move down, Preview PDF). Continue
-  checks its own step alone (`stepWrong`: Choose what to quote.; Choose a
+- Build quote on one sheet (the user, 2026-11-26, the approved boards; it
+  replaced the four steps of 2026-11-25): no steps, no Continue or Back.
+  Brands (`#qbBrands`: the count, Add brand) is a card a brand
+  (`#qbBrandCards`, `.qb-bcard`), every quotation at least one, the first
+  named after the client: its head one press (`.qb-bopen`: the type's glyph,
+  Plan `layers`, Package `box`, Items `file`, none yet `tag`; the name over
+  what it holds; its figure incl. SST; the chevron) and its ⋯ (Duplicate;
+  Remove while two or more stand, with Undo where it happened). One card is
+  open at a time, holding the board (`#qbBoard`, moved into it; a shut
+  card's board waits in `#qbBoardHold`), its edits kept on its brand as
+  they are made: Brand name, Choose what to quote as three tiles (Plan,
+  Package or Items, `#qbTypes`, `kindPick`; choosing one lets go of the
+  other's choices), that type's block (Plan: the plan cards, content,
+  budget, platforms, extra content, languages and bilingual content;
+  Package: its builder, `#qbPkgBox`; Items: the one-time items), the rate
+  per additional content piece of a package, Extras (Add one-time item,
+  Custom items with Renew service lines and Add custom item) and the
+  brand's own Advertising budget (the user, 2026-11-26: "ad budget per
+  brand"). Add brand opens a new card ready to fill, its name in focus.
+  Under the brands the quotation's own part (`#qbQuote`: Term, Date,
+  Payment terms, Valid for, Apply the term discount, Bill to where two
+  entities or more), Add-on rates, then More details (Title, Rate Card
+  version, Terms). One card named as the client (or not named) is priced
+  and kept as a quotation without brands, as before brands existed; two or
+  more, or one named otherwise, as `brands`. A package's line is changed in
+  its builder alone, never in the lines (`ownLine`, as a custom line). At a
+  desk the Summary stands beside the sheet (`#qbSide`); on a phone it gives
+  way. The foot reads the total incl. SST (with `· n brands`), View quote
+  at every width once a line is priced (its count of priced lines a
+  `.tab-n`; the sheet turned to the priced lines, typed there, every
+  brand's under its name, the open brand's typed, the others read; its
+  Back returns), then Cancel, Preview PDF (beside the Summary alone; on a
+  phone under the lines) and Create quotation (Save when editing). Create
+  checks every card and opens the first with a fault, its control in focus
+  (`brandWrong`: Choose what to quote.; Enter each brand's name.; Choose a
   plan.; Enter the package name.; Add a Rate Card service to the package.;
-  Enter the package price.; Choose at least one item.), Back keeps what
-  was entered, and a quotation opened again (Edit, Adjust and send) opens
-  at Term and review. A package's line is changed in its builder alone,
-  never in the lines (`ownLine`, as a custom line). At a desk a summary
-  stands beside the steps (`#qbSide`: the board's lines and the monthly
-  figure incl. SST); on a phone Step n of 4 heads the track and the foot
-  holds the figure over Back and Continue as equal halves. The suites
-  open a step through `ADspaceQuotes.stepTo(n, kind)`.
+  Enter the package price.; Choose at least one item.; a budget or custom
+  item unfinished); a card left empty beside priced ones is a fault, so
+  nothing chosen is dropped unseen; with no fault, a selection the database
+  refuses reads its refusal. The suites open a brand's board through
+  `ADspaceQuotes.show(kind)`.
+- A brand's advertising budget (`2026-11-26-quotation-ads-per-brand.sql`):
+  the page keeps each brand's rows on its card and sends them on the
+  quotation (`p_sel.ads`), each naming its brand's place (`brand`) where the
+  quotation has brands; `quote_extras` keeps six rows a brand (`bad-ads`)
+  and the brand on the row; `quotation_cycle_lines` invoices a brand's row
+  as `{brand} · Advertising budget · {platform}` (`quote_line_label`); the
+  PDF prints a brand's rows under its name, /quote/ names it before the
+  line. One per brand gives each quotation its own brand's rows alone.
 - A quote part-built is kept as a draft (`2026-11-25-quotation-drafts.sql`;
   the user, 2026-11-25): a new quotation's Build quote closed before
   Create (the close mark, Cancel, Escape, the scrim) keeps what was entered
-  (`draftOut`: the type's choices, brands, lines, extras, term, the step it
-  was on; the date only where typed back from today) through
+  (`draftOut`: every brand as the page holds it, its type and budget
+  included, the card open, `_bi`; the quotation's own choices; the date only where typed back from today) through
   `quotation_draft_save`, one a client a colleague (`quotation_drafts`, RLS
   on, no policy, no grant; the three functions ask a colleague at Work on
   `clients.quotes` and the client in scope, `denied`, `client-scope`,
   `bad-request`, `too-long` past 200 KB), said Draft saved. under the
   pane; a close that changed nothing since the sheet opened saves nothing,
   and Edit or Adjust and send keep none. Build quote opened again on the
-  same client draws `#qbDraft` (`.draftline`) at the top of step 1: Draft
+  same client draws `#qbDraft` (`.draftline`) over the brands: Draft
   saved {date}, {time}, Discard (asks Discard draft?, This cannot be
-  undone., the draft's selection emptied) and Continue draft (opens at its
-  step, priced on the version live on its date unless one was chosen;
+  undone., the draft's selection emptied) and Continue draft (opens on the
+  brand it was left on, priced on the version live on its date unless one was chosen;
   priced on another version than it was saved on, `#qbMsg` reads
   Repriced on Rate Card v.{new}. The draft was priced on v.{old}.). A draft
   keeps no number and no PDF. A console quotation made clears its maker's
@@ -370,42 +392,28 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   alone (`tests/quotedraft.js`).
   At a desk the Summary is the cart (the user, 2026-11-25; `sidePaint`,
   `#qbSide`, sticking under the sheet's head and scrolling on its own where
-  taller than the body): every priced line under Monthly, One-time and
-  Advertising budget (Per month, billed separately, Up to RM {budget}),
-  each with its amount, then the totals in the quotation's own order
-  (each group's subtotal before its SST, the term adjustment where it applies,
-  Monthly incl. SST, One-time incl. SST), one mute line counting the
-  Add-on Rates ticked (3 add-on rates listed; No items. while none is
-  priced), and a ⋯ on each of the board's
-  lines (`.team-act`; Edit for a custom line, opening More details on
-  Term and review; Change tax code, asked in a sheet from `taxOpts`, the lines'
-  one list; Move up; Move down; Remove for a custom line or a one-time
-  item, red and last); it repaints as the steps change. View quote is not
-  drawn while the Summary shows (`sideOn`), and a resize that brings the
-  Summary back closes the lines turned open. On a phone, where the
-  Summary gives way, the foot reads the monthly total incl. SST (with `· n
-  brands`), View quote on steps 1 to 3 once a line is priced, its count
-  of priced lines a `.tab-n` (the sheet turned to the priced lines, every
-  brand's under its name, the brand on the board changed where read, the
-  others read; its Back returns); at every width, then Cancel on Type or
-  Back, and Continue, or Create quotation (Save when editing) on Term and
-  review. Add to quotation under Extras puts the
-  board's brand in Brands in this quotation (`#qbBrandList`: a row a
-  brand, its plan, platforms and term, its monthly figure from
-  `quote_preview`'s `brands`, Edit and Remove with Undo where it happened;
-  the board's own row marked Editing) and clears the board for the next,
-  the first press naming the brand after the client; Edit brings a brand
-  back with Save brand and Cancel; a brand choosing nothing is not priced;
-  one brand never pressed through Add to quotation creates as before. With
-  two brands or more, Create asks One for all brands (the answer it opens
-  on) or One per brand, which makes a quotation each from the same list,
-  its own reference, PDF, link, signature and invoicing, a key each
-  (`{idem}-{n}`); a revision stays one. The PDF names the Brands (one made
-  per brand its Brand) in its facts and each brand over its lines, the
-  totals the whole quotation's; /quote/ likewise, offering no Change.
-  Brand name carries no `aria-required` (the one save check would hold
-  Create on the empty name of a new board); a brand's name is required
-  only once it chooses something (`bad-brands`).
+  taller than the body): with one brand every priced line under Monthly,
+  One-time and Advertising budget (Per month, billed separately, Up to RM
+  {budget}); with two or more a group a brand, its name across the Summary
+  over its figure, then its lines (2026-11-26); a line's name across the
+  Summary, its amount under it; then the totals in the quotation's own
+  order (each group's subtotal before its SST, the term adjustment where it
+  applies, Monthly incl. SST, One-time incl. SST; Monthly excl. SST left out
+  where it equals the subtotal), one mute line counting the Add-on Rates
+  ticked (3 add-on rates listed; No items. while none is priced), and a ⋯
+  on each of the open brand's lines (`.team-act`; Edit for a custom line,
+  opening its row on the card; Change tax code, asked in a sheet from
+  `taxOpts`, the lines' one list; Move up; Move down; Remove for a custom
+  line or a one-time item, red and last); it repaints as the brands
+  change. With two brands or more, Create asks One for all brands (the
+  answer it opens on) or One per brand, which makes a quotation each from
+  the same list, its own reference, PDF, link, signature and invoicing, a
+  key each (`{idem}-{n}`); a revision stays one. The PDF names the Brands
+  (one made per brand its Brand) in its facts and each brand over its
+  lines, the totals the whole quotation's; /quote/ likewise, offering no
+  Change. Brand name carries no `aria-required` (the one save check would
+  hold Create on the empty name of a new card); a brand's name is required
+  once the quotation holds two brands or more (`bad-brands`).
 - Quotation signing (`2026-10-31-quotation-signing.sql`; the user,
   2026-10-31: "Jane picks the reviewer, approve"): the client accepts on
   the quotation's link (a team's quotation takes one from
