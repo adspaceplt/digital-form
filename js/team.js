@@ -1423,18 +1423,18 @@
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.outstation': 'Every colleague\'s outstation trips, their stops and photos, and the export.',
     'ops.time': 'Correct another colleague\'s time records.',
-    'team.performance': 'Monthly performance reviews, behind the master code.',
+    'team.performance': 'Monthly performance reviews. The master code is required.',
     /* Each admin tool says what it opens, naming the Settings row where it
        opens one (2026-11-26, the Groups review). */
     'team.upgrade': 'Settings › Page availability and Require latest version.',
-    'team.announce': 'Settings › Announcements: a word to every colleague.',
+    'team.announce': 'Settings › Announcements, shown to every colleague.',
     'team.notice': 'Settings › Notices: a notice to all colleagues or to those chosen.',
-    'team.settings': 'Every Settings row that holds a business figure or a portal switch.',
+    'team.settings': 'Every business figure and portal switch in Settings.',
     'reports.ai': 'Settings › AI usage and limits.',
     'team.analytics': 'Write the AI analysis on Analytics.',
     'ops.numbering': 'Settings › Task numbering.',
     'ops.override': 'Move any colleague\'s task and its due date.',
-    'reports.meta': 'Import from Meta and the audit against Meta, while Settings › Meta checks is on.',
+    'reports.meta': 'Import from Meta and Meta checks, while Settings › Meta checks is on.',
     'reports.whitelabel': 'A client\'s logo on its reports, and White label on a client\'s Brand.',
     'reports.transfer': 'Move a report to the client it belongs to.',
     'clients.vic': 'Mark a client as VIC, or remove it.',
@@ -1741,7 +1741,7 @@
   function paintPreview(access, admin, diffs) {
     var box = $('grPreview');
     if (!box) return;
-    if (admin) { box.innerHTML = '<p class="permprev-off">Every level in every section, as an admin.</p>'; return; }
+    if (admin) { box.innerHTML = '<p class="permprev-off">Admin: Full control of every section.</p>'; return; }
     var off = [];
     var rows = SECTIONS.filter(function (s) { return DESC[s[0]]; }).map(function (s) {
       var lv = access[s[0]] || 'none';
@@ -1833,7 +1833,7 @@
      line under Start from reads the preset under the pointer or focus,
      else the one chosen; a Custom panel's note says the rest. */
   function presetSum(k) {
-    if (k === 'admin') return 'Admin: every level in every section.';
+    if (k === 'admin') return 'Admin: Full control of every section.';
     var acc = PRESETS[k];
     if (!acc) return '';
     var by = { manage: [], work: [], view: [] };
