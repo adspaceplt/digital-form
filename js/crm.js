@@ -6958,7 +6958,7 @@
     var m = (e && e.message) || '';
     if (/client_services_rate_check/.test(m)) return 'The rate cannot be below zero.';
     if (/client_services_qty_check/.test(m)) return 'The quantity cannot be below zero.';
-    return /confirm-needs-letter/.test(m) ? 'Not saved. Verify the signed Letter of Offer to confirm this service, or use Confirm without letter.' : (m || 'Not saved. Please try again.');
+    return /confirm-needs-letter/.test(m) ? 'Not saved. A service is confirmed when its signed quotation is approved, or by an admin with Confirm without letter.' : (m || 'Not saved. Please try again.');
   }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */

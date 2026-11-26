@@ -274,39 +274,23 @@
   }
 
   /* The database answers in one word; the console says what it means. */
+  /* The database's word for a refusal on a letter issued before (sign,
+     verify, void, delete), in the console's words. */
   var ISSUE_WORD = {
-    'bad-entity': 'That billing entity no longer bills this client. Close the sheet and open it again.',
-    'entity-incomplete': 'The billing entity needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.',
-    'not-allowed': 'You do not have permission to issue a letter. Please ask an admin.',
-    'no-client-code': 'Add a Client ID to this client before issuing a letter.',
-    'needs-billing': 'Add the Registered Company Name, Business Registration No., billing address and a billing contact on Billing before issuing a Letter of Offer.',
+    'not-allowed': 'You do not have permission to change this letter. Please ask an admin.',
     'no-client': 'That client could not be found.',
-    'no-lines': 'Choose at least one service.',
-    'bad-lines': 'One of those services cannot go on a letter. Refresh the page and try again.',
-    'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
-    'already-quoted': 'One of those services is already on a Letter of Offer that has not been voided. Void that letter first.',
-    'bad-terms': window.ADspaceWords.line.terms,
-    'no-replaces': 'The letter being replaced no longer exists.',
-    'replaces-verified': 'A verified letter cannot be replaced.',
     'not-found': 'This letter no longer exists.',
     'voided': 'That letter is void.',
     'verified': 'That letter has already been verified.',
     'superseded': 'That letter has been replaced.',
     'not-signed': 'Mark the letter signed before verifying it.',
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
-    'clash': 'Two letters were issued at once. Try again.',
-    'serial-taken': 'This reference is already used by another document. Enter another reference.',
-    'bad-date': window.ADspaceWords.line.docDate,
-    'serial-shape': window.ADspaceWords.line.serialShape,
-    'no-serial': 'No free reference was found for this client this month. Enter one.',
     'reason-required': 'Enter a reason.',
     'not-verified': 'Only a verified letter can be voided. Delete an issued or signed letter instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
-    'issuer-name': window.ADspaceWords.line.issuerName,
     'bad-state': 'Choose a valid state for the service.',
-    'stale': 'The services or their quotation were changed by someone else. The latest version is now shown. Please check them and issue the letter again.',
-    'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
-    'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
+    'changed-terms': 'A service on this letter changed after it was issued, so the letter cannot be verified. Void it, or ask an admin to use Confirm without letter.',
+    'archived-line': 'A service on this letter was removed after it was issued. Restore the service, then verify the letter.'
   };
 
   function missingWord(m) {
@@ -316,7 +300,7 @@
     }
     /* A guard trigger answers in its own word (`needs-billing`). */
     if (ISSUE_WORD[m]) return ISSUE_WORD[m];
-    return m || 'The letter could not be issued. Please try again.';
+    return m || 'The letter could not be changed. Please try again.';
   }
 
   /* One shape for the three deliberate moves a letter makes. Each is a
