@@ -28,8 +28,11 @@ const CONFIDENTIAL = 'This email and any attachments are confidential and may be
   'If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.';
 
 /* A currency and its figure never part at a line's end: RM and S$ are
-   joined to the figure by a no-break space (written as the character). */
-export const joinMoney = (t: string) => String(t).replace(/\b(RM|S\$) +(?=[-\d])/g, '$1 ');
+   joined to the figure by a no-break space, made from its code so the
+   deployed copy reads as the repo's (an escape is rewritten by the
+   connector, the character itself looks like a space). */
+const NBSP = String.fromCharCode(160);
+export const joinMoney = (t: string) => String(t).replace(/\b(RM|S\$) +(?=[-\d])/g, '$1' + NBSP);
 function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }

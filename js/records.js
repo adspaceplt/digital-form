@@ -45,7 +45,7 @@
     var today = CK.today();
     if (d === today) return 'Today';
     if (d === CK.addDays(today, -1)) return 'Yesterday';
-    return CK.date(d, { weekday: true });
+    return CK.date(d);
   }
 
   /* Newest first in, newest first out. An entry joins the one above it when

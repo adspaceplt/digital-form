@@ -2370,7 +2370,7 @@
       { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
       { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, late items first. Choose a tab above to show one section. Select an item to open it.' }] },
     work: { name: 'My Work', steps: [
-      { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
+      { at: '#workViews', text: 'My Work shows the same tasks as a list, a board, a calendar or months.' },
       { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
       { at: '#workList .task-stage .state-select', text: 'Move a task to its next stage here. The colleague who takes it next is notified.' }] },
     clients: { name: 'Clients', steps: [
