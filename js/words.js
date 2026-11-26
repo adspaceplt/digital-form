@@ -434,8 +434,8 @@
     phoneOnly: 'Trips are recorded on a phone. Open My Work on your phone to record a trip.',
     metaOff: 'Meta is not connected to the portal. Please contact an admin.',
     metaChecksOff: 'Meta checks are turned off. An admin can turn them on in Settings → Reports.',
-    quoteWaOff: 'Website quotations are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
-    quoteWaOffAll: 'Website quotations are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
+    quoteWaOff: 'Quotations from the Quotation portal are not sent on WhatsApp. Send this quotation by email. An admin can change this in Settings → Messages.',
+    quoteWaOffAll: 'Quotations from the Quotation portal are not sent on WhatsApp. Send them by email. An admin can change this in Settings → Messages.',
     pageOff: function (name, kind, until) {
       return name + ' is set to ' + kind + (until ? ' until ' + until : '') + '. Anyone opening this link will see the notice page instead.';
     },

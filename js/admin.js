@@ -2363,12 +2363,12 @@
       { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
-      { at: '#ovwToday .ovw-today-row', text: 'Everything that needs you today, late first. Select an item to open it.' },
+      { at: '#ovwToday .ovw-today-row', text: 'Everything that needs your action today, late items first. Select an item to open it.' },
       { at: '#ovwAsk', text: 'Ask the Assistant about your clients and work.' },
       { at: '#ovwPages', text: 'Me is your own work. Team holds the figures of the sections you manage.' },
       { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
       { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
-      { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, with late items first. A tab above shows one kind. Select an item to open it.' }] },
+      { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, late items first. Choose a tab above to show one section. Select an item to open it.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
       { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
@@ -3557,8 +3557,8 @@
     'supplier.deleted':      ['Supplier deleted', 'is-danger', 'suppliers'],
     'service.added':         ['Rate Card service added', 'is-ok', 'services'],
     'service.changed':       ['Rate Card service changed', '', 'services'],
-    'service.off':           ['Rate Card service inactive', 'is-warn', 'services'],
-    'service.on':            ['Rate Card service active', 'is-ok', 'services'],
+    'service.off':           ['Rate Card service set inactive', 'is-warn', 'services'],
+    'service.on':            ['Rate Card service set active', 'is-ok', 'services'],
     'service.deleted':       ['Rate Card service deleted', 'is-danger', 'services'],
     'service.published':     ['Rate Card published', 'is-ok', 'services'],
     'client.touch':          ['Call or visit logged', '', 'clients'],
@@ -7018,7 +7018,7 @@
     resend: { title: 'Repeat messages', keys: [['wa_repeat_hours', 'Ask before sending again within', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */
-    quotewa: { title: 'Quotations from the website', keys: [['quote_wa_day', 'WhatsApp messages per day', 'cap', '', 'On WhatsApp', per('quotation')]] },
+    quotewa: { title: 'Quotation portal on WhatsApp', keys: [['quote_wa_day', 'WhatsApp messages per day', 'cap', '', 'On WhatsApp', per('quotation')]] },
     /* Before this month the portal held clients typed in later, never the
        leads that came to nothing (2026-10-25). */
     /* When a figure reads better or worse, and when churn is an alert

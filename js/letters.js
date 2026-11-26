@@ -60,7 +60,7 @@
     if (/could not find|does not exist|schema cache|function public\.(issue_document|register_add|document_set_void|document_delete|serial_taken)/i.test(m)) {
       return 'This feature is not available yet. Please contact an admin.';
     }
-    return m || 'The request failed. Please try again.';
+    return m || 'This could not be completed. Please try again.';
   }
 
   function call(fn, args, then) {

@@ -52,7 +52,7 @@
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Messages, WhatsApp templates.',
     'no-number': 'This prospect has no WhatsApp number. Add one in Contacts first.',
-    'wa-limit': 'Today\'s WhatsApp limit for website quotations has been reached. Send the quotation tomorrow, or raise the limit in Settings, Messages, Quotations from the website.',
+    'wa-limit': 'Today\'s WhatsApp limit for quotations from the Quotation portal has been reached. Send the quotation tomorrow, or raise the limit in Settings, Messages, Quotation portal on WhatsApp.',
     'no-fx': window.ADspaceWords.line.fxUnset,
     /* Signing, submitting and reviewing (QUOTATION SIGNING, 2026-10-31). */
     'not-signed': 'This quotation has not been signed. Mark it signed, or send the client the link to sign.', signed: 'This quotation has already been signed. Refresh the page.',

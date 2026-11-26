@@ -920,7 +920,7 @@
       var to = (v && typeof v === 'object' ? v[0] : v) || '';
       if (!to) return;
       var moving = list.filter(function (c) { return (c.owner || '') !== to; });
-      if (!moving.length) { msg('crmBulkMsg', 'No change. These clients are already with ' + to + '.', 'ok'); return; }
+      if (!moving.length) { msg('crmBulkMsg', 'No change. These clients are already assigned to ' + to + '.', 'ok'); return; }
       setOwners(moving, function () { return to; }, function (out) {
         setPicking(false);
         var badWord = out.bad.length ? ' ' + out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
@@ -1918,7 +1918,7 @@
     var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
     if (!rows.length) {
       return ovSection('Services', 'services', 'Manage services',
-        ovNone(all.length ? all.length + (all.length === 1 ? ' service line enquired.' : ' service lines enquired.')
+        ovNone(all.length ? 'Enquired: ' + all.length + (all.length === 1 ? ' service line.' : ' service lines.')
                           : 'No service lines.'));
     }
     var body = '<div class="ovtable">' +
@@ -3332,7 +3332,7 @@
   function billPickSave(cid, ch) {
     if (!ch) return Promise.resolve('');
     return db.rpc('client_entity_contact', { p_client: cid, p_entity: ch.ent, p_contact: ch.value, p_every: ch.every }).then(function (r) {
-      if (r.data && r.data.error === 'held') return 'Bukku holds this company\'s billing contact. Change it in Bukku, or untick Use for every brand to choose a billing contact for this brand.';
+      if (r.data && r.data.error === 'held') return 'This company\'s billing contact is kept in Bukku. Change it in Bukku, or untick Use for every brand to choose a billing contact for this brand.';
       return r.error || (r.data && r.data.error) ? entSaid(r) : '';
     }).catch(function (x) { return (x && x.message) || String(x); });
   }
@@ -3650,7 +3650,7 @@
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
+    'held': 'This entity\'s details are kept in Bukku. They have been read from Bukku; press Edit again to save to Bukku.',
     'brn-taken': 'An entity with this Business Registration No. already exists. Add that entity instead.'
   };
   function entSaid(r) {
@@ -3838,7 +3838,7 @@
         entClose();
         entReload();
         if (k.error) { msg('crmBillNote', 'Added. Not created in Bukku: ' + (window.ADspaceBukku ? window.ADspaceBukku.said(k) : k.error), 'warn'); return; }
-        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this Business Registration No.'
+        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which is listed in Bukku under this Business Registration No.'
           : 'Added and created in Bukku as ' + k.code + '.', 'ok');
       });
     };
@@ -4704,14 +4704,14 @@
         }).join('') + '</ul>']] : []), [e.name, baN(facts.length, 'fact')].filter(Boolean).join(' · '));
     }
     if ((a.works || []).length || (a.weak || []).length) {
-      out += baSec('Strong and weak points', [['Strong points', baList(a.works)], ['Weak points', baList(a.weak)]],
-        [baN((a.works || []).length, 'strong point'), baN((a.weak || []).length, 'weak point')].filter(Boolean).join(' · '));
+      out += baSec('Strengths and weaknesses', [['Strengths', baList(a.works)], ['Weaknesses', baList(a.weak)]],
+        [baN((a.works || []).length, 'strength'), baN((a.weak || []).length, 'weakness', 'weaknesses')].filter(Boolean).join(' · '));
     }
     if ((f.channels || []).length || f.angle) {
       out += baSec('Where ADspace fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
           return '<li><span class="ba-name">' + esc(x.channel) + ' <span class="chip">' + esc(BA_WHEN[x.priority] || x.priority) + '</span></span>' + esc(x.why || '') + '</li>';
         }).join('') + '</ul>' : ''],
-        ['Fixes before paid ads', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
+        ['Fixes before paid advertising', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
         [baN((f.channels || []).length, 'channel'), baN((f.fix_first || []).length, 'fix', 'fixes')].filter(Boolean).join(' · '));
     }
     return out;
@@ -4806,14 +4806,14 @@
         ['Version', esc('Version ' + v.version + ' · ' + baDay(v.created_at) + (v.by ? ' · ' + v.by : '')) +
           (latest ? '' : ' <button class="linkbtn" type="button" data-a="ba-latest">Show latest</button>')],
         ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
-        ['Based on', baRead(v.basis)],
+        ['Data used', baRead(v.basis)],
         ['Ad plan', baPlan(v.basis)]
       ].filter(function (r) { return (r[0] !== 'Confirmed' || v.confirmed_at) && (r[0] !== 'Ad plan' || r[1]); })) +
       (v.hypothesis ? '<p class="msg warn ba-hypo">This version was written without reports, post results or Meta figures.</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
-        p.could_own ? 'Ownable angle: ' + p.could_own : (p.now || '')) +
+        p.could_own ? 'Potential position: ' + p.could_own : (p.now || '')) +
       baFold('Target audiences', (a.audiences || []).map(function (s) { return s.name; }).filter(Boolean).join(' · '),
         baFacts((a.audiences || []).map(function (s) {
           return [s.name, [['Profile', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
@@ -8220,7 +8220,7 @@
   }
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published. Enter a later version.', 'bad-date': 'Valid until cannot be in the past.',
-    'no-change': 'Nothing has changed since the live version. Change a service or the wording first.', 'too-long': 'Shorten the note.',
+    'no-change': 'Nothing has changed since the live version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
     denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
@@ -8262,8 +8262,8 @@
     var parts = [];
     var lines = Object.keys(d.lines).length, words = Object.keys(d.words).length;
     /* "2 lines and 1 block of wording changed." (2026-10-22, SVC2-6). */
-    if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's') + ' changed');
-    if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
+    if (lines) parts.push(lines + ' service' + (lines === 1 ? '' : 's') + ' changed');
+    if (d.gone) parts.push(d.gone + ' service' + (d.gone === 1 ? '' : 's') + ' removed');
     if (words) parts.push(words + ' wording change' + (words === 1 ? '' : 's'));
     if (d.terms.length) parts.push(d.terms.length + ' tax or term figure' + (d.terms.length === 1 ? '' : 's') + ' changed');
     var said = parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];

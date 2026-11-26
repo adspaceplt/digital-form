@@ -466,7 +466,7 @@
           open: function (btn) { if (W.ADspaceOps.openMeetMessage) W.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); } },
         /* Website quotations (2026-10-29): how many a day are sent on
            WhatsApp, each a message ADspace pays for. */
-        biz && { id: 'quotewa', name: 'Quotations from the website', kind: 'edit',
+        biz && { id: 'quotewa', name: 'Quotation portal on WhatsApp', kind: 'edit',
           meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('partners', 'Partners', 'clients', [
@@ -1855,7 +1855,7 @@
     if (d.error === 'in-use') {
       var c = d.codes || [];
       return c.join(', ') + (c.length === 1 ? ' is' : ' are') + ' used on a service line, a quotation or a letter, so ' +
-        (c.length === 1 ? 'it cannot be deleted. Untick Offered on new lines to stop offering it.' : 'they cannot be deleted. Untick Offered on new lines to stop offering them.');
+        (c.length === 1 ? 'it cannot be deleted. Untick Offered on new service lines to stop offering it.' : 'they cannot be deleted. Untick Offered on new service lines to stop offering them.');
     }
     return TAX_SAID[d.error] || d.error;
   }
@@ -1960,7 +1960,7 @@
       fields: [t ? null : { name: 'code', label: 'Code', placeholder: 'SV8', required: true },
         { name: 'rate', label: 'Rate (%)', value: t ? String(t.rate) : '', placeholder: '8', required: true },
         { name: 'name', label: 'Name', value: t ? t.name : '', placeholder: 'Service tax 8%' },
-        { name: 'active', label: 'Offered on new lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
+        { name: 'active', label: 'Offered on new service lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
       check: function (v) {
         if (!t && !/^[A-Za-z0-9._ -]{1,30}$/.test(String(v.code || '').trim())) return TAX_SAID['bad-row'];
         if (String(v.name || '').trim().length > 80) return 'Enter a name of up to 80 characters.';
