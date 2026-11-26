@@ -161,12 +161,13 @@
         }));
       });
     },
-    /* Outstation trip numbers (2026-11-24): the next one this month. */
+    /* Outstation trip numbers (2026-11-24): the next one this month, from
+       the month's count (`next`, 2026-11-26). */
     tripno: function () {
       return db.rpc('id_formats_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('tripno');
         var f = r.data.filter(function (x) { return x.kind === 'trip'; })[0];
-        return f ? 'Next ' + tripWord(f, 1) : '';
+        return f ? 'Next ' + tripWord(f, f.next) : '';
       });
     },
     industries: function () {
@@ -992,9 +993,9 @@
   /* A trip's number as the database writes it: '#', the prefix, the month
      (YYMM, Malaysia's) and the month's count to the digits set. */
   function tripWord(f, n) {
-    var num = String(n);
+    var num = String(Number(n) >= 1 ? Math.floor(Number(n)) : 1);
     while (num.length < (Number(f.width) || 2)) num = '0' + num;
-    var t = window.ADspaceClock && window.ADspaceClock.today ? window.ADspaceClock.today() : new Date().toISOString().slice(0, 10);
+    var t = window.ADspaceClock.today();
     return '#' + (f.prefix || 'OS') + String(t).slice(2, 4) + String(t).slice(5, 7) + num;
   }
   function openTripNo() {
@@ -1009,11 +1010,12 @@
         fields: [
           { name: 'prefix', label: 'Prefix', half: true, value: f.prefix || '', required: true },
           { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true }],
-        /* The first number this month, read again as Prefix or Digits is
-           typed, the whole row's width under both (2026-11-25). */
+        /* The next trip's number (this month's count and one; F2,
+           2026-11-26), read again as Prefix or Digits is typed, the whole
+           row's width under both (2026-11-25). */
         preview: function (get) {
           var p = String(get('prefix').value || '').trim().toUpperCase(), w = String(get('width').value || '').trim();
-          return ['First this month:', tripWord({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width }, 1),
+          return ['Next trip:', tripWord({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width }, f.next),
             'The count starts again each month.'];
         },
         check: function (v) {

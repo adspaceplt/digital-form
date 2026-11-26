@@ -35,8 +35,13 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     rounded by `cents()`, a half away from nought as Postgres rounds, the
     float nudged first (1,234.50 × 0.95 is 1,172.7749… in a float).
   - `TERMS` holds the older factor table (used when `term_pct` is null).
-  - `ADspaceMoney.load()` reads the business figures once a page
-    (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
+  - `ADspaceMoney.load()` reads the business figures (`app_settings_read()`,
+    anon too), never for the page's life: a load() five minutes on asks
+    again, so does a return to the page or its focus a minute on, a new
+    Malaysian day, and another tab's `load(true)` (a save) through the
+    `adspace-settings-at` stamp; nothing on a timer; every read dispatches
+    `adspace-settings`, and a screen holding a figure from it (Build quote's
+    S$ rate) prices again on it (2026-11-26, F4; `tests/sgd.js`) and `setting(key, at)` answers them;
     the console waits for it beside `me()`, the client portal beside
     `get_portal`, the selection page beside `get_campaign`. `FIRST` is used
     only where the read fails, and is the one copy of a default (no page

@@ -653,7 +653,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   row a discount or a surcharge (`ADspaceMoney.termLine`, in Chinese on
   /quote/'s 中文, a row whose lines run different months naming none); an older one redraws
   as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
-  subject to ADspace's approval, `payLine`) and Include advertising budget (a
+  subject to ADspace's approval) and Include advertising budget (a
   row a platform, Monthly or One-time; the client's money, kept in the totals,
   never a service line or revenue; `quote_extras`; in an S$ quotation the
   Singapore ad account's own S$ figure, typed, never a ringgit tier turned
