@@ -232,7 +232,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
-  console, the type as seeded on /quote/; signed off by who prepared it);
+  console, the type as seeded on /quote/; signed off by who prepared it;
+  never issued on its own, `docs/rules/documents.md`);
   the quotation on a continuation page with no second letterhead (a lead
   sentence, Description · Qty · Rate · Amount between hairlines, a line's
   inclusions under its name a point each as the service lists them (a
@@ -367,10 +368,26 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   draft on the client (`quotation_drafts_clear`, on insert), so Create
   clears it. The phone's own sheet draft (`js/sheet.js`) leaves `#qbBox`
   alone (`tests/quotedraft.js`).
-  The foot reads the monthly total incl. SST (with `· n
-  brands`), View lines on steps 1 to 3 (the sheet turned to the priced
-  lines, every brand's under its name, the brand on the board changed
-  where read, the others read; its Back returns), then Cancel on Type or
+  At a desk the Summary is the cart (the user, 2026-11-25; `sidePaint`,
+  `#qbSide`, sticking under the sheet's head and scrolling on its own where
+  taller than the body): every priced line under Monthly, One-time and
+  Advertising budget (Per month, billed separately, Up to RM {budget}),
+  each with its amount, then the totals in the quotation's own order
+  (each group's subtotal before its SST, the term adjustment where it applies,
+  Monthly incl. SST, One-time incl. SST), one mute line counting the
+  Add-on Rates ticked (3 add-on rates listed; No items. while none is
+  priced), and a ⋯ on each of the board's
+  lines (`.team-act`; Edit for a custom line, opening More details on
+  Term and review; Change tax code, asked in a sheet from `taxOpts`, the lines'
+  one list; Move up; Move down; Remove for a custom line or a one-time
+  item, red and last); it repaints as the steps change. View quote is not
+  drawn while the Summary shows (`sideOn`), and a resize that brings the
+  Summary back closes the lines turned open. On a phone, where the
+  Summary gives way, the foot reads the monthly total incl. SST (with `· n
+  brands`), View quote on steps 1 to 3 once a line is priced, its count
+  of priced lines a `.tab-n` (the sheet turned to the priced lines, every
+  brand's under its name, the brand on the board changed where read, the
+  others read; its Back returns); at every width, then Cancel on Type or
   Back, and Continue, or Create quotation (Save when editing) on Term and
   review. Add to quotation under Extras puts the
   board's brand in Brands in this quotation (`#qbBrandList`: a row a
@@ -664,10 +681,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   quotation is released, or a WhatsApp for it is queued, sent or not
   confirmed, or an email for it sent, never while only filed or once
   failed (`2026-11-07-quotation-sent-when-it-went.sql`); a team's
-  quotation also when its own link is first opened by anyone but a
+  quotation also (the one the opened key belongs to, never a revision
+  still being made nor one not proceeding) when its own link is first opened by anyone but a
   signed-in colleague (`quote_opened`, the console's Preview never asking
   it), never when it is only given its link: Copy link is not sending
-  (`2026-11-25-quotation-sent-when-opened.sql`). Until then a team's quotation's ⋯
+  (`2026-11-25-quotation-sent-when-opened.sql`); nor an opening from the
+  address a colleague copied that link from in the last 30 days (every
+  Copy link press asks `quotation_link`, which records it), filed as
+  `{ref} · Opened by the team` (`2026-11-25-quotation-copier-opening.sql`;
+  its retention, `docs/rules/security.md`). Until then a team's quotation's ⋯
   and an awaiting website quotation's row offer Edit, Build quote opened
   as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
   Quotations at Work, in scope; priced again from the live card into the

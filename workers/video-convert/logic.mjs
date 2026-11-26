@@ -8,6 +8,15 @@ export const VIDEO = /\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$/i;
 export const ISO_BMFF = /\.(mov|mp4|m4v|qt)$/i;
 export const UNREAD = { brand: '', codecs: [], video: null, faststart: false };
 
+import { createHash } from 'node:crypto';
+
+/* MediaConvert's idempotency token for one upload (the review of
+   2026-11-25): the key with its ETag, else its size, so S3 delivering the
+   same event twice asks for one job; a new upload under the same key, or a
+   redo, is a new token. 64 characters at most. */
+export const tokenFor = (key, tag, redo) =>
+  createHash('sha256').update(key + ':' + String(tag == null ? '' : tag) + (redo ? ':redo' : '')).digest('hex');
+
 export const webKey = (key) => key.replace(/\.[a-z0-9]+$/i, '.web.mp4');
 export const isCandidate = (key) =>
   key.startsWith(PREFIX) && VIDEO.test(key) && !/\.web\.mp4$/i.test(key);
@@ -90,7 +99,7 @@ export const alreadyWeb = (ext, info) =>
   !info.codecs.some((c) => /^(hvc1|hev1|dvh1|dvhe|ap4h|apch|apcn|apcs|apco)$/.test(c)) && info.faststart &&
   !overCap(info.video);
 
-export function jobFor(bucket, key, hasAudio, video) {
+export function jobFor(bucket, key, hasAudio, video, token) {
   const base = key.replace(/\.[a-z0-9]+$/i, '');
   const size = outSize(video);
   const fast = !!video && video.fps > CAP.fps + 0.5;
@@ -145,7 +154,8 @@ export function jobFor(bucket, key, hasAudio, video) {
         Outputs: [output]
       }]
     },
-    UserMetadata: { source: key }
+    UserMetadata: { source: key },
+    ClientRequestToken: token || undefined
   };
 }
 

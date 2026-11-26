@@ -111,7 +111,7 @@ async function graph(path: string, params: Record<string, string> = {}, token = 
      its proof in it: it is never passed on to a log (the audit of
      2026-11-24). */
   let res: Response;
-  try { res = await fetch(url.toString()); }
+  try { res = await fetch(url.toString(), { signal: AbortSignal.timeout(20000) }); }
   catch (e) { throw new Error('Meta could not be reached (' + String((e as Error)?.name || 'fetch failed') + ')'); }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || (body && (body as Record<string, unknown>).error)) throw new MetaError(body);

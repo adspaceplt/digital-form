@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
   const use: Use = { input: 0, output: 0, model: null };
 
   return held((async () => {
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const left = () => BUDGET_MS - (Date.now() - started);
     // deno-lint-ignore no-explicit-any
     const call = async (system: string, messages: any[], format: unknown, effort: string): Promise<any> => {

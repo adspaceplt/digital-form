@@ -185,6 +185,10 @@ is empty and only shrinks (`--write` refuses to add).
   carries one, never inside `.claude/` (agents' worktrees live there).
   `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
   it where a notice wants a glyph on a page holding no icon set (2026-11-22).
+  A merge's stamp conflict is resolved line by line, never by taking one
+  side's whole file: the branch's own markup changes are kept (2026-11-25:
+  #1469's resolution took main's `admin/index.html` and put back the
+  `#campPayBlock` it removed).
   A restamp or a merge's resolution keeps every script tag a page holds:
   `tests/pagescripts.js` fails a page missing a script its own scripts call
   (2026-11-25: #1427 dropped `js/icons.js` from /details/ and /supplier/).

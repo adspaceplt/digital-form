@@ -40,6 +40,7 @@
     'no-signatory':   'Enter the signatory.',
     'issuer-name':    window.ADspaceWords.line.issuerName,
     'serial-required':'Enter the reference.',
+    'not-issuable':   'A Quotation Cover is the first page of every quotation and cannot be issued on its own. Refresh the page.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
     'serial-shape':   window.ADspaceWords.line.serialShape,
     'serial-taken':   'This reference is already used by another document. Enter another reference.',

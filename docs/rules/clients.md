@@ -536,8 +536,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   read under the version as Ad plan. Run analysis opens on this browser's
   answers, else the last version's, else the quotation's budget, each said
   under its field (D4). Where the name matches more than one business and
-  the record does not settle it, the function saves nothing, counts nothing
-  and answers `ambiguous` with up to five candidates; the page asks Choose
+  the record does not settle it, the function saves nothing (the run is
+  counted, as every run that reached the model is) and answers `ambiguous` with up to five candidates; the page asks Choose
   the brand and runs again with `choice`, which the model analyses alone
   (the user, 2026-11-22: never guess the brand).
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
