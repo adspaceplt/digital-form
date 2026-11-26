@@ -76,6 +76,15 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     `head` opens a section with its heading (`.askhead`), and `note` is one
     mute line under the field (`.asknote`, its `aria-describedby`); a spec
     of `line` alone is one mute line the row's whole width (`.askrow`).
+  - Fields side by side stand on the row's top, labels on one line
+    (cut with an ellipsis, never wrapped) and fields on one line, a
+    field's note never moving its neighbour (2026-11-25). A field's
+    `unit` (m, days, %) stands inside its box at the end and `pre` (RM,
+    US$) at the start (`.unitbox`), the label a noun alone; `inputMode`
+    names its keyboard. `preview(fieldOf)` answers [words, token, line],
+    drawn the whole row's width under the fields as a shaded example
+    (`.askpreview`, the token in the mono face) and read again at every
+    key: an example never sits under one column of a pair.
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
     nothing, never required); a `choices` field marked `seg` is a segment.
     Focus lands on the first typed field, never a segment or a tick;
