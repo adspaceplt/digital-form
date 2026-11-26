@@ -44,7 +44,8 @@
 -- this band keeps no reference. Holds no drop or delete.
 -- ROLLBACK: restate each function's last definition before this band
 -- (QUOTATIONS CONFIRMED BEFORE THEY GO for `quote_request_ref` and
--- `id_format_set`; the bands each other function was last restated in);
+-- `id_format_set`, INTERVIEW MISSED for `careers_read`; the bands each
+-- other function was last restated in);
 -- `drop trigger client_detail_forms_request_ref`,
 -- `supplier_forms_request_ref`, `hiring_candidates_request_ref`,
 -- `client_requests_request_ref`, `feedback_responses_request_ref`; the
@@ -468,7 +469,9 @@ declare
   v_contact text := public.mail_sender('careers')->>'reply_to';
   c public.hiring_candidates;
   i public.hiring_interviews;
+  m public.hiring_interviews;
   v_state text;
+  v_missed jsonb;
   v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
 begin
   if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found', 'contact', v_contact); end if;
@@ -480,13 +483,22 @@ begin
   select * into i from public.hiring_interviews where candidate_id = c.id and state <> 'replaced'
    order by invited_at desc limit 1;
   v_state := case when i.id is null then null else public.hiring_interview_state(i) end;
-  return jsonb_build_object('ok', true, 'contact', v_contact, 'name', c.name, 'position', c.position, 'stage',
+  /* Interview missed (2026-11-26): its time, while no later interview has
+     been confirmed and the candidate is still in the running, or where it
+     closed the application. */
+  select * into m from public.hiring_interviews where candidate_id = c.id and state = 'missed'
+   order by invited_at desc limit 1;
+  v_missed := case when m.id is not null
+      and not exists (select 1 from public.hiring_interviews j where j.candidate_id = c.id and j.invited_at > m.invited_at and j.state = 'confirmed')
+      and ((c.stage in ('new', 'invited', 'interview') and c.outcome is null) or public.hiring_closed_missed(c.id) = m.id)
+    then jsonb_strip_nulls(jsonb_build_object('at', m.slots[m.picked], 'closed', case when c.outcome = 'not' then true end)) end;
+  return jsonb_strip_nulls(jsonb_build_object('missed', v_missed)) || jsonb_build_object('ok', true, 'contact', v_contact, 'name', c.name, 'position', c.position, 'stage',
     case when c.stage = 'new' or (c.stage = 'pool' and c.outcome is null) then 'received' else c.stage end, 'received_at', c.created_at,
     'request_ref', c.request_ref,
     'pool_declined', case when c.outcome = 'pool' and c.pool_consent = 'no' then true end,
     'pool', case when c.stage = 'pool' and c.outcome = 'pool' then jsonb_strip_nulls(jsonb_build_object('consent', c.pool_consent,
       'until', c.pool_until, 'months', coalesce(public.app_setting('hiring_pool_months', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 12))) end,
-    'interview', case when i.id is null or c.stage in ('pool', 'closed') then null
+    'interview', case when i.id is null or c.stage in ('pool', 'closed') or i.state = 'missed' then null
       /* Cancelled: the state alone, never its time or link (2026-11-20). */
       when i.state = 'cancelled' then case when c.stage in ('new', 'invited', 'interview') and c.outcome is null
         then jsonb_build_object('state', 'cancelled') end

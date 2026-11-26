@@ -16,7 +16,7 @@
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Your portal', zh: '客户门户' }, steps: [
-    { at: '#cpTabs', text: { en: 'Your services, letters, reports and meetings are each on their own tab.', zh: '服务、函件、报告与会议，各在一个分页。' } },
+    { at: '#cpTabs', text: { en: 'Your content, reports, services and meetings are each on their own tab.', zh: '内容、报告、服务与会议，各在一个分页。' } },
     { at: '#ovRequest', text: { en: 'Use Request change to ask your account manager for an upgrade, a downgrade or a change of details.', zh: '如需升级、降级或更新资料，请点击「申请修改」，客户经理将为您跟进。' } }] };
   var db  = API && API.client;
   var MON = window.ADspaceMoney;
@@ -95,7 +95,7 @@
       reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'Requested change', downgrade: 'Requested change', cancel: 'Reason (optional)', details: 'Details to update' },
       send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'Please describe the change required.', company: 'Company',
       tabsLabel: 'Portal sections', sideLabel: 'Account manager and company',
-      tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
+      tabs: { overview: 'Overview', content: 'Content', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
         services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', feedback: 'Feedback', account: 'Account' },
       rateTitle: 'Rate your experience', fbRequested: 'Requested {d}', fbSubmit: 'Submit',
       loadFail: '{x} could not be loaded.', tryAgain: 'Try again',
@@ -145,7 +145,7 @@
       reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '所需更改', downgrade: '所需更改', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请描述所需的更改。', company: '公司',
       tabsLabel: '门户分页', sideLabel: '客户经理与公司',
-      tabs: { overview: '概览', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
+      tabs: { overview: '概览', content: '内容', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
         services: '服务', letters: '函件', reports: '报告', meetings: '会议', feedback: '反馈', account: '账户' },
       rateTitle: '请评价您的体验', fbRequested: '请求日期：{d}', fbSubmit: '提交',
       loadFail: '{x}无法加载。', tryAgain: '重试',
@@ -373,22 +373,40 @@
   /* One pane at a time, the way the console's records open theirs (the user,
      2026-09-28, choosing tabs over one long page). The pane rides in the
      address (`?tab=`, Overview left out) and pushes history, so Back steps
-     through the tabs and a refresh lands on the one that was open. Reports and
-     Meetings draw once there is one; an address naming a tab not drawn yet
-     opens it as soon as it is. */
-  var PANES = ['overview', 'review', 'scripts', 'campaigns', 'services', 'letters', 'reports', 'meetings', 'feedback', 'account'];
+     through the tabs and a refresh lands on the one that was open.
+     Six tabs at most (2026-11-26, the user: "Ok"; the strip had run to
+     ten): each tab holds its parts one under the other, each part a card
+     keeping its own address, so `tab=review` opens Content on Content
+     Review and every link written before still lands. A part of the
+     client's work joins the tab it belongs to, never a seventh. A part is
+     drawn once it holds something, a tab once any of its parts is; an
+     address naming one not drawn yet opens it as soon as it is. */
+  var STRIP = ['overview', 'content', 'reports', 'services', 'meetings', 'account'];
+  var TABS = { overview: ['overview'], content: ['review', 'scripts', 'campaigns'], reports: ['reports'],
+    services: ['services', 'letters'], meetings: ['meetings', 'feedback'], account: ['account'] };
+  /* The card a part is; a part with none is always drawn. */
+  var PART_EL = { review: 'crWrap', scripts: 'vsWrap', campaigns: 'cmWrap', reports: 'repWrap',
+    letters: 'docWrap', meetings: 'meetWrap', feedback: 'fbWrap' };
+  var TAB_OF = {};
+  STRIP.forEach(function (g) { TAB_OF[g] = g; TABS[g].forEach(function (k) { TAB_OF[k] = g; }); });
   var pane = 'overview';
   var wantPane = null;
   function paneFromUrl() {
     var p = new URLSearchParams(location.search).get('tab');
-    return PANES.indexOf(p) >= 0 ? p : 'overview';
+    return TAB_OF[p] ? p : 'overview';
   }
-  function tabOf(name) { return document.querySelector('#cpTabs .tab[data-pane="' + name + '"]'); }
+  /* The tab a tab's or a part's name stands in. */
+  function tabOf(name) { return document.querySelector('#cpTabs .tab[data-pane="' + TAB_OF[name] + '"]'); }
+  function partEl(name) { return PART_EL[name] ? $(PART_EL[name]) : null; }
+  function partShown(name) { var el = partEl(name); return !PART_EL[name] || !!(el && !el.hidden); }
   function showPane(name, push) {
+    if (!TAB_OF[name]) name = 'overview';
     var tab = tabOf(name);
     if (!tab || tab.hidden) { wantPane = name; name = 'overview'; tab = tabOf(name); }
+    else if (!partShown(name)) wantPane = name;
     else if (wantPane === name) wantPane = null;
-    pane = name;
+    var g = TAB_OF[name];
+    pane = g;
     Array.prototype.forEach.call(document.querySelectorAll('#cpTabs .tab'), function (b) {
       var on = b === tab;
       b.classList.toggle('is-on', on);
@@ -396,24 +414,32 @@
       b.tabIndex = on ? 0 : -1;
     });
     Array.prototype.forEach.call(document.querySelectorAll('.cp-pane'), function (p) {
-      p.hidden = p.getAttribute('data-pane') !== name;
+      p.hidden = p.getAttribute('data-pane') !== g;
     });
+    /* A part named by itself, below its tab's first card drawn, is brought into view. */
+    var el = name !== g && partShown(name) ? partEl(name) : null;
+    if (el) {
+      var first = Array.prototype.filter.call(el.parentNode.children, function (x) { return x.classList.contains('cp-card') && !x.hidden; })[0];
+      if (first !== el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+    }
     var url = new URL(location.href);
     if (name === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', name);
     if (url.href === location.href) return;
     if (push) history.pushState({ tab: name }, '', url.href); else history.replaceState(history.state, '', url.href);
   }
-  /* A tab drawn late (Reports, Meetings) opens if the address asked for it. */
+  /* A part drawn late (Reports, Meetings, Content Review) opens if the address asked for it. */
   function tabShown(name, on) {
-    var tab = tabOf(name);
+    var el = partEl(name), tab = tabOf(name), g = TAB_OF[name];
+    if (el) el.hidden = !on;
     if (!tab) return;
-    tab.hidden = !on;
-    if (on && wantPane === name) showPane(name, false);
-    if (!on && pane === name) showPane('overview', false);
+    tab.hidden = !TABS[g].some(partShown);
+    if (on && (wantPane === name || wantPane === g)) showPane(wantPane, false);
+    if (tab.hidden && pane === g) showPane('overview', false);
     paintTiles();
   }
+  /* A press on a tab is the person's own choice: a part still awaited is let go. */
   Array.prototype.forEach.call(document.querySelectorAll('#cpTabs .tab'), function (b) {
-    b.addEventListener('click', function () { showPane(b.getAttribute('data-pane'), true); });
+    b.addEventListener('click', function () { wantPane = null; showPane(b.getAttribute('data-pane'), true); });
   });
   /* The strip is a tab list: the arrows move along it, Home and End to its ends. */
   $('cpTabs').addEventListener('keydown', function (e) {
@@ -427,10 +453,11 @@
     tabs[to].focus();
     tabs[to].click();
   });
-  /* An Overview card's View all opens its tab at the top of the strip. */
+  /* An Overview card's View all or a tile opens its tab on its part, at the top of the strip. */
   document.addEventListener('click', function (e) {
     var go = e.target.closest && e.target.closest('[data-go]');
     if (!go) return;
+    wantPane = null;
     showPane(go.getAttribute('data-go'), true);
     var strip = $('cpTabs');
     if (strip && strip.getBoundingClientRect().top < 0) strip.scrollIntoView({ block: 'start' });
@@ -651,14 +678,14 @@
      tab drawn, its glyph, its name, where it stands and one fact under it,
      the whole tile opening its tab. Each source fills its own tile as its
      read answers; a tab not drawn has no tile. */
-  var TILES = [['review', 'image'], ['scripts', 'film'], ['campaigns', 'megaphone'], ['services', 'grid'], ['reports', 'chart'], ['meetings', 'calendar']];
+  var TILES = [['review', 'image'], ['scripts', 'film'], ['campaigns', 'megaphone'], ['reports', 'chart'], ['services', 'grid'], ['meetings', 'calendar']];
   var tiles = {};
   function setTile(key, v) { tiles[key] = v; paintTiles(); }
   function paintTiles() {
     var box = $('ovTiles');
     if (!box) return;
     var w = t();
-    var shown = TILES.filter(function (x) { var b = tabOf(x[0]); return tiles[x[0]] && b && !b.hidden; });
+    var shown = TILES.filter(function (x) { var b = tabOf(x[0]); return tiles[x[0]] && b && !b.hidden && partShown(x[0]); });
     box.hidden = !shown.length;
     /* Three across, two where four would leave one alone (a phone is two
        across, the last alone taking the row). */
@@ -798,8 +825,8 @@
       var rv = d.review, sets = (rv && rv.sets) || [];
       var waiting = sets.reduce(function (n, x) { return n + (x.waiting || 0); }, 0);
       tabShown('review', sets.length > 0);
-      var rt = tabOf('review');
-      if (rt) rt.innerHTML = esc(w.tabs.review) + (waiting ? ' <span class="tab-n is-err">' + waiting + '</span>' : '');
+      var rt = tabOf('content');
+      if (rt) rt.innerHTML = esc(w.tabs.content) + (waiting ? ' <span class="tab-n is-err">' + waiting + '</span>' : '');
       var crBox = $('crBox');
       if (crBox) {
         crBox.innerHTML = '';
@@ -1217,7 +1244,7 @@
     });
     /* An Overview card's way to its tab: the console Overview's own control. */
     Array.prototype.forEach.call(document.querySelectorAll('.cp-card .ovgo-word'), function (x) { x.textContent = w.viewAll; });
-    PANES.forEach(function (k) { var b = tabOf(k); if (b) b.textContent = w.tabs[k]; });
+    STRIP.forEach(function (k) { var b = tabOf(k); if (b) b.textContent = w.tabs[k]; });
     ['crHead:review', 'vsHead:scripts', 'cmHead:campaigns', 'fbHead:feedback'].forEach(function (p) {
       var a = p.split(':'); if ($(a[0])) $(a[0]).textContent = w.tabs[a[1]];
     });
