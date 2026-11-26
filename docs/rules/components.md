@@ -103,3 +103,24 @@ Moved whole from `DESIGN.md` §4, which keeps a one-line pointer here; read whol
 | A document checked on /verify/ (2026-11-20) | `docs/rules/documents.md`, Components |
 | A score asked of a client (a rating scale) | `docs/rules/client-feedback.md`, Components |
 | Finding a record in any section | `docs/rules/search.md`, Components |
+
+## Surface (`data-layout`, 2026-11-26)
+
+A page's surface is one attribute on `<html>`, never a page's own ground or a family's own card look (the user: pages built "like Lego… css global, parent, child then only adjust the details"). `css/portal.css` sets the tokens on `:root` (`cards`, the default, and `shaded`); `css/console.css` sets `v3` beside `--frame`, `--card-edge` and `--part-edge`. `body` takes `--ground`; one base rule (SECTION CARDS, `:where(...)`, no specificity) gives every section card family its ground, corner, padding and its edge as a 1px outline just inside it, and the stacking families their step; a list card (`.card`, `.softpanel`, `.crm-table`, `.kcard`, `.ovcard`, `.stg-card`, `.bookreg`) pads nothing, its rows padding themselves. A family's own rule keeps only its arrangement; a new card family joins both lists (the base and its focus corner) rather than drawing its own surface. A state's ground (`body.is-plain`, a cover) and a brand's own tone (the namecard's `--nc-ground`) stay their own.
+
+| Token | `v3` (console) | `cards` | `shaded` |
+|---|---|---|---|
+| `--ground` | `--page`; `--frame` at a desk (861 and over, no tab bar) | `--page` | `--card` |
+| `--section-bg` | `--card` | `--card` | `--sunk` |
+| `--section-edge` | transparent; `--card-edge` on the desk sheet (`.console`), `--part-edge` inside a record | transparent | transparent |
+| `--section-radius` | `--radius-lg` | `--radius` | `--radius-lg` |
+| `--section-pad` | 18px 20px | 18px 20px | 18px 20px |
+| `--section-gap` | 12px | 12px | 12px |
+
+| Page | `data-layout` |
+|---|---|
+| `admin/` | `v3` |
+| `/client/`, `/review/`, `/creator/`, `/script/` | `cards` |
+| `/`, `404.html`, `/quote/`, `/details/`, `/supplier/`, `/careers/`, `/feedback/`, `/verify/`, `/card/`, `/creators/`, `docs/PAGE-TEMPLATE.html` | `shaded` |
+
+The families: `.panel`, `.card`, `.softpanel`, `.kcard`, `.chartcard`, `.crm-table`, `.ovcard`, `.stg-card`, `.bookreg`, `.engcard`, `.rec-part`, `.sumcard`, `.verify-card`, `.rcv-track`, `.qs-side`; a record's rail block (`.rec-rail > .railblock`) and `.readgroups` read the same tokens in the console's own rules. Differences each family still holds, on purpose: `.chartcard`'s 14px foot (its figures fold under it); `.rcv-track` 20px and `.qs-side` 22px padding; `.verify-card`, `.card`, `.bookreg` and a bare `.crm-table` keep the 14px corner (`--radius`) where their layout's is 18 (a directory's `.crm-table.softpanel` takes the section's); in the console at a desk a bare `.crm-table` and a `.card` draw no edge. On a `shaded` page a `.softpanel` (`js/state.js`'s loading, empty and failed lines) stays white at 14px, and careers' `.panel.cr-doc` keeps 14px. Not section cards: `.lockcard` (the cover column, no box), `.ovsec` and `.qs-sec` (parts inside a card, divided by hairlines), `.crm-group` (its card is its `.crm-table.softpanel`), `.cp-card` (a `.panel`'s arrangement), and `.booking` (white on both a `cards` page and a `shaded` one, `/creators/`).

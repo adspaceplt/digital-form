@@ -267,8 +267,8 @@ button.appver {
    The row ⋯ menus are positioned on the viewport by `ADspaceMenu.place()`, so
    nothing here clips them. */
 .bookreg {
-  background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius); overflow: hidden;
 }
 .bookreg-head {
   /* The rows' own left pad, so each heading starts on its column. */
@@ -289,8 +289,7 @@ button.appver {
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .kcard {
   position: relative;              /* the actions menu positions against this */
-  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
-  margin-bottom: 12px;
+  border: 1px solid var(--card-line);
 }
 /* No overflow clipping here: the actions menu is positioned against the card
    and has to be allowed out of it. The last section rounds itself instead. */
@@ -1461,10 +1460,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    the pane you land on had less on it than any other, and under it sat half a
    screen of nothing. Never a row of decorative number tiles — this is one
    client, not a board. */
-.ovcard {
-  background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
-}
+.ovcard { border: 1px solid var(--card-line); overflow: hidden; }
 .ovsec { padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
 .ovsec:last-child { border-bottom: 0; }
 /* A heading and the one control that opens what it summarises: the section
@@ -3889,7 +3885,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .stg-ctl .btn { flex: 0 0 auto; }
 .stg-groups { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); }
-.stg-card { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
+.stg-card { border: 1px solid var(--card-line); overflow: hidden; }
 .stg-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
   padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
@@ -5495,7 +5491,7 @@ label.onb-row { cursor: pointer; }
    glass's backdrop filter trapped every row menu under the next card, so
    no menu item could be pressed). */
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
-  background-color: var(--glass-card);
+  background-color: var(--section-bg);
   box-shadow: var(--glass-lift);
   border-color: transparent;
 }
@@ -5652,6 +5648,14 @@ svg.sec {
    grey, never a warm one. */
 :root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
 :root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
+/* The console's surface (`data-layout="v3"`, css/portal.css SECTION CARDS):
+   white cards on the grey ground, the large corner; at a desk the ground is
+   the frame and a card on the sheet is edged by its hairline. */
+:root[data-layout="v3"] { --section-radius: var(--radius-lg); }
+@media (min-width: 861px) {
+  :root[data-layout="v3"]:not(.has-tabbar) { --ground: var(--frame); }
+  :root[data-layout="v3"]:not(.has-tabbar) .console { --section-edge: var(--card-edge); }
+}
 .console-headline { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 0 1 auto; }
 .console-sub { display: none; margin: 0; font-family: var(--font-head); font-size: 13.6px; line-height: 20px; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -5664,7 +5668,7 @@ svg.sec {
   :root:not(.has-tabbar) { scroll-padding-top: calc(var(--head-h) + 12px); }
   /* The sign-in page and every cover stay white (the user, 2026-11-13:
      "fully white would be ok"); the grey frame is the signed-in console's. */
-  :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--frame); }
+  :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--ground); }
   /* A hover the eye finds on the grey frame (the user, 2026-11-13: "why is
      the hover missing"): the chosen row's white at half, never a grey the
      frame already is. */
@@ -5719,12 +5723,14 @@ svg.sec {
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg, .engcard) {
-    background-color: var(--card); box-shadow: none;
-    /* An outline drawn just inside the card, above what it holds: an inset
-       shadow is painted under the rows, whose white ground hid the edge
-       (the user, 2026-11-12: "border missing" on Clients). */
-    outline: 1px solid var(--card-edge); outline-offset: -1px;
+    background-color: var(--section-bg); box-shadow: none;
+    /* The section card's edge, drawn just inside the card, above what it
+       holds: an inset shadow is painted under the rows, whose white ground
+       hid the edge (the user, 2026-11-12: "border missing" on Clients). */
+    outline: 1px solid var(--section-edge); outline-offset: -1px;
   }
+  /* A bare table and a post card stand on the sheet without an edge. */
+  :root:not(.has-tabbar) .console :is(.card, .crm-table:not(.softpanel)) { outline: 0; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .bookreg)
     :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) { box-shadow: none; outline: 0; }
   /* A register's rows are lines of one card, never cards of their own (the
@@ -5736,7 +5742,6 @@ svg.sec {
     outline: 2px solid var(--action-ring); outline-offset: 2px;
   }
 }
-.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard) { border-radius: var(--radius-lg); }
 /* A card inside a Dashboard card is one surface (DESIGN §1): an empty line
    there takes no corner of its own (2026-11-26, Next 5 days). */
 .console .ovw-card .softpanel { border-radius: 0; }
@@ -5749,9 +5754,9 @@ svg.sec {
    as one piece of paper. */
 @media (min-width: 861px) {
   :root:not(.has-tabbar) .console :is(#crmWork, #campWork, #crRec, #supRec, #teamRec)
-    :is(.panel, .softpanel, .ovcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) { outline-color: var(--part-edge); }
+    :is(.panel, .softpanel, .ovcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) { --section-edge: var(--part-edge); }
 }
-.console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; padding: 0 5px 2px; }
+.console .rec-part { min-width: 0; padding: 0 5px 2px; }
 .console .rec-part:has(> .viewhead[hidden]) { display: none; }
 .console .rec-part > .viewhead { margin: 0; padding: 14px 15px 6px; }
 /* A part showing its head alone (White label switched off, a part not yet
@@ -5773,7 +5778,7 @@ svg.sec {
 .console .rec:not(.cportal) .rec-panes { gap: 16px; }
 .console .rec:not(.cportal) > .rec-rail > .railblock,
 .console .rec:not(.cportal) > .rec-rail > .railblock.is-last:not(.rail-after) {
-  background: var(--card); border-radius: var(--radius-lg); border-bottom: 0; padding: 18px 20px; margin: 0 0 16px;
+  background: var(--section-bg); border-radius: var(--section-radius); border-bottom: 0; padding: var(--section-pad); margin: 0 0 16px;
 }
 .console .rec:not(.cportal) > .rec-rail > .railblock.is-last { margin-bottom: 0; }
 @media (max-width: 1100px) {
