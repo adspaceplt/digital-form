@@ -157733,6 +157733,7 @@ grant execute on function public.outstation_photo_add(uuid, text, timestamptz, n
 
 -- END OF OUTSTATION WRITES HELD -----------------------------------------------
 
+-- ===========================================================================
 -- QUOTATIONS ISSUED WHEN CREATED (2026-11-26)
 -- ===========================================================================
 -- WHY: /verify/ found nothing for ADP/QT2611-C02, a quotation with its
@@ -157744,6 +157745,11 @@ grant execute on function public.outstation_photo_add(uuid, text, timestamptz, n
 -- (`sent_out_at`) stays what it is.
 --
 -- WHAT IT CHANGES
+--   * `quotation_issued(q)`: the one test of an issued quotation, true for
+--     every quotation today; `verify_find` and its Document ID lookup ask
+--     it (a row function the table's column grants refuse to a page, so the
+--     Register, which lists every quotation, takes a column when the test
+--     narrows).
 --   * `verify_find`: every quotation is found by its reference, whether or
 --     not it went out (a removed one Void, as before), and by its Document
 --     ID (`doc_code`), answered as a report's is: the code as the serial,
@@ -157762,6 +157768,17 @@ grant execute on function public.outstation_photo_add(uuid, text, timestamptz, n
 -- ===========================================================================
 
 -- QUOTATIONS ISSUED WHEN CREATED --------------------------------------------
+
+/* Whether a quotation counts as issued: the one test verify_find and its
+   Document ID lookup ask, so a later change (a quotation issued once
+   confirmed) is made here. Today every quotation is issued as it is
+   created. */
+create or replace function public.quotation_issued(q public.quotations)
+returns boolean language sql stable set search_path = public as $$
+  select q.id is not null
+$$;
+revoke all on function public.quotation_issued(public.quotations) from public, anon;
+grant execute on function public.quotation_issued(public.quotations) to authenticated;
 
 /* Every quotation is issued as it is created: found by its reference
    and by its Document ID, whether or not it went out; a removed one
@@ -157826,6 +157843,7 @@ begin
   end if;
   select * into q from public.quotations x
    where (upper(replace(x.ref, '/', '-')) = sd)
+     and public.quotation_issued(x)
    order by (upper(x.ref) = s) desc, x.issued_at desc limit 1;
   if q.id is not null then
     select (min(r.issued_at) at time zone 'Asia/Kuala_Lumpur')::date into v_rep
@@ -157925,7 +157943,7 @@ begin
     /* A quotation by the Document ID its foot prints (QUOTATIONS ISSUED
        WHEN CREATED, 2026-11-26): its reference is what is typed, the code
        found here stands for it, as a report's does. */
-    select x.ref into v_ref from public.quotations x where x.doc_code = v_code limit 1;
+    select x.ref into v_ref from public.quotations x where x.doc_code = v_code and public.quotation_issued(x) limit 1;
     if v_ref is not null then
       return public.verify_find(v_ref) || jsonb_build_object('serial', substr(v_code, 1, 4) || '-' || substr(v_code, 5, 4), 'by_code', true);
     end if;

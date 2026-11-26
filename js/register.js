@@ -281,6 +281,9 @@
       var all = (!r.error && r.data) || [];
       var revised = {};
       all.forEach(function (q) { if (q.replaces && !q.removed_at) revised[q.replaces] = q.ref; });
+      /* Every quotation is issued as `quotation_issued` says today; the
+         table's column grants refuse that row function to the page, so a
+         narrower test reaches the Register as a column (2026-11-26). */
       then(all.map(function (q) {
         q._revised = revised[q.id] || null;
         /* Removed: Void once it was sent or signed (kept for good), else
