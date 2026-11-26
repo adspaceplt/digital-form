@@ -11868,6 +11868,21 @@ From the same review. A colleague set inactive (neither removed nor expired) kep
 ### 2026-11-26 · F6: a Quotation Cover is not added on its own
 
 The user, on HANDOVER §4 item 2: "Quotation Cover: remove it". A Quotation Cover has not been issued on its own since 2026-11-25, yet Documents' Add still offered it as a kind for a document issued elsewhere. Add now offers it only to keep an existing cover being edited; `register_add` refuses the family (`not-issuable`) and `register_update` refuses moving another document into it (`2026-11-26-quotation-cover-not-added.sql`). The cover page inside every quotation PDF, the covers already held (listed, read and verified as before) and the `quote_cover` type stay. `tests/docs.js` reads the Add sheet and the refusal.
+
+### 2026-11-26 · go.adspace.me phased out
+
+The user: "go.adspace.me is going to be retired. use the new
+digital.adspace.me/verify instead". Every PDF's verify line and the console's
+fallbacks read digital.adspace.me/verify (`ADSPACE_ORG.verifyUrl`); the
+Service Terms a quotation names move to hi.adspace.me/svc-terms (the user's
+choice) and the report's ad-terms glossary to hi.adspace.me/fb-ad-terms, both
+short links the team keeps under Short Links; the Short Links note names
+hi.adspace.me alone. go.adspace.me was Rebrandly's host, not the Worker's, so
+QR codes and PDFs already issued with it stop resolving once it goes, unless a
+redirect is kept. Documents issued before keep the words they were issued with.
+The outstation notification's Lark form link (go.adspace.me/outstation) is a
+database value and is left for its own migration.
+
 ### 2026-11-26 · A campaign's invoice is made in Bukku (#1476)
 
 The Finance pane asked a colleague to type `AINV` and a number and upload the PDF by hand. The invoice is now made in Bukku as a draft from the campaign (one line a confirmed creator at the client rate, on the sample invoice AINV2609023's product, account and tax code, set in Settings, Accounting, Bukku as Sample invoice number), or one made in Bukku is linked by its number on the client's own contact; the portal keeps the number and the Bukku id and reads the state, amount and PDF from Bukku each visit. Found while finishing it: the press answered `shortlisted` creators too (a client's pick, not yet confirmed; now confirmed onwards only), a campaign with an uploaded invoice could have been given a second (refused `invoiced` since), a refusal dropped the number it named ("Bukku holds no invoice undefined"; `invCall` now keeps the whole answer), and two ⋯ of one item stood beside other acts (Link existing invoice is a tonal button; the ⋯ holds Open in Bukku and Unlink). The client's selection page shows the number alone: Bukku's PDF link is a public page no access code guards, a draft may still change, and Bukku sends the issued invoice itself.
@@ -11878,6 +11893,23 @@ From the same review: 43 findings a fresh reader made on `js/crm.js` and `js/let
 ### 2026-11-26 · F7: a cancelled interview moves the candidate back
 
 The user: "hiring tab, interview stage, when cancelled interview, it still stucked at interview". `hiring_interview_cancel` cancelled the interview and never touched the candidate's stage, and Send new times after a confirmed interview left the candidate at Interview too (`hiring_invite` moved only New, Pool and Invited). Reopening a decision already derived the stage from the interviews; that derivation is now one function, `hiring_interview_stage(candidate, else)` (Interview while one is confirmed, Invited while one waits on the candidate, else the stage given), asked by the cancel (else New), by new times (else Invited) and by Reopen (else New). A candidate back at New still reads Interview cancelled on their page (`careers_read`). Walked each way in `tests/hiringsql.js`: a confirmed interview cancelled with none other (Interview → New, then new times → Invited), new times on a confirmed interview (Interview → Invited), a second round cancelled while a held first round stands (stays Interview), an invitation cancelled before confirmation (Invited → New), and a decision reopened (New). The stand-in shares the derivation. Applied live on 2026-11-26; the two candidates the old functions had left behind (one at Interview, one at Invited, neither with a live interview) were moved once to New by the same derivation, their link's clock left as it was.
+
+### 2026-11-26 · A client's pane opened from low on the page starts at its top
+
+The user pressed the rail's Recent activity View all and had to scroll up to
+find the Activity record: `showPane` swapped the pane but kept the scroll, so
+the new pane began above the screen. A pane opened by a press now brings the
+record's tab strip under the console's head where it had scrolled away; a pane
+already in view stays where it is. Every View all on the Overview and the rail
+goes through the same `showPane`, so all of them gain it.
+The user then set the pace ("dont remove my dns first. Retirement planning
+would be that slowly shift out from go.adspace.me to digital.adspace.me or
+hi.adspace.me"): go.adspace.me's DNS and Rebrandly links stay up; the same
+slugs were made on hi.adspace.me the same day (svc-terms, fb-ad-terms and
+verify added beside outstation, each checked to redirect), so every address
+the portal now writes resolves, and every older one keeps working until the
+user removes the host.
+
 ### 2026-11-26 · The Letter of Offer's issuing path leaves the console
 
 The Letter of Offer has not been issued since 2026-11-12 (the quotation is the one contract), but its sheet stood in the console, reached only by itself and by the billing gate's carry-on, and its code in `js/documents.js`. The user approved removing what no longer acts (through the coordinating session): the pick sheet (`#pickSheet`, `openPick` and its helpers, `pickPayload`, Preview and Issue), the billing gate's `toLetter` carry-on into it, the next-step lines that steered a colleague to issue one ("… not on a Letter of Offer.", "The Letter of Offer is with the client and unsigned."), `ADspaceDocs.issue`, `preview`, `quoteOf`, `quoteTerms`, `validLine` and the tax-rate cache only they read, the sheet's CSS (`.lpickrow` and kin; `.lpicksum` stays, the notice's), and Issue Letter of Offer from the act and menu tables and DESIGN.md's examples. Everything that reads a letter issued before stays: Documents, its ⋯ (Download, Send, Mark signed, Void, Delete; the empty Change group kept, the groups being positional), /verify/, the Register, the Activity record, Issue document (a client letter through the Register), and the database's `issue_letter` and AQL serial. The suites that need a letter to exist seed one through `tests/issueletter.js`, which now prices the lines in the page (`ADspaceDocs.priceOf`, exported for it) and calls the stand-in's `issue_letter` itself; `letter.js` reads the refusals' codes (the console's words for them went with the sheet), and uxaudit walks no Letter of Offer sheet. `lettersql`'s check that the page priced a letter as the database does is deleted: the page holds no such pricing now, and the database's own checks in the same suite stand. The stand-in, which priced a letter's stored rows through the page's `quoteOf`, prices them itself on `priceOf`. The copy review found the letter's refusal words still pointing at issuing and reissuing (Reissue the letter., You do not have permission to issue a letter.): the map now holds only what sign, verify, void and delete answer, each naming what is left to do, and a service's Confirmed state names the signed quotation and Confirm without letter.
