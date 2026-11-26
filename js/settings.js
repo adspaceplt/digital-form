@@ -1043,7 +1043,7 @@
     while (n.length < w) n = '0' + n;
     return '-' + (f.prefix || 'R') + n;
   }
-  var QNO_SAID = { 'bad-width-request': 'Choose 3 to 6 letters.', 'bad-width-revision': 'Choose 1 to 3 digits.' };
+  var QNO_SAID = { 'bad-width-request': 'Enter a number of letters from 3 to 6.', 'bad-width-revision': 'Enter a number of digits from 1 to 3.' };
   function openQuoteNo() {
     db.rpc('id_formats_list').then(function (r) {
       var by = {};
@@ -1065,8 +1065,7 @@
           { name: 'revision_width', label: 'Digits', half: true, value: String(by.revision.width || ''), required: true }],
         /* One Next: preview, as every numbering sheet's. */
         preview: function (get) {
-          return ['Next:', reqWord(typed(get, 'request')),
-            'A request\'s letters are random. A revision of ADP/QT2611-C02 reads ADP/QT2611-C02' + revWord(typed(get, 'revision')) + '.'];
+          return ['Next:', reqWord(typed(get, 'request')), 'Revision: ' + revWord(typed(get, 'revision'))];
         },
         check: function (v) {
           if (!/^[A-Za-z]{1,6}$/.test(String(v.request_prefix || '').trim()) || !/^[A-Za-z]{1,6}$/.test(String(v.revision_prefix || '').trim())) return IDS_SAID['bad-prefix'];
