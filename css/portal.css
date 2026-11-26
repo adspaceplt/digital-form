@@ -4977,11 +4977,8 @@ body > .shell { width: 100%; }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* What differs from the section, said while its parts are shut. */
 .permsec-diff { grid-area: diff; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
-.is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name tog" "seg seg" "desc desc" "diff diff" "parts parts"; row-gap: 8px; }
-/* Four levels across a phone's panel: four pixels each side keep every
-   level whole (Team audit, 2026-10-03); narrower still, the segment's own
-   measure wraps it into two columns. */
-.is-narrow .permsec .seg-opt { padding: 0 4px; }
+/* A phone: the name, then its segment at the right edge, Advanced under. */
+.is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "seg seg" "desc tog" "diff diff" "parts parts"; row-gap: 8px; }
 /* The fold names how many differ; it clears the control floor with the
    negative block margin the ⋯ uses, so its line keeps the words' height. */
 /* Advanced: a quiet small button with the shared chevron (2026-11-26, the
