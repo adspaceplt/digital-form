@@ -29,7 +29,7 @@
     empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
-    'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
+    'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimal places, and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
     'over-term': 'An item cannot run longer than the term. Set its months to the term or fewer.',
     'bad-card': 'That Rate Card version is no longer available. Choose another.',
@@ -835,7 +835,7 @@
     if (q.reviewed_at) fields.push({ name: 'lines', label: 'Revert its confirmed service lines to To quote', tick: true, value: 'on' });
     window.ADspaceConfirm.ask({
       title: 'Mark withdrawn?',
-      body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
+      body: q.ref + ' will read Withdrawn in Quotations and on the verify page. The signed copy is kept.',
       fields: fields, go: 'Mark withdrawn', tone: 'warn',
       check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a date between the signing date and today.' : ''; },
       wait: true
@@ -950,7 +950,7 @@
     else if (s.signature && s.signature.type === 'typed') sig = '<span class="qsg-sig is-typed">' + esc(s.signature.text) + '</span>';
     var how = s.via === 'paper'
       ? fact('Signed', 'On paper') +
-        fact('Keyed in by', esc((rec.by || '') + (rec.entered_at ? ' · ' + when(rec.entered_at) : ''))) +
+        fact('Entered by', esc((rec.by || '') + (rec.entered_at ? ' · ' + when(rec.entered_at) : ''))) +
         (s.scan && window.ADspaceWords.absUrl(s.scan) ? fact('Scan', '<a class="plink" href="' + esc(window.ADspaceWords.absUrl(s.scan)) + '" target="_blank" rel="noopener">Open scan</a>') : '')
       : fact('Signed', 'On the quotation link') +
         /* The code proves only the address it went to: one outside Contacts
@@ -1125,7 +1125,7 @@
         window.ADspaceSheet.close();
         RV = null;
         var line = q.ref + ' approved. ' + (d.lines || 0) + ' service line' + (d.lines === 1 ? '' : 's') + ' confirmed. ' + (BILLING_SAID[d.billing] || '') +
-          (c.stage && c.stage !== 'active' ? ' Move the client to Active from the record’s stage.' : '');
+          (c.stage && c.stage !== 'active' ? ' Move the client to Active.' : '');
         /* The signed copy is sealed at once (SIGNED DOCUMENT SEAL): drawn
            from the row as it now stands, kept private, never drawn again.
            A seal that fails is said; the next Download seals it. */
@@ -1861,7 +1861,7 @@
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · ' + CUR + ' ' + esc(rm(cv(p.rate)).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
         '<small>' + p.spec.contents + ' content pieces: ' + mixWords(p.spec.mix || [], true) + '</small>' +
-        (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
+        (p.spec.ad_budget ? '<small>Advertising budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
         '</span></button>';
     }).join('');
   }

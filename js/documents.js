@@ -1332,7 +1332,7 @@
            quotation's term, and the total over the months stated for each
            line, as the quotation says it (2026-10-18). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.plan + ' months, a total of ' +
-                   MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
+                   MON.money2(price.total, doc.market) + incl + ' over the months stated for each service' +
                    (price.planOnce ? ', one-time items included' : '') + '.');
       }
       /* A letter whose terms carry its validity (`terms_own`) prints them
