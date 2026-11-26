@@ -98,6 +98,7 @@
       tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
         services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', feedback: 'Feedback', account: 'Account' },
       rateTitle: 'Rate your experience', fbRequested: 'Requested {d}', fbSubmit: 'Submit',
+      loadFail: '{x} could not be loaded.', tryAgain: 'Try again',
       fbBy: 'Submitted {d} by {n}', fbOn: 'Submitted {d}', fbScore: '{v} of {m}',
       posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved', toReviewWord: 'To review',
@@ -147,6 +148,7 @@
       tabs: { overview: '概览', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
         services: '服务', letters: '函件', reports: '报告', meetings: '会议', feedback: '反馈', account: '账户' },
       rateTitle: '请评价您的体验', fbRequested: '请求日期：{d}', fbSubmit: '提交',
+      loadFail: '{x}无法加载。', tryAgain: '重试',
       fbBy: '{n}于{d}提交', fbOn: '{d}提交', fbScore: '{v}/{m}',
       posts: function (n) { return n + '篇帖子'; },
       toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准', toReviewWord: '待审阅',
@@ -265,6 +267,14 @@
      where the console draws one line inside the surface the list would have
      filled. */
   function empty(box, word) { UI.emptyLine(box, word, '', null); }
+  /* A read that failed is said in its card with Try again, in the page's
+     language, never an empty or hidden card (2026-11-25). */
+  function failCard(box, what, again) {
+    var w = t();
+    box.innerHTML = '<div class="errline" role="alert"><b>' + esc(w.loadFail.replace('{x}', what)) + '</b>' +
+      '<button class="btn btn-sm" type="button" data-a="retry">' + esc(w.tryAgain) + '</button></div>';
+    box.querySelector('[data-a="retry"]').addEventListener('click', again);
+  }
   /* A line of parts wraps between its parts, never inside one (DESIGN §5):
      each short part is held whole; a long one a person typed (a note, a
      unit) still breaks where it must. Answers HTML. */
@@ -884,8 +894,10 @@
     API.invokeFn('bukku-sync', { action: 'portal', client: c.id }).then(function (r) {
       if (stale(c)) return;
       var d = r.data || {};
-      /* Bukku not set up, or the function not yet deployed: nothing to show. */
-      if (r.error && (!d.error || /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error)))) { wrap.hidden = true; return; }
+      /* Bukku not set up, or the function not yet deployed: nothing to show.
+         Any other refusal is a read that failed, said in the card. */
+      if (r.error && d.error && /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error))) { wrap.hidden = true; return; }
+      if (r.error || d.error) { wrap.hidden = false; failCard(box, w.invoices, function () { paintInvoices(w, c); }); return; }
       var list = (d.invoices || []).slice();
       wrap.hidden = !list.length;
       if (!list.length) { box.innerHTML = ''; return; }
@@ -914,7 +926,7 @@
     }).catch(function () {
       if (stale(c)) return;
       wrap.hidden = false;
-      box.innerHTML = '<p class="cp-line"><b>' + esc(t().failTitle) + '</b></p><p class="cp-sub">' + esc(t().failText) + '</p>';
+      failCard(box, w.invoices, function () { paintInvoices(w, c); });
     });
   }
 
@@ -1025,8 +1037,9 @@
     if (!card || !box || !hbox || !c.id || !F) return;
     db.rpc('portal_feedback', { p_client: c.id }).then(function (r) {
       if (stale(c)) return;
-      if (r.error || !r.data || r.data.error) { card.hidden = true; tabShown('feedback', false); return; }
+      if (r.error || !r.data || r.data.error) { fbFailed(w, c); return; }
       var d = r.data, open = d.open, hist = d.history || [];
+      $('ovFbHead').textContent = w.rateTitle;
       tabShown('feedback', hist.length > 0);
       card.hidden = !open;
       if (open) {
@@ -1061,7 +1074,16 @@
             return '<div>' + q + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
           }).join('') + '</div></details>';
       }).join('') + '</div>' : '';
-    }).catch(function () { card.hidden = true; tabShown('feedback', false); });
+    }).catch(function () { if (!stale(c)) fbFailed(w, c); });
+  }
+  /* A failed read may hide a request waiting on the client, so the card
+     stands under the tab's name with Try again (2026-11-25). */
+  function fbFailed(w, c) {
+    var card = $('ovFb'), box = $('ovFbBox');
+    if (!card || !box) return;
+    $('ovFbHead').textContent = w.tabs.feedback;
+    card.hidden = false;
+    failCard(box, w.tabs.feedback, function () { paintFeedback(w, c); });
   }
   function submitFeedback(w, c, open, btn) {
     var F = window.ADspaceFeedback, form = $('ovFbForm');

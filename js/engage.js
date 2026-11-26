@@ -41,7 +41,6 @@
      copy of it here); these names read it. */
   var CK = window.ADspaceClock;
   var MONTHS = CK.LONG;
-  function shortMon(i) { return CK.MON[i]; }
   /* Today, and any stamp, as a day in Malaysia. */
   function dayMy(t) { return t == null ? CK.today() : CK.day(t); }
   function addDays(day, n) { return CK.addDays(day, n); }

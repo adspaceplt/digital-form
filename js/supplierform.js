@@ -237,6 +237,12 @@
     if (!mail(v('email'))) bad('email');
     if (!numberOk(v('mobile'), true)) bad('mobile');
     if (TERMS.indexOf(v('payment_term')) < 0) bad('payment_term');
+    /* A bank detail changed with the account number left blank would be
+       dropped, the current details kept (2026-11-25): it is refused here,
+       never reported saved. */
+    if (bankKept() && ['payee_name', 'bank_name', 'swift', 'bank_address'].some(function (k) { return v(k); })) {
+      out.push(['bank_account', 'Enter the account number to change the bank details.']);
+    }
     if (!bankKept()) {
       if (v('payee_name').length < 2) bad('payee_name');
       if (BANKS.indexOf(v('bank_name')) < 0) bad('bank_name');

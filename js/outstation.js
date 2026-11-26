@@ -163,7 +163,13 @@
       if (t.driver_id !== m.id || healed[t.id]) return;
       var stops = t.stops || [];
       var noPlace = stops.filter(function (s) { return !s.address; });
-      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null);
+      /* A check-out at the office whose drive back was never saved (the
+         last stop still left at the arrival itself) is asked again too
+         (2026-11-25): outstation_back_drive answers the same twice. */
+      var last = stops[stops.length - 1];
+      var noBack = t.state === 'closed' && last && last.left_how === 'office' && last.left_at && t.ended_at &&
+        Date.parse(last.left_at) >= Date.parse(t.ended_at);
+      var noKm = stops.some(function (s) { return s.km_from_prev == null; }) || (t.state === 'closed' && t.km_back == null) || noBack;
       if (!noPlace.length && !noKm) return;
       healed[t.id] = true;
       noPlace.forEach(function (s) { asks.push({ stop: s.id }); });
@@ -703,17 +709,22 @@
     return 2 * 6371000 * Math.asin(Math.sqrt(Math.pow(Math.sin(r(b.lat - a.lat) / 2), 2) +
       Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.pow(Math.sin(r(b.lng - a.lng) / 2), 2)));
   }
-  function readOffice(trip) {
-    if (!bridge.onTravelDevice || !bridge.onTravelDevice()) return;
-    if (st.office && st.office.trip === trip.id) return;
+  /* `fresh` reads again whatever was read before: each check-out asks
+     where the device is now, never where it stood when the page opened
+     (2026-11-25); `then` hears the reading, or null. */
+  function readOffice(trip, fresh, then) {
+    var tell = function (at) { if (then) then(at); };
+    if (!bridge.onTravelDevice || !bridge.onTravelDevice()) { tell(null); return; }
+    if (!fresh && st.office && st.office.trip === trip.id) return;
     st.office = { trip: trip.id, at: null };
     var mine = st.office;
     quickSpot().then(function (spot) {
-      if (st.office !== mine || !spot) return;
+      if (st.office !== mine) return;
       var pin = { lat: Number(setting('outstation_office_lat', NaN)), lng: Number(setting('outstation_office_lng', NaN)) };
       var limit = Number(setting('outstation_accuracy_m', 50)), radius = Number(setting('outstation_office_radius_m', 100));
-      if (!isFinite(pin.lat) || !isFinite(pin.lng) || spot.acc > limit || metres(spot, pin) > radius) return;
+      if (!spot || !isFinite(pin.lat) || !isFinite(pin.lng) || spot.acc > limit || metres(spot, pin) > radius) { tell(null); return; }
       mine.at = { lat: spot.lat, lng: spot.lng, acc: spot.acc, read: new Date().toISOString() };
+      tell(mine.at);
       if (!window.ADspaceSheet.isOpen()) paint();
     });
   }
@@ -1113,6 +1124,11 @@
     $('ostOutFacts').hidden = !outSheet.office;
     outMsg('');
     window.ADspaceSheet.show(outSheet, { opener: opener });
+    if (!edit) readOffice(trip, true, function (at) {
+      if (outSheet.trip !== trip || outSheet.edit) return;
+      outSheet.office = at;
+      $('ostOutFacts').hidden = !at;
+    });
   }
   function sendOut() {
     var trip = outSheet.trip, go = $('ostOutGo');

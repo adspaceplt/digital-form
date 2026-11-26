@@ -8328,7 +8328,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    card inside it. */
 .ovw-card .softpanel { background: none; border: 0; border-radius: 0; }
 .ovw-card .emptyline { padding: 0; }
-.ovw-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }
+.ovw-card .errline, .cp-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }
 
 .ovw > * { margin: 0; }
 .ovw-pages { margin: 0; }
