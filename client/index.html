@@ -30,26 +30,26 @@
 <script src="/js/copy.js?v=20261117zzzf"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122zzzc"></script>
+<script src="/js/form.js?v=20261126gl"></script>
 <script src="/js/otp.js?v=20261122zzr"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/menu.js?v=20261126lo"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261126rfd"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/maintenance.js?v=20261125ct"></script>
-<script src="/js/announce.js?v=20261126rfd"></script>
+<script src="/js/maintenance.js?v=20261126gl"></script>
+<script src="/js/announce.js?v=20261126gl"></script>
 <script src="/js/money.js?v=20261126rfc"></script>
-<script src="/js/documents.js?v=20261126ga"></script>
+<script src="/js/documents.js?v=20261126gl"></script>
 <script src="/js/smreport.js?v=20261126w"></script>
 <script src="/js/fbform.js?v=20261125tse"></script>
 </head>
 <body>
 
-<script src="/js/chrome.js?v=20261122zzzs" data-kicker="Client Portal" data-actions="lang"></script>
+<script src="/js/chrome.js?v=20261126gl" data-kicker="Client Portal" data-actions="lang"></script>
 
 <template id="chromeExtra">
-  <button class="pill" id="portalOut" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span id="portalOutWord">Sign out</span></button>
+  <button class="pill" id="portalOut" type="button" hidden><svg aria-hidden="true" data-ic="signout"></svg><span id="portalOutWord">Sign out</span></button>
 </template>
 
 <main class="shell">
@@ -131,7 +131,7 @@
           <!-- Each section at a glance, a tile a tab drawn (2026-11-25). -->
           <div class="cp-tiles" id="ovTiles" hidden></div>
           <section class="panel cp-card" id="ovSvc">
-            <div class="cp-card-head"><h3 id="ovSvcHead">Services</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="services" id="ovSvcGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div class="cp-card-head"><h3 id="ovSvcHead">Services</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="services" id="ovSvcGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" aria-hidden="true" data-ic="chevron"></svg></button></div>
             <div id="ovSvcBox"></div>
           </section>
           <!-- The client's own pages: Content Review and each creator campaign. -->
@@ -146,11 +146,11 @@
             <div id="ovMgrBox"></div>
           </section>
           <section class="panel cp-card" id="ovMeet" hidden>
-            <div class="cp-card-head"><h3 id="ovMeetHead">Next meeting</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="meetings" id="ovMeetGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div class="cp-card-head"><h3 id="ovMeetHead">Next meeting</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="meetings" id="ovMeetGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" aria-hidden="true" data-ic="chevron"></svg></button></div>
             <div id="ovMeetBox"></div>
           </section>
           <section class="panel cp-card" id="ovRep" hidden>
-            <div class="cp-card-head"><h3 id="ovRepHead">Latest report</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="reports" id="ovRepGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div class="cp-card-head"><h3 id="ovRepHead">Latest report</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="reports" id="ovRepGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" aria-hidden="true" data-ic="chevron"></svg></button></div>
             <div id="ovRepBox"></div>
             <div class="msg" id="ovRepMsg"></div>
           </section>
@@ -252,7 +252,7 @@
     <div class="sheet-head">
       <h3 id="reqHeading"></h3>
       <button class="iconbtn" id="reqClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <!-- The page keeps an unsent note itself (js/portal.js, reqDraft), in the
@@ -277,8 +277,8 @@
 </div>
 
 <script src="/js/sheet.js?v=20261125ar"></script>
-<script src="/js/confirm.js?v=20261126st"></script>
-<script src="/js/icons.js?v=20261126rc"></script>
-<script src="/js/portal.js?v=20261126cpt"></script>
+<script src="/js/confirm.js?v=20261126gl"></script>
+<script src="/js/icons.js?v=20261126gl"></script>
+<script src="/js/portal.js?v=20261126gl"></script>
 </body>
 </html>

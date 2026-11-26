@@ -82,7 +82,7 @@
     return 'register.documents';
   }
 
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   function shutMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('.reg-row .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('.reg-row .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -481,8 +481,7 @@
          and no ⋯ (MENU-7, 2026-10-22). */
       '<span class="team-act">' + (offer || perf
         ? '<button class="kmenu-btn reg-go" data-a="' + (offer ? 'record' : 'review') + '" type="button" aria-label="' +
-            (offer ? 'Open client' : 'Open review') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>'
+            (offer ? 'Open client' : 'Open review') + '">' + window.ADspaceIcons.glyph('chevron') + '</button>'
         : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             window.ADspaceMenu.items([
@@ -1050,7 +1049,7 @@
       return '<div class="sca-row" data-check-group data-i="' + i + '">' +
         '<div class="sca-row-head"><span class="fsec-h">Account ' + (i + 1) + '</span>' +
           (sca.rows.length > 1 ? '<button class="iconbtn" type="button" data-x="' + i + '" aria-label="Remove account ' + (i + 1) + '">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>' : '') + '</div>' +
+            window.ADspaceIcons.glyph('x') + '</button>' : '') + '</div>' +
         '<div class="row fgrid">' +
           '<div><label class="field-label" for="' + k + 'c">Client</label><select class="select" id="' + k + 'c" data-f="client_id" aria-required="true">' + opts + '</select></div>' +
           '<div><label class="field-label" for="' + k + 'a">Ad account</label><input class="input" id="' + k + 'a" data-f="account" list="docScaAccts" aria-required="true" placeholder="Account name or ID"></div>' +
@@ -1392,7 +1391,7 @@
      own. Documents: Document types, a granted part (an admin's by itself).
      A type is never removed, only no longer offered, because every document
      issued names its type. */
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
   var dt = { all: [], editing: null, kinds: {} };
   var DT_SAID = {
     'denied':       'You do not have permission to change document types. Please ask an admin.',

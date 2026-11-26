@@ -16,7 +16,7 @@
  */
 (function () {
   'use strict';
-  var FILE_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="m9 15 3 3 3-3"/></svg>';
+  var FILE_GLYPH = window.ADspaceIcons.glyph('file');
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -399,10 +399,10 @@
   }
 
   /* The padlock beside Performance says which state the reviews are in. */
-  var PAD_SHUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-  var PAD_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>';
+  var PAD_SHUT = window.ADspaceIcons.glyph('lock');
+  var PAD_OPEN = window.ADspaceIcons.glyph('unlock');
   /* An edit carries its pen, as every Edit in the console does. */
-  var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN_MARK = window.ADspaceIcons.glyph('pen');
   function padlock(open) {
     var b = $('perfLockBtn');
     b.innerHTML = open ? PAD_OPEN : PAD_SHUT;
@@ -585,7 +585,7 @@
       '<span class="perf-sum">' + esc(sum) + '</span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
+          window.ADspaceIcons.glyph('more') + '</button>' +
         '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="2" data-a="profile" type="button" role="menuitem">Review profile</button>' +
           (r && r.id && may('team.perfadmin', 'work') ? '<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>' : '') + '</div>' +
       '</span>';
@@ -941,7 +941,7 @@
         if (noId) {
           line = 'Set the Employee ID first.';
           if (may('team', 'view')) acts = '<button class="btn btn-sm" id="pvSetId" type="button">Open record' +
-            '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>';
+            window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button>';
         }
         if (canWork()) {
           /* Whether the release tells them: ticked unless management says
@@ -1141,7 +1141,7 @@
          the points (the menu standard), never a button under the row. */
       var act = draft && !voiding ? '<span class="team-act perf-breach-act">' +
         '<button class="kmenu-btn" data-a="bmenu" type="button" aria-label="More actions" aria-expanded="false">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
+        window.ADspaceIcons.glyph('more') + '</button>' +
         '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="5" data-void="' + esc(b.id) + '" type="button" role="menuitem">Withdraw</button></div></span>' : '';
       return '<div class="perf-breach" data-breach="' + esc(b.id) + '">' +
         '<div class="perf-breach-top"><span class="perf-breach-sev">' + esc(SEV_WORD[b.severity]) + '</span>' + vicMark(b) + '<span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span>' + act + '</div>' +
@@ -1155,7 +1155,7 @@
     }).join('');
     var empty = list.length ? '' : '<p class="perf-quiet">None recorded.</p>';
     var act = draft && r.id !== undefined && st.editing !== 'breach'
-      ? '<button class="btn btn-quiet btn-sm qcard-act" id="pvBreachAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add issue</button>' : '';
+      ? '<button class="btn btn-quiet btn-sm qcard-act" id="pvBreachAdd" type="button">' + window.ADspaceIcons.glyph('plus') + 'Add issue</button>' : '';
     var form = draft && st.editing === 'breach' ? breachForm(r) : '';
     return card('Issues this month', empty + rows + form, act, 'pvBreaches');
   }
@@ -1163,8 +1163,7 @@
      and its multiplier, stamped when it was logged. */
   function vicWord(b) { return b && b.vic ? 'VIC client · ×' + num(b.vic_x || 2) : ''; }
   function vicMark(b) {
-    return b && b.vic ? '<span class="chip-vic perf-vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
-      'stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg>' + esc(vicWord(b)) + '</span>' : '';
+    return b && b.vic ? '<span class="chip-vic perf-vic">' + window.ADspaceIcons.glyph('crown') + esc(vicWord(b)) + '</span>' : '';
   }
   /* The clients an issue may name, read once a visit, code first; a read
      refused leaves None alone. */
@@ -1726,7 +1725,7 @@
       '<span class="perf-grade">' + gradeChip(res) + '</span>' +
       '<span class="perf-reward">' + esc(rewardWord(res)) + '</span>' +
       '<span class="perf-sum">' + esc(res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '') + '</span>' +
-      '<span class="perf-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>';
+      '<span class="perf-chev" aria-hidden="true">' + window.ADspaceIcons.glyph('chevron') + '</span>';
     b.addEventListener('click', function () {
       st.mode = 'mine'; st.editing = null; st.rec = r;
       showSheet(b);
@@ -3119,7 +3118,7 @@
     if (may('team.performance', 'work')) {
       el.insertAdjacentHTML('beforeend', '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
+        window.ADspaceIcons.glyph('more') + '</button>' +
         '<div class="kmenu" data-menu hidden><button class="kmenu-item is-danger" data-g="6" data-a="remove" type="button" role="menuitem">Remove</button></div></span>');
       var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
       btn.addEventListener('click', function (e) {
@@ -3340,7 +3339,7 @@
     if (d && d.error === 'month-released') return (d.month || 'That month') + ' has been shared. Revert it to draft to change its recognitions.';
     return (d && REC_SAID[d.error]) || said(d);
   }
-  var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var MENU_DOTS = window.ADspaceIcons.glyph('more');
   function shutRecMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('#mineRecList .kmenu, #pvRecs .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('#mineRecList .kmenu-btn, #pvRecs .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -3413,8 +3412,7 @@
       paintLetters();
     });
   }
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M18 14v5H5V6h5"/></svg>';
+  var OUT = window.ADspaceIcons.glyph('out');
   function paintLetters() {
     var box = $('mineLetterList'), list = st.letters || [];
     if (!list.length) { UI.emptyLine(box, 'No letters.'); return; }

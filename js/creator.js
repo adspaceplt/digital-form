@@ -511,7 +511,7 @@
       var st = b && b.status === 'paid' ? 'paid' : (b || x.posted_on || x.state === 'posted' || x.state === 'completed') ? 'pending' : 'due';
       var tone = st === 'paid' ? 'is-ok' : st === 'pending' ? 'is-warn' : 'is-off';
       var word = st === 'paid' && b.paid_on ? fill(T0.paysPaid, { d: day(b.paid_on) }) : T0.paysWord[st];
-      return '<div class="crpay-row"><span class="cx-tile is-sm" aria-hidden="true">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('megaphone') : '') + '</span>' +
+      return '<div class="crpay-row"><span class="cx-tile is-sm" aria-hidden="true">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('campaigns') : '') + '</span>' +
         '<span class="crpay-what"><span class="crpay-name">' + esc(x.campaign || '') + '</span>' +
           (x.job ? '<small class="crpay-job">' + esc(x.job) + '</small>' : '') + '</span>' +
         '<span class="crpay-st"><span class="chip-state ' + tone + '">' + esc(word) + '</span></span>' +
@@ -794,7 +794,7 @@
         b.visit_pic_phone ? reachHtml(b.visit_pic_phone) : '']);
       if (b.tracking_no) facts.push([t().tracking, b.tracking_no, 'box']);
       var plats = platsOf(b.platforms);
-      if (plats.length) facts.push([t().platformsLabel, plats.join(' · '), 'megaphone']);
+      if (plats.length) facts.push([t().platformsLabel, plats.join(' · '), 'platform']);
       if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish), 'calendar']);
       if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due, true), 'clock']);
     }
@@ -1078,7 +1078,7 @@
       stars += '<button class="star' + (i <= given ? ' is-on' : '') + '" type="button" ' +
         'data-star="' + i + '" role="radio" aria-checked="' + (i === given) + '" ' +
         'aria-label="' + esc(t().rateStar(i)) + '">' +
-        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg>' +
+        window.ADspaceIcons.glyph('star') +
         '</button>';
     }
     return '<div class="booking-rate"><div class="kstep-title">' + esc(t().rateHead) + '</div>' +
@@ -1376,10 +1376,7 @@
   function pinHtml(f) {
     var size = sizeOf(f.bytes);
     return '<a class="filepin" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
-      '</svg>' +
+      window.ADspaceIcons.glyph('clip') +
       '<span class="filepin-name">' + esc(f.name) + '</span>' +
       (size ? '<span class="filepin-size">' + esc(size) + '</span>' : '') +
     '</a>';
@@ -1813,7 +1810,7 @@
     var forgetBtn = document.createElement('button');
     forgetBtn.className = 'pill';
     forgetBtn.id = 'signOutBtn'; forgetBtn.type = 'button';
-    forgetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span></span>';
+    forgetBtn.innerHTML = window.ADspaceIcons.glyph('signout') + '<span></span>';
     /* Named and hidden from the start. Its label was only written once a
        booking painted, so the sign-in cover carried an icon-only button with
        no name, offering to sign out of a session nobody had yet. */

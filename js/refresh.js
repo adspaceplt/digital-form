@@ -100,7 +100,7 @@
     mark = document.createElement('div');
     mark.className = 'pullmark';
     mark.setAttribute('aria-hidden', 'true');
-    mark.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+    mark.innerHTML = window.ADspaceIcons.glyph('refresh');
     document.body.appendChild(mark);
     return mark;
   }

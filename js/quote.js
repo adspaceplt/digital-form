@@ -551,7 +551,7 @@
       '<button class="btn btn-primary" type="button" data-a="next">' + esc(S.step === 'details' ? t().make : t().cont) + '</button>';
   }
   // The choice's mark at the card's right edge: an empty ring, the ink disc with its tick once chosen.
-  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  var MARK = '<span class="qs-mark" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="12" height="12"') + '</span>';
   function pick(type, name, value, on, title, sub) {
     return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
       (on ? ' checked' : '') + '><span class="qs-text"><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + MARK + '</label>';
@@ -638,7 +638,7 @@
     return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="plan" value="' + esc(p.slug) + '"' + (on ? ' checked' : '') + '>' +
       '<span class="qs-plan-top">' + ic(p.ads ? 'planads' : 'plancontent', 'qs-plan-ic') + (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + '</span>' +
       '<b>' + esc(f(w.plan, { p: p.plan })) + '</b>' +
-      '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
+      '<span class="qs-pl">' + ic('pieces') + esc(f(w.piecesN, { n: p.contents })) + '</span>' +
       '<span class="qs-pl">' + ic('device') + esc(p.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: p.platforms })) + '</span>' +
       (p.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(p.ad_budget) })) + '</span>' : '') + '</label>';
   }
@@ -664,7 +664,7 @@
   function inclList(items) {
     return items.length ? '<ul class="qs-incl">' + items.map(function (x) { return '<li>' + INCL_TICK + '<span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' : '';
   }
-  var INCL_TICK = '<svg class="qs-incl-tick" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var INCL_TICK = window.ADspaceIcons.glyph('check', 'qs-incl-tick', 'width="14" height="14"');
   /* The plan chosen, under the cards: what it is best for, its content
      each month (a segment where it holds two options, else the one), then
      what it includes, a tick each. */
@@ -874,7 +874,7 @@
     notes.push(f(t().basis, { v: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
-      ((st !== 'quote' && st !== 'ready') || q.revised || bn || q.change ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
+      ((st !== 'quote' && st !== 'ready') || q.revised || bn || q.change ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change">' + window.ADspaceIcons.glyph('back', '', 'width="15" height="15"') + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1>' + (tt.title ? '<span class="qs-meta qs-own">' + esc(tt.title) + '</span>' : '') + '<span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span>' +
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
@@ -952,7 +952,7 @@
     if (plan) {
       out.push(['plancontent', w.need.social[0] + ' · ' + f(w.plan, { p: plan.plan })]);
       var m = (plan.mix || [])[Number(sel.mix) || 0];
-      out.push(['picture', f(w.piecesN, { n: plan.contents }) + (m ? (lang === 'zh' ? '：' : '; ') + mixShort(m) : '')]);
+      out.push(['pieces', f(w.piecesN, { n: plan.contents }) + (m ? (lang === 'zh' ? '：' : '; ') + mixShort(m) : '')]);
     }
     if ((sel.platforms || []).length) out.push(['device', sel.platforms.map(function (k) { return w.plat[k] || k; }).join(lang === 'zh' ? '、' : ', ')]);
     if (sel.budget != null && (!plan || Number(sel.budget) !== 0 || plan.ad_budget)) out.push(['planads', w.need.ads[0]]);
@@ -1000,7 +1000,7 @@
      whether they decide, recorded on the lead with Proceed with this
      quotation, which opens nothing (2026-10-26). A free proposal is never
      offered. */
-  var TICK = '<span class="qs-asked-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>';
+  var TICK = '<span class="qs-asked-tick" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="13" height="13"') + '</span>';
   function done(title, line) {
     return '<div class="qs-asked">' + TICK + '<span><b>' + esc(title) + '</b>' + (line ? '<span>' + esc(line) + '</span>' : '') + '</span></div>';
   }
@@ -1184,7 +1184,7 @@
         return '<label class="qs-plan' + (on ? ' is-on' : '') + (feat ? ' is-feat' : '') + '"><input type="radio" name="chplan" value="' + esc(x.slug) + '"' + (on ? ' checked' : '') + '>' +
           (feat ? '<span class="qs-rec">' + esc(w.recommended) + '</span>' : '') + ic(x.ads ? 'planads' : 'plancontent', 'qs-plan-ic') +
           '<b>' + esc(f(w.plan, { p: x.plan })) + '</b>' + (r != null ? '<span class="qs-planprice">' + esc(f(w.perMonth, { a: chMoney(r) })) + '</span>' : '') +
-          '<span class="qs-pl">' + ic('grid') + esc(f(w.piecesN, { n: x.contents })) + '</span>' +
+          '<span class="qs-pl">' + ic('pieces') + esc(f(w.piecesN, { n: x.contents })) + '</span>' +
           '<span class="qs-pl">' + ic('device') + esc(x.platforms === 1 ? w.platOne.charAt(0).toUpperCase() + w.platOne.slice(1) : f(w.platsN, { n: x.platforms })) + '</span>' +
           (x.ad_budget ? '<span class="qs-pl">' + ic('bars') + esc(f(w.adUpTo, { b: n0(qb(x.ad_budget)) })) + '</span>' : '') + '</label>';
       }).join('') + '</div>');
@@ -1390,7 +1390,7 @@
         ? sgInput('sgTyped', SG.text, ' autocomplete="off" placeholder="' + esc(s.typedPh) + '" aria-labelledby="sgSigL"', 'qs-typed')
         : '<div class="qs-pad" id="sgPad" role="img" aria-labelledby="sgSigL"><span class="qs-pad-line" aria-hidden="true"></span>' +
           '<span class="qs-pad-hint" aria-hidden="true"' + (SG.path ? ' hidden' : '') + '>' + esc(s.padHint) + '</span>' +
-          '<svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><path d="' + esc(SG.path) + '"/></svg></div>';
+          window.ADspaceIcons.drawing('0 0 300 100', '<path d="' + esc(SG.path) + '"/>', 'preserveAspectRatio="none" aria-hidden="true"') + '</div>';
       return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
         '<dl class="qs-tot qs-agreed">' + agreedRows(q).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
         '<div class="qs-pair">' + sgField('sgSigner', s.signer, true, sgInput('sgSigner', SG.signer.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
@@ -1416,7 +1416,7 @@
       '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signfinish', s.finish) +
       '<p class="qs-note">' + noteH(s.rec) + '</p></form>';
   }
-  var LEAVE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+  var LEAVE = window.ADspaceIcons.glyph('out', '', 'width="15" height="15"');
   /* What the signer typed, read into the page's copy before any redraw. */
   function signRead() {
     if (!SG) return;
@@ -1678,11 +1678,10 @@
     signWire();
   }
   // The WhatsApp mark, as the front door draws it before the same words.
-  var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
+  var CHAT_MARK = window.ADspaceIcons.glyph('chat', '', 'width="15" height="15"');
   function addGlyph(b, k) {
     if (b.querySelector('svg')) return;
-    var p = { file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>' }[k];
-    b.insertAdjacentHTML('afterbegin', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>');
+    b.insertAdjacentHTML('afterbegin', window.ADspaceIcons.glyph(k, '', 'width="15" height="15"'));
   }
   function say(id, text, tone) {
     var m = $(id); if (!m) return;
@@ -1980,7 +1979,7 @@
     b.innerHTML = '<p class="annbar-text">Preview: the page as the prospect sees it. Nothing can be sent from it.</p>' +
       '<span class="msg" id="qsPreviewMsg" role="status"></span><span class="annbar-acts">' +
       '<button class="iconbtn annbar-x" id="qsPreviewHide" type="button" aria-label="Hide">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>';
+      window.ADspaceIcons.glyph('x') + '</button></span>';
     top.parentNode.insertBefore(b, top.nextSibling);
     $('qsPreviewHide').addEventListener('click', function () { b.hidden = true; });
   }

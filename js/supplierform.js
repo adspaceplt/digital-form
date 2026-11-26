@@ -44,7 +44,7 @@
     'ADSPACE PLT may, at its absolute discretion, terminate this arrangement by written notice to my / our last known address or email.',
     'I / We hereby declare that all the information provided above is true and correct.'
   ];
-  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  var MARK = '<span class="qs-mark" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="12" height="12"') + '</span>';
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var info = null, state = 'loading', typed = { kind: 'company', currency: 'MYR' }, consent = false, sending = false;

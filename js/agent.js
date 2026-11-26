@@ -50,7 +50,7 @@
   function me() { return (bridge.me && bridge.me()) || null; }
 
   var state = { messages: [], press: '', busy: false, notes: [], said: 0 };
-  var AI_GLYPH = '<svg class="spark ai-mark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>';
+  var AI_GLYPH = window.ADspaceIcons.glyph('sparkle', 'spark ai-mark');
 
   /* ---- Words ---------------------------------------------------------------- */
   var SAID = {
@@ -1504,7 +1504,7 @@
   function openBtn(o) {
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'btn btn-sm ag-open';
-    b.innerHTML = esc(o.label || 'Open') + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+    b.innerHTML = esc(o.label || 'Open') + ' ' + window.ADspaceIcons.glyph('chevron');
     b.addEventListener('click', function () { openRecord(o); });
     return b;
   }

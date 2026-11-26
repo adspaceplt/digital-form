@@ -23,17 +23,17 @@
   var audience = inConsole ? 'team' : 'clients';
   var shown = [];   // the live announcements, as the database orders them
   var at = 0;       // the one in view, among those not closed here
-  var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
-  var NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  var X = window.ADspaceIcons.glyph('x');
+  var OUT = window.ADspaceIcons.glyph('out');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var PREV = window.ADspaceIcons.glyph('chevleft');
+  var NEXT = window.ADspaceIcons.glyph('chevron');
+  var DOTS = window.ADspaceIcons.glyph('more');
   function shut() {
     Array.prototype.forEach.call(document.querySelectorAll('.ann-acts .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('.ann-acts [data-a="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
   }
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
   function esc(s) { return window.ADspaceWords.esc(s); }

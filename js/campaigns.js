@@ -14,14 +14,8 @@
 
   var W = window.ADspaceWords;   // read by STATE_WORD below, so it is set first
   // The mark that says a link leaves the page.
-  var EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-    + '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>'
-    + '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
-  var LINK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>' +
-    '<path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
+  var EXT = window.ADspaceIcons.glyph('out');
+  var LINK_ICON = window.ADspaceIcons.glyph('link');
   var bridge = window.ADspaceAdmin || {};
   var ICON    = bridge.ICON || {};
   var log     = bridge.log || function () {};
@@ -435,7 +429,7 @@
      suppliers)"): the row is one button, its platforms words, its payment
      details' standing at the right; on a phone two lines, the name with that
      standing, then Creator ID · platforms · campaigns with the rate. */
-  var CR_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CR_CHEV = window.ADspaceIcons.glyph('chevron');
   function platsOf(c) {
     var out = [];
     (c.creator_profiles || []).forEach(function (p) {
@@ -538,9 +532,9 @@
      address. */
   var CR_PANES = [['overview', 'Overview'], ['payment', 'Payment'], ['bookings', 'Bookings'], ['activity', 'Activity']];
   var crRec = { id: null, pane: 'overview', opener: null };
-  var CR_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var CR_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
-  var CR_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var CR_PEN = window.ADspaceIcons.glyph('pen');
+  var CR_BACK = window.ADspaceIcons.glyph('back');
+  var CR_DOTS = window.ADspaceIcons.glyph('more');
   function crPaneOk(k) {
     if (k === 'payment') return mayPart('campaigns.creators', 'view');
     if (k === 'activity') return Boolean(bridge.may && bridge.may('activity.campaigns', 'view'));
@@ -1192,7 +1186,7 @@
       return jobRow(' data-opt="' + esc(j.option) + '"', j.job, sub.join(' · '), st, when, mk,
         b && b.number ? payMenu(j.job, [bkItem(b.number), work ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-a="earlier">Edit</button>' : ''])
           : work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '');
+          window.ADspaceIcons.glyph('pen') + '</button>' : '');
     };
     /* A bill's day, number and amount, each part kept whole. */
     function billParts(b, withNumber) {
@@ -1914,8 +1908,7 @@
       '<input class="input prof-url" aria-label="Profile link" placeholder="https://www.xiaohongshu.com/user/profile/…">' +
       '<span class="prof-read muted"></span>' +
       '<button class="iconbtn is-danger" type="button" title="Remove" aria-label="Remove">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
-      'stroke-linejoin="round" aria-hidden="true">' + (ICON.trash || '') + '</svg></button>';
+      window.ADspaceIcons.glyph('trash') + '</button>';
     var input = row.querySelector('.prof-url');
     var read = row.querySelector('.prof-read');
     if (p) input.value = p.url;
@@ -2484,8 +2477,7 @@
     return niceDate(ADspaceClock.day(ts));
   }
 
-  var CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV_R = window.ADspaceIcons.glyph('chevron');
 
   if ($('campFind')) $('campFind').addEventListener('input', function () {
     campFind = this.value.trim().toLowerCase(); paintCampaigns();
@@ -3027,12 +3019,12 @@
      only thing the Remove button on a profile link row draws — resolved to
      undefined and that button rendered as an empty red square with no glyph
      and no name on it. The two maps are not even the same shape: the bridge
-     holds path data, this one holds whole `<svg>` elements. */
+     holds path data, this one holds whole drawn glyphs. */
   var STATE_ICON = {
-    send:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg>',
-    eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>',
-    reopen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/></svg>',
-    play:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 12 7-12 7z"/></svg>'
+    send:   window.ADspaceIcons.glyph('send'),
+    eyeOff: window.ADspaceIcons.glyph('eyeoff'),
+    reopen: window.ADspaceIcons.glyph('rotate'),
+    play:   window.ADspaceIcons.glyph('play')
   };
   function publishMove(s) {
     /* A closed selection with a slot free is reopened by the team, whatever
@@ -3458,10 +3450,7 @@
         ? '<div class="filepins">' + rest.map(function (f) {
             return '<span class="filepin filepin-row" data-file="' + esc(f.id) + '">' +
               '<a class="filepin-open" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-                'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-                '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
-              '</svg><span class="filepin-name">' + esc(f.name) + '</span></a>' +
+              window.ADspaceIcons.glyph('clip') + '<span class="filepin-name">' + esc(f.name) + '</span></a>' +
               fileX(o, 'filepin-x') + '</span>';
           }).join('') + '</div>'
         : '') +
@@ -4072,9 +4061,7 @@
      what `loadOptions` has already read, so the pane costs nothing and cannot
      hold a figure that has gone stale. A section with nothing says so in a
      line, because "None yet." is itself an answer. */
-  var OVCHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M9 18l6-6-6-6"/></svg>';
+  var OVCHEV = window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
 
   function ovSec(title, pane, word, body) {
     return '<section class="ovsec"><div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
@@ -5018,8 +5005,8 @@
     return ADspaceClock.date(d) || String(d);
   }
 
-  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var TICK = window.ADspaceIcons.glyph('check');
+  var DOTS = window.ADspaceIcons.glyph('more');
 
   function field(label, id, value, type, ph, cls) {
     return '<label class="kfield ' + (cls || '') + '"><span>' + esc(label) + '</span>' +
@@ -5077,7 +5064,7 @@
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
 
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron');
 
   /* Which production cards are open. Ten creators in production is ten
      cards; folded, each is one line, and the one being worked on is open. */
@@ -5118,7 +5105,7 @@
   /* One creator, one card. What is inside depends only on where they have got
      to: terms while they are an option, terms plus production once accepted,
      results once the post is live. */
-  var ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var ADD_ICON = window.ADspaceIcons.glyph('plus');
   function notesField(v) {
     return '<label class="kfield kfield-wide"><span>Notes</span>' +
       '<textarea class="input" data-f="notes" rows="2">' + esc(v || '') + '</textarea></label>';
@@ -5359,10 +5346,7 @@
     if (!list.length) return '';
     return '<div class="filepins">' + list.map(function (f, i) {
       return '<span class="filepin filepin-row" data-held-i="' + i + '">' +
-        '<span class="filepin-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-          '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
-        '</svg><span class="filepin-name">' + esc(f.name) + '</span></span>' +
+        '<span class="filepin-open">' + window.ADspaceIcons.glyph('clip') + '<span class="filepin-name">' + esc(f.name) + '</span></span>' +
         '<button class="filepin-x" type="button" data-a="teamunhold" aria-label="Remove ' + esc(f.name) + '">×</button></span>';
     }).join('') + '</div>' +
       '<div class="row acts"><button class="btn btn-primary" type="button" data-a="teamsend">Submit ' +
@@ -6594,7 +6578,7 @@
       return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
     }).catch(function () { return { error: 'failed' }; });
   }
-  var DOTS3 = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS3 = window.ADspaceIcons.glyph('more');
   function invMenu(groups) {
     return '<span class="team-act"><button class="kmenu-btn" type="button" data-a="invmenu" aria-label="More actions" aria-expanded="false">' + DOTS3 + '</button>' +
       '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items(groups) + '</div></span>';
@@ -6647,9 +6631,7 @@
          private invoice (a key under `private/`) has no address of its own:
          View invoice asks sign-download for a five-minute link. */
       var leave = 'View invoice' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
-        'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
-        '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+        window.ADspaceIcons.glyph('out');
       cur.innerHTML = '<div class="invline">' + (c.invoice_no ? invToken(c.invoice_no) : '') +
         (c.invoice_uploaded_at ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') + '</div>' +
         (c.invoice_url ? '<div class="row acts invacts">' + (privateFile(c.invoice_url)

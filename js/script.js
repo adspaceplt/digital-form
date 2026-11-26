@@ -27,10 +27,10 @@
   var GUIDE = { name: 'Video Scripts', steps: [
     { at: '#vsStages', text: 'Each content month has its own tab.' },
     { at: '.vs-pick', text: 'Open a script to read it, with its scenes as they will be shot.' }] };
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron');
   /* The leaving mark from the client pages' one icon set (2026-10-31, VS-3). */
   var OUT = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
+  var BACK = window.ADspaceIcons.glyph('back');
 
   function esc(s) { return window.ADspaceWords.esc(s); }
   /* `named`: a day the reader waits on carries its weekday (js/clock.js). */

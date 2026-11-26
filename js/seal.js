@@ -114,7 +114,7 @@
   function rows(rec) { return printable(rec.steps || []).map(row); }
 
   // ---- The console's reading of the record -----------------------------------
-  var LOCK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  var LOCK = window.ADspaceIcons.glyph('lock', '', 'width="15" height="15"');
   function stateOf(rec) {
     if (rec.stateWord) return rec.stateWord;
     if (rec.withdrawn) return ['Withdrawn', 'is-off'];

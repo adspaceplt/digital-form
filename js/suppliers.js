@@ -67,9 +67,9 @@
   function rpc(fn, args) {
     return db.rpc(fn, args).then(function (r) { return r; }).catch(function (e) { return { error: e }; });
   }
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
+  var DOTS = window.ADspaceIcons.glyph('more');
+  var CHEV = window.ADspaceIcons.glyph('chevron');
+  var BACK = window.ADspaceIcons.glyph('back');  /* the one way back every record draws (`.backlink`) */
 
   var state = { pane: 'overview', rows: null, find: '', open: null, rec: null, form: null, wired: false, view: 'list' };
 
@@ -215,7 +215,7 @@
     if (m && /could not find|does not exist|schema cache/i.test(m)) return BILL_SAID['needs-update'];
     return (d && typeof d.error === 'string' && BILL_SAID[d.error]) || BILL_SAID.failed;
   }
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="out"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  var OUT = window.ADspaceIcons.glyph('out', '', 'data-act="out"');
   /* Money through js/money.js alone: RM and S$, any other currency by its code. */
   function money(n, cur) {
     var t = window.ADspaceMoney.money2(Number(n) || 0, cur === 'SGD' ? 'SG' : 'MY');
@@ -723,8 +723,8 @@
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools" data-page-link="supplier"><div class="linkbox">' +
           '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Request from supplier link') + '" value="' + esc(url) + '">' +
-          '<button class="btn btn-icon" type="button" data-s="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
-          '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
+          '<button class="btn btn-icon" type="button" data-s="copy">' + window.ADspaceIcons.glyph('copy') + '<span>Copy link</span></button>' +
+          '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview ' + window.ADspaceIcons.glyph('out') + '</a>' +
           '</div></div>' : '');
     }
     if (s.status === 'active') {
@@ -749,7 +749,7 @@
     if (!c && !act) return '';
     var name = function (x) { return esc(window.ADspaceForm.named(x.code, x.name)); };
     var dd = !c ? '' : c.hidden ? '<dd>Not in your clients</dd>'
-      : '<dd>' + (cv ? '<button class="linkbtn" type="button" data-s="client-open">' + name(c) + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button>' : name(c)) + '</dd>';
+      : '<dd>' + (cv ? '<button class="linkbtn" type="button" data-s="client-open">' + name(c) + window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button>' : name(c)) + '</dd>';
     return '<div class="readgroup-head"><h4 class="fsec-h">Client</h4>' +
         (act ? '<button class="btn btn-sm" type="button" data-s="client">' + (c ? 'Edit' : 'Link client') + '</button>' : '') + '</div>' +
       (!c ? '<p class="muted">Not linked.</p>' + (m.length ? '<dl class="ovfacts"><div><dt>Same BRN</dt><dd>' + m.map(name).join(', ') + '</dd></div></dl>' : '')

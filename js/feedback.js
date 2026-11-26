@@ -35,7 +35,7 @@
   });
   var t = function () { return WORDS[lang]; };
   var f = function (s, v) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return v[k] == null ? m : v[k]; }); };
-  var LEAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  var LEAVE = window.ADspaceIcons.glyph('out');
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var info = null, state = 'loading', answers = {}, sending = false, answeredAt = null, sentAt = null;

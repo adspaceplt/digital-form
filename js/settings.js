@@ -18,10 +18,10 @@
   var db = window.ADspaceAPI.client;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return window.ADspaceWords.esc(s); }
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
   /* A table's add row: its Add carries the plus, as Reports' does (gate 2026-11-05). */
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var CHEV = window.ADspaceIcons.glyph('chevron');
   /* Who the route is offered to is js/admin.js's one list
      (`ADspaceAdmin.settingsAllowed`), asked before this script is fetched. */
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
@@ -1420,7 +1420,7 @@
           '<span class="dep-on">' + (d.active ? '' : '<span class="chip-state is-off">Inactive</span>') + '</span>' +
           '<span class="ind-acts"><button class="iconbtn" type="button" data-d="edit" aria-label="Edit ' + esc(d.name) + '" title="Edit">' + PEN + '</button>' +
           '<span class="team-act"><button class="kmenu-btn" type="button" data-d="menu" aria-label="More actions for ' + esc(d.name) + '" aria-expanded="false">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+            window.ADspaceIcons.glyph('more') + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-d="active">' + (d.active ? 'Set inactive' : 'Set active') + '</button>' +
             /* Offered only where it would go through: nobody in it and no
@@ -2019,7 +2019,7 @@
         return '<div class="ind-row is-tax tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + cells +
           '<span class="ind-acts"><button class="iconbtn" type="button" data-t="edit" aria-label="Edit ' + esc(t.code) + '" title="Edit">' + PEN + '</button>' +
           '<span class="team-act"><button class="kmenu-btn" type="button" data-t="menu" aria-label="More actions for ' + esc(t.code) + '" aria-expanded="false">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+            window.ADspaceIcons.glyph('more') + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-t="delete">Delete</button></div></span></span></div>';
       }).join('');
   }

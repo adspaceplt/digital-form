@@ -46,14 +46,13 @@
     if (slot && extra) slot.insertBefore(extra.content.cloneNode(true), document.getElementById('langToggle'));
   })();
 
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   /* The leaving mark from the client pages' one icon set (js/icons.js). */
   var EXT = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
   /* A way to another page in this tab carries the chevron after its words. */
   var GO = window.ADspaceIcons ? window.ADspaceIcons.svg('chevron') : '';
   /* Download carries the console's own mark (Reports' Download). */
-  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
+  var FILE = window.ADspaceIcons.glyph('file');
 
   // ---- Words, in both languages ------------------------------------------
   var T = window.ADspaceWords.of({
@@ -661,7 +660,7 @@
         row.innerHTML =
           /* The report's own name, as its cover and file print it: the first
              kind was stored as Social Media Report (2026-09-27). */
-          led('chart', '<b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
+          led('reports', '<b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
             parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small>') +
           '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
           '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
@@ -678,7 +677,9 @@
      tab drawn, its glyph, its name, where it stands and one fact under it,
      the whole tile opening its tab. Each source fills its own tile as its
      read answers; a tab not drawn has no tile. */
-  var TILES = [['review', 'image'], ['scripts', 'film'], ['campaigns', 'megaphone'], ['reports', 'chart'], ['services', 'grid'], ['meetings', 'calendar']];
+  /* Each tile draws its section by the meaning the console's rail draws it
+     by (js/icons.js MEANS): one thing, one glyph on every page. */
+  var TILES = [['review', 'review'], ['scripts', 'scripts'], ['campaigns', 'campaigns'], ['reports', 'reports'], ['services', 'services'], ['meetings', 'meetings']];
   var tiles = {};
   function setTile(key, v) { tiles[key] = v; paintTiles(); }
   function paintTiles() {
@@ -757,11 +758,11 @@
   }
   function campRow(w, m, withGlyph) {
     var sd = campStanding(w, m);
-    return progRow({ glyph: withGlyph ? 'megaphone' : '', name: campName(w, m),
+    return progRow({ glyph: withGlyph ? 'campaigns' : '', name: campName(w, m),
       sub: parts([w.campaign, sd.booked.length ? w.ofPosted(sd.live, sd.booked.length) : '']),
       state: chip(w.campState[m.state] || '', m.state === 'completed' ? 'is-ok' : (m.state === 'open' ? 'is-warn' : 'is-live')),
       tones: sd.tones, legend: sd.counts,
-      note: sd.shoot ? glyph('camera') + esc(w.nextShoot(niceDate(sd.shoot, 'ahead'))) : '',
+      note: sd.shoot ? glyph('shoot') + esc(w.nextShoot(niceDate(sd.shoot, 'ahead'))) : '',
       url: '/creators/?k=' + encodeURIComponent(m.token) });
   }
 
@@ -860,9 +861,9 @@
         if (list.length) {
           var stb = table('');
           list.forEach(function (x) {
-            stb.appendChild(progRow({ glyph: 'film', name: [x.code, x.title].filter(Boolean).join(' · '),
+            stb.appendChild(progRow({ glyph: 'scripts', name: [x.code, x.title].filter(Boolean).join(' · '),
               sub: parts([(w.scriptKind || {})[x.kind] || '', monthWord(x.period)]),
-              note: x.shoot_on ? glyph('camera') + esc(w.shoot(niceDate(x.shoot_on, 'ahead'))) : '',
+              note: x.shoot_on ? glyph('shoot') + esc(w.shoot(niceDate(x.shoot_on, 'ahead'))) : '',
               url: '/script/?k=' + encodeURIComponent(sc.key) + '#' + encodeURIComponent(x.id) }));
           });
           vsBox.appendChild(stb);
@@ -1044,7 +1045,7 @@
            Overview draws it (2026-10-20, POR-2). */
         var join = ahead && v.link;
         row.innerHTML =
-          led('calendar', '<b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small>') +
+          led('meetings', '<b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small>') +
           '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
           '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held, 'is-ok')) + '</span>' +
           '<span class="team-act">' + (join ? '<a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + ' ' + EXT + '</a>' : '') + '</span>';
@@ -1089,10 +1090,10 @@
       } else box.innerHTML = '';
       hbox.innerHTML = hist.length ? '<div class="fbh-list">' + hist.map(function (h) {
         var when = niceDate(h.submitted_at);
-        return '<details class="fbh"><summary class="fbh-row"><span class="cx-tile is-sm">' + glyph('star') + '</span><span class="fbh-name"><b>' + esc(F.title(h.kind, lang)) + '</b><small>' +
+        return '<details class="fbh"><summary class="fbh-row"><span class="cx-tile is-sm">' + glyph('feedback') + '</span><span class="fbh-name"><b>' + esc(F.title(h.kind, lang)) + '</b><small>' +
           esc(h.by ? fbFill(w.fbBy, { d: when, n: h.by }) : fbFill(w.fbOn, { d: when })) + '</small></span>' +
           '<span class="fbh-score">' + esc(fbFill(w.fbScore, { v: h.score, m: h.max })) + '</span>' +
-          '<svg class="fbh-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></summary>' +
+          window.ADspaceIcons.glyph('chevron', 'fbh-chev') + '</summary>' +
           '<div class="fbread">' + (h.answers || []).map(function (a) {
             var q = '<p class="fbread-q">' + esc(lang === 'zh' ? a.zh : a.en) + '</p>';
             if (a.type === 'scale') {
@@ -1215,7 +1216,7 @@
       /* A month a part, those begun green (2026-11-25, the approved boards). */
       var tones = [];
       for (var i = 0; i < n; i++) tones.push(i < at ? 'ok' : '');
-      return '<div class="cx-term"><span class="cx-tile is-sm">' + glyph('grid') + '</span><div class="cx-term-words"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
+      return '<div class="cx-term"><span class="cx-tile is-sm">' + glyph('services') + '</span><div class="cx-term-words"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
         '<p class="cp-sub">' + parts([w.monthOf(at, n), w.endsOn(endWord)]) + '</p>' +
         (window.ADspaceIcons ? window.ADspaceIcons.track(tones, w.monthOf(at, n)) : '') + '</div></div>';
     }).join('');
@@ -1356,7 +1357,7 @@
           .filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel]] : [];
         row.innerHTML =
-          led('grid', '<b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '')) +
+          led('services', '<b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '')) +
           /* One phrase that never breaks, "1 × RM 2,830.00 × 6 months", in a
              track wide enough for it at a desk (2026-10-31, POR-4: the
              months on a line of their own made a phone's row five lines). */
@@ -1420,7 +1421,7 @@
            button, Undo as before (MENU-19, 2026-10-22). */
         var canWithdraw = !gone && r.state === 'requested';
         row.innerHTML =
-          led('note', '<b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
+          led('requests', '<b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
             (r.reply ? '<small>' + esc(w.reply + (lang === 'zh' ? '：' : ': ') + r.reply) + '</small>' : '')) +
           /* No fee is a mute dash at a desk under its head, nothing on a

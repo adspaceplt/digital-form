@@ -421,14 +421,10 @@
      2026-09-25). */
   function ring(done, total) {
     if (done >= total) return '<span class="ringline">' + RING_DONE + 'Complete</span>';
-    var r = 8, len = 2 * Math.PI * r, off = len * (1 - (total ? done / total : 0));
-    return '<span class="ringline"><svg class="ring" viewBox="0 0 20 20" aria-hidden="true">' +
-      '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
-      '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/>' +
-      '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
+    return '<span class="ringline">' + window.ADspaceIcons.ring(done, total) + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
 
-  var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
+  var RING_DONE = window.ADspaceIcons.ring(1, 1);
 
   var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
 
@@ -838,9 +834,7 @@
          leaves empty. The row is one button, so the whole of it opens the
          client from a pointer and from the keyboard alike, and there is no
          control nested inside another control to trip a screen reader. */
-      '<svg class="crm-c crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M9 18l6-6-6-6"/></svg>';
+      window.ADspaceIcons.glyph('chevron', 'crm-c crm-c-go');
     /* A logo that will not load (an expired Facebook address) gives way to
        the initials, never a broken picture. */
     var logo = row.querySelector('.cl-mark img');
@@ -1696,7 +1690,7 @@
     }
     var tone = f.late ? 'is-late' : (f.held && f.done >= f.held) ? 'is-ok' : 'is-wait';
     line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
-      '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+      window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
     line.setAttribute('aria-label', line.textContent.replace(/\s+/g, ' ').trim() + '. Open the month in My Work');
     line.onclick = function () {
       history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
@@ -1807,37 +1801,17 @@
     });
   }
 
-  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
   /* The same pen the Overview's Contact details carries, so the one control
      that edits a value in place is one mark everywhere in the record. */
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
 
   /* The glyphs the record's rows carry. One per kind of thing, neutral, drawn
      at 16px with the stroke every other mark in the console uses, so a list
      can be scanned by shape before it is read. */
-  var RICON = {
-    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
-    phone:    '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
-    pin:      '<path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
-    person:   '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-    chat:     '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
-    mail:     '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
-    file:     '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
-    tag:      '<path d="M20 12l-8 8-9-9V4h7z"/><circle cx="7.5" cy="7.5" r="1"/>',
-    image:    '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-9 9"/>',
-    speaker:  '<path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1z"/><path d="M15 9a3 3 0 0 1 0 6"/>',
-    link:     '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
-    pencil:   '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
-    dot:      '<circle cx="12" cy="12" r="3"/>'
-  };
-  function ico(name, cls) {
-    return '<svg class="' + (cls || 'railico') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (RICON[name] || RICON.dot) + '</svg>';
-  }
+  var RICON = { calendar: 'calendar', phone: 'phone', pin: 'pin', person: 'user', chat: 'chat', mail: 'mail', file: 'doc',
+    tag: 'tag', image: 'image', speaker: 'megaphone', link: 'link', pencil: 'pen', dot: 'more' };
+  function ico(name, cls) { return window.ADspaceIcons.glyph(RICON[name] || RICON.dot, cls || 'railico'); }
   /* A call's glyph is its kind. */
   var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'person', whatsapp: 'chat', email: 'mail', note: 'chat' };
 
@@ -4110,11 +4084,11 @@
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools" data-page-link="details"><div class="linkbox">' +
           '<input class="input readfield" id="crmDfLink" readonly aria-label="Request from client link" value="' + esc(url) + '">' +
-          '<button class="btn btn-icon" type="button" data-df="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
+          '<button class="btn btn-icon" type="button" data-df="copy">' + window.ADspaceIcons.glyph('copy') + '<span>Copy link</span></button>' +
           /* The link in a message to paste into the client's WhatsApp group
              (2026-10-31); nothing is sent from here. */
-          '<button class="btn btn-icon" type="button" data-df="copymsg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy message</span></button>' +
-          '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
+          '<button class="btn btn-icon" type="button" data-df="copymsg">' + window.ADspaceIcons.glyph('copy') + '<span>Copy message</span></button>' +
+          '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview ' + window.ADspaceIcons.glyph('out') + '</a>' +
           '</div></div>' : '') + '<div class="msg" id="crmDfMsg"></div>';
     } else {
       var a = f.answers || {};
@@ -4668,7 +4642,7 @@
      Confirm is read against it. The head (State, Version, Read from) stays
      open. */
   var baCtx = { client: null, draft: false };
-  var BA_CHEV = '<svg class="ba-fold-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var BA_CHEV = window.ADspaceIcons.glyph('chevron', 'ba-fold-chev');
   function baKey(title) { return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
   function baN(n, one, many) { n = n || 0; return n ? n + ' ' + (n === 1 ? one : (many || one + 's')) : ''; }
   function baFold(title, summary, inner) {
@@ -5033,7 +5007,7 @@
       box.className = 'sheet'; box.id = id; box.hidden = true;
       box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmMetaTitle">' +
         '<div class="sheet-head"><h3 id="crmMetaTitle">Meta accounts</h3>' +
-        '<button class="iconbtn" id="crmMetaClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+        '<button class="iconbtn" id="crmMetaClose" type="button" aria-label="Close">' + window.ADspaceIcons.glyph('x') + '</button></div>' +
         '<div class="sheet-body"><p class="meta-for" id="crmMetaFor"></p><div class="meta-body" id="crmMetaBody"></div><div class="msg" id="crmMetaMsg"></div></div>' +
         '<div class="sheet-foot"><button class="btn btn-primary" id="crmMetaSave" type="button">Save</button>' +
         '<button class="btn btn-quiet" id="crmMetaCancel" type="button">Cancel</button></div></div>';
@@ -5125,7 +5099,7 @@
       paintSocial(c); paintLinks(c); railDone(c);
     }).catch(function () {});
   }
-  var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var PLUS_ICON = window.ADspaceIcons.glyph('plus');
   function brandAsk(c, b) {
     window.ADspaceConfirm.ask({ title: b ? 'Rename brand' : 'Add brand', go: b ? 'Save' : 'Add',
       field: { label: 'Brand name', need: 'Enter the brand name.', value: b ? b.name : '', placeholder: 'ADspace Advertising' } },
@@ -6326,10 +6300,10 @@
     var act = $('crmEngageActions');
     // Nothing is started for a client who is not Active, so the head waits.
     if (c.stage !== 'active') { act.innerHTML = ''; return; }
-    var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    var PLUS = window.ADspaceIcons.glyph('plus');
     /* A way to another console page carries the chevron after its words,
        never the leaving mark: it opens in this tab (2026-10-22, CLI-5). */
-    var CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+    var CHEVR = window.ADspaceIcons.glyph('chevron');
     /* Each way into the work is offered where it can be taken: Enable Content
        Review writes the client (Clients at Work, or Content Review settings
        at Work, as `clients_update` asks), New campaign makes one (Campaigns
@@ -6390,7 +6364,7 @@
     });
   }
 
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
 
   // ---- Services on a client -----------------------------------------------
   /* What the client asked for, was quoted, and confirmed. Each line keeps its
@@ -7784,7 +7758,7 @@
       if (m) { m.hidden = false; m.className = 'msg err'; m.textContent = 'The PDF could not be generated. ' + ((e && e.message) || 'Please try again.'); }
     });
   }
-  var PLANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>';
+  var PLANE = window.ADspaceIcons.glyph('plane');
   function nextVersion(v) {
     var p = String(v || '').split('.').map(Number);
     if (!p.length || p.some(isNaN)) return '';
@@ -7944,8 +7918,8 @@
      Followers | Indicative Talent Fee)"), a sentence as one field. Nothing is
      typed as a box of lines (the user, 2026-10-13: "so ugly and untidy
      unstructured"). Saved as the lines the PDF reads. */
-  var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
-  var CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var UP = window.ADspaceIcons.glyph('arrowup');
+  var CROSS = window.ADspaceIcons.glyph('x');
   var rcw = null;
   function wordsShape(b) {
     var m = /\(([^)]*\|[^)]*)\)\s*$/.exec(b.label || '');

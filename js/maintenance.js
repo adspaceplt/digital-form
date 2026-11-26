@@ -23,6 +23,9 @@
  *                                  — joins the page's one check a minute (`page_pulse`)
  */
 (function () {
+  /* The one set's glyph where the page holds it (js/icons.js); the front
+     door and the 404 hold none, and draw their words alone. */
+  function icGlyph(n, c, a) { return window.ADspaceIcons ? window.ADspaceIcons.glyph(n, c, a) : ''; }
   var API = window.ADspaceAPI;
   var off = { on: false, set: false };
   /* Page availability (2026-10-29): each page reads its own row
@@ -124,7 +127,7 @@
     }).join('<br>') : '';
     var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
     /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
-    var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
+    var CHAT_MARK = icGlyph('chat', '', 'width="15" height="15"');
     var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
     /* The console's cover is the whole screen, its bar under it: the
        wordmark leads it, as every page's bar would (2026-11-20). */
@@ -296,7 +299,7 @@
   /* A page that holds no icon set fetches it the first time a notice wants
      a glyph, never on load (the namecard and /quote/ hold their weight
      budgets). Its stamp is the icon set's own, bumped with it. */
-  var ICONS = '/js/icons.js?v=20261126rc', iconsAsked = false;
+  var ICONS = '/js/icons.js?v=20261126gl', iconsAsked = false;
   function marks() {
     var I = window.ADspaceIcons, W = window.ADspaceWords;
     var want = [].filter.call(document.querySelectorAll('[data-glyph], .cover .cover-panel'), function (x) {

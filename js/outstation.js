@@ -39,31 +39,20 @@
   var UI = window.ADspaceState;
   var W = window.ADspaceWords.en;
   var F = window.ADspaceForm;
-  var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var X = window.ADspaceIcons.glyph('x');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var CAMERA = window.ADspaceIcons.glyph('camera');
+  var DOTS = window.ADspaceIcons.glyph('more');
   /* The trip card's glyphs (2026-11-25): each purpose its own, the route's
      pin, the office, and the small facts under a stop. */
-  var G_ = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
-  var GLYPH = {
-    meeting: G_('<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.8 14.3c2.2.2 3.9 1.8 4.5 4.7"/>'),
-    shooting: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
-    event: G_('<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/>'),
-    other: G_('<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'),
-    pin: G_('<path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/>'),
-    road: G_('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H16"/>'),
-    office: G_('<path d="M5 20V6.5L12 4l7 2.5V20"/><path d="M3.5 20h17M9.5 9.5h.5M14 9.5h.5M9.5 13h.5M14 13h.5M11 20v-3h2v3"/>'),
-    clock: G_('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
-    target: G_('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>'),
-    camera: G_('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
-    pen: G_('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>')
-  };
+  var GLYPH = { meeting: 'users', shooting: 'camera', event: 'calendar', other: 'more', pin: 'pin', road: 'route',
+    office: 'building', clock: 'clock', target: 'target', camera: 'camera', pen: 'pen' };
+  Object.keys(GLYPH).forEach(function (k) { GLYPH[k] = window.ADspaceIcons.glyph(GLYPH[k]); });
   /* Recording acts wait for a phone (2026-11-25, the user: a desk computer
      never travels): drawn disabled with the reason at a desk, through the
      one painter (`data-gate="phone"`, js/admin.js). */
   var GATE = ' data-gate="phone"';
-  var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>';
+  var STAR = window.ADspaceIcons.glyph('star');
 
   var PURPOSE = { meeting: 'Meeting', shooting: 'Shooting', event: 'Event', other: 'Other' };
   var ZONE = { johor: 'Johor', singapore: 'Singapore', beyond: 'Beyond Johor' };

@@ -65,16 +65,16 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var STATE = { draft: ['Draft', 'is-off'], shared: ['Published', 'is-live'] };
   var ICON = {
-    dots: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>',
-    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
-    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
-    camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
-    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>',
-    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>',
-    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
-    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
-    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>'
+    dots: window.ADspaceIcons.glyph('more'),
+    plus: window.ADspaceIcons.glyph('plus'),
+    copy: window.ADspaceIcons.glyph('copy'),
+    camera: window.ADspaceIcons.glyph('camera'),
+    up: window.ADspaceIcons.glyph('chevup'),
+    down: window.ADspaceIcons.glyph('chevdown'),
+    x: window.ADspaceIcons.glyph('x'),
+    out: window.ADspaceIcons.glyph('out'),
+    play: window.ADspaceIcons.glyph('play'),
+    pause: window.ADspaceIcons.glyph('stop')
   };
 
   var st = { list: [], clients: [], loaded: false, open: null, scenes: [],
@@ -264,7 +264,7 @@
      shoot (else the last), and how many of its scripts are published. */
   /* The mark that says a row opens something, in the column every list
      keeps for it (2026-11-03). */
-  var GO = '<svg class="crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var GO = window.ADspaceIcons.glyph('chevron', 'crm-c-go');
   function rowOf(g) {
     var row = document.createElement('button');
     row.type = 'button';
@@ -782,7 +782,7 @@
       var row = document.createElement('div');
       row.className = 'vs-task';
       row.innerHTML = '<dt>Task</dt><dd><button class="linkbtn" type="button">' + esc(t.serial + ' \u00b7 ' + (t.title || '')) +
-        '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
+        window.ADspaceIcons.glyph('chevron', 'ovgo-chev') +
         '</button><small class="vs-task-stage">' + esc(t.stage || '') + '</small></dd>';
       dl.appendChild(row);
       row.querySelector('button').addEventListener('click', function () {
@@ -1979,7 +1979,7 @@
     /* A drawn frame already names its namespace: a second xmlns is a
        repeated attribute, and the picture would not load (2026-11-07). */
     var ns = /^<svg[^>]*\sxmlns=/.test(svg) ? '' : 'xmlns="http://www.w3.org/2000/svg" ';
-    return svg.replace('<svg ', '<svg ' + ns + 'style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
+    return svg.replace(/^<svg\b/, '$& ' + ns + 'style="color:#1b1a17"').replace(/currentColor/g, '#1b1a17');
   }
   /* A drawn frame as a PNG data URL, in ink on white, twice its size. */
   function framePng(svg) {

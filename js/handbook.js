@@ -36,8 +36,8 @@
               ['template', 'Templates and forms'], ['other', 'Other']];
   var CAT_WORD = {};
   CATS.forEach(function (c) { CAT_WORD[c[0]] = c[1]; });
-  var DOTS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>';
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
+  var OUT = window.ADspaceIcons.glyph('out');
 
   var st = { docs: [], vers: {}, loaded: false, editing: null, verFor: null };
 
@@ -283,8 +283,8 @@
      welcome, how far along, then a step a file, each opened, then
      acknowledged; the list returns once Continue lifts the gate. */
   var gateIds = null;
-  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
-  var BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg>';
+  var TICK = window.ADspaceIcons.glyph('check');
+  var BOOK = window.ADspaceIcons.glyph('book');
   function firstName() {
     var m = bridge.me ? bridge.me() : null;
     return m && m.name ? String(m.name).trim().split(/\s+/)[0] : '';

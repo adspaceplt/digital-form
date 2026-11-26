@@ -39,9 +39,7 @@
 
   function esc(s) { return window.ADspaceWords.esc(s); }
 
-  var CHEV = '<svg class="crm-band-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'crm-band-fold');
 
   /* One group.
        route   the route the memory is filed under ('clients', 'campaigns', …)

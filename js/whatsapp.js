@@ -25,8 +25,8 @@
 (function () {
   'use strict';
   var API = window.ADspaceAPI;
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
-  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var FILE = window.ADspaceIcons.glyph('doc');
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
   /* The purposes a template is set for, and what each message is. */
@@ -626,7 +626,7 @@
       });
     });
   }
-  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
 
   function load() {
     var box = $('waList'), S = window.ADspaceState;
@@ -729,7 +729,7 @@
       : x.to_kind === 'creator' && may('campaigns.creators', 'view') ? 'creator'
       : x.to_kind === 'contact' && x.client_id && may('clients.contacts', 'view') ? 'contact' : '';
     var open = to ? ' <button class="linkbtn wam-open" type="button" data-open="' + to + '">' + (to === 'creator' ? 'Open creator' : 'Open contacts') +
-      '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>' : '';
+      window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button>' : '';
     var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + open + '</small>'
       : s[0] === 'unknown' ? '<small class="wam-why is-unknown">' + esc(SAID['wa-unknown']) + '</small>' : '';
     /* A line of parts, each held whole; on a phone what was sent leads it
@@ -1008,7 +1008,7 @@
     if (why && r.kind === 'contact' && r.client_id && may('clients.contacts', 'view')) {
       var go = document.createElement('button');
       go.type = 'button'; go.className = 'btn btn-sm btn-quiet ovgo wa-tocontacts';
-      go.innerHTML = 'Open contacts<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+      go.innerHTML = 'Open contacts' + window.ADspaceIcons.glyph('chevron');
       go.addEventListener('click', function () {
         window.ADspaceSheet.close();
         history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(r.client_id) + '&tab=account');

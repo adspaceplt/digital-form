@@ -90,22 +90,141 @@
     verified: '<path d="M12 3l2.4 1.8 3-.2.9 2.9 2.4 1.8-1 2.8 1 2.8-2.4 1.8-.9 2.9-3-.2L12 21l-2.4-1.8-3 .2-.9-2.9-2.4-1.8 1-2.8-1-2.8 2.4-1.8.9-2.9 3 .2z"/><path d="M8.8 12.2l2.2 2.2 4.2-4.4"/>',
     sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
     bubble: '<path d="M4 19.5l1.3-3.8A8 8 0 1 1 8.6 19z"/>',
-    pen: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 8l3 3"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
     /* A decision on an application (the received page's track, 2026-11-25). */
     scale: '<path d="M12 3v18M5 7h14"/><path d="M5 7l-2.5 6a3 3 0 0 0 5 0zM19 7l-2.5 6a3 3 0 0 0 5 0z"/>',
     /* A form in steps (2026-11-25): a bank's payment details. */
-    bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 21h16M5 18h14M6.5 10v8M10.5 10v8M13.5 10v8M17.5 10v8"/>'
+    bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M4 21h16M5 18h14M6.5 10v8M10.5 10v8M13.5 10v8M17.5 10v8"/>',
+    /* The console's glyphs (2026-11-26, the user: the console's marks
+       "look like draft works"; this set's drawing is the standard, one
+       thing one glyph on every page). Same 24 grid, 1.8 stroke, round
+       ends and corners as every glyph above. */
+    more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    minus: '<path d="M5 12h14"/>',
+    x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    chevleft: '<path d="m15 18-6-6 6-6"/>',
+    chevdown: '<path d="m6 9 6 6 6-6"/>',
+    chevup: '<path d="m18 15-6-6-6 6"/>',
+    back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+    arrowup: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    clip: '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>',
+    eyeoff: '<path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.6a1 1 0 0 1 0 .7 10.8 10.8 0 0 1-1.4 2.6"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.4a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/>',
+    rotate: '<path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
+    play: '<path d="M7 4.5v15l12.5-7.5z"/>',
+    stop: '<path d="M8.5 5v14M15.5 5v14"/>',
+    sparkle: '<path d="M11 3.5 12.8 8.2 17.5 10l-4.7 1.8L11 16.5l-1.8-4.7L4.5 10l4.7-1.8z"/><path d="M18.5 15l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/>',
+    crown: '<path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/>',
+    grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+    handle: '<path d="M5 9h14M5 15h14"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+    bellring: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/><path d="M2.5 8a9 9 0 0 1 2.2-4.5"/><path d="M21.5 8a9 9 0 0 0-2.2-4.5"/>',
+    signout: '<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h.01"/>',
+    pulse: '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/><path d="M3.2 12h3.6l1.7-3 3 6 1.7-3h3.6"/>',
+    book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="M8 7h7M8 11h5"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4.5"/><path d="M12 8h.01"/>',
+    theme: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>',
+    perf: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 14 4-4 3 3 6-6"/>',
+    trend: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/><path d="M15 9h4v4"/>',
+    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M5 16a3 3 0 0 1 6 0M14 10h4M14 14h3"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/>',
+    history: '<path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 7.5v4.8l3 1.8"/>',
+    gear: '<path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    arrange: '<path d="m3 8 4-4 4 4M7 4v16"/><path d="m21 16-4 4-4-4M17 20V4"/>',
+    dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+    briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="m9.5 14 1.8 1.8 3.4-3.6"/>',
+    store: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M9.5 20v-5h5v5"/>',
+    team: '<circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 14 0"/><path d="m16 7.5 1.5 1.5 3-3"/>',
+    route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'
   };
   /* A platform's glyph by the words the pages hold for it. */
   var PLAT = { rednote: 'rednote', xhs: 'rednote', xiaohongshu: 'rednote', instagram: 'instagram', ig: 'instagram',
     tiktok: 'tiktok', facebook: 'facebook', fb: 'facebook' };
+  /* ONE THING, ONE GLYPH (the user, 2026-11-26: "when the console shows
+     video script … the client portal video script would also be seeing
+     the same icon"): a section, a kind of record or a part of one is named
+     here by what it means, and every page draws that meaning by this name,
+     the console's rail, tab bar, search, bell and records as much as the
+     client portal's tiles and rows, /quote/ and the creator pages. A
+     meaning answers its drawing; the drawing keeps its own name for a
+     shape that means nothing more (a chevron, a close). tests/glyphs.js
+     holds the table. */
+  var MEANS = {
+    /* Sections */
+    overview: 'dashboard', analytics: 'trend', work: 'briefcase', review: 'image', scripts: 'film',
+    reports: 'chart', whatsapp: 'chat', messages: 'chat', clients: 'building', campaigns: 'megaphone',
+    creators: 'people', suppliers: 'store', register: 'doccheck', services: 'grid', links: 'link',
+    team: 'team', hiring: 'team', handbook: 'book', settings: 'gear', activity: 'history', mine: 'perf',
+    /* Records and their parts */
+    meetings: 'calendar', meeting: 'calendar', day: 'calendar', invoices: 'doc', invoice: 'doc',
+    letters: 'doccheck', letter: 'doccheck', quotation: 'doc', feedback: 'star', requests: 'note',
+    request: 'note', account: 'user', person: 'user', contact: 'user', creator: 'people',
+    brand: 'tag', plan: 'plancontent', planads: 'planads', pieces: 'picture', item: 'picture',
+    platform: 'device', budget: 'bars', shoot: 'camera', parcel: 'box', draft: 'upload', posted: 'check',
+    payment: 'wallet', health: 'pulse', vic: 'crown', ai: 'sparkle', call: 'phone', place: 'pin',
+    trip: 'route', office: 'building', time: 'clock', engagements: 'heart', views: 'eye', reach: 'layers',
+    /* Acts */
+    add: 'plus', edit: 'pen', remove: 'trash', delete: 'trash', send: 'plane', publish: 'plane',
+    unpublish: 'eyeoff', hide: 'eyeoff', download: 'file', open: 'out', preview: 'out', go: 'chevron',
+    reopen: 'rotate', email: 'mail', passkey: 'key', attach: 'clip', close: 'x', find: 'search',
+    signout: 'signout', notifications: 'bell'
+  };
+  function drawn(name) { return P[name] || P[MEANS[name]] || ''; }
   function svg(name, cls) {
-    var p = P[name];
+    var p = drawn(name);
     if (!p) return '';
     return '<svg class="ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
       'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + p + '</svg>';
+  }
+  /* The same glyph where the place that holds it sizes it (the console's
+     buttons, rows and rail): no `.ic`, an optional class and attributes. */
+  function glyph(name, cls, attrs) {
+    var p = drawn(name);
+    if (!p) return '';
+    return '<svg' + (cls ? ' class="' + cls + '"' : '') + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"' + (attrs ? ' ' + attrs : '') + '>' + p + '</svg>';
+  }
+  /* A drawing that is no glyph (a ring of progress, a signature, a
+     plotted line): its own box and parts, still written here alone. */
+  function drawing(box, inner, attrs) {
+    return '<svg' + (box ? ' viewBox="' + box + '"' : '') + (attrs ? ' ' + attrs : ' aria-hidden="true"') + '>' + inner + '</svg>';
+  }
+  /* A ring for how much is done, one copy for Clients and My Work:
+     complete is the filled green disc with its white tick (css .ring-done),
+     never a full ring (the user, 2026-09-25). */
+  function ring(done, total, cls, attrs) {
+    var a = attrs || 'aria-hidden="true"';
+    if (total && done >= total) return '<svg class="ring-done' + (cls ? ' ' + cls : '') + '" viewBox="0 0 20 20" ' + a + '><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
+    var r = cls ? 7 : 8, len = 2 * Math.PI * r, off = len * (1 - (total ? done / total : 0));
+    return '<svg class="ring' + (cls ? ' ' + cls : '') + '" viewBox="0 0 20 20" ' + a + '>' +
+      '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
+      '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>';
+  }
+  /* A page's own markup names its glyph (`<svg data-ic="name">`), drawn
+     here once the page is read: one drawing for markup and script alike. */
+  function fill(root) {
+    var els = (root || document).querySelectorAll('svg[data-ic]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], p = drawn(el.getAttribute('data-ic'));
+      if (!p || el.getAttribute('data-ic-drawn')) continue;
+      el.setAttribute('viewBox', '0 0 24 24'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', 'currentColor');
+      el.setAttribute('stroke-width', '1.8'); el.setAttribute('stroke-linecap', 'round'); el.setAttribute('stroke-linejoin', 'round');
+      if (!el.hasAttribute('aria-hidden') && !el.hasAttribute('aria-label')) el.setAttribute('aria-hidden', 'true');
+      el.setAttribute('focusable', 'false'); el.setAttribute('data-ic-drawn', '1');
+      el.innerHTML = p;
+    }
+  }
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { fill(); });
+    else fill();
   }
   function platform(key) {
     var k = String(key || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -250,6 +369,6 @@
       (name ? '<b>' + esc(name) + '</b>' : '') + (title ? '<small>' + esc(title) + '</small>' : '') + '</span>' +
       (acts ? '<div class="rcv-acts">' + acts + '</div>' : '') + '</section>';
   }
-  window.ADspaceIcons = { svg: svg, platform: platform, mark: mark, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!P[n]; },
+  window.ADspaceIcons = { svg: svg, glyph: glyph, drawing: drawing, ring: ring, fill: fill, means: MEANS, platform: platform, mark: mark, journey: journey, track: track, legend: legend, stepOf: stepOf, has: function (n) { return !!drawn(n); },
     stepCards: stepCards, stepTrack: stepTrack, stepHead: stepHead, summary: summary, received: received, card: card, contactCard: contactCard };
 })();

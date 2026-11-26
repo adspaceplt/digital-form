@@ -72,15 +72,15 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
-  var TURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg>';
+  var TURN = window.ADspaceIcons.glyph('refresh');
   /* Save contact hands over a file (a vCard): the act table's file mark
      (js/acts.js `file`), as the pills under the card carry theirs. */
-  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
-  var QR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>';
+  var FILE = window.ADspaceIcons.glyph('file');
+  var QR = window.ADspaceIcons.glyph('qr');
 
   /* WhatsApp carries the chat mark before its words, as Chat on WhatsApp
      does on every client page (CARD-1). */
-  var CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
+  var CHAT = window.ADspaceIcons.glyph('chat');
 
   function row(label, value, href, cls) {
     return '<a class="nc-row' + (cls ? ' ' + cls : '') + '" href="' + esc(href) + '"' +

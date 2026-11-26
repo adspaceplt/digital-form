@@ -26,7 +26,7 @@
      page or an email a client reads. */
   var MARK = '<b class="bk-t"><img class="bk-logo" src="/img/bukku-logo.png?v=20261111c" alt="" width="45" height="16"><span class="sr">Bukku</span></b>';
   var API = window.ADspaceAPI;
-  var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var X = window.ADspaceIcons.glyph('x');
 
   function db() { return API && API.client; }
   function $(id) { return document.getElementById(id); }
@@ -132,7 +132,7 @@
      Unlink lets go of the link alone, nothing changed in Bukku, with Undo
      where it happened, so a record linked to the wrong contact is never a
      dead end. */
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   /* A Bukku contact's code, pressed to copy it. */
   function codeOf(c) {
     return '<button class="serial-copy bk-code" type="button" data-bk="copy" data-code="' + esc(c) + '" aria-label="Copy ' + esc(c) + '">' + esc(c) + '</button>';

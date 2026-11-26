@@ -68,7 +68,7 @@
   var SAL_ZH = { Mr: '先生', Ms: '女士', Mrs: '太太', Mdm: '夫人', Dr: '博士', Prof: '教授' };
   var FIELDS = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'billing_address', 'finance_email',
     'contact_salutation', 'contact_name', 'contact_phone', 'contact_email'];
-  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  var MARK = '<span class="qs-mark" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="12" height="12"') + '</span>';
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var info = null, state = 'loading', typed = {}, consent = false, sending = false;
