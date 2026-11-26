@@ -591,9 +591,12 @@
         });
       };
       /* The floor TERMS may reach on the fees page: the add-on block's
-         rule with the gap a section keeps above it, or the page's floor. */
+         rule with the gap a section keeps above it, or the page's floor.
+         TERMS name the add-ons ("not included in the fees above"), so they
+         never stand before an Add-on Rates block on a later page. */
       var termsFloor = addTop != null && pn.page === feesPage ? addTop + 20 : FLOOR;
-      if (feesY - termsH >= termsFloor) {
+      var addLater = addons.length && addTop == null;
+      if (!addLater && feesY - termsH >= termsFloor) {
         var backPage = pn.page, backY = y;
         pn.page = feesPage; y = feesY;
         drawTerms();

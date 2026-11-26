@@ -316,8 +316,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   body text. TERMS (2026-11-26) stand under the totals on the last fees
   page where the whole block fits there, clear of an Add-on Rates block
   anchored above its foot, the acceptance page then opening on Acceptance
-  of Quotation; else they open the acceptance page above it. Never split
-  across pages (`pdfcases` terms fit).
+  of Quotation; else, or where Add-on Rates take pages after it (TERMS
+  name the add-ons, so never come before them), they open the acceptance
+  page above it. Never split across pages (`pdfcases` terms fit).
 - The term discount is the team's choice per quotation (`p_sel.term_disc`;
   2026-11-25): false takes every negative term percentage to 0
   (`quote_term_off`, kept as `totals.term_off`), a short term's surcharge
