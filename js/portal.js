@@ -894,9 +894,9 @@
     API.invokeFn('bukku-sync', { action: 'portal', client: c.id }).then(function (r) {
       if (stale(c)) return;
       var d = r.data || {};
-      /* Bukku not set up, or the function not yet deployed: nothing to show.
+      /* Bukku not set up, or the contact not linked: nothing to show.
          Any other refusal is a read that failed, said in the card. */
-      if (r.error && d.error && /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error))) { wrap.hidden = true; return; }
+      if (d.error && /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error))) { wrap.hidden = true; return; }
       if (r.error || d.error) { wrap.hidden = false; failCard(box, w.invoices, function () { paintInvoices(w, c); }); return; }
       var list = (d.invoices || []).slice();
       wrap.hidden = !list.length;
