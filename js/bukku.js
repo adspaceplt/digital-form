@@ -243,7 +243,7 @@
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Refresh</button>' + menu + '</div>' +
           (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the details were last loaded: ' + esc(moved.join(', ')) + '.</p>' : '') +
           (r.values && r.values.person && r.person_in === false
-            ? '<div class="bk-person"><p class="msg warn">Bukku\'s billing person, ' + esc(r.values.person) + ', is not in Contacts.</p>' +
+            ? '<div class="bk-person"><p class="msg warn">Bukku\'s billing contact, ' + esc(r.values.person) + ', is not in Contacts.</p>' +
               (opts.addContact && may('clients.contacts', 'work') ? '<button class="btn btn-sm" type="button" data-bk="addct">Add as contact</button>' : '') + '</div>' : '') +
           (opts.said ? '<p class="msg ok bk-said" role="status">' + esc(opts.said) + '</p>' : '');
       } else {

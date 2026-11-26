@@ -94,6 +94,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   cancelled and ADspace will contact you to arrange another time., never
   the time or the link (`careers_read` answers `{state: cancelled}` alone),
   until new times are sent.
+  A cancel moves the candidate where their interviews now leave them
+  (`hiring_interview_stage`, the one derivation a cancel, new times and a
+  reopened decision share; the user, 2026-11-26: "when cancelled
+  interview, it still stucked at interview"): Interview while another
+  confirmed interview stands (a held round), Invited while one waits on
+  the candidate, else New, their page still reading Interview cancelled;
+  Send new times moves Interview to Invited the same way.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
   not chosen. A time chosen and not yet confirmed (`2026-11-22-interview-time-pending.sql`;

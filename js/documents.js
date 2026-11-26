@@ -316,7 +316,7 @@
     }
     /* A guard trigger answers in its own word (`needs-billing`). */
     if (ISSUE_WORD[m]) return ISSUE_WORD[m];
-    return m || 'The letter could not be issued.';
+    return m || 'The letter could not be issued. Please try again.';
   }
 
   /* One shape for the three deliberate moves a letter makes. Each is a
