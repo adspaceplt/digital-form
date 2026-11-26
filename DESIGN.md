@@ -1185,7 +1185,7 @@ screenshotted, and the push names any line it could not settle.
   - tasks `#WT00001`;
   - task codes `YYMMW{week}{NN}`;
   - HR `ADHR/…`;
-  - client letters `ACL/{client code}/{YYMMDD}{NN}`;
+  - client letters `ACL/{client code}/{YYMMDD}{NN}` (ADspace Client Letter);
   - Creator ID `ADC0001` (ADspace creator), Campaign ID `CC001` (creator campaign), a booking's Job reference
     `ADC0001/CC001`, a creator's payment details `ADC0001/R001`, each
     prefix, width, next number and the references' shape a setting
@@ -1199,7 +1199,7 @@ screenshotted, and the push names any line it could not settle.
     hang under it. `ADP` names what the ADspace Digital Portal issued;
     `AD` a team member, `AC` a client, `AS` a supplier, each with an
     `NNN` serial; `ADHR` HR use (employment, `EMP`, files under HR);
-    `ADCL` a cover letter facing the public. Every other reference is
+    `ACL` a letter to a client. Every other reference is
     built from the record it belongs to, as a booking's
     `ADC0001/CC001` is: references link into one loop, never stand
     alone. References already issued keep their form.
