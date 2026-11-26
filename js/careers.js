@@ -434,6 +434,8 @@
     var mail = CONTACT && window.ADspaceWords.emailOk(CONTACT) ? '<a class="plink" href="mailto:' + esc(CONTACT) + '">' + I.svg('mail') + esc(CONTACT) + '</a>' : '';
     root().innerHTML = I.received({
       title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ADspace.', note: NEXT.received,
+      /* The application's reference (ONE REQUEST REFERENCE, 2026-11-26). */
+      reqRef: d.request_ref || '',
       steps: [
         { state: 'done', title: STATUS.received, sub: esc(window.ADspaceClock.date(d.received_at)) },
         { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
@@ -455,6 +457,7 @@
       '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
+      (d.request_ref ? '<div><dt>Reference</dt><dd>' + esc(d.request_ref) + '</dd></div>' : '') +
       '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (d.missed && !i && d.stage !== 'closed' ? STATUS.missed : '') || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (i && i.state === 'picked' ? STATUS.pending : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
       (d.docs && d.docs.length ? docsSection(d.docs) : missed(d) + (dec || (i ? interview(i) : d.missed ? '' : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
     if (!(d.docs && d.docs.length) && !dec && i && i.state === 'invited') wire();

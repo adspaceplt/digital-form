@@ -288,7 +288,9 @@
     var panes = {
       overview: '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><dl class="ovfacts">' +
           fact('Email', esc(c.email)) + fact('Phone', c.phone ? esc(window.ADspaceAPI.phoneWord(c.phone)) : '') + fact('Position', esc(c.position)) +
-          fact('Source', esc(SOURCE[c.source] || '')) + fact('Added', esc(day(c.created_at))) + fact('CV', cv) +
+          fact('Source', esc(SOURCE[c.source] || '')) + fact('Added', esc(day(c.created_at))) +
+          /* The application's reference (ONE REQUEST REFERENCE, 2026-11-26). */
+          (c.request_ref ? fact('Reference', esc(c.request_ref)) : '') + fact('CV', cv) +
           fact('Note', c.note ? esc(c.note) : '', 'is-pre') + '</dl></section>' +
         (keeps && !removed ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Candidate page</h4></div>' +
           '<dl class="ovfacts"><div><dt>State</dt><dd>' + (ended ? 'Link expired ' + esc(day(c.link_ends)) : 'Open until ' + esc(day(c.link_ends))) + '</dd></div></dl>' +

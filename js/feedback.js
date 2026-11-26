@@ -38,7 +38,7 @@
   var LEAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
-  var info = null, state = 'loading', answers = {}, sending = false, answeredAt = null, sentAt = null;
+  var info = null, state = 'loading', answers = {}, sending = false, answeredAt = null, sentAt = null, reqRef = '';
   var root = function () { return $('fbRoot'); };
   var CFG = window.ADSPACE_CONFIG || {};
   var site = function () { return W.absUrl((window.ADSPACE_ORG || {}).website || ''); };
@@ -54,6 +54,7 @@
       (glyph ? ' data-glyph="' + glyph + '"' : '') + '><h2>' + esc(title) + '</h2>' + (text ? '<p>' + esc(text) + '</p>' : '') + (extra || '') +
       '</div></div></section>';
   }
+  function refWord() { return ((lang === 'zh' ? W.zh : W.en) || {}).coverRef || 'Reference'; }
   function websiteAct() {
     var u = site();
     return u ? '<div class="cover-acts"><a class="btn" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(t().website) + LEAVE + '</a></div>' : '';
@@ -73,6 +74,8 @@
     var follow = socials() + (u ? '<div class="rcv-acts"><a class="btn" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(w.website) + LEAVE + '</a></div>' : '');
     root().innerHTML = I.received({
       title: w.doneTitle, line: w.doneText, ref: F.title(info.kind, lang) + (info.client ? ' · ' + info.client : ''),
+      /* The answer's reference (ONE REQUEST REFERENCE, 2026-11-26). */
+      reqRef: reqRef, reqLabel: refWord(),
       steps: [
         { state: 'done', title: w.fbSent, sub: esc(when) },
         { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow }
@@ -89,7 +92,11 @@
     if (state === 'bad') { cover('', w.notFound, w.notFoundText); return; }
     if (state === 'fail') { cover('', w.failTitle, w.failText); return; }
     if (state === 'closed') { cover('archive', w.closedTitle, w.closedText, websiteAct()); return; }
-    if (state === 'answered') { cover('done', w.usedTitle, answeredAt ? f(w.usedText, { d: day(answeredAt) }) : '', websiteAct()); return; }
+    if (state === 'answered') {
+      cover('done', w.usedTitle, answeredAt ? f(w.usedText, { d: day(answeredAt) }) : '',
+        (reqRef ? '<p class="rcv-ref rcv-req">' + esc(refWord() + ' ' + reqRef) + '</p>' : '') + websiteAct());
+      return;
+    }
     if (state === 'done') { paintDone(); return; }
     root().innerHTML = '<div class="qs-step fb-step" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(F.title(info.kind, lang)) + '</h1>' +
       '<p class="qs-lead">' + esc(f(w.requested, { d: day(info.requested_at) })) + '</p></div>' +
@@ -107,7 +114,7 @@
     db.rpc('feedback_submit', { p_key: key, p_answers: F.payload(info.questions, answers) }).then(function (r) {
       var d = r.data || {};
       if (r.error) throw r.error;
-      if (d.error === 'answered') { state = 'answered'; answeredAt = d.answered_at; paint(); return; }
+      if (d.error === 'answered') { state = 'answered'; answeredAt = d.answered_at; reqRef = d.request_ref || ''; paint(); return; }
       if (d.error === 'closed') { state = 'closed'; paint(); return; }
       if (d.error === 'not_found') { state = 'bad'; paint(); return; }
       if ((d.error === 'required' || d.error === 'bad-score' || d.error === 'too-long') && d.key) {
@@ -115,7 +122,7 @@
         say(t().notSent); return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
+      reqRef = d.request_ref || ''; state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say(t().notSent);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });
@@ -137,7 +144,7 @@
     var d = r.data || {};
     if (r.error) throw r.error;
     if (d.client) info = { client: d.client };
-    if (d.error === 'answered') { state = 'answered'; answeredAt = d.answered_at; }
+    if (d.error === 'answered') { state = 'answered'; answeredAt = d.answered_at; reqRef = d.request_ref || ''; }
     else if (d.error === 'closed') state = 'closed';
     else if (d.error === 'busy') state = 'fail';
     else if (d.error || !d.ok) state = 'bad';
