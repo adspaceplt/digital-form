@@ -27,9 +27,16 @@ export const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetic
 const CONFIDENTIAL = 'This email and any attachments are confidential and may be privileged. ' +
   'If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.';
 
+/* A currency and its figure never part at a line's end: RM and S$ are
+   joined to the figure by a no-break space (written as the character). */
+export const joinMoney = (t: string) => String(t).replace(/\b(RM|S\$) +(?=[-\d])/g, '$1 ');
 function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }
+/* The public page a document is checked on: the server's copy of
+   ADSPACE_ORG.verifyUrl (js/config.js), which a function cannot read;
+   `tests/mailfn.js` holds the two alike. */
+export const VERIFY_URL = 'digital.adspace.me/verify';
 export const BLOCK = /^\{\s*invoices\s*\}$/i;
 /* `{invoices}` set in a line of its own words stands as its own paragraph,
    so the table is drawn wherever it was typed (review 2026-10-29, 3). */
@@ -38,7 +45,7 @@ const TOKEN = /\{\s*invoices\s*\}/i;
 export function layout(o: { heading: string; body: string; foot?: string; preheader?: string; block?: string; fine?: string[] }): string {
   const body = o.block ? String(o.body || '').replace(TOKEN, '\n\n{invoices}\n\n') : o.body;
   const ps = paras(body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
-    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
+    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">' + p.split('\n').map((l) => joinMoney(esc(l))).join('<br>') + '</p>').join('');
   const fine = (o.fine && o.fine.filter(Boolean).length ? o.fine.filter(Boolean) : [CONFIDENTIAL])
     .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">' + esc(t) + '</p>').join('');
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
@@ -66,12 +73,14 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '</td></tr></table></td></tr></table></body></html>';
 }
 
-/* The email's one button (the action blue, words in white), drawn where a
-   paragraph reads `{invoices}` through `layout`'s `block` (client feedback,
-   2026-11-24; creator-mail keeps its own copy until its next deploy). */
-export function button(a: { label: string; url: string }): string {
-  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;">' +
-    '<a href="' + esc(a.url) + '" style="display:inline-block;padding:9px 16px;font-family:' + FONT + ';font-size:14px;line-height:18px;font-weight:500;color:#ffffff;text-decoration:none;">' +
+/* The email's one button (the action blue, words in white, 15/500, 12px
+   24px, the 10px corner), shared by every function that sends one
+   (supplier-mail, creator-mail, hiring-mail, invite-member, bukku-sync;
+   unslop 2, 2026-11-26), drawn where a paragraph reads `{invoices}` through
+   `layout`'s `block`. `margin` sets the space around it. */
+export function button(a: { label: string; url: string; margin?: string }): string {
+  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:' + (a.margin || '8px 0 16px') + ';"><tr><td style="background:#0071e3;border-radius:10px;">' +
+    '<a href="' + esc(a.url) + '" style="display:inline-block;padding:12px 24px;text-align:center;font-family:' + FONT + ';font-size:15px;line-height:20px;font-weight:500;color:#ffffff;text-decoration:none;">' +
     esc(a.label) + '</a></td></tr></table>';
 }
 
