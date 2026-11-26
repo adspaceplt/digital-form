@@ -17,14 +17,20 @@ archives one whose work is all merged.
 
 ## Queue (in order, as release trains; coordinator session_01RVzkaP4WzcjZDWEysZw37c)
 
-1. **Build quote and TERMS fit**: branch `claude/quote-train` (both repos), merged (see Done).
-2. **Surface tokens and `data-layout`** (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
+1. **Build quote and TERMS fit**: merged, #1497.
+2. **Surface tokens and `data-layout`** (built on branch `claude/surface-tokens`; the user: run it in a fresh session in G's slot once G's releases merge and G is archived, which also builds item 3 and merges main in first, as F and G touched the card rules) (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
 3. **Style comparison** on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
 4. **Client pages** (held for the user's pick from 3): branch `claude/portal-six-tabs` (both repos): the portal at six tabs (Overview, Content, Reports, Services, Meetings, Account; old `?tab=` names land on their card), and `/creators/`, `/creator/` and the portal's campaign view in sections (identity head; Summary, Brief, Amount, Creators cards; each creator a card collapsed to name, state, next date, opening to track and facts two across; on a phone the track reads the current step's word). Its commit 6c0367b5 (portal shaded by CSS) is reverted in favour of the attribute. Screenshots of the portal, `/creators/` and `/quote/` at 390 and 1280 to the user before merging.
-5. **One glyph set**: `js/icons.js` the one icon set for the console and every page; the ~289 inline SVGs in ~40 scripts replaced by named glyphs; `acts.js` and the section marks read from it; a suite (`tests/glyphs.js`, in `affected.json`) fails a new inline `<svg>` in `js/` outside `icons.js`. Check the weight budget.
-6. **Automatic `?v=` stamps** from the commit at the Pages build; `admin/sw.js` never caches an unstamped file.
-7. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
-8. **Full gate on main** in its own session (`bash tests/snap.sh all`, 2-hour limit).
+5. **Linked sections** (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
+   - Content Review → My Work: a client's approval or request for changes on a set moves its task's stage (derived on load where the rules prefer it).
+   - Creator campaign → Bukku bills: a completed booking creates the creator's payable bill in Bukku (check `creator_bill_made` first).
+   - Client feedback → Performance and the Dashboard: a client's ratings feed the account manager's month and the client's standing.
+   - Short Links → client record: a link belongs to a client or campaign, and its clicks show on that record.
+   On hold ("1 2 6 8 on hold until further notice"; STANDARD.md §24): the closed loop from quotation to report, quotation → Bukku invoices, Outstation → My Work and claims, Meta reports → Analytics.
+6. **One glyph set**: `js/icons.js` the one icon set for the console and every page; the ~289 inline SVGs in ~40 scripts replaced by named glyphs; `acts.js` and the section marks read from it; a suite (`tests/glyphs.js`, in `affected.json`) fails a new inline `<svg>` in `js/` outside `icons.js`. Check the weight budget.
+7. **Automatic `?v=` stamps** from the commit at the Pages build; `admin/sw.js` never caches an unstamped file.
+8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
+9. **Full gate on main** in its own session (`bash tests/snap.sh all`, 2-hour limit).
 
 ## Logged defects (fail on main, not yet fixed)
 
@@ -53,6 +59,8 @@ archives one whose work is all merged.
 | #1492 Letter of Offer issuing path removed | 261126.396c |
 | #1493 digital.adspace.me/verify; View all scroll | 261126.cb04 |
 | #1494 Rules 207 KB → 81 KB; Token economy | 261126.baf3 |
+| #1496 Team groups (F) | 261126.9856 |
+| #1497 Build quote one sheet at a desk; TERMS fit | 261126.9c59 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
