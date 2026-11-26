@@ -81,7 +81,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   function writes them (`activity_log_stamp` clears a page's)
   (`2026-11-25-quotation-link-activity.sql`, `tests/quotelinksql.js`).
 - The record keeps three years: `privacy_retention()` (pg_cron
-  `privacy-retention`, the 2nd of each month) removes older rows, and
+  `privacy-retention`, daily at 02:45 MYT since 2026-11-26) removes older rows, and
   clears a WhatsApp message's number, name, variables and link code twelve
   months after it was queued, never one still queued or sending
   (`2026-10-18-personal-data-kept-for-a-time.sql`), and removes a caller's

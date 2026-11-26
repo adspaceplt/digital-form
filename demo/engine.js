@@ -279,7 +279,7 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
-    feedback_request: 'p_client p_kind', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    feedback_request: 'p_client p_kind p_again', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind p_again', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
     portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
@@ -2632,7 +2632,7 @@ function cardSlugFree(name, self, email) {
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
     }
 
-    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at); })
+    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref); })
       .sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
     if (qt) {
       var rev = (DB.quotations || []).filter(function (r) { return r.replaces === qt.id && !r.removed_at; })
@@ -2686,6 +2686,9 @@ function cardSlugFree(name, self, email) {
           state: rv.withdrawn_at ? 'withdrawn' : rnext ? 'replaced' : 'valid',
           steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
       }
+
+      var vq = (DB.quotations || []).filter(function (x) { return x.ref && x.doc_code === vc; })[0];
+      if (vq) { var fq = verifyFind(vq.ref); if (fq) { fq.serial = vser; fq.by_code = true; return fq; } }
       var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
       if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
         issued: mday(vs.shared_at), code: vs.doc_code, sealed: false, state: vs.status === 'shared' ? 'valid' : 'withdrawn',
@@ -10897,8 +10900,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (paT.state !== 'open' || paS.left_at) return oNo('closed');
         if (!new RegExp('^private/outstation/' + paT.id + '/[0-9a-f-]{36}\\.jpg$').test(String(args.p_path || ''))) return oNo('bad-key');
         var paAt = Date.parse(args.p_taken_at);
-        if (!paAt || paAt > Date.now() + 120000 || paAt < Date.parse(paT.started_at) - 600000) return oNo('bad-location');
-        if (OST.photos.filter(function (p) { return p.stop_id === paS.id; }).length >= 10) return oNo('too-many');
+        if (!paAt || paAt > Date.now() + 120000 || paAt < Date.parse(paT.started_at) - 600000) return oNo('bad-time');
+        if (OST.photos.filter(function (p) { return p.stop_id === paS.id && !p.removed_at; }).length >= 10) return oNo('too-many');
         OST.photos.push({ id: oUuid(), stop_id: paS.id, path: args.p_path, taken_at: args.p_taken_at, lat: args.p_lat == null ? null : args.p_lat,
           lng: args.p_lng == null ? null : args.p_lng, accuracy_m: args.p_accuracy == null ? null : args.p_accuracy });
         return oOk({ ok: true, trip: oJson(paT) });
@@ -11286,7 +11289,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var da = args || {}, dOut;
       idFormats();
       if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
-        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
+
+        var dTm = new Date(Date.now() + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
+        var dNx = k === 'trip' ? ((((DB.__ost || {}).refs) || {})[dTm] || 0) + 1 : (f.next_no || null);
+        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: dNx, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
         var dC = dO && (DB.creators || []).filter(function (c) { return c.id === dO.creator_id; })[0];
@@ -13003,6 +13009,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
         var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && String(k.email || '').trim(); })[0];
         if (!rk2) return fbNo('no-contact');
+
+        if (DB.feedback_requests.some(function (r) { return r.client_id === rc.id && r.kind === args.p_kind && r.mail_status === 'sending' &&
+            Date.now() - Date.parse(r.created_at) < 600e3; })) return fbNo('sending');
+        var fbH = appSet('wa_repeat_hours', appToday()); if (fbH == null) fbH = 24;
+        var fbRec = DB.feedback_requests.filter(function (r) { return r.client_id === rc.id && r.kind === args.p_kind &&
+            ['failed', 'sending'].indexOf(r.mail_status || 'sent') < 0 && r.closed_reason !== 'withdrawn' &&
+            Date.now() - Date.parse(r.created_at) < Number(fbH) * 3600e3; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        if (fbRec && !args.p_again) return Promise.resolve({ data: { error: 'recent', recent: { at: fbRec.created_at, by: fbRec.sent_by_name, to: fbRec.sent_to_name } }, error: null });
         var rm = DB.team_members.filter(function (m) { return m.active && String(m.name || '').trim().toLowerCase() === String(rc.owner || '').trim().toLowerCase(); })[0];
         DB.feedback_requests.forEach(function (r) { if (r.client_id === rc.id && r.kind === args.p_kind && !r.closed_at) { r.closed_at = fbNow; r.closed_reason = 'replaced'; } });
         var key = ''; while (key.length < 16) key += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
@@ -13030,7 +13045,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (typeof sendOk === 'function' && !sendOk('email')) return fbNo('send-off');
         if (Number(appSet('client_email_on', fbNow.slice(0, 10)) || 0) !== 1) return fbNo('email-off');
         if (/^(quick|review)$/.test(args.p_kind) && fbTpls().filter(function (x) { return x.kind === args.p_kind; }).length < 2) return fbNo('not-found');
-        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind }).then(function (rr) {
+        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind, p_again: args.p_again === true }).then(function (rr) {
           var r = rr.data || {};
           if (r.error) return { data: r, error: null };
           var q = DB.feedback_requests.filter(function (x) { return x.id === r.id; })[0];
@@ -14856,6 +14871,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, qdc.owner_id, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
         if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
         if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
+
+        if (qdq.sent_out_at || qdq.signed_at) return qtOk({ error: 'sent' });
         var qdn = (DB.client_services || []).filter(function (l) { return l.quotation_id === qdq.id; }).length;
         if (qdn) return qtOk({ error: 'lines', count: qdn });
         var qdd = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qdq.id; }); })[0];
@@ -18464,6 +18481,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'supplier_email_begin') {
           var bp = emPrep();
           if (bp.error) return spNo(bp.error);
+
+          if ((DB.supplier_emails || []).some(function (x) { return x.supplier_id === args.p_supplier && x.purpose === args.p_purpose &&
+              (x.document_id || null) === (args.p_document || null) && x.status === 'sending' && Date.now() - Date.parse(x.created_at) < 600e3; })) return spNo('sending');
           if (bp.recent && !args.p_again) return spNo('recent', { recent: bp.recent });
           var bs = String(args.p_subject || '').trim(), bb = String(args.p_body || '').trim();
           if (bs.length < 2 || bs.length > 200) return spNo('bad-subject');
@@ -20382,6 +20402,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (bkb.action === 'portal') {
             var piA = portalInvoiceContacts({ p_client: bkb.client });
             if (piA.error) return bkR({ error: piA.error });
+            if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
             var piT = appToday();
             var piAdd = function (n) { var d = new Date(Date.parse(piT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
             var piAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(piAdd);
@@ -20681,7 +20702,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var fmb = opts.body;
           window.__fbMailAsked = { client: fmb.client, kind: fmb.kind };
           if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
-          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind }).then(function (r) {
+          return rpc('feedback_mail_begin', { p_client: fmb.client, p_kind: fmb.kind, p_again: fmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;

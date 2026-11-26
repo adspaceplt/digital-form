@@ -219,11 +219,11 @@
     too_many: 'Twenty invitations a day is the limit. Try again tomorrow.'
   };
   function invokeFn(name, body) {
-    if (!client) return Promise.resolve({ data: {}, error: { message: 'Not configured' }, why: 'This feature is not available yet. Please contact an admin.' });
+    if (!client) return Promise.resolve({ data: {}, error: { message: 'Not configured' }, why: window.ADspaceWords.line.notYet });
     const words = (b, err) => {
       if (b && (b.detail || b.error)) return b.detail || FN_WORD[b.error] || b.error;
       const m = String((err && err.message) || err || '');
-      if (/not found|404|Failed to send|Failed to fetch/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
+      if (/not found|404|Failed to send|Failed to fetch/i.test(m)) return window.ADspaceWords.line.notYet;
       return m || 'The request failed. Please try again.';
     };
     return client.functions.invoke(name, { body }).then(r => {
