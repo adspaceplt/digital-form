@@ -5724,6 +5724,9 @@ svg.sec {
   }
 }
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard) { border-radius: var(--radius-lg); }
+/* A card inside a Dashboard card is one surface (DESIGN §1): an empty line
+   there takes no corner of its own (2026-11-26, Next 5 days). */
+.console .ovw-card .softpanel { border-radius: 0; }
 /* A record is hairline cards on the white sheet (the user, 2026-11-13: "keep
    white sheet is good. keep hairline too else it looks too bold. it has to
    be minimal elegant contrast"): each part of a pane (its head and its list)
