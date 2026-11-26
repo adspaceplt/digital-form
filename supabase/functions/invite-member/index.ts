@@ -22,7 +22,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, layout, resend, FONT, sender, fileSent } from '../_shared/mail.ts';
+import { esc, layout, resend, FONT, sender, fileSent, button as mailButton } from '../_shared/mail.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
@@ -39,10 +39,7 @@ const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
    nowhere). Its button is a one-time sign-in link. */
 function invitation(kind: string, greeting: string, link: string) {
   const client = kind === 'client';
-  const button = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
-    '<td style="background:#0071e3;border-radius:10px;"><a href="' + esc(link) + '" style="display:inline-block;min-width:52px;' +
-    'padding:12px 32px;text-align:center;font-family:' + FONT + ';font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">' +
-    (client ? 'Open Client Portal' : 'Sign in') + '</a></td></tr></table>';
+  const button = mailButton({ label: client ? 'Open Client Portal' : 'Sign in', url: link, margin: '8px 0 24px' });
   const dear = 'Dear ' + greeting + ',';
   const body = client
     ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services and resources with ADspace all in one place.',

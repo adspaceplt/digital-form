@@ -1577,6 +1577,17 @@
     if (!TABS[key] && parts[0] !== key) {
       var el = document.querySelector('#crmWork .rec-pane[data-pane="' + key + '"]');
       if (el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+    } else if (visit) {
+      /* A pane opened from low on the page (the rail's View all, a part's
+         View all) starts at its top, under the console's head, never above
+         the screen where the press left it (2026-11-26, the user: "I have
+         to scroll up to view it"). A pane already in view stays put. */
+      requestAnimationFrame(function () {
+        var strip = $('crmTabs'), bar = document.querySelector('.console-head');
+        if (!strip) return;
+        var off = bar ? bar.getBoundingClientRect().bottom : 0, top = strip.getBoundingClientRect().top;
+        if (top < off) window.scrollTo(0, Math.max(0, top + window.pageYOffset - off - 12));
+      });
     }
   }
   var ckFor = null;
@@ -2270,9 +2281,7 @@
   function nextStep(c) {
     var stage = c.stage || 'lead';
     var missing = billingMissing(c);
-    var quoting = (state.services || []).filter(function (l) { return l.state === 'quoted'; }).length;
     var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
-    var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
     /* The sale in the order it is won (2026-11-25, the user): a brand, a
        quotation, then billing once it is signed; an Active client's month. */
@@ -2291,14 +2300,10 @@
     if (!state.contacts.length) return { text: 'No contacts.', go: 'contacts', icon: 'person' };
     if (stage === 'lead') return { text: 'No calls or visits.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
-    if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' service line to quote is' : ' service lines to quote are') + ' not on a Letter of Offer.', go: 'documents', icon: 'file' };
-    }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
       return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') +
         ' required before Active.', go: 'billing', icon: 'file' };
     }
-    if (stage === 'proposal' && issued) return { text: 'The Letter of Offer is with the client and unsigned.', go: 'documents', icon: 'file' };
     if (stage === 'active' && !confirmed) return { text: 'This client is Active with no confirmed service line.', go: 'services', icon: 'tag' };
     return null;
   }
@@ -3734,7 +3739,7 @@
   /* Edit and New use Billing's own sheet, with what belongs to the client
      alone (SST on quotes, the currency, the details form) left out. */
   function openEntity(ent, opener) {
-    state.detUse = null; state.toActive = null; state.toLetter = null;
+    state.detUse = null; state.toActive = null;
     state.entEdit = { id: ent ? ent.id : null, updated_at: ent ? ent.updated_at : null };
     var c = state.client;
     BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = ent ? (ent[f[1]] || '') : ''; });
@@ -4030,7 +4035,6 @@
        Use details filled; a sheet left any other way forgets them. */
     state.detUse = null;
     state.toActive = null;
-    state.toLetter = null;
     state.entEdit = null;
     entSheetMode(false);
     state.billPick0 = null;
@@ -4047,7 +4051,7 @@
   $('crmBillCancel').addEventListener('click', function () {
     if (state.entEdit) { state.entEdit = null; shutSheet('crmBillSheet'); entSheetMode(false); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', ''); return; }
     state.detUse = null;
-    state.toActive = null; state.toLetter = null; state.billPick0 = null;
+    state.toActive = null; state.billPick0 = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
   });
   sheetClose('crmBillClose', 'crmBillCancel');
@@ -5243,12 +5247,12 @@
     if (patch.finance_email && !ADspaceWords.emailOk(patch.finance_email)) {
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
     }
-    /* A Save that changes nothing writes and files nothing; while Active or
-       a Letter of Offer waits on billing still missing, the sheet stays
+    /* A Save that changes nothing writes and files nothing; while Active
+       waits on billing still missing, the sheet stays
        open on the first missing field and the move stays asked for
        (2026-10-27, CLI-13). */
     var cid = state.client.id;
-    var gate = state.toActive === cid ? 'Active' : state.toLetter && state.toLetter.id === cid ? 'a Letter of Offer' : '';
+    var gate = state.toActive === cid ? 'Active' : '';
     var held = function (still) {
       msg('crmBillMsg', 'Billing details required before ' + gate + ': ' + still.join(', ') + '.', 'err');
       var first = BILLING.filter(function (f) { return still.indexOf(f[2]) > -1; })[0];
@@ -5300,11 +5304,11 @@
       if (!toBukku && !(r.data || []).length) {
         /* Moved since it was read (or refused, which reads alike): the
            sheet opens again on the latest version, the move still asked. */
-        var keepActive = state.toActive, keepLetter = state.toLetter;
+        var keepActive = state.toActive;
         staleClient(cid, function (found) {
           if (!found || !state.client || state.client.id !== cid) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
           openBilling();
-          state.toActive = keepActive; state.toLetter = keepLetter;
+          state.toActive = keepActive;
           msg('crmBillMsg', STALE_LINE, 'err');
         });
         return;
@@ -5342,8 +5346,7 @@
         db.rpc('client_details_used', { p_id: used, p_client: state.client.id }).then(function () { loadDetForm(); }).catch(function () {});
       }
       var goActive = state.toActive === state.client.id && !still.length;
-      var goLetter = state.toLetter && state.toLetter.id === state.client.id && !still.length ? state.toLetter : null;
-      state.toActive = null; state.toLetter = null;
+      state.toActive = null;
       openClient(state.client);
       var savedWord = toBukku && r.bukku ? 'Saved to Bukku.' : 'Saved.';
       msg('crmBillNote', still.length
@@ -5376,9 +5379,6 @@
           askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true, after: toHead }); });
         } else moveStage(c, 'active', null, { after: toHead });
       }
-      /* A Letter of Offer was asked for: billing now complete, the letter
-         sheet opens on the lines it was asked with. */
-      if (goLetter) loadServices(function () { openPick(goLetter.only, goLetter.rep || undefined); });
     });
   });
 
@@ -5391,12 +5391,14 @@
     if (!img) return;
     var url = val('crmLogo');
     img.hidden = !url;
+    /* The disc stands only once an address is typed (unslop 2). */
+    $('crmLogoPreview').classList.toggle('is-empty', !url);
     if (url) img.src = url;
   }
   if (bridge.wireLogoUpload) bridge.wireLogoUpload('crmLogoUp', 'crmLogoFile', 'crmLogo', 'crmBrandMsg', function () { return state.client; });
   if ($('crmLogo')) {
     $('crmLogo').addEventListener('input', paintLogoPreview);
-    $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; });
+    $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; $('crmLogoPreview').classList.add('is-empty'); });
   }
 
   $('crmBrandSave').addEventListener('click', function () {
@@ -5539,6 +5541,16 @@
   $('crmNewEmail').addEventListener('click', function () {
     window.ADspaceWhatsApp.newEmail($('crmNewEmail'), { audience: 'client', party: state.client && state.client.id });
   });
+  /* A contact the composer can message, read as its recipients list reads
+     it (`wa_number`): the WhatsApp number unless it is a username, else the
+     phone, of 8 to 15 digits (unslop 2: the ⋯ offered Send on WhatsApp to a
+     contact the sheet then refused). */
+  function waReach(ct) {
+    var raw = ct.whatsapp && !/^\s*@/.test(ct.whatsapp) ? ct.whatsapp : ct.phone;
+    if (!raw || /^\s*@/.test(raw)) return false;
+    var d = String(raw).replace(/\D/g, '');
+    return d.length >= 8 && d.length <= 15;
+  }
   function loadContacts() {
     loadEmails();
     var box = $('crmContacts');
@@ -5674,7 +5686,7 @@
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' },
                  /* A template message to this contact, sent at the press
                     (2026-10-31): the composer opens on them. */
-                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-gate="whatsapp"' },
+                 waMsg && waReach(ct) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-gate="whatsapp"' },
                  /* Messages' New email, opened on this contact (2026-11-04). */
                  mailMsg && ct.email && { a: 'mail', label: 'Send email', attrs: 'data-gate="email"' }],
                 [],
@@ -5791,7 +5803,7 @@
       loadRequests();
       // Putting access back does not email again: the login already exists,
       // and an undo is a correction, not a second announcement.
-      if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }); return; }
+      if (!on) { undoBar('Access revoked.', function () { setPortal(ct, true, false); }, $('crmContacts')); return; }
       /* Access on its own is enough: the login is made when they sign in.
          An invitation only goes out when somebody asked for one. */
       if (!invite) { msg('crmWorkMsg', 'Access enabled.', 'ok'); return; }
@@ -5829,8 +5841,8 @@
   function openContact(ct) {
     editingContact = ct || null;
     openSheet('crmContactBox');
-    $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
-    $('ctSave').textContent = 'Save';
+    $('crmContactTitle').textContent = ct ? 'Edit contact' : 'Add contact';
+    $('ctSave').textContent = ct ? 'Save' : 'Add contact';
     $('ctSalutation').value = ct ? (ct.salutation || '') : '';
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
@@ -5923,7 +5935,7 @@
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(away ? 'contact.removed' : 'contact.restored', state.client.name + ' · ' + ct.name, '');
-      if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); });
+      if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); }, $('crmContacts'));
       loadContacts();
     });
   }
@@ -6170,7 +6182,7 @@
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log(away ? 'client.touch_removed' : 'client.touch_restored', state.client.name, KIND_WORD[tc.kind] || '');
-        if (away) undoBar('Call or visit removed.', function () { archiveTouch(tc, false); });
+        if (away) undoBar('Call or visit removed.', function () { archiveTouch(tc, false); }, $('crmTouches'));
         loadTouches();
       });
   }
@@ -6458,11 +6470,6 @@
     });
     return live;
   }
-  /* The Services pane's one blue follows the deal (2026-10-22, SL-M2):
-     nothing quoted and no To quote line, Build quote; To quote lines no
-     live letter holds, Issue letter; else none (a quotation is signed by
-     the client, never offered as a letter, 2026-10-31). Issue
-     letter is drawn once a To quote or Confirmed line exists. */
   /* The Letter of Offer is no longer issued (2026-11-12, the user: the
      quotation is the one contract; letters issued before stay as they
      are), so the pane's blue is the quotation's. */
@@ -6974,7 +6981,7 @@
     var m = (e && e.message) || '';
     if (/client_services_rate_check/.test(m)) return 'The rate cannot be below zero.';
     if (/client_services_qty_check/.test(m)) return 'The quantity cannot be below zero.';
-    return /confirm-needs-letter/.test(m) ? 'Not saved. Verify the signed Letter of Offer to confirm this service, or use Confirm without letter.' : (m || 'Not saved. Please try again.');
+    return /confirm-needs-letter/.test(m) ? 'Not saved. A service is confirmed when its signed quotation is approved, or by an admin with Confirm without letter.' : (m || 'Not saved. Please try again.');
   }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */
@@ -6984,7 +6991,7 @@
       if (!(r.data || []).length) { msg('crmServiceMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(act === 'removed' ? 'client.service_removed' : act === 'restored' ? 'client.service_restored' : 'client.service_changed',
           state.client.name, l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
-      if (act === 'removed') undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }, 'restored'); });
+      if (act === 'removed') undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }, 'restored'); }, $('crmServices'));
       shutService();
       syncValue();
     }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not saved.', 'err'); });
@@ -7353,8 +7360,7 @@
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
             [{ a: 'download', label: 'Download PDF' }],
-            /* No Replace: the Letter of Offer is no longer issued
-               (2026-11-12); a changed deal is a new quotation. */
+            /* Change: none, an issued letter stands as it was issued. */
             [],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
@@ -7557,313 +7563,9 @@
 
   }
 
-  /* ---- Choosing what goes on the letter ---------------------------------
-     A letter is issued for the services somebody chose. To quote lines that
-     are not already on a live letter are ticked; a line already on one is
-     listed with the letter that holds it and cannot be ticked, because the
-     way through is to void that letter or replace it. A confirmed line sits
-     apart, unticked, for a renewal somebody decides on deliberately. */
-  var picking = null;
-  /* An Issue on its way: the client and the sheet it was pressed on. Issue
-     stays disabled until it answers, whatever is ticked or shut meanwhile,
-     and its answer acts only on the sheet that sent it. */
-  var pickBusy = null;
-
-  /* `rep`: the letter being replaced, whose lines are open to the one that
-     replaces it (issue_letter's p_replaces; 2026-10-31). */
-  function eligible(rep) {
-    var live = {};
-    (state.documents || []).forEach(function (d) {
-      if (!DOCS.liveDoc(d) || d.id === rep) return;
-      ((state.docMap || {})[d.id] || []).forEach(function (id) { live[id] = d.number; });
-    });
-    var out = { open: [], held: [], confirmed: [] };
-    (state.services || []).forEach(function (l) {
-      if (l.archived_at) return;
-      if (l.state === 'quoted') (live[l.id] ? out.held : out.open).push({ line: l, on: live[l.id] });
-      else if (l.state === 'confirmed') out.confirmed.push({ line: l, on: live[l.id] });
-    });
-    return out;
-  }
-
-  function pickBlock(title, rows, tick, note) {
-    if (!rows.length) return '';
-    var c = state.client;
-    return '<div class="lpickgroup"><h4 class="svc-cat">' + esc(title) + '</h4>' +
-      rows.map(function (r) {
-        var l = r.line;
-        /* Only a line on a live letter is held; a Confirmed line not on
-           one stays tickable for a renewal or a variation. */
-        return '<label class="lpickrow' + (!tick && r.on ? ' is-held' : '') + '">' +
-          '<input type="checkbox" value="' + esc(l.id) + '"' + (tick ? ' checked' : '') + '>' +
-          '<span class="lpickname"><b>' + esc(l.label) + '</b>' +
-            '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
-          /* A line of more than a month reads its month, as the letter's
-             total does, never its whole term beside a monthly foot
-             (2026-10-27, CLI-14); a one-time item its amount. */
-          '<span class="lpickamt">' + esc(Number(l.tenure || 1) > 1
-            ? MON.money2(MON.cents ? MON.cents(Number(l.qty || 0) * rateOf(l)) : Number(l.qty || 0) * rateOf(l), MON.curOf(c)) + ' / month'
-            : MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
-        '</label>';
-      }).join('') +
-      (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
-  }
-
-  function openPick(only, rep) {
-    var c = state.client;
-    msg('crmDocMsg', '');
-    msg('pickMsg', '');
-    /* No Letter of Offer without the billing it prints (2026-10-26); the
-       database refuses it too (`needs-billing`). */
-    var missing = billingMissing(c);
-    if (missing.length) {
-      gateBilling(missing, 'a Letter of Offer', document.activeElement, function () { state.toLetter = { id: c.id, only: only || null, rep: rep || null }; });
-      return;
-    }
-    /* The Client ID is what an automatic reference is built from, so a client
-       without one is told here rather than at the end. It is a caution and no
-       longer a refusal to open the sheet: a typed reference needs no code,
-       and the database is what decides either way. */
-    /* Said at the field it concerns, never under the button (2026-10-15,
-       audit CLI-4: the field read Numbered automatically while it could not
-       be). */
-    var noCode = !String(c.client_code || '').trim();
-    var e = eligible(rep);
-    picking = { replaces: rep || null };
-    $('pickBody').innerHTML =
-      /* Bill to (2026-10-29): which billing entity the letter bills, drawn
-         where the client holds more than one; the main is the default. */
-      '<div class="lpickref" id="pickBillBox" hidden>' +
-        '<label class="field-label" for="pickBillTo">Bill to</label>' +
-        '<select class="select" id="pickBillTo"></select>' +
-      '</div>' +
-      pickBlock('To quote', e.open, true, '') +
-      pickBlock('Already on an issued letter', e.held, false,
-        'Void that letter, or choose Replace from its ⋯, before quoting these again.') +
-      pickBlock('Confirmed', e.confirmed, false,
-        'Tick one only for a renewal, a variation or a replacement.') +
-      (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>') +
-      /* What the ticked lines come to, as the letter's summary prints it
-         (the user, 2026-11-06: only the term's total was shown). */
-      '<dl class="qb-tot lpicktot" id="pickTotals" aria-live="polite" hidden></dl>' +
-      /* The reference is the database's to make and the office's to override.
-         Blank is the everyday case and the placeholder says so without a
-         sentence; a reference is typed to fill a gap a deleted letter left,
-         which is the only reason this field exists. Typing one spends no
-         sequence number, so the next automatic letter keeps its place. */
-      /* A client with no Client ID is asked for one here, the next AC
-         number a press away; the letter is refused until it is set, and
-         the reference is then numbered from it (the user, 2026-10-27,
-         CLI-15: "refuse and request input Client ID"). */
-      (noCode ? '<div class="lpickref">' +
-        '<label class="field-label" for="pickCode">Client ID</label>' +
-        '<div class="pickcode-row"><input class="input input-sm" id="pickCode" type="text" autocomplete="off" spellcheck="false" maxlength="12"' +
-          ' aria-required="true" aria-describedby="pickRefNote" placeholder="AC001">' +
-          '<button class="btn btn-sm" id="pickCodeNext" type="button" hidden></button></div>' +
-        '<p class="msg warn" id="pickRefNote">This client has no Client ID. Set one to number the letter.</p>' +
-      '</div>' : '') +
-      /* The letter's own date (2026-11-12, the user: a letter may be
-         backdated): today until changed; its reference takes the date's
-         month, and the price and the validity line are read on it. */
-      '<div class="row fgrid">' +
-        '<div><label class="field-label" for="pickDate">Date</label>' +
-        '<input class="input input-sm" id="pickDate" type="date" aria-required="true" value="' + esc(window.ADspaceClock.today()) + '" max="' + esc(window.ADspaceClock.today()) + '"></div>' +
-        '<div><label class="field-label" for="pickRef">Reference</label>' +
-        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false" placeholder="Numbered automatically"></div>' +
-      '</div>' +
-      /* Terms of this letter's own, one point a line, printed under TERMS
-         after the term and the validity (the user, 2026-10-23). */
-      '<div class="lpickref">' +
-        '<label class="field-label" for="pickTerms">Terms</label>' +
-        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point per line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
-      '</div>' +
-      /* Preview draws the letter Issue would keep, no number spent; no
-         commit, so under the fields, never in the foot (2026-10-31, as the
-         client letter's DOC-6). */
-      '<div class="doc-preview-row">' +
-        '<button class="btn btn-sm" id="pickPreview" type="button">Preview</button>' +
-      '</div>';
-    /* A held line is shown so the reason is on the screen, and is refused so
-       the same letter cannot go out twice by accident. */
-    if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan($('pickBody'));
-    if (noCode) {
-      nextClientCode(function (next) {
-        var b = $('pickCodeNext');
-        if (!b || !next) return;
-        b.textContent = 'Use ' + next;
-        b.setAttribute('aria-label', 'Use ' + next + ' as the Client ID');
-        b.hidden = false;
-        b.onclick = function () {
-          var f = $('pickCode');
-          f.value = next; f.dispatchEvent(new Event('input', { bubbles: true })); f.focus();
-        };
-      });
-    }
-    Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
-      i.disabled = true;
-    });
-    /* Issued from a quotation: its own lines are the ones ticked. */
-    if (only && only.length) {
-      Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]:not([disabled])'), function (i) {
-        i.checked = only.indexOf(i.value) > -1;
-      });
-    }
-    Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]'), function (i) {
-      i.addEventListener('change', pickSum);
-    });
-    /* A date moved carries the validity line with it while that line is
-       still the one the sheet wrote; a line typed over is left alone. */
-    var pd = $('pickDate'), pdWas = pd ? pd.value : '';
-    if (pd) pd.addEventListener('change', function () {
-      var t = $('pickTerms'), was = DOCS.validLine ? DOCS.validLine(pdWas) : '', now = DOCS.validLine ? DOCS.validLine(pickDay()) : '';
-      if (t && was && t.value.split(/\r?\n/)[0] === was) t.value = [now].concat(t.value.split(/\r?\n/).slice(1)).join('\n');
-      pdWas = pickDay();
-      pickSum();
-    });
-    pickSum();
-    /* Lines from one quotation the reader cannot list (no Quotations part)
-       are priced on its rate and term as the letter is (the audit of
-       2026-10-26, finding 2). */
-    state.letterQuotes = [];
-    var tick = (state.services || []).filter(function (l) { return pickedIds().indexOf(l.id) > -1; });
-    if (tick.length && DOCS.quoteTerms) {
-      DOCS.quoteTerms(tick, state.quotes).then(function (qs) {
-        var have = state.quotes || [];
-        state.letterQuotes = qs.filter(function (x) { return have.indexOf(x) < 0; });
-        if (state.letterQuotes.length && !$('pickSheet').hidden) pickSum();
-      });
-    }
-    /* Opened and shut through js/sheet.js (2026-10-22, QT-3): the focus held
-       in it and handed back, Escape, and a press outside that never throws
-       away a typed reference. Read again in place while it is open. */
-    if (!window.ADspaceSheet.isOpen($('pickSheet'))) {
-      window.ADspaceSheet.show($('pickSheet'), { opener: document.activeElement, onClose: pickClosed });
-    }
-    pickBillTo();
-  }
-
-  /* The Bill to choice: the client's entities, main first, read with the
-     record (`client_entities_list`) or asked for here. */
-  function pickBillTo(keep) {
-    var c = state.client, box = $('pickBillBox');
-    if (!box || !c) return;
-    var paint = function () {
-      var L = state.entFor === c.id ? (state.entities || []) : [];
-      if (L.length < 2) { box.hidden = true; return; }
-      $('pickBillTo').innerHTML = L.map(function (x) {
-        return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') +
-          (x.main ? ' · Primary' : x.missing && x.missing.length ? ' · Incomplete' : '')) + '</option>';
-      }).join('');
-      if (keep && L.some(function (x) { return x.id === keep; })) $('pickBillTo').value = keep;
-      box.hidden = false;
-    };
-    if (state.entFor === c.id) { paint(); return; }
-    db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
-      if (!state.client || state.client.id !== c.id) return;
-      var d = r.data || {};
-      if (!r.error && !d.error) { state.entFor = c.id; state.entities = d.entities || []; }
-      paint();
-    }).catch(function () {});
-  }
-
-  function pickAgain(ids, said) {
-    var rep = picking && picking.replaces;
-    var ref = $('pickRef') ? $('pickRef').value : '';
-    var day = $('pickDate') ? $('pickDate').value : '';
-    var terms = $('pickTerms') ? $('pickTerms').value : '';
-    var bill = $('pickBillTo') && !$('pickBillBox').hidden ? $('pickBillTo').value : '';
-    var id = state.client && state.client.id;
-    loadServices(function () {
-      var reopen = function () {
-        if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
-        openPick(ids, rep);
-        if ($('pickRef')) $('pickRef').value = ref;
-        if ($('pickDate') && day) $('pickDate').value = day;
-        if ($('pickTerms')) $('pickTerms').value = terms;
-        if (bill) pickBillTo(bill);
-        msg('pickMsg', said, 'warn');
-      };
-      if (window.ADspaceQuotes && mayPart('clients.quotes', 'view')) loadQuotes(reopen, true); else reopen();
-    }, function (m) {
-      /* The lines could not be read again: the refusal stands, said with
-         why, and the next press would be refused the same way. */
-      if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
-      msg('pickMsg', 'The services or their quotation changed since this sheet was opened, and could not be read again: ' +
-        String(m).replace(/\.$/, '') + '. Close this sheet and open it again.', 'err');
-    });
-  }
-
-  function pickedIds() {
-    return Array.prototype.filter.call($('pickBody').querySelectorAll('input[type="checkbox"]'),
-      function (i) { return i.checked && !i.disabled; }).map(function (i) { return i.value; });
-  }
-
-  /* The letter's date as the sheet stands, today where empty. */
-  function pickDay() {
-    var v = $('pickDate') ? $('pickDate').value : '';
-    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
-  }
-  function pickSum() {
-    var ids = pickedIds();
-    var c = state.client;
-    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
-    var price = rows.length ? DOCS.quoteOf(c, rows, (state.quotes || []).concat(state.letterQuotes || []), renewal, pickDay()) : null;
-    /* Lines all from one quotation read as the quotation reads, its own
-       figure and term, never the letter's whole total (2026-10-22, QT-1). */
-    var qid = rows.length && rows[0].quotation_id;
-    var q = qid && rows.every(function (l) { return l.quotation_id === qid; }) && window.ADspaceQuotes && window.ADspaceQuotes.headline
-      ? (state.quotes || []).filter(function (x) { return x.id === qid; })[0] : null;
-    var h = q ? window.ADspaceQuotes.headline(q) : null;
-    $('pickSum').textContent = !rows.length ? 'Nothing chosen'
-      : h && h[1] ? h[0] + ' ' + h[1].charAt(0).toLowerCase() + h[1].slice(1) + (q.totals && q.totals.month && q.totals.term ? ' · ' + q.totals.term + ' months' : '')
-      : rows.length + (rows.length === 1 ? ' service' : ' services');
-    pickTotals(rows, price, h && h[1]);
-    $('pickGo').disabled = !rows.length || Boolean(pickBusy);
-  }
-
-  /* The letter's own summary rows for the lines ticked: the month's
-     subtotal, one-time items, SST, what is due first, each month and the
-     whole term, the term's total the one in weight. */
-  function pickTotals(rows, price, quoted) {
-    var box = $('pickTotals');
-    if (!box) return;
-    if (!rows.length || !price || quoted) { box.hidden = true; box.innerHTML = ''; return; }
-    var cur = MON.curOf(state.client), m = function (v) { return MON.money2(v, cur); };
-    var on = Number(price.tax) > 0;
-    var incl = on ? ' incl. SST' : '';
-    var word = on && MON.sstOf ? MON.sstOf(rows, price.sstPct != null ? price.sstPct : MON.setting('sst_pct')).word : (MON.SST_NONE || 'SST not applicable');
-    var once = Number(price.once) > 0, out = [];
-    if (price.term) {
-      out.push(['Monthly subtotal', m(price.each)]);
-      if (once) out.push(['One-time subtotal', m(price.once)]);
-      out.push([word, on ? m(Number(price.eachTax) + Number(price.onceTax || 0)) : '']);
-      if (once) out.push(['First month due', m(Number(price.eachTotal) + Number(price.onceTotal || 0))]);
-      out.push(['Monthly' + incl, m(price.eachTotal)]);
-      out.push(['Total for ' + price.term + ' months' + incl, m(price.total), 1]);
-    } else {
-      out.push(['Subtotal', m(price.subtotal)]);
-      out.push([word, on ? m(price.tax) : '']);
-      out.push(['Total' + incl, m(price.total), 1]);
-    }
-    box.innerHTML = out.map(function (x) {
-      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-    }).join('');
-    box.hidden = false;
-  }
-
-  function pickClosed() {
-    picking = null;
-    $('pickGo').disabled = Boolean(pickBusy);
-    $('pickGo').textContent = pickBusy ? 'Issuing…' : 'Issue';
-  }
-  function shutPick() {
-    if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
-    else { $('pickSheet').hidden = true; pickClosed(); }
-  }
+  /* Letters to a client and their Void (the Letter of Offer is no longer
+     issued: its sheet left the console on 2026-11-26). */
   wireLetterSheets();
-  $('pickClose').addEventListener('click', shutPick);
-  $('pickCancel').addEventListener('click', shutPick);
 
   /* The quotation cover and the letters to a client are issued from the same
      sheet the Register uses, with this client fixed and its main contact
@@ -7875,133 +7577,6 @@
                (state.contacts || []).filter(function (p) { return !p.archived_at; })[0] || null;
     R.openIssue({ client: c, contact: main, families: ['client'], msg: 'crmDocMsg',
                   onDone: function () { loadDocuments(); } });
-  });
-
-  /* The lines, terms and Bill to as the sheet stands, refused in place:
-     what Issue sends and Preview draws (2026-10-31). */
-  function pickPayload(ids) {
-    var c = state.client;
-    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
-      .map(function (t) { return t.trim(); }).filter(Boolean);
-    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
-      msg('pickMsg', 'Enter ten points at most, each up to 400 characters.', 'err');
-      $('pickTerms').focus();
-      return null;
-    }
-    var day = $('pickDate') ? $('pickDate').value : '';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > window.ADspaceClock.today() || day < '2023-08-14') {
-      msg('pickMsg', window.ADspaceWords.line.docDate, 'err');
-      if ($('pickDate')) $('pickDate').focus();
-      return null;
-    }
-    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    /* A billing entity other than the main is named; the main is the
-       client's own billing, sent as before. */
-    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
-      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
-    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
-      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.', 'err');
-      $('pickBillTo').focus();
-      return null;
-    }
-    return { rows: rows, renewal: rows.some(function (l) { return l.state === 'confirmed'; }), deal: {
-      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
-      entity: billEnt && !billEnt.main ? billEnt.id : null, date: day
-    } };
-  }
-  $('pickBody').addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('#pickPreview');
-    if (!b || !picking || !DOCS || !DOCS.preview) return;
-    var ids = pickedIds();
-    if (!ids.length) { msg('pickMsg', 'Choose at least one service.', 'err'); return; }
-    var pay = pickPayload(ids);
-    if (!pay) return;
-    msg('pickMsg', '');
-    b.disabled = true;
-    DOCS.preview('offer', state.client, pay.rows, pay.deal,
-      { replaces: picking.replaces, renewal: pay.renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
-        serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
-      function (r) {
-        b.disabled = false;
-        if (r.code === 'stale') { pickAgain(ids, r.error); return; }
-        if (r.error) msg('pickMsg', r.error, 'err');
-      });
-  });
-
-  $('pickGo').addEventListener('click', function () {
-    if (!picking || !DOCS || pickBusy) return;
-    var ids = pickedIds();
-    if (!ids.length) return;
-    var c = state.client;
-    /* No Client ID: the letter waits for one, set on the client first. */
-    if (!String(c.client_code || '').trim()) {
-      var code = codeOf(($('pickCode') || {}).value);
-      var bad = !code ? 'Enter the Client ID.' : !CODE_OK.test(code) ? 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.'
-        : (state.clients || []).some(function (x) { return x.id !== c.id && x.client_code === code; }) ? 'That Client ID is already used by another client.' : '';
-      if (bad) {
-        msg('pickMsg', bad, 'err');
-        if ($('pickCode')) { $('pickCode').setAttribute('aria-invalid', 'true'); $('pickCode').focus(); }
-        return;
-      }
-      var gb = $('pickGo');
-      gb.disabled = true;
-      db.from('clients').update({ client_code: code }).eq('id', c.id).select('id, updated_at').then(function (r) {
-        gb.disabled = false;
-        if (r.error || !(r.data || []).length) {
-          msg('pickMsg', r.error ? saveWord(r.error.message) : 'Not saved. The database refused the request.', 'err');
-          $('pickCode').setAttribute('aria-invalid', 'true'); $('pickCode').focus();
-          return;
-        }
-        c.client_code = code; c.updated_at = r.data[0].updated_at;
-        (state.clients || []).forEach(function (x) { if (x.id === c.id) { x.client_code = code; x.updated_at = c.updated_at; } });
-        log('client.edited', c.name, 'Client ID: not set → ' + code);
-        if ($('pickCode')) $('pickCode').removeAttribute('aria-invalid');
-        paintIdentity(c); paintRail(c);
-        $('pickGo').click();
-      }).catch(function (e) { gb.disabled = false; msg('pickMsg', String((e && e.message) || e), 'err'); });
-      return;
-    }
-    var pay = pickPayload(ids);
-    if (!pay) return;
-    var rows = pay.rows, renewal = pay.renewal, deal = pay.deal;
-    /* One key per press of this button, held while the request is in flight,
-       so a second press is the same submission and comes back as the same
-       letter rather than a second one. */
-    picking.idem = picking.idem || DOCS.idemKey();
-    var go = $('pickGo');
-    var sent = picking, cid = c.id, key = picking.idem;
-    pickBusy = { client: cid, idem: key };
-    go.disabled = true;
-    go.textContent = 'Issuing…';
-    DOCS.issue('offer', c, rows, deal,
-      { idem: key, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
-        serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
-      function (r) {
-        pickBusy = null;
-        go.textContent = 'Issue';
-        /* The sheet that sent it was shut, or another client opened since:
-           its answer touches no other sheet. A letter made still shows on
-           its own client's Documents. */
-        if (picking !== sent || !state.client || state.client.id !== cid) {
-          if (picking) pickSum(); else go.disabled = false;
-          if (!r.error && state.client && state.client.id === cid) loadDocuments();
-          return;
-        }
-        go.disabled = false;
-        pickSum();
-        /* The services or the quotation they came from changed while the
-           sheet was open (or the quotations failed to load, so the page
-           priced them without their rate): both are read again and the sheet
-           opened on the same ticks, so the next press prices what the
-           database holds instead of being refused again (2026-10-18). */
-        if (r.code === 'stale') { pickAgain(ids, r.error); return; }
-        if (r.error) { msg('pickMsg', r.error, 'err'); return; }
-        shutPick();
-        msg('crmDocMsg', r.number + (r.repeat ? ' was already issued.' : ' issued.') +
-          (r.warn ? ' ' + r.warn : ''), r.warn ? 'warn' : 'ok');
-        loadDocuments();
-      });
   });
 
   // ---- Rate card (the Services section) ------------------------------------
@@ -8385,7 +7960,8 @@
     rcw = { b: b, shape: shape };
     $('rcwTitle').textContent = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
     var head = $('rcwHead');
-    head.hidden = shape.kind !== 'cols';
+    /* A table of one column needs no header row over it (unslop 2). */
+    head.hidden = shape.kind !== 'cols' || !shape.cols || shape.cols.length < 2;
     head.classList.toggle('is-fixed', !!shape.fixed);
     head.style.setProperty('--n', shape.cols ? shape.cols.length : 1);
     head.innerHTML = shape.kind === 'cols' ? shape.cols.map(function (c) { return '<span class="field-label">' + esc(c) + '</span>'; }).join('') : '';

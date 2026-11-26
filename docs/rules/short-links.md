@@ -7,7 +7,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   of four answers (ok, missing, paused, revoked).
   - Redirects are 302 and `no-store`.
   - The client's parameters are carried over, minus `q`.
-  - `go.adspace.me` is never retired: printed QR codes encode it.
+  - `go.adspace.me` is being phased out (the user, 2026-11-26: "dont
+    remove my dns first … slowly shift out"): nothing the portal writes
+    names it any more (the verify line reads digital.adspace.me/verify, the
+    Service Terms and ad terms hi.adspace.me links), while its DNS and
+    Rebrandly links stay up so every code and PDF already issued keeps
+    working; hi.adspace.me carries the same slugs (`svc-terms`,
+    `fb-ad-terms`, `verify`, `outstation`). The user removes the DNS when
+    they choose.
   - The host is `ADSPACE_CONFIG.linkHost`.
 - A live link's row offers Copy, Open (its short address, a new tab), QR
   codes and the ⋯ (LNK-2, 2026-10-22), four fixed tracks on a phone

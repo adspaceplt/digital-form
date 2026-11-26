@@ -83,8 +83,10 @@
         .sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
     };
     var ink = PDF.rgb(0.318, 0.318, 0.318), dark = PDF.rgb(0.102, 0.102, 0.102);   // the palette's #515151 and #1a1a1a
-    var head = PDF.rgb(0.961, 0.961, 0.961), deep = PDF.rgb(0.851, 0.851, 0.851);
-    var edge = PDF.rgb(0.902, 0.902, 0.902);
+    /* The palette's shaded box (#f5f5f5) and hairline (#cfd0d4), as every
+       document draws them (DESIGN §2 Print). */
+    var head = PDF.rgb(0.961, 0.961, 0.961), deep = head;
+    var edge = PDF.rgb(0.812, 0.816, 0.831);
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
     var pn = D().pen(PDF, fonts, null, { kind: 'ratecard' });
@@ -198,9 +200,9 @@
     newPage('');
     text(T.cover_title || 'Rate Card & Packages', 126, H - 345, 26, med, ink);
 
-    /* 2. Ala Carté. */
-    newPage('Ala Carté');
-    var content = role('content');
+    /* 2. Ala Carté, drawn only where it holds something. */
+    var content = role('content'), accounts = role('platform'), verify = role('verify'), ads = role('ads');
+    if (content.length || accounts.length || verify.length || ads.length || T.alacarte_note || T.verify_footnote) newPage('Ala Carté');
     if (content.length) {
       label('Social Media Content');
       row([C('Deliverable', thirds[0], { fill: head }), C('Rate', thirds[1], { fill: head }), C('Unit', thirds[2], { fill: head })]);
@@ -211,7 +213,6 @@
       });
       gap();
     }
-    var accounts = role('platform');
     if (accounts.length) {
       label('Social Media Accounts');
       included('What’s Included', 'accounts_included', thirds[1] + thirds[2]);
@@ -219,7 +220,6 @@
       accounts.forEach(function (s) { row([L(s.name, thirds[0]), C(rm(s.rate), thirds[1] + thirds[2])]); });
       gap();
     }
-    var verify = role('verify');
     if (verify.length) {
       label('Account Verifications');
       included('What’s Included', 'verify_included', thirds[1] + thirds[2]);
@@ -227,7 +227,6 @@
       verify.forEach(function (s) { row([L(s.name, thirds[0]), C(rm(s.rate), thirds[1]), C((s.spec || {}).fee || '', thirds[2])]); });
       gap();
     }
-    var ads = role('ads');
     if (ads.length) {
       label('Digital Advertising');
       included('What’s Included', 'ads_included', thirds[1] + thirds[2]);

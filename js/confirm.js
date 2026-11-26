@@ -349,6 +349,38 @@
         rows.push({ spec: f, input: tk });
         return;
       }
+      /* `sw` is an on or off kept with the form and saved by its Save
+         (DESIGN.md §4: a button.switch, never a Yes and No pair; the
+         Settings review, 2026-11-26): its value '1' or '0', its `note` one
+         mute line under its name. */
+      if (f.sw) {
+        wrap.className += ' is-switch';
+        var hv = el('input');
+        hv.type = 'hidden';
+        hv.value = String(f.value) === '1' ? '1' : '0';
+        var nm = el('span', 'askswitch-name');
+        var nmw = el('span', null, f.label || '');
+        nmw.id = id + 'Name';
+        nm.appendChild(nmw);
+        if (f.note) nm.appendChild(el('small', null, f.note));
+        var sb = el('button', 'switch');
+        sb.type = 'button';
+        sb.id = id;
+        sb.setAttribute('role', 'switch');
+        sb.setAttribute('aria-labelledby', nmw.id);
+        sb.setAttribute('aria-checked', hv.value === '1' ? 'true' : 'false');
+        sb.addEventListener('click', function () {
+          hv.value = hv.value === '1' ? '0' : '1';
+          sb.setAttribute('aria-checked', hv.value === '1' ? 'true' : 'false');
+          hv.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        wrap.appendChild(nm);
+        wrap.appendChild(sb);
+        wrap.appendChild(hv);
+        elFields.appendChild(wrap);
+        rows.push({ spec: f, input: hv });
+        return;
+      }
       var lab = el('label', 'field-label', f.label || 'Reason');
       lab.setAttribute('for', id);
       var input;
@@ -424,6 +456,20 @@
           nt.appendChild(na);
         }
         wrap.appendChild(nt);
+      }
+      /* `act` [label, fn] is a quiet small button under the field (Use this
+         device's location; 2026-11-26): fn is handed the fields by name
+         and a line to answer on, under the button. */
+      if (f.act) {
+        var ab = el('button', 'btn btn-quiet btn-sm askfield-act', f.act[0]);
+        ab.type = 'button';
+        var am = el('p', 'msg askfield-msg', '');
+        am.setAttribute('aria-live', 'polite');
+        ab.addEventListener('click', function () {
+          f.act[1](fieldOf, function (text, tone) { am.textContent = text || ''; am.className = 'msg askfield-msg' + (tone ? ' ' + tone : ''); }, ab);
+        });
+        wrap.appendChild(ab);
+        wrap.appendChild(am);
       }
       elFields.appendChild(wrap);
       if (f.choices && f.seg && window.ADspaceForm && ADspaceForm.segment) {

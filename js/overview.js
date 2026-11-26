@@ -742,7 +742,7 @@
                    sub: over > 0 ? (curMoney(over, d.currency) + ' overdue').replace(/ /g, ' ') : 'None overdue', subTone: over > 0 ? 'err' : '' };
         });
       } },
-    { key: 'weowe', title: 'Payable', sec: 'clients', can: canPay,
+    { key: 'weowe', title: 'Payable', sec: 'suppliers', can: canPay,
       /* Opens the Payments view holding more of it, of those the reader
          may open: Creators' or Suppliers'. */
       go: function (d) {

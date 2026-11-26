@@ -186,9 +186,10 @@
     if (!mayRec(rec)) return Promise.resolve('');
     return read(rec, true).then(function (d) {
       var all = d.items.filter(function (i) { return i.rec === rec; });
-      var sw = all.filter(function (i) { return i.sw; });
-      var n = all.length + (all.length === 1 ? ' template' : ' templates');
-      return sw.length ? n + ' · ' + sw.filter(function (i) { return i.on; }).length + ' on' : n;
+      /* Every templates row reads n of N on (the Settings review,
+         2026-11-26): a template with no switch always goes. */
+      var on = all.filter(function (i) { return !i.sw || i.on; }).length;
+      return on + ' of ' + all.length + ' on';
     });
   }
   function free(t) {

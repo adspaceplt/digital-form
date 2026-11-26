@@ -168,11 +168,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-10-31-quotation-delete-team-requests.sql`); a deleted reference is
   kept (`quotation_refs_kept`, RLS on, no policy, no grant), which
   `quote_ref` counts, so it is never issued again. The pane's one
-  blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
-  quote line, Build quote; one quotation that can be offered, its Issue
-  Letter of Offer (none blue where two can); To quote lines no live letter
-  holds, Issue letter, drawn only once a To quote or Confirmed line
-  exists; else none. An empty Quotations list reads No quotations. alone,
+  blue follows the deal (`paintDeal`, SL-M2): the quotation's next step,
+  else Build quote where nothing is quoted; no Letter of Offer is offered
+  (retired 2026-11-12). An empty Quotations list reads No quotations. alone,
   Build quote the heading's (2026-11-03); an empty Service lines list reads
   the enquiry (else No service lines.), its Add service the heading's alone
   (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
@@ -224,11 +222,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the signed quotation is the contract; `quotation_offer` stays for a
   page served before and nothing calls it); the reviewer's approval makes
   its lines Confirmed (Quotation signing, below). Letters issued before
-  are read, voided and deleted as before; a Letter of Offer is still
-  issued from To quote service lines (Issue letter), and one not yet
-  verified is reissued on its lines as changed from its ⋯ Replace
-  (`issue_letter` `p_replaces`; the old one reads Replaced; 2026-10-31,
-  the user: Car Connect SG's letter needed changes). The PDF (`js/quotepdf.js`,
+  are read, voided and deleted as before; none is issued or replaced from
+  the console since 2026-11-12 (its sheet and code removed 2026-11-26). The PDF (`js/quotepdf.js`,
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
@@ -312,8 +307,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   currency at its right; only a section the client pays is numbered (1
   Monthly Service Fee, 2 One-time Items, 3 Advertising Budget), each led by
   its glyph in a 22pt shaded disc with Billed monthly or Billed once at its
-  right edge; no summary card; TERMS on the acceptance page above the
-  Acceptance of Quotation, whose figures are plain body text.
+  right edge; no summary card; the Acceptance of Quotation's figures plain
+  body text. TERMS (2026-11-26) stand under the totals on the last fees
+  page where the whole block fits there, clear of an Add-on Rates block
+  anchored above its foot, the acceptance page then opening on Acceptance
+  of Quotation; else, or where Add-on Rates take pages after it (TERMS
+  name the add-ons, so never come before them), they open the acceptance
+  page above it. Never split across pages (`pdfcases` terms fit).
 - The term discount is the team's choice per quotation (`p_sel.term_disc`;
   2026-11-25): false takes every negative term percentage to 0
   (`quote_term_off`, kept as `totals.term_off`), a short term's surcharge
@@ -347,11 +347,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   more, or one named otherwise, as `brands`. A package's line is changed in
   its builder alone, never in the lines (`ownLine`, as a custom line). At a
   desk the Summary stands beside the sheet (`#qbSide`); on a phone it gives
-  way. The foot reads the total incl. SST (with `· n brands`), View quote
-  at every width once a line is priced (its count of priced lines a
-  `.tab-n`; the sheet turned to the priced lines, typed there, every
-  brand's under its name, the open brand's typed, the others read; its
-  Back returns), then Cancel, Preview PDF (beside the Summary alone; on a
+  way. The priced lines (`#qbLinesBox`) are every brand's under its name,
+  every brand's typed at once, each line's quantity, rate, months, tax,
+  name, description and order kept on its own brand and all priced
+  together, never only the open card's (the user, 2026-11-26: "why does it
+  only allow to edit once at a time"). At a desk they stand on the sheet
+  under the brand cards, with no View quote and no Back (the user,
+  2026-11-26: "Same sheet at a desk", replacing View quote at every width
+  of 2026-11-25); on a phone View quote, once a line is priced, turns the
+  sheet to them (its count of priced lines a `.tab-n`) and its Back
+  returns. The foot reads the total incl. SST (with `· n brands`), View
+  quote on a phone, then Cancel, Preview PDF (beside the Summary alone; on a
   phone under the lines) and Create quotation (Save when editing). Create
   checks every card and opens the first with a fault, its control in focus
   (`brandWrong`: Choose what to quote.; Enter each brand's name.; Choose a

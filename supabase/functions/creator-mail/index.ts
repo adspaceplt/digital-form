@@ -48,7 +48,7 @@
  * SUPABASE_SERVICE_ROLE_KEY. Verify JWT is off: pg_net calls with no session.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { layout, resend, esc, FONT, sender } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, sender, button } from '../_shared/mail.ts';
 import { cors, json as cjson } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
@@ -76,16 +76,9 @@ async function pageOf(db: any, r: Row): Promise<{ label: string; url: string } |
   else if (r.option_id) url += '#b=' + encodeURIComponent(r.option_id);
   return { label, url };
 }
-/* One button after the message, the overdue reminder's own (bukku-sync). The
+/* One button after the message, the portal's one (`_shared/mail.ts`). The
    layout draws `block` where a paragraph reads `{invoices}`; the creator's
-   words never hold it, so it is added at the end.
-   shortcut: rides layout's `{invoices}` slot rather than a button option of
-   its own, so mail.ts and its two other functions are not redeployed. */
-function buttonOf(a: { label: string; url: string }): string {
-  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;">' +
-    '<a href="' + esc(a.url) + '" style="display:inline-block;padding:9px 16px;font-family:' + FONT + ';font-size:14px;line-height:18px;font-weight:500;color:#ffffff;text-decoration:none;">' +
-    esc(a.label) + '</a></td></tr></table>';
-}
+   words never hold it, so it is added at the end. */
 
 // ---- The payments sheet ------------------------------------------------------
 /* What each value is called in a header: a header holding every word of one
@@ -254,7 +247,7 @@ Deno.serve(async (req) => {
       const act = await pageOf(db, r).catch(() => null);
       const out = await resend({
         from: who.from, to: [r.to_email], reply_to: who.reply_to, subject: r.subject,
-        html: act ? layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: buttonOf(act) })
+        html: act ? layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: button(act) })
                   : layout({ heading: r.subject, body: r.body }),
         text: act ? r.body + '\n\n' + act.label + ': ' + act.url : r.body
       }, 'creator-' + r.id, apiKey);

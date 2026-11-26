@@ -408,6 +408,8 @@
     addonRates: 'Add-on Rates',
     addons: 'Add-ons',
     addonExtra: 'Additional content',
+    /* The PDF's group head, in the title case a document's heads take. */
+    addonExtraHead: 'Additional Content',
     addonLead: 'The following services may be requested in any month of the term, at the rates below. All rates are exclusive of SST.',
     addonTerm: 'Add-ons are not included in the fees above. Each is confirmed in writing before it begins and invoiced in the month following its confirmation.',
     stageFrom: function (stage, day) { return stage + ' from ' + day; },
