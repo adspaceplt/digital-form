@@ -14,12 +14,18 @@ Moved whole from `DESIGN.md` §7 Architecture, which keeps a one-line pointer he
     `ADC0001/CC001`, a creator's payment details `ADC0001/R001`, each
     prefix, width, next number and the references' shape a setting
     (`id_formats`);
-  - a website quotation request `ADP/REQ{YYMM}-{AAA}`, three random
-    letters, never a running count, so nobody can read how many requests
-    came in; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
+  - a request `ADP/REQ{YYMM}-{AAA}`, three random letters, never a
+    running count, so nobody can read how many requests came in: one
+    reference for everything sent from a public page (a website quotation
+    request, a client's details form, a supplier's form, a careers
+    application; feedback takes none), one generator
+    (`public_request_ref`) checked against every table holding one, so a
+    code is unique across kinds within a month; stamped by a trigger at
+    submission (`request_ref`), shown on the received and already-sent
+    pages and on the record, and found by console search (`request_ref_find`); a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
     confirmed; a revision after Sent is numbered under its family's first
     quotation, `ADP/QT2611-C02-R1`, `-R2`, never a new serial (the `request`
-    and `revision` rows of `id_formats`, set in Settings, Portal: Numbering, Quotation numbers).
+    and `revision` rows of `id_formats`, set in Settings, Portal: Numbering, Request and quotation numbers).
   - A new reference follows the house scheme (the user, 2026-11-26):
     the shortest prefix is the top of the structure and the longer ones
     hang under it. `ADP` names what the ADspace Digital Portal issued;

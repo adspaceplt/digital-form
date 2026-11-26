@@ -52,7 +52,7 @@
   var update = false, bankHeld = false, nricHeld = false;
   /* The form in steps (the user, 2026-11-25): the opening page (0), then a
      step a section, the last the authorisation and Submit. */
-  var at = 0, sentAt = null;
+  var at = 0, sentAt = null, reqRef = '';
   var STEPS = [
     { glyph: 'building', name: 'Billing details', line: 'Supplier type, Registered Company Name, Business Registration No., Tax Identification Number (TIN), SST Registration No., office or mobile number and billing address.',
       keys: ['kind', 'name', 'brn', 'nric', 'tin', 'sst_no', 'phone', 'address'] },
@@ -158,7 +158,9 @@
     var when = sent && C ? C.date(sent) + ', ' + C.clock(sent) : '';
     root().innerHTML = I.received({
       title: W.formReceived, line: text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.'),
-      refHtml: sent ? lead() : '',
+      /* The reference the database gave the submission (ONE REQUEST
+         REFERENCE, 2026-11-26), on the page sent and on a link opened again. */
+      refHtml: [reqRef ? '<span class="qs-part">' + esc(reqRef) + '</span>' : '', sent ? lead() : ''].filter(Boolean).join(' · '),
       steps: sent ? [
         { state: 'done', title: W.detailsSent, sub: esc(when) },
         { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
@@ -296,7 +298,7 @@
     db.rpc('supplier_form_submit', { p_key: key, p_answers: answers }).then(function (r) {
       var d = r.data || {};
       if (r.error) throw r.error;
-      if (d.error === 'submitted') { state = 'submitted'; paint(); return; }
+      if (d.error === 'submitted') { reqRef = d.request_ref || ''; state = 'submitted'; paint(); return; }
       if (d.error === 'expired') { state = 'expired'; paint(); return; }
       if (d.error === 'not_found') { state = 'bad'; paint(); return; }
       var k = d.error && d.error.indexOf('bad-') === 0 ? d.error.slice(4) : null;
@@ -306,7 +308,7 @@
         return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
+      reqRef = d.request_ref || ''; state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say('sfMsg', W.notSentAdspace);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });
@@ -341,7 +343,7 @@
     var d = r.data || {};
     if (r.error) throw r.error;
     if (d.error === 'expired') state = 'expired';
-    else if (d.error === 'submitted') state = 'submitted';
+    else if (d.error === 'submitted') { state = 'submitted'; reqRef = d.request_ref || ''; }
     else if (d.error || !d.ok) state = 'bad';
     else {
       info = d; state = 'open'; typed.name = d.name || '';

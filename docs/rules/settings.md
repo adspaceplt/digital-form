@@ -20,8 +20,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   and notices: Page availability, Require latest version (Edit, Off while
   none is required), Announcements, Notices, Demo access; Numbering (2026-11-26, every
   number the portal gives in one part: Task numbers, Outstation trip
-  numbers, Creator and campaign IDs, Quotation numbers (a website
-  request's prefix and letters, a revision's prefix and digits), each
+  numbers, Creator and campaign IDs, Request and quotation numbers (a
+  request's prefix and letters, every public submission's, a revision's prefix and digits), each
   sheet Prefix, Digits and, where a count runs, Next number, under one
   `Next:` preview); Plan: Storage
   and plan, the database and files against the plan and what was sent,

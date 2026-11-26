@@ -82,6 +82,21 @@
     }
     return CL.p;
   }
+  /* A submission's reference (ONE REQUEST REFERENCE, 2026-11-26): typed
+     whole (ADP/REQ2611-KMT), without its head (REQ2611-KMT) or by its
+     letters (KMT), it finds the client or supplier it came from, read once
+     a query and shared by both groups; a database without the function
+     finds none. */
+  var RQ = { q: null, p: null };
+  function refRows(q, kind) {
+    if (RQ.q !== q) {
+      RQ = { q: q, p: db.rpc('request_ref_find', { p_q: q }).then(function (r) {
+        var d = (r && r.data) || {};
+        return (r && r.error) || d.error ? [] : (d.rows || []);
+      }).catch(function () { return []; }) };
+    }
+    return RQ.p.then(function (rows) { return { rows: rows.filter(function (x) { return x.kind === kind; }) }; });
+  }
   function clientsFor(q) {
     return clientRows(q).then(function (r) { return (r.rows || []).map(function (c) { return c.id; }); });
   }
@@ -280,9 +295,13 @@
           });
           return { rows: rows };
         }).catch(function () { return { rows: [] }; });
-        /* A client found by its name leads; one found through a contact or
-           a billing entity follows, once, saying which. */
-        return Promise.all([direct, people, ents]).then(function (r) {
+        var refs = !may('clients.billing') ? none : refRows(q, 'client').then(function (r) {
+          return { rows: r.rows.map(function (x) { return { id: x.id, slug: x.slug, name: x.name, client_code: x.code, req: x.ref }; }) };
+        });
+        /* A client found by its name leads; one found through a contact, a
+           billing entity or a request's reference follows, once, saying
+           which. */
+        return Promise.all([direct, people, ents, refs]).then(function (r) {
           /* The clients read failing is said with Try again, never as no
              matches, unless another read found someone (audit 2026-10-30). */
           if (r[0].error && !(r[1].rows || []).length && !(r[2].rows || []).length) return { error: r[0].error };
@@ -294,7 +313,7 @@
             seen[c.id] = 1;
             out.push(Object.assign({}, c, { via: p }));
           });
-          (r[2].rows || []).forEach(function (c) {
+          (r[2].rows || []).concat(r[3].rows || []).forEach(function (c) {
             if (seen[c.id]) return;
             seen[c.id] = 1;
             out.push(c);
@@ -306,9 +325,9 @@
         var via = c.via, bill = c.bill;
         return {
           id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
-          meta: via ? [via.name, via.email || window.ADspaceAPI.phoneWord(via.phone)] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : [stageOf(c.stage)],
+          meta: via ? [via.name, via.email || window.ADspaceAPI.phoneWord(via.phone)] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : c.req ? [c.req] : [stageOf(c.stage)],
           open: function () {
-            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill ? '&tab=billing' : ''), 'clients');
+            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill || c.req ? '&tab=billing' : ''), 'clients');
           }
         };
       } },
@@ -366,16 +385,28 @@
        name or Supplier ID. */
     { key: 'suppliers', head: 'Suppliers', can: function () { return may('suppliers'); },
       read: function (q) {
-        return db.rpc('suppliers_list', {}).then(function (r) {
+        var list = db.rpc('suppliers_list', {}).then(function (r) {
           var d = (r && r.data) || {};
           if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
-          return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }).slice(0, LIMIT) };
+          return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }) };
         }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
+        /* One found by a request's reference follows, once, saying which. */
+        return Promise.all([list, refRows(q, 'supplier')]).then(function (r) {
+          if (r[0].error && !r[1].rows.length) return { error: r[0].error };
+          var seen = {}, out = [];
+          (r[0].rows || []).forEach(function (x) { seen[x.id] = 1; out.push(x); });
+          r[1].rows.forEach(function (x) {
+            if (seen[x.id]) return;
+            seen[x.id] = 1;
+            out.push({ id: x.id, name: x.name, code: x.code, req: x.ref });
+          });
+          return { rows: out.slice(0, LIMIT) };
+        });
       },
       row: function (x) {
         return {
           id: 'supplier-' + x.id, name: x.name || x.code, code: x.name ? x.code : '',
-          meta: [SUP_STATE[x.status] || ''],
+          meta: x.req ? [x.req] : [SUP_STATE[x.status] || ''],
           open: function () { go('/admin/?s=suppliers&supplier=' + encodeURIComponent(x.id), 'suppliers'); }
         };
       } },
@@ -470,13 +501,15 @@
         return db.rpc('hiring_list', {}).then(function (r) {
           var d = (r && r.data) || {};
           if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
-          return { rows: (d.rows || []).filter(function (x) { return !x.removed_at && (has(x.name, q) || has(x.position, q)); }).slice(0, LIMIT) };
+          /* By name, position or the application's reference (ONE REQUEST
+             REFERENCE, 2026-11-26). */
+          return { rows: (d.rows || []).filter(function (x) { return !x.removed_at && (has(x.name, q) || has(x.position, q) || has(x.request_ref, q)); }).slice(0, LIMIT) };
         }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
       },
       row: function (c) {
         return {
           id: 'candidate-' + c.id, name: c.name, code: '',
-          meta: [c.position],
+          meta: [c.position, c.request_ref],
           open: function () {
             var url = '/admin/?s=team&tab=hiring&candidate=' + encodeURIComponent(c.id);
             history.replaceState(null, '', url);

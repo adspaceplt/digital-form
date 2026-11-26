@@ -4088,6 +4088,11 @@
       box.hidden = false; failLine(box, 'Request from client', (e && e.message) || String(e), loadDetForm);
     });
   }
+  /* The reference the submission took (ONE REQUEST REFERENCE, 2026-11-26),
+     found by search. */
+  function dfRef(f) {
+    return f && f.request_ref ? '<div><dt>Reference</dt><dd>' + esc(f.request_ref) + '</dd></div>' : '';
+  }
   function paintDetForm() {
     var box = $('crmDetForm'), f = state.detForm, work = mayPart('clients.billing', 'work');
     if (!box) return;
@@ -4099,7 +4104,7 @@
       var ua = f && f.state === 'used' && f.answers, uwho = ua ? dfWho(ua) : '', uin = ua ? dfContactOf(ua) : null;
       box.innerHTML = head(make) + '<dl class="ovfacts"><div><dt>State</dt><dd>' +
         (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', added to Billing' : 'Link expired ' + esc(day(f.expires_at))) +
-        '</dd></div>' + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
+        '</dd></div>' + dfRef(f) + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
         (uwho && !uin && work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
         '<div class="msg" id="crmDfMsg"></div>';
     } else if (f.state === 'open') {
@@ -4124,7 +4129,7 @@
       box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' +
           '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="again" role="menuitem">Request again</button></div></span>' : '') +
-        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' + dfRef(f) +
         /* An answer that differs from what Billing holds reads held → sent,
            as a supplier's update reads, so Use details is chosen knowing
            what it replaces (2026-10-20, DTL-1). */

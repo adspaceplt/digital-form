@@ -170,7 +170,7 @@
         return f ? 'Next ' + tripWord(f, f.next) : '';
       });
     },
-    /* Quotation numbers: the next request's shape and a revision's
+    /* Request and quotation numbers: the next request's shape and a revision's
        suffix, as the database gives them. */
     quoteno: function () {
       return db.rpc('id_formats_list').then(function (r) {
@@ -348,8 +348,9 @@
         biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
         /* Creator and campaign IDs and the Job reference (2026-11-08). */
         biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
-        /* A website request's number and a revision's suffix (#1504). */
-        biz && { id: 'quoteno', name: 'Quotation numbers', kind: 'edit', meta: line('quoteno'), open: function () { openQuoteNo(); } }]],
+        /* A request's number, every public submission's (ONE REQUEST
+           REFERENCE, 2026-11-26), and a revision's suffix (#1504). */
+        biz && { id: 'quoteno', name: 'Request and quotation numbers', kind: 'edit', meta: line('quoteno'), open: function () { openQuoteNo(); } }]],
       ['Plan', [biz && { id: 'usage', name: 'Storage and plan', kind: 'open', meta: line('usage'), open: openUsage }]]]);
     /* Company (the Settings review, 2026-11-26): the office, its security
        and health, out of Portal, which keeps what changes the portal
@@ -1030,7 +1031,7 @@
     var t = window.ADspaceClock.today();
     return '#' + (f.prefix || 'OS') + String(t).slice(2, 4) + String(t).slice(5, 7) + num;
   }
-  /* A website request's number (ADP/{prefix}{YYMM}-{letters}, the letters
+  /* A request's number, every public submission's (ADP/{prefix}{YYMM}-{letters}, the letters
      random, never a count) and a revision's suffix under its family
      ({quotation}-{prefix}{n}); neither holds a next number of its own. */
   var REQ_EG = 'BCDFGH';
@@ -1057,9 +1058,9 @@
         return { prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^\d$/.test(w) ? w : f.width };
       };
       window.ADspaceConfirm.ask({
-        title: 'Quotation numbers', go: 'Save', wait: true,
+        title: 'Request and quotation numbers', go: 'Save', wait: true,
         fields: [
-          { name: 'request_prefix', label: 'Prefix', head: 'Website request', half: true, value: by.request.prefix || '', required: true },
+          { name: 'request_prefix', label: 'Prefix', head: 'Request from a public page', half: true, value: by.request.prefix || '', required: true },
           { name: 'request_width', label: 'Letters', half: true, value: String(by.request.width || ''), required: true },
           { name: 'revision_prefix', label: 'Prefix', head: 'Revision', half: true, value: by.revision.prefix || '', required: true },
           { name: 'revision_width', label: 'Digits', half: true, value: String(by.revision.width || ''), required: true }],
