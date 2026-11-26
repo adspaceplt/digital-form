@@ -274,17 +274,17 @@
   function quoteRows(then) {
     if (!mayFamily('quotation', 'view') || !window.ADspaceAPI || !window.ADspaceAPI.readPages) { then([]); return; }
     var COLS = 'id, ref, client_id, brand, status, source, issued_at, valid_until, contact, signed_at, signed, reviewed_at, reviewed_by, ' +
-      'submitted_at, reviewer_name, returned_at, returned_by, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on';
+      'submitted_at, reviewer_name, returned_at, returned_by, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on, confirmed_at';
     window.ADspaceAPI.readPages(function () {
       return db.from('quotations').select(COLS).order('issued_at', { ascending: false });
     }).then(function (r) {
       var all = (!r.error && r.data) || [];
       var revised = {};
       all.forEach(function (q) { if (q.replaces && !q.removed_at) revised[q.replaces] = q.ref; });
-      /* Every quotation is issued as `quotation_issued` says today; the
-         table's column grants refuse that row function to the page, so a
-         narrower test reaches the Register as a column (2026-11-26). */
-      then(all.map(function (q) {
+      /* Issued once confirmed, as `quotation_issued` says (QUOTATIONS
+         CONFIRMED, 2026-11-26): a draft and a request not yet sent are
+         not on the Register. */
+      then(all.filter(function (q) { return !!q.confirmed_at; }).map(function (q) {
         q._revised = revised[q.id] || null;
         /* Removed: Void once it was sent or signed (kept for good), else
            Removed, as the client's quotations say it (it can be restored). */
