@@ -26,7 +26,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
    - Client feedback → Performance and the Dashboard: a client's ratings feed the account manager's month and the client's standing.
    - Short Links → client record: a link belongs to a client or campaign, and its clicks show on that record.
    On hold ("1 2 6 8 on hold until further notice"; STANDARD.md §24): the closed loop from quotation to report, quotation → Bukku invoices, Outstation → My Work and claims, Meta reports → Analytics.
-6. **One glyph set**: `js/icons.js` the one icon set for the console and every page; the ~289 inline SVGs in ~40 scripts replaced by named glyphs; `acts.js` and the section marks read from it; a suite (`tests/glyphs.js`, in `affected.json`) fails a new inline `<svg>` in `js/` outside `icons.js`. Check the weight budget.
+6. **One glyph set**: merged, #1517 (N), 261127.67f8; tests #308.
 7. **Automatic `?v=` stamps** from the commit at the Pages build; `admin/sw.js` never caches an unstamped file.
 8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
 9. **Full gate on main** in its own session (`bash tests/snap.sh all`, 2-hour limit).
@@ -71,6 +71,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1513 Hotfix (M): a leaver's health data kept its six months (inactive stamp on every update; migration live); Build quote keeps its key on a settings re-read; tests #305 | 261127.c7a6 |
 | #1514 Team › Groups (M): each section's levels as wide as its own, no empty slots; tests #306 | 261127.5f23 |
 | #1515 Step track (M): every line clear of its discs; the bar's name alone under 400px; Exit demo's gutter; tests #307 (weight +0.1 KB on three client pages) | 261127.39bd |
+| #1517 One glyph set (N): every page draws from `js/icons.js`, one meaning one glyph (`MEANS`), WhatsApp's own mark on wa.me links; `tests/glyphs.js`; weight budgets raised with reason | 261127.67f8 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
