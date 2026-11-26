@@ -159680,10 +159680,13 @@ declare
   v_pre text;
   v_top int;
 begin
+  -- The root is the first confirmed quotation up the chain: a website
+  -- request revised before it was sent holds no ADP/QT number to count on.
   with recursive up as (
-    select q.id, q.replaces, q.ref, 0 as d from public.quotations q where q.id = p_of
+    select q.id, q.replaces, q.ref, 0 as d from public.quotations q where q.id = p_of and q.confirmed_at is not null
     union all
-    select p.id, p.replaces, p.ref, up.d + 1 from public.quotations p join up on p.id = up.replaces where up.d < 100)
+    select p.id, p.replaces, p.ref, up.d + 1 from public.quotations p join up on p.id = up.replaces
+     where up.d < 100 and p.confirmed_at is not null)
   select u.ref into v_root from up u order by u.d desc limit 1;
   if v_root is null then return null; end if;
   -- An old revision's own serial stands as it was issued; its root is the
@@ -159727,7 +159730,9 @@ begin
     if o.signed_at is not null or o.reviewed_at is not null then return jsonb_build_object('error', 'signed'); end if;
     select x.ref into v_by from public.quotations x where x.replaces = o.id and x.removed_at is null and x.id <> n.id limit 1;
     if v_by is not null then return jsonb_build_object('error', 'revised', 'ref', v_by); end if;
-    v_ref := public.quote_revision_ref(o.id);
+    -- A website request revised before it was sent holds no ADP/QT number:
+    -- its revision takes a fresh one; else the family's next -Rn.
+    v_ref := case when o.confirmed_at is null then public.quote_ref(n.brand, n.issued_at) else public.quote_revision_ref(o.id) end;
     update public.quotations set ref = v_ref, confirmed_at = now(), confirmed_by = me.name, replaces = o.id, revises = null
      where id = n.id returning * into n;
     insert into public.activity_log (actor, action, subject, detail)
@@ -160257,8 +160262,9 @@ begin
     return jsonb_build_object('error', 'not-found');
   end if;
   if n.source <> 'console' or n.replaces is not null then return jsonb_build_object('error', 'bad-quotation'); end if;
-  -- Only a confirmed quotation is revised (QUOTATIONS CONFIRMED, 2026-11-26).
-  if o.confirmed_at is null then return jsonb_build_object('error', 'not-confirmed'); end if;
+  -- A team's draft is never revised over: it is edited (QUOTATIONS
+  -- CONFIRMED, 2026-11-26); a website request waiting for the team may be.
+  if o.confirmed_at is null and o.source = 'console' then return jsonb_build_object('error', 'not-confirmed'); end if;
   -- A quotation the client signed is the contract: it is asked again, never
   -- revised over (audit 2026-11-04).
   if o.signed_at is not null or o.reviewed_at is not null then return jsonb_build_object('error', 'signed'); end if;
@@ -160565,8 +160571,8 @@ begin
     return jsonb_build_object('ok', true);
   end if;
   if v_p !~ '^[A-Z]{1,6}$' then return jsonb_build_object('error', 'bad-prefix'); end if;
-  if p_width is null or p_width < case p_kind when 'revision' then 1 when 'request' then 3 else 2 end
-     or p_width > case p_kind when 'revision' then 3 else 6 end then return jsonb_build_object('error', 'bad-width'); end if;
+  if p_width is null or p_width < (case p_kind when 'revision' then 1 when 'request' then 3 else 2 end)
+     or p_width > (case p_kind when 'revision' then 3 else 6 end) then return jsonb_build_object('error', 'bad-width'); end if;
   if p_next is null or p_next < 1 then return jsonb_build_object('error', 'bad-next'); end if;
   -- A creator's payment details reference: its Creator ID and a run of n.
   if p_kind = 'creator' and v_t <> '' and (length(v_t) > 40 or position('{creator}' in v_t) = 0 or v_t !~ '\{n{1,6}\}') then

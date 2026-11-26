@@ -13589,7 +13589,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       var qtRevisionRef = function (ofId) {
         var at = DB.quotations.filter(function (q) { return q.id === ofId; })[0], seen = {};
-        while (at && at.replaces && !seen[at.id]) { seen[at.id] = 1; at = DB.quotations.filter(function (q) { return q.id === at.replaces; })[0] || at; if (seen[at.id]) break; }
+        if (at && at.confirmed_at === null) return null;
+        while (at && at.replaces && !seen[at.id]) {
+          seen[at.id] = 1;
+          var up = DB.quotations.filter(function (q) { return q.id === at.replaces; })[0];
+          if (!up || up.confirmed_at === null || seen[up.id]) break;
+          at = up;
+        }
         if (!at) return null;
         var f = (idFormats().revision) || { prefix: 'R', width: 1 }, pre = '-' + (f.prefix || 'R'), root = at.ref;
         var top = DB.quotations.map(function (q) { return q.ref; }).concat((DB.quotation_refs_kept || []).map(function (k) { return k.ref; }))
@@ -15081,7 +15087,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (qco.signed_at || qco.reviewed_at) return qtOk({ error: 'signed' });
           var qcBy = DB.quotations.filter(function (x) { return x.replaces === qco.id && !x.removed_at && x.id !== qq.id; })[0];
           if (qcBy) return qtOk({ error: 'revised', ref: qcBy.ref });
-          qq.ref = qtRevisionRef(qco.id); qq.replaces = qco.id;
+          qq.ref = qco.confirmed_at === null ? qtNextRef('ADP/QT' + qtYm() + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase()) : qtRevisionRef(qco.id); qq.replaces = qco.id;
           qtLog(qq.brand, qq.ref + ' confirmed · revises ' + qco.ref);
         } else {
           qq.ref = qtNextRef('ADP/QT' + String(qq.issued_at || qtNow.toISOString()).slice(2, 4) + String(qq.issued_at || qtNow.toISOString()).slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
@@ -15095,7 +15101,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qold || qold.client_id !== qq.client_id || qold.id === qq.id || qq.removed_at || qold.removed_at) return qtOk({ error: 'not-found' });
         if (qq.source !== 'console' || qq.replaces) return qtOk({ error: 'bad-quotation' });
         if (qold.signed_at || qold.reviewed_at) return qtOk({ error: 'signed' });
-        if (!qtIssued(qold)) return qtOk({ error: 'not-confirmed' });
+        if (!qtIssued(qold) && qold.source === 'console') return qtOk({ error: 'not-confirmed' });
         if (!qtIssued(qq)) { qq.revises = qold.id; return qtOk({ ok: true, draft: true }); }
         qq.replaces = qold.id;
         qtLog(qq.brand, qq.ref + ' revises ' + qold.ref);
