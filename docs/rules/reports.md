@@ -947,7 +947,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     cheapest row's heavier face, every objective's table shares those
     tracks, and the name takes the rest.
   - The foot is the template's (AL): a published version's row, Document ID
-    {code} · Verify document authenticity: go.adspace.me/verify from the left margin and the
+    {code} · Verify document authenticity: digital.adspace.me/verify from the left margin and the
     page count at the right margin (DOCUMENT ID ON EVERY FOOT, 2026-11-24;
     `sm_report_versions.doc_code`, which `sm_report_version_code` stamps and
     writes into the snapshot, so the kept file, the client's copy and every

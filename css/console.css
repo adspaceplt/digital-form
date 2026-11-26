@@ -1076,8 +1076,19 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 }
 .permchunk > .fsec-h + .permsec { border-top: 0; padding-top: 4px; }
 .permsec > .seg { grid-area: seg; justify-self: end; }
+/* Four fixed tracks, a level a column (2026-11-26, the Groups review): a
+   section with fewer levels leaves its track empty, so View and Full
+   control stand in one column down the panel. 76px holds Full control's
+   65px of words whole inside its padding and edge (66, the review's
+   figure, cut it by 9px). */
+.permsec > .seg.is-sm { display: grid; grid-template-columns: repeat(4, 76px); gap: 0; }
+.permsec > .seg.is-sm > .seg-opt { padding-inline: 3px; }
+.permsec > .seg.is-sm > .seg-opt[data-v="none"] { grid-column: 1; }
+.permsec > .seg.is-sm > .seg-opt[data-v="view"] { grid-column: 2; }
+.permsec > .seg.is-sm > .seg-opt[data-v="work"] { grid-column: 3; }
+.permsec > .seg.is-sm > .seg-opt[data-v="manage"] { grid-column: 4; }
 .is-narrow .permsec > .seg { justify-self: stretch; }
-.is-narrow .permsec > .seg.is-sm > .seg-opt { flex: 1 0 auto; }
+.is-narrow .permsec > .seg.is-sm { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* Main settings (2026-11-17): Start from, then the group's own rows, one
    hairline between each, as the section rows read. */
 .permmain-h { margin: 8px 0 12px; }
@@ -1085,12 +1096,26 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .permmain > .permpart { padding-block: 8px; border-top: 1px solid var(--line-soft); }
 .permmain > .permpart > .seg { flex: 0 0 auto; }
 .permsec-n { color: var(--ink); font-weight: 600; }
-.permsec-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
+.permsec-toggle[aria-expanded="true"] .permsec-chev { transform: rotate(90deg); }
 /* Start from, then Custom: n changes from {preset} beside it, plain words
    (TEAM-4, 2026-10-14; no fold since 2026-11-17). */
 .permpreset-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
 .permpreset-head .field-label { margin-bottom: 0; }
 .permpreset-note { font-size: 12px; color: var(--ink-mute); }
+/* A preset's summary under Start from, and the group's under Add member's
+   User group: one mute line under the control. */
+.permpreset-sum { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+.permpreset-sum:empty { display: none; }
+/* What this group can do, read back before Save: a section a row, its
+   level beside its name, the level's line and what Advanced sets apart. */
+.permprev { display: flex; flex-direction: column; }
+.permprev-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.permprev-row:first-child { border-top: 0; padding-top: 0; }
+.permprev-sec { font-size: 14px; font-weight: 500; color: var(--ink); }
+.permprev-desc { font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+.permprev-diff { font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.permprev-off { margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+.permprev-off:first-child { margin-top: 0; }
 .permsec-parts {
   grid-area: parts; display: flex; flex-direction: column; gap: 2px;
   margin-top: 4px; padding-left: 16px; border-left: 2px solid var(--line-soft);
@@ -4223,7 +4248,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-sumrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
 .qb-card.is-lines .sheet-body > :not(#qbLinesBox):not(#qbMsg) { display: none; }
 .qb-card.is-lines.has-side .sheet-body { display: block; }
-}
 .qb-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .qb-plan {
   display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px 14px;
@@ -6756,6 +6780,11 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-board > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 @media (hover: hover) { .qb-bopen:hover { background: var(--sunk); } }
 .qb-brands + .fsec, .qb-brands + .qb-boardhold + .fsec { margin-top: 24px; }
+/* The item table on the sheet under the brands at a desk (the user,
+   2026-11-26: "Same sheet at a desk"); the quotation's own part a step
+   under it whether or not it is drawn. */
+.qb-brands ~ .qb-linesbox, .qb-brands ~ .qb-quote { margin-top: 24px; }
+.qb-linesbox + #qbMsg:empty { display: none; }
 /* The Summary by brand: a brand's name across it over its figure. */
 .qb-sidebn { font-size: 13.5px; font-weight: 600; color: var(--ink); margin: 8px 0 0; overflow-wrap: anywhere; }
 .qb-sidebf { font-size: 12.5px; color: var(--ink-mute); margin: 0 0 4px; font-variant-numeric: tabular-nums; }

@@ -86,7 +86,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, esc, FONT, codeEmail, sender, fileSent, callerEmail } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, button as mailButton, codeEmail, sender, fileSent, callerEmail } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const PAGE = 'https://digital.adspace.me/careers/?k=';
@@ -94,11 +94,8 @@ const OFFICE = '61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bah
 const MAP = 'https://hi.adspace.me/map';
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-function button(label: string, href: string): string {
-  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
-    '<td style="background:#0071e3;border-radius:10px;"><a href="' + esc(href) + '" style="display:inline-block;padding:12px 22px;' +
-    'font-family:' + FONT + ';font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">' + esc(label) + '</a></td></tr></table>';
-}
+/* The portal's one email button (`_shared/mail.ts`), 24px under it. */
+const button = (label: string, href: string) => mailButton({ label, url: href, margin: '8px 0 24px' });
 
 /* The close: the colleague who sent it over ADspace, or, sent by a system
    account (the super admin, named ADspace), the ADspace Hiring Team alone,

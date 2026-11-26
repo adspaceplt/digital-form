@@ -8342,11 +8342,8 @@
 
      The host is one value in js/config.js, read here and written into the
      field's prefix, because it was typed into this file and into the console's
-     markup and the two could disagree. `go.adspace.me` is deliberately not
-     retired and is not served by that Worker: a QR code encodes the whole
-     address, so the ones already printed on slides keep working for as long as
-     that host redirects. This value decides what the next link is built with. */
-  var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'go.adspace.me';
+     markup and the two could disagree. go.adspace.me is retired (2026-11-26). This value decides what the next link is built with. */
+  var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
   if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
   /* The host a link redirects from is a standing fact about the route, so it
      is the quiet line under the register: the team asked where these links
@@ -8358,8 +8355,9 @@
      sends it to the website, since somebody who types it has half a URL. Drawn
      the way the Register's routenote draws /verify: the outlined chip inline
      in its sentence, in a new tab (no underlined words, 2026-09-28). */
-  if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' +
-    hostLink(LINK_HOST) + '. Codes printed with ' + hostLink('go.adspace.me') + ' keep working.';
+  /* go.adspace.me is retired (the user, 2026-11-26), so the line names the
+     one host that redirects. */
+  if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' + hostLink(LINK_HOST) + '.';
   function hostLink(h) {
     return '<a class="plink" href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
   }

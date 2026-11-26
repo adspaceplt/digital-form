@@ -492,7 +492,7 @@
   function refDate(s) { return (s && ADspaceClock.date(dayOf(s))) || String(s || ''); }
   function verifyLine(signed) {
     return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
-      'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
+      'Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
   }
   /* A document's Document ID as printed (XXXX-XXXX; VERIFY DETAILS,
      2026-11-20), asked of the database by the id the page already holds:
@@ -660,7 +660,7 @@
       /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
       if (tpl !== 'ALP' && id) {
         p.right(count, R, at(G.countAt), G.count, font, faint);
-        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
@@ -739,12 +739,18 @@
     var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); head(); };
     var need = function (h) { if (y - h < FLOOR) newPage(); };
     var line = function (s, f, size, color) { need(LH); text(s, M, y, size || BODY, f, color); y -= LH; };
+    /* A paragraph of three lines or fewer is never split over a page
+       (as hrdocs' para). */
     var para = function (s, f, size) {
-      wrap(s, R - M, size || BODY, f).forEach(function (ln) { line(ln, f, size); });
+      var lines = wrap(s, R - M, size || BODY, f);
+      if (lines.length <= 3) need(lines.length * LH);
+      lines.forEach(function (ln) { line(ln, f, size); });
       y -= PARA;
     };
     var paraCjk = function (s) {
-      pn.wrapCjk(s, R - M, BODY, fonts.cjk).forEach(function (ln) {
+      var lines = pn.wrapCjk(s, R - M, BODY, fonts.cjk);
+      if (lines.length <= 3) need(lines.length * LH);
+      lines.forEach(function (ln) {
         need(LH); pn.page.drawText(ln, { x: M, y: y, size: BODY, font: fonts.cjk, color: pn.ink }); y -= LH;
       });
       y -= PARA;
@@ -954,7 +960,9 @@
         }
       };
       var para = function (s, f, size) {
-        wrap(s, R - M, size || BODY, f).forEach(function (ln) { need(LH); text(ln, M, y, size || BODY, f); y -= LH; });
+        var lines = wrap(s, R - M, size || BODY, f);
+        if (lines.length <= 3) need(lines.length * LH);
+        lines.forEach(function (ln) { need(LH); text(ln, M, y, size || BODY, f); y -= LH; });
         y -= PARA;
       };
 
@@ -1241,7 +1249,7 @@
          letter from the client's own act, so the sign-off above and the acceptance under it never read
          as one run of lines (the user, 2026-10-23: "so its not so crumpled"). */
       y -= 6; rule(y); y -= 24;
-      text('Acceptance of offer', M, y, BODY, bold); y -= LH + 8;
+      text('Acceptance of Offer', M, y, BODY, bold); y -= LH + 8;
 
       /* Plain prose, and a plain date: an ordinal reads as a letterhead
          flourish and this sentence is the operative one. */

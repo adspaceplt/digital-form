@@ -274,7 +274,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     through the one pen (`pen({ code })`, `foot(i, n, code)` where one PDF
     holds several: an ACL letter's verify line ends ` · Document ID
     XXXX-XXXX`; an AL document's row reads `Document ID XXXX-XXXX · Verify
-    document authenticity: go.adspace.me/verify`, DESIGN.md Print); a report version and a
+    document authenticity: digital.adspace.me/verify`, DESIGN.md Print); a report version and a
     video script hold one too (`sm_report_versions`, `video_scripts`;
     2026-11-24) and, holding no reference, are found by it typed as the
     reference (`verify_find` `by_code`, the page opening the details at
@@ -354,8 +354,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `ADspaceDocs.watermark`); a new tab, else a download.
   - A letter's foot is its template's (ACL_SIGN or ACL_NOSIGN, by To be
     signed; DESIGN.md, Print; 2026-11-20): the verify line centred
-    (`ADSPACE_ORG.verifyUrl`, go.adspace.me/verify, which redirects to
-    /verify/) and the page count; the reference stands in the body (Our
+    (`ADSPACE_ORG.verifyUrl`, digital.adspace.me/verify, the page itself; go.adspace.me phased out
+    2026-11-26) and the page count; the reference stands in the body (Our
     Ref) and, on a lettered document of two pages or more, on every page
     in the bottom margin's left (Slate Book 6.5pt, `#a1a1a1`, level with the
     Client initials, `pen()` `ref` or `letterFoot`'s serial; 2026-11-20,
