@@ -1051,11 +1051,11 @@
         fields.push({ name: k[0] + '_width', label: 'Digits', third: true, value: String(f.width || ''), required: true });
         fields.push({ name: k[0] + '_next', label: 'Next number', third: true, value: String(f.next || ''), required: true });
       });
-      fields.push({ name: 'job', label: 'Pattern', head: 'Job reference', value: (by.job || {}).pattern || '', required: true });
+      fields.push({ name: 'job', label: 'Format', head: 'Job reference', value: (by.job || {}).pattern || '', required: true });
       /* A creator's payment details reference (2026-11-08): its Creator ID
          and a run of n for the number, held on the creator's row. */
       var payPat = (by.creator || {}).pattern || '{creator}/R{nnn}';
-      fields.push({ name: 'payref', label: 'Pattern', head: 'Payment details reference', value: payPat, required: true });
+      fields.push({ name: 'payref', label: 'Format', head: 'Payment details reference', value: payPat, required: true });
       /* The IDs typed, as a booking's reference and a creator's first
          payment details read them, the whole row's width under the
          figures, read again at every key (2026-11-25). */
@@ -1068,8 +1068,8 @@
         title: 'Creator and campaign IDs', go: 'Save', wait: true, fields: fields,
         preview: function (get) {
           var cr = typed(get, 'creator'), job = String(get('job').value || '').trim() || (by.job || {}).pattern || '';
-          return ['A booking reads', job.replace('{creator}', cr).replace('{campaign}', typed(get, 'campaign')),
-            'A creator\'s first payment details read ' + payRefOf(String(get('payref').value || '').trim() || payPat, cr, 1) + '.'];
+          return ['Job reference:', job.replace('{creator}', cr).replace('{campaign}', typed(get, 'campaign')),
+            'A creator\'s first payment details reference reads ' + payRefOf(String(get('payref').value || '').trim() || payPat, cr, 1) + '.'];
         },
         check: function (v) {
           var bad = '';

@@ -397,7 +397,9 @@
         if (f.pre) { var up = el('span', 'unitbox-pre', f.pre); up.setAttribute('aria-hidden', 'true'); ub.appendChild(up); ub.style.setProperty('--unit-pre', String(f.pre).length); }
         ub.appendChild(input);
         if (f.unit) { var uu = el('span', 'unitbox-unit', f.unit); uu.setAttribute('aria-hidden', 'true'); ub.appendChild(uu); ub.style.setProperty('--unit-post', String(f.unit).length); }
-        input.setAttribute('aria-label', (f.label || '') + (f.pre ? ', ' + f.pre : '') + (f.unit ? ', ' + f.unit : ''));
+        /* Read aloud as its words (metres, per cent), drawn short. */
+        var said = { m: 'metres', '%': 'per cent', RM: 'ringgit', 'US$': 'US dollars' };
+        input.setAttribute('aria-label', (f.label || '') + (f.pre ? ', ' + (said[f.pre] || f.pre) : '') + (f.unit ? ', ' + (said[f.unit] || f.unit) : ''));
         wrap.appendChild(ub);
       } else {
         wrap.appendChild(input);
