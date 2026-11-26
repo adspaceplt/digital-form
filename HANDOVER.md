@@ -59,8 +59,8 @@ archives one whose work is all merged.
 | #1492 Letter of Offer issuing path removed | 261126.396c |
 | #1493 digital.adspace.me/verify; View all scroll | 261126.cb04 |
 | #1494 Rules 207 KB → 81 KB; Token economy | 261126.baf3 |
-| #1496 Team groups (F) | 261126.856b |
-| #1497 Build quote one sheet at a desk; TERMS fit | 261126.c591 |
+| #1496 Team groups (F) | 261126.9856 |
+| #1497 Build quote one sheet at a desk; TERMS fit | 261126.9c59 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
