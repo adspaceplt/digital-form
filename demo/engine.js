@@ -2634,7 +2634,7 @@ function cardSlugFree(name, self, email) {
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
     }
 
-    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at); })
+    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref); })
       .sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
     if (qt) {
       var rev = (DB.quotations || []).filter(function (r) { return r.replaces === qt.id && !r.removed_at; })
@@ -2688,6 +2688,9 @@ function cardSlugFree(name, self, email) {
           state: rv.withdrawn_at ? 'withdrawn' : rnext ? 'replaced' : 'valid',
           steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
       }
+
+      var vq = (DB.quotations || []).filter(function (x) { return x.ref && x.doc_code === vc; })[0];
+      if (vq) { var fq = verifyFind(vq.ref); if (fq) { fq.serial = vser; fq.by_code = true; return fq; } }
       var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
       if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
         issued: mday(vs.shared_at), code: vs.doc_code, sealed: false, state: vs.status === 'shared' ? 'valid' : 'withdrawn',
@@ -14870,6 +14873,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, qdc.owner_id, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
         if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
         if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
+
+        if (qdq.sent_out_at || qdq.signed_at) return qtOk({ error: 'sent' });
         var qdn = (DB.client_services || []).filter(function (l) { return l.quotation_id === qdq.id; }).length;
         if (qdn) return qtOk({ error: 'lines', count: qdn });
         var qdd = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qdq.id; }); })[0];
