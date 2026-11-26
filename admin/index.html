@@ -1740,6 +1740,18 @@
               </section>
               </div>
               </div>
+              <!-- The quotation's priced lines (2026-11-24): every brand's
+                   under its name, each typed where read (2026-11-26). At a
+                   desk they stand on the sheet under the brands; on a phone
+                   View quote in the foot turns the sheet to them, Back
+                   returns. -->
+              <section class="fsec qb-linesbox" id="qbLinesBox" hidden>
+                <div id="qbLines" aria-live="polite"></div>
+                <div class="doc-preview-row">
+                  <button class="btn btn-sm" id="qbPreview" type="button" disabled>Preview PDF</button>
+                </div>
+              </section>
+              <div class="msg" id="qbMsg"></div>
               <section class="fsec qb-sec qb-quote" id="qbQuote">
                 <h4 class="fsec-h">Quotation</h4>
                 <div class="row fgrid"><div><label class="field-label" for="qbTerm">Term</label>
@@ -1782,16 +1794,6 @@
                   </div>
                 </div>
               </details>
-              <!-- The quotation's priced lines (2026-11-24): View quote in the foot
-                   turns the sheet to them, every brand's lines under its name,
-                   the brand on the board changed where read; Back returns. -->
-              <section class="fsec qb-linesbox" id="qbLinesBox" hidden>
-                <div id="qbLines" aria-live="polite"></div>
-                <div class="doc-preview-row">
-                  <button class="btn btn-sm" id="qbPreview" type="button" disabled>Preview PDF</button>
-                </div>
-              </section>
-              <div class="msg" id="qbMsg"></div>
             </div>
             <div class="sheet-foot">
               <span class="lpicksum qb-sumrow"><span id="qbSum" aria-live="polite"></span><button class="btn btn-sm" id="qbView" type="button" aria-controls="qbLinesBox" aria-expanded="false" hidden>View quote</button></span>
