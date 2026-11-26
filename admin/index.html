@@ -97,7 +97,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126lp">
+<link rel="stylesheet" href="/css/portal.css?v=20261126st">
 <link rel="stylesheet" href="/css/console.css?v=20261126qtrb">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -139,7 +139,7 @@
 <script src="/js/acts.js?v=20261126lo"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261126a"></script>
+<script src="/js/confirm.js?v=20261126st"></script>
 <script src="/js/sheet.js?v=20261125ar"></script>
 <script src="/js/refresh.js?v=20261117zzzf"></script>
 <script src="/js/form.js?v=20261122zzzc"></script>
@@ -159,7 +159,7 @@
 <script src="/js/announce.js?v=20261126rfd"></script>
 <script src="/js/notice.js?v=20261122zzzu"></script>
 <script src="/js/whatsapp.js?v=20261126rfd"></script>
-<script src="/js/mailtpl.js?v=20261125tpl"></script>
+<script src="/js/mailtpl.js?v=20261126st"></script>
 <script src="/js/docmail.js?v=20261126rfd"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261126rfc"></script>
@@ -6191,7 +6191,7 @@ raya-2026        https://example.com/raya"></textarea>
 <div class="sheet" id="useSheet" hidden>
   <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="useHead">
     <div class="sheet-head">
-      <h3 id="useHead">Usage and limits</h3>
+      <h3 id="useHead">Storage and plan</h3>
       <button class="iconbtn" id="useClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
@@ -6813,11 +6813,11 @@ raya-2026        https://example.com/raya"></textarea>
   "documents": {"src": "/js/documents.js?v=20261126ga"},
   "letters": {"src": "/js/letters.js?v=20261126rfe", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261126w", "uses": ["documents"]},
-  "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
+  "reports": {"src": "/js/reports.js?v=20261126st", "uses": ["documents", "smreport"]},
   "register": {"src": "/js/register.js?v=20261126s", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261126y", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261126y", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261126rfe"},
+  "bukku": {"src": "/js/bukku.js?v=20261126su"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
@@ -6842,15 +6842,15 @@ raya-2026        https://example.com/raya"></textarea>
   "perf": {"src": "/js/perf.js?v=20261126ga", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
-  "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
+  "personnel": {"src": "/js/personnel.js?v=20261126su", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
   "outstation": {"src": "/js/outstation.js?v=20261126rfc"},
-  "settings": {"src": "/js/settings.js?v=20261126rfe", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "settings": {"src": "/js/settings.js?v=20261126st", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261126w"></script>
-<script src="/js/ops.js?v=20261126y"></script>
+<script src="/js/admin.js?v=20261126st"></script>
+<script src="/js/ops.js?v=20261126st"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261126rfd"></script>
 <script src="/js/overview.js?v=20261126y"></script>
