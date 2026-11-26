@@ -28,6 +28,7 @@
 <script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126fh"><\/script>');}}catch(e){}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261126ge"></script>
+<script src="/js/icons.js?v=20261126gl"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/words.js?v=20261126cpt"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
@@ -47,14 +48,14 @@
       <div class="cover-panel" data-glyph="userx">
         <!-- Drawn here, as js/icons.js draws `userx`: the namecard holds its
              request budget, so the notice never fetches the icon set. -->
-        <span class="lockcard-mark" data-mark="userx" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 11-5.7"/><path d="m17 15 4 4M21 15l-4 4"/></svg></span>
+        <span class="lockcard-mark" data-mark="userx" aria-hidden="true"><svg class="ic" data-ic="userx"></svg></span>
         <h2 id="ncCoverTitle"></h2>
         <p id="ncCoverText"></p>
         <!-- A visitor holding a namecard has no account manager: the office's
              own ways in (ux-audit CARD-2). -->
         <div class="cover-acts" id="ncCoverActs" hidden>
-          <a class="btn" id="ncCoverSite" href="https://adspacestudios.com" target="_blank" rel="noopener">Visit website<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
-          <a class="btn btn-primary" id="ncCoverWa" href="https://wa.me/adspace" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat on WhatsApp</a>
+          <a class="btn" id="ncCoverSite" href="https://adspacestudios.com" target="_blank" rel="noopener">Visit website<svg aria-hidden="true" data-ic="out"></svg></a>
+          <a class="btn btn-primary" id="ncCoverWa" href="https://wa.me/adspace" target="_blank" rel="noopener"><svg aria-hidden="true" data-ic="chat"></svg>Chat on WhatsApp</a>
         </div>
       </div>
     </div>
