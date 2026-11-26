@@ -1060,9 +1060,9 @@
       window.ADspaceConfirm.ask({
         title: 'Request and quotation numbers', go: 'Save', wait: true,
         fields: [
-          { name: 'request_prefix', label: 'Prefix', head: 'Request from a public page', half: true, value: by.request.prefix || '', required: true },
+          { name: 'request_prefix', label: 'Prefix', head: 'Request', half: true, value: by.request.prefix || '', required: true },
           { name: 'request_width', label: 'Letters', half: true, value: String(by.request.width || ''), required: true },
-          { name: 'revision_prefix', label: 'Prefix', head: 'Revision', half: true, value: by.revision.prefix || '', required: true },
+          { name: 'revision_prefix', label: 'Prefix', head: 'Quotation revision', half: true, value: by.revision.prefix || '', required: true },
           { name: 'revision_width', label: 'Digits', half: true, value: String(by.revision.width || ''), required: true }],
         /* One Next: preview, as every numbering sheet's. */
         preview: function (get) {

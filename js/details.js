@@ -170,7 +170,7 @@
     root().innerHTML = I.received({
       /* The reference the database gave the submission (ONE REQUEST
          REFERENCE, 2026-11-26), on the page sent and on a link opened again. */
-      title: title, line: text, ref: [reqRef, sent && info ? info.brand : ''].filter(Boolean).join(' · '),
+      title: title, line: text, ref: sent && info ? info.brand : '', reqRef: reqRef, reqLabel: (zh ? window.ADspaceWords.zh : window.ADspaceWords.en).coverRef,
       steps: sent ? [
         { state: 'done', title: w.detailsSent, sub: esc(when) },
         { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow },

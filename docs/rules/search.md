@@ -39,10 +39,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Team open filtered by their own search field, its bar opened.
 - A task number is read from `#WT01008`, `WT1008` or `1008` (`task_no.eq`),
   since `ilike` cannot compare a number.
-- A public submission's reference (`ADP/REQ2611-KMT`, `REQ2611-KMT` or
-  `KMT`) finds its client (at Billing View, opening `tab=billing`) or
-  supplier through `request_ref_find`, read once a query, and a candidate
-  in `hiring_list`; the row's mute line is the reference.
+- A request's reference (`ADP/REQ2611-KMT`, `REQ2611-KMT` or `KMT`)
+  finds its client (a details form opening `tab=billing`, a request
+  `tab=services`, a feedback answer `tab=feedback`) or supplier through
+  `request_ref_find`, read once a query, and a candidate in
+  `hiring_list`; the row's mute line is the reference.
 
 ## Components
 

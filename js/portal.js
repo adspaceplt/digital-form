@@ -1387,7 +1387,8 @@
         var gone = Boolean(r.withdrawn_at);
         row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
         var tone = gone ? '' : (r.state === 'approved' || r.state === 'applied') ? 'is-ok' : (r.state === 'declined') ? '' : 'is-warn';
-        var sub = [r.created_at ? '<span class="nb">' + esc(niceDate(r.created_at)) + '</span>' : '', r.note ? esc(r.note) : '']
+        /* Its reference first (ONE REQUEST REFERENCE, 2026-11-26), kept after Withdraw. */
+        var sub = [r.request_ref ? '<span class="nb">' + esc(r.request_ref) + '</span>' : '', r.created_at ? '<span class="nb">' + esc(niceDate(r.created_at)) + '</span>' : '', r.note ? esc(r.note) : '']
           .filter(Boolean).join(' · ');
         /* A request still Requested is withdrawn from its row, a tonal
            button, Undo as before (MENU-19, 2026-10-22). */

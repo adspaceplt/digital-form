@@ -160,7 +160,7 @@
       title: W.formReceived, line: text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.'),
       /* The reference the database gave the submission (ONE REQUEST
          REFERENCE, 2026-11-26), on the page sent and on a link opened again. */
-      refHtml: [reqRef ? '<span class="qs-part">' + esc(reqRef) + '</span>' : '', sent ? lead() : ''].filter(Boolean).join(' · '),
+      refHtml: sent ? lead() : '', reqRef: reqRef,
       steps: sent ? [
         { state: 'done', title: W.detailsSent, sub: esc(when) },
         { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },

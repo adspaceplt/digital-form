@@ -15,14 +15,18 @@ Moved whole from `DESIGN.md` §7 Architecture, which keeps a one-line pointer he
     prefix, width, next number and the references' shape a setting
     (`id_formats`);
   - a request `ADP/REQ{YYMM}-{AAA}`, three random letters, never a
-    running count, so nobody can read how many requests came in: one
-    reference for everything sent from a public page (a website quotation
-    request, a client's details form, a supplier's form, a careers
-    application; feedback takes none), one generator
-    (`public_request_ref`) checked against every table holding one, so a
-    code is unique across kinds within a month; stamped by a trigger at
-    submission (`request_ref`), shown on the received and already-sent
-    pages and on the record, and found by console search (`request_ref_find`); a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
+    running count, so nobody can read how many requests came in;
+  - every request that reaches ADspace from a public page or the client
+    portal takes one ADP/REQ reference at submission (a website quotation
+    request, a details form, a supplier form, a careers application, a
+    client's request, a feedback answer; the user, 2026-11-26: "all
+    outward incoming requests carry one REQ"); decisions on work ADspace
+    sent (Content Review, Video Scripts, creator selection) take none; a
+    new public form joins it when built: its table's `request_ref` stamped
+    by a trigger through `public_request_ref` (which checks every table
+    holding one), the reference on its received page as `received()`'s
+    `reqRef` line, on its record, in its Activity entry and in
+    `request_ref_find`; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
     confirmed; a revision after Sent is numbered under its family's first
     quotation, `ADP/QT2611-C02-R1`, `-R2`, never a new serial (the `request`
     and `revision` rows of `id_formats`, set in Settings, Portal: Numbering, Request and quotation numbers).

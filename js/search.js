@@ -82,11 +82,11 @@
     }
     return CL.p;
   }
-  /* A submission's reference (ONE REQUEST REFERENCE, 2026-11-26): typed
+  /* A request's reference (ONE REQUEST REFERENCE, 2026-11-26): typed
      whole (ADP/REQ2611-KMT), without its head (REQ2611-KMT) or by its
-     letters (KMT), it finds the client or supplier it came from, read once
-     a query and shared by both groups; a database without the function
-     finds none. */
+     letters (KMT), it finds the client (a details form, a request, a
+     feedback answer) or supplier it came from, read once a query and
+     shared by both groups; a database without the function finds none. */
   var RQ = { q: null, p: null };
   function refRows(q, kind) {
     if (RQ.q !== q) {
@@ -95,7 +95,7 @@
         return (r && r.error) || d.error ? [] : (d.rows || []);
       }).catch(function () { return []; }) };
     }
-    return RQ.p.then(function (rows) { return { rows: rows.filter(function (x) { return x.kind === kind; }) }; });
+    return RQ.p.then(function (rows) { return { rows: rows.filter(function (x) { return kind.indexOf(x.kind) > -1; }) }; });
   }
   function clientsFor(q) {
     return clientRows(q).then(function (r) { return (r.rows || []).map(function (c) { return c.id; }); });
@@ -295,8 +295,10 @@
           });
           return { rows: rows };
         }).catch(function () { return { rows: [] }; });
-        var refs = !may('clients.billing') ? none : refRows(q, 'client').then(function (r) {
-          return { rows: r.rows.map(function (x) { return { id: x.id, slug: x.slug, name: x.name, client_code: x.code, req: x.ref }; }) };
+        /* Each opens the tab its request is on. */
+        var REQ_TAB = { client: 'billing', request: 'services', feedback: 'feedback' };
+        var refs = refRows(q, ['client', 'request', 'feedback']).then(function (r) {
+          return { rows: r.rows.map(function (x) { return { id: x.id, slug: x.slug, name: x.name, client_code: x.code, req: x.ref, reqTab: REQ_TAB[x.kind] }; }) };
         });
         /* A client found by its name leads; one found through a contact, a
            billing entity or a request's reference follows, once, saying
@@ -327,7 +329,7 @@
           id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
           meta: via ? [via.name, via.email || window.ADspaceAPI.phoneWord(via.phone)] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : c.req ? [c.req] : [stageOf(c.stage)],
           open: function () {
-            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill || c.req ? '&tab=billing' : ''), 'clients');
+            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill ? '&tab=billing' : c.req ? '&tab=' + c.reqTab : ''), 'clients');
           }
         };
       } },
@@ -391,7 +393,7 @@
           return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }) };
         }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
         /* One found by a request's reference follows, once, saying which. */
-        return Promise.all([list, refRows(q, 'supplier')]).then(function (r) {
+        return Promise.all([list, refRows(q, ['supplier'])]).then(function (r) {
           if (r[0].error && !r[1].rows.length) return { error: r[0].error };
           var seen = {}, out = [];
           (r[0].rows || []).forEach(function (x) { seen[x.id] = 1; out.push(x); });

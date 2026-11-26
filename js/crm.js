@@ -2987,7 +2987,7 @@
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
         return '<details class="fbc-item" data-id="' + esc(q.id) + '"><summary class="fbc-row prow">' +
-          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc('Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
+          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc((s && s.request_ref ? s.request_ref + ' · ' : '') + 'Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
           '<span>' + esc(niceDate(q.created_at)) + '</span><span>' + (s ? esc(niceDate(s.submitted_at)) : '<span class="mute">\u2014</span>') + '</span>' +
           '<span class="pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
           '<span class="pr-end fbc-score' + (s && s.band === 'low' ? ' is-late' : '') + '">' + (s ? esc(fbScore(s)) : '<span class="mute">\u2014</span>') + '</span>' +
@@ -7086,7 +7086,8 @@
     /* Who asked: the client's contact, or the colleague who recorded it for
        them (2026-10-31). */
     var by = q.recorded_by ? 'Recorded by ' + q.recorded_by + (q.contact_name ? ' for ' + q.contact_name : '') : q.contact_name;
-    var sub = [by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
+    /* Its reference first (ONE REQUEST REFERENCE, 2026-11-26). */
+    var sub = [q.request_ref, by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
         (sub ? '<small>' + esc(sub) + '</small>' : '') +

@@ -423,7 +423,7 @@
     root().innerHTML = I.received({
       title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ADspace.', note: NEXT.received,
       /* The application's reference (ONE REQUEST REFERENCE, 2026-11-26). */
-      ref: d.request_ref || '',
+      reqRef: d.request_ref || '',
       steps: [
         { state: 'done', title: STATUS.received, sub: esc(window.ADspaceClock.date(d.received_at)) },
         { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
