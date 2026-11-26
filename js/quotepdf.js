@@ -352,7 +352,7 @@
       y -= h;
     });
     };
-    var MONY = window.ADspaceMoney, agreed = [];
+    var MONY = window.ADspaceMoney, agreed = [], termsOnFees = false;
     /* A figure in bold, with its S$ beside it where billed in RM. */
     var nearOf = function (label, v, many) {
       var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
@@ -449,6 +449,9 @@
          is; where it does not fit there it takes the next page, and a list
          longer than a page runs on under the same head. */
       var addons = Array.isArray(t.addons) ? t.addons.filter(function (r) { return r && r.name; }) : [];
+      /* Where the totals end, and where an Add-on Rates block anchored on
+         the same page begins: the room TERMS may take (below). */
+      var feesPage = pn.page, feesY = y, addTop = null;
       if (addons.length) {
         var WL = window.ADspaceWords.line, AS = 8.5, colGap = 24, colW = (FULL - colGap) / 2;
         var units = [], lastG = null;
@@ -516,6 +519,7 @@
         if (fit) {
           /* At the foot of the page, its last line on the floor. */
           y = FLOOR + headH(true) + Math.max(colHOf(fit[0]), fit[1] ? colHOf(fit[1]) : 0);
+          addTop = y;
           drawHead(true); drawCols(fit);
         } else {
           newPage();
@@ -530,10 +534,10 @@
           }
         }
       }
-      /* TERMS stand on the acceptance page, above what is signed
-         (QUOTATION ADD-ON RATES, 2026-11-25). */
-      var drawTerms = function () {
-      // TERMS.
+      /* TERMS stand on the fees page under the totals where the whole
+         block fits there, clear of an Add-on Rates block anchored above
+         its foot; else they open the acceptance page, above what is signed
+         (QUOTATION TERMS FIT, 2026-11-26). Never split across pages. */
       /* TERMS in the register of a contract (the user, 2026-11-12: "legal
          professional since this has the legal power when signed"): one
          obligation a clause, each said once. The payment term is the one
@@ -571,18 +575,34 @@
          "dont categorize my terms make it under the rates as usual"). */
       var all = [];
       groups.forEach(function (g) { all = all.concat(g.list); });
-      y -= 8;
-      text('TERMS', M, y, SM, book, mute);
-      y -= 6;
-      all.forEach(function (n, i) {
-        var ls = wrap(n, FULL - 14, 8.5, book);
-        room(ls.length * 12 + 2);
-        y -= 12;
-        text((i + 1) + '.', M, y + 3, 8.5);
-        ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
-        y -= (ls.length - 1) * 12;
-      });
+      var termsL = all.map(function (n) { return wrap(n, FULL - 14, 8.5, book); });
+      /* As drawn below: 8 over the label, 6 under it, 12 a line. */
+      var termsH = 14 + termsL.reduce(function (n, ls) { return n + ls.length * 12; }, 0);
+      var drawTerms = function () {
+        y -= 8;
+        text('TERMS', M, y, SM, book, mute);
+        y -= 6;
+        termsL.forEach(function (ls, i) {
+          room(ls.length * 12 + 2);
+          y -= 12;
+          text((i + 1) + '.', M, y + 3, 8.5);
+          ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
+          y -= (ls.length - 1) * 12;
+        });
       };
+      /* The floor TERMS may reach on the fees page: the add-on block's
+         rule with the gap a section keeps above it, or the page's floor.
+         TERMS name the add-ons ("not included in the fees above"), so they
+         never stand before an Add-on Rates block on a later page. */
+      var termsFloor = addTop != null && pn.page === feesPage ? addTop + 20 : FLOOR;
+      var addLater = addons.length && addTop == null;
+      if (!addLater && feesY - termsH >= termsFloor) {
+        var backPage = pn.page, backY = y;
+        pn.page = feesPage; y = feesY;
+        drawTerms();
+        pn.page = backPage; y = backY;
+        termsOnFees = true;
+      }
     } else {
     headRow();
     var tot0 = window.ADspaceMoney.quoteRows(t, q.lines, sstOn);
@@ -666,10 +686,12 @@
     newPage();
     var v2 = t.layout === 2;
     if (v2) {
-      drawTerms();
-      /* What is signed keeps to one page: where TERMS leave too little
-         room under them, the acceptance takes the next. */
-      if (y - (200 + agreed.length * 16 + 200) < FLOOR) newPage(); else y -= 30;
+      if (!termsOnFees) {
+        drawTerms();
+        /* What is signed keeps to one page: where TERMS leave too little
+           room under them, the acceptance takes the next. */
+        if (y - (200 + agreed.length * 16 + 200) < FLOOR) newPage(); else y -= 30;
+      }
       y -= 6; text('Acceptance of Quotation', M, y, H1, reg, pn.strong); y -= 8;
     } else heading('Acceptance of Quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
