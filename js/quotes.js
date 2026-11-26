@@ -1240,7 +1240,7 @@
   var QI = null;
   var QI_SAID = {
     'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date first.',
-    'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
+    'not-linked': window.ADspaceWords.line.bukkuLinkClient, invoiced: 'This invoice has already been created in Bukku.',
     creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Accounting, Bukku.',
     nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
     'no-fx': window.ADspaceWords.line.fxUnset, 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',

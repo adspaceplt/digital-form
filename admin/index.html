@@ -2740,22 +2740,7 @@
             <span class="muted" id="invoiceSummary">Not issued</span>
           </button>
           <div class="disclosure-body" id="invoiceBody" hidden>
-            <div class="row" id="invEdit" data-need="campaigns.finance:work">
-              <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
-                <div class="slugfield">
-                  <span class="slugfield-pre">AINV</span>
-                  <input class="input is-pre" id="invNo" placeholder="000123" autocomplete="off">
-                </div></div>
-              <div><label class="field-label" for="invFile">Invoice PDF</label>
-                <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
-            </div>
-            <!-- What is attached now belongs with the field that changes it,
-                 above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row acts invacts" id="invActs" data-need="campaigns.finance:work">
-              <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
-              <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
-            </div>
             <div class="msg" id="invMsg"></div>
           </div>
         </section>

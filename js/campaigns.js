@@ -2569,13 +2569,6 @@
   $('cancelAddCamp').addEventListener('click', shutCampForm);
   $('campFormClose').addEventListener('click', shutCampForm);
 
-  // Every invoice starts AINV, so the field carries it and only the rest is
-  // typed. Stored whole, because that is what is on the document.
-  function invoiceNo() {
-    var rest = ($('invNo').value || '').trim().replace(/^AINV/i, '');
-    return rest ? 'AINV' + rest : null;
-  }
-
   /* A campaign is found by its name on every screen that lists one, so a name
      that renders as nothing is a row nobody can pick out. One is live called
      `0`, which JavaScript reads as absent everywhere it is tested for, and the
@@ -6572,41 +6565,193 @@
     return (state.options || []).some(function (o) { return IN_PRODUCTION.indexOf(o.state) > -1; });
   }
 
+  /* The campaign's invoice is made in Bukku (CAMPAIGN INVOICE FROM BUKKU,
+     the user, 2026-11-25): Create invoice in Bukku makes a draft of one line
+     a booked creator on the client's Bukku contact, its number Bukku's; a
+     linked invoice reads its state, amount and PDF from Bukku each visit,
+     nothing kept but its number and id. An invoice typed or uploaded before
+     stays as it was, read only. */
+  var invRead = {};
+  var INV_STATE = { draft: ['is-off', 'Draft'], issued: ['is-warn', 'Issued'], paid: ['is-ok', 'Paid'],
+    overdue: ['is-danger', 'Overdue'], void: ['is-off', 'Void'] };
+  var INV_SAID = {
+    invoiced: 'This campaign already has an invoice. Refresh the page.',
+    'no-model': 'Set the model invoice in Settings (Accounting, Bukku) first.',
+    nothing: 'No confirmed creator has a rate to invoice.',
+    creating: 'An invoice for this campaign is being created. Refresh the page in a moment.',
+    'not-confirmed': 'Bukku did not confirm the invoice. Refresh the page in a moment, then try again.',
+    'bad-number': 'Enter the invoice number as it appears in Bukku.',
+    denied: 'You do not have permission to invoice campaigns. Please ask an admin.'
+  };
+  function invSaid(x) {
+    var W = window.ADspaceWords.line;
+    if (x.error === 'not-linked') return W.bukkuLinkClient;
+    if (x.error === 'no-fx') return W.fxUnset;
+    if (x.error === 'no-model' && x.number) return 'Invoice ' + x.number + ', the model in Settings (Accounting, Bukku), was not found in Bukku. Check the number in Settings.';
+    if (x.error === 'no-invoice') return 'Bukku holds no invoice ' + x.number + ' for this client. Check the number, then try again.';
+    if (x.error === 'not-filed') return 'Invoice ' + x.number + ' was created in Bukku, but the portal did not keep it. Choose Link existing invoice and enter ' + x.number + '.';
+    return INV_SAID[x.error] || (window.ADspaceBukku ? window.ADspaceBukku.said(x) : W.notSent);
+  }
+  function invCall(body) {
+    return db.functions.invoke('bukku-sync', { body: Object.assign({ action: 'campaigninvoice' }, body) }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }).catch(function () { return { error: 'failed' }; });
+  }
+  var DOTS3 = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  function invMenu(act, label) {
+    return '<span class="team-act"><button class="kmenu-btn" type="button" data-a="invmenu" aria-label="More actions" aria-expanded="false">' + DOTS3 + '</button>' +
+      '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.item(act, label) + '</div></span>';
+  }
+  function invToken(no) {
+    return '<button class="serial-copy" type="button" data-a="invcopy" aria-label="Copy ' + esc(no) + '">' + esc(no) + '</button>';
+  }
+
   function paintInvoice(c) {
     var on = accepted();
     $('invoicePanel').hidden = !on;
     if (!on) { setOpen('invoiceToggle', 'invoiceBody', false); return; }
-    // The closed panel says what it holds, and opens itself once it holds something.
-    $('invoiceSummary').textContent = c.invoice_url
-      ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
-      : (c.invoice_no ? c.invoice_no + ' · no PDF' : 'Not issued');
-    $('invNo').value = String(c.invoice_no || '').replace(/^AINV/i, '');
-    $('invFile').value = '';
-    /* The invoice is Finance's at Work (`campaigns_finance_guard`); at View
-       the number and the file are read, never offered as fields. */
+    // The closed panel says what it holds.
+    $('invoiceSummary').textContent = c.bukku_invoice_id ? (c.invoice_no || 'In Bukku')
+      : c.invoice_url ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
+      : c.invoice_no || 'Not issued';
+    /* The invoice is Finance's at Work; at View it is read alone. */
     var mayFinance = mayPart('campaigns.finance', 'work');
     var cur = $('invCurrent');
-    if (c.invoice_url) {
-      /* A private invoice (a key under `private/`) has no address of its own:
-         View invoice asks sign-download for a five-minute link and opens it. */
+    if (c.bukku_invoice_id) {
+      var r = invRead[c.id];
+      if (!r || r.bukku !== c.bukku_invoice_id) {
+        cur.innerHTML = '<div class="invline">' + invToken(c.invoice_no || '') + '<span class="muted">Reading Bukku.</span></div>';
+        var ask = invRead[c.id] = { bukku: c.bukku_invoice_id, reading: true };
+        invCall({ op: 'status', campaign: c.id }).then(function (x) {
+          if (invRead[c.id] !== ask) return;
+          invRead[c.id] = Object.assign({ bukku: c.bukku_invoice_id }, x);
+          if (state.campaign === c) paintInvoice(c);
+        });
+      } else if (!r.reading) {
+        var st = r.error ? null : r.gone ? ['is-warn', 'Not found in Bukku'] : INV_STATE[r.state] || INV_STATE.issued;
+        cur.innerHTML = '<div class="invline">' + invToken(r.number || c.invoice_no || '') +
+            (st ? '<span class="chip-state ' + st[0] + '">' + st[1] + '</span>' : '') +
+            (r.amount != null ? '<b class="invamt">' + esc(billMoney(r.amount, r.currency)) + '</b>' : '') + '</div>' +
+          (r.error ? '<p class="msg err">' + esc(invSaid(r)) + '</p>' : '') +
+          '<div class="row acts invacts">' +
+            (r.error ? '<button class="btn btn-sm" type="button" data-a="invagain">Try again</button>' : '') +
+            (r.web ? '<a class="btn btn-sm" href="' + esc(absUrl(r.web)) + '" target="_blank" rel="noopener">Open in Bukku</a>' : '') +
+            (r.pdf ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
+            (mayFinance ? invMenu('invunlink', 'Unlink') : '') +
+          '</div>';
+      }
+    } else if (c.invoice_no || c.invoice_url) {
+      /* Typed or uploaded before the invoice came from Bukku: read only. A
+         private invoice (a key under `private/`) has no address of its own:
+         View invoice asks sign-download for a five-minute link. */
       var leave = 'View invoice' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
         'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
         '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
-      cur.innerHTML =
-        (privateFile(c.invoice_url)
-          ? '<button class="btn btn-icon" id="invView" type="button">' + leave + '</button>'
-          : '<a class="btn btn-icon" href="' + esc(absUrl(c.invoice_url)) + '" target="_blank" rel="noopener">' + leave + '</a>') +
-        (c.invoice_uploaded_at
-          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
-        (mayFinance ? '<button class="btn btn-danger" id="invRemove" type="button">Remove PDF</button>' : '');
-      if (cur.querySelector('#invRemove')) cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
-      if (cur.querySelector('#invView')) cur.querySelector('#invView').addEventListener('click', function () { openPrivateInvoice(c); });
+      cur.innerHTML = '<div class="invline">' + (c.invoice_no ? invToken(c.invoice_no) : '') +
+        (c.invoice_uploaded_at ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') + '</div>' +
+        (c.invoice_url ? '<div class="row acts invacts">' + (privateFile(c.invoice_url)
+          ? '<button class="btn btn-sm btn-icon" id="invView" type="button">' + leave + '</button>'
+          : '<a class="btn btn-sm btn-icon" href="' + esc(absUrl(c.invoice_url)) + '" target="_blank" rel="noopener">' + leave + '</a>') + '</div>' : '');
+    } else if (mayFinance) {
+      cur.innerHTML = '<div class="row acts invacts">' +
+        '<button class="btn btn-primary" type="button" data-a="invcreate" data-gate="bukku">Create invoice in Bukku</button>' +
+        invMenu('invlink', 'Link existing invoice') + '</div>';
     } else {
-      /* The fold's head already says no PDF (2026-10-22, CMP-15). */
       cur.innerHTML = '';
     }
-    msg('invMsg', '');
+    wireInvoice(c, cur);
+    if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(cur);
+    if (!invKeep) msg('invMsg', '');
+    invKeep = false;
+  }
+  var invKeep = false;
+  function invSay(text, tone) { invKeep = true; msg('invMsg', text, tone); }
+
+  function wireInvoice(c, cur) {
+    var on = function (a, fn) { var b = cur.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', fn); };
+    on('invcopy', function () { window.ADspaceCopy.to(this, this.textContent); });
+    on('invagain', function () { delete invRead[c.id]; paintInvoice(c); });
+    var v = cur.querySelector('#invView');
+    if (v) v.addEventListener('click', function () { openPrivateInvoice(c); });
+    var mb = cur.querySelector('[data-a="invmenu"]');
+    if (mb) mb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var m = mb.parentNode.querySelector('.kmenu'), open = m.hidden;
+      shutMenus();
+      m.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(mb, m);
+    });
+    var shut = function () { var m = mb && mb.parentNode.querySelector('.kmenu'); if (m) m.hidden = true; if (mb) mb.setAttribute('aria-expanded', 'false'); };
+    on('invcreate', function () { createInvoice(c, this); });
+    on('invlink', function () { shut(); linkInvoice(c, mb); });
+    on('invunlink', function () { shut(); unlinkInvoice(c, mb); });
+  }
+  function charged() {
+    return (state.options || []).filter(function (o) { return IN_PRODUCTION.indexOf(o.state) > -1 && !o.goodwill && Number(o.rate) > 0; });
+  }
+  function tookInvoice(c, x) {
+    c.bukku_invoice_id = x.bukku; c.invoice_no = x.number;
+    invRead[c.id] = Object.assign({ bukku: x.bukku }, x);
+    paintInvoice(c);
+  }
+  function createInvoice(c, btn) {
+    var n = charged().length;
+    window.ADspaceConfirm.ask({ title: 'Create invoice in Bukku?', go: 'Create invoice', wait: true, opener: btn,
+      body: 'A draft invoice of ' + n + (n === 1 ? ' line' : ' lines') + ', one for each confirmed creator at the client rate, will be created in Bukku on the client\'s contact. Issue it in Bukku when it is ready.'
+    }, function () {
+      return invCall({ op: 'create', campaign: c.id }).then(function (x) {
+        if (x.error && !x.ok) return invSaid(x);
+        if (x.error === 'in-bukku') {
+          return readCampaign(c).then(function () { invSay('Invoice ' + x.number + ' was already in Bukku and is now linked.', 'ok'); return ''; });
+        }
+        tookInvoice(c, x);
+        invSay('Draft invoice ' + x.number + ' created in Bukku.', 'ok');
+        return '';
+      });
+    });
+  }
+  function readCampaign(c) {
+    return db.from('campaigns').select('bukku_invoice_id, invoice_no').eq('id', c.id).maybeSingle().then(function (r) {
+      if (r.data) { c.bukku_invoice_id = r.data.bukku_invoice_id; c.invoice_no = r.data.invoice_no; }
+      delete invRead[c.id];
+      paintInvoice(c);
+    });
+  }
+  function linkInvoice(c, opener, number, then) {
+    var go = function (num) {
+      return invCall({ op: 'link', campaign: c.id, number: num }).then(function (x) {
+        if (x.error) return invSaid(x);
+        tookInvoice(c, x);
+        if (then) then(); else invSay('Linked to invoice ' + x.number + '.', 'ok');
+        return '';
+      });
+    };
+    if (number) return go(number);
+    window.ADspaceConfirm.ask({ title: 'Link existing invoice', go: 'Link', wait: true, opener: opener,
+      field: { name: 'number', label: 'Invoice number', value: '', maxlength: 40, placeholder: 'AINV000123' } }, function (v) {
+      var num = String((v && v.number) || '').trim().toUpperCase();
+      if (!num) return 'Enter the invoice number.';
+      return go(num);
+    });
+  }
+  function unlinkInvoice(c, opener) {
+    var no = c.invoice_no || '';
+    window.ADspaceConfirm.ask({ title: 'Unlink invoice?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
+      body: 'This campaign will no longer be linked to invoice ' + no + '. Nothing changes in Bukku.'
+    }, function () {
+      return db.rpc('campaign_invoice_unlink', { p_campaign: c.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return r.error.message;
+        if (d.error) return d.error === 'not-linked' ? 'This campaign is no longer linked to an invoice. Refresh the page.' : invSaid(d);
+        c.bukku_invoice_id = null; c.invoice_no = null; delete invRead[c.id];
+        paintInvoice(c);
+        undoBar('Invoice unlinked.', function () {
+          linkInvoice(c, null, no, function () { invSay('Linked to invoice ' + no + ' again.', 'ok'); }).then(function (m) { if (m) invSay(m, 'err'); });
+        }, $('invMsg'));
+        return '';
+      });
+    });
   }
 
   function privateFile(u) { return /^private\//.test(String(u || '')); }
@@ -6623,8 +6768,6 @@
     }).catch(function (e) { if (tab) tab.close(); msg('invMsg', e.message.trim(), 'err'); });
   }
 
-  /* Removing the PDF clears the link the client sees; the file itself stays
-     with the accountant. Undo puts the link back. */
   var undoTimer = null;
   /* The way back is drawn where the act happened.
 
@@ -6661,69 +6804,6 @@
     bar.hidden = true;
     if (bar.classList.contains('undobar-here') && bar.parentNode) bar.parentNode.removeChild(bar);
   }
-  function setInvoiceFile(c, url, stamp) {
-    var was = { url: c.invoice_url, stamp: c.invoice_uploaded_at };
-    writeCamp(c, { invoice_url: url, invoice_uploaded_at: stamp }).then(function (r) {
-      if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { staleCamp(c, 'invMsg'); return; }
-      c.invoice_url = url; c.invoice_uploaded_at = stamp;
-      log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
-      paintInvoice(c);
-      /* Same reason as the handed-in file above: the Finance pane sits inside
-         the record, and the record's own bar is above the pane strip. */
-      if (!url) undoBar('Invoice PDF removed.',
-        function () { setInvoiceFile(c, was.url, was.stamp); }, $('invMsg'));
-    });
-  }
-
-  /* The number and the PDF are one invoice, so they are saved together. The
-     PDF goes to S3 by the same signed path media takes, and the campaign keeps
-     the public URL. Only the URL is ours to store; the file is the
-     accountant's. */
-  $('invSave').addEventListener('click', function () {
-    var c = state.campaign;
-    if (!accepted()) { msg('invMsg', 'Confirm the creators first.', 'err'); return; }
-    var no = invoiceNo();
-    var file = $('invFile').files && $('invFile').files[0];
-    if (file && !/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
-      msg('invMsg', 'The invoice must be a PDF.', 'err'); return;
-    }
-    if (file && !putToS3) { msg('invMsg', 'Uploads are not available on this page. Refresh the page, then try again.', 'err'); return; }
-
-    msg('invMsg', file ? 'Uploading…' : 'Saving…');
-    var step = file
-      ? db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
-          /* Private once the bucket is set up for it (`privateInvoices`,
-             docs/S3-STORAGE.md §5): the row then keeps the key, not an address. */
-          body: { ext: 'pdf', clientId: c.client_id, size: file.size, private: !!(cfg.s3 && cfg.s3.privateInvoices),
-                  purpose: 'invoice', campaignId: c.id }
-        }).then(bridge.signedUpload).then(function (r) {
-          return putToS3(r.data.uploadUrl, file, r.data.contentType || 'application/pdf').then(function () { return r.data.publicUrl || r.data.key; });
-        })
-      : Promise.resolve(null);
-
-    step.then(function (url) {
-      var patch = { invoice_no: no };
-      var stamp = null;
-      if (url) { stamp = new Date().toISOString(); patch.invoice_url = url; patch.invoice_uploaded_at = stamp; }
-      return writeCamp(c, patch).then(function (r) {
-        if (r.error) throw new Error(r.error.message);
-        if (!(r.data || []).length) { staleCamp(c, 'invMsg'); return; }
-        c.invoice_no = no;
-        if (url) { c.invoice_url = url; c.invoice_uploaded_at = stamp; }
-        log(url ? 'campaign.invoice_file' : 'campaign.invoice', c.title, no || 'cleared');
-        paintInvoice(c);
-        msg('invMsg', 'Saved.', 'ok');
-      });
-    }).catch(function (e) { msg('invMsg', e.message, 'err'); });
-  });
-
-  // Cancel puts back what is stored, so a typed number that was never saved
-  // leaves no trace.
-  $('invCancel').addEventListener('click', function () {
-    paintInvoice(state.campaign);
-  });
-
   // ---- Locking the selection ---------------------------------------------
   if ($('campLock2')) $('campLock2').addEventListener('click', function () { $('campLock').click(); });
   $('campLock').addEventListener('click', function () {
