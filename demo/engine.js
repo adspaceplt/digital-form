@@ -2502,8 +2502,6 @@ function cardSlugFree(name, self, email) {
   function registerAdd(a) {
     var fam = a.p_family || 'other';
     if (!regMay(fam, 'work')) return { error: 'not-allowed' };
-
-    if (fam === 'quote_cover') return { error: 'not-issuable' };
     var serial = String(a.p_serial || '').trim();
     if (!serialShapeOk(serial)) return { error: 'serial-shape' };
     if (serialTaken(serial)) return { error: 'serial-taken' };
@@ -2532,7 +2530,6 @@ function cardSlugFree(name, self, email) {
 
     if (d.source !== 'manual') return { error: 'not-manual' };
     if (!regMay(a.p_family || d.family, 'work') || !regMay(d.family, 'work')) return { error: 'not-allowed' };
-    if (a.p_family === 'quote_cover' && d.family !== 'quote_cover') return { error: 'not-issuable' };
     var sup = (a.p_family || d.family) === 'supplier' ? (DB.suppliers || []).filter(function (x) { return x.id === a.p_supplier; })[0] : null;
     if ((a.p_family || d.family) === 'supplier' && !sup) return { error: 'no-supplier' };
     d.kind = a.p_kind || d.kind;
