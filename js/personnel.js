@@ -919,7 +919,7 @@
     'tax_by_employer', 'socso_eis_relief', 'skbbk_exempted'];
   var SW_NOTE = { eclaim: 'Colleagues submit claims in AutoCount\'s EClaim app.',
     eleave: 'Colleagues apply for leave in AutoCount\'s ELeave app.',
-    skbbk_exempted: 'Opted out of SKBBK (Lindung 24 Jam), the PERKESO accident cover deducted from salary.' };
+    skbbk_exempted: 'SKBBK (Lindung 24 Jam) is not deducted from salary.' };
   function settingsLine() {
     return new Promise(function (ok, no) {
       call('personnel_settings_get', {}, function (d) {

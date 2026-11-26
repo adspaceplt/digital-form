@@ -478,7 +478,7 @@
       var F = [d.field_client, d.field_supplier, d.field_creator];
       var B = [d.bill_item_sku, d.bill_class_code, d.bill_account_code, d.budget_account_code, d.campaign_invoice_model];
       var n = function (xs) { return xs.filter(Boolean).length + '\u00a0of\u00a0' + xs.length; };
-      return n(F) + ' ID fields set · ' + n(B) + ' bill details set';
+      return n(F) + ' contact ID fields set · ' + n(B) + ' bill details set';
     });
   }
   function openConfig(btn, sayRow) {

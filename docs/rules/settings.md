@@ -60,7 +60,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   6 to 11, 12 to 17 and 18 to 23 months, then 24 months, with one line
   under them, A positive figure adds to the price. A negative figure is a
   discount.; Tax codes; Bukku, named by its word and read as two counts,
-  `2 of 3 ID fields set · 4 of 5 bill details set`, its advertising budget
+  `2 of 3 contact ID fields set · 4 of 5 bill details set`, its advertising budget
   account the bill account's select of Bukku accounts, Not set first),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Hiring

@@ -50,17 +50,13 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   branch's base (c881fdb, main with #1479, Settings sheets on one line):
   the Time limits sheet no longer reads its three figures' words as the
   suite asks. Held here until it ships.
-- 2026-11-26, `waapprove` (review fixes S3, which touches no Settings sheet): Settings › Due dates' sheet
-  holds no field labelled Remind after, so the suite times out; it fails
-  the same on main a6157c5, likely from #1479's relabelled sheets. Held
-  here until it ships.
 - 2026-11-26, `hiringheld` (the unslop pass, which touches no Settings
   sheet): "its Edit asks the decision time" fails at 1280 and 390, as
-  `hiringiv` and `waapprove` do, from #1479's relabelled Settings sheets.
+  `hiringiv` does, from #1479's relabelled Settings sheets.
   Held here until it ships.
 - 2026-11-26, `weight` (review fixes S4, whose always-loaded scripts are
   108 bytes smaller than main's by gzip): the console reads 1328.8 to
   1328.9 KB against its 1328.8 KB budget on main 2800345 itself; the
   hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
-  time field under its old label) fail the same on main, likely with
-  `waapprove` from #1479's relabelled sheets. Held here until they ship.
+  time field under its old label) fail the same on main, likely from
+  #1479's relabelled sheets. Held here until they ship.

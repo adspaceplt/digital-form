@@ -6989,7 +6989,7 @@
          the pin it draws round, one section (it stood under a second Office
          pin heading). */
       ['outstation_office_radius_m', 'Office radius', 'orad', 'Office pin', 'Office radius', function (v) { return v + ' m'; }],
-      ['outstation_accuracy_m', 'Location accuracy', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
+      ['outstation_accuracy_m', 'Location accuracy', 'accm', 'Trips', 'Location within', function (v) { return v + ' m'; }],
       ['outstation_keep_months', 'Trips kept for', 'keep', 'Trips', 'Kept', per('month')],
       ['outstation_remind_hours', 'Open trip reminder after', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]],
       /* The office pin from where the colleague stands (the Settings
