@@ -66,6 +66,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1501 Sections and sheets (G) | 261126.3a98 |
 | #1502 Surface tokens, `data-layout` | 261126.22df |
 | #1507 Client pages train (J): six portal tabs, creator pages in sections, v3 plain white on every client page | 261126.f307 |
+| #1508 Interview missed (K): Did not attend (Offer a new time, Close application), Interview completed; migration live, hiring-mail v22 | 261126.2c18 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
