@@ -2178,7 +2178,7 @@
     table([{ w: stW }, { w: rest / (1 + RPHI) }, { w: rest - rest / (1 + RPHI) }, { w: tmW }],
       ['Step', 'Name', 'Email', 'Date and time'], rows);
     y -= SP.line;
-    para('Download reference ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
+    para('Download reference ' + stamp.id + '. All times are in Malaysia time (GMT+8). ' +
       (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'go.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
   }
 
