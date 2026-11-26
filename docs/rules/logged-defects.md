@@ -65,3 +65,9 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   nosign) fail "its head and foot at the template's places on every
   page" (the foot's reference at 6pt, 794.5 down); the same three fail
   on main 8e9224f. Held here until it ships.
+- 2026-11-27 (05:50 MYT), `sql` (the interview missed release, which
+  touches neither `quote_wa_allowed` nor its migration): "the day's
+  Quotation ready messages to website quotations are held to the setting"
+  read a third send the same day as still allowed (`a2` true). Run inside
+  the 00:00 to 08:00 MYT window; likely the day counted on UTC's
+  calendar. Held here until it ships.

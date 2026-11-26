@@ -16214,12 +16214,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var heOut;
       if (!opsMe() || !opsGranted('team.settings', 'work')) heOut = { error: 'denied' };
       else if (name === 'hiring_email_templates_get') {
-        var heOrd = ['invite', 'confirm', 'rescheduled', 'cancelled', 'held', 'moved', 'pool', 'not', 'doc', 'doc_again', 'confirmed', 'expired'];
+        var heOrd = ['invite', 'confirm', 'rescheduled', 'cancelled', 'held', 'moved', 'pool', 'not', 'missed', 'doc', 'doc_again', 'confirmed', 'expired'];
         heOut = { ok: true, rows: hmTpl().slice().sort(function (a, b) { return heOrd.indexOf(a.kind) - heOrd.indexOf(b.kind); })
           .map(function (t) { return { kind: t.kind, on: t.on_send, subject: t.subject, body: t.body, updated_at: t.updated_at || null, updated_by: t.updated_by || null }; }) };
       } else {
         var heMv = [], heW = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled', held: 'Thank you for your interview',
-          moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', doc: 'Employment document', doc_again: 'Employment document sent again',
+          moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', missed: 'Interview missed', doc: 'Employment document', doc_again: 'Employment document sent again',
           confirmed: 'Document confirmed', expired: 'Document expired' };
         (args.p_rows || []).some(function (x) {
           var t = hmTpl().filter(function (y) { return y.kind === x.kind; })[0], on = x.on !== false;
