@@ -11,7 +11,8 @@ The code side is already done:
   account. A known and an unknown address both read "If this address is
   registered, a link (and a code) has been sent".
 - `portal-login` gives the same answer for every address. **Redeploy it**:
-  `supabase functions deploy portal-login` (Verify JWT stays off).
+  `supabase functions deploy portal-login` (Verify JWT stays on: the page
+  sends the public key; `docs/DECISIONS.md`, 2026-10-25).
 - No page can create an account (`shouldCreateUser: false` everywhere).
 - A captcha is wired to every sign-in email. The site key is set, so every
   sign-in carries a Turnstile token; Supabase checks it only once step 3 is done.
