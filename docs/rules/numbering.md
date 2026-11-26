@@ -19,7 +19,7 @@ Moved whole from `DESIGN.md` §7 Architecture, which keeps a one-line pointer he
     came in; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
     confirmed; a revision after Sent is numbered under its family's first
     quotation, `ADP/QT2611-C02-R1`, `-R2`, never a new serial (the `request`
-    and `revision` rows of `id_formats`).
+    and `revision` rows of `id_formats`, set in Settings, Portal: Numbering, Quotation numbers).
   - A new reference follows the house scheme (the user, 2026-11-26):
     the shortest prefix is the top of the structure and the longer ones
     hang under it. `ADP` names what the ADspace Digital Portal issued;

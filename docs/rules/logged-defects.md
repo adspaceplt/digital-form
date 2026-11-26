@@ -71,3 +71,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   read a third send the same day as still allowed (`a2` true). Run inside
   the 00:00 to 08:00 MYT window; likely the day counted on UTC's
   calendar. Held here until it ships.
+- 2026-11-26, `sql` (the received page's centring, which touches no
+  function): "the schema's last wa_compose_prepare is this one, refusing
+  feedback to a lead…" fails since F8 (#1504) redefined
+  `wa_compose_prepare` after that band. Held here until it ships.

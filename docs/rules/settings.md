@@ -18,7 +18,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   then Company): Portal (Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
   User groups (an admin's, opening Team's Groups; 2026-11-17); Pages
   and notices: Page availability, Require latest version (Edit, Off while
-  none is required), Announcements, Notices, Demo access; Plan: Storage
+  none is required), Announcements, Notices, Demo access; Numbering (2026-11-26, every
+  number the portal gives in one part: Task numbers, Outstation trip
+  numbers, Creator and campaign IDs, Quotation numbers (a website
+  request's prefix and letters, a revision's prefix and digits), each
+  sheet Prefix, Digits and, where a count runs, Next number, under one
+  `Next:` preview); Plan: Storage
   and plan, the database and files against the plan and what was sent,
   never the AI's cost, AI usage and limits'), Company (2026-11-26, out of
   Portal, which keeps what changes the portal itself; Suppliers' building
@@ -34,8 +39,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   (Deadlines: Due dates, its first two Report due and Client revision
   due, Priority deadlines, Task reminders, Delivery targets; Outstation:
   Outstation (the office pin, filled from the device by a quiet Use this
-  device's location under it, Location accuracy, trips kept), Outstation
-  trip numbers; Numbering: Task numbering), Reports (Meta
+  device's location under it, Location accuracy, trips kept)), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
   and emails; Email: Send by email at `team.settings`,
@@ -50,9 +54,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   inside includes Clients, Creators and Suppliers"; `tab=partners`, an
   old `tab=clients` landing on it; Details forms first: one figure for a
   client's and a supplier's link alike; Clients: Industries, Follow-up
-  limits, Analytics; Creators: Creator and campaign IDs (each
-  part's heading names its next ID, one Next: preview under the sheet),
-  Creator payments, Creator payments sheet, read `On · 0 payments
+  limits, Analytics; Creators: Creator payments, Creator payments sheet, read `On · 0 payments
   added`), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access; a templates row reads `n of N on`, Email templates
