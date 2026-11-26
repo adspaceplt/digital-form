@@ -56,7 +56,7 @@
   var SAID = {
     'ai-limit': 'The daily limit for the Assistant has been reached. It resets at 12:00 am.',
     'ai-not-set-up': 'The Assistant is not set up yet. Please contact an admin.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'needs-update': window.ADspaceWords.line.notYet,
     'ai-key': 'The Assistant is not available at the moment. Please contact an admin.',
     'ai-credit': 'The Assistant is not available at the moment. Please contact an admin.',
     'ai-model': 'The Assistant is not available at the moment. Please contact an admin.',
