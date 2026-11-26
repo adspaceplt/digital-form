@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126y">
-<link rel="stylesheet" href="/css/console.css?v=20261126cid">
+<link rel="stylesheet" href="/css/portal.css?v=20261126z">
+<link rel="stylesheet" href="/css/console.css?v=20261126cie">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4175,7 +4175,9 @@
               <div><label class="field-label" for="tmEmail">Sign-in email</label>
                 <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
               <div><label class="field-label" for="tmRole">User group</label>
-                <select class="select" id="tmRole" aria-required="true"></select></div>
+                <select class="select" id="tmRole" aria-required="true" aria-describedby="tmRoleSum"></select>
+                <!-- What the group chosen may do, as its row in Groups reads. -->
+                <p class="permpreset-sum" id="tmRoleSum"></p></div>
               <div><label class="field-label" for="tmStaff">Employee ID</label>
                 <input class="input" id="tmStaff" placeholder="AD001" autocapitalize="characters" spellcheck="false"></div>
             </div>
@@ -4186,7 +4188,7 @@
               <div class="row fgrid">
                 <div class="fpair span-all" id="tmUntilRow">
                   <div><label class="field-label" for="tmUntil">Access until</label>
-                    <input class="input" id="tmUntil" type="date" data-none="No end" data-some="Access until set"></div>
+                    <input class="input" id="tmUntil" type="date" data-none="Access until: No end date" data-some="Access until set"></div>
                   <!-- A time means something only on a day, so it arrives with one
                        (Team audit, 2026-10-03). -->
                   <div id="tmUntilTimeBox"><label class="field-label" for="tmUntilTime">Time</label>
@@ -4293,7 +4295,9 @@
                   <option value="staff">Staff</option>
                   <option value="viewer">View only</option>
                   <option value="custom" hidden>Custom</option>
-                </select></div>
+                </select>
+                <!-- The preset under the pointer, else the one chosen, in one line. -->
+                <p class="permpreset-sum" id="grPresetSum" hidden></p></div>
             </div>
             <div class="row">
               <div class="permbox" id="grFlags"></div>
@@ -6840,7 +6844,7 @@ raya-2026        https://example.com/raya"></textarea>
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261126rfe", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
-  "team": {"src": "/js/team.js?v=20261126", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261126a", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},

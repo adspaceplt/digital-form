@@ -247,8 +247,10 @@
        Granted like the four above, because administering the team is not
        reading its scores, and the master code is asked for on top. */
     team:      [['performance', 'Performance reviews'],
-                ['perfadmin', 'Revenue and profit, Performance settings and deleting reviews'],
-                ['settings', 'Business settings'], ['upgrade', 'Upgrade mode'],
+                /* Named as the Settings rows they open (2026-11-26, the
+                   Groups review): Settings, Page availability. */
+                ['perfadmin', 'Performance admin'],
+                ['settings', 'Settings'], ['upgrade', 'Page availability'],
                 ['invite', 'Send invitation'], ['handbook', 'Handbook files'], ['announce', 'Announcements'],
                 /* A notice to all colleagues or to those chosen (2026-10-09). */
                 ['notice', 'Notices'],
@@ -575,7 +577,17 @@
     $('tmRole').innerHTML = roleOptions('');
     if (keep) $('tmRole').value = keep;
     if (!$('tmRole').value) $('tmRole').value = 'account';
+    paintRoleSum();
   }
+  /* Add member reads what the group chosen may do under its select, in the
+     group panel's own sentence (2026-11-26, the Groups review). */
+  function paintRoleSum() {
+    var el = $('tmRoleSum');
+    if (!el) return;
+    var r = state.roles.filter(function (x) { return x.slug === $('tmRole').value; })[0];
+    el.textContent = r ? roleSumText(r) : '';
+  }
+  if ($('tmRole')) $('tmRole').addEventListener('change', paintRoleSum);
 
   // ---- Members ------------------------------------------------------------
   /* People are listed under the group they belong to, the way the rate card
@@ -1141,7 +1153,7 @@
   function accessMoves(before, after) {
     before = before || {}; after = after || {};
     var name = function (k) {
-      if (k === DASH) return 'Team dashboard';
+      if (k === DASH) return 'Dashboard Team tabs';
       var bits = k.split('.');
       var sec = SECTIONS.filter(function (x) { return x[0] === bits[0]; })[0];
       var part = bits[1] && (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
@@ -1187,7 +1199,7 @@
     if (only.length) parts.push(part('Only:') + ' ' + only.join(', '));
     if (r.client_scope === 'own') parts.push(part('Own clients only'));
     GSW.forEach(function (g) { if (r[g[0]]) parts.push(part(g[1])); });
-    if (acc[DASH] === 'none') parts.push(part('Team dashboard: Off'));
+    if (acc[DASH] === 'none') parts.push(part('Dashboard Team tabs: Off'));
     return parts.length ? parts.join(' · ') : part('Off');
   }
 
@@ -1411,9 +1423,34 @@
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.outstation': 'Every colleague\'s outstation trips, their stops and photos, and the export.',
     'ops.time': 'Correct another colleague\'s time records.',
-    'team.performance': 'Monthly performance reviews, behind the master code.'
+    'team.performance': 'Monthly performance reviews, behind the master code.',
+    /* Each admin tool says what it opens, naming the Settings row where it
+       opens one (2026-11-26, the Groups review). */
+    'team.upgrade': 'Settings › Page availability and Require latest version.',
+    'team.announce': 'Settings › Announcements: a word to every colleague.',
+    'team.notice': 'Settings › Notices: a notice to all colleagues or to those chosen.',
+    'team.settings': 'Every Settings row that holds a business figure or a portal switch.',
+    'reports.ai': 'Settings › AI usage and limits.',
+    'team.analytics': 'Write the AI analysis on Analytics.',
+    'ops.numbering': 'Settings › Task numbering.',
+    'ops.override': 'Move any colleague\'s task and its due date.',
+    'reports.meta': 'Import from Meta and the audit against Meta, while Settings › Meta checks is on.',
+    'reports.whitelabel': 'A client\'s logo on its reports, and White label on a client\'s Brand.',
+    'reports.transfer': 'Move a report to the client it belongs to.',
+    'clients.vic': 'Mark a client as VIC, or remove it.',
+    'campaigns.files_delete': 'Hide a file the client approved, and delete it.',
+    'register.types': 'Settings › Document types.',
+    'team.invite': 'Send a colleague the email that invites them to sign in.',
+    'team.handbook': 'Add, edit and archive Handbook files.',
+    'team.perfadmin': 'Revenue and profit, Settings › Performance figures, department scores and deleting reviews.'
   };
-  var SEG_ICON = '<span class="disclosure-caret" aria-hidden="true">&#9656;</span>';
+  /* Advanced is a quiet button with the shared chevron (the act table's
+     `go` mark), turned down while open (2026-11-26, the Groups review). */
+  var FOLD_CHEV = (window.ADspaceActs && window.ADspaceActs.glyph ? window.ADspaceActs.glyph('go')
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>')
+    /* Its own mark, not an act's: the act table takes back a mark its
+       words do not name (js/acts.js). */
+    .replace(/ data-act="[^"]*"/, '').replace('<svg ', '<svg class="permsec-chev" ');
   function partRow(sec, p) {
     var key = sec[0] + '.' + p[0], granted = isGranted(key);
     return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) +
@@ -1456,7 +1493,8 @@
   }
   function advName(it) { return it.kind === 'tool' ? partName(it.key) : it.p[1]; }
   function toolRow(k) {
-    return '<div class="permpart"><span class="permpart-name" id="grTool-' + k.replace('.', '-') + '">' + esc(partName(k)) + '</span>' +
+    return '<div class="permpart"><span class="permpart-name" id="grTool-' + k.replace('.', '-') + '">' + esc(partName(k)) +
+      (PART_DESC[k] ? '<small>' + esc(PART_DESC[k]) + '</small>' : '') + '</span>' +
       '<button class="switch" type="button" role="switch" aria-checked="false" data-tool="' + k + '" aria-labelledby="grTool-' + k.replace('.', '-') + '"></button></div>';
   }
   function secBlock(key) {
@@ -1468,8 +1506,8 @@
           return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
         }).join('') + '</select>' +
       '<p class="permsec-desc" id="grDesc-' + key + '"></p>' +
-      (fold ? '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + key + '">' +
-          '<span>Advanced</span><span class="permsec-n" data-n="' + key + '"></span>' + SEG_ICON + '</button>' : '') +
+      (fold ? '<button class="btn btn-quiet btn-sm permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + key + '">' +
+          '<span>Advanced</span><span class="permsec-n" data-n="' + key + '"></span>' + FOLD_CHEV + '</button>' : '') +
       '<p class="permsec-diff" id="grDiff-' + key + '" hidden></p>' +
       (fold ? '<div class="permsec-parts" id="grParts-' + key + '" hidden>' + items.map(function (it) {
           return it.kind === 'tool' ? toolRow(it.key) : partRow(secOf(it.sec), it.p);
@@ -1480,10 +1518,11 @@
     /* Main settings, after Start from: the Dashboard, the group's four
        switches, whose clients it sees and who it reports to. */
     '<div class="permchunk permmain">' +
-      '<div class="permpart" data-sec="' + DASH + '"><span class="permpart-name" id="grDashName">Dashboard' +
+      /* On or off, so a switch as the group's other switches are
+         (2026-11-26, the Groups review); it decides the Team tabs alone. */
+      '<div class="permpart" data-sec="' + DASH + '"><span class="permpart-name"><span id="grDashName">Dashboard Team tabs</span>' +
         '<small id="grDesc-' + DASH + '"></small></span>' +
-        '<select class="select select-sm" data-seg data-seg-value id="grDash" aria-labelledby="grDashName">' +
-        '<option value="none">Off</option><option value="on">On</option></select></div>' +
+        '<button class="switch" type="button" role="switch" aria-checked="true" id="grDash" aria-labelledby="grDashName" aria-describedby="grDesc-' + DASH + '"></button></div>' +
       GSW.map(function (g) {
         return '<div class="permpart"><span class="permpart-name" id="grSw-' + g[0] + '">' + esc(g[1]) + '<small>' + esc(g[2]) + '</small></span>' +
           '<button class="switch" type="button" role="switch" aria-checked="false" data-gsw="' + g[0] + '" aria-labelledby="grSw-' + g[0] + '"></button></div>';
@@ -1492,13 +1531,21 @@
         '<small>Own clients only: clients where they are Person in charge or Sales by, and leads nobody has taken.</small></span>' +
         '<select class="select select-sm" id="grScope" aria-labelledby="grScopeName">' +
         '<option value="all">All clients</option><option value="own">Own clients only</option></select></div>' +
-      '<div class="permpart"><span class="permpart-name" id="grReportsName">Reports to</span>' +
-        '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName"></select></div>' +
+      /* What the choice does, from the one function that reads it
+         (`feedback_sees_manager`; 2026-11-26, the Groups review). */
+      '<div class="permpart"><span class="permpart-name"><span id="grReportsName">Reports to</span>' +
+        '<small id="grReportsDesc">Colleagues in the group chosen see the client feedback scores of this group\'s colleagues.</small></span>' +
+        '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName" aria-describedby="grReportsDesc"></select></div>' +
     '</div>' +
     /* Section access: one row a section in the rail's order. */
     '<div class="permchunk permsections"><h4 class="fsec-h">Section access</h4>' +
       CHUNKS.map(function (c) { return c[1].map(secBlock).join(''); }).join('') +
     '</div>' +
+    /* What the group can do, read back before Save (2026-11-26, the Groups
+       review): a section opened, its level's line and what its Advanced
+       sets apart; the sections left off on one line. Read only. */
+    '<div class="permchunk permpreview"><h4 class="fsec-h">What this group can do</h4>' +
+      '<div class="permprev" id="grPreview"></div></div>' +
     /* Admin is chosen from Start from, which already names it (2026-09-26).
        The box stays, unseen, because it is what the save reads. */
     '<input type="checkbox" data-f="is_admin" hidden tabindex="-1" aria-hidden="true">';
@@ -1518,7 +1565,7 @@
   /* Reports to: any other group, or no one. */
   function fillReports(r) {
     var sel = $('grReports'), mine = r ? r.slug : null;
-    sel.innerHTML = '<option value="">No one</option>' + (state.roles || []).filter(function (g) { return g.slug !== mine; })
+    sel.innerHTML = '<option value="">None</option>' + (state.roles || []).filter(function (g) { return g.slug !== mine; })
       .map(function (g) { return '<option value="' + esc(g.slug) + '">' + esc(g.name) + '</option>'; }).join('');
     sel.value = r && r.reports_to ? r.reports_to : '';
   }
@@ -1528,8 +1575,13 @@
     if (sel.__seg) sel.__seg.setAttribute('aria-describedby', 'grDesc-' + sel.getAttribute('data-sec'));
   });
   if (window.ADspaceForm) window.ADspaceForm.segment($('grPreset'));
-  if (window.ADspaceForm) window.ADspaceForm.segment($('grDash'));
-  if ($('grDash').__seg) $('grDash').__seg.setAttribute('aria-describedby', 'grDesc-' + DASH);
+  function dashOn() { return $('grDash').getAttribute('aria-checked') !== 'false'; }
+  function setDash(on) { $('grDash').setAttribute('aria-checked', on ? 'true' : 'false'); }
+  $('grDash').addEventListener('click', function () {
+    if (this.disabled) return;
+    setDash(!dashOn());
+    paintPanel();
+  });
   function foldSec(sec, open) {
     var box = $('grParts-' + sec), btn = $('grFlags').querySelector('.permsec[data-sec="' + sec + '"] .permsec-toggle');
     if (!box || !btn) return;
@@ -1564,7 +1616,7 @@
      and a part only where it says something its section does not. */
   function readAccess() {
     var access = {};
-    if ($('grDash').value === 'none') access[DASH] = 'none';
+    if (!dashOn()) access[DASH] = 'none';
     levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
@@ -1610,7 +1662,7 @@
     return LEVEL_WORD[v] || 'Off';
   }
   function keyName(k) {
-    if (k === DASH) return 'Team dashboard';
+    if (k === DASH) return 'Dashboard Team tabs';
     if (TOOL[k]) return partName(k);
     var bits = k.split('.'), sec = secOf(bits[0]);
     return bits[1] ? partName(k) + ' (' + (sec ? sec[1] : bits[0]) + ')' : (sec ? sec[1] : bits[0]);
@@ -1668,7 +1720,7 @@
     if (scope === 'own') line += ' Own clients only.';
     var swOn = GSW.filter(function (g) { return sw && sw[g[0]]; }).map(function (g) { return g[1]; });
     line += swOn.length ? ' ' + listWords(swOn) + (swOn.length === 1 ? ' is' : ' are') + ' on.' : ' Every switch is off.';
-    if (acc[DASH] === 'none') line += ' The Team dashboard is hidden.';
+    if (acc[DASH] === 'none') line += ' The Dashboard Team tabs are off.';
     /* What differs is counted once, against the preset, by the Custom note
        (2026-10-20, TEAM-8); the sentence names no count of its own. */
     if (tools) line += ' ' + tools + (tools === 1 ? ' admin tool is' : ' admin tools are') + ' on.';
@@ -1676,8 +1728,34 @@
   }
   /* Everything that follows a change: each section's line, what differs
      under it, the shape the panel matches, and the sentence at the top. */
+  /* A stored group in the panel's sentence, for Add member. */
+  function roleSumText(r) {
+    var acc = accessOf(r), sw = {};
+    GSW.forEach(function (g) { sw[g[0]] = Boolean(r.is_admin || r[g[0]]); });
+    var tools = Object.keys(TOOL).filter(function (k) { return Boolean(offered(k, exceptionOf(acc, k))); }).length;
+    var lv = {};
+    SECTIONS.forEach(function (s) { lv[s[0]] = secLevel(s[0], acc[s[0]]); });
+    if (acc[DASH] === 'none') lv[DASH] = 'none';
+    return sumText(lv, Boolean(r.is_admin), r.client_scope === 'own' ? 'own' : 'all', tools, sw);
+  }
+  function paintPreview(access, admin, diffs) {
+    var box = $('grPreview');
+    if (!box) return;
+    if (admin) { box.innerHTML = '<p class="permprev-off">Every level in every section, as an admin.</p>'; return; }
+    var off = [];
+    var rows = SECTIONS.filter(function (s) { return DESC[s[0]]; }).map(function (s) {
+      var lv = access[s[0]] || 'none';
+      if (lv === 'none') { off.push(s[1]); return ''; }
+      var d = diffs[s[0]] || [];
+      return '<div class="permprev-row"><span class="permprev-sec">' + esc(s[1]) + ' · ' + esc(LEVEL_WORD[lv] || '') + '</span>' +
+        '<span class="permprev-desc">' + esc(DESC[s[0]][lv] || '') + '</span>' +
+        (d.length ? '<span class="permprev-diff">' + esc(d.join(' · ')) + '</span>' : '') + '</div>';
+    }).join('');
+    box.innerHTML = (rows || '<p class="permprev-off">No section is open to this group.</p>') +
+      (off.length && rows ? '<p class="permprev-off">Off: ' + esc(listWords(off)) + '.</p>' : '');
+  }
   function paintPanel() {
-    var access = readAccess();
+    var access = readAccess(), diffs = {};
     var adm = adminBox();
     var admin = Boolean(adm && adm.checked), locked = Boolean(state.editing && state.editing.slug === 'admin');
     /* On shows nothing without a section at Full Access (2026-10-20, TEAM-7). */
@@ -1696,6 +1774,7 @@
          section, an admin tool on, its line of the Activity record. */
       var diff = advItems(s[0]).filter(function (it) { return it.key in access; })
         .map(function (it) { return advName(it) + ': ' + (it.kind === 'tool' ? 'On' : valueWord(it.key, access[it.key])); });
+      diffs[s[0]] = diff;
       var n = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
       if (n) n.textContent = diff.length ? '(' + diff.length + ')' : '';
       /* Shut, a section names only what differs; open, its rows say it. */
@@ -1747,7 +1826,47 @@
     $('grPresetNote').textContent = n2 ? 'Custom: ' + n2 + (n2 === 1 ? ' change' : ' changes') + ' from ' + PRESET_WORD[shape.key] : '';
     lastChanges = n2;
     $('grSum').textContent = sumText(access, admin, readScope(), on.length, readSwitches());
+    paintPreview(access, admin, diffs);
+    paintPresetSum();
   }
+  /* Each preset carries its summary (2026-11-26, the Groups review): the
+     line under Start from reads the preset under the pointer or focus,
+     else the one chosen; a Custom panel's note says the rest. */
+  function presetSum(k) {
+    if (k === 'admin') return 'Admin: every level in every section.';
+    var acc = PRESETS[k];
+    if (!acc) return '';
+    var by = { manage: [], work: [], view: [] };
+    SECTIONS.forEach(function (s) { var v = acc[s[0]] || 'none'; if (by[v]) by[v].push(s[1]); });
+    var said = ['manage', 'work', 'view'].filter(function (lv) { return by[lv].length; }).map(function (lv) {
+      return LEVEL_WORD[lv] + ' on ' + (by[lv].length > 3 ? by[lv].length + ' sections' : listWords(by[lv]));
+    });
+    var sw = GSW_PRESET[k] || [];
+    var swWord = sw.length === GSW.length ? 'Every switch on' : !sw.length ? 'Every switch off'
+      : listWords(GSW.filter(function (g) { return sw.indexOf(g[0]) > -1; }).map(function (g) { return g[1]; })) + ' on';
+    return PRESET_WORD[k] + ': ' + listWords(said, ', and ') + '. ' + swWord + '.';
+  }
+  var presetAt = '';
+  function paintPresetSum() {
+    var el = $('grPresetSum');
+    if (!el) return;
+    var k = presetAt || $('grPreset').value;
+    el.textContent = k && k !== 'custom' ? presetSum(k) : '';
+    el.hidden = !el.textContent;
+  }
+  (function () {
+    var seg = $('grPreset').__seg;
+    if (!seg) return;
+    var at = function (e) {
+      var b = e.target.closest && e.target.closest('[data-v]');
+      presetAt = b && !b.disabled ? b.getAttribute('data-v') : '';
+      paintPresetSum();
+    };
+    seg.addEventListener('mouseover', at);
+    seg.addEventListener('focusin', at);
+    seg.addEventListener('mouseleave', function () { presetAt = ''; paintPresetSum(); });
+    seg.addEventListener('focusout', function () { presetAt = ''; paintPresetSum(); });
+  }());
   function setTools(acc) {
     toolSwitches().forEach(function (sw) {
       var k = sw.getAttribute('data-tool');
@@ -1758,7 +1877,7 @@
     var adm = adminBox();
     if (adm) adm.checked = k === 'admin';
     $('grScope').value = 'all';
-    $('grDash').value = 'on';
+    setDash(true);
     setSwitches(GSW_PRESET[k] || []);
     carried = {};
     if (k !== 'admin') {
@@ -1870,7 +1989,7 @@
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
     var acc = r ? accessOf(r) : null;
-    $('grDash').value = acc && acc[DASH] === 'none' ? 'none' : 'on';
+    setDash(!(acc && acc[DASH] === 'none'));
     levelPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-sec');
       sel.value = acc ? secLevel(k, acc[k]) : (k === 'clients' ? 'work' : 'none');
@@ -1991,7 +2110,7 @@
        may invite (TEAM2-10, 2026-10-24). */
     $('tmInvite').checked = false;
     $('tmInviteLine').hidden = !may('team.invite', 'work');
-    fillRolePick(); $('tmRole').value = 'account';
+    fillRolePick(); $('tmRole').value = 'account'; paintRoleSum();
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
       opener: memberOpener,
