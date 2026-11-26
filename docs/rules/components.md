@@ -121,8 +121,10 @@ v3 on a client page (`data-face="client"`, V3 CLIENT PARTS in `css/portal.css`, 
 
 | Page | `data-layout` |
 |---|---|
-| `admin/`, `/client/`, `/creators/`, `/creator/`, `/quote/` | `v3` |
-| `/review/`, `/script/` | `cards` |
-| `/`, `404.html`, `/quote/`, `/details/`, `/supplier/`, `/careers/`, `/feedback/`, `/verify/`, `/card/`, `docs/PAGE-TEMPLATE.html` | `shaded` |
+| `admin/` | `v3` (the console) |
+| `/client/`, `/creators/`, `/creator/`, `/quote/`, `/review/`, `/script/`, `/details/`, `/supplier/`, `/careers/`, `/feedback/`, `/verify/`, `/card/`, `404.html`, `docs/PAGE-TEMPLATE.html` (each `data-face="client"`) | `v3` (plain white, hairline cards) |
+| `/` (the front door, editorial) | `shaded` |
+
+`cards` stays defined for a page that asks for it; no page uses it.
 
 The families: `.panel`, `.card`, `.softpanel`, `.kcard`, `.chartcard`, `.crm-table`, `.ovcard`, `.stg-card`, `.bookreg`, `.engcard`, `.rec-part`, `.sumcard`, `.verify-card`, `.rcv-track`, `.qs-side`; a record's rail block (`.rec-rail > .railblock`) and `.readgroups` read the same tokens in the console's own rules. Differences each family still holds, on purpose: `.chartcard`'s 14px foot (its figures fold under it); `.rcv-track` 20px and `.qs-side` 22px padding; `.verify-card`, `.card`, `.bookreg` and a bare `.crm-table` keep the 14px corner (`--radius`) where their layout's is 18 (a directory's `.crm-table.softpanel` takes the section's); in the console at a desk a bare `.crm-table` and a `.card` draw no edge. On a `shaded` page a `.softpanel` (`js/state.js`'s loading, empty and failed lines) stays white at 14px, and careers' `.panel.cr-doc` keeps 14px. Not section cards: `.lockcard` (the cover column, no box), `.ovsec` and `.qs-sec` (parts inside a card, divided by hairlines), `.crm-group` (its card is its `.crm-table.softpanel`), `.cp-card` (a `.panel`'s arrangement), and `.booking` (a white card of its own; edged by `--part-edge` in `v3`).

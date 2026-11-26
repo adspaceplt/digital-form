@@ -436,11 +436,14 @@ body {
 :root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main { gap: 16px; }
 /* The parts that are not section cards take the hairline too: a creator
    option, a booking, a portal tile, a quotation's lines, totals and add-ons. */
-:root[data-face="client"][data-layout="v3"] :is(.cs-card, .booking, .cp-tile, .queue .qrow, .cardpair, .qs-table, .qs-tot, .qs-addons) {
+:root[data-face="client"][data-layout="v3"] :is(.cs-card, .booking, .cp-tile, .queue .qrow, .cardpair, .qs-table, .qs-tot, .qs-addons, .stepcard) {
   background: var(--card); border-radius: var(--radius-lg);
   outline: 1px solid var(--part-edge); outline-offset: -1px;
 }
 :root[data-face="client"][data-layout="v3"] .cardpair { box-shadow: none; }
+/* What stands white inside a shaded card (a step card's mark, the
+   representative's card) takes the shade inside a white one. */
+:root[data-face="client"][data-layout="v3"] :is(.stepcard-mark, .qs-rep) { background: var(--sunk); }
 /* A card inside a part is one surface with it (DESIGN §1). */
 :root[data-face="client"][data-layout="v3"] :is(.panel, .sumcard, .booking, .cardpair, .engcard, .rec-part, .kcard)
   :is(.panel, .card, .softpanel, .crm-table, .kcard, .ovcard, .booking) { outline: 0; }
@@ -10272,6 +10275,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .cp-prog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 12px; min-width: 0; }
 .cp-prog-top > .svc-state { flex: 0 0 auto; }
 .cp-prog-top > .cp-open { flex: 0 0 auto; align-self: center; }
+/* On a phone the name keeps the row's width; its state and Open go under it. */
+@media (max-width: 560px) {
+  .cp-prog-top { flex-wrap: wrap; align-items: center; }
+  .cp-prog-top > .svc-name { flex: 1 0 100%; }
+  .cp-prog-top > .cp-open { margin-left: auto; }
+}
 .cp-prog-body .cx-legend { margin: 0; }
 .cx-legend b { font-weight: 600; color: var(--ink); }
 .cp-prog-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
