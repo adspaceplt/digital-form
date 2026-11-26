@@ -2987,7 +2987,7 @@
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
         return '<details class="fbc-item" data-id="' + esc(q.id) + '"><summary class="fbc-row prow">' +
-          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc('Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
+          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc((s && s.request_ref ? s.request_ref + ' · ' : '') + 'Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
           '<span>' + esc(niceDate(q.created_at)) + '</span><span>' + (s ? esc(niceDate(s.submitted_at)) : '<span class="mute">\u2014</span>') + '</span>' +
           '<span class="pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
           '<span class="pr-end fbc-score' + (s && s.band === 'low' ? ' is-late' : '') + '">' + (s ? esc(fbScore(s)) : '<span class="mute">\u2014</span>') + '</span>' +
@@ -4088,6 +4088,11 @@
       box.hidden = false; failLine(box, 'Request from client', (e && e.message) || String(e), loadDetForm);
     });
   }
+  /* The reference the submission took (ONE REQUEST REFERENCE, 2026-11-26),
+     found by search. */
+  function dfRef(f) {
+    return f && f.request_ref ? '<div><dt>Reference</dt><dd>' + esc(f.request_ref) + '</dd></div>' : '';
+  }
   function paintDetForm() {
     var box = $('crmDetForm'), f = state.detForm, work = mayPart('clients.billing', 'work');
     if (!box) return;
@@ -4099,7 +4104,7 @@
       var ua = f && f.state === 'used' && f.answers, uwho = ua ? dfWho(ua) : '', uin = ua ? dfContactOf(ua) : null;
       box.innerHTML = head(make) + '<dl class="ovfacts"><div><dt>State</dt><dd>' +
         (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', added to Billing' : 'Link expired ' + esc(day(f.expires_at))) +
-        '</dd></div>' + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
+        '</dd></div>' + dfRef(f) + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
         (uwho && !uin && work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
         '<div class="msg" id="crmDfMsg"></div>';
     } else if (f.state === 'open') {
@@ -4124,7 +4129,7 @@
       box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' +
           '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="again" role="menuitem">Request again</button></div></span>' : '') +
-        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' + dfRef(f) +
         /* An answer that differs from what Billing holds reads held → sent,
            as a supplier's update reads, so Use details is chosen knowing
            what it replaces (2026-10-20, DTL-1). */
@@ -7081,7 +7086,8 @@
     /* Who asked: the client's contact, or the colleague who recorded it for
        them (2026-10-31). */
     var by = q.recorded_by ? 'Recorded by ' + q.recorded_by + (q.contact_name ? ' for ' + q.contact_name : '') : q.contact_name;
-    var sub = [by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
+    /* Its reference first (ONE REQUEST REFERENCE, 2026-11-26). */
+    var sub = [q.request_ref, by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
         (sub ? '<small>' + esc(sub) + '</small>' : '') +

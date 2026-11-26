@@ -23,7 +23,7 @@
     client_document_seq: 'client_id ym next_val',
     client_document_services: 'document_id service_id created_at',
     client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason doc_code',
-    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by',
+    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by request_ref',
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
     public_holidays: 'day name updated_at updated_by',
     departments: 'key name active in_prize criteria position updated_at updated_by ac_code',
@@ -279,6 +279,7 @@
     client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
+    request_ref_find: 'p_q',
     feedback_request: 'p_client p_kind p_again', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind p_again', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
     portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
@@ -298,7 +299,7 @@
     hiring_invite: 'p_id p_slots p_minutes p_mode p_note p_idem', hiring_interviews_of: 'p_id', hiring_interview_cancel: 'p_interview',
     hiring_interview_approve: 'p_interview', hiring_interview_move: 'p_interview p_at', hiring_interview_meet_prepare: 'p_interview', hiring_interview_set_meet: 'p_interview p_link p_event',
     hiring_busy_may: '', hiring_mail_prepare: 'p_interview p_kind', hiring_mail_gate: 'p_kinds', hiring_email_templates_get: '', hiring_email_templates_save: 'p_rows', hiring_mail_done: 'p_interview p_kind p_status p_error',
-    hiring_interview_held: 'p_interview p_decide_by', hiring_decide_by_change: 'p_interview p_decide_by p_note', hiring_decide_by_suggest: '',
+    hiring_interview_held: 'p_interview p_decide_by', hiring_interview_missed: 'p_interview p_next', hiring_interview_missed_undo: 'p_interview', hiring_decide_by_change: 'p_interview p_decide_by p_note', hiring_decide_by_suggest: '',
     careers_pick: 'p_key p_slot', careers_none: 'p_key p_note', careers_pool: 'p_key p_yes',
     hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
@@ -5938,6 +5939,22 @@ function cardSlugFree(name, self, email) {
     idBackfill();
     return DB.id_formats;
   }
+
+  function publicReqRef() {
+    var f = (idFormats().request) || { prefix: 'REQ', width: 3 }, A = 'BCDFGHJKLMNPQRSTVWXZ', r;
+    var my = new Date(Date.now() + 8 * 3600e3).toISOString(), ym = my.slice(2, 4) + my.slice(5, 7);
+    var held = function (x) {
+      return (DB.quotations || []).some(function (q) { return q.ref === x || q.request_ref === x; }) ||
+        (DB.quotation_refs_kept || []).some(function (k) { return k.ref === x; }) ||
+        ['client_detail_forms', 'supplier_forms', 'hiring_candidates', 'client_requests', 'feedback_responses'].some(function (t) { return (DB[t] || []).some(function (y) { return y.request_ref === x; }); });
+    };
+    do {
+      var o = '';
+      while (o.length < Math.max(3, Math.min(6, f.width || 3))) o += A.charAt(Math.floor(Math.random() * 20));
+      r = 'ADP/' + (f.prefix || 'REQ') + ym + '-' + o;
+    } while (held(r));
+    return r;
+  }
   function idBackfill() {
     if (!DB.id_formats) { idFormats(); return; }
     var byMade = function (a, b) { return String(a.created_at || '').localeCompare(String(b.created_at || '')) || String(a.id).localeCompare(String(b.id)); };
@@ -5978,7 +5995,7 @@ function cardSlugFree(name, self, email) {
   }
   function hDocName(d) { return (d.kind === 'offer' ? 'Employment Offer ' : 'Employment Contract ') + d.serial; }
   function hDocFor(d) { var p = String((d.terms && d.terms.position) || '').trim(); return p ? ' for the position of ' + p : ''; }
-  var HM_SEED = [{"kind": "invite", "on_send": true, "subject": "Interview invitation: {position}", "body": "Dear {candidate name},\n\nThank you for your application for the position of {position}. ADspace would like to invite you to an interview of {interview length} minutes {where} at one of the following times:\n\n{times}\n\n{note}\n\nPlease choose a time on your application page by {reply by} (Malaysia time). If none of these times is suitable, please indicate this on the same page.\n\n{button}\n\n{sign-off}"}, {"kind": "confirm", "on_send": true, "subject": "Interview confirmed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} is confirmed for {time} (Malaysia time), for {interview length} minutes.\n\n{place}\n\n{note}\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://hi.adspace.me/whatsapp\nEmail: {contact}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "rescheduled", "on_send": true, "subject": "Interview time changed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://hi.adspace.me/whatsapp\nEmail: {contact}\n\n{button}\n\n{sign-off}"}, {"kind": "held", "on_send": true, "subject": "Thank you for your interview: {position}", "body": "Dear {candidate name},\n\nThank you for attending the interview for the position of {position}.\n\nADspace will inform you of the outcome by {decision date} (Malaysia time).\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "moved", "on_send": true, "subject": "Decision date changed: {position}", "body": "Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "cancelled", "on_send": true, "subject": "Interview cancelled: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}"}, {"kind": "pool", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}"}, {"kind": "not", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}"}, {"kind": "doc", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "doc_again", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "confirmed", "on_send": true, "subject": "{document} confirmed: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "expired", "on_send": true, "subject": "{document} expired: {reference}", "body": "Dear {candidate name},\n\nThe {document} {reference} dated {document date} has expired, as no reply was received by {reply by} (Malaysia time).\n\nShould you wish to discuss the position, please contact ADspace at {contact}.\n\n{sign-off}"}];
+  var HM_SEED = [{"kind": "invite", "on_send": true, "subject": "Interview invitation: {position}", "body": "Dear {candidate name},\n\nThank you for your application for the position of {position}. ADspace would like to invite you to an interview of {interview length} minutes {where} at one of the following times:\n\n{times}\n\n{note}\n\nPlease choose a time on your application page by {reply by} (Malaysia time). If none of these times is suitable, please indicate this on the same page.\n\n{button}\n\n{sign-off}"}, {"kind": "confirm", "on_send": true, "subject": "Interview confirmed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} is confirmed for {time} (Malaysia time), for {interview length} minutes.\n\n{place}\n\n{note}\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://hi.adspace.me/whatsapp\nEmail: {contact}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "rescheduled", "on_send": true, "subject": "Interview time changed: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} has been rescheduled. Please note the new date and time below.\n\nPrevious time: {previous time} (no longer applies)\nNew time: {new time} (Malaysia time), for {interview length} minutes\n\n{place}\n\nIf you are unable to attend at this time, please contact ADspace to reschedule:\nWhatsApp: https://hi.adspace.me/whatsapp\nEmail: {contact}\n\n{button}\n\n{sign-off}"}, {"kind": "held", "on_send": true, "subject": "Thank you for your interview: {position}", "body": "Dear {candidate name},\n\nThank you for attending the interview for the position of {position}.\n\nADspace will inform you of the outcome by {decision date} (Malaysia time).\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "moved", "on_send": true, "subject": "Decision date changed: {position}", "body": "Dear {candidate name},\n\nThank you for your patience following the interview for the position of {position}. ADspace requires additional time to consider your application.\n\nADspace will now inform you of the outcome by {decision date} (Malaysia time).\n\n{note}\n\nThe details are also on your application page.\n\n{button}\n\n{sign-off}"}, {"kind": "cancelled", "on_send": true, "subject": "Interview cancelled: {position}", "body": "Dear {candidate name},\n\nYour interview for the position of {position} on {time} (Malaysia time) has been cancelled. {google meet notice}\n\nADspace will contact you to arrange another time.\n\n{sign-off}"}, {"kind": "pool", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. There is no suitable opening for you at this time. ADspace would like to keep your application for {months} months and may contact you about future positions.\n\nPlease indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{button}\n\n{sign-off}"}, {"kind": "not", "on_send": true, "subject": "Your application: {position}", "body": "Dear {candidate name},\n\nThank you for your interest in the position of {position} and for the time you have given ADspace. After careful consideration, ADspace will not be proceeding with your application.\n\nADspace wishes you every success in your search.\n\n{sign-off}"}, {"kind": "missed", "on_send": true, "subject": "We missed you at your interview for {position}", "body": "Dear {candidate name},\n\nAs you did not attend your interview for the position of {position}, arranged for {time} (Malaysia time), your application has been closed.\n\nThank you for your interest in joining ADspace. Should you wish to apply again in the future, please contact ADspace at {contact}.\n\n{sign-off}"}, {"kind": "doc", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nADspace is pleased to send you an {document} for the position of {position}, reference {reference}.\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "doc_again", "on_send": true, "subject": "{document}: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} has been sent to you again {purpose}.\n\n{reason}\n\nPlease read it on your application page and {requested action} by {reply by}. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "confirmed", "on_send": true, "subject": "{document} confirmed: {reference}", "body": "Dear {candidate name},\n\nYour {document} {reference} for the position of {position} has been confirmed and countersigned by ADSPACE PLT.\n\nThe confirmed copy may be read on your application page. For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{button}\n\n{sign-off}"}, {"kind": "expired", "on_send": true, "subject": "{document} expired: {reference}", "body": "Dear {candidate name},\n\nThe {document} {reference} dated {document date} has expired, as no reply was received by {reply by} (Malaysia time).\n\nShould you wish to discuss the position, please contact ADspace at {contact}.\n\n{sign-off}"}];
   function hmTpl() {
     if (!DB.hiring_email_templates) DB.hiring_email_templates = JSON.parse(JSON.stringify(HM_SEED));
     return DB.hiring_email_templates;
@@ -11323,7 +11340,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = dO && opsMe() ? DB.id_formats.job.pattern.replace('{creator}', (dC && dC.creator_code) || '').replace('{campaign}', (dM && dM.campaign_code) || '') : null;
       } else if (!opsGranted('team.settings', 'work')) dOut = { error: 'denied' };
       else {
-        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number', request: 'Quotation request number', revision: 'Quotation revision' })[da.p_kind];
+        var dF = DB.id_formats[da.p_kind], dW = ({ creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference', trip: 'Outstation trip number', request: 'Request number', revision: 'Quotation revision' })[da.p_kind];
         if (!dF) dOut = { error: 'not-found' };
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
@@ -11347,7 +11364,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (dN !== dF.next_no) dMv.push('next ' + dF.next_no + ' → ' + dN);
             var dRp = da.p_kind === 'creator' ? String(da.p_pattern || '').trim() : '';
             if (dRp && dRp !== dF.pattern) { dMv.push('payment details reference ' + (dF.pattern || 'not set') + ' → ' + dRp); }
-            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', da.p_kind === 'trip' ? 'Outstation trip numbers' : 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
+            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; if (dRp) dF.pattern = dRp; logAct('team.changed', da.p_kind === 'trip' ? 'Outstation trip numbers' : da.p_kind === 'request' || da.p_kind === 'revision' ? 'Request and quotation numbers' : 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
             dOut = { ok: true };
           }
         }
@@ -12906,7 +12923,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fr = DB.feedback_requests.filter(function (r) { return r.access_key === fk; })[0];
         if (!fr) return fbNo('not_found');
         var fcl = DB.clients.filter(function (c) { return c.id === fr.client_id; })[0] || {};
-        if (fr.closed_reason === 'answered') return fbNo('answered', { answered_at: fr.answered_at, kind: fr.kind, client: fcl.name });
+        if (fr.closed_reason === 'answered') return fbNo('answered', { answered_at: fr.answered_at, kind: fr.kind, client: fcl.name,
+          request_ref: ((DB.feedback_responses || []).filter(function (x) { return x.request_id === fr.id; })[0] || {}).request_ref || null });
         if (fr.closed_at || fcl.stage === 'past') return fbNo('closed', { client: fcl.name });
         if (name === 'feedback_read') {
           if (!fr.opened_at) fr.opened_at = fbNow;
@@ -12940,11 +12958,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (fwho) fwk = (DB.client_contacts || []).filter(function (k) { return k.client_id === fr.client_id && k.name === fwho; })[0];
         var fresp = { id: nid('fb'), request_id: fr.id, client_id: fr.client_id, kind: fr.kind, answers: fout, score: lv, band: fband,
           manager_id: fr.manager_id, manager_score: fmgr, contact_id: fwk ? fwk.id : null, contact_name: fwk ? fwk.name : null,
-          submitted_at: fbNow, followup_task_id: null };
+          submitted_at: fbNow, followup_task_id: null, request_ref: publicReqRef() };
         DB.feedback_responses.push(fresp);
         fr.answered_at = fbNow; fr.closed_at = fbNow; fr.closed_reason = 'answered'; fr.opened_at = fr.opened_at || fbNow;
         DB.activity_log.unshift({ id: nid('al'), actor: fwk ? fwk.name : 'Feedback form', action: 'client.edited', subject: fcl.name,
-          detail: fbKword(fr.kind) + ' answered: ' + lv + ' of ' + ld.max, created_at: fbNow });
+          detail: fbKword(fr.kind) + ' answered: ' + lv + ' of ' + ld.max + ' · ' + fresp.request_ref, created_at: fbNow });
         var ftell = fr.manager_id || fr.sent_by;
         if (ftell && DB.team_members.some(function (m) { return m.id === ftell && m.active; })) {
           (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: ftell, kind: 'client.feedback',
@@ -12952,7 +12970,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             body: fbKword(fr.kind) + ': ' + lv + ' of ' + ld.max + (fband === 'low' ? '. Open the client\'s Feedback to follow up.' : '.'),
             client_id: fcl.id, created_at: fbNow, read_at: null });
         }
-        return fbOk();
+        return fbOk({ request_ref: fresp.request_ref });
       }
       if (name === 'portal_feedback') {
         if (!portalNameOf(args.p_client)) return fbNo('no-access');
@@ -12978,7 +12996,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { id: r.id, kind: r.kind, created_at: r.created_at, sent_by: r.sent_by_name, to_name: r.sent_to_name, to_email: r.sent_to_email,
               manager: r.manager_name, opened_at: r.opened_at || null, answered_at: r.answered_at || null, closed_at: r.closed_at || null,
               closed_reason: r.closed_reason || null,
-              response: s ? { id: s.id, score: s.score, band: s.band, submitted_at: s.submitted_at, by: s.contact_name, max: fbLead(s.kind).max,
+              response: s ? { id: s.id, score: s.score, band: s.band, submitted_at: s.submitted_at, by: s.contact_name, request_ref: s.request_ref || null, max: fbLead(s.kind).max,
                 manager_score: fbSees(s.manager_id) ? s.manager_score : null, answers: fbAnswers(s, r.manager_name, fbSees(s.manager_id)),
                 task_id: s.followup_task_id || null, task_done: t ? !!t.completed_at : null } : null };
           }) });
@@ -13169,7 +13187,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         documents: (DB.client_documents || []).filter(function (d) { return d.client_id === cid && !d.voided_at; })
           .map(function (d) { return pick(d, ['id', 'kind', 'number', 'issued_at', 'market', 'subtotal', 'tax', 'total', 'bill_to', 'lines', 'issued_by']); }),
         requests: DB.client_requests.filter(function (r) { return r.client_id === cid; }).slice().reverse()
-          .map(function (r) { return pick(r, ['id', 'kind', 'service_label', 'note', 'state', 'fee', 'reply', 'created_at', 'withdrawn_at']); }),
+          .map(function (r) { var o = pick(r, ['id', 'kind', 'service_label', 'note', 'state', 'fee', 'reply', 'created_at', 'withdrawn_at']); o.request_ref = r.request_ref || null; return o; }),
         review: (!pc.review_hidden && (DB.batches || []).some(function (b) { return b.client_id === cid && b.published; })) ? { token: pc.access_token } : null,
         campaigns: (DB.campaigns || []).filter(function (m) { return m.client_id === cid && m.state !== 'draft'; })
           .map(function (m) { var BK = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
@@ -13202,12 +13220,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var meC = (DB.client_contacts || []).filter(function (c) { return c.client_id === args.p_client && c.portal_access && String(c.email || '').toLowerCase() === who(); })[0] || {};
       var rq = { id: nid('r'), client_id: args.p_client, contact_id: meC.id || null, contact_name: meC.name || null, kind: args.p_kind,
         service_id: svc ? svc.id : null, service_label: svc ? svc.label : null, note: String(args.p_note || '').trim() || null,
-        state: 'requested', fee: null, reply: null, withdrawn_at: null, created_at: new Date().toISOString(), idem: rqKey };
+        state: 'requested', fee: null, reply: null, withdrawn_at: null, created_at: new Date().toISOString(), idem: rqKey, request_ref: publicReqRef() };
       DB.client_requests.push(rq);
       var pcl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0] || {};
-      DB.activity_log.push({ id: nid('a'), actor: who(), action: 'request.raised', subject: pcl.name, detail: args.p_kind + (svc ? ' · ' + svc.label : ''), created_at: new Date().toISOString() });
+      DB.activity_log.push({ id: nid('a'), actor: who(), action: 'request.raised', subject: pcl.name, detail: args.p_kind + (svc ? ' · ' + svc.label : '') + ' · ' + rq.request_ref, created_at: new Date().toISOString() });
       persist();
-      return Promise.resolve({ data: { ok: true, id: rq.id }, error: null });
+      return Promise.resolve({ data: { ok: true, id: rq.id, request_ref: rq.request_ref }, error: null });
     }
 
     if (name === 'client_request_add' || name === 'client_request_delete') {
@@ -13247,11 +13265,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var raRow = { id: nid('r'), client_id: rac.id, contact_id: rat ? rat.id : null, contact_name: rat ? rat.name : null, kind: args.p_kind,
         service_id: ras ? ras.id : null, service_label: ras ? ras.label : null, note: String(args.p_note || '').trim() || null,
         state: 'requested', fee: null, reply: null, decided_by: null, withdrawn_at: null, created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(), idem: raKey, recorded_by: raMe.name };
+        updated_at: new Date().toISOString(), idem: raKey, recorded_by: raMe.name, request_ref: publicReqRef() };
       DB.client_requests.push(raRow);
       DB.activity_log.unshift({ id: nid('al'), actor: raMe.name, action: 'request.added', subject: rac.name,
-        detail: raWord[args.p_kind] + (ras ? ' · ' + ras.label : '') + (rat ? ' · for ' + rat.name : ''), created_at: new Date().toISOString() });
-      return raOk({ ok: true, id: raRow.id });
+        detail: raWord[args.p_kind] + (ras ? ' · ' + ras.label : '') + (rat ? ' · for ' + rat.name : '') + ' · ' + raRow.request_ref, created_at: new Date().toISOString() });
+      return raOk({ ok: true, id: raRow.id, request_ref: raRow.request_ref });
     }
     if (name === 'portal_withdraw') {
       DB.client_requests = DB.client_requests || [];
@@ -13590,12 +13608,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qtLetters = function (n) { var A = 'BCDFGHJKLMNPQRSTVWXZ', o = ''; while (o.length < n) o += A.charAt(Math.floor(Math.random() * 20)); return o; };
       var qtYm = function () { return qtToday.slice(2, 4) + qtToday.slice(5, 7); };
       var qtDraftRef = function () { var r; do { r = 'ADP/QT' + qtYm() + '-DRAFT-' + qtLetters(4); } while (DB.quotations.some(function (q) { return q.ref === r; })); return r; };
-      var qtRequestRef = function () {
-        var f = (idFormats().request) || { prefix: 'REQ', width: 3 }, r;
-        do { r = 'ADP/' + (f.prefix || 'REQ') + qtYm() + '-' + qtLetters(Math.max(3, f.width || 3)); }
-        while (DB.quotations.some(function (q) { return q.ref === r || q.request_ref === r; }));
-        return r;
-      };
+      var qtRequestRef = function () { return publicReqRef(); };
       var qtRevisionRef = function (ofId) {
         var at = DB.quotations.filter(function (q) { return q.id === ofId; })[0], seen = {};
         if (at && at.confirmed_at === null) return null;
@@ -16096,6 +16109,36 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { ok: true }, error: null });
     }
 
+    if (name === 'request_ref_find') {
+      if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var rq = String(args.p_q || '').replace(/^\s*ADP\//i, '').replace(/[^A-Za-z0-9-]/g, '').toUpperCase(), rqOut = [];
+      if (rq.length < 3 || rq.length > 20) return Promise.resolve({ data: { ok: true, rows: [] }, error: null });
+      var rqBy = function (a, b) { return String(b.submitted_at).localeCompare(String(a.submitted_at)); };
+      var rqHas = function (f) { return f.request_ref && f.request_ref.indexOf(rq) > -1; };
+      if (opsAllowed('clients.billing', 'view')) {
+        (DB.client_detail_forms || []).filter(function (f) { return rqHas(f) && scopeSeen(f.client_id, 'view'); }).sort(rqBy).slice(0, 5).forEach(function (f) {
+          var c = DB.clients.filter(function (x) { return x.id === f.client_id; })[0];
+          if (c) rqOut.push({ kind: 'client', ref: f.request_ref, id: c.id, slug: c.slug, name: c.name, code: c.client_code, at: f.submitted_at });
+        });
+      }
+      var rqClient = function (rows, kind, at) {
+        rows.filter(function (f) { return rqHas(f) && scopeSeen(f.client_id, 'view'); })
+          .sort(function (a, b) { return String(b[at]).localeCompare(String(a[at])); }).slice(0, 5).forEach(function (f) {
+            var c = DB.clients.filter(function (x) { return x.id === f.client_id; })[0];
+            if (c) rqOut.push({ kind: kind, ref: f.request_ref, id: c.id, slug: c.slug, name: c.name, code: c.client_code, at: f[at] });
+          });
+      };
+      if (opsAllowed('clients.requests', 'view')) rqClient(DB.client_requests || [], 'request', 'created_at');
+      if (opsAllowed('clients', 'view')) rqClient(DB.feedback_responses || [], 'feedback', 'submitted_at');
+      if (opsAllowed('suppliers', 'view')) {
+        (DB.supplier_forms || []).filter(rqHas).sort(rqBy).slice(0, 5).forEach(function (f) {
+          var x = (DB.suppliers || []).filter(function (y) { return y.id === f.supplier_id; })[0];
+          if (x) rqOut.push({ kind: 'supplier', ref: f.request_ref, id: x.id, name: x.name, code: x.code, at: f.submitted_at });
+        });
+      }
+      return Promise.resolve({ data: { ok: true, rows: rqOut }, error: null });
+    }
+
     if (/^client_details_/.test(name)) {
       var dfOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var dfNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
@@ -16108,7 +16151,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!/^[a-z0-9]{8}$/.test(dk)) return dfNo('not_found');
         var df = DB.client_detail_forms.filter(function (x) { return x.access_key === dk && !x.voided_at; })[0];
         if (!df) return dfNo('not_found');
-        if (df.submitted_at) return dfNo('submitted');
+        if (df.submitted_at) return Promise.resolve({ data: { error: 'submitted', request_ref: df.request_ref || null }, error: null });
         if (Date.parse(df.expires_at) <= dfNow.getTime()) return dfNo('expired');
         var dcl = DB.clients.filter(function (c) { return c.id === df.client_id; })[0] || {};
         if (dcl.stage === 'past') return dfNo('not_found');
@@ -16139,9 +16182,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (dd.length < 8 || dd.length > 15 || an.contact_phone.length > 30) return dfNo('bad-contact_phone');
         if (!mail.test(an.contact_email)) return dfNo('bad-contact_email');
         Object.keys(an).forEach(function (k) { if (an[k] == null) delete an[k]; });
-        df.submitted_at = dfNow.toISOString(); df.answers = an;
+        df.submitted_at = dfNow.toISOString(); df.answers = an; df.request_ref = df.request_ref || publicReqRef();
         var dwho = (an.contact_salutation ? an.contact_salutation + ' ' : '') + an.contact_name;
-        DB.activity_log.unshift({ id: nid('al'), actor: 'Details form', action: 'client.edited', subject: dcl.name, detail: 'Billing details received on the details form from ' + dwho, created_at: dfNow.toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Details form', action: 'client.edited', subject: dcl.name, detail: 'Billing details received on the details form from ' + dwho + ' · ' + df.request_ref, created_at: dfNow.toISOString() });
 
         var dfRank = function (v) { return { view: 1, work: 2, manage: 3 }[v] || 0; };
         var dfLv = function (m, k) { var ac = m.access || {}; return dfRank(ac[k] != null ? ac[k] : ac.clients); };
@@ -16158,7 +16201,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: m.id, kind: 'client.details', title: 'Billing details received · ' + dcl.name,
             body: 'From ' + dwho + '. Review them on the client\'s Billing.', client_id: dcl.id, created_at: dfNow.toISOString(), read_at: null });
         });
-        return dfOk();
+        return dfOk({ request_ref: df.request_ref });
       }
       var dfMe = opsMe();
       if (!dfMe) return dfNo('denied');
@@ -16173,6 +16216,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (st === 'open' && opsAllowed('clients.billing', 'work')) out.key = lf.access_key;
         if (lf.submitted_at) { out.submitted_at = lf.submitted_at; out.answers = JSON.parse(JSON.stringify(lf.answers)); }
         if (lf.used_at) out.used_at = lf.used_at;
+        if (lf.request_ref) out.request_ref = lf.request_ref;
         return dfOk({ form: out });
       }
       if (!opsAllowed('clients.billing', 'work')) return dfNo('denied');
@@ -16214,12 +16258,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var heOut;
       if (!opsMe() || !opsGranted('team.settings', 'work')) heOut = { error: 'denied' };
       else if (name === 'hiring_email_templates_get') {
-        var heOrd = ['invite', 'confirm', 'rescheduled', 'cancelled', 'held', 'moved', 'pool', 'not', 'doc', 'doc_again', 'confirmed', 'expired'];
+        var heOrd = ['invite', 'confirm', 'rescheduled', 'cancelled', 'held', 'moved', 'pool', 'not', 'missed', 'doc', 'doc_again', 'confirmed', 'expired'];
         heOut = { ok: true, rows: hmTpl().slice().sort(function (a, b) { return heOrd.indexOf(a.kind) - heOrd.indexOf(b.kind); })
           .map(function (t) { return { kind: t.kind, on: t.on_send, subject: t.subject, body: t.body, updated_at: t.updated_at || null, updated_by: t.updated_by || null }; }) };
       } else {
         var heMv = [], heW = { invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled', held: 'Thank you for your interview',
-          moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', doc: 'Employment document', doc_again: 'Employment document sent again',
+          moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful', missed: 'Interview missed', doc: 'Employment document', doc_again: 'Employment document sent again',
           confirmed: 'Document confirmed', expired: 'Document expired' };
         (args.p_rows || []).some(function (x) {
           var t = hmTpl().filter(function (y) { return y.kind === x.kind; })[0], on = x.on !== false;
@@ -17523,6 +17567,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       DB.hiring_interviews = DB.hiring_interviews || [];
 
+      var hClosedMissed = function (c) {
+        if (!c || c.outcome !== 'not') return null;
+        var x = DB.hiring_interviews.filter(function (i) { return i.candidate_id === c.id && i.state === 'missed' && i.missed_at === c.outcome_at; })[0];
+        return x ? x.id : null;
+      };
+
       var hWorkday = function (iso) {
         var C = window.ADspaceClock, d = C ? C.day(iso) : String(iso).slice(0, 10), wd = C ? C.weekday(d) : new Date(d).getUTCDay();
         return wd !== 0 && wd !== 6 && !(DB.public_holidays || []).some(function (h) { return h.day === d; });
@@ -17596,6 +17646,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (Date.parse(cc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired', { contact: cbox });
         var ci = hIvOf(cc.id)[0], civ = null;
 
+        var cm = hIvOf(cc.id).filter(function (i) { return i.state === 'missed'; })[0], cmiss;
+        if (cm && !hIvOf(cc.id).some(function (j) { return j.invited_at > cm.invited_at && j.state === 'confirmed'; }) &&
+            ((['new', 'invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) || hClosedMissed(cc) === cm.id))
+          cmiss = cc.outcome === 'not' ? { at: cm.slots[cm.picked - 1], closed: true } : { at: cm.slots[cm.picked - 1] };
+        if (ci && ci.state === 'missed') ci = null;
+
         if (ci && ci.state === 'cancelled' && ['new', 'invited', 'interview'].indexOf(cc.stage) > -1 && !cc.outcome) civ = { state: 'cancelled' };
 
         if (ci && ci.state !== 'cancelled' && hIvState(ci) === 'picked') civ = { state: 'picked', minutes: ci.minutes, mode: ci.mode, at: ci.slots[ci.picked - 1] };
@@ -17618,7 +17674,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;
         var cdocs = cc.stage === 'offer' || cc.stage === 'hired' ? (DB.hiring_docs || []).filter(function (d) { return d.candidate_id === cc.id && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })
           .map(function (d) { return { id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state, sent_at: d.sent_at, reply_by: d.reply_by, signed_at: d.signed_at || undefined }; }) : undefined;
-        return Promise.resolve({ data: { ok: true, contact: cbox, pool_declined: cc.outcome === 'pool' && cc.pool_consent === 'no' ? true : undefined, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool, docs: cdocs }, error: null });
+        return Promise.resolve({ data: { ok: true, missed: cmiss, contact: cbox, pool_declined: cc.outcome === 'pool' && cc.pool_consent === 'no' ? true : undefined, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, request_ref: cc.request_ref || null, interview: civ, pool: cpool, docs: cdocs }, error: null });
       }
 
       DB.hiring_docs = DB.hiring_docs || []; DB.hiring_doc_pay = DB.hiring_doc_pay || []; DB.hiring_doc_views = DB.hiring_doc_views || [];
@@ -17703,7 +17759,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hLog = function (id, action, detail) { DB.hiring_events.unshift({ id: nid('he'), candidate_id: id, actor: hMe.name, action: action, detail: detail, created_at: new Date().toISOString() }); };
       var hName = function (tid) { var t = (DB.team_members || []).filter(function (m) { return m.id === tid; })[0]; return t ? t.name : ''; };
       var hRow = function (c, role) {
-        return { id: c.id, name: c.name, position: c.position, source: c.source, stage: c.stage, created_at: c.created_at, last_step_at: c.last_step_at,
+        return { id: c.id, name: c.name, position: c.position, source: c.source, stage: c.stage, created_at: c.created_at, request_ref: c.request_ref || null, last_step_at: c.last_step_at,
           removed_at: c.removed_at || null, role: role,
           owners: DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).map(function (p) { return hName(p.team_member_id); }).sort(),
           step: (hStep(c) || {}).step, step_at: (hStep(c) || {}).at };
@@ -17763,10 +17819,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (av.error) return hNo(av.error);
         var dup = DB.hiring_candidates.filter(function (x) { return x.email.toLowerCase() === av.email && !x.removed_at && x.stage !== 'hired' && x.stage !== 'closed'; })[0];
         if (dup) return hNo('taken', { id: dup.id, name: dup.name });
-        var nc = Object.assign({ id: nid('hc'), stage: 'new', link_key: hKey(), last_step_at: hNowIso, idem: args.p_idem, created_by: hMe.id, created_at: hNowIso, updated_at: hNowIso, phone: null, cv_url: null, note: null }, av);
+        var nc = Object.assign({ id: nid('hc'), stage: 'new', link_key: hKey(), request_ref: publicReqRef(), last_step_at: hNowIso, idem: args.p_idem, created_by: hMe.id, created_at: hNowIso, updated_at: hNowIso, phone: null, cv_url: null, note: null }, av);
         DB.hiring_candidates.unshift(nc);
         DB.hiring_people.push({ candidate_id: nc.id, team_member_id: hMe.id, role: 'owner', added_by: hMe.id, added_at: hNowIso });
-        hLog(nc.id, 'candidate.added', nc.position + ' · ' + nc.source.charAt(0).toUpperCase() + nc.source.slice(1).replace('_', '-'));
+        hLog(nc.id, 'candidate.added', nc.position + ' · ' + nc.source.charAt(0).toUpperCase() + nc.source.slice(1).replace('_', '-') + ' · ' + nc.request_ref);
         return hOk({ id: nc.id });
       }
 
@@ -17782,6 +17838,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'hiring_interview_cancel') {
           if (iv.state === 'cancelled' || iv.state === 'replaced') return hOk({ same: true });
           if (iv.held_at) return hNo('held');
+
+          if (iv.state === 'missed') return hNo('missed');
           iv.state = 'cancelled';
 
           if (['invited', 'interview'].indexOf(icand.stage) > -1 && !icand.outcome) { icand.stage = hIvStage(icand.id, 'new'); icand.last_step_at = new Date().toISOString(); }
@@ -17824,6 +17882,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         if (name === 'hiring_interview_held') {
           if (iv.held_at) return hOk({ same: true, decide_by: icand.decide_by });
+          if (iv.state === 'missed') return hNo('missed');
           if (iv.state !== 'confirmed' || !iv.picked) return hNo('not-confirmed');
           if (icand.outcome || icand.stage !== 'interview') return hNo('decided');
           if (Date.parse(iv.slots[iv.picked - 1]) > Date.now()) return hNo('not-yet');
@@ -17833,8 +17892,48 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!hWorkday(hAt)) return hNo('not-workday');
           iv.held_at = hNowIso; iv.held_by = hMe.id; iv.held_mail = null; iv.held_mail_at = null;
           Object.assign(icand, { decide_by: hAt, decide_note: null, decide_soon_at: null, decide_due_at: null, decide_moved_at: null, last_step_at: hNowIso });
-          hLog(iv.candidate_id, 'candidate.interview', 'Interview held. The decision is due by ' + hWhen(hAt) + '.');
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview completed. The decision is due by ' + hWhen(hAt) + '.');
           return hOk({ decide_by: hAt });
+        }
+
+        if (name === 'hiring_interview_missed') {
+          if (icand.removed_at) return hNo('not-found');
+          if (iv.state === 'missed') return hOk({ same: true });
+          if (iv.held_at) return hNo('held');
+          if (iv.state !== 'confirmed' || !iv.picked) return hNo('not-confirmed');
+          if (icand.outcome || icand.stage !== 'interview') return hNo('decided');
+          if (Date.parse(iv.slots[iv.picked - 1]) > Date.now()) return hNo('not-yet');
+          if (['times', 'close'].indexOf(args.p_next) < 0) return hNo('bad-next');
+          iv.state = 'missed'; iv.missed_at = hNowIso; iv.missed_by = hMe.id; iv.updated_at = hNowIso;
+          var msN = DB.hiring_interviews.filter(function (i) { return i.candidate_id === icand.id && i.state === 'missed'; }).length;
+          hLog(icand.id, 'candidate.interview', 'Did not attend the interview on ' + hWhen(iv.slots[iv.picked - 1]) + '.' + (msN > 1 ? ' Interviews missed: ' + msN + '.' : ''));
+          if (args.p_next === 'close') {
+            return rpc('hiring_decide', { p_id: icand.id, p_outcome: 'not', p_note: null }).then(function (r) {
+              var d = r.data || {};
+
+              icand.outcome_at = hNowIso; persist();
+              return { data: { ok: true, next: 'close', missed: msN, meets: d.meets || [] }, error: null };
+            });
+          }
+          if (!icand.outcome) { icand.stage = hIvStage(icand.id, 'new'); icand.last_step_at = hNowIso; }
+          return hOk({ next: 'times', missed: msN });
+        }
+        if (name === 'hiring_interview_missed_undo') {
+          if (iv.state !== 'missed') return hOk({ same: true });
+          if (Date.parse(iv.missed_at) < Date.now() - 120000) return hNo('too-late');
+          if (DB.hiring_interviews.some(function (j) { return j.candidate_id === iv.candidate_id && j.id !== iv.id && j.invited_at > iv.invited_at && j.state !== 'replaced'; })) return hNo('moved-on');
+          var muBack = function () {
+            iv.state = 'confirmed'; iv.missed_at = null; iv.missed_by = null; iv.updated_at = new Date().toISOString();
+            if (!icand.outcome) { icand.stage = hIvStage(icand.id, 'new'); icand.last_step_at = new Date().toISOString(); }
+            hLog(icand.id, 'candidate.interview', 'Did not attend undone.');
+            return hOk({});
+          };
+          if (icand.outcome) {
+            if (hClosedMissed(icand) !== iv.id) return hNo('decided');
+            if (['sent', 'sending', 'unknown', 'failed'].indexOf(icand.outcome_mail) > -1) return hNo('mail-sent');
+            return rpc('hiring_decide', { p_id: icand.id, p_outcome: 'reopen', p_note: null }).then(muBack);
+          }
+          return muBack();
         }
         if (name === 'hiring_interview_set_meet') {
           if (args.p_link && !/^https:\/\/meet\.google\.com\/[a-z0-9-]+$/.test(args.p_link)) return hNo('bad-link');
@@ -18274,12 +18373,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         setTimeout(function () {
           var q = DB.hiring_candidates.filter(function (x) { return x.id === hqId; })[0];
           if (!q || q.outcome_mail !== 'queued' || ['pool', 'not'].indexOf(q.outcome) < 0) return;
-          var qg = hiringGate([q.outcome]), qt = qg.tpl[q.outcome];
+          var qk = hClosedMissed(q) ? 'missed' : q.outcome, qg = hiringGate([qk]), qt = qg.tpl[qk];
           if (!qt || !qg.auto || !qt.on || window.__mail === false) {
             q.outcome_mail = 'failed'; q.outcome_mail_at = new Date().toISOString();
-            window.__hireMailOff = (window.__hireMailOff || []).concat([{ kind: q.outcome, why: !qg.auto ? 'off: Automatic emails are off.' : 'off: This email is turned off in Email templates.' }]);
+            window.__hireMailOff = (window.__hireMailOff || []).concat([{ kind: qk, why: !qg.auto ? 'off: Automatic emails are off.' : 'off: This email is turned off in Email templates.' }]);
           } else {
-            window.__hireMail = (window.__hireMail || []).concat([{ to: q.email, kind: q.outcome,
+            window.__hireMail = (window.__hireMail || []).concat([{ to: q.email, kind: qk,
               months: Number(appSet('hiring_pool_months', appToday())) || 12 }]);
             q.outcome_mail = 'sent'; q.outcome_mail_at = new Date().toISOString();
             hLog(q.id, 'candidate.email', 'Decision' + hMailSaid('sent'));
@@ -18292,8 +18391,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'hiring_outcome_mail_prepare') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
-        return Promise.resolve({ data: { id: hc.id, kind: hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,
-          months: Number(appSet('hiring_pool_months', appToday())) || 12, sender: hMe.name, system: !!hMe.system }, error: null });
+
+        var opM = hClosedMissed(hc), opI = opM && DB.hiring_interviews.filter(function (i) { return i.id === opM; })[0];
+        return Promise.resolve({ data: { id: hc.id, kind: opM ? 'missed' : hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,
+          months: Number(appSet('hiring_pool_months', appToday())) || 12, when: opI ? hWhen(opI.slots[opI.picked - 1]) : undefined,
+          contact: opM ? mailSendersFull().careers.reply_to : undefined, sender: hMe.name, system: !!hMe.system }, error: null });
       }
       if (name === 'hiring_outcome_mail_done') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
@@ -18309,6 +18411,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           o.invited_by = hName(i.invited_by); o.approved_by = i.approved_by ? hName(i.approved_by) : undefined;
           if (i.held_at) { o.held_by = hName(i.held_by); if (hc.decide_by) o.decide_by = hc.decide_by; if (hc.decide_note) o.decide_note = hc.decide_note; if (hc.decide_moved_at) o.decide_moved = true; }
           else delete o.held_by;
+          if (i.missed_at) o.missed_by = hName(i.missed_by); else delete o.missed_by;
           delete o.candidate_id; delete o.idem; delete o.meeting_event_id; delete o.moved_from_before; delete o.moved_at;
           return o;
         }) });
@@ -18488,7 +18591,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!/^[a-z0-9]{8}$/.test(fk)) return spNo('not_found');
         var ff = DB.supplier_forms.filter(function (x) { return x.access_key === fk && !x.voided_at; })[0];
         if (!ff) return spNo('not_found');
-        if (ff.submitted_at) return spNo('submitted');
+        if (ff.submitted_at) return spNo('submitted', { request_ref: ff.request_ref || null });
         if (Date.parse(ff.expires_at) <= spNow.getTime()) return spNo('expired');
         var fs0 = DB.suppliers.filter(function (x) { return x.id === ff.supplier_id; })[0] || {};
         var fUp = ff.purpose === 'update';
@@ -18511,8 +18614,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fv = spCheck(fa, true);
         if (fv.error) return spNo(fv.error);
         Object.keys(fv).forEach(function (k) { if (fv[k] == null) delete fv[k]; });
-        ff.submitted_at = spNow.toISOString(); ff.answers = fv;
-        DB.activity_log.unshift({ id: nid('al'), actor: 'Supplier form', action: 'supplier.edited', subject: fs0.name, detail: fs0.code + ' · ' + (fUp ? 'Details update received on the update link' : 'Details received on the details form') + (String(fv.contact_name || '').trim() ? ' from ' + String(fv.contact_name).trim() : ''), created_at: spNow.toISOString() });
+        ff.submitted_at = spNow.toISOString(); ff.answers = fv; ff.request_ref = ff.request_ref || publicReqRef();
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Supplier form', action: 'supplier.edited', subject: fs0.name, detail: fs0.code + ' · ' + (fUp ? 'Details update received on the update link' : 'Details received on the details form') + (String(fv.contact_name || '').trim() ? ' from ' + String(fv.contact_name).trim() : '') + ' · ' + ff.request_ref, created_at: spNow.toISOString() });
         var spRank = function (v) { return { view: 1, work: 2, manage: 3 }[v] || 0; };
         (DB.team_members || []).filter(function (m) {
           if (m.active === false || m.system) return false;
@@ -18524,7 +18627,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             title: (fUp ? 'Supplier details update received · ' : 'Supplier details received · ') + fs0.name, body: 'From ' + fv.contact_name + '. Review them on the supplier.',
             supplier_id: fs0.id, created_at: spNow.toISOString(), read_at: null });
         });
-        return spOk();
+        return spOk({ request_ref: ff.request_ref });
       }
       var spMe = opsMe();
       if (!spMe || !opsAllowed('suppliers', 'view')) return spNo('denied');
@@ -18557,6 +18660,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!payView) SECRET.forEach(function (k) { delete form.answers[k]; });
           }
           if (gf.used_at) form.used_at = gf.used_at;
+          if (gf.request_ref) form.request_ref = gf.request_ref;
           if (gf.submitted_at && !gf.used_at && gs.bank_account != null)
             form.bank_changed = ['payee_name', 'bank_name', 'bank_account'].some(function (k) { return (gf.answers[k] == null ? null : gf.answers[k]) !== (gs[k] == null ? null : gs[k]); });
         }

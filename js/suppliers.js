@@ -702,6 +702,11 @@
     });
     return out;
   }
+  /* The reference the submission took (ONE REQUEST REFERENCE, 2026-11-26),
+     found by search. */
+  function refRow(f) {
+    return f && f.request_ref ? '<div><dt>Reference</dt><dd>' + esc(f.request_ref) + '</dd></div>' : '';
+  }
   function formBlock() {
     var f = state.form, work = may('suppliers', 'work'), s = state.rec;
     var update = f && f.purpose === 'update';
@@ -710,7 +715,7 @@
       return formHead(update ? 'Details update' : 'Request from supplier', work && !held
           ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
         /* The received day is the head's; the state says what waits. */
-        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be applied' : 'Waiting to be applied') + '</dd></div>' +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be applied' : 'Waiting to be applied') + '</dd></div>' + refRow(f) +
         (update ? changesOf(f) + '</dl>' : '</dl>' + answersOf(f)) +
         (held && work ? '<p class="msg warn">The bank details changed. A colleague with access to supplier bank details must use these changes.</p>' : '');
     }
@@ -732,13 +737,13 @@
       if (!work && !mine) return '';
       return formHead('Details update form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!mine ? 'Not sent' : mine.state === 'used'
-          ? 'Received ' + esc(day(mine.submitted_at)) + ', applied' : 'Link expired ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
+          ? 'Received ' + esc(day(mine.submitted_at)) + ', applied' : 'Link expired ' + esc(day(mine.expires_at))) + '</dd></div>' + refRow(mine) + '</dl>';
     }
     if (s.status !== 'pending') return '';
     if (!work && !f) return '';
     return formHead('Request from supplier', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
-        ? 'Received ' + esc(day(f.submitted_at)) + ', applied' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
+        ? 'Received ' + esc(day(f.submitted_at)) + ', applied' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div>' + refRow(f) + '</dl>';
   }
   /* The client this supplier also is (2026-10-18): its own Supplier ID and
      Client ID kept apart, the two records opening each other. While none is
