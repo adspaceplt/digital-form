@@ -383,7 +383,14 @@ button.appver {
   .pbox.needs-link { flex: 1 1 100%; min-width: 0; }
   }
 
-.invcurrent { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+/* The campaign's invoice (CAMPAIGN INVOICE FROM BUKKU, 2026-11-26): its
+   number, amount and state on one line, the ⋯ at its right edge, the acts
+   under it. */
+.invcurrent { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 12px; }
+.invline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: var(--ctl-h-sm); }
+.invamt { font-weight: 500; font-variant-numeric: tabular-nums; }
+.invend { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.invcurrent > .invacts { margin-top: 0; }
 /* Counts and money on one line, small enough to be read as a row rather than
    a wall of tiles. */
 .stat { display: flex; flex-direction: column; gap: 1px; }
@@ -894,7 +901,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .svc-cat:first-child { padding-top: 12px; }
 /* How much of a group is filled: a ring and the count. */
 .ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-.ring-track { stroke: var(--line); }
+.ring-track { stroke: var(--line-ctl); stroke-opacity: .45; }
 .ring-arc { stroke: var(--ink-soft); stroke-linecap: round; }
 .ring.is-ok .ring-arc { stroke: var(--ok); }
 .is-narrow .cat-row.rcv-row > .team-act { align-self: center; margin-block: 0; }
@@ -1251,7 +1258,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .link-row:last-child { border-bottom: 0; }
 .link-slug {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px; font-weight: 600; letter-spacing: -.01em;
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .link-target, .link-label {
@@ -1674,10 +1681,15 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   .cmdbar-end .cmdbar-quiet:empty { display: none; }
   .cmdbar-acts .cmd-primary .btn-word { display: none; }
   .cmdbar-acts .cmd-primary svg { margin: 0; }
-  /* A lone act with a glyph gives up its word on a phone, as the primary does. */
-  .cmdbar-acts .cmd-solo:has(> svg) .btn-word { display: none; }
-  .cmdbar-acts .cmd-solo:has(> svg) { width: var(--ctl-h-sm); min-width: 0; padding: 0; }
-  .cmdbar-acts .cmd-solo:has(> svg) svg { margin: 0; }
+  /* A lone act with a glyph gives up its word on a phone, as the primary
+     does, unless the primary stands beside it: two glyphs alone read as one
+     act twice (Documents' two pluses, 2026-11-26), so it keeps its words. */
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) .btn-word { display: none; }
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) { width: var(--ctl-h-sm); min-width: 0; padding: 0; }
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) svg { margin: 0; }
+  /* Its words then take the count's room, so the bar stays one row; the
+     count is said in the Filters sheet's head, as My Work's Months' is. */
+  .cmdbar-end:has(> .cmdbar-acts > .cmd-primary:not([hidden])):has(> .cmdbar-acts > .cmd-solo:not([hidden]) > svg) > .cmdbar-quiet { display: none; }
   .cmd-more { display: inline-block; position: relative; }
   }
 
@@ -1704,6 +1716,11 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .tfacts dd > .select.tdetail { width: calc(100% + 9px); max-width: none; }
+/* A select drawn as a value (My Work's task details, a colleague's
+   Department) reads its empty choice, Not set, in the mute ink, as every
+   value not set beside it does; its open list keeps the ink (2026-11-26). */
+.select.tdetail:has(option:checked[value=""]) { color: var(--ink-mute); }
+.select.tdetail option { color: var(--ink); }
 /* A detail's select keeps its whole target but gives its height back, as a
    date does, so a row with a select and a row of words stand the same 8px
    apart (the user, 2026-10-11: "are you sure this is evenly distributed"). */
@@ -3646,6 +3663,14 @@ button.vs-row {
 .is-narrow .vs-issue-tags { grid-column: 2; justify-content: flex-start; }
 .vs-rvfold > summary { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); font-size: 13px; font-weight: 600; cursor: pointer; }
 .vs-rvfold[open] > summary { margin-bottom: 8px; }
+.vs-rvfold > summary { list-style: none; }
+.vs-rvfold > summary::-webkit-details-marker { display: none; }
+.vs-rvfold > summary::after {
+  content: ""; width: 7px; height: 7px; margin-left: 2px; flex: 0 0 auto;
+  border-right: 1.6px solid var(--ink-mute); border-bottom: 1.6px solid var(--ink-mute);
+  transform: translateY(-2px) rotate(45deg); transition: transform var(--t) var(--ease);
+}
+.vs-rvfold[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .vs-rvq > .field-label { font-size: 13px; font-weight: 600; color: var(--ink); }
 .vs-rvq ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
 .vs-rvq li + li { margin-top: 4px; }
@@ -4507,6 +4532,11 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .hir-row > .hir-line { display: block; grid-area: who; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .hir-row > .hir-state { grid-area: state; justify-self: end; }
 .is-narrow .hir-row > .hir-day { grid-area: day; text-align: right; font-size: 12.5px; color: var(--ink-mute); }
+/* Where the card holds one state, the state column reads the day the row
+   last moved (`ADspaceGroup.upd`, Suppliers and Hiring; 2026-11-26), and a
+   phone keeps that one date at the right, never two dates unnamed. */
+.row-upd { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.is-narrow .hir-row.is-upd > .hir-day { display: none; }
 .hir-headcard, #hirTabs { margin-bottom: 12px; }
 .hir-body .readgroups.hir-pane { margin-top: 0; }
 #hirMsg:empty, #hirRecMsg:empty { display: none; }
@@ -4575,7 +4605,8 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-abhead { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
 .mrec-abrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
 .mrec-abrow:first-of-type { border-top: 0; }
-.team-head.team-row > :first-child { padding-left: 44px; }
+/* The header steps in for a row's mark only where a row draws one (2026-11-26). */
+.team-table:has(.team-row .cl-mark) > .team-head.team-row > :first-child { padding-left: 44px; }
 /* A colleague's work, a row a record (2026-10-18): the name over its facts,
    the date at the right (red once late), the chevron last. */
 .mrec-rows { display: flex; flex-direction: column; }
@@ -5700,6 +5731,9 @@ svg.sec {
   }
 }
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard) { border-radius: var(--radius-lg); }
+/* A card inside a Dashboard card is one surface (DESIGN §1): an empty line
+   there takes no corner of its own (2026-11-26, Next 5 days). */
+.console .ovw-card .softpanel { border-radius: 0; }
 /* A record is hairline cards on the white sheet (the user, 2026-11-13: "keep
    white sheet is good. keep hairline too else it looks too bold. it has to
    be minimal elegant contrast"): each part of a pane (its head and its list)
@@ -5868,6 +5902,8 @@ svg.sec {
    a narrow labelled edge that opens while a card is dragged (2026-11-22). */
 .bcol { grid-template-rows: auto auto 1fr; }
 .bcol-phase { margin: 0; padding: 0 4px; min-height: 18px; font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Stacked on a phone, an empty phase line is only a gap (2026-11-26). */
+@media (max-width: 640px) { .bcol-phase:empty { display: none; } }
 .bcol.is-fold { flex-basis: 56px; transition: flex-basis var(--t-slow) var(--ease); }
 .bcol.is-fold .bcol-head { flex-direction: column; align-items: center; gap: 8px; border-bottom: 0; }
 .bcol.is-fold .bcol-head h3 { writing-mode: vertical-rl; white-space: nowrap; overflow: visible; }
@@ -5923,9 +5959,10 @@ svg.sec {
 .crm-tiles { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
 .is-narrow .crm-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .crm-tile { margin: 0; }
+.crm-tile:has(.crm-tile-foot) { overflow: hidden; }
 .crm-tile .ovw-kpi-fig { font-size: 24px; line-height: 30px; }
 .crm-tile .ovw-kpi-sub { font-size: 12.5px; color: var(--ink-mute); }
-.crm-tile-foot { margin: 8px -20px 0; padding: 8px 20px; background: var(--sunk); border-top: 1px solid var(--line-soft);
+.crm-tile-foot { margin: 8px calc(-1 * var(--kpi-x, 16px)) 0; padding: 8px var(--kpi-x, 16px); background: var(--sunk); border-top: 1px solid var(--line-soft);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }
@@ -6179,6 +6216,12 @@ svg.sec {
 .ovw-me-cols.is-one, .is-narrow .ovw-me-cols { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1100px) { .ovw-me-cols { grid-template-columns: minmax(0, 1fr); } }
 .ovw-me-main, .ovw-me-side { display: grid; gap: 12px; min-width: 0; }
+/* The two columns end on one line: Today, the main column's first card,
+   takes what the side column's height leaves (the user, 2026-11-26). */
+.ovw-me-cols:not(.is-one) { align-items: stretch; }
+.ovw-me-main { grid-template-rows: minmax(0, 1fr); align-content: stretch; }
+.ovw-me-today { display: grid; }
+.ovw-me-main > .msg:empty { display: none; }
 .ovw-today .chart-head, .ovw-week .chart-head, .ovw-mycl .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .ovw-today-n { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
 .ovw-today-chips { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
@@ -6410,8 +6453,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cpq-sub.is-late { color: var(--err); font-weight: 500; }
 .cpq-fig { font-variant-numeric: tabular-nums; font-weight: 500; font-size: 13.5px; }
 .cpq-acct { margin: 0 0 12px; }
-.cpq-paid-none .crm-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.cpq-h { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; font-weight: 600; }
 .crm-group-head .cpq-period { width: auto; flex: 0 0 auto; margin-left: auto; }
 .is-narrow .cpq-row { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
 .is-narrow .cpq-act:empty { display: none; }

@@ -63,7 +63,18 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     can be pressed. Its glyph is the row ⋯'s three dots across. A ⋯
     that would hold one item is not drawn: that item's own button stands
     on the bar (`.cmd-solo`; a section's own ⋯, My Work's and Reports',
-    through `ADspaceMenu.solo`; the user, 2026-11-17).
+    through `ADspaceMenu.solo`; the user, 2026-11-17). On a phone it gives
+    up its word, unless the primary stands beside it: two glyphs alone read
+    as one act twice (Documents' Add existing document beside Issue
+    document), so it keeps its words and the count gives way to the Filters
+    sheet's head, the bar one row (2026-11-26).
+  - A card whose rows all hold its heading's state reads the day each last
+    moved in that column, headed Updated (`ADspaceGroup.upd`,
+    `ADspaceWords.line.updated`; Creators, Suppliers, Hiring); a card of
+    mixed states keeps State (2026-11-26).
+  - A line of parts (a phone row's meta) is `ADspaceWords.parts`: each
+    part whole, the dot inside the part after it, so a wrap never leaves a
+    dot at a line's end (2026-11-26).
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
     wasting one row for the filters"), on a row of their own under it

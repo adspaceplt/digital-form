@@ -104,6 +104,12 @@
  *                                             (2026-11-25): the contacts
  *                                             `portal_invoice_contacts` answers
  *                                             as the caller, read, never kept.
+ *   POST { action: 'campaigninvoice', campaign, op, number? }
+ *                                             a campaign's invoice (2026-11-25):
+ *                                             `create` a Bukku draft of one line
+ *                                             a booked creator, `link` one made
+ *                                             in Bukku by its number, `status`
+ *                                             as Bukku holds it now.
  *   POST { action: 'remind', contact, invoices, cc, to?, ccs?, subject, body, again }
  *                                             one reminder to one Bukku
  *                                             contact: each invoice read
@@ -973,6 +979,60 @@ export function invoiceBody(p: any, items: any[] | null, budgetAccount: number |
     status: 'draft', myinvois_action: 'NORMAL', form_items: form
   };
 }
+/* The line a campaign's invoice copies (CAMPAIGN INVOICE FROM BUKKU,
+   2026-11-25): the model invoice's first line, by its number, read whole;
+   its product, unit, account and tax code. Null where Bukku holds no such
+   invoice or it has no line. */
+async function modelLine(number: string): Promise<any | null> {
+  const k = String(number || '').trim().toUpperCase();
+  if (!k) return null;
+  const r = await bukku('GET', `/sales/invoices?search=${encodeURIComponent(k)}&page=1&page_size=100`);
+  const hit = ((r && r.transactions) || []).find((x: any) => x && String(x.number || '').toUpperCase() === k);
+  if (!hit) return null;
+  const whole = await oneInvoice(Number(hit.id));
+  const line = whole && Array.isArray(whole.form_items) ? whole.form_items[0] : null;
+  if (!line) return null;
+  const n = (v: unknown) => (Number(v) > 0 ? Number(v) : null);
+  return { product_id: n(line.product_id), product_unit_id: n(line.product_unit_id), account_id: n(line.account_id), tax_code_id: n(line.tax_code_id) };
+}
+/* The campaign's invoice as Bukku's Create Invoice takes it: one line a
+   booked creator (`{creator} · {campaign}`) at the client rate, on the
+   model's product, account and tax code (no tax code where the client is
+   billed no SST), the reference in its second number, a draft. */
+export function campaignInvoiceBody(p: any, model: any): Record<string, unknown> {
+  const form = ((p.lines || []) as any[]).map((l) => {
+    const it: Record<string, unknown> = { description: String(l.label || '').slice(0, 255), unit_price: Number(l.amount), quantity: 1 };
+    if (model.product_id) it.product_id = model.product_id;
+    if (model.product_unit_id) it.product_unit_id = model.product_unit_id;
+    if (model.account_id) it.account_id = model.account_id;
+    if (model.tax_code_id && p.sst !== false) it.tax_code_id = model.tax_code_id;
+    return it;
+  });
+  return {
+    contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
+    currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
+    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200),
+    status: 'draft', myinvois_action: 'NORMAL', form_items: form
+  };
+}
+/* An invoice as the Finance pane reads it: its number, amount, the state
+   Bukku holds (Draft; Paid where no balance stands; Overdue past its due
+   date; else Issued), its PDF (Bukku's own link) and its page in Bukku. */
+export function campaignInvoiceOf(x: any, today: string, sub: string): Record<string, unknown> {
+  const st = String(x.status || '');
+  const bal = x.balance == null || x.balance === '' ? null : cents(x.balance);
+  const terms = (Array.isArray(x.term_items) ? x.term_items : []).map((t: any) => String((t && t.date) || ''))
+    .filter((d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const due = terms.length ? terms[terms.length - 1] : String(x.date || '').slice(0, 10);
+  const state = st === 'draft' ? 'draft' : ['void', 'voided'].includes(st) ? 'void'
+    : bal !== null && bal <= 0 ? 'paid' : /^\d{4}-\d{2}-\d{2}$/.test(due) && due < today ? 'overdue' : 'issued';
+  const s = String(sub || '').replace(/\.bukku\.my$/i, '');
+  const link = String(x.short_link || '');
+  return { number: String(x.number || ''), bukku: Number(x.id || 0), state, amount: x.amount == null ? null : cents(x.amount), balance: bal,
+    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+    pdf: LINK.test(link) ? link : null,
+    web: /^[a-z0-9-]+$/i.test(s) && Number(x.id) > 0 ? `https://${s}.bukku.my/sales/invoices/${Number(x.id)}` : null };
+}
 /* A creator bill's page in Bukku: found by its number among the bills the
    caller reads on the creator's Payment pane, then on the creator's contact. */
 export function billWeb(sub: string, id: number): string | null {
@@ -1769,6 +1829,64 @@ Deno.serve(async (req) => {
         const num = String(t.number || '') || 'Created';
         await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: Number(t.id || 0), p_number: num, p_amount: total });
         return json({ ok: true, made: num }, 200, origin);
+      } catch (e) {
+        const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
+        if (!sent || refused) await letGo();
+        else return json({ error: 'not-confirmed' }, 200, origin);
+        throw e;
+      }
+    }
+    /* A campaign's invoice in Bukku (CAMPAIGN INVOICE FROM BUKKU,
+       2026-11-25): `create` makes a draft of one line a booked creator, each
+       on the product, account and tax code of the model invoice set in
+       Settings (the user's AINV2609023), never twice; `link` takes one made
+       in Bukku by its number, on the client's own contact; `status` reads
+       it as Bukku holds it now, nothing kept. */
+    if (action === 'campaigninvoice') {
+      const cid = String(body.campaign || ''), op = String(body.op || '');
+      if (!/^[0-9a-f-]{36}$/i.test(cid) || !/^(create|link|status)$/.test(op)) return json({ error: 'bad-request' }, 400, origin);
+      if (op === 'status') {
+        const rd = await db.rpc('campaign_invoice_read', { p_campaign: cid });
+        if (rd.error) return json({ error: 'needs-update' }, 200, origin);
+        const r0 = rd.data || {};
+        if (r0.error) return json({ error: r0.error }, 200, origin);
+        const inv = await oneInvoice(Number(r0.bukku));
+        if (!inv) return json({ ok: true, gone: true, number: r0.number }, 200, origin);
+        return json(Object.assign({ ok: true }, campaignInvoiceOf(inv, todayMY(), secret('BUKKU_SUBDOMAIN'))), 200, origin);
+      }
+      const prep = await db.rpc('campaign_invoice_prep', { p_campaign: cid, p_mode: op });
+      if (prep.error) return json({ error: 'needs-update' }, 200, origin);
+      const p = prep.data || {};
+      if (p.error) return json({ error: p.error, number: p.number }, 200, origin);
+      if (op === 'link') {
+        const num = String(body.number || '').trim().toUpperCase();
+        if (!/^[A-Z0-9._/-]{3,40}$/.test(num)) return json({ error: 'bad-number' }, 200, origin);
+        const r = await bukku('GET', `/sales/invoices?search=${encodeURIComponent(num)}&contact_id=${Number(p.contact_id)}&page=1&page_size=100`);
+        const hit = ((r && r.transactions) || []).find((x: any) => x && String(x.number || '').toUpperCase() === num &&
+          Number(x.contact_id) === Number(p.contact_id) && !['void', 'voided'].includes(String(x.status || '')));
+        if (!hit) return json({ error: 'no-invoice', number: num }, 200, origin);
+        const t = await db.rpc('campaign_invoice_take', { p_campaign: cid, p_bukku: Number(hit.id), p_number: String(hit.number), p_linked: true });
+        if (t.error) return json({ error: 'needs-update' }, 200, origin);
+        if (t.data && t.data.error) return json({ error: t.data.error, number: t.data.number }, 200, origin);
+        return json(Object.assign({ ok: true, linked: true }, campaignInvoiceOf(hit, todayMY(), secret('BUKKU_SUBDOMAIN'))), 200, origin);
+      }
+      const letGo = () => db.rpc('campaign_invoice_take', { p_campaign: cid, p_bukku: null, p_number: null, p_linked: false });
+      let sent = false;
+      try {
+        const had = await invoiceHolding(Number(p.contact_id), String(p.ref));
+        if (had) {
+          await db.rpc('campaign_invoice_take', { p_campaign: cid, p_bukku: had.id, p_number: had.number, p_linked: true });
+          return json({ ok: true, error: 'in-bukku', number: had.number }, 200, origin);
+        }
+        const model = await modelLine(String(p.model));
+        if (!model) { await letGo(); return json({ error: 'no-model', number: String(p.model) }, 200, origin); }
+        sent = true;
+        const made = await bukku('POST', '/sales/invoices', campaignInvoiceBody(p, model));
+        const tx = (made && made.transaction) || {};
+        const num = String(tx.number || '') || 'Created';
+        const t = await db.rpc('campaign_invoice_take', { p_campaign: cid, p_bukku: Number(tx.id || 0), p_number: num, p_linked: false });
+        if (t.error || (t.data && t.data.error)) return json({ error: 'not-filed', number: num }, 200, origin);
+        return json(Object.assign({ ok: true, made: num }, campaignInvoiceOf(Object.assign({ status: 'draft' }, tx), todayMY(), secret('BUKKU_SUBDOMAIN'))), 200, origin);
       } catch (e) {
         const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
         if (!sent || refused) await letGo();

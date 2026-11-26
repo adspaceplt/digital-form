@@ -680,16 +680,18 @@
   function progRow(o) {
     var I = window.ADspaceIcons;
     var row = document.createElement('div');
+    var bare = !(I && o.tones && o.tones.length) && !o.note;
+    var open = '<a class="btn btn-sm cp-open" href="' + esc(o.url) + '">' + esc(t().open) + ' ' + GO + '</a>';
     row.className = 'svc-row cp-work-row cp-prog' + (o.glyph ? '' : ' is-bare');
     row.innerHTML = (o.glyph ? '<span class="cx-tile">' + glyph(o.glyph) + '</span>' : '') +
       '<div class="cp-prog-body"><div class="cp-prog-top"><span class="svc-name"><b>' + esc(o.name) + '</b>' +
         (o.sub ? '<small>' + o.sub + '</small>' : '') + '</span>' +
-        (o.state ? '<span class="svc-state">' + o.state + '</span>' : '') + '</div>' +
+        (o.state ? '<span class="svc-state">' + o.state + '</span>' : '') + (bare ? open : '') + '</div>' +
       (I && o.tones && o.tones.length ? I.track(o.tones) + (o.note ? I.legend(o.legend) : '') : '') +
-      /* The words under the track share Open's line, unless a note takes it. */
-      '<div class="cp-prog-foot">' + (o.note ? '<span class="cp-prog-note">' + o.note + '</span>' :
-        I && o.tones && o.tones.length ? I.legend(o.legend) : '') +
-        '<a class="btn btn-sm cp-open" href="' + esc(o.url) + '">' + esc(t().open) + ' ' + GO + '</a></div></div>';
+      /* The words under the track share Open's line, unless a note takes it;
+         a row with neither keeps Open on its title line (2026-11-26). */
+      (bare ? '' : '<div class="cp-prog-foot">' + (o.note ? '<span class="cp-prog-note">' + o.note + '</span>' :
+        I && o.tones && o.tones.length ? I.legend(o.legend) : '') + open + '</div>') + '</div>';
     return row;
   }
   /* A content set: its approved posts green, those with changes asked and
