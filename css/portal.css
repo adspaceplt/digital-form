@@ -8117,6 +8117,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .topbar .brand-for { display: grid; line-height: 1.25; }
   .topbar .brand-for b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+/* Under 400 the bar keeps the name the page is for and lets its label go
+   (Signed in as, Prepared for), still read by a screen reader; the name
+   ends in an ellipsis only where it cannot fit (2026-11-27, the user,
+   option A: "Si… / Ar…" clipped at 320). */
+@media (max-width: 400px) {
+  .topbar .brand-for { grid-template-columns: minmax(0, 1fr); }
+  .topbar .brand-for-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+}
 
 /* =========================================================================
    A POPOVER CARD (js/menu.js `pop`)

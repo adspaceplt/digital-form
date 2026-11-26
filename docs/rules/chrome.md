@@ -15,7 +15,9 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
     own controls go in just before `#langToggle`), all one tonal family of
     one height and corner; the client portal's bar is sign out, 中文: no
     bell and no notifications there (the user, 2026-11-25). On a phone the name the page is for takes two
-    lines, its label over it (`.brand-for-label`).
+    lines, its label over it (`.brand-for-label`); under 400px the label goes
+    (kept for a screen reader) and the name stays, ending in an ellipsis
+    only where it cannot fit (the user, 2026-11-27, option A).
 - Nothing moves after first paint.
   - The mark's ratio is kept in `localStorage` `adspace-logo-ratio` and drawn at
     that ratio (`aspect-ratio: auto R`).
