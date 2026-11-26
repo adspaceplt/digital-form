@@ -33,6 +33,10 @@ export const joinMoney = (t: string) => String(t).replace(/\b(RM|S\$) +(?=[-\d])
 function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }
+/* The public page a document is checked on: the server's copy of
+   ADSPACE_ORG.verifyUrl (js/config.js), which a function cannot read;
+   `tests/mailfn.js` holds the two alike. */
+export const VERIFY_URL = 'digital.adspace.me/verify';
 export const BLOCK = /^\{\s*invoices\s*\}$/i;
 /* `{invoices}` set in a line of its own words stands as its own paragraph,
    so the table is drawn wherever it was typed (review 2026-10-29, 3). */
