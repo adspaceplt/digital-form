@@ -260,14 +260,10 @@
   }
 
   /* ---- Issuing -----------------------------------------------------------
-     The serial and the letter are the database's to make, not the browser's.
-     `nextNumber` used to read MAX(number) here and insert, which two people
-     pressing Issue letter in the same second could both win; and the line set
-     was picked by one predicate, `state = 'quoted'`, so a line already sent to
-     a client on an earlier letter was silently carried into the next one.
-     `issue_letter` reserves the serial atomically, builds the snapshot from
-     the stored rows, records which services the letter captured, and answers
-     the same letter twice when the same submission arrives twice. */
+     The Letter of Offer is no longer issued (2026-11-12; its sheet and its
+     issuing code left the console on 2026-11-26). Letters issued before are
+     read, downloaded, signed, verified and voided as they stand; the serial
+     and the snapshot stay the database's (`issue_letter`). */
 
   /* One key per submission, so a double click, a retry after a dropped
      connection and an impatient second press are all one letter. */
@@ -277,187 +273,24 @@
     return r.slice(0, 32);
   }
 
-  /* What the letter would be worth, as the letter draws it. The database
-     works the same price from the stored lines and keeps these figures only
-     where they agree to the sen (audit S4, 2026-10-10), so a line changed
-     since the sheet opened is refused rather than printed at the old price. */
-  /* The rate of each tax code a service line may carry (2026-10-22), read
-     once a page: a line holding a code is priced at its rate, as
-     issue_letter prices it. */
-  var TAXR = {};
-  function taxRates(list) { TAXR = {}; (list || []).forEach(function (t) { TAXR[t.code] = Number(t.rate); }); return TAXR; }
-  var taxAsked = false;
-  /* `at` is the letter's own date (2026-11-12): the SST in force and the
-     quotation still standing are read on it, as issue_letter reads them. */
-  function quoteOf(client, lines, quotes, renewal, at) {
-    var day = at || window.ADspaceClock.today();
-    if (!taxAsked && MON.taxCodes) { taxAsked = true; MON.taxCodes().then(taxRates); }
-    lines = lines.map(function (l) {
-      return l.tax_code && (l.tax_pct == null || l.tax_pct === '') && TAXR[l.tax_code] != null
-        ? Object.assign({}, l, { tax_pct: TAXR[l.tax_code] }) : l;
-    });
-    /* Lines a quotation made carry its SST rate, read from the quotation
-       the page holds, as the database reads it: only while it stands
-       (unexpired, not removed) and never on a renewal (2026-10-17). */
-    var q = lines.length ? lines[0].quotation_id : null;
-    var hit = !renewal && q && lines.every(function (l) { return l.quotation_id === q; }) &&
-      (quotes || []).filter(function (x) {
-        return x.id === q && !x.removed_at && String(x.valid_until || '').slice(0, 10) >= day;
-      })[0];
-    if (hit && hit.totals) {
-      lines = lines.map(function (l) {
-        return Object.assign({}, l, { quote_sst: client.sst_applies === false ? 0 : Number(hit.totals.sst_pct || 0),
-                                      quote_term: Math.max(1, Number(hit.totals.term || 1)) });
-      });
-    }
-    return priceOf(lines, MON.curOf(client), client.sst_applies !== false, day);
-  }
-
-  /* The quotation the lines came from, as the letter prices it: read from
-     the quotations the page holds, else asked of `letter_quote_terms`
-     (its id, validity and the two figures the price reads), so a colleague
-     at Clients: Letters without Quotations prices as issue_letter does and
-     is not refused `stale` press after press (the audit of 2026-10-26,
-     finding 2). A database without it answers as before. */
-  function quoteTerms(lines, quotes) {
-    quotes = quotes || [];
-    var q = lines.length ? lines[0].quotation_id : null;
-    if (!q || !lines.every(function (l) { return l.quotation_id === q; }) ||
-        quotes.some(function (x) { return x.id === q; })) return Promise.resolve(quotes);
-    return db.rpc('letter_quote_terms', { p_services: lines.map(function (l) { return l.id; }) })
-      .then(function (r) { return r.data && r.data.id ? quotes.concat([r.data]) : quotes; })
-      .catch(function () { return quotes; });
-  }
-
-  /* client: the record. picked: the service rows the person chose. deal: the
-     display facts the record knows that the client row does not spell out.
-     opts: { idem, replaces, renewal, serial }. A blank serial is the everyday
-     case and the database numbers the letter; one typed here is checked
-     against every document that stands and spends no sequence number. */
-  function issue(kind, client, picked, deal, opts, then) {
-    opts = opts || {};
-    var use = (picked || []).filter(function (l) { return l && !l.archived_at; });
-    if (!use.length) { then({ error: 'Choose at least one service.' }); return; }
-    var serial = String(opts.serial || '').trim();
-    /* The Client ID builds an automatic reference and nothing else, so it is
-       needed only where none has been typed. */
-    if (!serial && !String(client.client_code || '').trim()) {
-      then({ error: 'Add a Client ID to this client before issuing a letter.' });
-      return;
-    }
-    deal = deal || {};
-    /* Priced once the tax codes are read, so a line's own code is priced
-       at its rate (2026-10-22). */
-    (MON.taxCodes ? MON.taxCodes() : Promise.resolve([])).then(function (list) {
-    if (list && list.length) taxRates(list);
-    return quoteTerms(use, opts.quotes);
-    }).then(function (quotes) {
-    var price = quoteOf(client, use, quotes, opts.renewal, deal.date || null);
-    db.rpc('issue_letter', Object.assign({ p_idem: opts.idem || idemKey() }, letterArgs(client, use, deal, opts, price, serial))).then(function (r) {
-      /* The migration has to be in place before the site is. Until it is, the
-         function is missing and nothing is written at all — a half issued
-         letter cannot exist either way. */
-      if (r.error) { then({ error: missingWord(r.error.message) }); return; }
-      var out = r.data || {};
-      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
-      readBack(out.id, function (doc, err) {
-        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: window.ADspaceWords.line.issuedNoPdf }); return; }
-        download(doc, function (warn) {
-          then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
-        });
-      });
-    }).catch(function (e) { then({ error: missingWord(e && e.message) }); });
-    });
-  }
-
-  /* What issue_letter and its preview are asked with: one copy. */
-  function letterArgs(client, use, deal, opts, price, serial) {
-    return {
-      p_client: client.id,
-      p_services: use.map(function (l) { return l.id; }),
-      p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
-      p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true,
-                entity: deal.entity || null, date: deal.date || null },
-      p_replaces: opts.replaces || null,
-      p_renewal: Boolean(opts.renewal),
-      p_serial: serial || null
-    };
-  }
-
-  /* Preview (2026-10-31; the user: "preview pdf … before sending"): the
-     letter Issue would keep, made by the database and rolled back
-     (`issue_letter_preview`), drawn under DRAFT (INTERNAL USE ONLY) with
-     the reference PREVIEW. Nothing is written and no number is spent; a
-     letter with no Client ID yet is previewed under PREVIEW too. */
-  function preview(kind, client, picked, deal, opts, then) {
-    opts = opts || {};
-    var use = (picked || []).filter(function (l) { return l && !l.archived_at; });
-    if (!use.length) { then({ error: 'Choose at least one service.' }); return; }
-    deal = deal || {};
-    var tab = previewTab();
-    var fail = function (e) { shut(tab); then({ error: e }); };
-    (MON.taxCodes ? MON.taxCodes() : Promise.resolve([])).then(function (list) {
-      if (list && list.length) taxRates(list);
-      return quoteTerms(use, opts.quotes);
-    }).then(function (quotes) {
-      var price = quoteOf(client, use, quotes, opts.renewal, deal.date || null);
-      return db.rpc('issue_letter_preview', letterArgs(client, use, deal, opts, price, String(opts.serial || '').trim() || 'PREVIEW'));
-    }).then(function (r) {
-      if (r.error) { fail(missingWord(r.error.message)); return; }
-      var out = r.data || {};
-      /* The refusal's code goes with its words, as issue() hands it, so
-         a `stale` preview reads the lines again (2026-11-07). */
-      if (out.error) { shut(tab); then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
-      if (!out.doc) { fail('The preview could not be generated. Try again.'); return; }
-      var doc = out.doc;
-      doc.number = 'PREVIEW'; doc.draft = true;
-      return render(doc).then(function (bytes) {
-        save(new Blob([bytes], { type: 'application/pdf' }), 'Preview ' + fileName(doc), tab);
-        then({ ok: true });
-      });
-    }).catch(function (e) { fail('The preview could not be generated. Try again.'); });
-  }
-
-  function readBack(id, then) {
-    db.from('client_documents').select('*').eq('id', id).single()
-      .then(function (r) { then(r.data, r.error); }).catch(function (e) { then(null, e); });
-  }
-
   /* The database answers in one word; the console says what it means. */
+  /* The database's word for a refusal on a letter issued before (sign,
+     verify, void, delete), in the console's words. */
   var ISSUE_WORD = {
-    'bad-entity': 'That billing entity no longer bills this client. Close the sheet and open it again.',
-    'entity-incomplete': 'The billing entity needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.',
-    'not-allowed': 'You do not have permission to issue a letter. Please ask an admin.',
-    'no-client-code': 'Add a Client ID to this client before issuing a letter.',
-    'needs-billing': 'Add the Registered Company Name, Business Registration No., billing address and a billing contact on Billing before issuing a Letter of Offer.',
+    'not-allowed': 'You do not have permission to change this letter. Please ask an admin.',
     'no-client': 'That client could not be found.',
-    'no-lines': 'Choose at least one service.',
-    'bad-lines': 'One of those services cannot go on a letter. Refresh the page and try again.',
-    'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
-    'already-quoted': 'One of those services is already on a Letter of Offer that has not been voided. Void that letter first.',
-    'bad-terms': window.ADspaceWords.line.terms,
-    'no-replaces': 'The letter being replaced no longer exists.',
-    'replaces-verified': 'A verified letter cannot be replaced.',
     'not-found': 'This letter no longer exists.',
     'voided': 'That letter is void.',
     'verified': 'That letter has already been verified.',
     'superseded': 'That letter has been replaced.',
     'not-signed': 'Mark the letter signed before verifying it.',
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
-    'clash': 'Two letters were issued at once. Try again.',
-    'serial-taken': 'This reference is already used by another document. Enter another reference.',
-    'bad-date': window.ADspaceWords.line.docDate,
-    'serial-shape': window.ADspaceWords.line.serialShape,
-    'no-serial': 'No free reference was found for this client this month. Enter one.',
     'reason-required': 'Enter a reason.',
     'not-verified': 'Only a verified letter can be voided. Delete an issued or signed letter instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
-    'issuer-name': window.ADspaceWords.line.issuerName,
     'bad-state': 'Choose a valid state for the service.',
-    'stale': 'The services or their quotation were changed by someone else. The latest version is now shown. Please check them and issue the letter again.',
-    'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
-    'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
+    'changed-terms': 'A service on this letter changed after it was issued, so the letter cannot be verified. Void it, or ask an admin to use Confirm without letter.',
+    'archived-line': 'A service on this letter was removed after it was issued. Restore the service, then verify the letter.'
   };
 
   function missingWord(m) {
@@ -467,7 +300,7 @@
     }
     /* A guard trigger answers in its own word (`needs-billing`). */
     if (ISSUE_WORD[m]) return ISSUE_WORD[m];
-    return m || 'The letter could not be issued. Please try again.';
+    return m || 'The letter could not be changed. Please try again.';
   }
 
   /* One shape for the three deliberate moves a letter makes. Each is a
@@ -1831,21 +1664,12 @@
     }).catch(function () {});
   }
 
-  /* The validity a new letter's terms open on: today in Malaysia plus the
-     days set in Tax and terms (`quote_valid_days`), never a figure here. */
-  function validLine(at) {
-    var today = at || ADspaceClock.today();
-    var days = Number(MON.setting('quote_valid_days', today)) || 0;
-    return days > 0 ? 'This offer is valid until ' + longDate(plusDays(today, days)) + '.' : '';
-  }
-
   window.ADspaceDocs = {
-    validLine: validLine,
     save: save, tabFor: tabFor, previewTab: previewTab, installed: installed, shut: shut, ios: IOS, forgetFiles: forgetFiles,
-    issue: issue, preview: preview, download: download, render: render, lib: lib, list: list,
+    download: download, render: render, lib: lib, list: list, priceOf: priceOf,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
-    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
+    liveDoc: liveDoc, letterState: letterState, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
     pen: pen, codeOf: codeOf, codeWord: codeWord, withCode: withCode, TEMPLATE: TEMPLATE, templateOf: templateOf, INTERNAL: INTERNAL, verifyLine: verifyLine, PAGE: G, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, refDate: refDate, TITLE: TITLE, watermark: watermark,
     letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
