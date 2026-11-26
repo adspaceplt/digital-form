@@ -4213,7 +4213,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-sumrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
 .qb-card.is-lines .sheet-body > :not(#qbLinesBox):not(#qbMsg) { display: none; }
 .qb-card.is-lines.has-side .sheet-body { display: block; }
-}
 .qb-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .qb-plan {
   display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px 14px;
