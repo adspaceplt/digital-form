@@ -677,6 +677,12 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   holds no field labelled Remind after, so the suite times out; it fails
   the same on main a6157c5, likely from #1479's relabelled sheets. Held
   here until it ships.
+- 2026-11-26, `weight` (review fixes S4, whose always-loaded scripts are
+  108 bytes smaller than main's by gzip): the console reads 1328.8 to
+  1328.9 KB against its 1328.8 KB budget on main 2800345 itself; the
+  hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
+  time field under its old label) fail the same on main, likely with
+  `waapprove` from #1479's relabelled sheets. Held here until they ship.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
