@@ -42,8 +42,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   AC number offered (`client_code_next()`, one past the highest across
   every client, as wide as it), and both go in one write; trigger
   `clients_active_code` refuses Active with none (`active-needs-code`;
-  `2026-10-18-client-id-at-active.sql`). A Letter of Offer before Active
-  still asks for one at its Reference.
+  `2026-10-18-client-id-at-active.sql`).
 - The slug is set once from the name, never follows a rename, and a clash is
   numbered, a clash only the index sees (a client outside the colleague's
   scope; every Chinese name reads `client`) taking the next number, never
@@ -368,8 +367,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `client.billing` naming fields alone.
     Console search finds a client by an entity billing it (Billed by …,
     opening Billing). Bill to (`2026-10-29-bill-to.sql`): with two
-    entities or more, the Letter of Offer sheet (`#pickBillTo`) and a
-    client letter's Issue (`#docBillTo`) ask which, the main first and
+    entities or more, a client letter's Issue (`#docBillTo`) asks which, the main first and
     chosen; `issue_letter` takes `p_deal.entity` (an entity of that client,
     `bad-entity`; its name, BRN and address held, `entity-incomplete`) and
     prints its registered name, numbers, address and billing contact,

@@ -238,8 +238,7 @@ screenshotted, and the push names any line it could not settle.
    | Use passkey | Unlock with a passkey |
 
    Extra words stay only where they change what the act is (Confirm
-   without letter, Send on WhatsApp beside Resend on WhatsApp, Issue Letter
-   of Offer). A question's title may still name its object (Remove from
+   without letter, Send on WhatsApp beside Resend on WhatsApp). A question's title may still name its object (Remove from
    Content Review?).
 10. **Standard lines.** A delete question ends This cannot be undone.
    (never There is no restore); a record changed meanwhile reads Not saved.

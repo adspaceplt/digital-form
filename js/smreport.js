@@ -179,7 +179,7 @@
       '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
     'hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. a high hold rate indicates engaging content; a low one shows where viewers stop watching.':
       '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
-    'every ad term is explained at go.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 go.adspace.me/fb-ad-terms。',
+    'every ad term is explained at hi.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 hi.adspace.me/fb-ad-terms。',
     'amount spent is the total spent on ads, excluding the 10% wht and 8% sst, which are charged separately.':
       '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
     'amount spent is the total spent on ads, excluding the 5% dcc and 9% gst, which are charged separately.':
@@ -1883,7 +1883,7 @@
         });
         y -= h + BLOCK;
       };
-      var GLOSSARY = 'Every ad term is explained at go.adspace.me/fb-ad-terms.';
+      var GLOSSARY = 'Every ad term is explained at hi.adspace.me/fb-ad-terms.';
       /* A row is one creative with every variation of it added together,
          so a weak row reads as the creative tried several ways (the user,
          2026-10-02, their option B). */
