@@ -409,7 +409,7 @@
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
     mailOff: 'Email is not set up yet. Please contact an admin.',
-    mailSending: 'This email is on its way. Please wait a minute before sending again.',
+    mailSending: 'This email is being sent. Please wait a minute before sending again.',
     /* A send refused by the portal's switch or the group's (GROUP
        SWITCHES, 2026-11-17). */
     emailSendOff: 'Sending email is turned off for you. Please ask an admin.',

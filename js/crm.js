@@ -2900,7 +2900,7 @@
     'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.', sending: ADspaceWords.line.mailSending };
+    'needs-update': ADspaceWords.line.notYet, sending: ADspaceWords.line.mailSending };
   /* Sends the request; answers the refusal's words, or '' once sent or
      once a request sent within the repeat hours has asked first
      (RETENTION AND JOBS HELD, 2026-11-25: when, by whom and to whom, then
