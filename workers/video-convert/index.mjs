@@ -29,7 +29,7 @@
 import { S3Client, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import * as MC from '@aws-sdk/client-mediaconvert';
 
-import { PREFIX, ISO_BMFF, UNREAD, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc,
+import { PREFIX, ISO_BMFF, UNREAD, isCandidate, tokenFor, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc,
   fromProbe, hasAudioOf, attempt, walk } from './logic.mjs';
 const { MediaConvertClient, CreateJobCommand } = MC;
 
@@ -82,7 +82,7 @@ async function present(Bucket, Key) {
 /* With `redo`, a copy made before the cap is asked for again where it is
    over it; MediaConvert writes the new copy under the same name. The
    original is never touched. */
-async function convert(Bucket, Key, size, redo) {
+async function convert(Bucket, Key, size, redo, tag) {
   if (!isCandidate(Key)) return 'not a video';
   if (await present(Bucket, Key) === null) return 'error: not found';
   const had = await exists(Bucket, webKey(Key));
@@ -103,7 +103,7 @@ async function convert(Bucket, Key, size, redo) {
     if (p) info = Object.assign({}, info, p);
   }
   if (had === null && alreadyWeb(ext, info)) return 'already plays everywhere';
-  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudioOf(info), info.video)));
+  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudioOf(info), info.video, tokenFor(Key, tag || size, redo))));
   return (had === null ? 'job ' : 'redo job ') + (r.Job && r.Job.Id);
 }
 
@@ -131,7 +131,7 @@ export const handler = async (event, context) => {
     for (const rec of (event && event.Records) || []) {
       const Bucket = rec.s3.bucket.name;
       const Key = decodeURIComponent(String(rec.s3.object.key).replace(/\+/g, ' '));
-      done.push([Key, await attempt(() => convert(Bucket, Key, rec.s3.object.size))]);
+      done.push([Key, await attempt(() => convert(Bucket, Key, rec.s3.object.size, false, rec.s3.object.eTag))]);
     }
   }
   done.forEach(([k, what]) => (/^error: /.test(what) ? console.error : console.log)(what + ': ' + k));

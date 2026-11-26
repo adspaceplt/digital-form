@@ -198,7 +198,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     and superseded letters keep theirs.
 - The Register lists `documents` and `client_documents` (`asOffer()`, family
   `offer`), banded Quotation Covers / Letters of Offer / Client Letters / HR
-  Letters / Other.
+  Letters / Other, a band drawn only while it holds any.
+  - A Quotation Cover is never issued on its own (2026-11-25): every
+    quotation's PDF opens with it. Issue (the Register's and a client
+    record's, `families: ['client']`) offers no `quote_cover` type, and
+    `issue_document` and `document_reissue` refuse one (`not-issuable`,
+    `2026-11-25-quotation-cover-not-issued-alone.sql`). Covers already
+    issued stay under Quotation Covers, read only: Download, the record,
+    Void and /verify/ as before, no Reissue. The `quote_cover` type stays
+    built in and undeletable, listed in Document types as First page of
+    every quotation, and New type offers no Quotation group.
   - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
     out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
     else an Employee ID in the reference). The search reads a dash as a slash,
@@ -206,7 +215,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - An offer row answers to `clients.documents` and offers Open client record,
     never Void/Delete/Reissue.
 - Serials per family:
-  - a quotation cover takes the accounting portal's, typed;
+  - a quotation cover issued before 2026-11-25 kept the accounting
+    portal's, typed;
   - a client letter `ACL/{client_code}/{YYMMDD}{NN}` (ADspace Cover
     Letter; the letter's date; the lowest number free for that client that
     day from 01, under an advisory lock); older `AD/[SA/]…` letters keep

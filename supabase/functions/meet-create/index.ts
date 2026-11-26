@@ -38,10 +38,21 @@ const CAL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
    as a different secret. */
 const SECRETS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN'];
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
+/* Every call to Google is held to 15 seconds (the review of 2026-11-25): a
+   call cut off answers as Google refusing it, its reason `timeout`, so the
+   page names it and the function never hangs. */
+async function gfetch(url: string, init: RequestInit = {}): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
+  } catch (e) {
+    console.error('meet-create: Google did not answer', String(e));
+    return new Response(JSON.stringify({ error: 'timeout' }), { status: 504, headers: { 'Content-Type': 'application/json' } });
+  }
+}
 async function googleToken(): Promise<{ token?: string; error?: string; missing?: string[]; reason?: string }> {
   const missing = SECRETS.filter((k) => !secret(k));
   if (missing.length) return { error: 'meet-not-set-up', missing };
-  const r = await fetch('https://oauth2.googleapis.com/token', {
+  const r = await gfetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: secret('GOOGLE_CLIENT_ID'), client_secret: secret('GOOGLE_CLIENT_SECRET'),
@@ -75,7 +86,7 @@ async function why(r: Response): Promise<string> {
   const d = await r.json().catch(() => ({}));
   const e = d && d.error;
   const first = e && Array.isArray(e.errors) && e.errors[0];
-  return String((first && first.reason) || (e && e.status) || r.status);
+  return String((typeof e === 'string' && e) || (first && first.reason) || (e && e.status) || r.status);
 }
 
 Deno.serve(async (req) => {
@@ -117,7 +128,7 @@ Deno.serve(async (req) => {
     if (may.error || !may.data || (may.data as Record<string, unknown>).error) return json({ error: 'denied' }, 200, origin);
     const t = await googleToken();
     if (!t.token) return json({ error: t.error, missing: t.missing, reason: t.reason }, 200, origin);
-    const got = await fetch(`${CAL}?` + new URLSearchParams({
+    const got = await gfetch(`${CAL}?` + new URLSearchParams({
       timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250'
     }), { headers: { Authorization: `Bearer ${t.token}` } });
     if (!got.ok) return json({ error: 'google-refused', reason: await why(got) }, 200, origin);
@@ -151,7 +162,7 @@ Deno.serve(async (req) => {
   const eventId = stored === eventIdOf(kind, eid) ? stored : '';
   if (action === 'delete') {
     if (eventId) {
-      const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
+      const r = await gfetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
       if (!r.ok && r.status !== 404 && r.status !== 410) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
     }
     /* The event is gone; a refused save leaves the link pointing at it, so
@@ -171,7 +182,7 @@ Deno.serve(async (req) => {
      2026-10-01): an event carrying a Meet link, or a Meet, Zoom or Teams
      address. Its time is given, so the person can pick another; a shoot or a
      reminder in the slot is left alone. */
-  const list = await fetch(`${CAL}?` + new URLSearchParams({
+  const list = await gfetch(`${CAL}?` + new URLSearchParams({
     timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '50'
   }), { headers: g });
   if (!list.ok) return json({ error: 'google-refused', reason: await why(list) }, 200, origin);
@@ -204,17 +215,17 @@ Deno.serve(async (req) => {
   let r: Response;
   let made: Record<string, any> | null = null;
   if (eventId) {
-    r = await fetch(`${CAL}/${encodeURIComponent(eventId)}?conferenceDataVersion=1`,
+    r = await gfetch(`${CAL}/${encodeURIComponent(eventId)}?conferenceDataVersion=1`,
       { method: 'PATCH', headers: g, body: JSON.stringify(event) });
   } else {
     const fixed = eventIdOf(kind, eid);
-    r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify({ id: fixed, ...event }) });
+    r = await gfetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify({ id: fixed, ...event }) });
     if (r.status === 409) {
       /* Already booked: the event another press made is this record's, and
          is the answer. One taken off the calendar earlier (Delete, then
          Create Google Meet) keeps its id at Google, so it is put back with
          this booking's time and a Meet asked for again. */
-      const had = await fetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`, { headers: g });
+      const had = await gfetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`, { headers: g });
       if (!had.ok) return json({ error: 'google-refused', reason: await why(had) }, 200, origin);
       made = await had.json();
       if (made && made.status === 'cancelled') {
@@ -222,7 +233,7 @@ Deno.serve(async (req) => {
         event.status = 'confirmed';
         event.conferenceData = { createRequest: { requestId: `${eid}-${Date.now()}`,
           conferenceSolutionKey: { type: 'hangoutsMeet' } } };
-        r = await fetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`,
+        r = await gfetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`,
           { method: 'PATCH', headers: g, body: JSON.stringify(event) });
       }
     }
@@ -237,7 +248,7 @@ Deno.serve(async (req) => {
   let link = meetLinkOf(made!);
   for (let i = 0; !link && i < 8; i++) {
     await new Promise((ok) => setTimeout(ok, 750));
-    const again = await fetch(`${CAL}/${encodeURIComponent(made!.id)}?conferenceDataVersion=1`, { headers: g });
+    const again = await gfetch(`${CAL}/${encodeURIComponent(made!.id)}?conferenceDataVersion=1`, { headers: g });
     if (again.ok) link = meetLinkOf(await again.json());
   }
   link = link || (eventId && m.meeting_link ? String(m.meeting_link) : null);

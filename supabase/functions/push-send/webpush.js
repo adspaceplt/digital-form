@@ -78,7 +78,14 @@ export async function encrypt(p256dh, auth, text) {
 /* One send. The answer's status is what the caller acts on: 201 sent, 404
    or 410 the device has gone and its subscription is removed. */
 export async function send(sub, payload, keys, subject, ttl) {
-  const body = await encrypt(sub.p256dh, sub.auth, JSON.stringify(payload));
+  /* A push service refuses a record over about 4 KB (413) on every device,
+     so the words are held well under it before sealing (the review of
+     2026-11-25). */
+  const words = Object.assign({}, payload, {
+    title: String(payload.title || '').slice(0, 200),
+    body: String(payload.body || '').slice(0, 1500)
+  });
+  const body = await encrypt(sub.p256dh, sub.auth, JSON.stringify(words));
   const r = await fetch(sub.endpoint, {
     method: 'POST',
     headers: {

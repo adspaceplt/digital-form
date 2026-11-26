@@ -20,28 +20,28 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261125we">
+<link rel="stylesheet" href="/css/portal.css?v=20261126a">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261125wf"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126a"><\/script>');}}catch(e){}</script>
 <script src="/js/config.js?v=20261124zzfb"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261125ap"></script>
-<script src="/js/clock.js?v=20261120wd"></script>
+<script src="/js/words.js?v=20261125cnq"></script>
+<script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/decide.js?v=20261117zzzf"></script>
 <script src="/js/sheet.js?v=20261125ar"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261124x"></script>
-<script src="/js/maintenance.js?v=20261125nl"></script>
+<script src="/js/maintenance.js?v=20261125ct"></script>
 <script src="/js/announce.js?v=20261124ts"></script>
 <script src="/js/menu.js?v=20261125ofc"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261125ap"></script>
 </head>
-<body>
+<body class="qs-page">
 
 <!-- Header and footer come from the shared chrome, so a new page gets them
      by including one script rather than copying this markup. -->
@@ -68,87 +68,48 @@
 
   <div id="app" data-shown hidden>
 
-    <!-- The name of the job, and nothing else. What the campaign is *about*
-         belongs with the rest of its detail, inside the card below. -->
-    <section class="panel rec-head camp-namecard" id="campHead">
-      <div class="rec-id">
+    <!-- The head (2026-11-25, the mockup the user approved): the client's
+         mark, the campaign over its client, and at the right the two facts
+         the client chooses against, Choose by and Creators. -->
+    <section class="cs-head" id="campHead">
+      <div class="cs-id">
         <span class="rec-mark" id="campMark" aria-hidden="true"></span>
-        <div class="rec-who">
-          <div class="rec-name"><h1 id="campTitle"></h1></div>
-          <p class="rec-id-meta" id="campMeta"></p>
+        <div class="cs-who">
+          <h1 id="campTitle"></h1>
+          <p id="campMeta"></p>
         </div>
       </div>
+      <dl class="cs-facts" id="csFacts"></dl>
       <!-- Where the campaign stands: n of N posted, a bar part a creator. -->
       <div class="cx-standing" id="campStanding" hidden></div>
     </section>
 
-    <!-- One summary band, not two cards. What the campaign is and how far the
-         selection has got are the same question asked twice, and they were two
-         bounded surfaces stacked above the comparison the client came to read.
-         The progress sits under the same hairline the facts do.
-
-         **The detail folds, and it is shut when the page opens.** The client
-         came to choose creators, and the creators are below this card: the
-         brief, the purpose and the figures were between them and the work,
-         so the page opened on everything except the thing to do. The date is
-         the one fact here with a consequence, so it rides the fold's own head
-         and stays readable while the card is shut — which is the summary a
-         fold in this portal has always carried. -->
-    <section class="engage-card is-shut" id="engageCard">
-      <div class="engage-head">
-        <button class="engage-toggle" id="engageToggle" type="button"
-                aria-expanded="false" aria-controls="engageBody">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-          <span id="engageLabel"></span>
-        </button>
-        <span class="engage-sum" id="engageSum"></span>
-      </div>
-      <div class="engage-body" id="engageBody">
-      <div class="engage-inner">
-      <div class="engage-band">
-        <p class="camphead-purpose" id="campPurpose" hidden></p>
+    <!-- The brief, one shaded line, never folded. -->
+    <div class="cs-brief" id="campBriefBox" hidden>
+      <span class="cs-brief-ic" id="campBriefIc" aria-hidden="true"></span>
+      <div class="cs-brief-text">
+        <p class="cs-purpose" id="campPurpose" hidden></p>
         <p id="campBrief"></p>
-        <dl class="booking-facts" id="engageFacts"></dl>
-        <!-- The amount is folded away. Campaigns get shown on a screen in a
-             meeting, and the billing figure is not always for that room. -->
-        <div class="amountfold" id="amountFold" hidden>
-          <div class="amountfold-head">
-            <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-              <span id="amountLabel"></span>
-            </button>
-            <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
-          </div>
-          <div class="msg err" id="amountMsg" role="status" hidden></div>
-          <div class="totals" id="bookedTotals" hidden></div>
-        </div>
       </div>
+    </div>
 
-    <!-- Progress. Determinate, because the slot count is known, and phrased as
-         what is left to do rather than as a tally. -->
-    <div class="progress-card" id="progressCard">
-      <div class="progress-top">
-        <b id="progLabel"></b>
-        <span class="muted" id="progCount"></span>
-      </div>
-      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
-      <p class="progress-say" id="progSay"></p>
-      <p class="progress-say progress-backup" id="progBackup" hidden></p>
-      <div class="progress-new" id="progNew" hidden>
-        <span id="progNewText"></span>
-        <button class="linkbtn" id="progNewBtn" type="button"></button>
-      </div>
-      </div>
-      </div>
-      </div>
-    </section>
-
-    <!-- Confirmed bookings and where each has got to. Short chips only: a
-         client wants to know whether it is their turn, not our vocabulary. -->
     <!-- A draft waiting on the client leads the page. -->
     <div class="cx-needs" id="needBox" hidden></div>
     <section id="bookingWrap" hidden>
       <h2 class="sectionhead" id="bookingHead"></h2>
+      <!-- The amount is folded away. Campaigns get shown on a screen in a
+           meeting, and the billing figure is not always for that room. -->
+      <div class="amountfold" id="amountFold" hidden>
+        <div class="amountfold-head">
+          <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            <span id="amountLabel"></span>
+          </button>
+          <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
+        </div>
+        <div class="msg err" id="amountMsg" role="status" hidden></div>
+        <div class="totals" id="bookedTotals" hidden></div>
+      </div>
       <!-- Totals across every live post, the same figures the console adds up. -->
       <section class="rollup-card" id="clientRollup" hidden>
         <div class="rollup-head" id="rollupHead"></div>
@@ -159,16 +120,52 @@
 
     <h2 class="sectionhead" id="chooseHead" hidden></h2>
     <p class="listhint" id="chooseHint" hidden></p>
-    <div class="clist" id="optionGrid"></div>
 
-    <div class="confirmbar" id="confirmBar">
-      <div class="confirmbar-in">
-        <span id="confirmSummary"></span>
-        <button class="btn btn-primary" id="confirmBtn" type="button"></button>
+    <!-- The creators to choose from beside the cart (1.618 : 1 at a desk);
+         on a phone the cart is the bar at the foot and its sheet. -->
+    <div class="cs-body" id="csBody" hidden>
+      <div class="cs-main">
+        <div class="actstrip seg-strip"><div class="cmdbar-views actviews" id="csStrip" role="group"></div></div>
+        <div class="cs-grid" id="optionGrid"></div>
+      </div>
+      <aside class="sumcard cs-cart" id="csCart" aria-labelledby="cartHeading">
+        <div class="cs-cart-head">
+          <span class="cs-cart-ic" id="cartIc" aria-hidden="true"></span>
+          <h2 id="cartHeading"></h2>
+          <span class="tab-n" id="progCount"></span>
+          <button class="iconbtn cs-cart-close" id="cartClose" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p class="cs-say" id="progSay"></p>
+        <ul class="cs-lines" id="cartLines"></ul>
+        <p class="cs-backups" id="cartBackup" hidden></p>
+        <p class="cs-say cs-mute" id="progBackup" hidden></p>
+        <div class="totals cs-totals" id="cartTotals"></div>
+        <p class="cs-say cs-mute" id="cartChanged" hidden></p>
+        <button class="btn btn-primary cs-submit" id="confirmBtn" type="button"></button>
+      </aside>
+    </div>
+
+    <!-- The cart on a phone: fixed at the foot, above the safe area. -->
+    <div class="cs-bar" id="confirmBar" hidden>
+      <div class="cs-bar-in">
+        <p class="cs-bar-sum" id="confirmSummary"></p>
+        <div class="cs-bar-acts">
+          <button class="btn" id="cartOpen" type="button"></button>
+          <button class="btn btn-primary" id="barSubmit" type="button"></button>
+        </div>
       </div>
     </div>
   </div>
 </main>
+
+<!-- The cart's own sheet on a phone: View selection carries the cart in. -->
+<div class="sheet cs-cartsheet" id="cartSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cartHeading">
+    <div class="sheet-body" id="cartSheetBody"></div>
+  </div>
+</div>
 
 <div class="sheet" id="confirmSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="confirmHeading">
@@ -191,8 +188,8 @@
   </div>
 </div>
 
-<script src="/js/icons.js?v=20261125nl"></script>
+<script src="/js/icons.js?v=20261125ct"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/creators.js?v=20261125cpa"></script>
+<script src="/js/creators.js?v=20261125ct"></script>
 </body>
 </html>

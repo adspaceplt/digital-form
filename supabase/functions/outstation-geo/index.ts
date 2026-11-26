@@ -79,7 +79,7 @@ async function placeOf(admin: ReturnType<typeof createClient>, key: string, lat:
   if (Number(wait) > 0) await new Promise((r) => setTimeout(r, Math.min(Number(wait), 8000)));
   try {
     const r = await fetch(`${ORS_BASE}/pelias/v1/reverse?point.lat=${lat}&point.lon=${lng}&size=1`,
-      { headers: { 'Authorization': key, 'Accept': 'application/json' } });
+      { headers: { 'Authorization': key, 'Accept': 'application/json' }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error('geocode ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
     const f = ((d.features || []) as Feature[])[0];
@@ -161,7 +161,8 @@ Deno.serve(async (req) => {
     const r = await fetch(`${ORS_BASE}/openrouteservice/v2/matrix/driving-car`, {
       method: 'POST',
       headers: { 'Authorization': key, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ locations: coords, metrics: ['distance', 'duration'], units: 'km' })
+      body: JSON.stringify({ locations: coords, metrics: ['distance', 'duration'], units: 'km' }),
+      signal: AbortSignal.timeout(15000)
     });
     if (!r.ok) throw new Error('ors ' + r.status + ' ' + (await r.text()).slice(0, 200));
     const d = await r.json();
