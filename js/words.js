@@ -378,7 +378,7 @@
   W.parts = function (items) {
     return (items || []).filter(function (x) { return x && (typeof x !== 'object' || x.text); }).map(function (x, i) {
       var t = typeof x === 'object' ? x : { text: x };
-      return '<span class="lpart' + (t.cls ? ' ' + t.cls : '') + '">' + (i ? '\u00b7\u00a0' : '') + W.esc(t.text) + '</span>';
+      return '<span class="lpart' + (t.cls ? ' ' + t.cls : '') + '">' + (i ? '<span aria-hidden="true">\u00b7\u00a0</span>' : '') + W.esc(t.text) + '</span>';
     }).join(' ');
   };
   /* The one reading of an email address typed anywhere (2026-10-27, the
