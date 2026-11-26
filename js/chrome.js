@@ -229,6 +229,9 @@
       });
     };
     paint();
+    /* A page holding no glyph set (the front door) has its close drawn once
+       the set is fetched (js/maintenance.js). */
+    if (!window.ADspaceIcons && window.ADspaceMaintenance && window.ADspaceMaintenance.icons) window.ADspaceMaintenance.icons(paint);
     if (window.MutationObserver) new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     var up = document.getElementById('upgradeBar'), top = document.getElementById('topbar');
     if (up && up.parentNode) up.parentNode.insertBefore(bar, up);
