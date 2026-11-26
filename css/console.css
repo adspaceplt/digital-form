@@ -1674,10 +1674,15 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   .cmdbar-end .cmdbar-quiet:empty { display: none; }
   .cmdbar-acts .cmd-primary .btn-word { display: none; }
   .cmdbar-acts .cmd-primary svg { margin: 0; }
-  /* A lone act with a glyph gives up its word on a phone, as the primary does. */
-  .cmdbar-acts .cmd-solo:has(> svg) .btn-word { display: none; }
-  .cmdbar-acts .cmd-solo:has(> svg) { width: var(--ctl-h-sm); min-width: 0; padding: 0; }
-  .cmdbar-acts .cmd-solo:has(> svg) svg { margin: 0; }
+  /* A lone act with a glyph gives up its word on a phone, as the primary
+     does, unless the primary stands beside it: two glyphs alone read as one
+     act twice (Documents' two pluses, 2026-11-26), so it keeps its words. */
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) .btn-word { display: none; }
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) { width: var(--ctl-h-sm); min-width: 0; padding: 0; }
+  .cmdbar-acts:not(:has(> .cmd-primary:not([hidden]))) .cmd-solo:has(> svg) svg { margin: 0; }
+  /* Its words then take the count's room, so the bar stays one row; the
+     count is said in the Filters sheet's head, as My Work's Months' is. */
+  .cmdbar-end:has(> .cmdbar-acts > .cmd-primary:not([hidden])):has(> .cmdbar-acts > .cmd-solo:not([hidden]) > svg) > .cmdbar-quiet { display: none; }
   .cmd-more { display: inline-block; position: relative; }
   }
 
@@ -1704,6 +1709,11 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .tfacts dd > .select.tdetail { width: calc(100% + 9px); max-width: none; }
+/* A select drawn as a value (My Work's task details, a colleague's
+   Department) reads its empty choice, Not set, in the mute ink, as every
+   value not set beside it does; its open list keeps the ink (2026-11-26). */
+.select.tdetail:has(option:checked[value=""]) { color: var(--ink-mute); }
+.select.tdetail option { color: var(--ink); }
 /* A detail's select keeps its whole target but gives its height back, as a
    date does, so a row with a select and a row of words stand the same 8px
    apart (the user, 2026-10-11: "are you sure this is evenly distributed"). */
@@ -4533,6 +4543,11 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .hir-row > .hir-line { display: block; grid-area: who; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .hir-row > .hir-state { grid-area: state; justify-self: end; }
 .is-narrow .hir-row > .hir-day { grid-area: day; text-align: right; font-size: 12.5px; color: var(--ink-mute); }
+/* Where the card holds one state, the state column reads the day the row
+   last moved (`ADspaceGroup.upd`, Suppliers and Hiring; 2026-11-26), and a
+   phone keeps that one date at the right, never two dates unnamed. */
+.row-upd { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.is-narrow .hir-row.is-upd > .hir-day { display: none; }
 .hir-headcard, #hirTabs { margin-bottom: 12px; }
 .hir-body .readgroups.hir-pane { margin-top: 0; }
 #hirMsg:empty, #hirRecMsg:empty { display: none; }
@@ -6446,8 +6461,6 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cpq-sub.is-late { color: var(--err); font-weight: 500; }
 .cpq-fig { font-variant-numeric: tabular-nums; font-weight: 500; font-size: 13.5px; }
 .cpq-acct { margin: 0 0 12px; }
-.cpq-paid-none .crm-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.cpq-h { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; font-weight: 600; }
 .crm-group-head .cpq-period { width: auto; flex: 0 0 auto; margin-left: auto; }
 .is-narrow .cpq-row { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
 .is-narrow .cpq-act:empty { display: none; }

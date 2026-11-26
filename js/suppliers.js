@@ -133,8 +133,9 @@
   }
   function chip(s, got) {
     var st = STATE[s.status] || STATE.pending;
-    return '<span class="chip-state ' + st[1] + '">' + esc(s.waiting || got ? 'Details received' : st[0]) + '</span>';
+    return '<span class="chip-state ' + st[1] + '">' + esc(stateWord(s, got)) + '</span>';
   }
+  function stateWord(s, got) { return s.waiting || got ? 'Details received' : (STATE[s.status] || STATE.pending)[0]; }
   function paint() {
     var box = $('supList'), rec = $('supRec');
     rec.hidden = true;
@@ -157,18 +158,22 @@
     [['pending', 'Pending'], ['active', 'Active'], ['inactive', 'Inactive']].forEach(function (g) {
       var mine = rows.filter(function (s) { return s.status === g[0]; });
       if (!mine.length) return;
+      /* A card whose every row reads its heading's state says when each
+         last moved instead, as Creators does; a card of mixed states (a
+         Pending supplier whose details came back) keeps the state. */
+      var one = mine.every(function (s) { return stateWord(s) === g[1]; });
       box.appendChild(GRP.section({
         route: 'suppliers', key: g[0], name: g[1], count: mine.length,
         shut: !filtered && GRP.shut('suppliers', g[0], g[0] === 'inactive'),
         table: function () {
-          var table = GRP.table('svc-row sup-row', ['Supplier', 'Person in charge', 'Payment term', 'State', '']);
-          GRP.more(table, mine, 30, 'suppliers', row);
+          var table = GRP.table('svc-row sup-row', ['Supplier', 'Person in charge', 'Payment term', one ? window.ADspaceWords.line.updated : 'State', '']);
+          GRP.more(table, mine, 30, 'suppliers', function (s) { return row(s, one); });
           return table;
         }
       }));
     });
   }
-  function row(s) {
+  function row(s, one) {
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'svc-row sup-row' + (s.status === 'inactive' ? ' is-off' : '');
@@ -177,7 +182,7 @@
          (2026-10-20, SUP-9). */
       '<span class="sup-who' + (s.contact_name ? '' : ' is-none') + '">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-term' + (s.payment_term ? '' : ' is-none') + '">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
-      '<span class="sup-state">' + chip(s) + '</span>' +
+      '<span class="sup-state">' + (one ? window.ADspaceGroup.upd(s.updated_at || s.created_at) : chip(s)) + '</span>' +
       /* A phone's second line, as Clients reads (the user, 2026-11-10): the
          Supplier ID leads it, then the person in charge and their position,
          each part kept whole; what is not known is left out. */
@@ -419,12 +424,12 @@
     section('waiting', 'Awaiting payment', wt, wt.map(function (b) { return row(b, b.balance, 'Due ' + billDay(b.due)); }).join(''), sum(wt));
     var perSel = '<select class="select select-sm cpq-period" id="spyPeriod" aria-label="Paid period">' +
       PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === bills.period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>';
+    /* Paid stands even when the period holds none, as Creators' Payments:
+       the same card head, its count 0 and No entries. in it (2026-11-26). */
     if (pd.length) section('paid', 'Paid', pd, pd.map(function (b) { return row(b, b.amount, 'Paid ' + billDay(b.paid_on || b.date)); }).join(''), perSel);
-    else {
-      var none = document.createElement('section'); none.className = 'crm-group cpq-paid-none';
-      none.innerHTML = '<div class="crm-group-head"><h3 class="cpq-h">Paid<span class="tab-n">0</span></h3>' + perSel + '</div>';
-      host.appendChild(none);
-    }
+    else host.appendChild(GRP.section({ route: 'supplier-payments', key: 'paid', name: 'Paid', count: 0, marks: perSel,
+      shut: GRP.shut('supplier-payments', 'paid', false, false),
+      table: function () { var t = document.createElement('div'); UI.emptyLine(t, 'No entries.'); return t.firstChild; } }));
     readLine(host, d);
     var ps = $('spyPeriod');
     ps.addEventListener('click', function (ev) { ev.stopPropagation(); });

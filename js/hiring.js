@@ -157,8 +157,11 @@
      amber, until a colleague acts; the record's head keeps the stage, its
      card saying the step. */
   var STEP = { picked: 'Time chosen', none: 'New times requested', accepted: 'Offer accepted', signed: 'Contract signed', declined: 'Offer declined' };
+  function chipOf(c, step) {
+    return c.removed_at ? ['Removed', 'is-off'] : step && STEP[c.step] ? [STEP[c.step], 'is-warn'] : STAGE[c.stage] || STAGE.new;
+  }
   function chip(c, step) {
-    var st = c.removed_at ? ['Removed', 'is-off'] : step && STEP[c.step] ? [STEP[c.step], 'is-warn'] : STAGE[c.stage] || STAGE.new;
+    var st = chipOf(c, step);
     return '<span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>';
   }
   function paint() {
@@ -181,27 +184,31 @@
     [['new', 'New'], ['invited', 'Invited'], ['interview', 'Interview'], ['offer', 'Offer'], ['pool', 'Talent pool'], ['hired', 'Hired'], ['closed', 'Closed'], ['removed', 'Removed']].forEach(function (g) {
       var mine = rows.filter(function (c) { return g[0] === 'removed' ? !!c.removed_at : !c.removed_at && c.stage === g[0]; });
       if (!mine.length) return;
+      /* A card whose every row reads its heading's state says when each
+         last moved instead, as Creators does; a card where a candidate's
+         own step waits on the team (Time chosen) keeps the state. */
+      var one = mine.every(function (c) { return chipOf(c, true)[0] === g[1]; });
       box.appendChild(GRP.section({
         route: 'hiring', key: g[0], name: g[1], count: mine.length,
         shut: !filtered && GRP.shut('hiring', g[0], g[0] === 'removed' || g[0] === 'closed'),
         table: function () {
-          var table = GRP.table('svc-row hir-row', ['Candidate', 'Source', 'Owner', 'Added', 'State', '']);
-          GRP.more(table, mine, 30, 'hiring', row);
+          var table = GRP.table('svc-row hir-row', ['Candidate', 'Source', 'Owner', 'Added', one ? window.ADspaceWords.line.updated : 'State', '']);
+          GRP.more(table, mine, 30, 'hiring', function (c) { return row(c, one); });
           return table;
         }
       }));
     });
   }
-  function row(c) {
+  function row(c, one) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'svc-row hir-row' + (c.removed_at ? ' is-off' : '');
+    b.className = 'svc-row hir-row' + (c.removed_at ? ' is-off' : '') + (one ? ' is-upd' : '');
     var owners = (c.owners || []).join(', ');
     b.innerHTML = '<span class="svc-name"><b>' + esc(c.name) + '</b><small>' + esc(c.position) + '</small></span>' +
       '<span class="hir-src">' + esc(SOURCE[c.source] || '') + '</span>' +
       '<span class="hir-own' + (owners ? '' : ' is-none') + '">' + (owners ? esc(owners) : '<span class="muted">—</span>') + '</span>' +
       '<span class="hir-day">' + esc(day(c.created_at)) + '</span>' +
-      '<span class="hir-state">' + chip(c, true) + '</span>' +
+      '<span class="hir-state">' + (one ? window.ADspaceGroup.upd(c.removed_at || c.last_step_at || c.created_at) : chip(c, true)) + '</span>' +
       /* A phone's second line: the position, then the source, each kept whole. */
       '<span class="hir-line">' + [c.position, SOURCE[c.source]].filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }).join(' · ') + '</span>' +
       '<span class="hir-go">' + CHEV + '</span>';

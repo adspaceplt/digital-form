@@ -4759,8 +4759,9 @@ body > .shell { width: 100%; }
 .cl-lead > .cl-who { flex: 1 1 auto; }
 .cl-lead > .cl-who > :is(b, small) { display: block; }
 .camp-row .cl-lead > .cl-who { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A part of a line of parts that must stay whole (a date, a name). */
-.crm-c-meta .nb { white-space: nowrap; }
+/* A part of a line of parts, kept whole, its dot inside it
+   (`ADspaceWords.parts`): a wrap falls before the dot, never after it. */
+.lpart { white-space: nowrap; }
 .crm-seen-kind {
   font-size: 12px; color: var(--ink-mute);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
