@@ -2915,7 +2915,6 @@
     if (isEveryday(t)) return (PLAIN[plainOfKey(s.key)] || {}).word || s.label;
     return stepWord(s, t.engagement_id) || s.label;
   }
-  function statusCell(t) { return stageCell(t); }
   /* A row's stage: the select, and over it on a phone its word as a status
      (the dot and its word), the select laid unseen over the word so a press
      still opens the stages (2026-11-18, the user: the stage on the title's
@@ -7423,9 +7422,6 @@
     var when = niceTime(e.meeting_at);
     return when + (e.meeting_channel ? ' · ' + (CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel)) : '') +
       (e.meeting_owner_id ? ' · ' + nameOf(e.meeting_owner_id) : '');
-  }
-  function meetingHeld(e) {
-    return Boolean(e && (e.meeting_na || (e.meeting_at && new Date(e.meeting_at) <= new Date())));
   }
   /* 11:30am, the way the message to a client writes a time. */
   function clock(v) {

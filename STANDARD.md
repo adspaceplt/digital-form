@@ -675,6 +675,10 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   branch's base (c881fdb, main with #1479, Settings sheets on one line):
   the Time limits sheet no longer reads its three figures' words as the
   suite asks. Held here until it ships.
+- 2026-11-26, `waapprove` (the same release): Settings › Due dates' sheet
+  holds no field labelled Remind after, so the suite times out; it fails
+  the same on main a6157c5, likely from #1479's relabelled sheets. Held
+  here until it ships.
 ### Not built, or waiting on the user
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):

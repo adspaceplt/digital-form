@@ -75,8 +75,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   feedback and the hiring limits named none, and their Save threw); a
   section's figures pair only while every label of it fits a column (24
   characters, three across at 14), a latitude always beside its
-  longitude; a numbering sheet's example is its preview (First this
-  month: #OS261101); a figure changed from a
+  longitude; a numbering sheet's example is its preview, the number
+  the next record takes (Next trip: #OS261102, this month's count and
+  one from `id_formats_list`, never a 1 typed by the page; 2026-11-26);
+  a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
   (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
   never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). An Open
