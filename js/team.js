@@ -292,7 +292,7 @@
   /* Since the revamp (2026-11-13) every colleague has the Dashboard's Me
      tab; this row decides the Team tabs alone. */
   var DASH_DESC = { on: 'Shows the Team tabs with the cards of each section the group has at Full control.', none: 'The Team tabs are hidden. Me is always shown.',
-    empty: 'On, but the Team tabs show nothing: the group has no section at Full control.' };
+    empty: 'The Team tabs are empty, as this group has no section at Full control. Give it Full control of a section to show its cards.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
@@ -773,7 +773,7 @@
       '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.removed_at ? 'Removed' : m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
         /* A request to reach the console from abroad, waiting on an admin. */
         : abroadWaiting(m.id) ? '<span class="tone is-warn">Overseas request</span>'
-        : m.card_on === false ? '<span class="tone is-off">Card off</span>' : '') + '</span>' +
+        : m.card_on === false ? '<span class="tone is-off">Namecard hidden</span>' : '') + '</span>' +
       '<svg class="crm-c-go team-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M9 18l6-6-6-6"/></svg>';
@@ -888,7 +888,7 @@
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
         if (k === 'access_until') return 'Access until: ' + (dayWord(m.access_until) || 'not set') + ' → ' + (dayWord(patch.access_until) || 'not set');
-        if (k === 'access_until_time') return 'Access time: ' + (timeWord(m.access_until_time) || 'day\'s end') + ' → ' + (timeWord(patch.access_until_time) || 'day\'s end');
+        if (k === 'access_until_time') return 'Access time: ' + (timeWord(m.access_until_time) || 'End of day') + ' → ' + (timeWord(patch.access_until_time) || 'End of day');
         return k + ': ' + (m[k] == null ? 'not set' : m[k]) + ' → ' + (patch[k] == null ? 'not set' : patch[k]);
       }).join('; '));
       msg('teamMsg', 'Saved.', 'ok');
@@ -1049,7 +1049,7 @@
            own, holds the delete (review 2026-11-24). */
         if (a.error === 'in-use') {
           return (a.held || []).indexOf('trips') >= 0
-            ? 'This colleague cannot be deleted because other colleagues travelled on outstation trips this colleague drove. This colleague remains removed.'
+            ? 'This colleague cannot be deleted while they are the driver on other colleagues\' outstation trips. They remain removed.'
             : 'This colleague cannot be deleted because other work in the portal still names this colleague. This colleague remains removed.';
         }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
@@ -1320,7 +1320,7 @@
                work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, send back, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
-    services: { none: 'Services is hidden.', view: 'Read the Rate Card.', manage: 'Add, edit and delete Rate Card lines, and publish the Rate Card.' },
+    services: { none: 'Services is hidden.', view: 'Read the Rate Card.', manage: 'Add, edit and delete Rate Card services, and publish the Rate Card.' },
     team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Sending an invitation needs Send invitation under Advanced.' },
     activity: { none: 'The Activity record is hidden.', view: 'Read the Activity record, section by section.' }
   };
@@ -1809,7 +1809,7 @@
       roles.map(function (r) {
         var acc = accessOf(r), off = !r.is_admin && acc[DASH] === 'none';
         var none = !off && !r.is_admin && !SECTIONS.some(function (s) { return acc[s[0]] === 'manage'; });
-        return cell(r.name, '<b>' + (off ? 'Off' : 'On') + '</b>' + (none ? '<small>No section at Full control</small>' : ''), off ? 'is-off' : '');
+        return cell(r.name, '<b>' + (off ? 'Off' : 'On') + '</b>' + (none ? '<small>This group has no section at Full control.</small>' : ''), off ? 'is-off' : '');
       }).join('') + '</div>';
     CHUNKS.forEach(function (c) {
       html += '<div class="permcmp-chunk">' + esc(c[0]) + '</div>';
@@ -2820,11 +2820,11 @@
             var e = (r2 && r2.error && r2.error.message) || (r2 && r2.data && r2.data.error) || '';
             if (e) {
               every.disabled = false;
-              msg('mrecDevMsg', DEV_SAID[e] || (/function|schema cache/i.test(e) ? window.ADspaceWords.line.notYet : 'Not signed out. Try again.'), 'err');
+              msg('mrecDevMsg', DEV_SAID[e] || (/function|schema cache/i.test(e) ? window.ADspaceWords.line.notYet : 'Not signed out. Please try again.'), 'err');
               return;
             }
             paintDevices(m, body, all);
-          }).catch(function () { every.disabled = false; msg('mrecDevMsg', 'Not signed out. Try again.', 'err'); });
+          }).catch(function () { every.disabled = false; msg('mrecDevMsg', 'Not signed out. Please try again.', 'err'); });
         });
       });
       Array.prototype.forEach.call(body.querySelectorAll('[data-dev]'), function (b) {
@@ -2837,9 +2837,9 @@
             b.disabled = true;
             db.rpc('team_session_end', { p_id: m.id, p_session: x.id }).then(function (r2) {
               var e = (r2 && r2.error && r2.error.message) || (r2 && r2.data && r2.data.error) || '';
-              if (e) { b.disabled = false; msg('mrecDevMsg', DEV_SAID[e] || 'Not signed out. Try again.', 'err'); return; }
+              if (e) { b.disabled = false; msg('mrecDevMsg', DEV_SAID[e] || 'Not signed out. Please try again.', 'err'); return; }
               paintDevices(m, body, all);
-            }).catch(function () { b.disabled = false; msg('mrecDevMsg', 'Not signed out. Try again.', 'err'); });
+            }).catch(function () { b.disabled = false; msg('mrecDevMsg', 'Not signed out. Please try again.', 'err'); });
           });
         });
       });
