@@ -12,7 +12,7 @@ item it takes. The previous coordinator session ended here; nothing lives in it.
 | F `session_01RVzkaPPWFkP4TvAS61BgEd` | #1496 and #1500 merged. Left: Numbering (one part in Settings), once F8 is on main | Message F when F8 merges |
 | H `session_01RVzkaMzHTsWjccfqE6Hemb` | The surface comparison Artifact (6 screens × v3, cards, shaded, 1280 and 390); no repo change | Sends the link to the coordinator |
 
-G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 is not deployed (index.ts is 140 KB, too large for one connector call; live v68 keeps the old View PDF button, cosmetic): deploy it by CLI (`supabase functions deploy bukku-sync --no-verify-jwt`) or through the Management API with a token.
+G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 (index.ts 140 KB, too large for one connector call) is being deployed by session `session_01RVzkaQdpVPqkzAb7ChdveC` through the Management API; `SUPABASE_ACCESS_TOKEN` is now set in the environment for later deploys. PDF item 13 (the Rate Card discount sign, as G proposed in #1499/#1501's handover) is approved by the user ("2 ok"): build it, with its suite edit, on the next documents/PDF train.
 
 ## Queue (in order, as release trains; coordinator session_01RVzkaP4WzcjZDWEysZw37c)
 
@@ -76,5 +76,4 @@ Also done:
 Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
 1. go.adspace.me's DNS stays for now; its removal is a future update.
-2. Decide PDF item 13 (G): the Rate Card discount reads −10%; approve its test edit.
-3. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
+2. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
