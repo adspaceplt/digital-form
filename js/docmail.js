@@ -48,7 +48,7 @@
     'bad-kind': 'Refresh the page and try again.',
     'bad-request': 'Refresh the page and try again.',
     'bad-file': 'The PDF could not be attached. Preview it to check, then try again.',
-    sending: 'This email is on its way. Please wait a minute before sending again.',
+    sending: window.ADspaceWords.line.mailSending,
     'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',

@@ -2900,24 +2900,37 @@
     'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.' };
+    'needs-update': 'This feature is not available yet. Please contact an admin.', sending: ADspaceWords.line.mailSending };
+  /* Sends the request; answers the refusal's words, or '' once sent or
+     once a request sent within the repeat hours has asked first
+     (RETENTION AND JOBS HELD, 2026-11-25: when, by whom and to whom, then
+     Send again). */
+  function sendFeedback(c, kind, again) {
+    return db.functions.invoke('supplier-mail', { body: { feedback: true, client: c.id, kind: kind, again: again === true } }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) return FB_SAID['not-sent'];
+      if (d.error === 'recent' && !again) {
+        var rc = d.recent || {};
+        setTimeout(function () {
+          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Send again', wait: true,
+            body: 'This request went to ' + (rc.to || 'the primary contact') + (rc.at ? ' on ' + ADspaceClock.date(rc.at) : '') + (rc.by ? ' by ' + rc.by : '') + '.' },
+            function () { return sendFeedback(c, kind, true); });
+        }, 0);
+        return '';
+      }
+      if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
+      msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
+      if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback();
+      return '';
+    }).catch(function () { return FB_SAID['not-sent']; });
+  }
   function askFeedback(c) {
     var primary = (state.contacts || []).filter(function (k) { return k.client_id === c.id && k.is_primary && !k.archived_at; })[0];
     window.ADspaceConfirm.ask({
       title: 'Request feedback', go: 'Send', wait: true,
       body: primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
       fields: [{ name: 'k', label: 'Form', seg: true, choices: [['quick', 'Service rating'], ['review', 'Performance review']], value: 'quick' }]
-    }, function (v) {
-      var kind = (v && v.k) || 'quick';
-      return db.functions.invoke('supplier-mail', { body: { feedback: true, client: c.id, kind: kind } }).then(function (r) {
-        var d = r.data || {};
-        if (r.error) return FB_SAID['not-sent'];
-        if (d.error) return FB_SAID[d.error] || FB_SAID['not-sent'];
-        msg('crmWorkMsg', 'Sent to ' + (d.to_name || d.to || 'the primary contact') + '.', 'ok');
-        if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback();
-        return '';
-      }).catch(function () { return FB_SAID['not-sent']; });
-    });
+    }, function (v) { return sendFeedback(c, (v && v.k) || 'quick', false); });
   }
 
   /* The record's Feedback pane: every request, newest first, its answer
