@@ -80,7 +80,7 @@
 
   /* WhatsApp carries the chat mark before its words, as Chat on WhatsApp
      does on every client page (CARD-1). */
-  var CHAT = window.ADspaceIcons.glyph('chat');
+  var CHAT = window.ADspaceIcons.glyph('whatsapp');
 
   function row(label, value, href, cls) {
     return '<a class="nc-row' + (cls ? ' ' + cls : '') + '" href="' + esc(href) + '"' +

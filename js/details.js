@@ -166,7 +166,7 @@
     var w = t(), I = window.ADspaceIcons, C = window.ADspaceClock, zh = lang === 'zh', rep = sent && info && info.rep;
     var when = sent && C ? C.date(sent, { zh: zh }) + (zh ? '' : ', ') + C.clock(sent, { zh: zh }) : '';
     var wa = rep && rep.whatsapp ? '<a class="btn btn-primary" href="https://wa.me/' + esc(rep.whatsapp) + '" target="_blank" rel="noopener">' +
-      I.svg('chat') + esc(w.chatWhatsApp) + '</a>' : '';
+      I.svg('whatsapp') + esc(w.chatWhatsApp) + '</a>' : '';
     root().innerHTML = I.received({
       title: title, line: text, ref: sent && info ? info.brand : '',
       steps: sent ? [

@@ -1303,7 +1303,7 @@
     if (mgr) {
       mgr.hidden = !c.owner;
       $('ovMgrBox').innerHTML = c.owner ? '<div class="cp-who"><span class="cx-tile is-round">' + glyph('user') + '</span><span class="cp-led-words"><b class="cp-person">' + esc(c.owner) + '</b><small>' + esc(w.manager) + '</small></span></div><div class="cp-reach">' +
-        (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
+        (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + glyph('whatsapp') + esc(w.whatsapp) + '</a>' : '') +
         (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + glyph('mail') + esc(w.email) + '</a>' : '') + '</div>' : '';
     }
     /* The registered name, the account manager and the status are on the
@@ -1335,7 +1335,7 @@
           '<span class="crm-reach">' +
             /* Each chip with its glyph, as the account manager's are. */
             (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + glyph('phone') + esc(phoneWord(k.phone)) + '</a>' : '') +
-            (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
+            (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">' + glyph('whatsapp') + esc(w.whatsapp) + '</a>' : '') +
             (k.email ? '<a class="plink" href="mailto:' + esc(k.email) + '">' + glyph('mail') + esc(k.email) + '</a>' : '') +
           '</span><span class="team-act"></span>';
         ct.appendChild(row);

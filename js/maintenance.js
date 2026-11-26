@@ -127,7 +127,7 @@
     }).join('<br>') : '';
     var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
     /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
-    var CHAT_MARK = icGlyph('chat', '', 'width="15" height="15"');
+    var CHAT_MARK = icGlyph('whatsapp', '', 'width="15" height="15"');
     var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
     /* The console's cover is the whole screen, its bar under it: the
        wordmark leads it, as every page's bar would (2026-11-20). */

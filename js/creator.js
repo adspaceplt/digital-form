@@ -769,7 +769,7 @@
     var d = window.ADspaceAPI.waNumber(phone);
     var I = window.ADspaceIcons;
     return '<div class="cx-chips">' +
-      '<a class="plink" href="https://wa.me/' + d + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') + esc(t().whatsapp) + '</a>' +
+      '<a class="plink" href="https://wa.me/' + d + '" target="_blank" rel="noopener">' + (I ? I.svg('whatsapp') : '') + esc(t().whatsapp) + '</a>' +
       '<a class="plink" href="tel:+' + d + '">' + (I ? I.svg('phone') : '') + esc(t().call) + '</a></div>';
   }
   function placeHtml(where) {

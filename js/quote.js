@@ -1678,7 +1678,7 @@
     signWire();
   }
   // The WhatsApp mark, as the front door draws it before the same words.
-  var CHAT_MARK = window.ADspaceIcons.glyph('chat', '', 'width="15" height="15"');
+  var CHAT_MARK = window.ADspaceIcons.glyph('whatsapp', '', 'width="15" height="15"');
   function addGlyph(b, k) {
     if (b.querySelector('svg')) return;
     b.insertAdjacentHTML('afterbegin', window.ADspaceIcons.glyph(k, '', 'width="15" height="15"'));
