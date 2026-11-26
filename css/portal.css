@@ -4881,12 +4881,13 @@ body > .shell { width: 100%; }
 /* The Employee ID beside the name, read after it. */
 .team-who b .team-eid { margin-left: 6px; font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .team-who small { font-size: 12px; color: var(--ink-mute); }
+.permchunk > .fsec-h, .permmain-h { font-size: 15px; letter-spacing: -.01em; }
 .permchunk > .fsec-h { margin: 0 0 4px; }
 /* The Dashboard's one row stands above the chunks, with no heading (2026-10-11). */
 /* A row with nothing in it takes no room: the Dashboard's block holds no
    Customise, and an empty line stood 44px over Work (2026-10-27, TEAM-7). */
 .permsec-desc:empty { display: none; }
-.permsec-name { grid-area: name; align-self: center; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.permsec-name { grid-area: name; align-self: center; min-width: 0; font-size: 14px; font-weight: 500; color: var(--ink); }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* What differs from the section, said while its parts are shut. */
 .permsec-diff { grid-area: diff; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
@@ -4897,14 +4898,11 @@ body > .shell { width: 100%; }
 .is-narrow .permsec .seg-opt { padding: 0 4px; }
 /* The fold names how many differ; it clears the control floor with the
    negative block margin the ⋯ uses, so its line keeps the words' height. */
-.permsec-toggle {
-  grid-area: tog; justify-self: end; align-self: center;
-  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
-  margin-block: calc((18px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
-  color: var(--ink-soft); font: inherit; font-size: 13px; text-align: right; cursor: pointer; white-space: nowrap;
-}
+/* Advanced: a quiet small button with the shared chevron (2026-11-26, the
+   Groups review), arranged here and styled by its own rules. */
+.permsec-toggle { grid-area: tog; justify-self: end; align-self: center; min-width: 0; white-space: nowrap; }
 .permsec-n:empty { display: none; }
-.permsec-toggle .disclosure-caret { display: inline-block; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.permsec-chev { transition: transform var(--t) var(--ease); }
 /* The sentence at the top reads the group back as it stands. */
 .permsum {
   margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk);

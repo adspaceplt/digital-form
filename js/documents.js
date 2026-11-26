@@ -492,7 +492,7 @@
   function refDate(s) { return (s && ADspaceClock.date(dayOf(s))) || String(s || ''); }
   function verifyLine(signed) {
     return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
-      'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
+      'Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
   }
   /* A document's Document ID as printed (XXXX-XXXX; VERIFY DETAILS,
      2026-11-20), asked of the database by the id the page already holds:
@@ -660,7 +660,7 @@
       /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
       if (tpl !== 'ALP' && id) {
         p.right(count, R, at(G.countAt), G.count, font, faint);
-        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
