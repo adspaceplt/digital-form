@@ -1180,7 +1180,7 @@ screenshotted, and the push names any line it could not settle.
   - Delete permanently (Manage) is for data that should not exist. A contact's
     foreign keys are `on delete set null`.
 - Numbering:
-  - Letter of Offer `AQL/{client_code}/{YYMM}{NN}` (ADspace Quotation Letter, `issue_letter`);
+  - Letter of Offer `AQL/{client_code}/{YYMM}{NN}` (ADspace Quotation Letter): no longer issued since 2026-11-12, the quotation being the one contract; letters issued before keep their numbers;
   - campaign invoice `AINV` plus six digits, typed;
   - tasks `#WT00001`;
   - task codes `YYMMW{week}{NN}`;
