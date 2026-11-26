@@ -11869,7 +11869,7 @@ From the same review. A colleague set inactive (neither removed nor expired) kep
 
 The user, on HANDOVER §4 item 2: "Quotation Cover: remove it". A Quotation Cover has not been issued on its own since 2026-11-25, yet Documents' Add still offered it as a kind for a document issued elsewhere. Add now offers it only to keep an existing cover being edited; `register_add` refuses the family (`not-issuable`) and `register_update` refuses moving another document into it (`2026-11-26-quotation-cover-not-added.sql`). The cover page inside every quotation PDF, the covers already held (listed, read and verified as before) and the `quote_cover` type stay. `tests/docs.js` reads the Add sheet and the refusal.
 
-### 2026-11-26 · go.adspace.me retired
+### 2026-11-26 · go.adspace.me phased out
 
 The user: "go.adspace.me is going to be retired. use the new
 digital.adspace.me/verify instead". Every PDF's verify line and the console's
@@ -11902,3 +11902,10 @@ the new pane began above the screen. A pane opened by a press now brings the
 record's tab strip under the console's head where it had scrolled away; a pane
 already in view stays where it is. Every View all on the Overview and the rail
 goes through the same `showPane`, so all of them gain it.
+The user then set the pace ("dont remove my dns first. Retirement planning
+would be that slowly shift out from go.adspace.me to digital.adspace.me or
+hi.adspace.me"): go.adspace.me's DNS and Rebrandly links stay up; the same
+slugs were made on hi.adspace.me the same day (svc-terms, fb-ad-terms and
+verify added beside outstation, each checked to redirect), so every address
+the portal now writes resolves, and every older one keeps working until the
+user removes the host.
