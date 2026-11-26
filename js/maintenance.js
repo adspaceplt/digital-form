@@ -299,7 +299,7 @@
   /* A page that holds no icon set fetches it the first time a notice wants
      a glyph, never on load (the namecard and /quote/ hold their weight
      budgets). Its stamp is the icon set's own, bumped with it. */
-  var ICONS = '/js/icons.js?v=20261126gl', iconsAsked = false, iconsWait = [];
+  var ICONS = '/js/icons.js?v=20261126gm', iconsAsked = false, iconsWait = [];
   /* The set for a page that holds none (the front door, the 404): fetched
      once, the first time something there wants a glyph (chrome.js's
      time zone bar), each asker drawn again once it lands. */

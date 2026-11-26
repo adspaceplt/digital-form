@@ -67,6 +67,10 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1502 Surface tokens, `data-layout` | 261126.22df |
 | #1507 Client pages train (J): six portal tabs, creator pages in sections, v3 plain white on every client page | 261126.f307 |
 | #1508 Interview missed (K): Did not attend (Offer a new time, Close application), Interview completed; migration live, hiring-mail v22 | 261126.2c18 |
+| #1511 One request reference (L): ADP/REQ{YYMM}-{AAA} on details, supplier, careers, client portal requests and feedback, unique across kinds; migration live, no edge function; tests #304 | 261127.a163 |
+| #1513 Hotfix (M): a leaver's health data kept its six months (inactive stamp on every update; migration live); Build quote keeps its key on a settings re-read; tests #305 | 261127.c7a6 |
+| #1514 Team › Groups (M): each section's levels as wide as its own, no empty slots; tests #306 | 261127.5f23 |
+| #1515 Step track (M): every line clear of its discs; the bar's name alone under 400px; Exit demo's gutter; tests #307 (weight +0.1 KB on three client pages) | 261127.39bd |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;

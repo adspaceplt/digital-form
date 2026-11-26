@@ -74,7 +74,7 @@
   var info = null, state = 'loading', typed = {}, consent = false, sending = false;
   /* The form in steps (the user, 2026-11-25): the opening page (0), then a
      step a section, the last reading the answers back before Submit. */
-  var at = 0, sentAt = null;
+  var at = 0, sentAt = null, reqRef = '';
   var STEPS = [
     { glyph: 'building', name: 'company', line: 'companyLine', keys: ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no'] },
     { glyph: 'pin', name: 'billing', line: 'billingLine', keys: ['billing_address', 'finance_email'] },
@@ -168,7 +168,9 @@
     var wa = rep && rep.whatsapp ? '<a class="btn btn-primary" href="https://wa.me/' + esc(rep.whatsapp) + '" target="_blank" rel="noopener">' +
       I.svg('whatsapp') + esc(w.chatWhatsApp) + '</a>' : '';
     root().innerHTML = I.received({
-      title: title, line: text, ref: sent && info ? info.brand : '',
+      /* The reference the database gave the submission (ONE REQUEST
+         REFERENCE, 2026-11-26), on the page sent and on a link opened again. */
+      title: title, line: text, ref: sent && info ? info.brand : '', reqRef: reqRef, reqLabel: (zh ? window.ADspaceWords.zh : window.ADspaceWords.en).coverRef,
       steps: sent ? [
         { state: 'done', title: w.detailsSent, sub: esc(when) },
         { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow },
@@ -279,7 +281,7 @@
     db.rpc('client_details_submit', { p_key: key, p_answers: answers }).then(function (r) {
       var d = r.data || {};
       if (r.error) throw r.error;
-      if (d.error === 'submitted') { state = 'submitted'; paint(); return; }
+      if (d.error === 'submitted') { reqRef = d.request_ref || ''; state = 'submitted'; paint(); return; }
       if (d.error === 'expired') { state = 'expired'; paint(); return; }
       if (d.error === 'not_found') { state = 'bad'; paint(); return; }
       if (d.error && SERVER[d.error]) {
@@ -289,7 +291,7 @@
         return;
       }
       if (d.error) throw new Error(d.error);
-      state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
+      reqRef = d.request_ref || ''; state = 'done'; sentAt = new Date().toISOString(); paint(); window.scrollTo(0, 0);
     }).catch(function () {
       say('dfMsg', t().notSent);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });
@@ -331,7 +333,7 @@
     var d = r.data || {};
     if (r.error) throw r.error;
     if (d.error === 'expired') state = 'expired';
-    else if (d.error === 'submitted') state = 'submitted';
+    else if (d.error === 'submitted') { state = 'submitted'; reqRef = d.request_ref || ''; }
     else if (d.error || !d.ok) state = 'bad';
     else { info = d; state = 'open'; }
     paint();

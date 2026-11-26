@@ -336,7 +336,9 @@
      for /details/, /supplier/, /careers/, /feedback/ and /quote/.
      received({ title, line, note, ref, steps, cards, foot }): the green tick
      over the title, the statement (`line`), a second line (`note`) and a
-     mute reference (`ref`, or `refHtml` where its parts must hold); where it stands as a track (`steps`: { state 'done' |
+     mute reference (`ref`, or `refHtml` where its parts must hold), then the
+     request's own reference on its line (`reqRef`, read after `reqLabel`,
+     Reference by default; ONE REQUEST REFERENCE, 2026-11-26); where it stands as a track (`steps`: { state 'done' |
      'now' | '', glyph, title, sub } with `sub` markup, `now` a line led by
      the amber dot); then its cards (markup: `summary`, `contactCard`) and
      an optional foot (markup). */
@@ -350,7 +352,8 @@
         '<h1 class="qs-title">' + esc(o.title) + '</h1>' +
         (o.line ? '<p class="rcv-line">' + esc(o.line) + '</p>' : '') +
         (o.note ? '<p class="rcv-note">' + (window.ADspaceWords && window.ADspaceWords.note ? window.ADspaceWords.note(o.note) : esc(o.note)) + '</p>' : '') +
-        (o.ref || o.refHtml ? '<p class="rcv-ref">' + (o.refHtml || esc(o.ref)) + '</p>' : '') + '</div>' +
+        (o.ref || o.refHtml ? '<p class="rcv-ref">' + (o.refHtml || esc(o.ref)) + '</p>' : '') +
+        (o.reqRef ? '<p class="rcv-ref rcv-req">' + esc((o.reqLabel || 'Reference') + ' ' + o.reqRef) + '</p>' : '') + '</div>' +
       (steps.length ? '<ol class="rcv-track">' + steps.map(function (x) {
         var cls = x.state === 'done' ? 'is-done' : x.state === 'now' ? 'is-now' : '';
         return '<li' + (cls ? ' class="' + cls + '"' : '') + (x.state === 'now' ? ' aria-current="step"' : '') + '>' +
