@@ -152,7 +152,8 @@
         any: 'Not sent. Please try again.',
         changes: 'This quotation cannot be signed while your changes are being reviewed. Withdraw the request to sign it as it stands.',
         brands: 'Changes to this quotation cannot be requested online. Please contact ADspace on WhatsApp.',
-        recent: 'Your changes were sent a moment ago. Please try again in a minute.'
+        recent: 'Your changes were sent a moment ago. Please try again in a minute.',
+        busy: 'Too many requests have been made on this quotation in the past hour. Please try again later, or contact ADspace on WhatsApp.'
       },
       /* Accepting the quotation on its link (2026-10-31). */
       sg: {
@@ -300,7 +301,8 @@
         any: '未能提交，请重试。',
         changes: '您的修改请求正在审核中，暂时无法签署此报价。如需按原报价签署，请先撤回请求。',
         brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ADspace。',
-        recent: '刚刚已提交修改请求，请一分钟后再试。'
+        recent: '刚刚已提交修改请求，请一分钟后再试。',
+        busy: '过去一小时内此报价的请求次数过多，请稍后再试，或通过 WhatsApp 联系 ADspace。'
       },
       sg: {
         title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',

@@ -2774,6 +2774,7 @@
     'own-session': 'This is your own device. Use Sign out in your account menu.',
     'system-account': 'Only the super admin can sign out the super admin\'s devices. Please ask the super admin.',
     'own-account': 'These are your own devices. Use Sign out in your account menu.',
+    'admin-only': 'Only an admin can sign out an admin\'s devices. Please ask an admin.',
     none: 'No device is signed in. Refresh the page.'
   };
   function paintDevices(m, body, all) {
@@ -2788,7 +2789,10 @@
       var shown = all ? list : list.slice(0, 5);
       /* Sign out all (2026-11-20): every sign-in the colleague holds, never
          the reader's own record nor a system account's. */
-      var allOk = !(me() && me().id === m.id) && !m.system;
+      /* An admin's devices are an admin's to sign out (2026-11-25): the
+         database refuses another colleague, so no Sign out is drawn. */
+      var mayEnd = !(m.is_admin && !(me() && me().is_admin));
+      var allOk = !(me() && me().id === m.id) && !m.system && mayEnd;
       body.innerHTML = '<ul class="mrec-devs">' + shown.map(function (x) {
         var last = x.last_at ? activeWord(x.last_at) : '';
         return '<li class="mrec-dev">' +
@@ -2796,7 +2800,7 @@
             '<small>' + [last, 'Signed in ' + whenWord(x.created_at)].filter(Boolean).map(function (w) {
               return '<span class="mrec-dev-part">' + esc(w) + '</span>'; }).join(' · ') + '</small>' +
             '<code class="mrec-dev-code">' + esc(window.ADspaceAPI.sessionShort(x.id)) + '</code></span>' +
-          (x.mine ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
+          (x.mine || !mayEnd ? '' : '<button class="btn btn-sm" type="button" data-dev="' + esc(x.id) + '">Sign out</button>') + '</li>';
       }).join('') + '</ul>' +
         (shown.length < list.length || allOk ? '<div class="mrec-railacts">' +
           (shown.length < list.length ? '<button class="btn btn-quiet btn-sm mrec-devmore" type="button">Show all ' + list.length + '</button>' : '') +
