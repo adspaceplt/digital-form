@@ -545,7 +545,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Card, every line the team added kept (`quote_website_preview` by the
   link's key, anon, writing nothing); a changed selection is never signed:
   Request these changes keeps it on the quotation (`change_request`,
-  `change_requested_at`, a minute apart, `unchanged` refused, the reply due
+  `change_requested_at`, a minute apart, ten requests or withdrawals a link
+  an hour then `busy` (MINOR ABUSE PATHS HELD), `unchanged` refused, the reply due
   by `quote_reply_by`, the team told `quote.changes`), Accept and sign
   waits (`quote_sign_open` refuses `changes`) and Withdraw request clears
   it; the console row reads Changes requested, Reply by its day, and Adjust

@@ -377,6 +377,9 @@
         input.autocomplete = 'off';
         input.spellcheck = false;
         if (numeric(f)) input.inputMode = 'numeric';
+        /* `inputMode` names the keyboard a figure wants (decimal for a
+           latitude), the box drawn as ours, never the browser's spinner. */
+        if (f.inputMode) input.inputMode = f.inputMode;
         /* A code from an email: the iPhone offers it from Mail. */
         if (f.code) input.autocomplete = 'one-time-code';
         if (f.min) input.min = f.min;
@@ -386,7 +389,21 @@
       if (f.placeholder) input.placeholder = f.placeholder;
       if (f.value != null) input.value = f.value;
       wrap.appendChild(lab);
-      wrap.appendChild(input);
+      /* `unit` (m, days, %) stands inside the box at its end and `pre`
+         (RM, US$) at its start, so the label stays a noun on one line
+         (2026-11-25, the Settings sheets). */
+      if (f.unit || f.pre) {
+        var ub = el('div', 'unitbox');
+        if (f.pre) { var up = el('span', 'unitbox-pre', f.pre); up.setAttribute('aria-hidden', 'true'); ub.appendChild(up); ub.style.setProperty('--unit-pre', String(f.pre).length); }
+        ub.appendChild(input);
+        if (f.unit) { var uu = el('span', 'unitbox-unit', f.unit); uu.setAttribute('aria-hidden', 'true'); ub.appendChild(uu); ub.style.setProperty('--unit-post', String(f.unit).length); }
+        /* Read aloud as its words (metres, per cent), drawn short. */
+        var said = { m: 'metres', '%': 'per cent', RM: 'ringgit', 'US$': 'US dollars' };
+        input.setAttribute('aria-label', (f.label || '') + (f.pre ? ', ' + (said[f.pre] || f.pre) : '') + (f.unit ? ', ' + (said[f.unit] || f.unit) : ''));
+        wrap.appendChild(ub);
+      } else {
+        wrap.appendChild(input);
+      }
       /* `note` is one mute line under the field (a figure already changed
          from a later day). */
       if (f.note) {
@@ -424,6 +441,27 @@
       rows.push({ spec: f, input: input });
     });
 
+    /* `preview(fieldOf)` answers [main, token, line] drawn the whole row's
+       width under the fields as a shaded example (a number's first
+       reference: First this month: #OS261101), read again as any field is
+       typed in, so a figure's meaning never sits under one column of a
+       pair (2026-11-25, the numbering sheets). */
+    if (o.preview) {
+      var pv = el('div', 'askpreview'), pvMain = el('p', 'askpreview-main'), pvLine = el('p', 'asknote');
+      pv.setAttribute('aria-live', 'polite');
+      pv.appendChild(pvMain); pv.appendChild(pvLine);
+      elFields.appendChild(pv);
+      var paintPreview = function () {
+        var a = o.preview(fieldOf) || [];
+        pvMain.textContent = a[0] || '';
+        if (a[1]) { var tk = el('span', 'askpreview-token', a[1]); pvMain.appendChild(document.createTextNode(' ')); pvMain.appendChild(tk); }
+        pvLine.textContent = a[2] || '';
+        pvLine.hidden = !a[2];
+        pv.hidden = !a[0];
+      };
+      paintPreview();
+      rows.forEach(function (x) { x.input.addEventListener('input', paintPreview); x.input.addEventListener('change', paintPreview); });
+    }
     /* `change(name, fieldOf)` hears every field as it is typed in (the
        Business settings sheet follows its From day). */
     if (o.change) rows.forEach(function (x) {

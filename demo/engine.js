@@ -968,7 +968,8 @@
   function quoteActivity(q, action, detail, who) {
     var cl = (DB.clients || []).filter(function (c) { return c.id === q.client_id; })[0];
     var ip = window.__callerIp || '203.0.113.24', ua = navigator.userAgent;
-    var h = 0, k = ip + '|' + ua + '|' + new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+
+    var h = 0, k = ip + '|' + (uaDevice(ua) || '') + '|' + new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
     for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
     var w = who || {}, name = ((w.salutation ? w.salutation + ' ' : '') + (w.name || '')).trim();
     var meta = { ref: q.ref, name: name || null, email: w.email ? String(w.email).trim().toLowerCase() : null, device: uaDevice(ua),
@@ -10923,6 +10924,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!ssMe) return ssNo('denied');
         if (ssMe.id === ssRow.id || String(ssMe.email || '').toLowerCase() === ssKey) return ssNo('own-account');
         if (ssRow.system) return ssNo('system-account');
+        if (ssRow.is_admin && !ssMe.is_admin) return ssNo('admin-only');
         if (!ssList.length) return ssNo('none');
         ssAll[ssKey] = [];
         DB.activity_log.push({ id: nid('a'), actor: ssMe.name, action: 'team.changed', subject: 'Signed-in devices',
@@ -10930,6 +10932,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return Promise.resolve({ data: { ok: true, ended: ssList.length }, error: null });
       }
       if (ssRow.system && (!ssMe || ssMe.id !== ssRow.id)) return ssNo('system-account');
+
+      if (ssRow.is_admin && !(ssMe && ssMe.is_admin)) return ssNo('admin-only');
       if (args.p_session === window.__sessionMine) return ssNo('own-session');
       var ssHit = ssList.filter(function (x) { return x.id === args.p_session; })[0];
       if (!ssHit) return ssNo('not-found');
@@ -14356,6 +14360,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cro = qsChangeOpen(crq);
         if (cro.error) return qtOk({ error: cro.error });
         var cq = cro.q;
+
+        if ((DB.activity_log || []).filter(function (a) { return (a.action === 'quotation.changes' || a.action === 'quotation.withdrawn') &&
+            a.meta && a.meta.ref === cq.ref && Date.parse(a.created_at) > Date.now() - 3600e3; }).length >= 10) return qtOk({ error: 'busy' });
         if (args.p_sel == null) {
           if (!cq.change_requested_at) return qtOk({ ok: true, again: true });
           cq.change_request = null; cq.change_requested_at = null;
