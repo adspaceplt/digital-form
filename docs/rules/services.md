@@ -187,7 +187,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
-  made again whenever the selection changes; the same key twice, even at
+  made again whenever the selection changes, never when the figures are
+  read again (`adspace-settings` reprices only on a changed S$ rate or SST,
+  never during a save, keeping the key); the same key twice, even at
   once, answers `again` with the first, and only for its own client, a
   website key its own visitor's email; 2026-10-19, audit 15; 2026-10-22,
   BE-4).
