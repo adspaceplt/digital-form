@@ -361,7 +361,7 @@
       var out = r.data || {};
       if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
-        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be generated. Download it from the list.' }); return; }
+        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: window.ADspaceWords.line.issuedNoPdf }); return; }
         download(doc, function (warn) {
           then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
@@ -467,7 +467,7 @@
     }
     /* A guard trigger answers in its own word (`needs-billing`). */
     if (ISSUE_WORD[m]) return ISSUE_WORD[m];
-    return m || 'The letter could not be issued.';
+    return m || 'The letter could not be issued. Please try again.';
   }
 
   /* One shape for the three deliberate moves a letter makes. Each is a
