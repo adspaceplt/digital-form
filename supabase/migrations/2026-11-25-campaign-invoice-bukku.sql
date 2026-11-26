@@ -166,7 +166,7 @@ begin
   insert into public.bukku_settings (id, campaign_invoice_model, set_by, set_at) values (1, v_num, me.id, now())
   on conflict (id) do update set campaign_invoice_model = excluded.campaign_invoice_model, set_by = excluded.set_by, set_at = now();
   insert into public.activity_log (actor, action, subject, detail)
-  values (me.name, 'team.changed', 'Bukku', 'Campaign invoice model: ' || coalesce(b.campaign_invoice_model, 'not set') || ' → ' || coalesce(v_num, 'not set'));
+  values (me.name, 'team.changed', 'Bukku', 'Campaign sample invoice: ' || coalesce(b.campaign_invoice_model, 'not set') || ' → ' || coalesce(v_num, 'not set'));
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.bukku_campaign_model_set(text) from public, anon;

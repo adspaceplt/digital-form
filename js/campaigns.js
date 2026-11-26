@@ -6312,7 +6312,7 @@
     /* A refused read or write is said on the card (2026-10-22, CMP-5); the
        results then read what is there. */
     db.from('option_posts').select('platform').eq('option_id', o.id).then(function (r) {
-      if (r.error) { say('card:' + o.id, 'Results could not be prepared. ' + r.error.message, 'err'); then(); return; }
+      if (r.error) { say('card:' + o.id, 'Results could not be prepared. Please try again.', 'err'); then(); return; }
       var have = {};
       (r.data || []).forEach(function (p) { have[p.platform] = true; });
       var rows = platformsOf(o).filter(function (p) { return !have[p]; })
@@ -6576,8 +6576,8 @@
     overdue: ['is-danger', 'Overdue'], void: ['is-off', 'Void'] };
   var INV_SAID = {
     invoiced: 'This campaign already has an invoice. Refresh the page.',
-    'no-model': 'Set the model invoice in Settings (Accounting, Bukku) first.',
-    nothing: 'No confirmed creator has a rate to invoice.',
+    'no-model': 'Set the sample invoice in Settings (Accounting, Bukku) first.',
+    nothing: 'No confirmed creator has a client rate. Set the client rate on a confirmed booking first.',
     creating: 'An invoice for this campaign is being created. Refresh the page in a moment.',
     'not-confirmed': 'Bukku did not confirm the invoice. Refresh the page in a moment, then try again.',
     'bad-number': 'Enter the invoice number as it appears in Bukku.',
@@ -6587,9 +6587,9 @@
     var W = window.ADspaceWords.line;
     if (x.error === 'not-linked') return W.bukkuLinkClient;
     if (x.error === 'no-fx') return W.fxUnset;
-    if (x.error === 'no-model' && x.number) return 'Invoice ' + x.number + ', the model in Settings (Accounting, Bukku), was not found in Bukku. Check the number in Settings.';
+    if (x.error === 'no-model' && x.number) return 'Invoice ' + x.number + ', the sample invoice in Settings (Accounting, Bukku), was not found in Bukku. Check the number in Settings.';
     if (x.error === 'no-invoice') return 'Bukku has no invoice ' + x.number + ' for this client. Check the number, then try again.';
-    if (x.error === 'not-filed') return 'Invoice ' + x.number + ' was created in Bukku, but the portal did not keep it. Choose Link existing invoice and enter ' + x.number + '.';
+    if (x.error === 'not-filed') return 'Invoice ' + x.number + ' was created in Bukku, but the portal did not save the link. Choose Link existing invoice and enter ' + x.number + '.';
     return INV_SAID[x.error] || (window.ADspaceBukku ? window.ADspaceBukku.said(x) : W.notSent);
   }
   function invCall(body) {
@@ -6621,7 +6621,7 @@
     if (c.bukku_invoice_id) {
       var r = invRead[c.id];
       if (!r || r.bukku !== c.bukku_invoice_id) {
-        cur.innerHTML = '<div class="invline">' + invToken(c.invoice_no || '') + '<span class="muted">Reading Bukku.</span></div>';
+        cur.innerHTML = '<div class="invline">' + invToken(c.invoice_no || '') + '<span class="muted">Loading…</span></div>';
         var ask = invRead[c.id] = { bukku: c.bukku_invoice_id, reading: true };
         invCall({ op: 'status', campaign: c.id }).then(function (x) {
           if (invRead[c.id] !== ask) return;
@@ -6704,7 +6704,7 @@
   function createInvoice(c, btn) {
     var n = charged().length;
     window.ADspaceConfirm.ask({ title: 'Create invoice in Bukku?', go: 'Create invoice', wait: true, opener: btn,
-      body: 'A draft invoice of ' + n + (n === 1 ? ' line' : ' lines') + ', one for each confirmed creator at the client rate, will be created in Bukku on the client\'s contact. Issue it in Bukku when it is ready.'
+      body: 'A draft invoice of ' + n + (n === 1 ? ' line' : ' lines') + ', one for each confirmed creator at the client rate, will be created in Bukku for this client. Issue it in Bukku when it is ready.'
     }, function () {
       return invCall({ op: 'create', campaign: c.id }).then(function (x) {
         if (x.error && !x.ok) return invSaid(x);
@@ -6768,7 +6768,7 @@
     msg('invMsg', 'Opening…');
     db.functions.invoke('sign-download', { body: { campaignId: c.id } }).then(function (r) {
       var u = r && r.data && r.data.url;
-      if (r.error || !u) throw new Error('The invoice could not be opened. ' + ((r.data && r.data.error) || (r.error && r.error.message) || ''));
+      if (r.error || !u) throw new Error('The invoice could not be opened. Please try again.');
       if (tab) tab.location.href = u; else location.href = u;
       msg('invMsg', '');
     }).catch(function (e) { if (tab) tab.close(); msg('invMsg', e.message.trim(), 'err'); });

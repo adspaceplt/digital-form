@@ -162,7 +162,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     draft on the client's Bukku contact (its own link, else the company
     billing it), one line a confirmed creator (`{creator} · {campaign}` at the
     client rate, a goodwill or unpriced booking left out) on the product,
-    account and tax code of the model invoice set in Settings, Accounting,
+    account and tax code of the sample invoice set in Settings, Accounting,
     Bukku (`campaign_invoice_model`, seeded AINV2609023; no tax code where the
     client is billed no SST); Link existing invoice takes one made in Bukku by
     its number, on the client's own contact alone. The press is held ten

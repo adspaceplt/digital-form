@@ -16403,7 +16403,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cmw = 'campaign_invoice_model' in DB.bukku_settings ? DB.bukku_settings.campaign_invoice_model : 'AINV2609023';
         if (cmw === cmn) return bkOk();
         DB.bukku_settings = Object.assign({}, DB.bukku_settings, { campaign_invoice_model: cmn });
-        logAct('team.changed', 'Bukku', 'Campaign invoice model: ' + (cmw || 'not set') + ' → ' + (cmn || 'not set'));
+        logAct('team.changed', 'Bukku', 'Campaign sample invoice: ' + (cmw || 'not set') + ' → ' + (cmn || 'not set'));
         return bkOk();
       }
       if (/^campaign_invoice_(prep|take|unlink|read)$/.test(name)) {
@@ -16442,7 +16442,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!ciModel) return bkNo('no-model');
         var ciFx = 1;
         if (ciCur === 'SGD') { ciFx = Number(appSet('fx_sgd', new Date().toISOString().slice(0, 10))) || 0; if (!ciFx) return bkNo('no-fx'); }
-        var ciOn = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
+        var ciOn = ['confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
         var ciLines = (DB.campaign_options || []).filter(function (o) {
           return o.campaign_id === ciC.id && ciOn.indexOf(o.state) > -1 && !o.goodwill && Number(o.rate) > 0;
         }).sort(function (a, b) { return (a.position || 0) - (b.position || 0); }).map(function (o) {

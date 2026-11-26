@@ -59,7 +59,7 @@
     /* A new contact sent and not answered may stand in Bukku: the next Send
        links it rather than making another (the Bukku review, 2026-11-25). */
     'not-confirmed': 'Bukku did not confirm the contact. Please refresh the page in a moment, then send it again.',
-    'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
+    'not-filed': 'The contact was sent to Bukku, but the portal did not save the link. Send again to link it.',
     moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-value': 'Choose a field from the list.',
@@ -241,7 +241,7 @@
         host.innerHTML = head + '<span class="chip-state is-ok">Linked</span></div>' +
           (via || '<p class="bk-sub">' + (holds(kind) ? 'Billing details from Bukku · ' + readAt : readAt) + '</p>') +
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Refresh</button>' + menu + '</div>' +
-          (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the last read: ' + esc(moved.join(', ')) + '.</p>' : '') +
+          (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the details were last loaded: ' + esc(moved.join(', ')) + '.</p>' : '') +
           (r.values && r.values.person && r.person_in === false
             ? '<div class="bk-person"><p class="msg warn">Bukku\'s billing person, ' + esc(r.values.person) + ', is not in Contacts.</p>' +
               (opts.addContact && may('clients.contacts', 'work') ? '<button class="btn btn-sm" type="button" data-bk="addct">Add as contact</button>' : '') + '</div>' : '') +
@@ -484,7 +484,7 @@
         /* A quotation's advertising budget (2026-11-17). */
         d.budget_account_code ? 'Advertising budget account ' + d.budget_account_code : 'Advertising budget account not set',
         /* A campaign's invoice copies this one's line (2026-11-26). */
-        d.campaign_invoice_model ? 'Campaign invoice model ' + d.campaign_invoice_model : 'Campaign invoice model not set'];
+        d.campaign_invoice_model ? 'Campaign sample invoice ' + d.campaign_invoice_model : 'Campaign sample invoice not set'];
       if (!on.length) return ['Not set'].concat(acct).map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
       return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat(acct)
@@ -523,7 +523,7 @@
             placeholder: '3000-01', required: false },
           /* A campaign's invoice takes this invoice's product, account and
              tax code (CAMPAIGN INVOICE FROM BUKKU, 2026-11-26). */
-          { name: 'model', head: 'Campaign invoices', label: 'Model invoice number', value: c.campaign_invoice_model || '',
+          { name: 'model', head: 'Campaign invoices', label: 'Sample invoice number', value: c.campaign_invoice_model || '',
             placeholder: 'AINV000123', required: false }
         ],
         check: function (v) {
