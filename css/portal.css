@@ -224,6 +224,24 @@
   --section-bg: var(--sunk);
   --section-radius: var(--radius-lg);
 }
+/* v3's frame and hairlines (the console's, and a client page's in v3): the
+   grey the white sheet stands on, the sheet's edge, and the edge of a part
+   on the sheet. The frame is the brand's own off white, #f5f5f5 (the user,
+   2026-11-15); the hairlines a neutral grey, never a warm one. */
+:root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
+:root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
+/* v3 on a client page (the user, 2026-11-26: "when you are showing
+   something, it should be in the white card"): the console's frame, the
+   page's column one white sheet on it, and every part on the sheet a white
+   card edged by `--part-edge`, 16px apart, as a console record's parts are.
+   The sheet and its parts: V3 CLIENT SHEET, below the section cards. */
+:root[data-face="client"][data-layout="v3"] {
+  --ground: var(--frame);
+  --section-bg: var(--card);
+  --section-edge: var(--part-edge);
+  --section-radius: var(--radius-lg);
+  --section-gap: 16px;
+}
 
 /* Dark is the team's, and only ever by choice. It is not taken from the
    system, because a client who happens to have their phone in dark mode would
@@ -411,6 +429,57 @@ body {
 :root[data-layout="shaded"] .softpanel { background: var(--card); border-radius: var(--radius); }
 /* The cards that stack by their own margin take the section's step. */
 :where(.panel, .crm-table, .ovcard, .kcard, .bookreg, .engcard) { margin-bottom: var(--section-gap); }
+/* V3 CLIENT SHEET (the user, 2026-11-26): on a client page in `v3` the
+   page's column is one white sheet on the frame, as the console's is, its
+   18px corner and `--card-edge` drawn just inside it, no shadow; a cover
+   (a sign-in, a refusal) keeps its own ground. A quotation's sheet is its
+   left part, the head to Back, and its Summary stands beside it (under it
+   on a phone) as a card of its own on the frame. On a phone the sheet runs
+   edge to edge, as the console's phone draws no inset sheet. */
+:root[data-face="client"][data-layout="v3"] body > .shell:not(:has(> .cover:not([hidden]), > .qs-quote)),
+:root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main {
+  background: var(--card); border-radius: var(--radius-lg);
+  outline: 1px solid var(--card-edge); outline-offset: -1px;
+  padding: 24px 32px 32px;
+}
+/* A page's first block brings its own 16px over it, so the sheet adds 8 to
+   stand it 24 under the sheet's top. */
+:root[data-face="client"][data-layout="v3"] body > .shell:not(:has(> .cover:not([hidden]), > .qs-quote)) {
+  width: calc(100% - 24px); margin: 12px auto; padding-top: 8px;
+}
+/* A form's column (/quote/'s steps, /details/, /supplier/, /careers/,
+   /feedback/) brings no space over it: the sheet keeps its 24, and is the
+   560px column's width and its 32px sides, never a wide white field. */
+:root[data-face="client"][data-layout="v3"] body > .shell.qs:not(:has(> .cover:not([hidden]), > .qs-quote)) {
+  max-width: calc(560px + 64px); padding-top: 24px;
+}
+:root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main { gap: 16px; }
+:root[data-face="client"][data-layout="v3"] .qs-quote > .qs-side { --section-edge: var(--card-edge); }
+/* The parts on the sheet that are not section cards take its hairline too:
+   a creator option, a booking, a portal tile, a quotation's lines, totals
+   and add-ons. */
+:root[data-face="client"][data-layout="v3"] :is(.cs-card, .booking, .cp-tile, .queue .qrow, .cardpair, .qs-table, .qs-tot, .qs-addons) {
+  background: var(--card); border-radius: var(--radius-lg);
+  outline: 1px solid var(--part-edge); outline-offset: -1px;
+}
+:root[data-face="client"][data-layout="v3"] .cardpair { box-shadow: none; }
+/* A card inside a part is one surface with it (DESIGN §1). */
+:root[data-face="client"][data-layout="v3"] :is(.panel, .sumcard, .booking, .cardpair, .engcard, .rec-part, .kcard)
+  :is(.panel, .card, .softpanel, .crm-table, .kcard, .ovcard, .booking) { outline: 0; }
+:root[data-face="client"][data-layout="v3"] .cs-card.is-on { outline: 1.5px solid var(--action); outline-offset: -1.5px; }
+:root[data-face="client"][data-layout="v3"] :is(.qs-table, .qs-addons) { padding: 14px 20px 4px; }
+:root[data-face="client"][data-layout="v3"] .qs-addons { border-top: 0; padding-bottom: 18px; }
+@media (max-width: 640px) {
+  :root[data-face="client"][data-layout="v3"] body > .shell:not(:has(> .cover:not([hidden]), > .qs-quote)),
+  :root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main {
+    border-radius: 0; outline: 0; padding-top: 16px; padding-inline: 16px;
+  }
+  :root[data-face="client"][data-layout="v3"] body > .shell:not(:has(> .cover:not([hidden]), > .qs-quote)) { width: 100%; margin: 0; padding-top: 0; }
+  :root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main { margin-inline: -16px; padding-bottom: 24px; }
+  :root[data-face="client"][data-layout="v3"] .shell:has(> .qs-quote) { padding-top: 0; }
+  :root[data-face="client"][data-layout="v3"] .qs-headrow + .qs-row { border-top: 0; }
+  :root[data-face="client"][data-layout="v3"] :is(.qs-table, .qs-addons) { padding-inline: 16px; }
+}
 img, video { display: block; max-width: 100%; }
 /* Author rules beat the UA [hidden] default, so state it explicitly. */
 [hidden] { display: none !important; }
