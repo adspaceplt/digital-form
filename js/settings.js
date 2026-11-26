@@ -995,7 +995,7 @@
   function tripWord(f, n) {
     var num = String(Number(n) >= 1 ? Math.floor(Number(n)) : 1);
     while (num.length < (Number(f.width) || 2)) num = '0' + num;
-    var t = window.ADspaceClock && window.ADspaceClock.today ? window.ADspaceClock.today() : new Date().toISOString().slice(0, 10);
+    var t = window.ADspaceClock.today();
     return '#' + (f.prefix || 'OS') + String(t).slice(2, 4) + String(t).slice(5, 7) + num;
   }
   function openTripNo() {

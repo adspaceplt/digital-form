@@ -4187,28 +4187,12 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-headtext .qb-for { margin: 0; }
 .qb-planhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .qb-planhead .fsec-h { margin: 0; }
-/* Several brands on one quotation (2026-11-24, the approved basket): a row
-   a brand over the board, its name and plan over the term, its figure, then
-   Edit and Remove; on a phone the acts take their own line as halves. */
-.qb-baskethead { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
-.qb-baskethead .tab-n { margin: 0; }
-.qb-blist { padding: 0; overflow: hidden; }
-.qb-brow { display: grid; grid-template-columns: minmax(0, 1fr) auto 190px; grid-template-areas: "who fig acts"; gap: 4px 12px; align-items: center; padding: 12px 15px; }
-.qb-brow + .qb-brow { border-top: 1px solid var(--line-soft); }
-.qb-bwho { grid-area: who; min-width: 0; }
-.qb-bname { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.qb-bname b { font-weight: 500; overflow-wrap: anywhere; }
-.qb-bwho small, .qb-bfig small { display: block; font-size: 12.5px; color: var(--ink-mute); }
-.qb-bfig { grid-area: fig; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.qb-bacts { grid-area: acts; display: flex; gap: 8px; justify-content: flex-end; }
-.qb-brandacts { margin: 8px 0 0; }
 .qb-table .qb-brandh { padding: 12px 15px 4px; font-size: 13px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--line-soft); }
 .qb-table .crm-head + .qb-brandh { border-top: 0; }
-/* The sheet in the order a quote is built (2026-11-24): a step a section,
-   its number in a small disc before its heading; Extras' Add buttons open
-   their rows; View quote turns the sheet to the quotation so far. */
-.qb-stepsec > * + * { margin-top: 12px; }
-.qb-stepsec > .qb-plans { margin-bottom: 0; }
+/* A part of Build quote (2026-11-24): its blocks a step apart; Extras' Add
+   buttons open their rows; View quote turns the sheet to the quotation so far. */
+.qb-sec > * + * { margin-top: 12px; }
+.qb-sec > .qb-plans { margin-bottom: 0; }
 /* A heading led by its number reads from the left, the words beside the
    disc: `.fsec-h` spreads its parts apart, so the disc and its words
    landed at the two edges (2026-11-25, the phone). */
@@ -4222,11 +4206,11 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-pc:has(> #qbExtras[hidden]):has(> #qbLangCol[hidden]) { display: none; }
 #qbSum:empty { display: none; }
 /* On a phone the two Add buttons stand one over the other at the column's
-   width, as Add to quotation under them does: side by side, Add
+   width: side by side, Add
    advertising budget broke onto two lines (DESIGN.md §5, never a label
    broken). */
 @media (max-width: 640px) { .qb-adds > .btn { flex: 1 1 100%; } }
-.qb-stepsec .select, .qb-morebox .select { width: 100%; min-width: 0; }
+.qb-sec .select, .qb-morebox .select { width: 100%; min-width: 0; }
 .qb-oncebox .qb-once { padding-top: 8px; }
 .qb-morebox { display: grid; gap: 16px; padding-top: 12px; }
 /* The box's gap is the step between its blocks: a row, the bilingual tick
@@ -4235,9 +4219,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-morebox > .row { margin-top: 0; }
 .qb-sumrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
 .qb-card.is-lines .sheet-body > :not(#qbLinesBox):not(#qbMsg) { display: none; }
-@media (max-width: 640px) {
-  .qb-brow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who fig" "acts acts"; align-items: start; row-gap: 10px; }
-  .qb-bacts > .btn { flex: 1 1 50%; }
+.qb-card.is-lines.has-side .sheet-body { display: block; }
 }
 .qb-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .qb-plan {
@@ -6672,38 +6654,35 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 }
 @media print { .trace-ink { display: none !important; } }
 
-/* BUILD QUOTE IN STEPS (2026-11-25, the user's approved boards): a track of
-   four steps over the sheet, one pane a step, the type chosen drawing its
-   own block, a summary beside the steps at a desk. */
-.sheet-card.formsheet.qb-card.is-steps { width: min(1000px, 100%); }
-.qb-track { display: flex; gap: 8px; list-style: none; margin: 0; padding: 16px 22px 0; }
-.qb-track li { flex: 1 1 0; min-width: 0; }
-.qb-trackbar { display: block; height: 4px; border-radius: 2px; background: var(--line); }
-.qb-track li.is-done .qb-trackbar { background: var(--fill); }
-.qb-trackname { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-mute); }
-.qb-track li.is-now .qb-trackname { color: var(--ink); font-weight: 600; }
-.qb-stepword { display: none; }
-.qb-pane:not(.is-on) { display: none; }
+/* BUILD QUOTE ON ONE SHEET (2026-11-26, the user's approved boards): a card
+   a brand, the open one holding the board; then the quotation's own part;
+   the Summary beside them at a desk. */
+.sheet-card.formsheet.qb-card.has-side { width: min(1000px, 100%); }
 .qb-card:not([data-kind="plan"]) .qb-for-plan,
 .qb-card:not([data-kind="package"]) .qb-for-package,
 .qb-card:not([data-kind="items"]) .qb-for-items { display: none; }
-.qb-card.is-steps .sheet-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 24px; align-content: start; }
-.qb-card.is-steps .sheet-body > * { grid-column: 1; min-width: 0; }
-.qb-card.is-steps .sheet-body > .qb-side { grid-column: 2; grid-row: 1 / span 9; align-self: start; position: sticky; top: 0; }
+.qb-card.has-side .sheet-body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; column-gap: 24px; align-content: start; }
+.qb-card.has-side .sheet-body > * { grid-column: 1; min-width: 0; }
+.qb-card.has-side .sheet-body > .qb-side { grid-column: 2; grid-row: 1 / span 9; align-self: start; position: sticky; top: 0; }
 .qb-side { background: var(--sunk); border-radius: var(--radius); padding: 16px; margin-top: 16px; max-height: var(--qb-side-max, none); overflow-y: auto; overscroll-behavior: contain; }
 .qb-sidehead { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 0 0 4px; }
 /* The cart (2026-11-25): a line a row, its name, its figure and its ⋯ in
    one column on every row, the ⋯'s track kept where a line has none. */
 .qb-sidegroup + .qb-sidegroup { margin-top: 12px; }
 .qb-sidegh { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 8px 0 0; }
-.qb-sideline { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--ctl-h-sm); gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line-soft); }
+/* A line's name runs the Summary's width, its figure under it, its ⋯ at
+   the right of both (2026-11-26, the approved boards). */
+.qb-sideline { display: grid; grid-template-columns: minmax(0, 1fr) var(--ctl-h-sm); grid-template-areas: "n a" "f a"; column-gap: 8px; align-items: center; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.qb-sideline > .qb-sidename { grid-area: n; }
+.qb-sideline > .qb-fig { grid-area: f; justify-self: start; color: var(--ink-soft); }
+.qb-sideline > .qb-sideact { grid-area: a; }
 .qb-sidename { overflow-wrap: anywhere; }
 .qb-sideact { position: relative; display: flex; justify-content: flex-end; }
 .qb-sideact .kmenu-btn { margin-block: -4px; }
 .qb-sidetot { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
-.qb-sidetot > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px calc(var(--ctl-h-sm) + 8px) 2px 0; }
+.qb-sidetot > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px 0; }
 .qb-sidetot dt, .qb-sidetot dd { margin: 0; }
-.qb-sidetot dt { min-width: 0; }
+.qb-sidetot dt { min-width: 0; white-space: nowrap; }
 .qb-sidetot dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .qb-sidetot > .is-total { font-size: 14px; font-weight: 600; }
 .qb-sidenote { font-size: 12px; color: var(--ink-mute); margin: 8px 0 0; }
@@ -6717,6 +6696,44 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 @media (hover: hover) { .qb-type:not([aria-checked="true"]):hover { background: var(--line-soft); } }
 .qb-typemark { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--line-soft); }
 .qb-typemark svg { width: 18px; height: 18px; }
+/* A brand's card (BUILD QUOTE ON ONE SHEET): a hairline card on the sheet;
+   its head one press (the type's glyph on a tonal disc, the name over what
+   it holds, the figure, the chevron), its ⋯ last; the open card's body the
+   board, its first part with no rule above it. */
+.qb-brands { display: grid; gap: 12px; }
+.qb-brandshead { display: flex; align-items: center; gap: 8px; }
+.qb-brandshead .fsec-h { margin: 0; justify-content: flex-start; gap: 8px; }
+.qb-brandshead .tab-n { margin: 0; }
+.qb-brandshead .btn { margin-left: auto; }
+.qb-bcards { display: grid; gap: 12px; }
+.qb-bcard { position: relative; background: var(--card); border-radius: var(--radius); outline: 1px solid var(--part-edge); outline-offset: -1px; }
+.qb-bhead { display: grid; grid-template-columns: minmax(0, 1fr) var(--ctl-h); align-items: center; gap: 4px; padding: 0 10px 0 0; }
+.qb-bopen { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto 18px; align-items: center; gap: 12px; min-width: 0; padding: 12px 6px 12px 14px;
+  border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; border-radius: var(--radius) 0 0 var(--radius); }
+.qb-bopen:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+.qb-bmark { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--line-soft); color: var(--ink-soft); }
+.qb-bmark svg { width: 18px; height: 18px; }
+.qb-bwho { display: grid; gap: 2px; min-width: 0; }
+.qb-bname { font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qb-bmeta { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qb-bfig { font-size: 13.5px; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.qb-bfig small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-mute); }
+.qb-bchev { display: grid; place-items: center; color: var(--ink-mute); }
+.qb-bchev svg { width: 15px; height: 15px; transition: transform var(--t) var(--ease); }
+.qb-bcard.is-open .qb-bchev svg { transform: rotate(90deg); }
+.qb-bact { position: relative; display: flex; justify-content: flex-end; }
+.qb-bbody { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease); }
+.qb-bbody > * { min-height: 0; overflow: hidden; }
+.qb-bcard.is-open .qb-bbody { grid-template-rows: 1fr; opacity: 1; }
+.qb-bcard.is-open .qb-bbody > * { overflow: visible; }
+.qb-bcard:not(.is-open) .qb-bbody { visibility: hidden; }
+.qb-board { border-top: 1px solid var(--line-soft); padding: 16px 16px 20px; }
+.qb-board > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (hover: hover) { .qb-bopen:hover { background: var(--sunk); } }
+.qb-brands + .fsec, .qb-brands + .qb-boardhold + .fsec { margin-top: 24px; }
+/* The Summary by brand: a brand's name across it over its figure. */
+.qb-sidebn { font-size: 13.5px; font-weight: 600; color: var(--ink); margin: 8px 0 0; overflow-wrap: anywhere; }
+.qb-sidebf { font-size: 12.5px; color: var(--ink-mute); margin: 0 0 4px; font-variant-numeric: tabular-nums; }
 .qb-billrow { margin-top: 16px; }
 .qb-pkgrow { display: grid; grid-template-columns: minmax(0, 1fr) 128px 90px 100px var(--ctl-h); gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px; }
 .qb-pkghd { padding-top: 0; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
@@ -6727,16 +6744,24 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-pkgline .tickline { margin: 0; }
 #qbPkgInclAdd { margin-top: 8px; }
 @media (max-width: 760px) {
-  .qb-card.is-steps .sheet-body { display: block; }
-  .qb-card.is-steps .sheet-body > .qb-side { display: none; }
+  .qb-card.has-side .sheet-body { display: block; }
+  .qb-card.has-side .sheet-body > .qb-side { display: none; }
   .qb-types { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
-  .qb-stepword { display: block; margin: 12px 16px 0; font-size: 12.5px; color: var(--ink-mute); }
-  .qb-stepword b { font-weight: 600; color: var(--ink); }
-  .qb-track { padding: 8px 16px 0; gap: 6px; }
-  .qb-trackname { display: none; }
   .qb-pkgrow { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name name x" "step fig fig"; row-gap: 4px; }
+  /* A brand's head: the glyph, the name over what it holds, the figure on
+     the name's line; the chevron gives way (the head itself opens). */
+  .qb-bopen { grid-template-columns: 36px minmax(0, 1fr) auto; column-gap: 10px; padding-left: 12px; }
+  .qb-bchev { display: none; }
+  .qb-bfig small { display: none; }
+  .qb-board { padding: 14px 12px 16px; }
+  /* A type a row: the glyph beside its name and line. */
+  .qb-type { display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-areas: "m b" "m s"; column-gap: 12px; row-gap: 2px; padding: 12px 14px; }
+  .qb-type .qb-typemark { grid-area: m; }
+  .qb-type b { grid-area: b; margin: 0; }
+  .qb-type > span:last-child { grid-area: s; }
+  .qb-types { gap: 8px; }
   .qb-pkgrow > .qb-pkgname { grid-area: name; }
   .qb-pkgrow > .qb-step { grid-area: step; }
   .qb-pkgrow > .qb-rate { display: none; }

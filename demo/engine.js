@@ -11288,10 +11288,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var da = args || {}, dOut;
       idFormats();
       if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
-
-        var dTm = new Date(Date.now() + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
-        var dNx = k === 'trip' ? ((((DB.__ost || {}).refs) || {})[dTm] || 0) + 1 : (f.next_no || null);
-        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: dNx, pattern: f.pattern || null }; }) : [];
+        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
         var dC = dO && (DB.creators || []).filter(function (c) { return c.id === dO.creator_id; })[0];
@@ -14903,7 +14900,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sel.valid != null && sel.valid !== '' && (!/^\d{1,3}$/.test(String(sel.valid)) || [14, 30, 45, 60, 90].indexOf(Number(sel.valid)) < 0)) return { error: 'bad-valid' };
         var rows = [], tot = 0;
         if (sel.ads != null) {
-          if (!Array.isArray(sel.ads) || sel.ads.length > 6) return { error: 'bad-ads' };
+
+          var nb = Array.isArray(sel.brands) ? sel.brands.length : 0, per = {};
+          if (!Array.isArray(sel.ads) || sel.ads.length > 6 * Math.max(nb, 1)) return { error: 'bad-ads' };
+          for (var j = 0; j < sel.ads.length; j++) {
+            var bx = sel.ads[j] && sel.ads[j].brand;
+            if (bx != null && (!/^\d{1,2}$/.test(String(bx)) || Number(bx) >= nb)) return { error: 'bad-ads' };
+            per[String(bx)] = (per[String(bx)] || 0) + 1;
+            if (per[String(bx)] > 6) return { error: 'bad-ads' };
+          }
           for (var i = 0; i < sel.ads.length; i++) {
             var r = sel.ads[i] || {};
             if (['meta', 'tiktok', 'google', 'xhs', 'youtube', 'linkedin'].indexOf(r.platform) < 0 || ['monthly', 'once'].indexOf(r.freq) < 0 ||
@@ -14914,7 +14919,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               mo = Number(r.months);
             }
             var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;
-            rows.push({ platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am });
+            var row = { platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am };
+            if (r.brand != null && r.brand !== '') row.brand = Number(r.brand);
+            rows.push(row);
             tot += am;
           }
         }
@@ -16476,7 +16483,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var mo = (e.freq || 'monthly') === 'monthly', n = Math.max(1, Number(e.months || 1));
             if ((mo && cyc <= n) || (!mo && cyc === 1)) {
               var u = Math.round(Number(e.budget != null ? e.budget : e.amount || 0) * 100) / 100;
-              if (u > 0) out.push({ label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other'), qty: 1, unit: u, sst: 0 });
+              if (u > 0) out.push({ label: qtLineLabel(tot, { brand: e.brand, label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other') }), qty: 1, unit: u, sst: 0 });
             }
           });
           return out;

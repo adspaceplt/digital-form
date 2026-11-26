@@ -485,9 +485,6 @@
      made (Build quote's Needs approval), so the PDF states it as decided
      (the user, 2026-11-12). */
   var PAY_DAYS = [7, 14, 30, 60, 90];
-  function payLine(days) {
-    return 'Payment term: NET ' + (Number(days) || 7);
-  }
 
   window.ADspaceMoney = {
     termLine: termLine,
@@ -495,7 +492,6 @@
     AD_PLATFORMS: AD_PLATFORMS,
     adWord: adWord,
     PAY_DAYS: PAY_DAYS,
-    payLine: payLine,
     planFold: planFold,
     addonRate: addonRate,
     addonParts: addonParts,
@@ -510,7 +506,6 @@
     SST_NONE: SST_NONE,
     sstOf: sstOf,
     termFactor: termFactor,
-    termWord: termWord,
     termAdj: termAdj,
     termNote: termNote,
     termPct: termPct,
@@ -518,15 +513,11 @@
     QUOTE_TERMS: QUOTE_TERMS,
     rateFor: rateFor,
     cents: cents,
-    TERMS: TERMS,
-    TERM_PCT: TERM_PCT,
     sign: signOf,
     curOf: curOf,
     approx: approx,
     approxSgd: approxSgd,
     market: market,
-    MARKETS: MARKETS,
-    TAX: TAX,
     load: load,
     setting: setting,
     next: next,
