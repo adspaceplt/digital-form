@@ -419,8 +419,16 @@
           y -= 5; rule(y);
         };
         adHead();
+        /* A brand's own budget under its name (QUOTATION ADVERTISING PER
+           BRAND, 2026-11-26), as its lines are. */
+        var adBrand = null;
         ads.forEach(function (r) {
           if (room(24)) adHead();
+          if (brandNames && r.brand != null && r.brand !== adBrand && brandNames[r.brand]) {
+            adBrand = r.brand;
+            y -= 16;
+            text(brandNames[r.brand], M, y + 2, TB, reg, pn.strong);
+          }
           y -= 18;
           text(MONY.adWord(r.platform), M, y + 4, TB, reg);
           text(r.freq === 'once' ? 'One-time' : 'Monthly', xs.f, y + 4, TB);
@@ -540,7 +548,7 @@
       grp('Validity', ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
         longDay(q.valid_until) + ' unless accepted before that date.']);
       grp('Fees and payment', [
-        t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each line' : 'over the minimum term') +
+        t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each service' : 'over the minimum term') +
           ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
       ]);
       grp('Advertising budget', [ads.length
@@ -556,8 +564,8 @@
         })() : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
       grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. ' +
-        (termsAt('This quotation, together with the ') ? termsAt('This quotation, together with the ') + ', shall constitute the contract between the parties.'
-          : 'This quotation shall constitute the contract between the parties.'),
+        (termsAt('This Quotation, together with the ') ? termsAt('This Quotation, together with the ') + ', shall constitute the contract between the parties.'
+          : 'This Quotation shall constitute the contract between the parties.'),
         'All rates are based on the ' + agency() + ' Rate Card Version ' + q.version + '. E&OE.']);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:
          "dont categorize my terms make it under the rates as usual"). */
@@ -629,7 +637,7 @@
       }).join(', ') + '.');
     }
     if (t.month) {
-      notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
+      notes.push((own ? 'The total commitment over the months stated for each service' : 'The total commitment for ' + both(t.term) + ' months') +
         ' is ' + amt(t.commitment, q) + incl + (t.once ? ', one-time items included.' : '.'));
     }
     notes.push('This quotation becomes binding once accepted and signed on its acceptance page.' +
@@ -667,7 +675,7 @@
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
       'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
     y -= v2 ? 22 : 12;
-    if (v2) { text('Figures agreed', M, y, LBL, book, mute); y -= 6; }
+    if (v2) { text('Agreed figures', M, y, LBL, book, mute); y -= 6; }
     rule(y);
     y -= 4;
     agreed.forEach(function (r) { y -= 16; text(r[0], M, y + 4, TB); right(r[1], R, y + 4, TB); });
