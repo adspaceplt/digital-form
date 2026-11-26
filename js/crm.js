@@ -5380,12 +5380,14 @@
     if (!img) return;
     var url = val('crmLogo');
     img.hidden = !url;
+    /* The disc stands only once an address is typed (unslop 2). */
+    $('crmLogoPreview').classList.toggle('is-empty', !url);
     if (url) img.src = url;
   }
   if (bridge.wireLogoUpload) bridge.wireLogoUpload('crmLogoUp', 'crmLogoFile', 'crmLogo', 'crmBrandMsg', function () { return state.client; });
   if ($('crmLogo')) {
     $('crmLogo').addEventListener('input', paintLogoPreview);
-    $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; });
+    $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; $('crmLogoPreview').classList.add('is-empty'); });
   }
 
   $('crmBrandSave').addEventListener('click', function () {
@@ -5528,6 +5530,16 @@
   $('crmNewEmail').addEventListener('click', function () {
     window.ADspaceWhatsApp.newEmail($('crmNewEmail'), { audience: 'client', party: state.client && state.client.id });
   });
+  /* A contact the composer can message, read as its recipients list reads
+     it (`wa_number`): the WhatsApp number unless it is a username, else the
+     phone, of 8 to 15 digits (unslop 2: the ⋯ offered Send on WhatsApp to a
+     contact the sheet then refused). */
+  function waReach(ct) {
+    var raw = ct.whatsapp && !/^\s*@/.test(ct.whatsapp) ? ct.whatsapp : ct.phone;
+    if (!raw || /^\s*@/.test(raw)) return false;
+    var d = String(raw).replace(/\D/g, '');
+    return d.length >= 8 && d.length <= 15;
+  }
   function loadContacts() {
     loadEmails();
     var box = $('crmContacts');
@@ -5663,7 +5675,7 @@
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' },
                  /* A template message to this contact, sent at the press
                     (2026-10-31): the composer opens on them. */
-                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-gate="whatsapp"' },
+                 waMsg && waReach(ct) && { a: 'wa', label: 'Send on WhatsApp', attrs: 'data-gate="whatsapp"' },
                  /* Messages' New email, opened on this contact (2026-11-04). */
                  mailMsg && ct.email && { a: 'mail', label: 'Send email', attrs: 'data-gate="email"' }],
                 [],
@@ -5780,7 +5792,7 @@
       loadRequests();
       // Putting access back does not email again: the login already exists,
       // and an undo is a correction, not a second announcement.
-      if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }); return; }
+      if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }, $('crmContacts')); return; }
       /* Access on its own is enough: the login is made when they sign in.
          An invitation only goes out when somebody asked for one. */
       if (!invite) { msg('crmWorkMsg', 'Access enabled.', 'ok'); return; }
@@ -5818,8 +5830,8 @@
   function openContact(ct) {
     editingContact = ct || null;
     openSheet('crmContactBox');
-    $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
-    $('ctSave').textContent = 'Save';
+    $('crmContactTitle').textContent = ct ? 'Edit contact' : 'Add contact';
+    $('ctSave').textContent = ct ? 'Save' : 'Add contact';
     $('ctSalutation').value = ct ? (ct.salutation || '') : '';
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
@@ -5912,7 +5924,7 @@
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(away ? 'contact.removed' : 'contact.restored', state.client.name + ' · ' + ct.name, '');
-      if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); });
+      if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); }, $('crmContacts'));
       loadContacts();
     });
   }
@@ -6159,7 +6171,7 @@
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log(away ? 'client.touch_removed' : 'client.touch_restored', state.client.name, KIND_WORD[tc.kind] || '');
-        if (away) undoBar('Call or visit removed.', function () { archiveTouch(tc, false); });
+        if (away) undoBar('Call or visit removed.', function () { archiveTouch(tc, false); }, $('crmTouches'));
         loadTouches();
       });
   }
@@ -6968,7 +6980,7 @@
       if (!(r.data || []).length) { msg('crmServiceMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(act === 'removed' ? 'client.service_removed' : act === 'restored' ? 'client.service_restored' : 'client.service_changed',
           state.client.name, l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
-      if (act === 'removed') undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }, 'restored'); });
+      if (act === 'removed') undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }, 'restored'); }, $('crmServices'));
       shutService();
       syncValue();
     }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not saved.', 'err'); });
@@ -7937,7 +7949,8 @@
     rcw = { b: b, shape: shape };
     $('rcwTitle').textContent = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
     var head = $('rcwHead');
-    head.hidden = shape.kind !== 'cols';
+    /* A table of one column needs no header row over it (unslop 2). */
+    head.hidden = shape.kind !== 'cols' || !shape.cols || shape.cols.length < 2;
     head.classList.toggle('is-fixed', !!shape.fixed);
     head.style.setProperty('--n', shape.cols ? shape.cols.length : 1);
     head.innerHTML = shape.kind === 'cols' ? shape.cols.map(function (c) { return '<span class="field-label">' + esc(c) + '</span>'; }).join('') : '';

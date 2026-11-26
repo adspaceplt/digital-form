@@ -7002,7 +7002,7 @@
     $('ntPostsN').hidden = n < 2;
     $('ntAddPiece').hidden = n >= 60;
     ntPlanGate();
-    $('ntGo').textContent = n > 1 ? 'Create ' + n + ' tasks' : 'Create task';
+    $('ntGo').textContent = n > 1 ? 'Create ' + n + ' tasks' : 'Add task';
     ntCodeHint();
   }
   function ntResetPieces() {
