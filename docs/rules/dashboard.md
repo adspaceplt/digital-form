@@ -155,7 +155,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     holding more of it that the reader may open (Creators' or Suppliers').
   - Detail, under its labels: Sales (Leads to clients, one-line bars, each
     step's share of the one before; Pipeline now, a ring with the whole in
-    its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
+    its middle; Client stage changes: lost leads, paused, resumed, win-backs, lead to
     won as a median, conversion of the leads decided, churn of those active
     at the start, and for Services View the monthly value won and lost; Sales
     by colleague, new leads, won and lost by the colleague who sold them (a
@@ -179,7 +179,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     side by side, a row's cards share four rows (a subgrid: head, chart,
     key, Figures), so their Figures start on one line, open or shut,
     whatever each table holds; Figures' hairline a step below the chart;
-    three in a row run three across. In Sales moves, Churn rate and the two
+    three in a row run three across. In Client stage changes, Churn rate and the two
     monthly values take a row each.
 - Each tile, signal, chart and list source asks its own `may()` before any
   read, at Full Access (`manage`) on its section or part; the granted parts

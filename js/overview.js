@@ -954,7 +954,7 @@
           if (!n[0]) return { empty: 'No new leads ' + periodName(period) + '.' };
           return { kind: 'bars', inline: true, rows: words.map(function (w, i) {
             return { label: w, value: n[i], note: i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '0%') : '' };
-          }), table: { heads: ['Step', 'Leads', 'Of the step before'], rows: words.map(function (w, i) {
+          }), table: { heads: ['Step', 'Leads', 'From previous step'], rows: words.map(function (w, i) {
             return [w, String(n[i]), i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '—') : '—'];
           }) } };
         });
@@ -973,7 +973,7 @@
          leads lost, the clients paused, resumed and won back, how long a lead
          takes to win, conversion and churn, and for whoever may open client
          Services the value won and lost. */
-      { key: 'moves', title: 'Sales moves', can: canLeads,
+      { key: 'moves', title: 'Client stage changes', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         var val = canValue();
         return (val ? R.lines() : Promise.resolve(null)).then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
@@ -991,8 +991,8 @@
             ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
           ];
           if (val && f.money) {
-            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'One month of the lines won', true]);
-            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'One month of the lines churned', true]);
+            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'Monthly fee of service lines won', true]);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'Monthly fee of service lines churned', true]);
           }
           return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
             /* Churn and the two values take a row each, so a long label
@@ -1112,7 +1112,7 @@
               return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
                        note: (openAt[x.stage_key] || 0) + ' open' };
             }), fmt: function (v) { return spanOf(v); },
-            table: { heads: ['Stage', 'Open now', 'Times moved on', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
+            table: { heads: ['Stage', 'Open now', 'Moved out', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
               return [x.label || x.stage_key, String(openAt[x.stage_key] || 0), String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
             }) } };
         });
@@ -1172,7 +1172,7 @@
               return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
                        note: pc(x) + '% on time' + (x.median_cycle_minutes ? ' · ' + spanOf(x.median_cycle_minutes) : '') };
             }), fmt: function (v) { return String(v); },
-            table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median cycle'], rows: by.map(function (x) {
+            table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median turnaround'], rows: by.map(function (x) {
               return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%', x.median_cycle_minutes ? spanOf(x.median_cycle_minutes) : '\u2014'];
             }) } };
         });
@@ -1256,7 +1256,7 @@
 
   // ---- Drawing ----------------------------------------------------------------------
   function fail(body, title, e, again) {
-    UI.failLine(body, title || 'This card', (e && e.message) || '', again);
+    UI.failLine(body, title || 'This figure', (e && e.message) || '', again);
   }
   function tile(grid, t) {
     var el = document.createElement('article');
@@ -2207,7 +2207,7 @@
         return function () {
           return read().then(function (d) {
             var bad = d.failed.filter(function (x) { return src === 'tasks' ? x === 'Tasks' : x !== 'Tasks'; });
-            if (bad.length) throw new Error('Could not load ' + bad.join(', ') + '.');
+            if (bad.length) throw new Error('Could not load your ' + bad.join(', ').toLowerCase() + '.');
             return f(d);
           });
         };

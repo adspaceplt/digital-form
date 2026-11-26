@@ -11774,3 +11774,9 @@ Today's own, while a refused meeting read keeps the days. Today ended about
 180px above Next 5 days at a desk, leaving a dead band; the two columns now end
 on one line (`.ovw-me-cols`). Kept as decided: the greeting (2026-11-13) and
 the task ring (2026-11-14). `tests/overview.js` asserts all three.
+The copy review of the same release read the standing words on both pages and
+renamed six: Sales moves is Client stage changes; Of the step before is From
+previous step; One month of the lines won and churned is Monthly fee of service
+lines won and churned; Times moved on is Moved out; Median cycle is Median
+turnaround, the word the page already uses; a failed figure reads Could not load
+your tasks., and the fallback failure names This figure.
