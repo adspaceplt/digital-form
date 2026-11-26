@@ -85,7 +85,14 @@ Deno.serve(async (req) => {
           }
         } catch (_) { bad++; }
       }));
-      await db.rpc('push_done', { p_outbox: m.id, p_sent: ok, p_failed: bad, p_dead: dead });
+      /* Closed, asked once more where the first answer failed: a message
+         left claimed is taken back in five minutes and every device told
+         again (the review of 2026-11-25). */
+      const close = () => db.rpc('push_done', { p_outbox: m.id, p_sent: ok, p_failed: bad, p_dead: dead })
+        .then((r) => r.error ? r.error.message : '', (e) => String(e));
+      let notClosed = await close();
+      if (notClosed) notClosed = await close();
+      if (notClosed) console.error('push-send: message not closed', m.id, notClosed);
       sent += ok; failed += bad; messages++;
     }
   }

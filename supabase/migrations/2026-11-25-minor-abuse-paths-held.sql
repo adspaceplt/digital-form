@@ -10,7 +10,7 @@
 --     withdrawal cleared the minute's wait, so request and withdraw in turn
 --     told the team without end.
 --   * `team_session_end` and `team_sessions_end_all` (restated from
---     DELETES AND BUILDS HELD): an admin's devices are signed out by an admin alone,
+--     HIRING AND RECORD LINES WORDED): an admin's devices are signed out by an admin alone,
 --     `admin-only`; a colleague at Team: Sessions (Work) could sign an
 --     admin out.
 --   * `verify_name_wrong` / `verify_name_wait` (restated from VERIFY NAMES

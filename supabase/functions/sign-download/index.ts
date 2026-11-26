@@ -55,6 +55,22 @@
  * browser's CORS preflight, and this function checks the caller itself.
  */
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
+
+/* A file read from S3 is held to 20 seconds until S3 answers (the review of
+   2026-11-25); the bytes then stream at their own pace, so a large file is
+   never cut off midway. A call cut off answers `timeout`. */
+async function s3get(aws: AwsClient, url: string): Promise<Response | 'timeout'> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 20000);
+  try {
+    return await aws.fetch(url, { signal: ctl.signal });
+  } catch (e) {
+    console.error('sign-download: S3 did not answer', String((e as Error)?.name || e));
+    return 'timeout';
+  } finally {
+    clearTimeout(t);
+  }
+}
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json as send } from '../_shared/cors.ts';
 
@@ -160,7 +176,8 @@ Deno.serve(async (req) => {
       region: Deno.env.get('S3_REGION')!,
       service: 's3'
     });
-    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    const got = await s3get(aws, `https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (got === 'timeout') return json({ error: 'timeout' }, 504, origin);
     if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
     return new Response(got.body, {
       status: 200,
@@ -305,7 +322,8 @@ Deno.serve(async (req) => {
       region: Deno.env.get('S3_REGION')!,
       service: 's3'
     });
-    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    const got = await s3get(aws, `https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (got === 'timeout') return json({ error: 'timeout' }, 504, origin);
     if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
     return new Response(got.body, {
       status: 200,
@@ -339,7 +357,8 @@ Deno.serve(async (req) => {
       region: Deno.env.get('S3_REGION')!,
       service: 's3'
     });
-    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    const got = await s3get(aws, `https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (got === 'timeout') return json({ error: 'timeout' }, 504, origin);
     if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
     /* A picture as octet-stream, as a trip's photo (2026-11-24). */
     const type = m[2] === 'pdf' ? 'application/pdf' : 'application/octet-stream';

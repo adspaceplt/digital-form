@@ -156421,6 +156421,802 @@ create or replace trigger quotation_drafts_clear
 -- END OF QUOTATION DRAFTS ------------------------------------------------------
 
 -- ===========================================================================
+-- QUOTATION COPIER'S OPENING (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (choice A). QUOTATION SENT WHEN IT REACHES THE
+-- CLIENT stamps a team's quotation sent at its first opening by anyone but
+-- a signed-in colleague. The live openings of ADP/QT2611-C01 and -B01 came
+-- four seconds after Copy link, from the copier's own iPhone: the console
+-- on the Home Screen keeps its sign-in apart from Safari, so a colleague
+-- opening the link they copied read as the client.
+--
+-- WHAT CHANGES
+--   * `quotation_link_copies` (quotation, address, when): where a colleague
+--     copied a quotation's link, one row an address, its time renewed at
+--     every copy. Row level security on, no policy, no grant: no page reads
+--     it. The address is the caller's as `request_ip()` reads it (the
+--     gateway's, never a header a caller sets). Cleared 30 days after the
+--     copy by `privacy_retention` (QUOTATION COPIER'S ADDRESS KEPT 30 DAYS).
+--   * `quotation_link`: records the copier's address at every press (the
+--     console asks it at every Copy link, the link already made or not).
+--   * `quote_opened`: an opening from an address a colleague copied that
+--     quotation's link from in the last 30 days neither stamps it sent nor
+--     moves the stage; it is still filed, `{ref} · Opened by the team`.
+--   * `quote_opened` stamps the quotation the opened key belongs to, never
+--     the newest revision `quote_shown` reads (a revision still being
+--     edited was stamped sent when the old link was opened again), nor one
+--     not proceeding (review of QUOTATION SENT WHEN IT REACHES THE CLIENT).
+--   Each restated from its last section with those lines alone added.
+--
+-- ORDER: the pages first (Copy link asks the function at every press),
+-- then this file (connector), then QUOTATION COPIER'S ADDRESS KEPT 30 DAYS
+-- (SQL Editor: its function holds the connector's stop words). Safe to run
+-- twice.
+-- ROLLBACK: run `quotation_link` (QUOTATION SIGNING) and `quote_opened`
+-- (QUOTATION SENT WHEN IT REACHES THE CLIENT) again; the table is then
+-- read by nothing.
+-- ===========================================================================
+
+-- QUOTATION COPIER'S OPENING ---------------------------------------------------
+
+create table if not exists public.quotation_link_copies (
+  id           uuid primary key default gen_random_uuid(),
+  quotation_id uuid not null,
+  ip           text,
+  at           timestamptz not null default now()
+);
+create unique index if not exists quotation_link_copies_one on public.quotation_link_copies (quotation_id, ip);
+alter table public.quotation_link_copies enable row level security;
+revoke all on table public.quotation_link_copies from public, anon, authenticated;
+
+create or replace function public.quotation_link(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  v_ip text := nullif(public.request_ip(), '');
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.access_key is null then
+    update public.quotations set access_key = public.new_link_key() where id = q.id returning * into q;
+  end if;
+  -- Where the link was copied from, so the colleague's own opening is never
+  -- taken for the client's (QUOTATION COPIER'S OPENING, 2026-11-25). Kept
+  -- 30 days (privacy_retention), never read by a page.
+  if v_ip is not null then
+    insert into public.quotation_link_copies (quotation_id, ip, at) values (q.id, v_ip, now())
+    on conflict (quotation_id, ip) do update set at = excluded.at;
+  end if;
+  return jsonb_build_object('ok', true, 'key', q.access_key);
+end $$;
+revoke all on function public.quotation_link(uuid) from public, anon;
+grant execute on function public.quotation_link(uuid) to authenticated;
+
+create or replace function public.quote_opened(p_key text, p_device text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+  v_ip  text := nullif(public.request_ip(), '');
+  v_dev text := public.seal_device(p_device);
+  v_team boolean := false;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  if public.is_team() then return jsonb_build_object('ok', true, 'kept', false); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  if q.id is null or (q.source = 'website' and q.released_at is null) then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  -- An opening from where a colleague copied this quotation's link in the
+  -- last 30 days is the team's own, never the client's.
+  v_team := v_ip is not null and exists (select 1 from public.quotation_link_copies c
+              where c.quotation_id in (w.id, q.id) and c.ip = v_ip and c.at > now() - interval '30 days');
+  -- A team's quotation reaches the client the first time its own link is
+  -- opened by anyone but a colleague: it is sent out then, once. The
+  -- quotation the key belongs to, never a revision still being made, nor
+  -- one not proceeding.
+  if w.source = 'console' and w.sent_out_at is null and w.status <> 'not_proceeding' and not v_team then
+    update public.quotations set sent_out_at = now() where id = w.id and sent_out_at is null;
+  end if;
+  if exists (select 1 from public.signing_steps s
+              where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened'
+                and s.at > now() - interval '6 hours'
+                and s.ip is not distinct from v_ip and s.device is not distinct from v_dev)
+     or (select count(*) from public.signing_steps s
+          where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened') >= 100 then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  insert into public.signing_steps (doc_kind, doc_id, step, ip, country, device)
+  values ('quotation', q.id, 'opened', v_ip, nullif(public.request_country(), ''), v_dev);
+  -- The same opening, kept once, is the Activity record's line.
+  perform public.quote_activity(q, 'quotation.opened', q.ref || case when v_team then ' · Opened by the team' else '' end, q.contact);
+  return jsonb_build_object('ok', true, 'kept', true);
+end $$;
+revoke all on function public.quote_opened(text, text) from public;
+grant execute on function public.quote_opened(text, text) to anon, authenticated;
+
+-- END OF QUOTATION COPIER'S OPENING --------------------------------------------
+
+-- ===========================================================================
+-- QUOTATION COPIER'S ADDRESS KEPT 30 DAYS (2026-11-25)
+-- ===========================================================================
+-- WHY: the copier's address (QUOTATION COPIER'S OPENING) is personal data
+-- kept for one purpose, PDPA 2010: it is cleared 30 days after the copy, as
+-- a link passcode's caller address is.
+--
+-- WHAT CHANGES
+--   * `privacy_retention`: clears `quotation_link_copies.ip` 30 days after
+--     its copy, counted as `quotation_copiers_cleared`. Restated from its
+--     last section with that step alone added.
+--
+-- ORDER: after QUOTATION COPIER'S OPENING. Run whole in the SQL Editor (the
+-- function holds the connector's stop words). Safe to run twice.
+-- ROLLBACK: run `privacy_retention` from its last section before this one.
+-- ===========================================================================
+
+-- QUOTATION COPIER'S ADDRESS KEPT 30 DAYS --------------------------------------
+
+create or replace function public.privacy_retention(p_now timestamptz default now())
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_wa integer := 0; v_act integer := 0; v_hc integer := 0; v_hl integer := 0; v_lt integer := 0; v_vt integer := 0; v_vd integer := 0; v_vc integer := 0; v_hm integer := 0; v_qc integer := 0;
+  v_today date := (p_now at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keep integer := coalesce(public.app_setting('health_keep_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 24)::integer;
+  v_left integer := coalesce(public.app_setting('health_leaver_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 6)::integer;
+  v_gone uuid[];
+begin
+  update public.wa_outbox o
+     set to_number = '', to_name = null, params = '[]'::jsonb, button = null
+   where o.created_at < p_now - interval '12 months'
+     and o.state not in ('queued', 'sending')
+     and (o.to_number <> '' or o.to_name is not null or o.params <> '[]'::jsonb or o.button is not null);
+  get diagnostics v_wa = row_count;
+  delete from public.activity_log a where a.created_at < p_now - interval '3 years';
+  get diagnostics v_act = row_count;
+  delete from public.health_checkins k where k.half < v_today - make_interval(months => v_keep);
+  get diagnostics v_hc = row_count;
+  delete from public.health_moods k where k.period_start < v_today - make_interval(months => v_keep);
+  get diagnostics v_hm = row_count;
+  v_hc := v_hc + v_hm;
+  select coalesce(array_agg(m.id), '{}') into v_gone from public.team_members m
+   where not m.active and coalesce(m.removed_at, m.expired_at) < p_now - make_interval(months => v_left);
+  if array_length(v_gone, 1) > 0 then
+    delete from public.health_checkins k where k.team_member_id = any(v_gone);
+    get diagnostics v_hl = row_count;
+    delete from public.health_moods k where k.team_member_id = any(v_gone);
+    get diagnostics v_hm = row_count;
+    v_hl := v_hl + v_hm;
+    delete from public.health_talks t where t.team_member_id = any(v_gone) or t.with_id = any(v_gone);
+    delete from public.health_log l where l.team_member_id = any(v_gone);
+    delete from public.health_consents c where c.team_member_id = any(v_gone);
+  end if;
+  -- A caller's address against a link's passcode, once it has had nothing
+  -- to say for 30 days and holds no lock (audit 2026-10-18, item 14).
+  delete from public.link_tries t
+   where greatest(t.last_at, coalesce(t.ok_at, t.last_at)) < p_now - interval '30 days'
+     and coalesce(t.locked_until, t.last_at) < p_now;
+  get diagnostics v_lt = row_count;
+  -- A caller's address against /verify/, once its hour began 30 days ago.
+  delete from public.verify_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vt = row_count;
+  -- And against /verify/'s details (VERIFY DETAILS, 2026-11-20).
+  delete from public.verify_detail_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vd = row_count;
+  -- And a check's address hash, 30 days after its day; the document's
+  -- total stays (VERIFY CHECKS COUNTED, 2026-11-21).
+  delete from public.verify_checks v where v.day < v_today - 30;
+  get diagnostics v_vc = row_count;
+  -- And where a colleague copied a quotation's link, 30 days after the copy
+  -- (QUOTATION COPIER'S OPENING, 2026-11-25).
+  update public.quotation_link_copies c set ip = null where c.ip is not null and c.at < p_now - interval '30 days';
+  get diagnostics v_qc = row_count;
+  return jsonb_build_object('whatsapp_cleared', v_wa, 'activity_removed', v_act,
+    'health_checkins_removed', v_hc + v_hl, 'health_leavers', coalesce(array_length(v_gone, 1), 0),
+    'link_tries_removed', v_lt, 'verify_tries_removed', v_vt, 'verify_detail_tries_removed', v_vd,
+    'verify_checks_removed', v_vc, 'quotation_copiers_cleared', v_qc);
+end $$;
+revoke all on function public.privacy_retention(timestamptz) from public, anon, authenticated;
+
+-- END OF QUOTATION COPIER'S ADDRESS KEPT 30 DAYS -------------------------------
+
+-- ===========================================================================
+-- QUOTATION COVER NOT ISSUED ALONE (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25. Every quotation's PDF already opens with its
+-- Quotation Cover (`js/quotepdf.js`, page 1, its words from the
+-- `quote_cover` document type), so a Quotation Cover issued on its own from
+-- Documents or a client's record repeats it.
+--
+-- WHAT CHANGES
+--   * `issue_document`: a type of the `quote_cover` family is refused
+--     (`not-issuable`), so an open tab served before cannot issue one.
+--   * `document_reissue`: a Quotation Cover already issued is refused the
+--     same way; it stays read only (Download, Verify, Void as before).
+--   Each is restated from its last section with that line alone added.
+--   * Unchanged: the `quote_cover` document type stays built in and
+--     undeletable, and its words still write every quotation's cover.
+--     Covers already issued stay in the register and on /verify/.
+--
+-- ORDER: the pages first (they stop offering it), then this file
+-- (connector). Safe to run twice.
+-- ROLLBACK: run `issue_document` from SAVED WHOLE AND TOLD and
+-- `document_reissue` from DOCUMENTS ON THEIR OWN DATE again.
+-- ===========================================================================
+
+-- QUOTATION COVER NOT ISSUED ALONE --------------------------------------------
+
+create or replace function public.issue_document(
+  p_type      text,
+  p_client    uuid,
+  p_member    uuid,
+  p_serial    text,
+  p_issued_at date,
+  p_title     text,
+  p_recipient jsonb,
+  p_body      jsonb,
+  p_signatory jsonb,
+  p_languages text[],
+  p_idem      text,
+  p_salutation text default null,
+  p_signed    boolean default null,
+  p_supplier  uuid default null
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who     text := lower(auth.jwt() ->> 'email');
+  t       public.doc_types%rowtype;
+  cl      public.clients%rowtype;
+  mb      public.team_members%rowtype;
+  sp      public.suppliers%rowtype;
+  me      public.team_members%rowtype;
+  v_old   public.documents%rowtype;
+  v_serial text;
+  v_base  text;
+  v_n     int;
+  v_id    uuid;
+  v_langs text[];
+  v_signed boolean;
+begin
+  select * into t from public.doc_types where id = p_type and active;
+  -- A letter's own date, backdated where chosen (2026-11-12): never before
+  -- 14 Aug 2023 or after today; its reference follows it.
+  if p_issued_at is not null and not public.doc_day_ok(p_issued_at) then return jsonb_build_object('error', 'bad-date'); end if;
+  if t.id is null then return jsonb_build_object('error', 'no-type'); end if;
+  -- A Quotation Cover opens every quotation's PDF; it is never issued on
+  -- its own (QUOTATION COVER NOT ISSUED ALONE, 2026-11-25).
+  if t.family = 'quote_cover' then return jsonb_build_object('error', 'not-issuable'); end if;
+  if not public.register_may(t.family, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+    end if;
+  end if;
+
+  if t.family in ('quote_cover', 'client') then
+    if p_client is null then return jsonb_build_object('error', 'no-client'); end if;
+    select * into cl from public.clients where id = p_client;
+    if cl.id is null then return jsonb_build_object('error', 'no-client'); end if;
+  end if;
+  if t.family = 'hr' then
+    if p_member is null then return jsonb_build_object('error', 'no-member'); end if;
+    select * into mb from public.team_members where id = p_member;
+    if mb.id is null then return jsonb_build_object('error', 'no-member'); end if;
+    if coalesce(btrim(mb.staff_code), '') = '' then return jsonb_build_object('error', 'no-staff-code'); end if;
+  end if;
+  if t.family = 'supplier' then
+    if p_supplier is null then return jsonb_build_object('error', 'no-supplier'); end if;
+    select * into sp from public.suppliers where id = p_supplier;
+    if sp.id is null then return jsonb_build_object('error', 'no-supplier'); end if;
+    /* The agreement carries its schedules (2026-10-18): who the supplier is,
+       when it starts, the fee and at least one account. */
+    if t.id = 'supplier_sca' and not public.sca_complete(p_body) then
+      return jsonb_build_object('error', 'agreement-incomplete');
+    end if;
+  end if;
+
+  -- Whether the letter leaves space to be signed is the sheet's tick
+  -- (2026-10-01), else the type's own setting. A signed letter is signed by
+  -- a person, never by a permission; an unsigned one may still name who
+  -- issued it, held to the same test.
+  v_signed := coalesce(p_signed, t.signed);
+  if coalesce(btrim(p_signatory ->> 'name'), '') <> '' and not public.issuer_name_ok(p_signatory ->> 'name') then
+    return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+  end if;
+  if v_signed then
+    if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
+    if not public.issuer_name_ok(p_signatory ->> 'name') then
+      return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+    end if;
+  end if;
+
+  v_serial := nullif(btrim(coalesce(p_serial, '')), '');
+  if v_serial is null then
+    if t.family = 'quote_cover' then return jsonb_build_object('error', 'serial-required'); end if;
+    if t.family in ('client', 'supplier') then
+      if t.family = 'client' then
+        if coalesce(btrim(cl.client_code), '') = '' then return jsonb_build_object('error', 'no-client-code'); end if;
+        v_base := 'ACL/' || upper(btrim(cl.client_code));
+      elsif t.id = 'supplier_sca' then
+        v_base := 'AD/SCA/' || upper(btrim(sp.code));
+      else
+        v_base := 'ASL/' || upper(btrim(sp.code));
+      end if;
+      /* A Supplier Service Agreement is numbered by its month
+         (AD/SCA/{Supplier ID}/{YYMM}{NN}, 2026-10-18); every other letter by
+         its day. */
+      v_base := v_base || '/' || to_char(coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date),
+                                         case when t.id = 'supplier_sca' then 'YYMM' else 'YYMMDD' end);
+      -- Two issuers on one client (or supplier) and day wait for each other
+      -- here, so the second never reads the first one's number as free.
+      perform pg_advisory_xact_lock(hashtext('acl:' || v_base));
+      v_n := 1;
+      loop
+        v_serial := v_base || case when v_n < 10 then '0' else '' end || v_n;
+        exit when not public.serial_taken(v_serial);
+        v_n := v_n + 1;
+        if v_n > 999 then return jsonb_build_object('error', 'no-serial'); end if;
+      end loop;
+    else
+      v_base := 'ADHR/' || upper(mb.staff_code) || '/' || coalesce(t.code, 'GL') ||
+                to_char(coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date), 'YYMM');
+      -- Two issues for one colleague, kind and month wait for each other
+      -- here, as a letter's do, so the second never takes the first's number
+      -- (review 2026-11-24).
+      perform pg_advisory_xact_lock(hashtext('adhr:' || v_base));
+      v_serial := v_base; v_n := 1;
+      while public.serial_taken(v_serial) loop
+        v_n := v_n + 1; v_serial := v_base || '-' || v_n;
+      end loop;
+    end if;
+  else
+    if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
+    if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
+  end if;
+
+  v_langs := coalesce(p_languages, '{en}');
+  if array_length(v_langs, 1) is null then v_langs := '{en}'; end if;
+
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  insert into public.documents
+    (type_id, family, kind, serial, client_id, member_id, supplier_id, issued_at, title, salutation, closing,
+     recipient, body, languages, signatory, signed, source, issued_by, idem_key)
+  values
+    (t.id, t.family, t.name, v_serial,
+     case when t.family in ('hr', 'supplier') then null else p_client end,
+     case when t.family = 'hr' then p_member else null end,
+     case when t.family = 'supplier' then p_supplier else null end,
+     coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date),
+     coalesce(nullif(btrim(p_title), ''), t.title),
+     coalesce(nullif(btrim(p_salutation), ''), t.salutation), t.closing,
+     coalesce(p_recipient, '{}'::jsonb), coalesce(p_body, '{}'::jsonb), v_langs,
+     case when coalesce(btrim(p_signatory ->> 'name'), '') <> '' then p_signatory else null end, v_signed, 'portal',
+     coalesce(me.name, who), nullif(btrim(p_idem), ''))
+  returning id into v_id;
+
+  -- The record is told an HR letter was issued and nothing about whom: the
+  -- Activity record is read by more people than HR is.
+  if t.family = 'hr' then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.issued', 'HR', t.name);
+  else
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.issued', case when t.family = 'supplier' then sp.name else cl.name end, v_serial || ' · ' || t.name);
+  end if;
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', v_serial);
+exception
+  when unique_violation then
+    if coalesce(btrim(p_idem), '') <> '' then
+      select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+      if v_old.id is not null then
+        return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+      end if;
+    end if;
+    return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text, boolean, uuid) to authenticated;
+
+create or replace function public.document_reissue(
+  p_doc       uuid,
+  p_issued_at date,
+  p_title     text,
+  p_recipient jsonb,
+  p_body      jsonb,
+  p_signatory jsonb,
+  p_languages text[],
+  p_salutation text,
+  p_idem      text
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who    text := lower(auth.jwt() ->> 'email');
+  d      public.documents%rowtype;
+  v_old  public.documents%rowtype;
+  me     public.team_members%rowtype;
+  cl     public.clients%rowtype;
+  v_id   uuid;
+  v_langs text[];
+begin
+  select * into d from public.documents where id = p_doc;
+  if p_issued_at is not null and not public.doc_day_ok(p_issued_at) then return jsonb_build_object('error', 'bad-date'); end if;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.source <> 'portal' then return jsonb_build_object('error', 'not-portal'); end if;
+  if d.family = 'quote_cover' then return jsonb_build_object('error', 'not-issuable'); end if;
+  if not public.register_may(d.family, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+    end if;
+  end if;
+  if exists (select 1 from public.documents
+              where upper(serial) = upper(d.serial) and voided_at is null and id <> d.id) then
+    return jsonb_build_object('error', 'not-current');
+  end if;
+  if d.signed then
+    if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
+    if not public.issuer_name_ok(p_signatory ->> 'name') then
+      return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+    end if;
+  end if;
+  v_langs := coalesce(p_languages, d.languages, '{en}');
+  if array_length(v_langs, 1) is null then v_langs := '{en}'; end if;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  if d.voided_at is null then
+    update public.documents set voided_at = now(), voided_by = who, void_reason = 'Reissued' where id = d.id;
+  end if;
+  insert into public.documents
+    (type_id, family, kind, serial, client_id, member_id, supplier_id, issued_at, title, salutation, closing,
+     recipient, body, languages, signatory, signed, source, issued_by, idem_key, replaces)
+  values
+    (d.type_id, d.family, d.kind, d.serial, d.client_id, d.member_id, d.supplier_id,
+     coalesce(p_issued_at, d.issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date),
+     coalesce(nullif(btrim(p_title), ''), d.title),
+     coalesce(nullif(btrim(p_salutation), ''), d.salutation), d.closing,
+     coalesce(p_recipient, d.recipient), coalesce(p_body, d.body), v_langs,
+     case when d.signed then p_signatory else null end, d.signed, 'portal',
+     coalesce(me.name, who), nullif(btrim(p_idem), ''), d.id)
+  returning id into v_id;
+
+  if d.client_id is not null then select * into cl from public.clients where id = d.client_id; end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.reissued',
+          case when d.family = 'hr' then 'HR' else coalesce(cl.name, (select s.name from public.suppliers s where s.id = d.supplier_id), d.recipient ->> 'name', '') end,
+          case when d.family = 'hr' then d.kind else d.serial || ' · ' || d.kind end);
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', d.serial);
+exception
+  when unique_violation then
+    return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.document_reissue(uuid, date, text, jsonb, jsonb, jsonb, text[], text, text) to authenticated;
+
+-- END OF QUOTATION COVER NOT ISSUED ALONE -------------------------------------
+
+-- ===========================================================================
+-- CREATOR BILLS GONE BY THEIR OWN CONTACT (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (the Bukku review). `creator_bills_take` marked
+-- gone every bill of the creator that one read did not hold. A read is of
+-- one Bukku contact, so a creator paid through two sets of payment details
+-- lost the other contact's bills: their bookings read as not billed and
+-- could be billed, and paid, again.
+--
+-- WHAT CHANGES
+--   * `creator_bills_take`: a bill is marked gone only among the bills of
+--     the contact just read (`y.contact_id = p_contact`). Restated from THE
+--     SUPPLIER'S REFERENCE NO. ON BUKKU LISTS with that filter alone.
+--   * Existing rows are not changed; the next read of each contact sets
+--     its own bills right.
+--
+-- ORDER: this file (connector), then bukku-sync. No page calls it.
+-- Safe to run twice.
+-- ROLLBACK: run `creator_bills_take` from THE SUPPLIER'S REFERENCE NO. ON
+-- BUKKU LISTS again.
+-- ===========================================================================
+
+-- CREATOR BILLS GONE BY THEIR OWN CONTACT ------------------------------------
+
+create or replace function public.creator_bills_take(p_creator uuid, p_contact bigint, p_rows jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  x jsonb; b public.creator_bills; v_id bigint; v_status text; v_opt uuid; v_n int := 0; v_paid int := 0;
+  v_seen bigint[] := '{}'; v_post boolean;
+begin
+  if p_creator is null or jsonb_typeof(p_rows) is distinct from 'array' then return jsonb_build_object('error', 'bad-request'); end if;
+  for x in select * from jsonb_array_elements(p_rows) loop
+    v_id := (x->>'id')::bigint;
+    if v_id is null then continue; end if;
+    v_seen := v_seen || v_id;
+    select * into b from public.creator_bills y where y.bill_id = v_id for update;
+    -- A bill the portal made keeps its booking, whatever its reference reads now.
+    v_opt := coalesce(b.made_for,
+      case when coalesce(x->>'made_for', '') ~ '^[0-9a-f-]{36}$' then (x->>'made_for')::uuid end,
+      public.creator_bill_option(p_creator, x->>'ref', x->>'number'));
+    -- A bill read with no balance keeps the state it had, never Paid by default.
+    v_status := case when coalesce(x->>'draft', '') = 'true' then 'draft'
+                     when nullif(x->>'balance', '') is null then coalesce(nullif(b.status, 'draft'), 'processing')
+                     when (x->>'balance')::numeric <= 0 then 'paid' else 'processing' end;
+    v_post := v_opt is not null and exists (select 1 from public.campaign_options o where o.id = v_opt and o.posted_on is not null);
+    if b.bill_id is null then
+      insert into public.creator_bills (bill_id, creator_id, contact_id, number, ref, ref_no, bill_date, amount, balance, currency, status,
+                                        option_id, made_for, read_at, paid_seen_at, paid_told_at, paid_on)
+      values (v_id, p_creator, p_contact, left(x->>'number', 60), left(x->>'ref', 200),
+              left(nullif(btrim(x->>'ref_no'), ''), 60), nullif(x->>'date', '')::date,
+              (x->>'amount')::numeric, nullif(x->>'balance', '')::numeric, left(coalesce(x->>'currency', 'MYR'), 3), v_status, v_opt,
+              case when coalesce(x->>'made_for', '') ~ '^[0-9a-f-]{36}$' then (x->>'made_for')::uuid end, now(),
+              case when v_status = 'paid' then now() end,
+              case when v_status = 'paid' then now() end,
+              case when v_status = 'paid' then nullif(x->>'paid_on', '')::date end);
+      -- A bill first read already paid is told only for a booking posted in the
+      -- portal; one from before the portal (no posted day) tells nobody.
+      if v_status = 'paid' and v_post then
+        perform public.creator_mail_job('paid', v_opt);
+        v_paid := v_paid + 1;
+      end if;
+    else
+      update public.creator_bills y set creator_id = p_creator, contact_id = p_contact, number = left(x->>'number', 60),
+        ref = left(x->>'ref', 200), ref_no = left(nullif(btrim(x->>'ref_no'), ''), 60), bill_date = nullif(x->>'date', '')::date, amount = (x->>'amount')::numeric,
+        balance = coalesce(nullif(x->>'balance', '')::numeric, y.balance), currency = left(coalesce(x->>'currency', 'MYR'), 3), status = v_status,
+        option_id = v_opt, gone = false, read_at = now(),
+        paid_seen_at = case when v_status = 'paid' then coalesce(y.paid_seen_at, now()) end,
+        paid_on = case when v_status = 'paid' then coalesce(nullif(x->>'paid_on', '')::date, y.paid_on) end
+       where y.bill_id = v_id;
+      if v_status = 'paid' and b.status in ('processing', 'draft') and b.paid_told_at is null and v_opt is not null then
+        update public.creator_bills y set paid_told_at = now() where y.bill_id = v_id;
+        perform public.creator_mail_job('paid', v_opt);
+        v_paid := v_paid + 1;
+      end if;
+    end if;
+    v_n := v_n + 1;
+  end loop;
+  -- Gone only among this contact's bills: a creator paid through two sets of
+  -- payment details keeps the other contact's bills (2026-11-25).
+  update public.creator_bills y set gone = true
+   where y.creator_id = p_creator and y.contact_id = p_contact and not (y.bill_id = any(v_seen)) and not y.gone;
+  return jsonb_build_object('ok', true, 'bills', v_n, 'told', v_paid);
+end $$;
+revoke all on function public.creator_bills_take(uuid, bigint, jsonb) from public, anon, authenticated;
+grant execute on function public.creator_bills_take(uuid, bigint, jsonb) to service_role;
+
+-- END OF CREATOR BILLS GONE BY THEIR OWN CONTACT -----------------------------
+
+-- ===========================================================================
+-- BUKKU MADE ONCE (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25 (the Bukku review, "approve all the fixes"). A
+-- contact Bukku made whose link the portal failed to file, or whose answer
+-- timed out, let the claim go, so the next Send made a second contact; a
+-- bill made whose list then failed to read let its hold go, so the next
+-- press could make a second bill.
+--
+-- WHAT CHANGES
+--   * `bukku_send_claims` keeps `sent_code` (the contact code a new contact
+--     was sent under) and `made_contact` (the contact Bukku made).
+--   * `bukku_send_claim` answers them when a record is claimed again, so
+--     bukku-sync links that contact rather than making another.
+--   * `bukku_send_sent(p_kind, p_id, p_code, p_contact)` writes them on the
+--     caller's claim before and after the contact is sent.
+--   * `bukku_send_release` clears them once the send is settled.
+--   * `creator_bill_made(p_option, p_number)` files a bill made in Bukku and
+--     keeps the press held ten minutes more, for a bill whose list was not
+--     read back.
+--
+-- ORDER: this file (connector), then bukku-sync. Until bukku-sync is
+-- deployed nothing calls the new function, and the claim answers two keys
+-- more. Safe to run twice.
+-- ROLLBACK: run BUKKU SEND CLAIMED's `bukku_send_claim` and
+-- `bukku_send_release` again and redeploy the previous bukku-sync; the two
+-- columns and two functions may stay unused.
+-- ===========================================================================
+
+-- BUKKU MADE ONCE ------------------------------------------------------------
+
+alter table public.bukku_send_claims add column if not exists sent_code text;
+alter table public.bukku_send_claims add column if not exists made_contact bigint;
+
+create or replace function public.bukku_send_claim(p_kind text, p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_got boolean;
+  k public.bukku_send_claims;
+begin
+  if me.id is null or not public.bukku_may(p_kind, p_id, 'work') then return jsonb_build_object('error', 'denied'); end if;
+  insert into public.bukku_send_claims as c (kind, record_id, claimed_at, claimed_by)
+  values (p_kind, p_id, now(), me.id)
+  on conflict (kind, record_id) do update set claimed_at = now(), claimed_by = me.id
+   where c.claimed_at is null or c.claimed_at < now() - interval '2 minutes'
+  returning true into v_got;
+  if v_got is null then return jsonb_build_object('error', 'busy'); end if;
+  -- What an earlier send left unsettled: the code it was sent under, and
+  -- the contact Bukku made, so the contact is linked, never made twice.
+  select * into k from public.bukku_send_claims x where x.kind = p_kind and x.record_id = p_id;
+  return jsonb_build_object('ok', true, 'sent_code', k.sent_code, 'made', k.made_contact);
+end $$;
+revoke all on function public.bukku_send_claim(text, uuid) from public, anon;
+grant execute on function public.bukku_send_claim(text, uuid) to authenticated;
+
+create or replace function public.bukku_send_sent(p_kind text, p_id uuid, p_code text, p_contact bigint)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  update public.bukku_send_claims c
+     set sent_code = coalesce(left(nullif(btrim(coalesce(p_code, '')), ''), 40), c.sent_code),
+         made_contact = coalesce(p_contact, c.made_contact)
+   where c.kind = p_kind and c.record_id = p_id and c.claimed_by = me.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_send_sent(text, uuid, text, bigint) from public, anon;
+grant execute on function public.bukku_send_sent(text, uuid, text, bigint) to authenticated;
+
+create or replace function public.bukku_send_release(p_kind text, p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  update public.bukku_send_claims c set claimed_at = null, sent_code = null, made_contact = null
+   where c.kind = p_kind and c.record_id = p_id and c.claimed_by = me.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_send_release(text, uuid) from public, anon;
+grant execute on function public.bukku_send_release(text, uuid) to authenticated;
+
+-- A bill made in Bukku whose list was not read back: filed as made, and the
+-- press held ten minutes more, so a second press makes no second bill.
+create or replace function public.creator_bill_made(p_option uuid, p_number text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  o  public.campaign_options;
+  f  public.creator_fees;
+  c  public.creators;
+begin
+  if me.id is null or not public.ops_granted('campaigns.pay', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into o from public.campaign_options x where x.id = p_option;
+  if o.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.creator_bill_claims k set claimed_at = now() where k.option_id = o.id;
+  if nullif(btrim(coalesce(p_number, '')), '') is not null then
+    select * into f from public.creator_fees x where x.option_id = o.id;
+    select * into c from public.creators x where x.id = o.creator_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'creator.updated', c.name,
+            coalesce(public.creator_job_ref(o.id) || ' · ', '') || 'Bill ' || left(btrim(p_number), 60) || ' created in Bukku · '
+            || public.creator_fee_word(f.amount, f.currency));
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.creator_bill_made(uuid, text) from public, anon;
+grant execute on function public.creator_bill_made(uuid, text) to authenticated;
+
+-- END OF BUKKU MADE ONCE -----------------------------------------------------
+
+-- ===========================================================================
+-- ADDRESSES LET GO (2026-11-25)
+-- ===========================================================================
+-- WHY (the review of everything merged since 15 Nov, approved by the user
+-- on 2026-11-25): three tables holding a caller's address never let a row
+-- go, against the 30-day promise in STANDARD.md (Retention): /feedback/'s
+-- and /quote/'s hourly counts (`feedback_hits`, `quote_hits`) and
+-- /verify/'s name check (`verify_name_caller_tries`). And the two functions
+-- the one-time report picture move used (`report-thumbs-move`, removed from
+-- the repository on 2026-11-24) are read by nothing.
+--
+-- WHAT CHANGES
+--   * `privacy_retention` (restated whole from QUOTATION COPIER'S
+--     ADDRESS KEPT 30 DAYS) also deletes an hourly count a day after its hour, and a
+--     name check's count 30 days after it began, once it holds no lock;
+--     its answer names the three counts.
+--   * `sm_report_thumb_set(text, uuid, text)` and
+--     `sm_report_thumb_versions(integer)` are dropped (the service role's
+--     alone; nothing in the repository calls either).
+--
+-- ORDER: this file alone (connector); no page reads either. Safe to run
+-- twice.
+-- ROLLBACK: run `privacy_retention` from QUOTATION COPIER'S ADDRESS KEPT 30
+-- DAYS, and
+-- `sm_report_thumb_versions` from REPORT PICTURES ON S3 and
+-- `sm_report_thumb_set` from its band after it, again.
+-- ===========================================================================
+
+-- ADDRESSES LET GO -------------------------------------------------------------
+
+create or replace function public.privacy_retention(p_now timestamptz default now())
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_wa integer := 0; v_act integer := 0; v_hc integer := 0; v_hl integer := 0; v_lt integer := 0; v_vt integer := 0; v_vd integer := 0; v_vc integer := 0; v_hm integer := 0; v_qc integer := 0;
+  v_fh integer := 0; v_qh integer := 0; v_vn integer := 0;
+  v_today date := (p_now at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keep integer := coalesce(public.app_setting('health_keep_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 24)::integer;
+  v_left integer := coalesce(public.app_setting('health_leaver_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 6)::integer;
+  v_gone uuid[];
+begin
+  update public.wa_outbox o
+     set to_number = '', to_name = null, params = '[]'::jsonb, button = null
+   where o.created_at < p_now - interval '12 months'
+     and o.state not in ('queued', 'sending')
+     and (o.to_number <> '' or o.to_name is not null or o.params <> '[]'::jsonb or o.button is not null);
+  get diagnostics v_wa = row_count;
+  delete from public.activity_log a where a.created_at < p_now - interval '3 years';
+  get diagnostics v_act = row_count;
+  delete from public.health_checkins k where k.half < v_today - make_interval(months => v_keep);
+  get diagnostics v_hc = row_count;
+  delete from public.health_moods k where k.period_start < v_today - make_interval(months => v_keep);
+  get diagnostics v_hm = row_count;
+  v_hc := v_hc + v_hm;
+  select coalesce(array_agg(m.id), '{}') into v_gone from public.team_members m
+   where not m.active and coalesce(m.removed_at, m.expired_at) < p_now - make_interval(months => v_left);
+  if array_length(v_gone, 1) > 0 then
+    delete from public.health_checkins k where k.team_member_id = any(v_gone);
+    get diagnostics v_hl = row_count;
+    delete from public.health_moods k where k.team_member_id = any(v_gone);
+    get diagnostics v_hm = row_count;
+    v_hl := v_hl + v_hm;
+    delete from public.health_talks t where t.team_member_id = any(v_gone) or t.with_id = any(v_gone);
+    delete from public.health_log l where l.team_member_id = any(v_gone);
+    delete from public.health_consents c where c.team_member_id = any(v_gone);
+  end if;
+  -- A caller's address against a link's passcode, once it has had nothing
+  -- to say for 30 days and holds no lock (audit 2026-10-18, item 14).
+  delete from public.link_tries t
+   where greatest(t.last_at, coalesce(t.ok_at, t.last_at)) < p_now - interval '30 days'
+     and coalesce(t.locked_until, t.last_at) < p_now;
+  get diagnostics v_lt = row_count;
+  -- A caller's address against /verify/, once its hour began 30 days ago.
+  delete from public.verify_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vt = row_count;
+  -- And against /verify/'s details (VERIFY DETAILS, 2026-11-20).
+  delete from public.verify_detail_tries v where v.since < p_now - interval '30 days';
+  get diagnostics v_vd = row_count;
+  -- And a check's address hash, 30 days after its day; the document's
+  -- total stays (VERIFY CHECKS COUNTED, 2026-11-21).
+  delete from public.verify_checks v where v.day < v_today - 30;
+  get diagnostics v_vc = row_count;
+  -- A caller's hourly count on /feedback/ and /quote/, a day after its
+  -- hour (ADDRESSES LET GO, 2026-11-25): the count is read for the hour
+  -- alone, so nothing older is needed.
+  delete from public.feedback_hits h where h.hour < (p_now at time zone 'Asia/Kuala_Lumpur') - interval '1 day';
+  get diagnostics v_fh = row_count;
+  delete from public.quote_hits h where h.hour < (p_now at time zone 'Asia/Kuala_Lumpur') - interval '1 day';
+  get diagnostics v_qh = row_count;
+  -- And against /verify/'s name check, once its count began 30 days ago
+  -- and it holds no lock.
+  delete from public.verify_name_caller_tries v
+   where v.since < p_now - interval '30 days'
+     and coalesce(v.locked_until, v.since) < p_now;
+  get diagnostics v_vn = row_count;
+  -- And where a colleague copied a quotation's link, 30 days after the copy
+  -- (QUOTATION COPIER'S OPENING, 2026-11-25).
+  update public.quotation_link_copies c set ip = null where c.ip is not null and c.at < p_now - interval '30 days';
+  get diagnostics v_qc = row_count;
+  return jsonb_build_object('whatsapp_cleared', v_wa, 'activity_removed', v_act,
+    'health_checkins_removed', v_hc + v_hl, 'health_leavers', coalesce(array_length(v_gone, 1), 0),
+    'link_tries_removed', v_lt, 'verify_tries_removed', v_vt, 'verify_detail_tries_removed', v_vd,
+    'verify_checks_removed', v_vc, 'quotation_copiers_cleared', v_qc, 'feedback_hits_removed', v_fh, 'quote_hits_removed', v_qh,
+    'verify_name_tries_removed', v_vn);
+end $$;
+revoke all on function public.privacy_retention(timestamptz) from public, anon, authenticated;
+
+drop function if exists public.sm_report_thumb_set(text, uuid, text);
+drop function if exists public.sm_report_thumb_versions(integer);
+
+-- END OF ADDRESSES LET GO ------------------------------------------------------
+
+-- ===========================================================================
 -- MINOR ABUSE PATHS HELD (2026-11-25)
 -- ===========================================================================
 -- WHY (the review of everything merged since 15 Nov, approved by the user
@@ -156432,7 +157228,7 @@ create or replace trigger quotation_drafts_clear
 --     withdrawal cleared the minute's wait, so request and withdraw in turn
 --     told the team without end.
 --   * `team_session_end` and `team_sessions_end_all` (restated from
---     DELETES AND BUILDS HELD): an admin's devices are signed out by an admin alone,
+--     HIRING AND RECORD LINES WORDED): an admin's devices are signed out by an admin alone,
 --     `admin-only`; a colleague at Team: Sessions (Work) could sign an
 --     admin out.
 --   * `verify_name_wrong` / `verify_name_wait` (restated from VERIFY NAMES

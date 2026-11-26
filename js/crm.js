@@ -4606,7 +4606,7 @@
     'not-found': 'This analysis is no longer available.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
     'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.',
-    ambiguous: 'More than one business matches this client. Run the analysis again and choose the brand.'
+    ambiguous: 'More than one brand matches this client. Run the analysis again and choose the brand.'
   };
   function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
@@ -4935,7 +4935,7 @@
     var host = function (u) { return u ? String(u).replace(/^https:\/\/(www\.)?/i, '').replace(/\/.*$/, '') : ''; };
     window.ADspaceConfirm.ask({
       title: 'Choose the brand',
-      body: 'More than one business matches ' + c.name + '. Choose the one to analyse. The earlier run was not counted.',
+      body: 'More than one brand matches ' + c.name + '. Choose the one to analyse.',
       go: 'Run',
       fields: [{ name: 'pick', label: 'Brand', required: true, need: 'Choose a brand.', value: '',
         choices: [['', 'Choose a brand']].concat(cands.map(function (x, i) {
@@ -7855,7 +7855,7 @@
     if (!R || !c) return;
     var main = (state.contacts || []).filter(function (p) { return p.is_primary && !p.archived_at; })[0] ||
                (state.contacts || []).filter(function (p) { return !p.archived_at; })[0] || null;
-    R.openIssue({ client: c, contact: main, families: ['quote_cover', 'client'], msg: 'crmDocMsg',
+    R.openIssue({ client: c, contact: main, families: ['client'], msg: 'crmDocMsg',
                   onDone: function () { loadDocuments(); } });
   });
 
