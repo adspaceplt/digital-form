@@ -383,7 +383,14 @@ button.appver {
   .pbox.needs-link { flex: 1 1 100%; min-width: 0; }
   }
 
-.invcurrent { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+/* The campaign's invoice (CAMPAIGN INVOICE FROM BUKKU, 2026-11-26): its
+   number, amount and state on one line, the ⋯ at its right edge, the acts
+   under it. */
+.invcurrent { display: flex; flex-direction: column; align-items: stretch; gap: 12px; margin-top: 12px; }
+.invline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: var(--ctl-h-sm); }
+.invamt { font-weight: 500; font-variant-numeric: tabular-nums; }
+.invend { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.invcurrent > .invacts { margin-top: 0; }
 /* Counts and money on one line, small enough to be read as a row rather than
    a wall of tiles. */
 .stat { display: flex; flex-direction: column; gap: 1px; }

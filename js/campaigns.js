@@ -1143,7 +1143,7 @@
     if (!payJobs || payJobs.creator !== c.id) UI.skeleton(host, 2);
     var btn = $('cpayRead'); if (btn && fresh) btn.disabled = true;
     var ask = fresh ? db.functions.invoke('bukku-sync', { body: { action: 'bills', creator: c.id } }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
     }) : db.rpc('creator_bills_list', { p_creator: c.id }).then(function (r) { return r.error ? { error: r.error.message } : (r.data || {}); });
     ask.then(function (d) {
       if (btn) btn.disabled = false;
@@ -1285,7 +1285,7 @@
     if (!c) return;
     var tab = window.open('', '_blank');
     db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: c.id, number: num } }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
     }).then(function (x) {
       if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
       if (tab) tab.close();
@@ -1392,7 +1392,7 @@
     return runs.reduce(function (p, part) {
       return p.then(function () {
         return db.functions.invoke('bukku-sync', { body: { action: 'createbill', options: part.map(function (j) { return j.option; }) } }).then(function (r) {
-          return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
+          return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
         }).then(function (d) {
           if (!d.results) { part.forEach(function (j) { out.unsure.push(j.job); }); return; }
           if (d.list) out.list = d.list;
@@ -1731,7 +1731,7 @@
   function cpqOpenBill(creator, num) {
     var tab = window.open('', '_blank');
     db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: creator, number: num } }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
     }).then(function (x) {
       if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
       if (tab) tab.close();
@@ -6588,20 +6588,21 @@
     if (x.error === 'not-linked') return W.bukkuLinkClient;
     if (x.error === 'no-fx') return W.fxUnset;
     if (x.error === 'no-model' && x.number) return 'Invoice ' + x.number + ', the model in Settings (Accounting, Bukku), was not found in Bukku. Check the number in Settings.';
-    if (x.error === 'no-invoice') return 'Bukku holds no invoice ' + x.number + ' for this client. Check the number, then try again.';
+    if (x.error === 'no-invoice') return 'Bukku has no invoice ' + x.number + ' for this client. Check the number, then try again.';
     if (x.error === 'not-filed') return 'Invoice ' + x.number + ' was created in Bukku, but the portal did not keep it. Choose Link existing invoice and enter ' + x.number + '.';
     return INV_SAID[x.error] || (window.ADspaceBukku ? window.ADspaceBukku.said(x) : W.notSent);
   }
   function invCall(body) {
     return db.functions.invoke('bukku-sync', { body: Object.assign({ action: 'campaigninvoice' }, body) }).then(function (r) {
-      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? Object.assign({}, r.data || {}, { error: code }) : (r.data || { error: 'failed' }); });
     }).catch(function () { return { error: 'failed' }; });
   }
   var DOTS3 = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  function invMenu(act, label) {
+  function invMenu(groups) {
     return '<span class="team-act"><button class="kmenu-btn" type="button" data-a="invmenu" aria-label="More actions" aria-expanded="false">' + DOTS3 + '</button>' +
-      '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.item(act, label) + '</div></span>';
+      '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items(groups) + '</div></span>';
   }
+  var invWeb = null;
   function invToken(no) {
     return '<button class="serial-copy" type="button" data-a="invcopy" aria-label="Copy ' + esc(no) + '">' + esc(no) + '</button>';
   }
@@ -6629,16 +6630,20 @@
         });
       } else if (!r.reading) {
         var st = r.error ? null : r.gone ? ['is-warn', 'Not found in Bukku'] : INV_STATE[r.state] || INV_STATE.issued;
+        /* The state on the number's line before its ⋯ (DESIGN.md §5): Open
+           in Bukku and Unlink are rare, so they wait in it. */
+        var items = [[r.web ? { a: 'invweb', label: 'Open in Bukku' } : null], [], [], [],
+          [mayFinance ? { a: 'invunlink', label: 'Unlink' } : null]];
+        var menu = items[0][0] || items[4][0] ? invMenu(items) : '';
         cur.innerHTML = '<div class="invline">' + invToken(r.number || c.invoice_no || '') +
-            (st ? '<span class="chip-state ' + st[0] + '">' + st[1] + '</span>' : '') +
-            (r.amount != null ? '<b class="invamt">' + esc(billMoney(r.amount, r.currency)) + '</b>' : '') + '</div>' +
+            (r.amount != null ? '<b class="invamt">' + esc(billMoney(r.amount, r.currency)) + '</b>' : '') +
+            '<span class="invend">' + (st ? '<span class="chip-state ' + st[0] + '">' + st[1] + '</span>' : '') + menu + '</span></div>' +
           (r.error ? '<p class="msg err">' + esc(invSaid(r)) + '</p>' : '') +
-          '<div class="row acts invacts">' +
-            (r.error ? '<button class="btn btn-sm" type="button" data-a="invagain">Try again</button>' : '') +
-            (r.web ? '<a class="btn btn-sm" href="' + esc(absUrl(r.web)) + '" target="_blank" rel="noopener">Open in Bukku</a>' : '') +
+          (r.error || r.pdf ? '<div class="row acts invacts">' +
             (r.pdf ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
-            (mayFinance ? invMenu('invunlink', 'Unlink') : '') +
-          '</div>';
+            (r.error ? '<button class="btn btn-sm" type="button" data-a="invagain">Try again</button>' : '') +
+          '</div>' : '');
+        if (r.web) invWeb = r.web;
       }
     } else if (c.invoice_no || c.invoice_url) {
       /* Typed or uploaded before the invoice came from Bukku: read only. A
@@ -6656,7 +6661,7 @@
     } else if (mayFinance) {
       cur.innerHTML = '<div class="row acts invacts">' +
         '<button class="btn btn-primary" type="button" data-a="invcreate" data-gate="bukku">Create invoice in Bukku</button>' +
-        invMenu('invlink', 'Link existing invoice') + '</div>';
+        '<button class="btn" type="button" data-a="invlink" data-gate="bukku">Link existing invoice</button></div>';
     } else {
       cur.innerHTML = '';
     }
@@ -6684,7 +6689,8 @@
     });
     var shut = function () { var m = mb && mb.parentNode.querySelector('.kmenu'); if (m) m.hidden = true; if (mb) mb.setAttribute('aria-expanded', 'false'); };
     on('invcreate', function () { createInvoice(c, this); });
-    on('invlink', function () { shut(); linkInvoice(c, mb); });
+    on('invlink', function () { linkInvoice(c, this); });
+    on('invweb', function () { shut(); if (invWeb) window.open(absUrl(invWeb), '_blank', 'noopener'); });
     on('invunlink', function () { shut(); unlinkInvoice(c, mb); });
   }
   function charged() {

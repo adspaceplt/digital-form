@@ -157526,7 +157526,10 @@ begin
   if p_mode is null or p_mode not in ('create', 'link') then return jsonb_build_object('error', 'bad-request'); end if;
   select * into m from public.campaigns x where x.id = p_campaign for update;
   if m.id is null or not public.client_scope_ok('campaign', m.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
-  if m.bukku_invoice_id is not null then return jsonb_build_object('error', 'invoiced', 'number', m.invoice_no); end if;
+  -- An invoice typed or uploaded before stays as it was (read only).
+  if m.bukku_invoice_id is not null or m.invoice_no is not null or m.invoice_url is not null then
+    return jsonb_build_object('error', 'invoiced', 'number', m.invoice_no);
+  end if;
   select * into cl from public.clients x where x.id = m.client_id;
   select l.contact_id into v_contact from public.bukku_links l where l.kind = 'client' and l.record_id = m.client_id;
   if v_contact is null then v_contact := (public.bukku_shared('client', m.client_id)->>'contact_id')::bigint; end if;
@@ -157546,7 +157549,7 @@ begin
            'amount', o.rate) order by o.position, o.added_at), '[]'::jsonb)
     into v_lines
     from public.campaign_options o left join public.creators c on c.id = o.creator_id
-   where o.campaign_id = m.id and o.state in ('shortlisted', 'confirmed', 'pending_visit', 'pending_draft', 'submitted',
+   where o.campaign_id = m.id and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted',
          'reviewing', 'changes', 'scheduled', 'posted', 'completed')
      and not coalesce(o.goodwill, false) and coalesce(o.rate, 0) > 0;
   if jsonb_array_length(v_lines) = 0 then return jsonb_build_object('error', 'nothing'); end if;

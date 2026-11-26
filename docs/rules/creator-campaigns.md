@@ -157,8 +157,29 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator named in the detail.
 - The invoice fold arrives with the first confirmed creator and leaves with the
   last.
-  - One Save covers the number (`AINV` + six digits) and the PDF.
-  - With `ADSPACE_CONFIG.s3.privateInvoices` on (after
+  - The invoice is made in Bukku (CAMPAIGN INVOICE FROM BUKKU, the user,
+    2026-11-25): Create invoice in Bukku (blue, `data-gate="bukku"`) makes a
+    draft on the client's Bukku contact (its own link, else the company
+    billing it), one line a confirmed creator (`{creator} · {campaign}` at the
+    client rate, a goodwill or unpriced booking left out) on the product,
+    account and tax code of the model invoice set in Settings, Accounting,
+    Bukku (`campaign_invoice_model`, seeded AINV2609023; no tax code where the
+    client is billed no SST); Link existing invoice takes one made in Bukku by
+    its number, on the client's own contact alone. The press is held ten
+    minutes (`campaign_invoice_prep`, `creating`), an invoice already in Bukku
+    under the reference is linked, never made twice, and a campaign holds one
+    invoice (`invoiced`). The portal keeps the number and the Bukku id alone:
+    every visit reads the state (Draft, Issued, Paid, Overdue, Void), the
+    amount and the PDF from Bukku (`campaigninvoice` `status`); the ⋯ holds
+    Open in Bukku and Unlink, Unlink changing nothing in Bukku, with Undo.
+  - An invoice typed and uploaded before stays as it was, read only (its
+    number and View invoice); nothing new is made for that campaign.
+  - The client's selection page shows the invoice number alone, never a
+    Bukku-made invoice's PDF (2026-11-26): Bukku's own link is a public page
+    no access code guards, a draft's figures may still change, and Bukku
+    sends the client the issued invoice itself. An invoice uploaded before
+    keeps its PDF link there.
+  - An uploaded invoice's file (before 2026-11-26): with `ADSPACE_CONFIG.s3.privateInvoices` on (after
     `docs/S3-STORAGE.md` §5), the PDF is signed under `private/` and the row
     keeps the key, never an address; View invoice and the client's PDF link
     ask `sign-download` for a five-minute link, the file found from what the
@@ -170,7 +191,6 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     since 2026-10-03, `docs/S3-STORAGE.md` §5d), else an S3 presigned one. An older invoice keeps its public
     address. A refused open on the client's page is one line in its
     language (`#amountMsg`).
-  - Remove PDF, with Undo.
   - `get_campaign` withholds `invoice_no` and `invoice_url` until a creator is
     confirmed.
 - Confirm creators is reachable from Client selection, from the Creators tab
