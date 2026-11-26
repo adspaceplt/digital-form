@@ -2103,7 +2103,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* Each line after the statement 8 under the one before. */
 .cover-panel :is(h1, h2) ~ p + p:not(.msg, .cover-ref) { margin-top: 8px; }
 :root[data-face="client"] .cover-panel p { font-size: 14px; }
-:root[data-face="client"] .cover-panel h2 + p { font-size: 17px; }
+:root[data-face="client"] .cover-panel :is(h1, h2) + p { font-size: 17px; }
 /* The sign-in's reference, last, where a sign-in is held (js/maintenance.js). */
 .cover-panel .cover-ref, :root[data-face="client"] .cover-panel .cover-ref {
   margin-top: 24px; color: var(--ink); font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; }
@@ -3268,6 +3268,16 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .cs-main { min-width: 0; }
 .cs-main > .actstrip { padding-top: 0; }
 .cs-main .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+/* On a phone a client page's view strip runs the column's width, as the
+   portal's tabs and every console strip do (css/console.css, the same rule
+   for the console's sheet; the user, 2026-11-26): each view grows, two are
+   equal halves. */
+@media (max-width: 640px) {
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews { display: flex; width: 100%; }
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab { flex: 1 0 auto; justify-content: center; }
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab:first-child:nth-last-child(2),
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab:last-child:nth-child(2) { flex: 1 1 50%; min-width: 0; }
+}
 .cs-main > .actstrip[hidden] { display: none; }
 .cs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .cs-empty { grid-column: 1 / -1; margin: 0; padding: 16px 0; font-size: 14px; color: var(--ink-mute); }
