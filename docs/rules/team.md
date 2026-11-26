@@ -78,6 +78,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   account's; it asks (how many devices, signed in again on each), ends every
   sign-in at once and is filed `{name} signed out on n devices`;
   refusals `own-account`, `system-account`, `none`, `denied`, `not-found`.
+  An admin's devices are signed out by an admin alone, one or all
+  (`admin-only`, MINOR ABUSE PATHS HELD, 2026-11-25): no Sign out is drawn
+  on them for a colleague who is not one.
   Each night (pg_cron `session-idle`, 03:52 MYT) `team_sessions_idle_end`
   ends every colleague's sign-in whose latest renewal, update or start is
   older than `session_idle_days` (Business setting, 30, 0 turns this off, 1

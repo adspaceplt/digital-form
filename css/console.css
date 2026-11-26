@@ -4963,8 +4963,11 @@ span.inv-amt { font-weight: 600; }
 .ost-vh-end .kmenu-btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 .ost-part > .ost-facts { margin-top: 4px; margin-bottom: 15px; }
 .ost-facts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-.ost-facts .serial-copy { margin-left: -6px; }
-.ost-purpose, .ost-person { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ost-facts .serial-copy { margin-left: -6px; white-space: nowrap; }
+.ost-purpose, .ost-person { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.ost-person > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-facts dd { overflow-wrap: normal; }
+.ost-facts .facts-wide dd { overflow-wrap: anywhere; }
 .ost-purpose svg { width: 15px; height: 15px; color: var(--ink-soft); flex: 0 0 auto; }
 .ost-people { display: grid; gap: 6px; }
 .ost-break { margin-top: 0; }

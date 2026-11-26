@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126b"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126c"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -6865,7 +6865,7 @@ raya-2026        https://example.com/raya"></textarea>
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
   "crm": {"src": "/js/crm.js?v=20261126a", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
-  "team": {"src": "/js/team.js?v=20261125tse", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "team": {"src": "/js/team.js?v=20261126", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
   "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
@@ -6880,7 +6880,7 @@ raya-2026        https://example.com/raya"></textarea>
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261125b", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
   "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
-  "outstation": {"src": "/js/outstation.js?v=20261125osl"},
+  "outstation": {"src": "/js/outstation.js?v=20261126b"},
   "settings": {"src": "/js/settings.js?v=20261126a", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
