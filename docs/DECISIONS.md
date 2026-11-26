@@ -11764,9 +11764,66 @@ The fix is in the two shared pieces. `ADspaceConfirm` stands side-by-side fields
 ### 2026-11-25 · Build quote says items, custom items and service lines, never the builder's lines
 
 The copy review of Build quote's Summary (#1473) read every word on the sheet and found the builder's word "lines" still standing after the user retired it with View lines: Custom lines and Add line, Renew lines, Rate Card line, the Line column of the lines view, and refusals saying "line". The starting session gave them to this session as their own release, in the reviewer's words: an item on the quotation is an item (Item, Custom items, Add custom item, An item cannot run longer than the term, Its items will become confirmed service lines), a confirmed one is a service line (Renew service lines, No confirmed service lines to renew.), and what the Rate Card offers is a Rate Card service (Choose a Rate Card service, Add a Rate Card service to the package.). A package's inclusion is added by Add inclusion. The phrases join `tests/words.js` RETIRED. No suite read them as text; only check names held them.
+
+### 2026-11-26 · The Dashboard's Me page: no repeated mark, one line for an empty week, columns level
+
+The user ran an unslop audit of the Dashboard (Me) and approved three of its
+findings. The four figure tiles each carried My Work's mark, the same glyph
+four times, telling the reader nothing: tiles read from one section now carry
+none (`oneSection` in `js/overview.js`; a tile drawing a trend already gave its
+mark up). An empty Next 5 days drew five rows of Nothing due; a week holding
+none of the colleague's work or meetings is now one line, Nothing is due., as
+Today's own, while a refused meeting read keeps the days. Today ended about
+180px above Next 5 days at a desk, leaving a dead band; the two columns now end
+on one line (`.ovw-me-cols`). Kept as decided: the greeting (2026-11-13) and
+the task ring (2026-11-14). `tests/overview.js` asserts all three.
+The copy review of the same release read the standing words on both pages and
+renamed six: Sales moves is Client stage changes; Of the step before is From
+previous step; One month of the lines won and churned is Monthly fee of service
+lines won and churned; Times moved on is Moved out; Median cycle is Median
+turnaround, the word the page already uses; a failed figure reads Could not load
+your tasks., and the fallback failure names This figure.
+
+### 2026-11-26 · The unslop pass over every other screen
+
+The user asked for unslop's audit of every screen and for its findings to be
+applied without asking. Three readers walked the console and the client pages
+at 1280 and 390; none found the AI-template signs (gradients, glows, emoji,
+tracked capitals, hype). Applied: My Work's phone row wraps its chips under the
+name (the name had been drawn 0px wide); a task's step names what is missing
+(Not assigned, No due date) rather than Not ready to start under a head reading
+Ready to start; an empty board phase line gives up its gap on a phone; a ring's
+track takes the control's edge at 45% so it no longer reads as a spinner;
+Analytics' turnaround names its unit and a span of none reads a dash; Video
+Scripts reads Last shoot; its rewrite fold carries the chevron; Content
+Review's and a campaign's rails drop the percentage beside n of N; the client
+portal keeps Open on a bare row's title line; /quote/'s Change selection keeps
+to the content edge; /careers/ says Awaiting your reply once and its document
+card is shaded; Team's header aligns with its names where no row draws a mark;
+the Clients tiles' foot keeps within its card; Team, Handbook and Documents
+names read at 500; Short Links' slugs at the mono size and 500. Not applied: My
+Work's board bar (the workflow select stays on the bar, `docs/rules/cmdbar.md`),
+Content Review's group count (a directory card's count, DESIGN §4), and the
+/client/ phone tiles (already full width when three).
+The pass's copy review (a second reader, 22 findings) was applied the same day:
+Unassigned in place of Not assigned (one word per thing); Nothing due. as the
+week's own days say it; Monthly fee of service lines lost under Monthly value
+lost; Draft due, never Draft owed; Target at most; No posts.; Results from and
+Results to; All creators are booked., and a withdrawn creator's place said as
+Another creator can be booked in their place.; rednote Safe Mode; Generating the
+PDF…; Enter a reason., Enter a name., Choose a date.; the decision refused to
+anyone but the colleague asked; Code {code}. The task number will be assigned
+when it is saved.; a candidate's returned document and confirmation in a
+letter's words. Kept as decided: Good night as the late greeting (dashboard.md)
+and Chat on WhatsApp (the front door and /quote/).
+
 ### 2026-11-26 · Review fixes S2: four small abuse paths held
 
 From the same review (approved 2026-11-25). A quotation link's Request changes and Withdraw request told the team each time and a withdrawal cleared the minute's wait, so pressing them in turn notified without end: ten a link an hour, then `busy` (/quote/ says so in English and Chinese). A colleague at Team: Sessions (Work) could sign an admin out: `team_session_end` and `team_sessions_end_all` refuse `admin-only`, and Devices draws no Sign out for them. /verify/'s wrong-name lock was counted across every connection, so callers elsewhere could lock the real addressee out: it now locks one connection and one reference. `request_visit` held the device header to 400 characters with control characters kept, and its session reference hashed the whole header, so a caller could mint sessions: the header is held to 300 characters without control characters, the city to 60, and the reference reads the device word. MINOR ABUSE PATHS HELD, `tests/abusesql.js`. The handover's draft was rebuilt on main by its builder, its header naming the bands the functions were restated from.
+
+### 2026-11-26 · Five list and bar fixes from the Partners audit
+
+The audit the user approved. Suppliers' and Hiring's cards repeated their heading on every row (Active inside Active; Invited, Interview, Offer): a card whose rows all hold its heading's state now reads Updated with the day each last moved, as Creators' tabs do, one cell (`ADspaceGroup.upd`) and one word (`ADspaceWords.line.updated`); a card of mixed states (a Pending supplier whose details came back, a candidate whose own step waits) keeps State. Creators' and Suppliers' Payments drew an empty Paid as a head of their own with a `.tab-n` 0 beside the other groups' plain counts: it is now `ADspaceGroup.section` with count 0 and No entries. in it. A colleague's Department read Not set in ink beside mute Not set values: a select drawn as a value (`.select.tdetail`, My Work's task details too) reads its empty choice in the mute ink, by its own variant rule. The phone meta line under a campaign (client · 3 of 4 booked) and a client wrapped leaving its dot at a line's end: `ADspaceWords.parts` keeps each part whole with its dot inside the part after it. Documents on a phone drew two plus glyphs side by side (Add existing document as `.cmd-solo`, Issue document as the primary): the user's 2026-11-17 choice of a phone ⋯ for it was undone the same day by the rule that no ⋯ holds one item, so the solo act keeps its words beside the primary and the count gives way to the Filters sheet's head, the bar one row (Services' Download alike). `tests/cmdbar.js` counted the figures eye as one of the bar's acts, so Clients read three acts and one in the ⋯ and failed; it now counts acts alone, as `wireActions` does. A line of parts already had three local copies (`engage.js`, `portal.js`, `settings.js`), left as they are; a new list's meta line reads `ADspaceWords.parts`.
 
 ### 2026-11-26 · F2: Settings names the next trip number, not the month's first
 
@@ -11785,6 +11842,21 @@ The user reported Build quote's four steps (2026-11-25) as the wrong flow: editi
 Built: no steps; a card a brand, the first named after the client, one open at a time holding the one board the page already had (moved into the open card, so every control kept its wiring); Duplicate and Remove (with Undo) in each card's ⋯; Add brand opens a ready card; Create checks every card and opens the first with a fault. Save brand, Editing, `B.was`, `stepGo`, `stepNext`, `stepWrong` and the track are gone; a draft keeps its brands and the open card (`_bi`), no `_step`. The advertising budget moved from the quotation to each brand: the page keeps a brand's rows on its card and sends them with the brand's place, `quote_extras` keeps the place (six rows a brand) and `quotation_cycle_lines` invoices a brand's row under its name (QUOTATION ADVERTISING PER BRAND); the PDF and /quote/ name the brand over its rows; One per brand gives each quotation its own rows.
 
 Found while building: the steps' Term and review was where a line's quantity, rate and months were typed at a desk; the approved boards dropped View quote at a desk, which would have left nowhere to type them, so View quote stands at every width (said to the user with the release). A selection the database refused (a package with no price) disabled Create, so Create could not name the card's fault; Create now stays pressable, names the card's own fault first, else the refusal. `quotedraft` found the draft line touching the brands under it (0px); it stands 12px above them.
+
+### 2026-11-26 · References: a draft until confirmed, a request number nobody can count, and the house scheme
+
+The user asked that a team's quotation hold every act but Preview PDF, Edit
+and Confirm until a colleague confirms it, showing `ADP/QT{YYMM}-DRAFT`, and
+that a website request take `ADP/REQ{YYMM}-{AAA}`, three random letters, "so
+people wont guess how many requests submitted to us"; the real serial is spent
+only at Confirm (or a request's Send quotation), so a test or a declined
+request never takes one (session C, F8). The user then set the scheme every new
+reference follows: the shortest prefix at the top (AD a team member, AC a
+client, AS a supplier, NNN each), ADHR for HR (EMP filed under it), ADCL a
+public cover letter, ADP what the portal issued, REQ a request; every other
+reference built from the record it belongs to, as one loop. Existing
+references (AQL, ACL, ADC, CC) keep their form; DESIGN.md §7 Numbering.
+
 ### 2026-11-26 · Review fixes S4: retention and scheduled jobs held
 
 From the same review. A colleague set inactive (neither removed nor expired) kept their health data for good: `team_members.inactive_at` is stamped and cleared by a trigger, and `privacy_retention` counts from `coalesce(removed_at, expired_at, inactive_at)`; it runs daily, not monthly. `hiring_retention` left a candidate's email and address in their signing steps; they go first. `health_daily` reminded only on the exact day, so a holiday or a missed run lost it; it reminds on any day to the period's end, the dedupe key still sending one. `supplier_email_begin` and the feedback request had no lock against a send still going out (`sending`), and a feedback request could go again at once (`recent`, unless Send again). The candidate email claims mark a send stuck for ten minutes not confirmed, the kick wakes for a queued expiry email, and `jobs_watch` tells failed candidate emails. My Work's nudge and reminder were sent on a public holiday; the access end ended access a colleague had meanwhile been given back; two presses could make a recurring rule's date twice; an index was missing. The handover's builder carried, inside `ops_generate_recurring`, an older `jobs_watch` that stood between that function and its grant in the schema, which would have replaced the new one; it was found by comparing each function in the band with its last version and cut at the function's end (`tests/retentionsql.js` holds jobs_watch the newest and every function made once). RETENTION AND JOBS HELD.

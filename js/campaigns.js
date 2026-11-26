@@ -1652,8 +1652,8 @@
     section('review', 'Details to review', rv, rv.map(function (r) {
       return '<div class="cpq-row" data-req="' + esc(r.id) + '" data-creator="' + esc(r.creator) + '">' +
         '<div class="cpq-l"><span class="cpq-name">' + esc(r.name || '') + (r.code ? ' <span class="cpq-mono cpq-job">' + esc(r.code) + '</span>' : '') + '</span>' +
-          '<span class="cpq-sub"><span class="nb">' + esc(window.ADspaceWords.bank(r.method_word) + ' ending ' + r.account_end) + '</span> · <span class="nb">' + esc(r.currency) + '</span>' +
-          (r.replaces ? ' · <span class="nb">Replaces approved details</span>' : '') + '</span></div>' +
+          '<span class="cpq-sub">' + W.parts([window.ADspaceWords.bank(r.method_word) + ' ending ' + r.account_end, r.currency,
+            r.replaces ? 'Replaces approved details' : '']) + '</span></div>' +
         '<div class="cpq-r"><span class="chip-state is-warn">To review</span><span class="cpq-sub">' + esc(cpqWhen(r.created_at)) + '</span></div>' +
         '<div class="cpq-act"><button class="btn btn-sm" type="button" data-a="review">Review</button></div></div>';
     }).join(''));
@@ -1675,17 +1675,18 @@
     }).join(''), lateN ? '<span class="tab-n is-err">' + lateN + ' late</span>' : '');
     var per = '<select class="select select-sm cpq-period" id="cpqPeriod" aria-label="Paid period">' +
       CPQ_PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === cpqPeriod ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>';
-    if (paid.length) section('paid', 'Paid', paid, paid.map(function (j) {
+    /* Paid stands even when the period holds none, its period beside it:
+       the same card head as every group, its count 0 and No entries. in
+       it (2026-11-26: a pill 0 under a head of its own read apart). */
+    if (!paid.length) host.appendChild(GRP.section({ route: 'creator-payments', key: 'paid', name: 'Paid', count: 0, marks: per,
+      shut: GRP.shut('creator-payments', 'paid', false, false),
+      table: function () { var t = document.createElement('div'); UI.emptyLine(t, 'No entries.'); return t.firstChild; } }));
+    else section('paid', 'Paid', paid, paid.map(function (j) {
       /* A paid bill opens in Bukku as an awaiting one does (2026-11-19, the
          user: the row stood short of its card's edge, its act column empty). */
       return row(j, { top: amt(j), sub: sub(j, true), when: 'Paid ' + esc(cpqDay(j.bill.paid_on)) },
         j.bill && j.bill.number ? '<button class="btn btn-sm" type="button" data-a="bukku" data-num="' + esc(j.bill.number) + '">Open in Bukku</button>' : '');
     }).join(''), per);
-    else {
-      var none = document.createElement('section'); none.className = 'crm-group cpq-paid-none';
-      none.innerHTML = '<div class="crm-group-head"><h3 class="cpq-h">Paid<span class="tab-n">0</span></h3>' + per + '</div>';
-      host.appendChild(none);
-    }
     if (!shown && all) { var e = document.createElement('p'); e.className = 'emptyline'; e.textContent = 'No matches.'; host.insertBefore(e, host.firstChild); }
     if (d.read_at) { var rd = document.createElement('p'); rd.className = 'muted cpay-read'; rd.textContent = 'Read from Bukku ' + cpqDay(d.read_at) + ', ' + ADspaceClock.clock(d.read_at); host.appendChild(rd); }
     var ps = $('cpqPeriod');
@@ -2408,7 +2409,7 @@
              own 13.5px and set the word AMOUNT three sizes above every other
              heading beside it. */
           var table = GRP.table('camp-row',
-            ['Campaign', 'Client', 'Booked', { text: 'Amount', cls: 'is-end' }, { text: 'Updated', cls: 'is-end' }, ''], 'crm-register');
+            ['Campaign', 'Client', 'Booked', { text: 'Amount', cls: 'is-end' }, { text: W.line.updated, cls: 'is-end' }, ''], 'crm-register');
           GRP.more(table, inMonth, 30, 'campaigns', function (c) { return campRow(c, campSums); });
           return table;
         }
@@ -2472,10 +2473,7 @@
       /* The one line the phone gets under the name: the client and how many
          creators. The amount stands under the date at the right edge (the
          user, 2026-11-14). It may wrap between its parts, never inside one. */
-      '<span class="crm-c crm-c-meta">' +
-        [cl.name ? esc(cl.name) : '',
-         esc(booked + ' booked').replace(/ /g, '\u00a0')]
-          .filter(Boolean).join('\u00a0\u00b7 ') + '</span>' +
+      '<span class="crm-c crm-c-meta">' + W.parts([cl.name, booked + ' booked']) + '</span>' +
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
     row.addEventListener('click', function () { openCampaign(c); });
     return row;
@@ -4227,8 +4225,7 @@
       if (slots) {
         var pct = Math.min(100, Math.round((chosen.length / slots) * 100));
         $('campPickRail').innerHTML =
-          '<p class="railpct"><b>' + chosen.length + ' of ' + slots + ' chosen</b>' +
-          '<span>' + pct + '%</span></p>' +
+          '<p class="railpct"><b>' + chosen.length + ' of ' + slots + ' chosen</b></p>' +
           '<span class="railbar"><span class="railbar-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
           (booked > slots
             ? '<p class="railwarn">' + booked + ' booked · ' + goodwill.length + ' goodwill</p>'
@@ -4427,7 +4424,7 @@
     var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
     var booked = state.options.filter(isLive).length;
     if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
-      cardSay(o, 'All creator places are filled.', 'err');
+      cardSay(o, 'All creators are booked.', 'err');
       return;
     }
     db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
@@ -5988,7 +5985,7 @@
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
           /* Every slot already booked (`campaign_options_slots_hold`, audit 2026-11-15). */
-          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'Every creator place is booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
+          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);
@@ -6351,7 +6348,7 @@
       }
       var rows = r.data || [];
       if (!rows.length) {
-        box.innerHTML = head + '<div class="empty">No placements.</div>';
+        box.innerHTML = head + '<div class="empty">No posts.</div>';
         return;
       }
       box.innerHTML = head;
@@ -6404,9 +6401,9 @@
               '<textarea class="input" data-p="post_url" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://">' + esc(p.post_url || '') + '</textarea></label>' +
             '<label class="kfield"><span>Posted on</span>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
-            '<label class="kfield"><span>Count from</span>' +
+            '<label class="kfield"><span>Results from</span>' +
               '<input class="input" data-p="measure_from" type="date" value="' + esc(from) + '"></label>' +
-            '<label class="kfield"><span>Count to</span>' +
+            '<label class="kfield"><span>Results to</span>' +
               '<input class="input" data-p="measure_to" type="date" value="' + esc(to) + '"></label>' +
             num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
@@ -6437,7 +6434,7 @@
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
           if (badFig) { badFig.focus(); return no('Enter a whole number of 0 or more.'); }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Choose a Count to date on or after Count from.');
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Choose an end date on or after the start date.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
@@ -6508,8 +6505,8 @@
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
           cardSay(o, kind === 'withdrawn'
-            ? name + ' withdrawn. The place is open for a replacement.'
-            : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
+            ? name + ' withdrawn. Another creator can be booked in their place.'
+            : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' Another creator can be booked in their place.'), 'warn');
           loadOptions();
         });
     });

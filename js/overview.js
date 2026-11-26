@@ -877,6 +877,7 @@
   // Minutes as a person reads them: "45m", "6.5h", "3.2 days".
   function spanOf(m) {
     m = Number(m) || 0;
+    if (!(m > 0)) return '—';
     if (m < 60) return Math.round(m) + 'm';
     if (m < 1440) return String(Math.round(m / 6) / 10).replace(/\.0$/, '') + 'h';
     var d = Math.round(m / 144) / 10;
@@ -954,7 +955,7 @@
           if (!n[0]) return { empty: 'No new leads ' + periodName(period) + '.' };
           return { kind: 'bars', inline: true, rows: words.map(function (w, i) {
             return { label: w, value: n[i], note: i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '0%') : '' };
-          }), table: { heads: ['Step', 'Leads', 'Of the step before'], rows: words.map(function (w, i) {
+          }), table: { heads: ['Step', 'Leads', 'From previous step'], rows: words.map(function (w, i) {
             return [w, String(n[i]), i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '—') : '—'];
           }) } };
         });
@@ -973,7 +974,7 @@
          leads lost, the clients paused, resumed and won back, how long a lead
          takes to win, conversion and churn, and for whoever may open client
          Services the value won and lost. */
-      { key: 'moves', title: 'Sales moves', can: canLeads,
+      { key: 'moves', title: 'Client stage changes', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         var val = canValue();
         return (val ? R.lines() : Promise.resolve(null)).then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
@@ -991,8 +992,8 @@
             ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
           ];
           if (val && f.money) {
-            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'One month of the lines won', true]);
-            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'One month of the lines churned', true]);
+            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'Monthly fee of service lines won', true]);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'Monthly fee of service lines lost', true]);
           }
           return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
             /* Churn and the two values take a row each, so a long label
@@ -1112,7 +1113,7 @@
               return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
                        note: (openAt[x.stage_key] || 0) + ' open' };
             }), fmt: function (v) { return spanOf(v); },
-            table: { heads: ['Stage', 'Open now', 'Times moved on', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
+            table: { heads: ['Stage', 'Open now', 'Moved out', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
               return [x.label || x.stage_key, String(openAt[x.stage_key] || 0), String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
             }) } };
         });
@@ -1170,9 +1171,9 @@
           var pc = function (x) { return Math.round((Number(x.on_time) || 0) / Number(x.completed) * 100); };
           return { kind: 'bars', inline: true, rows: by.map(function (x) {
               return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
-                       note: pc(x) + '% on time' + (x.median_cycle_minutes ? ' · ' + spanOf(x.median_cycle_minutes) : '') };
+                       note: pc(x) + '% on time' + (x.median_cycle_minutes > 0 ? ' · ' + spanOf(x.median_cycle_minutes) + ' turnaround' : '') };
             }), fmt: function (v) { return String(v); },
-            table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median cycle'], rows: by.map(function (x) {
+            table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median turnaround'], rows: by.map(function (x) {
               return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%', x.median_cycle_minutes ? spanOf(x.median_cycle_minutes) : '\u2014'];
             }) } };
         });
@@ -1201,7 +1202,7 @@
         return R.bookings().then(function (list) {
           var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
           if (!list.length) return { empty: 'No open bookings.' };
-          return { kind: 'bars', inline: true, rows: [{ label: 'To shoot', value: n(['pending_visit']) }, { label: 'Draft owed', value: n(['pending_draft', 'changes']) },
+          return { kind: 'bars', inline: true, rows: [{ label: 'To shoot', value: n(['pending_visit']) }, { label: 'Draft due', value: n(['pending_draft', 'changes']) },
             { label: 'Quality check', value: n(['submitted']) }, { label: 'With client', value: n(['reviewing']) },
             { label: 'To post', value: n(['scheduled']) }], valueHead: 'Bookings' };
         });
@@ -1256,7 +1257,7 @@
 
   // ---- Drawing ----------------------------------------------------------------------
   function fail(body, title, e, again) {
-    UI.failLine(body, title || 'This card', (e && e.message) || '', again);
+    UI.failLine(body, title || 'This figure', (e && e.message) || '', again);
   }
   function tile(grid, t) {
     var el = document.createElement('article');
@@ -1858,7 +1859,7 @@
     var dot = function (bad, words) { return '<span class="chip-state ' + (bad ? 'is-danger' : 'is-ok') + '">' + esc(words) + '</span>'; };
     return '<div class="tl-figs">' +
       fig('On time or early', rate == null ? '—' : rate + '%', rate == null ? esc('Target ' + T.pct + '%') : dot(s.lowRate, 'Target ' + T.pct + '%'), s.lowRate ? 'late' : '') +
-      fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target under ' + tlDays(T.late)) : dot(s.slowLate, 'Target under ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
+      fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target at most ' + tlDays(T.late)) : dot(s.slowLate, 'Target at most ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
       fig('Average days early', lead == null ? '—' : tlDays(lead), esc('Before the due date'), '') +
       fig('Turnaround', turn == null ? '—' : tlDays(turn), p90 == null ? esc('Median') : esc('Slowest 10%: ' + tlDays(p90)), '') +
       '</div>';
@@ -2207,7 +2208,7 @@
         return function () {
           return read().then(function (d) {
             var bad = d.failed.filter(function (x) { return src === 'tasks' ? x === 'Tasks' : x !== 'Tasks'; });
-            if (bad.length) throw new Error('Could not load ' + bad.join(', ') + '.');
+            if (bad.length) throw new Error('Could not load your ' + bad.join(', ').toLowerCase() + '.');
             return f(d);
           });
         };
@@ -2218,7 +2219,7 @@
         if (!may('clients.leads', 'view')) { grid.remove(); return; }
         var lg = function (f) { return function () { return myLeads().then(f); }; };
         var monthStart = CK.today().slice(0, 7) + '-01';
-        [{ key: 'me-leads', title: 'My leads', sec: 'clients', load: lg(function (l) {
+        oneSection([{ key: 'me-leads', title: 'My leads', sec: 'clients', load: lg(function (l) {
             var open = l.filter(function (c) { return c.stage !== 'active'; });
             var prop = open.filter(function (c) { return c.stage === 'proposal'; }).length;
             return { fig: String(open.length), sub: prop ? prop + ' proposal' + (prop === 1 ? '' : 's') + ' sent' : 'No proposals sent' };
@@ -2234,10 +2235,10 @@
          { key: 'me-won', title: 'Won this month', sec: 'clients', load: lg(function (l) {
             var n = l.filter(function (c) { return c.stage === 'active' && CK.day(c.stage_since) >= monthStart; }).length;
             return { fig: String(n), sub: n ? 'Active since ' + CK.month(monthStart) : 'None this month' };
-          }) }].forEach(function (t) { tile(grid, t); });
+          }) }]).forEach(function (t) { tile(grid, t); });
         return;
       }
-      [{ key: 'me-open', title: 'My open tasks', sec: 'work', load: get(function (d) {
+      oneSection([{ key: 'me-open', title: 'My open tasks', sec: 'work', load: get(function (d) {
           var week = d.tasks.filter(function (t) { return t.days !== null && t.days >= 0 && t.days <= 7 && !t.late; }).length;
           return { fig: String(d.tasks.length), sub: week ? week + ' due within 7 days' : 'None due within 7 days' };
         }, 'tasks') },
@@ -2256,7 +2257,14 @@
           d.waiting.forEach(function (r) { by[r.state] = (by[r.state] || 0) + 1; });
           var parts = Object.keys(by).map(function (k) { return by[k] + ' ' + k.toLowerCase(); });
           return { fig: String(d.waiting.length), sub: parts.length ? parts.slice(0, 2).join(', ') : 'Nothing waiting' };
-        }, 'wait') }].forEach(function (t) { tile(grid, t); });
+        }, 'wait') }]).forEach(function (t) { tile(grid, t); });
+    }
+    /* Tiles read from one section carry no section mark: the same glyph on
+       every tile tells the reader nothing (the user, 2026-11-26). */
+    function oneSection(list) {
+      var s = list[0] && list[0].sec;
+      if (list.every(function (t) { return t.sec === s; })) list.forEach(function (t) { delete t.sec; });
+      return list;
     }
     /* The Assistant as one field (⌘ J): what is typed opens it with the
        question asked; two suggested questions under it. */
@@ -2379,6 +2387,7 @@
         .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00+08:00').toISOString())
         .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()); }).then(rows).catch(function () { return null; }) : Promise.resolve([]);
       meet.then(function (ms) {
+        var any = false;
         var html = days.map(function (day, i) {
           var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
             var rg = ringOf(t);
@@ -2388,11 +2397,16 @@
             if (CK.day(m.meeting_at) !== day) return;
             ts.push('<span class="ovw-ev is-meet">' + esc(CK.clock(m.meeting_at, { space: false })) + ' · ' + esc((m.clients && m.clients.name) || 'Meeting') + '</span>');
           });
+          if (ts.length) any = true;
           var wdw = CK.date(day, { weekday: true }).split(',')[0];
           return '<div class="ovw-day' + (i === 0 ? ' is-today' : '') + '"><span class="ovw-day-d">' + esc(wdw) + '<b>' + Number(day.slice(8, 10)) + '</b></span>' +
             '<div class="ovw-day-evs">' + (ts.length ? ts.slice(0, 4).join('') + (ts.length > 4 ? '<span class="ovw-ev is-more">' + (ts.length - 4) + ' more</span>' : '') : '<span class="ovw-ev is-none">Nothing due</span>') + '</div></div>';
         }).join('');
-        card.querySelector('.ovw-days').innerHTML = html;
+        /* A week with nothing in it is one line, never five rows of
+           Nothing due (the user, 2026-11-26); a refused meeting read keeps
+           the days, since a free day is then not known. */
+        if (!any && ms !== null) UI.emptyLine(card.querySelector('.ovw-days'), 'Nothing due.');
+        else card.querySelector('.ovw-days').innerHTML = html;
         /* A refused read of the meetings is said, never drawn as a free day. */
         if (ms === null) {
           var f = document.createElement('div');
