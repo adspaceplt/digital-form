@@ -212,6 +212,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Void and /verify/ as before, no Reissue. The `quote_cover` type stays
     built in and undeletable, listed in Document types as First page of
     every quotation, and New type offers no Quotation group.
+  - Nor is one added (the user, 2026-11-26: "Quotation Cover: remove it"):
+    Add offers no Quotation Cover kind, but keeps it for an existing cover
+    being edited, and `register_add` refuses one (`not-issuable`), as
+    `register_update` refuses moving another document into it
+    (`2026-11-26-quotation-cover-not-added.sql`).
   - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
     out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
     else an Employee ID in the reference). The search reads a dash as a slash,
