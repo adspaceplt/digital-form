@@ -350,7 +350,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   way. The foot reads the total incl. SST (with `· n brands`), View quote
   at every width once a line is priced (its count of priced lines a
   `.tab-n`; the sheet turned to the priced lines, typed there, every
-  brand's under its name, the open brand's typed, the others read; its
+  brand's under its name, every brand's typed at once, each line's
+  quantity, rate, months, tax, name, description and order kept on its
+  own brand and all priced together, never only the open card's (the
+  user, 2026-11-26: "why does it only allow to edit once at a time"); its
   Back returns), then Cancel, Preview PDF (beside the Summary alone; on a
   phone under the lines) and Create quotation (Save when editing). Create
   checks every card and opens the first with a fault, its control in focus
