@@ -56,6 +56,9 @@
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-offered': 'That Bukku contact does not match this record. Choose one of the contacts offered.',
     busy: 'Sending to Bukku is already in progress. Please refresh the page in a moment.',
+    /* A new contact sent and not answered may stand in Bukku: the next Send
+       links it rather than making another (the Bukku review, 2026-11-25). */
+    'not-confirmed': 'Bukku did not confirm the contact. Please refresh the page in a moment, then send it again.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
     moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',

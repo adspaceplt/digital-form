@@ -10,8 +10,8 @@
 -- the repository on 2026-11-24) are read by nothing.
 --
 -- WHAT CHANGES
---   * `privacy_retention` (restated whole from HEALTH CHECK-INS BY
---     WORKLOAD) also deletes an hourly count a day after its hour, and a
+--   * `privacy_retention` (restated whole from QUOTATION COPIER'S
+--     ADDRESS KEPT 30 DAYS) also deletes an hourly count a day after its hour, and a
 --     name check's count 30 days after it began, once it holds no lock;
 --     its answer names the three counts.
 --   * `sm_report_thumb_set(text, uuid, text)` and
@@ -20,7 +20,8 @@
 --
 -- ORDER: this file alone (connector); no page reads either. Safe to run
 -- twice.
--- ROLLBACK: run `privacy_retention` from HEALTH CHECK-INS BY WORKLOAD, and
+-- ROLLBACK: run `privacy_retention` from QUOTATION COPIER'S ADDRESS KEPT 30
+-- DAYS, and
 -- `sm_report_thumb_versions` from REPORT PICTURES ON S3 and
 -- `sm_report_thumb_set` from its band after it, again.
 -- ===========================================================================
@@ -30,7 +31,7 @@
 create or replace function public.privacy_retention(p_now timestamptz default now())
 returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare v_wa integer := 0; v_act integer := 0; v_hc integer := 0; v_hl integer := 0; v_lt integer := 0; v_vt integer := 0; v_vd integer := 0; v_vc integer := 0; v_hm integer := 0;
+declare v_wa integer := 0; v_act integer := 0; v_hc integer := 0; v_hl integer := 0; v_lt integer := 0; v_vt integer := 0; v_vd integer := 0; v_vc integer := 0; v_hm integer := 0; v_qc integer := 0;
   v_fh integer := 0; v_qh integer := 0; v_vn integer := 0;
   v_today date := (p_now at time zone 'Asia/Kuala_Lumpur')::date;
   v_keep integer := coalesce(public.app_setting('health_keep_months', (p_now at time zone 'Asia/Kuala_Lumpur')::date), 24)::integer;
@@ -91,10 +92,14 @@ begin
    where v.since < p_now - interval '30 days'
      and coalesce(v.locked_until, v.since) < p_now;
   get diagnostics v_vn = row_count;
+  -- And where a colleague copied a quotation's link, 30 days after the copy
+  -- (QUOTATION COPIER'S OPENING, 2026-11-25).
+  update public.quotation_link_copies c set ip = null where c.ip is not null and c.at < p_now - interval '30 days';
+  get diagnostics v_qc = row_count;
   return jsonb_build_object('whatsapp_cleared', v_wa, 'activity_removed', v_act,
     'health_checkins_removed', v_hc + v_hl, 'health_leavers', coalesce(array_length(v_gone, 1), 0),
     'link_tries_removed', v_lt, 'verify_tries_removed', v_vt, 'verify_detail_tries_removed', v_vd,
-    'verify_checks_removed', v_vc, 'feedback_hits_removed', v_fh, 'quote_hits_removed', v_qh,
+    'verify_checks_removed', v_vc, 'quotation_copiers_cleared', v_qc, 'feedback_hits_removed', v_fh, 'quote_hits_removed', v_qh,
     'verify_name_tries_removed', v_vn);
 end $$;
 revoke all on function public.privacy_retention(timestamptz) from public, anon, authenticated;

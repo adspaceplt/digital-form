@@ -336,6 +336,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   creator contact's purchase bills into `creator_bills` (RLS on, no policy,
   no grant; `creator_bills_take`, the service role's), each matched to the
   booking whose Job reference or earlier job its reference or number holds:
+  a read of one contact marking gone only that contact's bills, never those
+  of the creator's other payment details (`2026-11-25-creator-bills-gone-by-contact.sql`);
   Processing while a balance stands, Paid at none, a bill read with no
   balance keeping the state it had, never marked by hand; Payment sent goes
   once, when a bill read Processing is read Paid, or a bill first read paid
@@ -419,10 +421,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-11-13-creator-margin-admins.sql`)), never to the creator's page or a client. Create bill (a
   booking Posted or Completed with no bill, the creator linked, the account
   chosen; it asks the amount, the fee written in, and keeps it as the fee
-  first) and Create n bills (those with a fee) (`bukku-sync` `createbill`, one at a time):
+  first) and Create n bills (those with a fee) (`bukku-sync` `createbill`, `options` a run of twenty at most in one call, its product, accounts and each creator's bills read once a run; 2026-11-25):
   `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
   `billed`, `no-account`, `no-item`, `no-fx`, `creating`, the claim taken), Bukku
-  searched for a bill already holding the Job reference (`in-bukku`, never a
+  searched for a bill whose reference no. or reference is the Job reference whole, never one holding it inside a longer one (`ADC0001/CC1001` is not `ADC0001/CC100`'s; `in-bukku`, never a
   second), then one bill on credit, a draft with e-Invoice action NORMAL,
   the Job reference in its reference no., its description `{campaign} ·
   {creator}`, one line at the fee: the Bukku product of the item SKU found
@@ -434,7 +436,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `no-product`, `no-bukku-account` before anything is sent, the claim let go;
   `2026-11-15-creator-bills-koc-fee.sql`; the user, 2026-11-15), no tax, due
   on `pay_by`; read back as Read from Bukku reads,
-  `creator_bill_done` letting go of the claim and filing the number. A
+  `creator_bill_done` letting go of the claim and filing the number; a bill
+  made whose list is not read back is filed by `creator_bill_made`, its claim
+  kept ten minutes more, and a bill sent and unanswered is `not-confirmed`,
+  its claim kept, said as Bukku did not confirm, never Not created
+  (`2026-11-25-bukku-made-once.sql`). A
   draft is kept as one (`creator_bills.status` `draft`,
   `2026-11-13-creator-bill-drafts.sql`), the booking reading Draft in Bukku
   until it is posted there; each bill's ⋯ holds Open in Bukku (`billlink`); a bill the portal made
