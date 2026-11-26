@@ -267,8 +267,8 @@ button.appver {
    The row ⋯ menus are positioned on the viewport by `ADspaceMenu.place()`, so
    nothing here clips them. */
 .bookreg {
-  background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius); overflow: hidden;
 }
 .bookreg-head {
   /* The rows' own left pad, so each heading starts on its column. */
@@ -289,8 +289,7 @@ button.appver {
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .kcard {
   position: relative;              /* the actions menu positions against this */
-  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
-  margin-bottom: 12px;
+  border: 1px solid var(--card-line);
 }
 /* No overflow clipping here: the actions menu is positioned against the card
    and has to be allowed out of it. The last section rounds itself instead. */
@@ -1461,15 +1460,14 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    the pane you land on had less on it than any other, and under it sat half a
    screen of nothing. Never a row of decorative number tiles — this is one
    client, not a board. */
-.ovcard {
-  background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
-}
+.ovcard { border: 1px solid var(--card-line); overflow: hidden; }
 .ovsec { padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
 .ovsec:last-child { border-bottom: 0; }
 /* A heading and the one control that opens what it summarises: the section
    head this portal already uses, drawn flat rather than as another card. */
 .ovsec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+/* A head over nothing shown (My Health's Earlier check-ins, shut) keeps no step under it. */
+.ovsec-head:has(+ [hidden]:last-child) { margin-bottom: 0; }
 .ovfacts dd b { font-weight: 600; }
 .ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
 /* A few real rows, on the record's own grid so every column starts at the
@@ -3028,7 +3026,9 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .hb-verrow:last-child { border-bottom: 0; }
 .hb-verrow .tone { margin-left: 6px; }
 /* The sheet takes the card's full landscape width (720) at a desk. */
-.sheet-card.formsheet.ncsheet { width: min(780px, 100%); }
+/* A form sheet as wide as a picker's: New client, and Add task beside its
+   Content task twin, so the switch between them never changes width. */
+.sheet-card.formsheet.ncsheet, .sheet-card.formsheet.is-wide { width: min(780px, 100%); }
 /* My namecard in the console: the card as a client sees it, then its
    address with Copy link and Open, then the fields. */
 .ncsheet-card { display: flex; justify-content: center; }
@@ -3381,7 +3381,7 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
    one over the other when narrow. */
 .health-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .is-narrow .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
 /* The pair's gap is its step: a card gives its own margin back (stacked at 390). */
 .health-pair > .ovcard { margin-bottom: 0; }
 .is-narrow .health-pair { grid-template-columns: minmax(0, 1fr); }
@@ -3889,7 +3889,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .stg-ctl .btn { flex: 0 0 auto; }
 .stg-groups { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); }
-.stg-card { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
+.stg-card { border: 1px solid var(--card-line); overflow: hidden; }
 .stg-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
   padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
@@ -4883,8 +4883,11 @@ label.inv-row { cursor: pointer; }
 .inv-who { display: grid; gap: 2px; min-width: 0; }
 .inv-who b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inv-who small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inv-amt { display: grid; justify-items: end; text-align: right; font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-span.inv-amt { font-weight: 600; }
+.inv-amt { display: grid; justify-items: end; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+span.inv-amt { font-weight: 500; }
+.inv-row:not(.crm-head) .inv-amt { font-size: 13.5px; }
+.inv-late { color: var(--err); }
+.inv-open { margin-inline-start: -8px; }
 .inv-amt small { font-weight: 400; font-size: 12px; color: var(--ink-mute); }
 .inv-due { font-size: 13.5px; white-space: nowrap; }
 .inv-days { font-size: 13.5px; color: var(--err); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -4895,23 +4898,24 @@ span.inv-amt { font-weight: 600; }
 .inv-last .linkbtn { font-size: 12.5px; }
 .inv-last .linkbtn svg { width: 13px; height: 13px; margin-left: 4px; }
 .is-narrow .crm-head.inv-row { display: none; }
-/* A phone row reads line by line: the client and the amount; the invoice
-   and its due date, and how long overdue; the last reminder, and Open in
-   Bukku (2026-10-31). */
+/* A phone row reads line by line (unslop 2, 2026-11-26): the client and
+   the amount; the invoice, its due date and the days overdue as one line of
+   parts under both; the last reminder, and Open in Bukku. */
 .is-narrow .inv-row, .is-narrow .can-pick .inv-row {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "who amt" "who days" "state open";
+  grid-template-areas: "who amt" "meta meta" "state open";
   align-items: start; gap: 2px 12px; padding: 12px 15px;
 }
-.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". who days" ". state open"; }
+.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". meta meta" ". state open"; }
 .is-narrow .inv-row > .inv-tick { grid-area: tick; padding-top: 2px; }
-.is-narrow .inv-row > .inv-who { grid-area: who; }
+.is-narrow .inv-row > .inv-who { display: contents; }
+.is-narrow .inv-who > b { grid-area: who; }
+.is-narrow .inv-who > small { grid-area: meta; }
 .is-narrow .inv-row > .inv-amt { grid-area: amt; }
-.is-narrow .inv-row > .inv-due { display: none; }
-.is-narrow .inv-row > .inv-days { grid-area: days; justify-self: end; }
+.is-narrow .inv-row > .inv-due, .is-narrow .inv-row > .inv-days { display: none; }
 .is-narrow .inv-row > .inv-last { display: contents; }
 .is-narrow .inv-last > .inv-state { grid-area: state; margin-top: 6px; }
-.is-narrow .inv-last > .inv-open { grid-area: open; justify-self: end; align-self: end; }
+.is-narrow .inv-last > .inv-open { grid-area: open; justify-self: end; align-self: end; margin-inline-start: 0; }
 .is-narrow .inv-due-m, .is-narrow .inv-word { display: inline; }
 /* The invoice's line wraps between its parts, never inside one. */
 .is-narrow .inv-who small { white-space: normal; }
@@ -5191,7 +5195,7 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .od-who b { font-weight: 500; overflow-wrap: anywhere; }
 .od-who small { font-size: 12.5px; color: var(--ink-mute); }
 .od-late { color: var(--err); }
-.od-amt { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.od-amt { font-size: 13.5px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .od-st { justify-self: start; }
 .od-none { margin: 0; }
 .od-sent-h { margin: 16px 0 4px; }
@@ -5494,7 +5498,7 @@ label.onb-row { cursor: pointer; }
    glass's backdrop filter trapped every row menu under the next card, so
    no menu item could be pressed). */
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
-  background-color: var(--glass-card);
+  background-color: var(--section-bg);
   box-shadow: var(--glass-lift);
   border-color: transparent;
 }
@@ -5651,6 +5655,14 @@ svg.sec {
    grey, never a warm one. */
 :root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
 :root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
+/* The console's surface (`data-layout="v3"`, css/portal.css SECTION CARDS):
+   white cards on the grey ground, the large corner; at a desk the ground is
+   the frame and a card on the sheet is edged by its hairline. */
+:root[data-layout="v3"] { --section-radius: var(--radius-lg); }
+@media (min-width: 861px) {
+  :root[data-layout="v3"]:not(.has-tabbar) { --ground: var(--frame); }
+  :root[data-layout="v3"]:not(.has-tabbar) .console { --section-edge: var(--card-edge); }
+}
 .console-headline { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 0 1 auto; }
 .console-sub { display: none; margin: 0; font-family: var(--font-head); font-size: 13.6px; line-height: 20px; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -5663,7 +5675,7 @@ svg.sec {
   :root:not(.has-tabbar) { scroll-padding-top: calc(var(--head-h) + 12px); }
   /* The sign-in page and every cover stay white (the user, 2026-11-13:
      "fully white would be ok"); the grey frame is the signed-in console's. */
-  :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--frame); }
+  :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--ground); }
   /* A hover the eye finds on the grey frame (the user, 2026-11-13: "why is
      the hover missing"): the chosen row's white at half, never a grey the
      frame already is. */
@@ -5718,12 +5730,14 @@ svg.sec {
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg, .engcard) {
-    background-color: var(--card); box-shadow: none;
-    /* An outline drawn just inside the card, above what it holds: an inset
-       shadow is painted under the rows, whose white ground hid the edge
-       (the user, 2026-11-12: "border missing" on Clients). */
-    outline: 1px solid var(--card-edge); outline-offset: -1px;
+    background-color: var(--section-bg); box-shadow: none;
+    /* The section card's edge, drawn just inside the card, above what it
+       holds: an inset shadow is painted under the rows, whose white ground
+       hid the edge (the user, 2026-11-12: "border missing" on Clients). */
+    outline: 1px solid var(--section-edge); outline-offset: -1px;
   }
+  /* A bare table and a post card stand on the sheet without an edge. */
+  :root:not(.has-tabbar) .console :is(.card, .crm-table:not(.softpanel)) { outline: 0; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .bookreg)
     :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) { box-shadow: none; outline: 0; }
   /* A register's rows are lines of one card, never cards of their own (the
@@ -5735,7 +5749,6 @@ svg.sec {
     outline: 2px solid var(--action-ring); outline-offset: 2px;
   }
 }
-.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard) { border-radius: var(--radius-lg); }
 /* A card inside a Dashboard card is one surface (DESIGN §1): an empty line
    there takes no corner of its own (2026-11-26, Next 5 days). */
 .console .ovw-card .softpanel { border-radius: 0; }
@@ -5748,9 +5761,9 @@ svg.sec {
    as one piece of paper. */
 @media (min-width: 861px) {
   :root:not(.has-tabbar) .console :is(#crmWork, #campWork, #crRec, #supRec, #teamRec)
-    :is(.panel, .softpanel, .ovcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) { outline-color: var(--part-edge); }
+    :is(.panel, .softpanel, .ovcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) { --section-edge: var(--part-edge); }
 }
-.console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; padding: 0 5px 2px; }
+.console .rec-part { min-width: 0; padding: 0 5px 2px; }
 .console .rec-part:has(> .viewhead[hidden]) { display: none; }
 .console .rec-part > .viewhead { margin: 0; padding: 14px 15px 6px; }
 /* A part showing its head alone (White label switched off, a part not yet
@@ -5772,7 +5785,7 @@ svg.sec {
 .console .rec:not(.cportal) .rec-panes { gap: 16px; }
 .console .rec:not(.cportal) > .rec-rail > .railblock,
 .console .rec:not(.cportal) > .rec-rail > .railblock.is-last:not(.rail-after) {
-  background: var(--card); border-radius: var(--radius-lg); border-bottom: 0; padding: 18px 20px; margin: 0 0 16px;
+  background: var(--section-bg); border-radius: var(--section-radius); border-bottom: 0; padding: var(--section-pad); margin: 0 0 16px;
 }
 .console .rec:not(.cportal) > .rec-rail > .railblock.is-last { margin-bottom: 0; }
 @media (max-width: 1100px) {
@@ -6527,10 +6540,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prs-file-acts { justify-content: flex-start; }
 .dep-code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-mute); margin-left: 8px; }
 .prs-none { margin: 0; font-size: 13px; color: var(--ink-mute); }
-/* On a narrow pane the record's two acts take their own row, equal halves. */
+/* On a narrow pane the record's acts take their own row at the right
+   edge, each at its own width, wrapping rather than stacking full width
+   (unslop 2, 2026-11-26). */
 .is-narrow .readgroup-head:has(> .prs-acts) { flex-wrap: wrap; }
-.is-narrow .prs-acts { flex: 1 0 100%; justify-content: stretch; }
-.is-narrow .prs-acts > .btn { flex: 1 1 50%; }
+.is-narrow .prs-acts { flex: 1 0 100%; justify-content: flex-end; }
+.is-narrow .prs-acts > .btn { flex: 0 0 auto; }
 /* Interview scorecards (2026-11-17): Position · Criteria · the pen and ⋯;
    a candidate's scores and decision as the interviews' shaded cards. */
 .ind-row.is-hsc { grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 80px; }

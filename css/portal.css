@@ -203,6 +203,27 @@
   --font-head: "ADspace Slate", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
+/* Surface is one attribute on <html> (the user, 2026-11-26: pages built
+   "like Lego… css global, parent, child then only adjust the details"):
+   `data-layout` sets the page's ground and every section card's ground,
+   edge, corner, padding and the step between stacked cards, and every card
+   family reads them through one base rule (SECTION CARDS, below). `cards`
+   (also the default): grey ground, white cards, no edge. `shaded`: white
+   ground, shaded cards, no edge, the large corner. `v3` (the console) is
+   set in css/console.css beside the frame and the hairlines it reads. */
+:root, :root[data-layout="cards"] {
+  --ground: var(--page);
+  --section-bg: var(--card);
+  --section-edge: transparent;
+  --section-radius: var(--radius);
+  --section-pad: 18px 20px;
+  --section-gap: 12px;
+}
+:root[data-layout="shaded"] {
+  --ground: var(--card);
+  --section-bg: var(--sunk);
+  --section-radius: var(--radius-lg);
+}
 
 /* Dark is the team's, and only ever by choice. It is not taken from the
    system, because a client who happens to have their phone in dark mode would
@@ -357,7 +378,7 @@ html { -webkit-text-size-adjust: 100%; }
 html, * { -webkit-tap-highlight-color: transparent; }
 body {
   font-family: var(--font);
-  background: var(--page);
+  background: var(--ground);
   color: var(--ink);
   font-size: 14px;
   line-height: 1.55;
@@ -370,6 +391,26 @@ body {
    Only what inherits moves: controls, labels and chips state their own size,
    so the shapes are the same on both sides and only the reading text grows. */
 :root[data-face="client"] body { font-size: 16px; }
+/* SECTION CARDS: one base for every card a section is built from (global >
+   parent > child). Its ground, edge, corner and padding come from the
+   page's surface tokens (`data-layout`, :root above); at no specificity, so
+   a family's own rule keeps only its arrangement (a list card's rows pad
+   themselves, `padding: 0`) and a context still lays a card inside a card
+   flat. The edge is drawn just inside the card, above what it holds. */
+:where(.panel, .card, .softpanel, .kcard, .chartcard, .crm-table, .ovcard, .stg-card, .bookreg, .engcard, .rec-part,
+  .sumcard, .verify-card, .rcv-track, .qs-side) {
+  background: var(--section-bg);
+  border-radius: var(--section-radius);
+  padding: var(--section-pad);
+  outline: 1px solid var(--section-edge); outline-offset: -1px;
+}
+/* A card that is a list pads nothing: its rows pad themselves. */
+:where(.card, .softpanel, .crm-table, .kcard, .ovcard, .stg-card, .bookreg) { padding: 0; }
+/* On a shaded page a loading, empty or failed line (`js/state.js`) stands
+   on the white, as it did before the surface was one attribute. */
+:root[data-layout="shaded"] .softpanel { background: var(--card); border-radius: var(--radius); }
+/* The cards that stack by their own margin take the section's step. */
+:where(.panel, .crm-table, .ovcard, .kcard, .bookreg, .engcard) { margin-bottom: var(--section-gap); }
 img, video { display: block; max-width: 100%; }
 /* Author rules beat the UA [hidden] default, so state it explicitly. */
 [hidden] { display: none !important; }
@@ -645,6 +686,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 :where(button, [role="button"], a[href], summary, [tabindex]):focus-visible {
   outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-sm);
 }
+/* A section card reached by the keyboard keeps its own corner under the ring. */
+:where(.panel, .card, .softpanel, .kcard, .chartcard, .crm-table, .ovcard, .stg-card, .bookreg, .engcard, .rec-part,
+  .sumcard, .verify-card, .rcv-track, .qs-side):where([tabindex], [role="button"]):focus-visible { border-radius: var(--section-radius); }
 .input:focus-visible, .textarea:focus-visible { outline: none; }
 .count { color: var(--ink-mute); font-size: 13px; }
 .crm-group-more {
@@ -684,7 +728,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .shell.shell-review { max-width: 1480px; }
 .shell-review .grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .card {
-  background: var(--card); border: 1px solid var(--card-line);
+  border: 1px solid var(--card-line);
   border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
 }
 /* On a phone the placement name, the pixel size and the status ran into each
@@ -1395,10 +1439,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 /* =========================================================================
    TEAM ADMIN
    ========================================================================= */
-.panel {
-  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 12px;
-}
+.panel { border: 1px solid var(--card-line); box-shadow: var(--shadow); }
 .cards + .panel { margin-top: 24px; }
 .panel h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
 /* A hint is 13px wherever it is. It was scoped to `.panel`, so the moment a
@@ -1475,7 +1516,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    the first, and one that follows the choice a sheet opens on (the kind of
    task, What in Bulk add), takes no rule. */
 .fsec { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
-.sheet-body > .fsec:first-child, .sheet-body > :first-child > .fsec:first-child, .panelhead + .fsec, .panelhead + .hint + .fsec { margin-top: 0; padding-top: 0; border-top: 0; }
+.sheet-body > .fsec:first-child, .sheet-body > :first-child > .fsec:first-child, .sheet-body > [hidden]:first-child + .fsec, .panelhead + .fsec, .panelhead + .hint + .fsec { margin-top: 0; padding-top: 0; border-top: 0; }
 .kindseg + .fsec, .sheet-body > .row:first-child + .fsec { margin-top: 20px; padding-top: 0; border-top: 0; }
 .fsec-h {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
@@ -2051,7 +2092,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* The answer: a shaded card of facts, label beside value, its status the
    dot and its word in ink; the mute line under it. */
 .verify-out.is-answer { align-items: stretch; gap: 12px; text-align: left; }
-.verify-card { background: var(--sunk); border-radius: var(--radius); padding: 18px 20px; }
+.verify-card { border-radius: var(--radius); }
 .verify-facts { display: grid; gap: 8px; margin: 0; }
 .verify-facts > div { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .verify-facts dt { font-size: 13px; color: var(--ink-mute); }
@@ -2369,10 +2410,9 @@ body.is-plain .topbar { background: var(--chrome); }
   background: #fff; display: grid; place-items: center;
 }
 .logopreview img { width: 100%; height: 100%; object-fit: contain; }
-.logopreview.is-empty {
-  background: repeating-conic-gradient(#f2f2f2 0 25%, #fff 0 50%) 0 0 / 10px 10px;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
-}
+/* Shown once an address is typed (unslop 2, 2026-11-26): an empty disc is a
+   placeholder (DESIGN §5, no empty discs). */
+.logopreview.is-empty { display: none; }
 /* A caution is the words in ink after an amber dot (2026-10-07). */
 .msg.warn { color: var(--ink); }
 .msg.warn:not(:empty)::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; corner-shape: round; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
@@ -2765,6 +2805,9 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields.has-third { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .askfields.has-third > .askentry.is-half { grid-column: span 3; }
 .askfields.has-third > .askentry.is-third { grid-column: span 2; }
+/* A phone takes a third whole: three across leaves no room for a label
+   (unslop 2, AutoCount HRMS). */
+@media (max-width: 560px) { .askfields.has-third > .askentry.is-third { grid-column: 1 / -1; } }
 /* Fields side by side stand on the row's top (DESIGN.md §5, a row aligns
    to the top): labels on one line, fields on one line, a note under its
    own field never moving the other (2026-11-25, the numbering sheets drew
@@ -3990,8 +4033,8 @@ body > .shell { width: 100%; }
 .crm-group.is-shut { margin-bottom: 24px; }
 .crm-group-head .hint { margin: 0; flex: 1 1 260px; }
 .crm-table {
-  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
-  overflow: hidden; margin-bottom: 12px;
+  border: 1px solid var(--card-line); border-radius: var(--radius);
+  overflow: hidden;
 }
 /* Blocks stacked in a section sit 12px apart whatever they are: a table, a
    panel, a fold, an empty state, a card. The section head carries 24 above. */
@@ -4235,7 +4278,7 @@ body > .shell { width: 100%; }
 
 /* The engagement is the month's own record, so it sits in the month's card
    above the tasks as a bounded block with the same edge the tables carry. */
-.engcard { border: 1px solid var(--card-line); border-radius: var(--radius-lg); background: var(--card); padding: 18px 20px; margin: 0 0 12px; }
+.engcard { border: 1px solid var(--card-line); }
 .is-narrow .engcard { padding: 14px; }
 .eng-who { min-width: 0; }
 /* The head's facts are rows on the card's grid (label track, value), the
@@ -5448,8 +5491,10 @@ body > .shell { width: 100%; }
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
    a border and a shadow together is a thing pretending to float. */
 .softpanel {
-  background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius-panel); overflow: hidden;
+  border: 1px solid var(--card-line); overflow: hidden;
+  /* Restated over the bare table's held corner, so a directory card
+     (`.crm-table.softpanel`) takes the section's. */
+  border-radius: var(--section-radius);
 }
 .softpanel + .softpanel { margin-top: 12px; }
 
@@ -6420,7 +6465,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .ovsec { padding: 14px 15px; }
 .readgroup:first-child { border-top: 0; padding-top: 4px; }
 .readgroup .fsec-h { margin-bottom: 12px; }
-.ovfacts dd.is-missing { color: var(--err); font-weight: 600; }
+.ovfacts dd.is-missing { color: var(--warn); font-weight: 500; }
 .ovfacts dd.is-empty { color: var(--ink-mute); }
 .readlogo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: middle;
   border-radius: 50%; corner-shape: round; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
@@ -7419,7 +7464,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   align-self: stretch; margin: -10px 0; padding: 10px 0; min-height: var(--ctl-h);
   border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
 }
-.perf-open b, .mine-month b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perf-open b, .mine-month b { font-size: 14px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf-open small, .mine-month small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf-state, .perf-grade { min-width: 0; }
 .perf-chev svg { width: 16px; height: 16px; }
@@ -7826,8 +7871,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    for a milestone reached, warn for late or over, red for the grade that
    refuses. The figures fold under every chart as a table. */
 .chartcard {
-  position: relative; background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px 14px; min-width: 0;
+  position: relative; border: 1px solid var(--card-line);
+  box-shadow: var(--shadow); padding-bottom: 14px; min-width: 0;
 }
 .is-narrow .chartcard, .is-tight .chartcard { padding: 14px 14px 10px; }
 .chart-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
@@ -8154,7 +8199,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   src: local('Optima'), local('Optima-Regular'), url('/css/OPTIMA.TTF') format('truetype');
   font-display: swap;
 }
-body.lp { --lp-col: 980px; --lp-gut: 24px; background: var(--card); }
+body.lp { --lp-col: 980px; --lp-gut: 24px; }
 /* The bar and the foot keep every page's edge (the user, 2026-10-03: the
    front door's mark sat in the column while every other page's sat at the
    left edge); the column holds the page's own content only. */
@@ -8882,7 +8927,7 @@ body.is-maint { overflow: hidden; }
 .health-talk + .health-talk { border-top: 1px solid var(--line-soft); }
 .health-talk-who b { font-size: 14px; font-weight: 600; }
 .health-talk-who small { font-size: 12px; color: var(--ink-mute); }
-.health-who b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-who b { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .health-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .health-prow { grid-template-columns: minmax(0, 1fr) 120px 16px; grid-template-areas: "who at chev"; gap: 4px 10px; }
 /* ---------- The client pages refresh (2026-10-07) ----------
@@ -9676,7 +9721,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .rcv-tick { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; corner-shape: round;
   background: var(--ok-bg); color: var(--ok); }
 .rcv-tick .ic { width: 30px; height: 30px; stroke-width: 2.2; }
-.rcv-track { list-style: none; margin: 0; padding: 20px; display: grid; border-radius: var(--radius-lg); background: var(--sunk); }
+.rcv-track { list-style: none; margin: 0; padding: 20px; display: grid; }
 .rcv-track li { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
 .rcv-track li:last-child { padding-bottom: 0; }
 .rcv-track li:not(:last-child)::after { content: ""; position: absolute; left: 15.5px; top: 34px; bottom: 2px; width: 1px; background: var(--line); }
@@ -9742,7 +9787,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .stephead-mark .ic { width: 22px; height: 22px; }
 .stephead .qs-top { gap: 2px; min-width: 0; }
 .stephead .qs-title { overflow-wrap: anywhere; }
-.sumcard { display: grid; gap: 14px; padding: 18px 20px; border-radius: var(--radius-lg); background: var(--sunk); min-width: 0; }
+.sumcard { display: grid; gap: 14px; min-width: 0; }
 .sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .sumcard-head .btn { flex: 0 0 auto; }
@@ -9818,7 +9863,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (max-width: 640px) { .qs-review-act { justify-self: stretch; display: grid; } }
 /* Beside the quotation (under it on a phone): a proposal to ask for, else
    the colleague who took the lead (2026-10-26). */
-.qs-side { display: grid; gap: 12px; align-content: start; align-self: start; background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; }
+.qs-side { display: grid; gap: 12px; align-content: start; align-self: start; padding: 22px; }
 .qs-side h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .qs-side p { margin: 0; color: var(--ink-soft); }
 .qs-side .btn { width: 100%; }
@@ -9892,7 +9937,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-done { justify-items: start; padding-top: 16px; }
 .qs-done p { margin: 0; }
 .qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; corner-shape: round; background: var(--ok-solid); color: var(--on-ok); }
-body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; }
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
@@ -10011,7 +10055,7 @@ body.qs-page { background: var(--card); }
 /* A heading over one line of words (an interview cancelled, expired or
    other times asked) keeps the section's 12px alone (2026-11-20). */
 .cr-iv > .qs-sec-h:has(+ .cr-next) { margin-bottom: 0; }
-.cr-doc { display: grid; gap: 16px; background: var(--sunk); box-shadow: none; border: 0; }
+.cr-doc { display: grid; gap: 16px; border-radius: var(--radius); box-shadow: none; border: 0; }
 /* The state stands on the name's line while both fit and takes the line
    under it where they do not (320: the reference and Awaiting your reply
    widened the page by 17px); the name keeps its longest word whole. */

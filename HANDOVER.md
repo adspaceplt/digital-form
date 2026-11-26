@@ -69,10 +69,8 @@ Also done:
 
 ## Waiting on the user
 
-1. Approve the changed test expectations listed in #1476, #1482, #1489 and #1493.
-2. Confirm the Bukku sample invoice **AINV2609023** (campaign invoices are made from it).
-3. Rotate the Bukku token, then update the `BUKKU_TOKEN` secret.
-4. Delete the retired edge functions in the dashboard: `report-thumbs-move`, `bukku-peek`, `auth-templates` and `video-probe`.
-5. Check on an iPhone: the Outstation thumbnails, the Add photo camera and the Safari dark toolbar.
-6. Decide when to remove go.adspace.me's DNS. Codes and PDFs issued before today still point to it.
-7. The outstation notification still links go.adspace.me/outstation, a database value. Move it to hi.adspace.me/outstation, which points to the portal's Outstation.
+Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
+
+1. go.adspace.me's DNS stays for now; its removal is a future update.
+2. The outstation notification still links go.adspace.me/outstation, a database value. Move it to hi.adspace.me/outstation.
+3. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).

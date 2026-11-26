@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-layout="v3">
 <head>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126st">
-<link rel="stylesheet" href="/css/console.css?v=20261126qtrb">
+<link rel="stylesheet" href="/css/portal.css?v=20261126std">
+<link rel="stylesheet" href="/css/console.css?v=20261126std">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -149,7 +149,7 @@
 <script src="/js/menu.js?v=20261126lo"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/cmdbar.js?v=20261126y"></script>
-<script src="/js/records.js?v=20261125qla"></script>
+<script src="/js/records.js?v=20261126gd"></script>
 <script src="/js/chart.js?v=20261125fh"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/trace.js?v=20261124"></script>
@@ -811,6 +811,10 @@
               <div><label class="field-label" for="crmIndustry">Industry</label>
                 <select class="select" id="crmIndustry" aria-describedby="crmIndMsg"></select>
                 <p class="msg err" id="crmIndMsg" role="status" hidden></p></div>
+              <div class="span-all"><label class="field-label" for="crmEnquiry">Enquiry</label>
+                <textarea class="input textarea" id="crmEnquiry" rows="2" placeholder="Service or package enquired"></textarea></div>
+              <div><label class="field-label" for="crmCommence">Urgency to commence</label>
+                <select class="select" id="crmCommence"></select></div>
             </div>
           </section>
           <!-- The person who asked belongs to intake only: after that they are
@@ -830,15 +834,6 @@
                 <input class="input is-pre" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="crmContactEmail">Email</label>
                 <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
-            </div>
-          </section>
-          <section class="fsec">
-            <h4 class="fsec-h">Enquiry</h4>
-            <div class="row fgrid">
-              <div class="span-all"><label class="field-label" for="crmEnquiry">Enquiry</label>
-                <textarea class="input textarea" id="crmEnquiry" rows="2" placeholder="Service or package enquired"></textarea></div>
-              <div><label class="field-label" for="crmCommence">Urgency to commence</label>
-                <select class="select" id="crmCommence"></select></div>
             </div>
           </section>
           <details class="fmore" id="crmMore">
@@ -1108,7 +1103,7 @@
               <div class="sheet" id="crmContactBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmContactTitle">
           <div class="sheet-head">
-            <h3 id="crmContactTitle">New contact</h3>
+            <h3 id="crmContactTitle">Add contact</h3>
             <button class="iconbtn" id="crmContactClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
@@ -1301,23 +1296,21 @@
               <button class="iconbtn" id="crmBrandClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
             <div class="sheet-body" id="crmBrandBody">
+              <!-- Brand profile's three fields need no sections (unslop 2):
+                   one block, no heading over them. -->
               <section class="fsec" data-bmode="profile">
-                <h4 class="fsec-h">Website and office</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
                     <textarea class="input" id="crmWebsite" placeholder="https://adspace.me" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
                     <input class="input" id="crmPhone" type="tel" data-check="phone" placeholder="07-123 4567"></div>
                 </div>
-              </section>
-              <!-- The same logo Content Review draws on a mockup: one row,
-                   edited in either place. -->
-              <section class="fsec" data-bmode="profile">
-                <h4 class="fsec-h">Logo</h4>
+                <!-- The same logo Content Review draws on a mockup: one row,
+                     edited in either place. -->
                 <div class="row">
                   <div><label class="field-label" for="crmLogo">Logo</label>
                     <div class="logorow">
-                      <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
+                      <span class="logopreview is-empty" id="crmLogoPreview" aria-hidden="true">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
                       <textarea class="input" id="crmLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
@@ -2415,7 +2408,7 @@
               <div><label class="field-label" for="campTitle">Campaign name</label>
                 <input class="input" id="campTitle" aria-required="true" placeholder="Product Launch Campaign"></div>
               <div><label class="field-label" for="campPurpose">Campaign purpose</label>
-                <textarea class="input" id="campPurpose" placeholder="Purpose" rows="1" data-oneline></textarea></div>
+                <textarea class="input" id="campPurpose" placeholder="Optional" rows="1" data-oneline></textarea></div>
             </div>
           </section>
           <section class="fsec">
@@ -3363,7 +3356,7 @@
             </section>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="ntGo" data-check-own type="button">Create task</button>
+            <button class="btn btn-primary" id="ntGo" data-check-own type="button">Add task</button>
             <button class="btn btn-quiet" id="ntCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="ntMsg"></div>
@@ -3533,7 +3526,7 @@
            is folded, and a task made here opens nothing: Enter makes it and
            the title field is ready for the next. -->
       <div class="sheet" id="quickSheet" hidden>
-        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="qkHead">
+        <div class="sheet-card formsheet is-wide" role="dialog" aria-modal="true" aria-labelledby="qkHead">
           <div class="sheet-head">
             <h3 id="qkHead">Add task</h3>
             <button class="iconbtn" id="qkClose" type="button" aria-label="Close">
@@ -4942,15 +4935,11 @@
         </div>
         <div class="sheet-body">
           <section class="fsec">
-            <h4 class="fsec-h">Recipient</h4>
             <div class="row"><div><label class="field-label" for="waTo">To</label>
               <select class="select" id="waTo" aria-required="true" data-nodraft></select></div></div>
             <div class="row" id="waNumberRow" hidden><div><label class="field-label" for="waNumber">Number</label>
               <input class="input readfield" id="waNumber" readonly data-nodraft></div></div>
             <p class="msg" id="waToNote" role="status" hidden></p>
-          </section>
-          <section class="fsec">
-            <h4 class="fsec-h">Template</h4>
             <div class="row"><div><label class="field-label" for="waTpl">Template</label>
               <select class="select" id="waTpl" aria-required="true" data-nodraft></select></div></div>
             <div class="row" id="waReportRow" hidden><div><label class="field-label" for="waReport" id="waReportLabel">Report</label>
@@ -6818,7 +6807,7 @@ raya-2026        https://example.com/raya"></textarea>
   "suppliers": {"src": "/js/suppliers.js?v=20261126y", "uses": ["letters", "register", "bukku"]},
   "hiring": {"src": "/js/hiring.js?v=20261126y", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261126su"},
-  "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
+  "invoices": {"src": "/js/invoices.js?v=20261126gd", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
   "quotes": {"src": "/js/quotes.js?v=20261126qtr", "uses": ["documents", "bukku", "quotepdf", "seal"]},
@@ -6827,7 +6816,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261126w", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261126gd", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
   "team": {"src": "/js/team.js?v=20261126lp", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
@@ -6839,7 +6828,7 @@ raya-2026        https://example.com/raya"></textarea>
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261126ga", "uses": ["documents"]},
   "campaigns": {"src": "/js/campaigns.js?v=20261126cid", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261126ga", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "perf": {"src": "/js/perf.js?v=20261126gd", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261126su", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
@@ -6849,10 +6838,10 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261126st"></script>
-<script src="/js/ops.js?v=20261126st"></script>
+<script src="/js/admin.js?v=20261126gd"></script>
+<script src="/js/ops.js?v=20261126gd"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261126rfd"></script>
-<script src="/js/overview.js?v=20261126y"></script>
+<script src="/js/overview.js?v=20261126gd"></script>
 </body>
 </html>

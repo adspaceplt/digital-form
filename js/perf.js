@@ -195,7 +195,7 @@
   }
   function gradeChip(res) {
     if (!res || !res.complete) return '<span class="perf-dash">—</span>';
-    return '<span class="chip ' + (GRADE_TONE[res.grade] || '') + '">' + esc(res.grade + ' · ' + res.grade_word) + '</span>';
+    return '<span class="chip ' + (GRADE_TONE[res.grade] || '') + '">' + esc(res.grade_word ? res.grade + ' · ' + res.grade_word : res.grade) + '</span>';
   }
   function rewardWord(res) {
     if (!res || !res.complete) return '—';
