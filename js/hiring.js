@@ -54,7 +54,7 @@
     'bad-recommend': 'Choose a recommendation.', 'bad-outcome': 'Please refresh the page and try again.',
     'no-email': 'This decision sends no email.', 'bad-criteria': 'Enter 3 to 8 criteria, each 2 to 60 characters, none twice.',
     'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.',
-    'not-yet': 'The interview has not taken place. Mark it after it ends.',
+    'not-yet': 'The interview has not started yet. Mark it once it has started.',
     'past': 'Choose a decision date and time in the future.', 'too-far': 'Choose a decision date within 30 working days from today.',
     'not-workday': 'Choose a working day.',
     'held': 'This interview has been completed. Enter the decision on the Scores tab.', 'not-held': 'Mark the interview completed first.',
@@ -731,7 +731,7 @@
         fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at ? fact('Marked completed by', esc([i.held_by, when(i.held_at)].filter(Boolean).join(' · '))) : '') +
-        (i.missed_at ? fact('Recorded by', esc([i.missed_by, when(i.missed_at)].filter(Boolean).join(' · '))) : '') +
+        (i.missed_at ? fact('Marked by', esc([i.missed_by, when(i.missed_at)].filter(Boolean).join(' · '))) : '') +
         (i.held_at && i.decide_by && undecided() ? fact('Decision by', esc(due(i.decide_by))) : '') +
         (i.held_at && i.decide_note && undecided() ? fact('Decision date note', esc(i.decide_note), 'is-pre') : '') +
         mail('invite', 'Invitation') + mail('confirm', 'Confirmation') + mail('reschedule', 'Time change') + mail('cancel', 'Cancellation') + mail('held', 'Decision date') +

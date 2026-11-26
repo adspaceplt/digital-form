@@ -185,7 +185,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   decision's email: `hiring-mail` `missed`, We missed you at your
   interview for {position}, the time and the careers mailbox, no button;
   `hiring_closed_missed` names the miss whose moment is the decision's).
-  The card reads Did not attend and Recorded by, with no act or ⋯; the
+  The card reads Did not attend and Marked by, with no act or ⋯; the
   history files each miss and counts a second (Interviews missed: 2.),
   and the Scores tab states Interviews missed beside the decision. A
   missed interview is never completed or cancelled (`missed`); Undo where

@@ -160757,7 +160757,7 @@ alter table public.hiring_email_templates add constraint hiring_email_templates_
                   'doc', 'doc_again', 'confirmed', 'expired'));
 insert into public.hiring_email_templates (kind, subject, body) values
   ('missed', 'We missed you at your interview for {position}',
-   E'Dear {candidate name},\n\nADspace was unable to meet you at your interview for the position of {position}, arranged for {time} (Malaysia time). Your application has therefore been closed.\n\nThank you for your interest in joining ADspace. Should you wish to apply again in the future, please contact ADspace at {contact}.\n\n{sign-off}')
+   E'Dear {candidate name},\n\nAs you did not attend your interview for the position of {position}, arranged for {time} (Malaysia time), your application has been closed.\n\nThank you for your interest in joining ADspace. Should you wish to apply again in the future, please contact ADspace at {contact}.\n\n{sign-off}')
 on conflict (kind) do nothing;
 
 do $$
