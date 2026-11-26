@@ -11780,3 +11780,25 @@ previous step; One month of the lines won and churned is Monthly fee of service
 lines won and churned; Times moved on is Moved out; Median cycle is Median
 turnaround, the word the page already uses; a failed figure reads Could not load
 your tasks., and the fallback failure names This figure.
+
+### 2026-11-26 · The unslop pass over every other screen
+
+The user asked for unslop's audit of every screen and for its findings to be
+applied without asking. Three readers walked the console and the client pages
+at 1280 and 390; none found the AI-template signs (gradients, glows, emoji,
+tracked capitals, hype). Applied: My Work's phone row wraps its chips under the
+name (the name had been drawn 0px wide); a task's step names what is missing
+(Not assigned, No due date) rather than Not ready to start under a head reading
+Ready to start; an empty board phase line gives up its gap on a phone; a ring's
+track takes the control's edge at 45% so it no longer reads as a spinner;
+Analytics' turnaround names its unit and a span of none reads a dash; Video
+Scripts reads Last shoot; its rewrite fold carries the chevron; Content
+Review's and a campaign's rails drop the percentage beside n of N; the client
+portal keeps Open on a bare row's title line; /quote/'s Change selection keeps
+to the content edge; /careers/ says Awaiting your reply once and its document
+card is shaded; Team's header aligns with its names where no row draws a mark;
+the Clients tiles' foot keeps within its card; Team, Handbook and Documents
+names read at 500; Short Links' slugs at the mono size and 500. Not applied: My
+Work's board bar (the workflow select stays on the bar, `docs/rules/cmdbar.md`),
+Content Review's group count (a directory card's count, DESIGN §4), and the
+/client/ phone tiles (already full width when three).

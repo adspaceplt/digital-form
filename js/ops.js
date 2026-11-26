@@ -5224,7 +5224,9 @@
       var need = readyNeeds(t);
       if (need.length) {
         n.blocked = true;
-        n.title = 'Not ready to start';
+        /* The step names what is missing; the stage stays the head's word
+           (2026-11-26: Ready to start over Not ready to start). */
+        n.title = need.length > 1 ? 'Not assigned, no due date' : need[0] === 'owner' ? 'Not assigned' : 'No due date';
         var words = { owner: 'Assign someone', due: 'Set a due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
         n.line = need.length > 1 ? 'Assign someone and set a due date before work can begin.'

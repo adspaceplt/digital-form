@@ -6697,7 +6697,7 @@
     });
     var pct = n ? Math.round(ok / n * 100) : 0;
     $('setProgress').innerHTML =
-      '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
+      '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b></p>' +
       '<span class="railbar"><span class="railbar-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
       (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + (ch === 1 ? ' change requested' : ' changes requested') + '</span></p>' : '');
     block.hidden = false;

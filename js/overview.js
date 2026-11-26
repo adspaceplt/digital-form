@@ -877,6 +877,7 @@
   // Minutes as a person reads them: "45m", "6.5h", "3.2 days".
   function spanOf(m) {
     m = Number(m) || 0;
+    if (!(m > 0)) return '—';
     if (m < 60) return Math.round(m) + 'm';
     if (m < 1440) return String(Math.round(m / 6) / 10).replace(/\.0$/, '') + 'h';
     var d = Math.round(m / 144) / 10;
@@ -1170,7 +1171,7 @@
           var pc = function (x) { return Math.round((Number(x.on_time) || 0) / Number(x.completed) * 100); };
           return { kind: 'bars', inline: true, rows: by.map(function (x) {
               return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
-                       note: pc(x) + '% on time' + (x.median_cycle_minutes ? ' · ' + spanOf(x.median_cycle_minutes) : '') };
+                       note: pc(x) + '% on time' + (x.median_cycle_minutes > 0 ? ' · ' + spanOf(x.median_cycle_minutes) + ' turnaround' : '') };
             }), fmt: function (v) { return String(v); },
             table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median turnaround'], rows: by.map(function (x) {
               return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%', x.median_cycle_minutes ? spanOf(x.median_cycle_minutes) : '\u2014'];

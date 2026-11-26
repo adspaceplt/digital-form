@@ -894,7 +894,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .svc-cat:first-child { padding-top: 12px; }
 /* How much of a group is filled: a ring and the count. */
 .ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-.ring-track { stroke: var(--line); }
+.ring-track { stroke: var(--line-ctl); stroke-opacity: .45; }
 .ring-arc { stroke: var(--ink-soft); stroke-linecap: round; }
 .ring.is-ok .ring-arc { stroke: var(--ok); }
 .is-narrow .cat-row.rcv-row > .team-act { align-self: center; margin-block: 0; }
@@ -1251,7 +1251,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .link-row:last-child { border-bottom: 0; }
 .link-slug {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px; font-weight: 600; letter-spacing: -.01em;
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .link-target, .link-label {
@@ -3646,6 +3646,14 @@ button.vs-row {
 .is-narrow .vs-issue-tags { grid-column: 2; justify-content: flex-start; }
 .vs-rvfold > summary { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); font-size: 13px; font-weight: 600; cursor: pointer; }
 .vs-rvfold[open] > summary { margin-bottom: 8px; }
+.vs-rvfold > summary { list-style: none; }
+.vs-rvfold > summary::-webkit-details-marker { display: none; }
+.vs-rvfold > summary::after {
+  content: ""; width: 7px; height: 7px; margin-left: 2px; flex: 0 0 auto;
+  border-right: 1.6px solid var(--ink-mute); border-bottom: 1.6px solid var(--ink-mute);
+  transform: translateY(-2px) rotate(45deg); transition: transform var(--t) var(--ease);
+}
+.vs-rvfold[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .vs-rvq > .field-label { font-size: 13px; font-weight: 600; color: var(--ink); }
 .vs-rvq ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
 .vs-rvq li + li { margin-top: 4px; }
@@ -4593,7 +4601,8 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-abhead { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
 .mrec-abrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
 .mrec-abrow:first-of-type { border-top: 0; }
-.team-head.team-row > :first-child { padding-left: 44px; }
+/* The header steps in for a row's mark only where a row draws one (2026-11-26). */
+.team-table:has(.team-row .cl-mark) > .team-head.team-row > :first-child { padding-left: 44px; }
 /* A colleague's work, a row a record (2026-10-18): the name over its facts,
    the date at the right (red once late), the chevron last. */
 .mrec-rows { display: flex; flex-direction: column; }
@@ -5883,6 +5892,8 @@ svg.sec {
    a narrow labelled edge that opens while a card is dragged (2026-11-22). */
 .bcol { grid-template-rows: auto auto 1fr; }
 .bcol-phase { margin: 0; padding: 0 4px; min-height: 18px; font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Stacked on a phone, an empty phase line is only a gap (2026-11-26). */
+@media (max-width: 640px) { .bcol-phase:empty { display: none; } }
 .bcol.is-fold { flex-basis: 56px; transition: flex-basis var(--t-slow) var(--ease); }
 .bcol.is-fold .bcol-head { flex-direction: column; align-items: center; gap: 8px; border-bottom: 0; }
 .bcol.is-fold .bcol-head h3 { writing-mode: vertical-rl; white-space: nowrap; overflow: visible; }
@@ -5938,9 +5949,10 @@ svg.sec {
 .crm-tiles { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
 .is-narrow .crm-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .crm-tile { margin: 0; }
+.crm-tile:has(.crm-tile-foot) { overflow: hidden; }
 .crm-tile .ovw-kpi-fig { font-size: 24px; line-height: 30px; }
 .crm-tile .ovw-kpi-sub { font-size: 12.5px; color: var(--ink-mute); }
-.crm-tile-foot { margin: 8px -20px 0; padding: 8px 20px; background: var(--sunk); border-top: 1px solid var(--line-soft);
+.crm-tile-foot { margin: 8px calc(-1 * var(--kpi-x, 16px)) 0; padding: 8px var(--kpi-x, 16px); background: var(--sunk); border-top: 1px solid var(--line-soft);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
 .crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
 .crm-tile-foot.is-late { color: var(--err); }

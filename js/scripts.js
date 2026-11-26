@@ -283,7 +283,7 @@
         '<span class="cl-who"><b>' + esc(g.client.name || 'Client') +
         (A && A.vic(list[0].client_id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</b><small>' +
         esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span></span>' +
-      '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last</span>') : '<span class="mute">Not set</span>') + '</span>' +
+      '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last shoot</span>') : '<span class="mute">Not set</span>') + '</span>' +
       '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>' + GO;
     row.addEventListener('click', function () { openMonth(list[0].id, true); });
     return row;
