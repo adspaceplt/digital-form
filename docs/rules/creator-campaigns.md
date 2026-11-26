@@ -671,10 +671,28 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`hint()`, `bumpHint()`).
   - Sign out is named, and hidden until there is a session.
 - Creators selection page (`creators/`, `js/creators.js`):
-  - Built from the mockup the user approved on 2026-11-25: the head (the
-    client's mark, the campaign over its client, Choose by with its weekday
-    `22 Sept (Tue)` and Creators n of N at the right, rows on a phone), the
-    brief as one shaded line (never folded), the view strip All, Selected,
+  - Laid out as every client page (`docs/rules/client-portal.md`, the
+    shaded cards; 2026-11-26): the head in the portal's head shape on a
+    shaded card (`.sumcard.rec-head`: the client's mark, the campaign over
+    its client, its state at the right, `ADspaceWords.campState`), then
+    shaded cards titled inside: Summary (`#campSummary`: Choose by with its
+    weekday `22 Sept (Tue)`, Creators n of N and the invoice, then the
+    standing), Brief (never folded; its title `ADspaceWords.briefHead`, the
+    creator page's too), the draft waiting on the client, Amount (its figure
+    behind the title's chevron, shut on every load), Campaign results, then
+    Creators, a title with its count over a shaded card a creator
+    (`.cx-ccard`): folded to its number, name over its next date
+    (`Shoot visit · 22 Sept (Tue)`, Post date, Posted once live, To be
+    confirmed where none is set), state at the right and the chevron; the
+    head opens it (`grid-template-rows` 0fr to 1fr with opacity, `inert`
+    while shut) to its six steps, facts two across (one column under 390
+    alone, where two cannot fit), posts and approval. A lone creator opens by
+    itself, and one opened stays open through a repaint. On a phone (640
+    and under) every six-step track, here and on the creator's page, keeps
+    its six parts and shows the step in hand's word alone on one line, the
+    others kept for a screen reader.
+  - The selection itself, from the mockup the user approved on 2026-11-25:
+    the view strip All, Selected,
     Backup with counts, a shaded card a creator (two across beside the cart
     at a desk, one on a phone) and the cart. No profile picture and no
     follower count: neither is held.
@@ -685,7 +703,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
-  - The campaign room (2026-10-08): under the name card, where it stands (n
+  - The campaign room (2026-10-08): in the Summary card, where it stands (n
     of N posted, a segment a booking in its state's dot, a legend, the next
     shoot); a booking waiting on the client (a draft at Reviewing) leads the
     page in its own card (`#needBox`: Waiting for your approval, the draft and
@@ -738,7 +756,7 @@ Moved from DESIGN.md §4 on 2026-11-22.
 | A creator offered for selection (/creators/) | `.cs-card`: a `--sunk` card, no outline; the number and the name (Replacement or New a grey `.chip`), the round tick at the top right (`.cs-tick`: a ring, selected a blue disc with a white tick, the card then white with a 1.5px `--action` edge), the profiles as `.plink`s with the platform's mark and the leaving mark, a hairline, the fee 17/600 over its unit mute, Mark as backup (`.cs-backup`, `.btn-sm` with the bookmark; marked, Marked as backup on the ink fill with the bookmark filled, a press again unmarks) |
 | The client's selection, totalled (/creators/) | The cart, as Build quote's Summary: at a desk `.sumcard.cs-cart` sticky under the bar in the 1.618 : 1 split (Your selection with its count as a `.tab-n`, each selected name and fee, the backups one mute line, Subtotal, SST at the campaign's rate through `js/money.js`, Total 17/600, Submit selection blue at the card's width); on a phone `.cs-bar` fixed at the foot over the safe area (n of N selected and the total over the backups and incl. SST, then View selection with its count and Submit selection as equal halves at the control's height, nothing in the bar setting its own), View selection carrying the cart into its sheet |
 | A booking's steps (client pages) | `.cx-journey` (`ADspaceIcons.journey`): a hairline a step with its name under it in 12px, the done steps in the mute ink, the one in hand amber with its name in ink, as Apple tracks an order; never bare bars, never large ringed marks (the user, 2026-10-08) |
-| Where a campaign stands (client page) | `.cx-standing` under the name card: n of N posted, a 6px track a booking in its state's dot colour, a legend, the next shoot |
+| Where a campaign stands (client page) | `.cx-standing` in the Summary card (the selection page) or under the name card: n of N posted, a 6px track a booking in its state's dot colour, a legend, the next shoot |
 | What the client owes (client page) | `.cx-needs`: the booking's own card above the rest, led by the amber dot and Waiting for your approval, the booking leaving the list while it waits |
 
 - The Creators List's tiles (2026-11-22, the Bukku structure, decision 5):
