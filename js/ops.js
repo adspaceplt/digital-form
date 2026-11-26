@@ -1364,6 +1364,20 @@
           meta: c.position, url: '/admin/?s=team&tab=hiring&candidate=' + encodeURIComponent(c.id) });
       });
     }));
+    /* A Delete pressed at Edit waits on an admin (js/delreq.js): each
+       request another colleague made is a row here, opening the requests
+       (the Settings review, 2026-11-26); Settings keeps the count. */
+    var DR = window.ADspaceDelReq, AD = window.ADspaceAdmin;
+    if (DR && AD && AD.isAdmin && AD.isAdmin()) jobs.push(got(db.rpc('delete_requests_list').then(function (r) {
+      return r.error || !r.data || !r.data.ok ? { error: r.error || r.data } : { data: r.data.rows || [] };
+    }), 'Delete requests').then(function (list) {
+      (list || []).forEach(function (x) {
+        if (x.mine || !(x.state === 'open' || x.state === 'approving')) return;
+        rows.push({ key: 'del:' + x.id, section: String(x.section || 'team').split('.')[0], at: x.at, title: x.label || x.word || 'Delete request', state: 'Requested',
+          meta: [x.word ? 'Delete ' + String(x.word).toLowerCase() : 'Delete', x.by ? 'By ' + x.by : ''].filter(Boolean).join(' · '),
+          open: function () { DR.open(); } });
+      });
+    }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
     if (name) {
       if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creators')

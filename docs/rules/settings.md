@@ -10,17 +10,32 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29), or Suppliers at Full Access (Supplier email templates, 2026-11-25); its address falls back for anyone else. Ten groups
+  Full Access (2026-10-22, SET2-11; 2026-10-29), or Suppliers at Full Access (Supplier email templates, 2026-11-25); its address falls back for anyone else. Eleven groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings, in the
   rail's order (`ORDER`, 2026-11-22: the portal's own, then Work, Partners,
   then Company): Portal (Portal switches: AI, Email, WhatsApp (`portal_switch_set`, `team.settings`),
   User groups (an admin's, opening Team's Groups; 2026-11-17); Pages
-  and notices: Page availability, Announcements, Notices, Demo access;
-  Company: Public holidays, Departments, AutoCount HRMS, Working hours, Overseas approval, Signed-in devices, Health check-ins, Health data
-  kept), AI (AI usage and limits, AI prices), My Work (Due
-  dates, Priority deadlines, Task reminders, Delivery targets, Outstation (the office pin, the location accuracy limit, trips kept), Task numbering), Reports (Meta
+  and notices: Page availability, Require latest version (Edit, Off while
+  none is required), Announcements, Notices, Demo access; Plan: Storage
+  and plan, the database and files against the plan and what was sent,
+  never the AI's cost, AI usage and limits'), Company (2026-11-26, out of
+  Portal, which keeps what changes the portal itself; Suppliers' building
+  for its mark: Office: Public holidays, Departments (the row's prize
+  count `2 in the performance prize`, the sheet's Status naming Inactive
+  alone), Working hours, AutoCount HRMS (its Yes or No values switches
+  under Contributions and claims, EClaim, ELeave and SKBBK exempted each
+  with one line); Security: Overseas approval, Signed-in devices, Hidden
+  personal details, Delete requests (the count; each request waiting is a
+  row of Waiting for you for an admin, opening the requests); Health:
+  Health check-ins, Health data kept), AI (AI usage and limits, each
+  limit read `10 per day`, Next batch runs among them; AI prices), My Work
+  (Deadlines: Due dates, its first two Report due and Client revision
+  due, Priority deadlines, Task reminders, Delivery targets; Outstation:
+  Outstation (the office pin, filled from the device by a quiet Use this
+  device's location under it, Location accuracy, trips kept), Outstation
+  trip numbers; Numbering: Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks),
   Messages (Automatic emails, Automatic WhatsApp, Sent again: WhatsApp
   and emails; Email: Send by email at `team.settings`,
@@ -35,10 +50,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   inside includes Clients, Creators and Suppliers"; `tab=partners`, an
   old `tab=clients` landing on it; Details forms first: one figure for a
   client's and a supplier's link alike; Clients: Industries, Follow-up
-  limits, Analytics; Creators: Creator and campaign IDs,
-  Creator payments, Creator payments sheet), Templates
+  limits, Analytics; Creators: Creator and campaign IDs (each
+  part's heading names its next ID, one Next: preview under the sheet),
+  Creator payments, Creator payments sheet, read `On · 0 payments
+  added`), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
-  Services Full Access), Accounting (Tax and terms, Tax codes, Bukku),
+  Services Full Access; a templates row reads `n of N on`, Email templates
+  alike), Accounting (Tax and terms: a term reads its range, Under 3 months, 3 to 5,
+  6 to 11, 12 to 17 and 18 to 23 months, then 24 months, with one line
+  under them, A positive figure adds to the price. A negative figure is a
+  discount.; Tax codes; Bukku, named by its word and read as two counts,
+  `2 of 3 contact ID fields set · 4 of 5 bill details set`, its advertising budget
+  account the bill account's select of Bukku accounts, Not set first),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Hiring
   (Candidates: Time limits at `team.settings`, Interview scorecards at
@@ -78,7 +101,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   longitude; a numbering sheet's example is its preview, the number
   the next record takes (Next trip: #OS261102, this month's count and
   one from `id_formats_list`, never a 1 typed by the page; 2026-11-26);
-  a figure changed from a
+  every figure sheet asks Applies from (every key it
+  holds is dated in `app_settings`); a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
   (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
   never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). An Open
@@ -129,5 +153,5 @@ Moved from DESIGN.md §4 on 2026-11-22.
 
 | Need | Component |
 |---|---|
-| What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen`, the gear beside the Activity record's mark at the rail's foot: one group at a time (`.stg-sec`: the 15/600 title, then its parts, each a 12/600 mute heading (`.stg-part-h`, none where the group holds one part) over an inset card (`.stg-card`) of five rows at most), never a screen between the page and a row; at a desk the groups run down the left in a sticky card (`.stg-nav`, 208px: a search field, then each group its rail glyph and name, the group shown the `--line-soft` fill), a press showing its card alone; on a phone the search heads the page over the view strip; words in the search list the matching rows across groups (`.stg-hit`: the group's glyph, the name over its group, the chevron), a press opening the group on the row's control; a `.stg-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch` (acting at the press, Undo a shaded line of its card under its own row), Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
+| What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen`, the gear beside the Activity record's mark at the rail's foot: one group at a time (`.stg-sec`: the 15/600 title, then its parts, each a 12/600 mute heading (`.stg-part-h`, none where the group holds one part) over an inset card (`.stg-card`) of five rows at most), never a screen between the page and a row; at a desk the groups run down the left in a sticky card (`.stg-nav`, 208px: a search field, then each group its rail glyph and name, the group shown the `--line-soft` fill), a press showing its card alone; on a phone the view strip heads the page, sticky, the search under it; words in the search list the matching rows across groups (`.stg-hit`: the group's glyph, the name over its group, the chevron), a press opening the group on the row's control; a `.stg-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch` (acting at the press, Undo a shaded line of its card under its own row), Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
 | A short list kept in Settings (Industries, Public holidays, Tax codes, Departments) | One table in its sheet (`.ind-row`, `.is-hol`, `.is-tax`, `.is-dep`): the heads (12/600 mute) over its columns (English, 中文, Clients; Date, Holiday; Code, Rate, Name, Offered; Department, Colleagues, Prize, Status) and the pen (an icon button named Edit {name}); the pen turns its row into its fields with Cancel and Save on the line under them, Delete red among them only where nothing holds it (a tax code's and a department's in its ⋯, their edit asked in a question); the last row adds one (fields and Add); on a phone the heads leave, the name stands over its second fact and the figure takes its word. WhatsApp templates and Page availability are the same plain list in their sheet: no fold, the pen alone |

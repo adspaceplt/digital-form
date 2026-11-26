@@ -2829,6 +2829,15 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields > .askrow { grid-column: 1 / -1; margin: -4px 0 0; }
 .askfields.has-half > .askhead:not(:first-child) { margin-top: 8px; }
 .asknote { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
+/* An on or off in a question: its name (and one mute line) at the left, the
+   switch at the right edge, a row a control's height. */
+.askentry.is-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.askswitch-name { min-width: 0; font-size: 14px; color: var(--ink); }
+.askswitch-name small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--ink-mute); }
+/* A field's own quiet act under it (Use this device's location) and its answer. */
+.askfield-act { margin-top: 8px; width: auto; min-width: 0; }
+.askfield-msg { margin: 6px 0 0; }
+.askfield-msg:empty { display: none; }
 /* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
    words and mark give way to a turning ring in its own ink. */
 .btn.is-busy { position: relative; cursor: progress; }

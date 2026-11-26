@@ -472,23 +472,13 @@
       /* A refused read reads Could not load. on the row, never nothing;
          each field is said for itself (2026-10-22, SET2-3). */
       if (d.error) throw new Error(d.error);
-      /* Three fields (2026-11-10: the Creator ID's own); the chosen named,
-         then each one not chosen, every part held whole. */
-      var F = [['Client ID', d.field_client], ['Supplier ID', d.field_supplier], ['Creator ID', d.field_creator]];
-      var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
-      var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not set'; });
-      /* The creator bill's item and account (2026-11-15): Business settings. */
-      var acct = [d.bill_item_sku ? 'Creator bill SKU ' + d.bill_item_sku : 'Creator bill SKU not set',
-        d.bill_class_code ? 'Classification code ' + d.bill_class_code : 'Classification code not set',
-        d.bill_account_code ? 'Creator bill account ' + d.bill_account_code : 'Creator bill account not set',
-        /* A quotation's advertising budget (2026-11-17). */
-        d.budget_account_code ? 'Advertising budget account ' + d.budget_account_code : 'Advertising budget account not set',
-        /* A campaign's invoice copies this one's line (2026-11-26). */
-        d.campaign_invoice_model ? 'Campaign sample invoice ' + d.campaign_invoice_model : 'Campaign sample invoice not set'];
-      if (!on.length) return ['Not set'].concat(acct).map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
-      var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
-      return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat(acct)
-        .map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
+      /* Cut to the facts that matter (the Settings review, 2026-11-26):
+         how many of the ID fields and of the bill and invoice details are
+         set; the sheet names each. */
+      var F = [d.field_client, d.field_supplier, d.field_creator];
+      var B = [d.bill_item_sku, d.bill_class_code, d.bill_account_code, d.budget_account_code, d.campaign_invoice_model];
+      var n = function (xs) { return xs.filter(Boolean).length + '\u00a0of\u00a0' + xs.length; };
+      return n(F) + ' contact ID fields set · ' + n(B) + ' bill details set';
     });
   }
   function openConfig(btn, sayRow) {
@@ -507,6 +497,9 @@
       var acctChoices = [['', 'Not set']].concat(accts.map(function (x) { return [x.code, x.code + ' · ' + x.name]; }));
       if (c.bill_account_code && !accts.some(function (x) { return x.code === c.bill_account_code; }))
         acctChoices.push([c.bill_account_code, c.bill_account_name || c.bill_account_code]);
+      var budChoices = [['', 'Not set']].concat(accts.map(function (x) { return [x.code, x.code + ' · ' + x.name]; }));
+      if (c.budget_account_code && !accts.some(function (x) { return x.code === c.budget_account_code; }))
+        budChoices.push([c.budget_account_code, c.budget_account_code]);
       window.ADspaceConfirm.ask({
         title: 'Bukku', go: 'Save', wait: true,
         fields: [
@@ -519,8 +512,10 @@
           { name: 'account', label: 'Account', choices: acctChoices, value: c.bill_account_code || '', required: true },
           /* A quotation's advertising budget is invoiced on its own account,
              with no tax (2026-11-17). */
-          { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account', value: c.budget_account_code || '',
-            placeholder: '3000-01', required: false },
+          /* The same select of Bukku's accounts as the bill's (the
+             Settings review, 2026-11-26), Not set its first option. */
+          { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account', choices: budChoices, value: c.budget_account_code || '',
+            required: false },
           /* A campaign's invoice takes this invoice's product, account and
              tax code (CAMPAIGN INVOICE FROM BUKKU, 2026-11-26). */
           { name: 'model', head: 'Campaign invoices', label: 'Sample invoice number', value: c.campaign_invoice_model || '',
