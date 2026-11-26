@@ -18,26 +18,31 @@ applied by Claude through the Supabase connector (§3). A change to one function
 column ships as a dated file in `supabase/migrations/`: narrowly scoped, safe to
 run twice, its own rollback, mirrored in `schema.sql`.
 
-`DESIGN.md` holds the design system, components, laws, copy and architecture.
-`STANDARD.md` holds the general standard, the working method, the completion
-gate, and the Project Memory (departures, open findings, what is not built).
+`DESIGN.md` holds the design system and architecture; its components, laws,
+copy and print rules are `docs/rules/components.md`, `laws.md`, `copy.md` and
+`print.md`. `STANDARD.md` holds the instruction priority and the Project Memory
+(departures, open findings, what is not built); the general standard, the
+working method and the completion gate are `docs/rules/standard.md`.
 Where they disagree, `STANDARD.md` §2 settles it and this portal's documented
 behaviour wins.
 
 ## 0. Where things are written
 
-- These three files are **rules only**. The history behind every rule (what was
-  reported, measured, tried and rejected, and why) is in `docs/DECISIONS.md`
-  and `docs/DESIGN-NOTES.md`. They are not loaded.
+- These three files are **rules only**, loaded on every turn: a rule needed
+  only while one kind of file is changed lives in a `docs/rules/` file under
+  that file's triggers, with one loaded line naming it. The history behind
+  every rule (what was reported, measured, tried and rejected, and why, and
+  who asked when) is in `docs/DECISIONS.md` and `docs/DESIGN-NOTES.md`. They
+  are not loaded.
 - **Before changing an area, search the archive for it**
   (`grep -n -i "<class, function, table or word>" docs/DECISIONS.md docs/DESIGN-NOTES.md`)
   and read what matches. A rule that looks arbitrary has its reason there. Never
   undo a recorded decision without reading it.
 - **One place per fact.** A rule learned is written the same push, as one line,
   in the one file it belongs to (behaviour, data, tests, workflow: here, or
-  an area's own `docs/rules/` file for that area alone; look, components,
-  copy, architecture: `DESIGN.md`; general standard, departures, open items:
-  `STANDARD.md`). Its story goes in `docs/DECISIONS.md`
+  an area's own `docs/rules/` file for that area alone; look, architecture:
+  `DESIGN.md`; components, laws, copy, print: their `docs/rules/` file;
+  departures, open items: `STANDARD.md`). Its story goes in `docs/DECISIONS.md`
   Part 3 as one dated entry. A superseded rule is replaced, never appended to.
   Never the same fact in two loaded files.
 
@@ -74,7 +79,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   migrations; 2026-10-04). Supabase's logs are read only while a fault is
   being found, for the shortest window that holds it, never to confirm a
   deploy (the Pages run and a live read do that): every log read counts
-  against the organisation's log query allowance (the user, 2026-10-15). So
+  against the organisation's log query allowance. So
   is a release's own work (the user,
   2026-10-11: "auto merge all PRs and allow all sessions"): opening,
   updating and merging a PR, applying its migration and deploying its edge
@@ -90,33 +95,28 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
-  - Merge first, gate once a day (the user, 2026-10-12: "Once ready pr u
-    can merge then only run the gate … wait till all tasks completed then
-    run a full gate full suite … build all and merge first"). A request is
+  - Merge first, gate once a day. A request is
     built, `node tests/affected.js --run` passes (never uxaudit or matrix,
-    which run once, in the day's full gate; the user, 2026-11-20: "Only run
-    once. Run during full gate would do right"), its touched
+    which run once, in the day's full gate), its touched
     screens are screenshotted and read (1280 and 390, both themes in the
     console; every screen a shared layout, CSS or component change
-    reaches), and it merges at once on its own PR, never held for the next
-    (one request, one release; the user, 2026-10-11). Beyond the suites
+    reaches), and it merges on its train's PR (§3, Token economy). Beyond the suites
     the diff reaches, a suite runs by hand only while a fault is being
     found. A migration still runs `sql` and its
     area's Postgres suite before it is applied to the live database. The
     full gate runs once a day, on main, after the day's merges (`all`:
-    every suite, `ui`, uxaudit and matrix included; the user, 2026-11-22);
+    every suite, `ui`, uxaudit and matrix included);
     what it finds is the next batch, each fix its own release. Never weaken an assertion or
     change an expectation merely to pass. A failure in code a request did
-    not touch is logged under `STANDARD.md` Logged defects until it ships.
+    not touch is logged in `docs/rules/logged-defects.md` until it ships.
   - After `main` is merged into a branch, only the suites that failed
-    before the merge run again (the user, 2026-11-22).
+    before the merge run again.
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
     the wait never ends.
 - A suite passes on exit code 0, some output, and no line starting `FAIL`
-  anywhere in it (2026-10-10, audit T1: a FAIL before the last line, or an
-  empty output, passed). **Never count `FAIL` lines** to call a suite
+  anywhere in it. **Never count `FAIL` lines** to call a suite
   green: a suite that throws prints none. Every suite asserts what it walks;
   one that only prints what it saw is a diagnostic, never in the gate
   (audit T3). `tests/gateself.js` runs the gate's own judgement on
@@ -131,7 +131,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 |---|---|
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (`node tests/affected.js --run`) |
-| Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
+| Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against the phone checklist (`docs/rules/laws.md`). `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
 | Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` and `fit` for a layout change); `ui` waits for the daily run |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql` and `policies`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`, `meetmsgsql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
@@ -147,13 +147,11 @@ standing rules (schema: `sql`, `policies`; a stylesheet: `cssguard`, `geom`,
 map in the same push. The map lives with the suites, never with the
 portal, so a change cannot rewrite what checks it.
 
-**Before every merge** (2026-11-17, the user: "ok all", the verification
-loop): `node tests/affected.js --run` (`node --check` on each changed
+**Before every merge**: `node tests/affected.js --run` (`node --check` on each changed
 script, then those suites through `gate.sh`, in the background, uxaudit and
 matrix left out and named as the full gate's; it writes
 `/tmp/affected-pass/{commit}` on a pass). A run stopped partway is stopped
-with every suite process it started, never its shell alone (2026-11-20: an
-orphaned `levels.js` shut the next run's Postgres cluster). The merge check
+with every suite process it started, never its shell alone. The merge check
 (`.claude/hooks/verify-gate.sh`, mode in `verify-gate.mode`: off, observe,
 enforce) reads it; a merge without a pass carries `Verify: skipped, {reason}`
 in its message. A suite that fails is fixed at its cause in up to three
@@ -166,7 +164,7 @@ check is deleted with its reason in `docs/DECISIONS.md` Part 3.
 by `affected.js`) and go in the PR body under Expectations changed, for the
 user to approve. A check only added is not listed.
 
-**Global > parent > child** (the user, 2026-10-11, the light version): a
+**Global > parent > child**: a
 base element (button, field, select, chip) is styled by its own rule and its
 variants; a section arranges it and never restyles it. `tests/cssguard.js`
 (run with `ui`) fails a new section rule that sets a base element's ground,
@@ -176,7 +174,7 @@ is empty and only shrinks (`--write` refuses to add).
 
 **Also required:**
 - Before a push, scan the diff for a number, word, colour, address or id
-  typed into logic (the user, 2026-10-08): a business figure goes to
+  typed into logic: a business figure goes to
   `app_settings` / `perf_settings`, shared words to `js/words.js`, a colour or
   size to a token, an id or endpoint to `js/config.js`, a secret to Supabase
   only. The report names what became configurable.
@@ -184,32 +182,23 @@ is empty and only shrinks (`--write` refuses to add).
   further pushes the same day). Bump it with one `sed` over every HTML file that
   carries one, never inside `.claude/` (agents' worktrees live there).
   `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
-  it where a notice wants a glyph on a page holding no icon set (2026-11-22).
+  it where a notice wants a glyph on a page holding no icon set.
   A merge's stamp conflict is resolved line by line, never by taking one
-  side's whole file: the branch's own markup changes are kept (2026-11-25:
-  #1469's resolution took main's `admin/index.html` and put back the
-  `#campPayBlock` it removed).
+  side's whole file: the branch's own markup changes are kept.
   A restamp or a merge's resolution keeps every script tag a page holds:
-  `tests/pagescripts.js` fails a page missing a script its own scripts call
-  (2026-11-25: #1427 dropped `js/icons.js` from /details/ and /supplier/).
+  `tests/pagescripts.js` fails a page missing a script its own scripts call.
   A page holds no script nothing on it calls: a client page's weight is
-  every visitor's (2026-11-25: `js/state.js` on five forms that never
-  called it, 3.7 KB each, put /quote/ over its budget).
+  every visitor's.
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new thing joins every shared list of its kind in the same push that
-  builds it, checked before the PR opens and named in its Test plan (the
-  user, 2026-11-24: "you kept missing this and that"; a trip number missing
-  from Settings' numbering, a feedback email missing from Email templates, a
-  seventh client tab): an email its row in Settings › Messages (`js/mailtpl.js`,
+  builds it, checked before the PR opens and named in its Test plan: an email its row in Settings › Messages (`js/mailtpl.js`,
   English and 中文); a number or reference its Settings numbering
   (`id_formats`); a business figure its setting; a word two screens say
   `ADspaceWords.line`; a part of a client's record a place within the six
   tabs (`docs/rules/clients.md`), never a seventh; a route the walks; a page
   Page availability (below).
-- A new portal page joins Page availability in the same push that builds it
-  (the user, 2026-11-21: "Every new pages added should also go into the
-  availability section"): its key taken by `page_set`, the page loading
+- A new portal page joins Page availability in the same push that builds it: its key taken by `page_set`, the page loading
   `js/maintenance.js`, its row in `#pgSheet`.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
   pane that walks empty is a pane nobody has measured.
@@ -223,219 +212,40 @@ is empty and only shrinks (`--write` refuses to add).
 - Assert that withheld data is absent from the function's payload. Never assert
   a value you believe correct.
 - A link handed out for one step of a record ends when the record moves
-  past that step, and a suite seeds the link still open at that move
-  (2026-10-20: an approved supplier's details form stood open).
+  past that step, and a suite seeds the link still open at that move.
 - A control hidden, a message moved or words taken off a row is first
   grepped by its id or words across the suites and `GUIDES`, and each suite that reads
-  it is changed in the same push (2026-10-21: six pressed a Publish #691
-  hid, myhr read a line #693 moved, uxaudit a month #693 took off a row).
+  it is changed in the same push.
 - Before a push, every word the diff puts in front of a person is drafted
-  and checked by DESIGN.md §6, How copy is drafted, and `tests/words.js`
+  and checked by `docs/rules/copy.md` (DESIGN.md §6), How copy is drafted, and `tests/words.js`
   passes (a word the user rejects is added to it in the same push); copy is
-  never left for the user to review (2026-10-29). Once a change, before
-  its merge, every word on every screen or PDF that change touches, the
-  standing words with the new, is read by a second reader (never a scan
-  of the whole repo): the `/copy-review` skill lists them
+  never left for the user to review. Once a release, before
+  its merge, the words that release adds or changes (copyscan's `+` lines,
+  never the standing words of a whole file; those are read once a day in
+  the tone sweep, §3 Token economy) are read by a second reader: the
+  `/copy-review` skill lists them
   (`tests/copyscan.js`) and hands them, with §6 alone, to a fresh agent
   that did not build the change, asking also whether a newcomer would
   understand each label at once as a familiar app's word; every finding is
-  fixed or answered, and the PR's Test plan names the review (2026-11-04, the user: "every new
-  build didnt follow your tone etc. rules"; 2026-11-25: "Please do not
-  give me weird naming again", Build quote's View lines; "not every time
-  run the whole repo checks"). A line two screens say lives
+  fixed or answered, and the PR's Test plan names the review. A line two screens say lives
   once in `ADspaceWords.line` (`js/words.js`); `tests/words.js` fails a
   script that types one, and its PATTERNS stop kinds of wording (a system
   word, a refusal that is no instruction, a tab named wrongly), not only
   phrases already met.
 - A word table holds one key a word: a new field's label takes a key of
-  its own, grepped in the table first (2026-10-29: /quote/'s Planned
-  commencement took `start`, and the opening page's Start button read it).
+  its own, grepped in the table first.
 - A function's name is declared once in its script: a second declaration
-  of the same name replaces the first for every caller (2026-11-09 form.js's
-  `shape`, 2026-11-10 campaigns.js's `money`); `tests/jsdupes.js` holds it.
+  of the same name replaces the first for every caller; `tests/jsdupes.js` holds it.
 - A function removed is first grepped by name across the suites with no
   cap on the output: a suite that cuts a script at `'  function name('`
-  uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).
+  uses it.
 
 ## 2. Load-bearing invariants
 
 Each line is a rule that broke once. Its reason is in the archive.
 
 ### Pages, chrome, boot
-- `js/chrome.js` is the only header and footer.
-  - The mark comes from `brandLogo`, the kicker from `data-kicker`, the actions
-    from `data-actions` (`lang`, `qr`, `push`).
-  - Footer: left `© {year} ADSPACE PLT. All Rights Reserved.`; right `Terms of
-    Service` → https://adspacestudios.com/legal/policies.
-  - The footer is drawn with the header and sits last from the first paint
-    (`.portalfoot { order: 1 }`). It moves to the end of body once the page is
-    parsed. It is hidden while it precedes an open console.
-  - A client page's bar reads left to right bell, sign out, 中文 (the page's
-    own controls go in just before `#langToggle`), all one tonal family of
-    one height and corner; the client portal's bar is sign out, 中文: no
-    bell and no notifications there (the user, 2026-11-25). On a phone the name the page is for takes two
-    lines, its label over it (`.brand-for-label`).
-- Nothing moves after first paint.
-  - The mark's ratio is kept in `localStorage` `adspace-logo-ratio` and drawn at
-    that ratio (`aspect-ratio: auto R`).
-  - On a first visit `.brand.is-waiting` hides the brand until the mark loads or
-    fails (at most 2.5s). `ADspaceChrome.mark()` reserves the rail's mark the
-    same way.
-  - `data-boot` from the head script (off an `sb-*-auth-token` key; removed by
-    `gate()` or a 4s timeout) paints signed-out white and signed-in without a
-    sign-in bar.
-- `.topbar .brand-logo` is `flex: 0 0 auto; max-width: 60vw`, because Safari
-  drew it 0px wide. Safari cannot run in the sandbox; the user confirms on an
-  iPhone.
-- `loadMe` asks `me()`, the business figures, the system accounts, the VIC
-  clients and the departments at once, never one after another
-  (2026-10-26); a `me()` asked again after a session refresh asks the VIC
-  clients and departments again under it.
-- The console fetches a section's scripts on first ask (ON DEMAND,
-  2026-11-22): a section script is never a tag of `admin/index.html` but a
-  line of its `#lazyScripts` (address with `?v=`, `first` what it reads as
-  it loads, `uses` what it calls; `tests/lazy.js`; a script is added only
-  once its `first` have run, so a failed fetch leaves those after it to be
-  fetched again, 2026-11-24); `showSection` draws
-  `#consoleBoot` until `sectionJs` is held, leaving the address alone; an
-  always-loaded script calling a listed global asks `ADspaceAdmin.need`,
-  `needThen` or `whenSection` first, and what it decides before any section
-  draws (who may open a section, a record's address) and what it does for
-  every section (a ⋯ shut on a press elsewhere) is its own, never a listed
-  script's (2026-11-22: Content Review read `laman-citra` as an id
-  and Analytics left the rail, crm.js and analytics.js not yet fetched).
-- The console boots as `.console.is-booting`: its own shell and rail with the
-  contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
-  `applyAccess()` removes it. A refused team row goes to Access denied; a
-  `me()` that errors is asked again once after `refreshSession()`, and an
-  error still standing reads Unable to load with Try again, never a console
-  drawn with no access read. Never draw the client pages' bar in its place.
-- `/`, the front door: `docs/rules/front-door.md`.
-- The favicon on every portal page is the ADspace wordmark in Optima on white
-  (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
-  `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
-  client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`, `feedback/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
-  title and address as it does a Google Drive link (`twitter:card` summary;
-  the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
-  `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
-  Optima over Digital Portal in Slate Regular, on white. No icon
-  hangs on the CDN.
-- Only `/` may be listed: every other page carries noindex, `robots.txt`
-  disallows nothing (a blocked page's noindex cannot be read), and
-  `sitemap.xml` names `/` alone (`tests/seo.js`).
-- `404.html` is the portal's cover:
-  - English only, white, the cover family's own type and glyph (a document
-    with a question mark);
-  - Visit website and Contact support (its envelope) as tonal halves, no
-    Client sign-in (the user, 2026-11-22); the portal's foot as static markup;
-  - no `noscript` redirect.
-  - The front door and the 404 are in the uxaudit walk.
-- One `.cover` for every full-page state (no link, bad link, access code,
-  closed, confirmed, nothing to review, access denied, the console's
-  sign-in, a quotation waiting for the team), drawn as the cover family
-  (DESIGN.md §4 Full-page state), with the same words on
-  every client page (`js/words.js`). Where the browser holds a sign-in (the console, the
-  client portal), every cover ends Reference {code}, the sign-in's code as a
-  colleague's Devices block cuts it (`ADspaceAPI.sessionCode()`: the access
-  token's `session_id` claim, no request; `sessionShort`, the one cut, Devices
-  too), drawn by one watcher in `js/maintenance.js`; signed out, or on a
-  public page (/verify/, /quote/, a link's page) whatever the browser holds,
-  no line; never the token (`tests/covers.js`).
-- The console's sign-in page and every cover are white to the edge
-  (`body.is-plain`); the grey frame is the signed-in console's alone (the
-  user, 2026-11-13: "fully white would be ok"). Client pages stay as they
-  are, never v3 (the user, 2026-11-13).
-- Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
-  portal should follow the timezone of malaysia"): a device whose clock is
-  not GMT+8 (Malaysia and Singapore share it) is told on every page that
-  loads `chrome.js`, under its bar (`#tzBar`, `.tzbar`, the warn ground led
-  by the amber dot; in the console's column, edge to edge under a client
-  page's bar): Time zone difference detected: this device is on GMT+9
-  (Asia/Tokyo). The portal follows Malaysia time (GMT+8)., in Chinese after
-  the 中文 switch; its × hides it for the visit (`adspace-tz-hide`). An
-  automated browser is not told unless it sets `window.__tzBar`
-  (`tests/tzbar.js`).
-- Every page carries `viewport-fit=cover`. Sheets, feet, the confirm bar, the
-  console body and the rail pad by `env(safe-area-inset-*)`.
-- On iOS alone, `js/chrome.js` adds `maximum-scale=1` (stops the focus zoom,
-  keeps pinch).
-  - Never on Android.
-  - Never `user-scalable=no`.
-- Under a coarse pointer `.console-head` takes `--chrome-solid` with no
-  backdrop filter, because Safari colours the status bar from an opaque bar.
-  A client page's `.topbar` is opaque there too (`--chrome-solid`;
-  its glass, kept 2026-10-10, read grey behind the status bar on 2026-11-14),
-  the root painted `--card` so the status bar takes white, never the grey page. The console's root
-  is painted `--chrome-solid` under a finger too: WebKit colours the status
-  bar from the root's background, never the head (2026-11-14). The `theme-color` meta follows the console's own theme (the head script
-  and `wearTheme()`); client pages are white.
-- A plain console page (sign-in, its code step, every cover, the
-  whole-screen Upgrade, `admin/offline.html`) is one ground from the
-  browser's toolbar down: its bar, its root and the `theme-color` meta take
-  `--card` in both themes, the signed-in console `--chrome-solid`, set from
-  the tokens by `wearToolbar()` on every `is-plain` or `is-maint` change,
-  both ways (2026-11-25, `tests/covers.js`).
-- The bar is two families: the console's `.console-head` (`css/console.css`)
-  and every client page's `.topbar` (`js/chrome.js`, `css/portal.css`), one
-  height, `--head-h` (64 at a desk, 56 on a phone), the console's signed-in
-  head too; no page sets its own (the user, 2026-11-21); a
-  change to one is checked on the other in the same push (2026-11-14: the
-  status bar fixed on the console reached the client pages a release later).
-- The console is a PWA:
-  - `admin/manifest.webmanifest`, with scope and start `/admin/`;
-  - wordmark icons in `admin/icons/`.
-  - iOS draws a launch picture before the page's first byte
-    (`apple-touch-startup-image`, `admin/launch/`): the wordmark over
-    Digital Portal on white or the dark ground, one a device size and
-    orientation, dark lines first; a size with no exact match is a blank
-    screen, so a new device is added through `tests/launch-build.js`
-    (`tests/launch.js`). iOS takes it when the app is added to the Home
-    Screen.
-- The phone tab bar (`#tabBar`): `docs/rules/tab-bar.md`.
-- Arrange sections (`#railSheet`): `docs/rules/tab-bar.md`.
-- Settings (`?s=settings`, `js/settings.js`): `docs/rules/settings.md`.
-- `admin/sw.js` keeps `offline.html` and the wordmark for a page load that
-  failed, and every same-origin file whose address carries `?v=`
-  (`adspace-console-assets`), answered from the store first, one copy a
-  file, the copy under an older stamp let go when the new one is stored
-  (2026-10-26: a reopen after ten minutes asked the server about 69 files).
-  The page itself always goes to the network (navigation preload on), and
-  an unstamped file is never kept: a changed file without a new stamp would
-  be served stale, so the `?v=` bump below is load bearing. It also holds a
-  PDF the console drew, for an hour, at `/admin/file/` (`js/file-sw.js`,
-  `adspace-files`; see `ADspaceDocs.save`). `client/sw.js` holds that
-  alone, at `/client/file/`, registered by `js/portal.js`. A failed
-  registration is silent.
-- The rail's foot names the build with Settings' and the Activity record's marks (`#appVersion`,
-  `.appver`, 11px mute): `{YYMMDD}.{commit}`, the deploy's day in
-  Malaysia and the last four of the merge commit's seven-character short
-  hash (`dcd08c6` reads `08c6`, never the full hash's last four) as one token
-  (`261006.b43a`; the user, 2026-10-06: short, but which build; 2026-11-17:
-  shorter), read from
-  `/version.json` (its name and hover hold all seven characters), which the Pages build writes through Jekyll
-  (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
-  (no build) or missing, the line is hidden (`tests/appver.js`). The line is
-  Refresh app (the user, 2026-10-12): a button drawn as its words (no box,
-  no underline, the mute ink, the soft ink on hover), the line's height its
-  target, named `Refresh app, {build}` for a screen reader and on hover; the
-  account menu holds no Refresh app.
-- Refresh app (the build line):
-  - it unregisters the console's own worker (`/admin/`) and empties its own
-    caches (`adspace-console-*`, and `/admin/file/` in `adspace-files`),
-    never the creator's, the selection page's or the client portal's
-    (audit F7, 2026-10-10);
-  - it never touches localStorage, IndexedDB or the sign-in;
-  - notifications survive it: the next load subscribes again without asking
-    (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
-- The latest build (`#buildBar`, Require latest version): `docs/rules/portal-notices.md`.
-- Pull to refresh works only in the installed app, and only on a list with no
-  record, sheet or menu open.
-- Page availability (`js/maintenance.js`): `docs/rules/portal-notices.md`.
-- Announcements (`js/announce.js`): `docs/rules/portal-notices.md`.
-- Notices (`js/notice.js`): `docs/rules/portal-notices.md`.
-
-- Public holidays (`public_holidays`): `docs/rules/settings.md`.
+- Every page's head, bar, foot, covers, favicon, share card, listing, time zone bar, safe areas, the console's boot, on-demand scripts, PWA, worker, build line and Refresh app: `docs/rules/chrome.md`, read whole before changing any of them or adding a page.
 
 ### One copy of each mechanism
 Each mechanism's rules are in its `docs/rules/` file, printed on the first
@@ -475,30 +285,22 @@ edit of its script; no page keeps a copy of its own.
 - An import from another system (Bukku, Meta, a spreadsheet) lists what
   it found and takes only what the person ticks, never all of it at once;
   and whatever a person can add, they can delete (where nothing names it)
-  from its own ⋯ and several at once through Select (the user, 2026-10-22:
-  Read from Bukku took 32 tax codes and offered no Delete, "mentioned many
-  times").
-- Every email box takes an address alone (`ADspaceWords.emailOk`, the one
-  reading; the user, 2026-10-27: "every email boxes"): a value that is no
+  from its own ⋯ and several at once through Select.
+- Every email box takes an address alone (`ADspaceWords.emailOk`, the one reading): a value that is no
   address (digits, a host with no domain, a space, a list) is refused where
   it was typed as Enter a valid email address., nothing written; the
   console's sign-in, the client portal's, a lead's, a contact's, Billing's
   finance email, a colleague's, a supplier's, the details and supplier forms
   and /quote/ alike (`tests/emailbox.js`). Page-side only.
 - Every page's `esc` is `ADspaceWords.esc` (`js/chrome.js` keeps its own,
-  loaded before it; one copy, 2026-10-26), escaping `"` and `'` as well as `&`, `<`, `>`: a stored
-  value is drawn inside attributes (2026-10-17: a creator's file address
-  holding a quote ran script in the console).
+  loaded before it; one copy), escaping `"` and `'` as well as `&`, `<`, `>`: a stored
+  value is drawn inside attributes.
 - A value is never drawn raw because of what it starts with: a fact not set
-  is a flag (`null` drawn as Not set), never sniffed from its text (2026-10-19:
-  an Industry or push format reading `<span…` drew as markup).
+  is a flag (`null` drawn as Not set), never sniffed from its text.
 - A stored address drawn as a link is held to the web twice: a check on its
   column (`^https?://`, an invoice `https://` or `private/`) and the page
   drawing it only on http or https (`ADspaceWords.absUrl`, the one copy, answers nothing for another
-  scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
-  column's check refuses; 2026-10-17: `javascript://` passed the scheme test; a
-  booking's file and a document's file link likewise, opened by `window.open`
-  too, 2026-11-07). A link typed
+  scheme, nor for a space, quote, `<`, `>`, backtick or backslash the column's check refuses; a booking's file and a document's file link likewise, opened by `window.open` too). A link typed
   bare takes `https://` (a month's Drive folder too, its column https
   alone); one `absUrl` answers nothing for is refused where it was typed
   (Enter a web address.), never saved as none. A value
@@ -510,8 +312,7 @@ edit of its script; no page keeps a copy of its own.
 - Use `.then(ok).catch(bad)`, never `.then(ok, bad)`: `bad` never sees what
   `ok` throws.
 - A function's refusal reaches the page whole: a call wrapper hands back the
-  answer with what came with it (`recent`, `paid`), never the code alone
-  (2026-10-29: a reminder refused `recent` read "Reminded . Not sent again.").
+  answer with what came with it (`recent`, `paid`), never the code alone.
 - A refusal is named in the team's words, never the database's (`SAID`-style
   maps). A missing function reads "This feature is not available yet. Please contact an admin."; a refused permission "You do not have permission to {act}. Please ask an admin.", never a section and a level; a setup fault (a key, a token, Google) names no tool to a colleague ("… is not set up yet / not available at the moment. Please contact an admin.").
 - A client page never shows a database message. The console may. A refused
@@ -544,87 +345,27 @@ edit of its script; no page keeps a copy of its own.
   repaints from it.
 - A comparison of two copies (a migration and its schema section; the
   `ACTION_LABEL` map and `activity_section()`) is enforced by a suite.
-- A merge leaves no conflict marker in any file (2026-10-18: a `=======`
-  line from #491 stood in `schema.sql`, `tests/sql.js`; 2026-11-18: one
-  reached `docs/DECISIONS.md` through #1238): the merge check
+- A merge leaves no conflict marker in any file: the merge check
   (`verify-gate.sh`) holds a commit carrying one in every mode but off.
 
 ### Access
 - Access is a level per section, **none < view < work < manage**, in `team_roles.access` / `team_members.access`; `allowed(section, level)` is every policy's predicate, and a control the database would refuse is not drawn. Every other access rule: `docs/rules/access.md`.
 
 ### Directories and the command bar
-- Every console directory is a card per group via `js/group.js`:
-  - Clients by stage;
-  - a client's Engagements by content month;
-  - Content Review as one card; a client's sets by content month;
-  - Creators as a tab a state (`#campStages`: Draft, Open for
-    selection, In production, Completed, each counted, opening on the first
-    that holds any), a card a month made (MYT) under it, newest open; a row
-    reads Updated where the state would repeat its tab, and Booked n of N
-    (creators booked of its slots, never the slots alone; 2026-10-22, CMP-8);
-    on a phone the client and Booked n of N under the name, the amount under
-    the date at the right edge (the user, 2026-11-14);
-  - the Creators List by fee band (Inactive shut);
-  - Short Links Live, Namecards, Paused (Paused shut);
-  - Documents by family;
-  - Services by category;
-  - Team by user group;
-  - the Handbook by category (Archived shut, `team.handbook` alone);
-  - My Work by its axis.
-- A filter never repeats the cards' own grouping: no state, kind, group or
-  category filter on a route whose cards are those groups (Creators,
-  Documents, Team, Services, Handbook, Short Links). An option for all reads
-  All stages, All people, All months, never Every …, Everyone or Everything.
-- A list puts what needs acting on first and what is finished last (2026-11-03,
-  the user: "the more user friendly sequencing order"), the order otherwise
-  kept: My Work's rows and board columns a VIC client's open work first, then
-  priority and due date, finished work newest finished first (`rowOrder`);
-  Leads past their follow-up time first; a client's quotations needing the
-  team, then standing, then settled, then over (Expired, Revised,
-  Cancelled); requests open first; service lines To quote, Confirmed,
-  Enquired, each newest first; a void or replaced letter, a withdrawn
-  notice, an inactive rate line, a cancelled month and a posted or completed
-  booking after the rest; Content Review's sets in a month with changes
-  requested first, then drafts, then published; a report month's rows on
-  Published not sent first, then A to Z by the name they read; the client
-  portal's meetings ahead first, soonest first, then held, latest first;
-  Video Scripts' No month last. A history stays newest first and what waits
-  on the reader oldest first.
-- A filter repaints only when its value changed: `input` and `change` both fire,
-  and `change` on blur detached Clear filters.
-- A list reads what its rows show in one request (`.in()`, paged by the
-  thousand), never one a row, and a repaint or a key typed reads nothing
-  again: every request is a logged line Supabase meters (Content Review's
-  read a client was a sixth of the live traffic, 2026-10-09; `tests/sets.js`).
-- `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
-  wrap cannot split it. An empty count is not drawn.
-- The rail's order (see `DESIGN.md`) drives `SECTIONS`, the Activity record's
-  sections (`ACT_SECTION`), `PARTS.activity`, and the Team panel's blocks. One
-  sequence everywhere.
-- The route's purpose line opens from the route name (`.console-title` button,
-  14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
-  - One sentence per route, from `INTRO`.
-  - Never opens by itself (the first-visit guide is the one that does). While
-    a route is new, the glyph carries `--action`.
-  - Below 400px the glyph gives way and the name never does.
-- A standing fact about a route is a `.routenote` under the register:
-  - the verify page as a link;
-  - the redirect host `hi.adspace.me` as a link (`go.adspace.me` being
-    phased out, its DNS kept up, 2026-11-26; `docs/rules/short-links.md`).
+- Every console directory's cards, a filter, a list's order, how a list reads, the command bar's end, the rail's one sequence, a route's purpose line and its standing note: `docs/rules/directories.md`, read whole before changing a list.
 
 ### Area rules (read before changing an area)
 
 Each area's rules live in its own file under `docs/rules/`, out of what every
-session loads (2026-11-17, the user: "ok all"; the cost of loading every rule
-in every session). The shared rules (each one-copy mechanism, the tests and
+session loads. The shared rules (each one-copy mechanism, the tests and
 the stand-in, access, sign-in and security, the database) live there too, each
-under its own triggers, with one loaded line here naming its file (2026-11-23). Before changing an area, read its file whole. The first
+under its own triggers, with one loaded line here naming its file. Before changing an area, read its file whole. The first
 edit of a path in its triggers prints the file's name (`.claude/hooks/area-rules.sh`);
 a change reaching an area with no path of its own (a schema band, a function)
 is found with `grep -rln "<function, table or word>" docs/rules/`. An
 area's rules live in its `docs/rules/` file alone: a block about one area
 (a section, a page, a tool) is never written in this file or `DESIGN.md`,
-only a one-line pointer to it (the user, 2026-11-22).
+only a one-line pointer to it.
 
 | Area | Rules | Paths that name it |
 |---|---|---|
@@ -689,12 +430,11 @@ Every sign-in and security rule: `docs/rules/security.md`.
   repositories, a release in progress on its PR, never in a session); a
   branch with an open PR is continued, not replaced. Squash-merged by
   Claude. Releases are
-  grouped by risk (the user, 2026-10-10): related batches share one PR and
+  grouped by risk: related batches share one PR and
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes
   go apart.
-- At most four sessions run at once (the user, 2026-11-22; "allow all
-  sessions" since 2026-10-11): each holds one request on its own branch and PR,
+- At most four sessions run at once: each holds one request on its own branch and PR,
   merges `main` in where another merged first, and merges as soon as it
   is built, never waiting to be asked. One gate a machine still holds.
   "Hand over" means: commit and push both repositories, then post
@@ -704,11 +444,10 @@ Every sign-in and security rule: `docs/rules/security.md`.
   session opening on an open PR reads its latest handover first and
   continues its branch.
 - The session that starts others checks every one it started every 30
-  minutes while any runs (`list_sessions` children, a `send_later`
-  check-in), never waiting for a report: one blocked or idle with its PR
+  minutes while any runs (`list_sessions` children and their status line
+  alone, never a transcript; a `send_later` check-in), never waiting for a report: one blocked or idle with its PR
   unmerged is unblocked, or its PR merged by the starting session; a
-  session's own brief says it merges without asking (the user,
-  2026-11-22: "Its not the first time its happening").
+  session's own brief says it merges without asking.
 - A release with a migration or a function states its order (pages,
   each migration, each function), what an old open tab meets at every
   intermediate state, what a failed step leaves and which steps reverse.
@@ -725,68 +464,62 @@ Every sign-in and security rule: `docs/rules/security.md`.
   confirm the Pages build, report.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
-- A migration is applied by Claude through the Supabase connector (project
-  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), or through the Management
-  API (`api.supabase.com/v1/projects/{ref}/database/query`, the token never
-  printed) in a session whose connector belongs to another organisation
-  (2026-11-20); never a connector on another organisation, in the order the release
-  states (commonly after the Pages deploy, so the page stops asking before
-  the database stops answering), and verified on the live database
-  afterwards. The report names what was applied.
-  - The connector holds any statement holding `drop` or `delete` (a function
-    body included) for a confirmation it cannot show, and times out: apply
-    the rest in small `execute_sql` pieces (`create or replace trigger`, a
-    policy created under `if not exists`), then hand the user the held part
-    for the SQL Editor as its own run. A storage policy goes in a run of its
-    own, since the editor may not alter `storage.objects` and a failure rolls
-    back the whole run.
-- An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
-  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`, `hiring-mail`, `outstation-geo`) is
-  deployed by Claude through the
-  Supabase connector from the repo copy, keeping its Verify JWT setting, and
-  the live source is read back (the user, 2026-09-30) and compared with the
-  repo file before anything else; a file is always sent whole, never in
-  part (2026-10-16: a half file broke `report-draft` for three minutes),
-  its content pasted in the call itself, never a placeholder to fill later
-  (2026-10-19: `meet-create` served a placeholder for 50 seconds).
-  Before a deploy, `main` is fetched and merged into the branch, and the
-  live version compared with `main`'s file: sessions run at once, and a
-  deploy from a branch behind `main` takes away what another session
-  deployed (2026-10-29: `bukku-sync` v12 removed #814's button for five
-  minutes).
-  The connector turns a `\u` escape into its character, so a function file
-  writes such characters as themselves, keeping the read-back byte for byte.
-  A function that imports `../_shared/` is sent with that file in the same
-  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; `supplier-mail`,
-  `bukku-sync`: `_shared/mail.ts`, the one email layout and Resend send; every function a
-  browser calls: `_shared/cors.ts`, the one list of origins and the one
-  answer's headers, `tests/mailfn.js`), and both read back.
+- How a migration is applied (the Supabase connector, project `hwwuigvdfubuymchsvyx`, or the Management API) and how an edge function is deployed (whole, read back, from a branch with `main` merged in, with its `_shared/` files): `docs/rules/release.md`, read whole before either.
 - The report lists what the user does by hand: a dashboard setting.
 - Every go-live report names the version the console shows exactly as the rail reads it (`{YYMMDD}.{commit}`: `git log -1 --format=%h --abbrev=7` on the merge commit, its last four), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
+
+### Token economy (the user, 2026-11-26; binding on every account and session)
+Every session, agent and check-in is paid for in the account's usage, so
+work is shaped to spend it on the fix, not on overhead.
+- **Release trains, not a PR a fix.** A hotfix (a fault that blocks work
+  or that a client sees) ships alone at once. Every other fix, word and
+  polish is built on one branch per area through the day and ships as one
+  minor release per area once or twice a day: one test run, one screenshot
+  pass, one copy review, one merge. A feature with a migration is a major
+  release on its own PR. (This replaces "one request, one release".)
+- **Short sessions.** A session's context is re-read on every turn, so a
+  long session costs more each hour. A session holds one train or one
+  major release and ends when it merges; the next work starts in a fresh
+  session from the repo and the PR's handover, never by continuing a long
+  one. A coordinating session hands over and is replaced daily.
+- **Copy review reads what changed.** Per release, the second reader gets
+  copyscan's added and changed lines alone; the whole screens' standing
+  words are read once a day, in one tone sweep after the day's merges.
+- **Screenshots of what changed.** The changed screens at 1280 and 390;
+  both themes only where a stylesheet or a theme token changed.
+- **One test run per release.** Commit, then gate a frozen copy
+  (`tests/snap.sh`); never edit what a running gate tests, and never stop
+  and restart a run for a further edit: the edit waits for the next train.
+- **Whole-portal audits** (unslop, ux-audit, security) run only when the
+  user asks, once.
+- **Held SQL runs through the connector.** The user approves running a
+  migration's `drop` or `delete` statements directly (2026-11-26: "Run all
+  sql dont care if its drop delete"): nothing waits for the SQL Editor; the
+  release applies it and verifies it live (`docs/rules/release.md`).
+- **Agents and sub-sessions get a tight brief** (the goal, the files, what
+  not to do) and report in under 600 words; their transcripts are never
+  read whole.
 
 ### Folder and file rules
 - Never edit the user's root files: `ap01.html` and `accv-new.html`, the
   Jotform pages left (the user, 2026-11-12, every other removed: AP02,
   AP03, AP Dale, 3P form, e-Invoice info, interview quiz, sales
   programme). `index.html` and `404.html` are the portal's;
-  `supplier.html` was retired for `/supplier/` (the user, 2026-10-18: "no
-  longer in use").
+  `supplier.html` was retired for `/supplier/`.
 - `drafts/` (holding the old Jotform verify page) is excluded from Pages.
 - Portal pages are folders with an `index.html` and clean paths; never `.html`
   in a URL.
 - New pages start from `docs/PAGE-TEMPLATE.html`.
-- Two stylesheets, never more (second audit, item 19, 2026-10-18):
+- Two stylesheets, never more:
   `css/portal.css` holds the tokens and every rule a client page can meet,
   and is the only sheet a client page loads; `css/console.css` holds the
   rules only the console meets, loaded by `admin/` alone right after it. A
   rule moved between them keeps its place in the cascade (equal
   specificity and a shared property against a later rule of the other
   sheet keep it in `portal.css`); a console base and its own `@media`
-  override share a sheet, the override after it (`cssguard`; 2026-10-18,
-  the upload preview). One script per section, and the one-copy
+  override share a sheet, the override after it (`cssguard`). One script per section, and the one-copy
   mechanisms above.
 - Server code that is not a Supabase edge function lives in `workers/`, one
   folder per Worker, with a README.
@@ -800,13 +533,12 @@ Every sign-in and security rule: `docs/rules/security.md`.
   list's own scroll, and a refresh restores the record's. A list opens at
   its top on a visit or a refresh; a section reached from the rail is a
   visit, at its top however far its list was scrolled before
-  (`visitSection`; the user, 2026-10-09; `tests/visit.js`); a press on
+  (`visitSection`; `tests/visit.js`); a press on
   the section already open (the rail, the tab bar, a mark at the rail's
   foot) goes back to its list, as an iPhone's tab bar does: the open
   record is left by its own Back, one at a time, never pressed twice, and
   a press on the list takes it to its top; the bell and search still open
-  the record whose address they wrote (`railPress`; the user, 2026-11-19:
-  "return to the list like iPhone"); only Back and
+  the record whose address they wrote (`railPress`); only Back and
   Forward restore its scroll, and nothing is saved until the person scrolls (`bootScroll`,
   `personScrolled` in `js/admin.js`: bars drawn above a list while it
   loaded once saved a lower place each visit).
@@ -837,23 +569,22 @@ Every sign-in and security rule: `docs/rules/security.md`.
   Every PDF reads the issuer from it and the agency's name from
   `agencyName` at the draw (the pen's wordmark, a quotation's lines, a
   sealed copy's Record page), the Service Terms address from
-  `serviceTermsUrl`; never typed (2026-11-21: the demo's quotation printed
-  ADspace's; `tests/demo.js`).
+  `serviceTermsUrl`; never typed (`tests/demo.js`).
 - Emails:  - support and issuer: advertise@adspacestudios.com (the client portal's
     contact line too);
   - every email the portal sends goes from `portal@sc.adspace.me` under its
     section's name (clients, suppliers, creators, careers, finance, team;
     `mail_senders`, `mail_sender(p_key)` through `_shared/mail.ts` `sender`;
-    never a no-reply address, 2026-11-18, `2026-11-18-portal-sender.sql`;
+    never a no-reply address, `2026-11-18-portal-sender.sql`;
     Supabase's own sign-in emails from the same address, set in its SMTP
     settings), and replies to a company mailbox, never a
-    colleague's own address (the user, 2026-11-17): General
+    colleague's own address: General
     advertise@ (clients, invitations to colleagues, all else), HR hr@
-    (careers: every email to a candidate; the user, 2026-11-20), Accounts
+    (careers: every email to a candidate), Accounts
     payable ap@ (suppliers, creators), Finance finance@ (invoices and
     reminders), e-Invoice einvoice@ (e-invoice submissions alone), Legal
     and compliance legal@ (named by /verify/ where a copy does not match,
-    `verify_details` `contact`; 2026-11-20); the six are
+    `verify_details` `contact`); the six are
     Settings, Messages: Reply-to mailboxes (`mail_boxes`,
     `mail_boxes_set`, `team.settings`, filed `team.changed` under Reply-to
     mailboxes), the pages reading them through `mail_senders_read`
@@ -861,17 +592,15 @@ Every sign-in and security rule: `docs/rules/security.md`.
     `mail_log` `senders`;
   - every link an email carries is on adspace.me (the sending domain,
     `sc.adspace.me`), the foot's website `adspace.me` in its words too,
-    and the wordmark at the head opens it (2026-11-19, Resend's check: a
-    link off the sending domain reads as spam);
+    and the wordmark at the head opens it (Resend's check: a link off the sending domain reads as spam);
   - admin login: adspacestudios@gmail.com.
 - Google Drive import uses the browser key (restricted to
   `digital.adspace.me/*`, Drive API only).
 
 ### Guardrails the user gave
 - "This should be automatic on your structure when designing": every rule in
-  `DESIGN.md` is applied before the user sees a screenshot.
-- A first build is the finished design, never text first and design later
-  (the user, 2026-11-25: Outstation's trip card shipped as lines of words):
+  `DESIGN.md` and its `docs/rules/` files (components, laws, copy, print) is applied before the user sees a screenshot.
+- A first build is the finished design, never text first and design later:
   every new screen is built from the v3 components it needs (facts, a
   timeline, figures, thumbnails, the phone row) in its first release, and
   its screenshots are read for runs of text a component would carry.
@@ -891,24 +620,19 @@ Every sign-in and security rule: `docs/rules/security.md`.
 - Partial work is labelled partial, never reported as done.
 - A place the user names by a word two areas share (a console section, a
   Settings group) is checked against where the thing already lives before
-  anything moves (2026-11-25: #1419 moved the email templates out of
-  Settings into each section's ⋯; the user meant Settings' own Messages).
-- Every change adds value the portal keeps (the user, 2026-11-18: "every
-  changes, every fixes must add new values … else … waste of usage, waste
-  of limits, waste of time"): a fix goes to its cause in the shared
+  anything moves.
+- Every change adds value the portal keeps: a fix goes to its cause in the shared
   mechanism, so the same fault cannot recur elsewhere, never a patch on the
   one screen reported; a change with no lasting gain is not made.
 - A change asked of one list or screen is made on every one of the same
-  shape in the same push (2026-11-10, the user: "why need me to point out
-  one by one": the client logo asked of Content Review was owed to Video
-  Scripts, Reports and Creators too).
+  shape in the same push.
 - A value only read is drawn as words at the field's height with no box
   (`.readfield` on a `p` or `div` is that, on an `.input` the shaded copy
   field): a shaded slab with its words on the edge, out of line with the
   fields under it, reached the user twice (Reports' Amount spent; Send
-  email's From, Replies go to and To; 2026-10-18), so a sheet's screenshot
+  email's From, Replies go to and To), so a sheet's screenshot
   is read for every value only read, and `tests/suppliers.js` measures it.
 - Every mistake that reaches the user or the gate is written in the push
-  that fixes it (the user, 2026-10-16: "note down all mistakes"): the rule,
+  that fixes it: the rule,
   one line, in its loaded file; the story in `docs/DECISIONS.md` Part 3
   (what broke, why, how it was found).

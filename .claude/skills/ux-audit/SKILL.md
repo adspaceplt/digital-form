@@ -45,7 +45,7 @@ A budget is a rule of thumb for a tool used all day, not a law. If a flow goes o
 ## 1. Before anything
 
 - The tests repo must be cloned and linked (CLAUDE.md §1, Setup). Port 8899 must serve the repo; start it as the gate does if it is down.
-- Read the section's own lines in CLAUDE.md §2 and DESIGN.md (§4 components, §5 laws, §8 theories).
+- Read the section's own lines in CLAUDE.md §2 and DESIGN.md (§8 theories), `docs/rules/components.md` (§4) and `docs/rules/laws.md` (§5).
 - Grep `docs/DECISIONS.md` and `docs/DESIGN-NOTES.md` for the section's name and its main classes.
 - A choice the user made is not a finding. If new evidence argues against one, report it as "revisit: <decision, date>", with the evidence.
 

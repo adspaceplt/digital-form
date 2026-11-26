@@ -11,22 +11,19 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 - Never "AI SaaS": no rainbow gradients, no decorative shadows, no walls of
   tinted pills, no explanatory blurbs, no highlighter colours. A status is a
   dot and its word in ink (App Store Connect), never a coloured box.
-- At a desk the console is v3 (the user, 2026-11-12: "tbh i really like
-  v3", "ok yes all"): one white sheet (`.console-main`, 12px in, 18px
+- At a desk the console is v3: one white sheet (`.console-main`, 12px in, 18px
   corner, a `--card-edge` hairline) on the grey `--frame`, the rail flat on
   the frame (its chosen row white with the same hairline). The sheet's head
-  names the section at 22/600 in Slate (`--font-head`, as every heading; the user, 2026-11-13: the system face read as another family) over one line (`.console-sub`, the same Slate at 13.6px, the title over φ; the user, 2026-11-13): the rail's
+  names the section at 22/600 in Slate (`--font-head`, as every heading) over one line (`.console-sub`, the same Slate at 13.6px, the title over φ): the rail's
   group, then what the section holds as figures and words
   (`ADspaceAdmin.counts`: 14 open · 2 late · 6 due this week; a late part
-  in red words), drawn by the section itself; the head is every bar's height, `--head-h` (64, 56 on a phone; the user, 2026-11-21: "Lets do all 64"), its words centred in it and its sides at the body's 32px, every sticky offset reading it. A card on the sheet is white
+  in red words), drawn by the section itself; the head is every bar's height, `--head-h` (64, 56 on a phone), its words centred in it and its sides at the body's 32px, every sticky offset reading it. A card on the sheet is white
   with a `--card-edge` hairline drawn as an outline just inside it (never
   an inset shadow, which the rows' white ground covers), never a shadow; a card inside a
   card is one surface; cards take the large corner (`--radius-lg`). The
   rail's Dashboard row counts what waits on the reader (`.nav-n`). Inside an
   open record (a client, a campaign, a supplier, a colleague, a creator)
-  the record stays on the white sheet and is hairline cards (the user,
-  2026-11-13: "keep white sheet is good. keep hairline too else it looks
-  too bold"): the head, each part of a pane (`.rec-part`: its head inside
+  the record stays on the white sheet and is hairline cards: the head, each part of a pane (`.rec-part`: its head inside
   the card at 15/600 with its count as a `.tab-n`, its list the card's
   rows) and each rail block, each edged by `--part-edge` (a register (`.bookreg`) the card, its rows lines in it; ink at 11%; light
   ink at 12% in dark), 16px apart, the grouping carried by the space; a
@@ -36,7 +33,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   keep their solid head and one-line title. What holds words over other
   words (a menu, a popover, the finder, a sheet, a question) is solid
   `--raised`. Client pages keep their white.
-- Marks stay light (the user, 2026-11-12: the VIC ring read "bold and thick"): a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
+- Marks stay light: a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never
   from dimming text.
@@ -47,20 +44,20 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--ink` | `#1a1a1a` | `#f0f0f0` | Text (the brand's monochrome, neutral in both themes; 2026-11-15) |
+| `--ink` | `#1a1a1a` | `#f0f0f0` | Text (the brand's monochrome, neutral in both themes) |
 | `--ink-soft` | `#515151` | `#c9c9c9` | Secondary text, default button text |
 | `--ink-mute` | `#666666` | `#a9a9a9` | Labels, hints, quiet buttons (4.5:1 on every ground) |
 | `--line` | `#e0e0e0` | `#3c3c3c` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
 | `--line-ctl` | `#8e8e8e` | `#858585` | A control's drawn edge (a radio, a tick's ring): the lightest neutral that holds 3:1 on every ground |
-| `--field` | `#f0f0f0` | `#323232` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground and the control's edge (`--line-ctl`, 3:1) through `--field` / `--select-ground` / `--field-edge`, set on the one list of grey cards in `css/portal.css` (the user, 2026-10-31, option A); a placeholder is `--ink-mute` at full strength |
+| `--field` | `#f0f0f0` | `#323232` | A box typed into: filled, no outline; white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground and the control's edge (`--line-ctl`, 3:1) through `--field` / `--select-ground` / `--field-edge`, set on the one list of grey cards in `css/portal.css`; a placeholder is `--ink-mute` at full strength |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Buttons and fields are filled, never outlined; the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
-| `--fill` / `--on-fill` | `#1a1a1a` / `#fff` | `#f0f0f0` / `#1a1a1a` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button but Use passkey (`.btn-ink`, the user, 2026-11-22), never the Undo bar |
+| `--fill` / `--on-fill` | `#1a1a1a` / `#fff` | `#f0f0f0` / `#1a1a1a` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button but Use passkey (`.btn-ink`), never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
-| `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
+| `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve), as apple.com draws every primary; never a status. White on it 4.70:1 |
 | `--action-hover` / `--action-pressed` | `#0068d1` / `#005bb8` | the same | Its steps, each darker so the label keeps AA (Apple's lighter hover is 4.32:1). `#007AFF` (4.02:1) is refused |
 | `--action-ink` | `#0066cc` | `#2997ff` | Blue as words or a glyph (5.57:1 on white, 5.47:1 on the dark card) |
 | `--dot-ok` / `--dot-wait` / `--dot-late` / `--dot-off` | `#34c759` / `#ff9f0a` / `#ff3b30` / `#aeaeb2` | `#30d158` / `#ff9f0a` / `#ff453a` / `#636366` | A status's 8px dot before its word in ink, Apple's system colours: green done or live, amber waiting on somebody or still running, red needs acting on now, grey not started, paused or closed. The word carries the meaning; the dot is never alone |
@@ -70,36 +67,35 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | A mark drawn over a guidance figure (a capacity bar, a chart bar or key); a waiting state is its amber dot, a caution a neutral box led by it (the upgrade line, an Important announcement, `.msg.warn`), never a tinted slab |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#fff` | `#cf9350` / `#1d1408` | A warn fill |
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys, refuses, or is late** (danger items, the billing gate, blocked; a date already passed: overdue, late, Urgent, Urgent delivery, a lead over its follow-up time) |
-| `--pub` / `--pub-bg` | `#2a5793` / `#e6effb` | `#a7c6ed` / `#1d2735` | The post date on the My Work calendar, nowhere else: a pastel blue of Pantone 2717 C (the user, 2026-10-15, in place of purple), greyer than the action blue |
+| `--pub` / `--pub-bg` | `#2a5793` / `#e6effb` | `#a7c6ed` / `#1d2735` | The post date on the My Work calendar, nowhere else: a pastel blue of Pantone 2717 C, greyer than the action blue |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
-| `--vic` / `--vic-ink` / `--vic-bg` | `#b08a32` / `#7a5a0e` / `#f7f0dc` | `#c9a24c` / `#e3c272` / `#2b2517` | A Very Important Client's antique gold (the user, 2026-10-15, gold A): the VIC tag (`--vic-ink` on `--vic-bg`, 6.4:1 light, 9.6:1 dark), its crown and the ring round the client's logo, nothing else; browner than Medium's yellow, cooler than the amber dot |
-| `--sec-{home,work,clients,review,scripts,campaigns,reports,messages,int}` / `-bg` | `#2f62d6` / `#e8effc` (My Work) … | `#8ab0f5` / `#1d2a44` … | A section's mark (palette B, the user, 2026-11-12): its glyph in its colour on a soft tint of it, the Work sections a hue each, the Dashboard and Analytics graphite, Internal graphite; drawn wherever the rail's glyph is copied (`svg.sec`, the rail, the tab bar, search's groups, Waiting for you, Engagements, the bell, Arrange sections, a figure tile, Needs attention). Never a status, a button or a word |
-| `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else (2026-10-11) |
+| `--vic` / `--vic-ink` / `--vic-bg` | `#b08a32` / `#7a5a0e` / `#f7f0dc` | `#c9a24c` / `#e3c272` / `#2b2517` | A Very Important Client's antique gold: the VIC tag (`--vic-ink` on `--vic-bg`, 6.4:1 light, 9.6:1 dark), its crown and the ring round the client's logo, nothing else; browner than Medium's yellow, cooler than the amber dot |
+| `--sec-{home,work,clients,review,scripts,campaigns,reports,messages,int}` / `-bg` | `#2f62d6` / `#e8effc` (My Work) … | `#8ab0f5` / `#1d2a44` … | A section's mark (palette B): its glyph in its colour on a soft tint of it, the Work sections a hue each, the Dashboard and Analytics graphite, Internal graphite; drawn wherever the rail's glyph is copied (`svg.sec`, the rail, the tab bar, search's groups, Waiting for you, Engagements, the bell, Arrange sections, a figure tile, Needs attention). Never a status, a button or a word |
+| `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
 | `--trace-ink` / `--trace-strength` | `#1a1a1a` / .06 | `#f0f0f0` / .07 | The viewer's trace over a screen of personal data (`js/trace.js`), nothing else |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
-| `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
+| `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
 | `--z-trace`, `--z-sticky` … `--z-picker` | 10 the viewer's trace over its screen, 20 sticky bar, 30 console head, 39 notice cover, 40 top and confirm bars, 43 to 45 the tab bar, 50 menus and cards, 55 and 60 the drawer, 70 pull mark, 85 side sheet, 90 sheets, 92 and 93 a card over a sheet, 95 the question and canvas, 96 the finder | | Every page-level layer is one of these; a component's own stacking keeps a small figure. A new layer joins the scale, never a literal |
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.
 - A document (every PDF) pairs its ground and words as the user's palette
-  does (2026-11-20, "white with #515151, #f5f5f5 with #1a1a1a"): the
+  does: the
   white page carries `#515151`, the ADspace wordmark too, a shaded
   `#f5f5f5` box `#1a1a1a`; titles `#1a1a1a`; the head's and the foot's
   marks and fine print `#a1a1a1`; hairlines `#cfd0d4` (Print, §2
   Typography).
-- An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary `#515151`, the fine print (the confidentiality line, a reminder's legal note and disclaimer) very light in `#a1a1a1` (the user, 2026-11-11; the console's preview of an email draws it `#767676`, 4.5:1, the user, 2026-11-12), the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, a code's digits are centred in their box, and Apple Mail's number detection is kept off (the user, 2026-11-09); the email ends a row under the fine print with the portal's copyright line, `© {year} ADSPACE PLT. All Rights Reserved.`, in the fine print's light grey (the user, 2026-11-18).
+- An email's palette: `docs/rules/messages.md`.
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
 - A fill and its text are always a pair (`--action` / `--on-action`, never
   `var(--ink)` / `#fff`). A hover is the token's own step (`--action-hover`)
   or `filter: brightness()` on the same token.
-- One colour, one meaning, and the screen stays about nine-tenths neutral (the
-  user, 2026-10-07, after the colour audit, on Apple's guidelines): blue is
+- One colour, one meaning, and the screen stays about nine-tenths neutral: blue is
   the action, green done or live, amber waiting or still running, red needs
   acting on now or destroys, grey not started or closed. A fact (High,
   Goodwill, White label, You) is a grey tag, never a status colour. Health's
@@ -114,8 +110,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   chip beside the name with the row faded (Inactive, Paused). Green marks a
   milestone only a minority have reached.
 - Grounds, ink and borders are neutral greys on the brand's monochrome
-  (`#f5f5f5`, `#ffffff`, `#515151`, `#a1a1a1`, `#1a1a1a`; the user,
-  2026-11-15: "move to my palette"); `#a1a1a1` is never words (2.6:1), only
+  (`#f5f5f5`, `#ffffff`, `#515151`, `#a1a1a1`, `#1a1a1a`); `#a1a1a1` is never words (2.6:1), only
   the contact chip's edge and an email's fine print.
   - Never set a filled surface to `--page`.
   - A new dark value keeps the luminance of the one it replaces.
@@ -124,9 +119,9 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Value | Use |
 |---|---|---|
-| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2). Where the browser draws `corner-shape` (Chrome, Safari), every rounded box takes the squircle on the same radii by one rule at no specificity (`:where(*), ::before, ::after`), never a list of classes; a round shape opts out where its radius is set, every `border-radius` of 50%, 999px or half its box carrying `corner-shape: round` in the same block, and a variant taking a pill back to a corner says `squircle` beside it; the review mockups stay round; never some round and some squircle beside each other (`tests/corners.js` reads both sheets and measures every box on the client pages and console routes; the user, 2026-10-24; 2026-11-07; 2026-11-22) |
-| `--head-h` | 64px (56 phone) | Every bar, one height (the user, 2026-11-21: "Take note all client facing (brandmark \| {portal name}) height must be same"): every client page's bar (the wordmark and the portal's name), the console's signed-out pages and the console's own head; no page sets its own; never wraps; the kicker hides below 640 before anything clips |
-| `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes (the user, 2026-10-23); under a finger a `.btn` still takes a 44px press (its `::after`) |
+| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2). Where the browser draws `corner-shape` (Chrome, Safari), every rounded box takes the squircle on the same radii by one rule at no specificity (`:where(*), ::before, ::after`), never a list of classes; a round shape opts out where its radius is set, every `border-radius` of 50%, 999px or half its box carrying `corner-shape: round` in the same block, and a variant taking a pill back to a corner says `squircle` beside it; the review mockups stay round; never some round and some squircle beside each other (`tests/corners.js` reads both sheets and measures every box on the client pages and console routes) |
+| `--head-h` | 64px (56 phone) | Every bar, one height: every client page's bar (the wordmark and the portal's name), the console's signed-out pages and the console's own head; no page sets its own; never wraps; the kicker hides below 640 before anything clips |
+| `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes; under a finger a `.btn` still takes a 44px press (its `::after`) |
 | `--ctl-h-sm` | 30px (32 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
 | `--tap` | 44px | The press a finger needs: a `.btn`'s invisible press area and an icon button's box under a coarse pointer |
 | `--box-h` / `--box-h-sm` | 84 / 72px | A box of lines' floor; a short note's the smaller |
@@ -163,11 +158,11 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Panel and group title | 15/600/-.01em | a record's `.viewhead h2`, `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
 | Money in a row | 13.5px tabular, its figure at 500 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
-| A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (2026-10-31; uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
+| A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
 | Control, small | 13 / 12.5px | |
-| Label | 12/600, sentence case, mute, **no tracking, never uppercase** (but the PDFs' uppercase marks: uppercase by the stylesheet alone; the user, 2026-11-20) | Every table header, band, fact label, step title, sidebar kicker |
+| Label | 12/600, sentence case, mute, **no tracking, never uppercase** (but the PDFs' uppercase marks: uppercase by the stylesheet alone) | Every table header, band, fact label, step title, sidebar kicker |
 | Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 170px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
-| Numbers in cells | 17/600/-.02em | `.tally-cell b`; the selection page's results summary under its lead figure (`.cx-figs dd`, 17/600, the user, 2026-10-31: kept for emphasis) |
+| Numbers in cells | 17/600/-.02em | `.tally-cell b`; the selection page's results summary under its lead figure (`.cx-figs dd`, 17/600, kept for emphasis) |
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |
 
@@ -179,118 +174,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 - The front door's hierarchy: headings in the body face 17/600 (16 phone); the
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
-- Print: the company's Word templates (`docs/templates/`; the user,
-  2026-11-20: "please take note of the header and footer. it should remain
-  in place", "yes align all to the templates"), drawn by the one pen
-  (`ADspaceDocs.pen`, its figures `ADspaceDocs.PAGE`, measured from the
-  templates rendered in their own fonts), the head and the foot at the same
-  place on every page whatever the page holds:
-  - the page: A4, margins 72pt top and bottom, 54pt each side; the head
-    28.8pt under the top edge, the foot 28.8pt over the bottom edge;
-  - inks, the user's palette (2026-11-20: "white with #515151, #f5f5f5
-    with #1a1a1a"; then the wordmark and the foot): the body and the
-    ADspace wordmark `#515151` on the white page; a title, the headings,
-    PRIVATE & CONFIDENTIAL in the body and ADSPACE PLT `#1a1a1a`; the
-    head's and the foot's marks (the page count, FOR INTERNAL USE, the
-    foot's PRIVATE & CONFIDENTIAL, the verify line, Co. Reg., the page's
-    reference) `#a1a1a1`, never the body; hairlines `#cfd0d4`; a shaded
-    box `#f5f5f5` with `#1a1a1a` words (`pen().ink`, `strong`, `faint`,
-    `line`, `shade`; `pdfreal` reads each run's fill);
-  - the faces are the templates' four alone: Optima (the wordmark), Slate
-    Medium, Slate Regular and Slate Book; Slate Light, the ACL page count's
-    face in the template, is not held, so it is Slate Book;
-  - an uppercase mark (PRIVATE & CONFIDENTIAL, FOR INTERNAL USE) carries
-    no letter spacing: the user's 1.08pt, set as character spacing, read
-    letter by letter to pdf.js (F O R I N T E R N A L), so it was dropped
-    (2026-11-20);
-  - a letter's title is the body's size in Slate Medium; a title on any
-    other document is the body times φ (17.8pt on 11pt, 16.18pt on 10pt;
-    `ADspaceDocs.TITLE`);
-  - the Date beside Our Ref is the portal's date (`20 Nov 2026`,
-    `ADspaceDocs.refDate`), never the template's superscript ordinal;
-  - AL (the letterhead): the wordmark in Optima 16pt top left (baseline
-    60.2pt from the top); Page n of N in Slate Book 8pt from 493.75pt
-    (baseline 47pt from the bottom);
-  - ALP (internal): AL's head with FOR INTERNAL USE in Slate Medium 8pt
-    centred on the page (58.9pt); the foot PRIVATE & CONFIDENTIAL in Slate
-    Medium 8pt at the left (48.9pt from the bottom) and AL's page count; a
-    form's title opens its first page in Slate Medium 15pt over a hairline;
-  - ACL_SIGN and ACL_NOSIGN (a lettered document to a party): page one the
-    full letterhead (the wordmark Optima 14pt, Co. Reg. 9pt, the address
-    11pt on 12.5pt lines at the left; the phone, email and website at the
-    right edge; the monogram 20.3pt square top right), later pages the
-    wordmark and the monogram; the foot the verify line centred in Slate
-    Book 6pt (This is a computer-generated document. [No signature
-    required. ]Verify document authenticity: digital.adspace.me/verify) and Page
-    n of N in 7.5pt at the right margin; the body PRIVATE & CONFIDENTIAL (Slate
-    Medium) at 155.1pt, Our Ref and Date a blank line under it, the
-    recipient's name (Slate Regular) over its lines, the title (Slate
-    Medium), the salutation and the message a blank line apart, single
-    lines of 12.5pt at 11pt, then Yours sincerely, and ADSPACE PLT in Slate
-    Medium;
-  - which template (`ADspaceDocs.TEMPLATE`, `templateOf(kind, signed)`; a
-    new PDF joins it): ACL_SIGN for a document carrying a signature block
-    or signing page (the Letter of Offer, a signed client, HR or supplier
-    letter, the Supplier Service Agreement, the Employment Contract, and a
-    sealed copy's Record page), ACL_NOSIGN for one that does not (an
-    unsigned letter, the Employment Offer); ALP for an admin's working form
-    (Employee Record Form, Interview Sheet, Onboarding Checklist, Welcome
-    Kit, a client's checklist, the Analytics Analysis) and the Rate Card;
-    AL for the rest (the Monthly Performance Record, the quotation, the
-    Social Media Report, the video scripts), whose bodies keep their own
-    layout between the template's margins; a white-label report puts its
-    partner's logo in the wordmark's place;
-  - a sealed copy's Record page (`js/seal.js`, the user, 2026-11-21: "Sorry
-    what i mean is to use this", Apple's print design the model) is a dated
-    timeline in about a quarter of the page: Record of this Document 13pt
-    Slate Medium after the padlock, the Document ID at its right on its
-    baseline (Document ID 7pt, the code 9pt Slate Medium); the sentence
-    8pt; a hairline; at the left the steps under their Malaysian day
-    (`12 Jan 1988 · GMT+8`, 7pt Slate Medium, no weekday), each a line of
-    8pt on 10pt: the time to the second in a 54pt column, the step's word
-    in Slate Medium, the rest a sentence, and its device on one 6.3pt line;
-    a 4pt dot a step on a 0.6pt hairline, filled for Signed and Confirmed;
-    at the right, at least 96pt, the QR code 32pt, Scan to check this copy
-    over the verify address, then SHA-256, pages 1 to n over the hash on
-    two lines of 32 characters, all 6pt; inks as above (the words
-    `#515151`, a step's word, the title and the code `#1a1a1a`, never
-    `#a1a1a1`); a long record runs on under the same head;
-  - a lettered foot is one row on one baseline (794.5pt; the user,
-    2026-11-24: "the serial id or document id and the computer generated
-    document and the page x of x should be same in line same row"): the
-    reference, then the verify line with its Document ID, from the left
-    margin, and Page n of N at the right margin (the reference gives way
-    first where the row would reach the page count); Client initials is a
-    box (112 by 36pt) at the right over the row, and the body stops 14pt
-    above it;
-  - an AL document a client receives (a quotation, a report as published, a
-    video script as shared, the Monthly Performance Record) is one row on
-    the page count's baseline (794.9pt; the user, 2026-11-24: "Document ID
-    | Verify document | Page x of x"): `Document ID XXXX-XXXX · Verify document
-    authenticity: digital.adspace.me/verify` in Slate Book 6.5pt from the left margin, Page n
-    of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
-    and the template's page count, and a draft and a white-label report the
-    page count alone;
-  - a quotation's section heads carry an outline glyph alone (0.75pt in
-    `#515151`, about 10pt, never filled) in an 18pt `#f5f5f5` disc on the
-    heading's capitals, never a number; its billing note in the mute ink at
-    the label size on the heading's baseline at the right margin; PROPOSED
-    FEES alone on its row (2026-11-25);
-  - a quotation's Add-on Rates are a block anchored above the foot of its
-    fees page, as a sealed copy's Record is, two columns with dotted
-    leaders and the unit mute, never in a total; where it does not fit it
-    takes the next page under the same head (2026-11-25);
-  - a summary of totals never stands on a page alone: the last line carries
-    the summary's height, and moves over with it where both do not fit
-    (letters and quotations alike, 2026-11-24);
-  - nothing else in the head or the foot; a mark a document needs on every
-    page (the Letter of Offer's Client initials, the performance record's
-    reference line, the Rate Card's version) stands in the bottom margin
-    clear of the foot.
-  - Config holds file paths, never font names.
-- Letter tables: Description, Rate, Amount only. Quantity rides in the rate
-  cell. The term sits mute under the Amount. Inclusions go under the name, then
-  one mute line of basis, period and note. TERMS holds the term, then the letter's own points as typed, the first its validity.
+- Print (every PDF: the Word templates, the head and the foot, a sealed copy's Record page, a quotation's layout) and letter tables: `docs/rules/print.md`, read whole before drawing or changing a PDF.
 
 ### Spacing
 The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
@@ -316,14 +200,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 ## 3. Themes
 - A dark value hangs off `:root[data-theme="dark"]` alone, never a
   `prefers-color-scheme` query: the head script sets the attribute for Auto,
-  so a query also fires on a device in dark whose colleague chose Light
-  (2026-11-12: the revamp's glass drew dark cards on a light console).
+  so a query also fires on a device in dark whose colleague chose Light.
 - Client pages (`/client/`, `/creators/`, `/creator/`, `/review/`, `/verify/`,
   `/quote/`, `/details/`, the covers) are **light only** and never carry `data-theme`.
 - The console follows the device until somebody chooses.
   - The choice is Theme in the account menu (`#themePick`, a small segment:
-    Auto, Light, Dark; the user, 2026-10-10: "add the settings into the
-    Name"), kept in `localStorage` `adspace-theme` and winning from then on.
+    Auto, Light, Dark), kept in `localStorage` `adspace-theme` and winning from then on.
   - Auto clears the choice; a `matchMedia` listener follows the device while
     nothing is stored.
   - The head script applies it before first paint.
@@ -334,812 +216,21 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 
 ## 4. Components (a new screen is built from these)
 
-| Need | Component |
-|---|---|
-| Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
-| Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + view selects + the Filters mark (the filters in `#cmdPop` at a desk, `#cmdSheet` on a phone) + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
-| What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
-| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name at 500, never bold; the user, 2026-10-09) and a close mark |
-| A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
-| A list row on a phone | `.prow` (the end of `css/console.css`; 2026-11-18, the user: every list's phone layout from one component, never written by hand again): the row's cells take its slots, `.pr-lead` (a tick, a ring, a mark), `.pr-main` (the title over its meta), `.pr-state` and `.pr-act` (the ⋯) on the title's line at the right edge, `.pr-end` (a date, a figure) under them on the meta's line; a row without a lead or a ⋯ closes that column, every other cell hidden on the phone but one laid over the row by its own position (`.pr-float`, the swiped next step). A new list is built on it; a list's own phone grid is never written again (`tests/phonerow.js`, its baseline only shrinking) |
-| Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
-| Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
-| Counts and money | `.tallies` > `.tallygroup` > `.tally` > `.tally-cell` (`is-total`, `is-warn`); no cell alone on the last row: on a desk five cells read three over two and six three over three until all fit one row |
-| Figures a reader may hide (every section that shows figures) | The eye (`.figs-eye`, an `.iconbtn` the Filters mark's tonal square, held one step deeper: the open eye while shown, the struck eye while hidden, as Personnel's `.prs-eye`; Hide figures and Show figures, `aria-pressed`) in the section's command bar just before its primary, or at the end of the Dashboard's and Analytics' bar, on the bar's line at every width; one choice a device for every section (`adspace-figs-hidden`, `js/admin.js`); hidden, every figure and amount (a tile's figure and lines, a total, a chart's values and axis, a figure table, a payment's amount) is four dots over its own box, nothing moving, read to nobody, a name that carries figures reading its words alone (`data-figs-say`, `data-figs-bare`); labels, statuses, dates and a list's count stay. What hides is one list in `css/console.css` (`:root.figs-off`): a figure a new screen draws joins it and its bar takes the eye (2026-11-25) |
-| Completeness | `.ringline` > `.ring` + "2 of 4"; a bar (`.railbar-fill`) in ink while it fills, green (`is-done`) only once complete |
-| A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`) on the white sheet: `.rec-id` identity (a card), `.rectabs` panes, each part a `section.rec-part` card (its `.viewhead` inside, the count beside the title, the add act quiet), `.rec-rail` of `.railblock` cards; a part whose list is already cards (month groups, read groups, booking cards) keeps its head on the sheet over them; every card in a record takes the `--part-edge` hairline, 16px apart. A row keeps at most two buttons (Preview and its next step); the rest is its ⋯ |
-| A record with no artwork (a task) | `.rec-id-plain`: the number as a token (copy control) heading the record, no mark |
-| One record with steps | `.kcard` > `.kcard-head` (name, then summary, then the state beside the ⋯) + `.kstep` |
-| Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` drawn by `ADspaceMenu.items([[open],[change],[send],[mark],[lifecycle],[destroy]])`: fixed order, `hr.kmenu-sep` between groups (always before destroy), Remove/Void/Delete red and last, 13.5/400, one width, role menu/menuitem; ≤7 items; one item only for lifecycle or destroy (§5 Menus and action groups) |
-| An act with a consequence | `ADspaceConfirm` sheet (`.askcard`, 440px); a field may be a tick (`.tickline`) or a segment (`seg`) |
-| A caption written by AI | `.capwrite`: Write with AI (the AI mark first), `.btn-sm` at its own width under the caption field, its question an `ADspaceConfirm` sheet, its answer or refusal one `.msg.capmsg` line under it, Undo where it happened |
-| An AI analysis read first (a client's Brand analysis) | `docs/rules/clients.md`, Components |
-| One value | `ADspaceAsk` rename / inline / note |
-| Add or edit a record | A sheet: `.sheet` > `.sheet-card.formsheet` (620px; 780 for a picker) with a head and close mark, a scrolling `.sheet-body`, and `.sheet-foot` |
-| A form of more than five fields | `section.fsec` > `h4.fsec-h` (13/600 ink), 2 to 5 fields each, divided by a `--line-soft` hairline and a 24px step |
-| Fields side by side | `.row.fgrid` (two equal) / `.fgrid-3`, `span-all` / `span-2`; one column under `.is-tight` and below 560. Never a pixel width in a style attribute |
-| A choice of two to four | Segment `select[data-seg][data-seg-value]`, a pill (five or more stays a select); named by a label beside it where an action shares its row |
-| A switch of what is shown (a list's recipient, a year, a sheet's part, a card's view) | The view strip, never a segment: `select[data-seg][data-strip]` (`js/form.js`), the select the source of truth, drawn as `.actstrip.seg-strip` > `.cmdbar-views.actviews#{id}Strip`, one line that scrolls with its far edge faded, the list under it `data-swipe="{id}Strip"`, no label where the tabs name themselves (2026-11-22) |
-| A choice of ten or more | A select; it opens the finder (`.picker`, `js/form.js` §8): a search field over the options, under the field at a desk, the screen's height on a phone |
-| Usual defaults | `details.fmore` More details, its line naming what it holds |
-| A record pane of facts | Read first (`readGroup`, missing required values in warn) on a white card (`.readgroups`, the groups a hairline apart inside it; a client's Billing a card for the request link, one for the primary entity with its Bukku band, one for the other entities, one for unpaid invoices), the rail beside it on the ground; Edit opens the same groups in a sheet |
-| Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |
-| Full-page state | One cover family for every notice and lock (the user, 2026-11-22, after Apple's account pages): `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`, the client pages' notices, the console's sign-in and code step, Access denied, Unable to load, Overseas access, the console's whole-screen Upgrade, `admin/offline.html` (its own copy of the template, since the worker cannot promise `css/portal.css` offline), the 404, a namecard not found (every page's bar and foot drawn with the notice alone), /verify/'s Request received (/quote/'s is a page of its own, `docs/rules/services.md`); inside a console section the same column is `.lockcard` (My records, Health, Performance, No access). Each under the page's own bar and foot; white to the edge, no box; one column (400px) at the optical centre between the bar and the foot (centred, nudged above by a deeper pad under it), the same on every cover; the state's glyph in the locks' disc (`.lockcard-mark`, from `data-glyph`, else the title through `ADspaceWords.glyphOf`, drawn by `js/maintenance.js` from `js/icons.js`); the title at the Display level (24/600 Slate, 21 on a phone, sentence case); the statement 17/400 in `--ink-soft`; a second line 14px; a field on its own row, its label over it (an access code's title is its label), the acts under it as equal halves (`.cover-acts`), the primary blue, a way out tonal with its glyph; one quiet `.btn-sm` or 13px mute line under them; the wordmark (`.cover-mark`) only where no bar carries it (the console's whole-screen notice); signed in, last `Reference {code}` (`.cover-ref`, 14px ink, tabular). The line never restates the title (`tests/covers.js`) |
-| Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (a tonal pop-up: the buttons' shade, no outline, its dot in the box and the chevron at its end; never blue) only for a state that moves as the work |
-| A task on My Work's board and list (v3, 2026-11-12) | `docs/rules/my-work.md`, Components |
-| The Clients list over its bands (v3, 2026-11-12) | `docs/rules/clients.md`, Components |
-| Content Review's clients (v3, 2026-11-12) | `docs/rules/content-review.md`, Components |
-| A priority's deadline (My Work) | `docs/rules/my-work.md`, Components |
-| A Very Important Client | `.chip-vic` (`ADspaceAdmin.vicTag`): the crown and VIC, 11.5/500, radius 5, `--vic-ink` on `--vic-bg`, after the client's name; a button opening `#vicPop` (a `.popcard`: the crown in `--vic` and Very Important Client (VIC) at 500, two sentences, the note shaded, the since line mute), or a part of a row that is one button; the logo disc ringed (`.is-vic`, a hairline: 1px of the card then 1px of `--vic` at 72%); where the tag would crowd a row's name (the Clients list, Waiting for you) the ring carries the crown on it instead (`.vic-crown`, `ADspaceAdmin.vicBadge`: a 14px disc of `--vic-bg` on the ring's top right, the crown in `--vic-ink`, its card on a desk's hover) and the row names VIC to a screen reader |
-| Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
-| The demo on sample data | `docs/rules/demo.md`, Components |
-| A row's next step under a finger (My Work) | `docs/rules/my-work.md`, Components |
-| Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |
-| Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
-| A client page while its link is read | `.pageload` in its `main`: one turning ring (32px, a 3px arc fading round to its head in `--ink-soft`, a smooth turn of .9s, centred), `role="status"` named Loading, no words; drawn only while nothing marked `data-shown` is on show (`:has()`), so no script hides it |
-| A request at work (any page) | `.loadbar`, drawn inside what it sits under so a menu, popover, finder or sheet laid over that draws over it: 2px under the page's own bar across its width (while a sheet is open, under that sheet's head across its card, never across the page behind it; the user, 2026-11-13), a segment of `--ink-soft` sliding across it (`--ease`, 1.15s), fading in after 300ms and out with the last answer; a still line in `--ink-mute` under reduced motion; never a colour, never a number |
-| Loading, empty, failed | `ADspaceState` skeleton (a light sweeping across `--line-soft` rows; past its wait one 12.5px mute line, Still loading…) / `emptyLine` (a line inside its panel in the mute ink at 400, with the way out where nothing on screen offers it; a record pane's act is its heading's) / `failLine` (what failed, why, Try again) |
-| A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
-| A trend and what to expect (Analytics) | `docs/rules/analytics.md`, Components |
-| A section's figures at a glance (the Dashboard) | `docs/rules/dashboard.md`, Components |
-| The Dashboard's first row | `docs/rules/dashboard.md`, Components |
-| Everything waiting across sections (the Dashboard) | `docs/rules/dashboard.md`, Components |
-| A team's month at a glance (the Dashboard's Team tab, 2026-11-13) | `docs/rules/dashboard.md`, Components |
-| What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile (a VIC client's ringed in gold with the crown on its corner, `.is-vic`, `.wfy-crown`, never the tag in the title), the record's name over what it is (`Accounts Report · Sept 2026`, its parts kept whole), the decision where it is taken in the row (tonal Decline and Approve), and at the right edge (`.wfy-end`, top aligned, line for line) where it stands as a status (Pending review, Extension requested, Submitted, Requested, Changes requested, Awaiting approval) over its age (red when late), two lines a side, never who handed it over; on a narrow pane the acts take a second line as equal halves |
-| A client's work by month (the record's Engagements) | `ADspaceGroup.section` card a content month of `.cmonth-row`s: the section's glyph on a tonal tile, the name (a fact as a grey chip after it) over its facts wrapping between parts, the state in a `--state-w` track, the chevron last (a finished report's `.btn-sm` Download in its place, `.has-file`); on a narrow pane two columns, the state at the right of the first line, the Download under it |
-| Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
-| A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
-| Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page, each led by its glyph (the phone, the chat bubble, the envelope; the console and the client pages alike, 2026-11-08); never an underlined word; the small control's height (`--ctl-h-sm`) with 12.5px words; equal widths on a phone unless alone (`is-tight`), a chip alone on its row keeping its own width; a desk's pane keeps each its own width |
-| A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
-| An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
-| A value only read | `.readfield` (the field's height, no box) |
-| A value hidden until asked (an employee record's NRIC Number, Account number) | Dots and its last four (`•••• 1234`), the eye (`.prs-eye`, an `.iconbtn`: the eye to show, the struck eye to hide) at the fact's right edge, its press overflowing the line evenly; shown only once filed (`docs/rules/personnel.md`) |
-| A screen of a colleague's personal data | `data-trace` on its card or sheet (`js/trace.js`): the reader's name, email and time tiled at -24° in `--trace-ink`, cleared under every word and control, and the card's last line `.trace-foot` (Viewed by {name} · {date, time} · Confidential, 12px mute at the right over a hairline; `docs/rules/security.md`) |
-| A client billed by several companies (billing entities) | `docs/rules/clients.md`, Components |
-| A record's link to another system (Bukku) | `docs/rules/bukku.md`, Components |
-| A read group with its own act (Brand: Meta) | `docs/rules/clients.md`, Components |
-| The code from an email | `.otp` (`js/otp.js`): a box a digit (a creator's access code a box a character, letters and digits, `data-otp-len`, `data-otp-chars="alnum"`) (`.otp-cell`, `--tap` high, `--field` ground, the small corner, 20/500 tabular), 8px apart (6 under 400), the next to fill drawn as a field typed in (`--card`, the blue edge and ring); the one field over them unseen; Sign in under it at the row's width |
-| An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
-| A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
-| Moving between sections on a phone | `docs/rules/tab-bar.md`, Components |
-| A colleague's own order of the sections | `docs/rules/tab-bar.md`, Components |
-| What changes the portal for everybody (Settings) | `docs/rules/settings.md`, Components |
-| An email's wording (Settings, Messages) | `docs/rules/messages.md`, Components |
-| A short list kept in Settings (Industries, Public holidays, Tax codes, Departments) | `docs/rules/settings.md`, Components |
-| Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet, as its own shaded block after the question's fields (`.askentry.is-declare`: the AI mark and the line naming the person's responsibility, then a `.tickline` that refuses until ticked), never run on into the question's words. Never asked of words typed by hand |
-| Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Theme as a small segment at the row's right edge, Passkeys, Notifications as a switch), Sign out; Refresh app is a press on the build line at the rail's foot; what changes the portal for everybody is the Settings page it opens. Compact: rows a control's height, 272px wide. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
-| A word to everyone (an announcement) | `docs/rules/portal-notices.md`, Components |
-| A creator's payments (the creator page's Payment pane) | `docs/rules/creator-campaigns.md`, Components |
-| Every creator's payment work (Creators, Payments) | `docs/rules/creator-campaigns.md`, Components |
-| A creator's payment details on the Creators List | `docs/rules/creator-campaigns.md`, Components |
-| A creator's payment details (the creator's page) | `docs/rules/creator-campaigns.md`, Components |
-| A colleague's health check-in | `docs/rules/health.md`, Components |
-| A message sent on WhatsApp (the WhatsApp section) | `docs/rules/messages.md`, Components |
-| A client's checklist (`js/checklists.js`) | `docs/rules/clients.md`, Components |
-| What clients owe, past its date, and a reminder by email (Clients' Overdue invoices) | `docs/rules/clients.md`, Components |
-| A client's quotations and Build quote | `docs/rules/services.md`, Components |
-| A prospect's own quotation (`/quote/`) | `docs/rules/services.md`, Components |
-| A client's form in steps (`/details/`, `/supplier/`; `/quote/`'s track and step cards) | One copy each in `js/icons.js` and `css/portal.css` (2026-11-25): an opening page (the title, the lead, one 16px line, What to expect as `stepCards`: a `--sunk` card a step, its glyph in a white disc carrying the step's number in an ink badge, the name 15/600 over one 13.5px line, or one 14.5px sentence where a step has no name (`/quote/`); the closing day after the clock glyph, `.qs-time`; Start alone), then a step a section: `stepTrack` (Step n of m over the 4px track), `stepHead` (the step's glyph in the locks' `--line-soft` disc beside its title and the page's lead), the section's fields at the portal's sizes, Back and Continue as equal halves; the last step either the answers read back (`summary`: a `--sunk` card, its groups a hairline apart, a label over its value on a phone and beside it at a desk, an empty value left out, Edit with its pen to step 1) or the step's own terms, then the tick and Submit. Continue refuses its own step's fields in place; Submit asks every step again and takes the reader to the step of the first fault |
-| The page a form lands on once sent (`/details/`, `/supplier/`, `/careers/`'s first state, `/feedback/`, `/quote/`'s Request received) | One copy, `ADspaceIcons.received` (js/icons.js, css/portal.css `.rcv`, 2026-11-25): the green tick disc over the title (Display), the statement 17px, a second line 14px and the reference 13px mute, all centred; where it stands as a track (`.rcv-track`: a 32px disc a step, the done one green with its tick, the one in hand ringed in ink with In progress after the amber dot, the rest grey; a hairline between, green below a done step); then shaded cards (`.sumcard`, never an edge on a client page): what was sent (`summary`, the NRIC and a whole account number never read back), who to reach (`contactCard`: a label over the name and title, its act at the right, under them on a phone; or `card`: Contact ADspace, Follow ADspace); a link opened again once sent reads the tick, the title and its line alone |
-| The emails the portal sent (Messages, Email) | `docs/rules/messages.md`, Components |
-| Sending a template on WhatsApp from any record | `docs/rules/messages.md`, Components |
-| A client's document sent by email | `docs/rules/documents.md`, Components |
-| A notice to colleagues (Notices) | `docs/rules/portal-notices.md`, Components |
-| Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
-| A booking's steps (client pages) | `docs/rules/creator-campaigns.md`, Components |
-| Where a campaign stands (client page) | `docs/rules/creator-campaigns.md`, Components |
-| What the client owes (client page) | `docs/rules/creator-campaigns.md`, Components |
-| Asking the portal in words (the Assistant) | `docs/rules/assistant.md`, Components |
-| A document checked on /verify/ (2026-11-20) | `docs/rules/documents.md`, Components |
-| A score asked of a client (a rating scale) | `docs/rules/client-feedback.md`, Components |
-| Finding a record in any section | `docs/rules/search.md`, Components |
+Moved to `docs/rules/components.md` (the components table), printed on the first edit of a screen's files: read it whole before building or changing a screen.
 
 ## 5. Laws (each broke once; the reasons are in the archive)
 
-### Layout and alignment
-- Two blocks in a section are always the same distance apart.
-- A column is a column on every row. Every shared track is fixed and measured
-  against its worst case (the clients state chip 120px; the Activity `By`
-  150px; the task stage 170px; the schedule shoot 176px). `justify-self:
-  stretch` aligns a cell and does not equalise the track.
-- On a phone the last column is a right edge: the cell stretches and aligns
-  right. An empty action cell gives up its track on a phone only.
-- A phone list row is a two-column table, top aligned: who over meta on the
-  left, state over age on the right, drawn by the phone row (`.prow`, §4). Two or three lines, never a stack of
-  fields. Cells on one line share its baseline: a record beside an outlined
-  chip reads on the chip's text (`.cr-record`). The right column's lines stand on
-  the left's, line for line (the same line heights), never centred over a
-  taller column (2026-11-04: a report's v1 sat above its brand name). A token that
-  names the row (a Client ID) leads its meta line rather than taking a line
-  of its own (2026-11-04: the Clients list read three lines against two).
-- A phone template names every cell it keeps and hides the rest, including the
-  restatement lower in the file.
-- An empty grid cell keeps its column on a desk. `display:none` slides the rest
-  left.
-- A card's state chip sits on its title row at the right edge, before its ⋯
-  (a record head, a month, a booking, a task's priority, a set, a post); the
-  facts and the amount go on the lines under the name, on a phone as at a
-  desk. In a desk table row a chip follows the name, never the far edge of
-  a wide cell (a task's Urgent read as the assignee's).
-- A value changed where it is read ends its mark on the facts' one right
-  edge: the task card's date pens and detail chevrons alike (the user,
-  2026-10-11: "the pen is here and there").
-- A row holding a control keeps a row of words' height: the control's
-  target overflows it evenly (a negative block margin), so facts stand one
-  pitch apart whatever each row holds.
-- A padded control on a card's last line gives its padding back with a
-  negative block margin (the ⋯, the tick). A control whose
-  presence depends on a permission never sizes its row.
-- A chip, a ⋯ or a ring on a title line centres on that line, never on its
-  own target: the control's cell takes the line's height and the 44px target
-  overflows it evenly (the month card, a task row).
-- A rule about something inside a pane keys on `is-narrow` / `is-tight`, never
-  on a media query. The window is the measure only for a page's own head (the
-  client portal).
-- Every table states its own tracks. A template hung off `:not(...)` claims the
-  wrong header.
-- Every tab strip is the view strip: the tonal track, never a rule across the
-  column, never bleeding past the page's margins. A report's step strip
-  (`.rp-steps`, each step's summary under its name) is one too. A record's strip
-  (`.rectabs`, the client portal's too) and a strip inside a card (a set's
-  `.poststages`) run the width of that card at every width, as the Overview's
-  strip of a client record does; a section's switch
-  (`.tabrow`, or a view strip on its own row: My records, Performance, the Activity
-  record) is its own width at a desk and the column's on a phone, up to a
-  control sharing its line (`uxaudit` `strip`). Tabs in a full strip share what is spare
-  (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
-  has more beyond it faded.
-- The chosen tab always shows its word on the sliding thumb at 4.5:1: the
-  thumb is painted in the page's own order, never promoted to a layer of
-  its own (no `translate3d`, `translateZ` or `will-change` on a
-  `.has-thumb::before`), since iOS Safari drew a promoted thumb over the
-  word inside a phone sheet (2026-11-22; `tests/segkind.js`).
-- A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
-  with the soft ink, red (`is-err`) only where what it counts needs acting
-  on now (Content Review: Changes requested, on both sides; Overview: an
-  item is late); a waiting or done count stays neutral (2026-10-07).
-  It gives back its room on a phone (4px under 640, 3px under 400) before a
-  tab's word is cut.
-- On a phone a sideways swipe presses the tab beside the chosen one
-  (`js/swipe.js`, a region's `data-swipe` naming its strip).
-- A box that scrolls sideways is the containing block of what it holds (`position: relative`): a screen-reader label inside a board card escaped the board's scroll and widened the page by 986px (2026-10-27, the demo's columns).
-- A component borrowed for its shape carries its old flex and behaviour. Use a
-  class of its own (`.railrow`, never `.navitem`).
-- A class name belongs to one component. A new component never reuses a name
-  already styled elsewhere (grep `css/portal.css` and `css/console.css` first): Content Review's
-  `.cr-rec` split the Creators List's record cell, then named `.cr-rec` too.
-- An id is held once on a page, the console's one document included: a new
-  view's ids take a prefix of their own, grepped in `admin/index.html` and
-  the scripts first (2026-10-28: Overdue invoices' `#invCancel`, `#invMsg`
-  and `#invView` were the campaign invoice form's; `tests/overdue.js`).
-- A group that must stay together is one element in the markup, never a hope
-  about where a wrap falls.
-- A box a page redraws alone inside a stack of sections (/quote/'s `#qsExtraBox`) gives up its own box (`display: contents`), so each section in it keeps the stack's step and its hairline (2026-10-28).
-- Text a person typed (a caption, a brief, a note, a place) breaks anywhere
-  (`overflow-wrap: anywhere`), and a grid holding it states
-  `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
-  the card and the page. The walk seeds a 120-character link on both client
-  pages. An address that is a row's meta line under its name is one line
-  ending in an ellipsis; the whole address is one press away.
-- Words never leave their box: a line is either whole inside its card or
-  row, wrapping under itself and the row growing, or cut with an ellipsis;
-  never cut bare at a column's edge or drawn over the next cell. A block
-  inside a one-line cell (`.crm-c`) wraps (a client's name), since the
-  cell's ellipsis never reaches it. `tests/fit.js` sweeps every console
-  route from 1440 down to 900.
-- An overlay is positioned against the box it explains (`.sched-field`), never
-  its container.
-- An image sized by one axis in a box that can clamp the other is squashed. The
-  brand mark is `object-fit: contain; object-position: left center`.
-- The bar and the foot run to the screen's edges on every page. Content keeps
-  its reading width.
-- The foot stands on the page's own ground (no band of its own), a `--line`
-  rule above it; its bottom pad is the larger of 16px and the home bar's
-  inset less 14px (20px on an iPhone, the tab bar's offset), never the two
-  added; the © line stands above the home indicator. In a phone's browser
-  (coarse pointer, `display-mode: browser`) the floor is 4px, about 19px
-  above Safari's controls, which report no inset; Terms of Service keeps a
-  44px press reaching upward.
-- The last "not centred" is usually two type sizes. Measure the ink, the
-  borders and the type before calling it even.
-
-### Records
-- The head is two parts centred on each other.
-  - Left: the mark, the name and the meta.
-  - Right: `.rec-ctl`, the state (chip or select, `align-self: center`) and one
-    ⋯ holding Edit and Delete. Never Edit standing beside the name.
-  - On a phone: `"mark . ctl" / "who who who"`.
-- A form the team fills over time (a checklist, a paper form brought into
-  the portal) is a record, never a page of open fields: it reads first,
-  a tick is pressed in place, and each section's Edit opens its answers in
-  a sheet (the user, 2026-10-15: "the checklist is coming back in the
-  wrong design"). Before a screen ships it is checked against this file's
-  components; a layout not in §4 is not invented.
-- The landing pane is the record itself, built from what is loaded: flat
-  sections with one control each; empty ones say so in a line.
-- The rail is one block per question, ordered by need. A block with no data
-  leaves. A written next action beats a derived one. A missing date's row is
-  left out.
-- A choice and an action never share a row unseparated: the choice carries
-  its label at the left, the action sits at the right edge with its count
-  just before it (the draft's language beside Write with AI).
-- An act is offered once on a screen: a value is changed where it is read
-  (its pen, its row's control), never again from a ⋯ (the user, 2026-10-09:
-  Change sent date beside the Sent pen; Reassign beside Assigned to). What
-  goes in a ⋯ is §5 Menus and action groups.
-- A fact is stated once on a screen. A control that changes it answers
-  (`Saved.`), and puts itself back on a refusal.
-- A mark holds real artwork (`logo_url`, falling back to initials only while
-  none is held). No monogram or avatar placeholders anywhere, no empty dashed
-  discs.
-- A completion figure is never the whole message: the bar carries its missing
-  list.
-- A page opens on what it is for, and everything that explains it folds. The
-  fold's head carries the summary it is read for.
-- A long list needs an axis (Group by) and a bound that never covers open work.
-  Off the default axis every card is shut and the heading carries the count
-  that matters.
-- The commonest act on a row belongs on the row. A control inside a control is
-  never nested: the name cell opens the record.
-- A forward move is a button at its own width, never full width. Revert beside
-  it is neutral, never a second blue. A client form's lone Submit (`.qs-foot`,
-  /supplier/, /details/) stands at the column's right edge at a desk and full
-  width on a phone; /quote/'s Back and Continue stay equal halves.
-- The booking register clips its own rows (`.bookreg { overflow: hidden }`).
-- A board is the same rows, one workflow at a time. Columns exist only where
-  work can go. The drag reaches the same move as the select.
-- A card on a board reads in order: what it is, whose it is, when it is owed.
-
-### Forms, sheets, buttons
-- Every add or edit form is a sheet over the list, never a panel unfolding at
-  the top, never a form replacing the record's head.
-- Buttons:
-  - `.btn` is tonal (shaded, never outlined). The one outlined control is
-    the contact chip `.plink`. A box typed into (`.input`, `.textarea`, a
-    prefixed `.slugfield`, a code's boxes) is filled with `--field` and no
-    outline, turning white with the blue edge and ring while typed in (the
-    user, 2026-10-31, option B: "B"); every select (a status, a form's
-    choice, a bar's view) is a tonal pop-up, the chevron at its end (the
-    user, 2026-10-11). An invalid field keeps its red edge.
-  - No bare text links in the portal: a way somewhere is a button, a chip
-    or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
-    Inside a line of facts it is `.linkbtn` (quiet, chevron, no underline);
-    a typed address (a website, a profile, a past link) is a `.plink`.
-  - The command bar's controls are 32px and take the small corner
-    (`--radius-ctl-sm`).
-  - Three roles, as Apple's (2026-10-07): `.btn-primary` and `.btn-go` are
-    the one blue primary; `.btn` is tonal, caution included (`.btn-warn` is
-    the tonal button, its question saying what it costs); `.btn-danger` is
-    red words on the tonal button, never a red slab.
-  - Every button that acts is shaded (the user, 2026-11-16: a word on a
-    white card did not read as a button): `.btn-quiet` is the tonal ground
-    like `.btn`, and words alone only as Cancel beside the view's blue
-    primary (`:has(> .btn-primary, > .btn-go)`). A way inside a line of
-    facts stays `.linkbtn`. A shaded button never gives its padding back
-    sideways: its ground would stand past the words' edge (2026-11-20, a
-    performance issue's Withdraw 13px left of its row, now its ⋯).
-  - `.btn-sm`.
-  - A sheet Cancel is `.btn-quiet`, never a bare `.btn` (`flex: 1` grows it).
-    `.sheet-foot > .btn { flex: 0 0 auto }`.
-- **Action rows read Cancel / secondary / Save from the left, anchored to the
-  right edge** (`flex-direction: row-reverse`; the markup keeps the primary
-  first).
-  - Applies to `.sheet-foot`, `.row.acts`, `.changebox-actions`,
-    `.zone-actions`, `.qform-acts`, `.filearm-acts`.
-  - On a phone the two halves are equal, Cancel on the left; with three
-    actions Cancel and the secondary are the halves and the primary takes
-    the row under them, nearest the thumb: one rule for every sheet's foot
-    at 640 and under (`css/console.css`), never a sheet's own copy
-    (2026-10-20, DOC-1).
-  - A count in the foot sits to the left of the pair (above it on a phone).
-  - A sign-in reads Continue (blue) on the left and Use passkey (ink) on the
-    right, as Apple's account pages do (the user, 2026-11-22); a cover's
-    pair puts the way out (Sign out, Visit website) on the left.
-- Controls in a row share a width and a height. `.row` aligns to the top, and
-  `.row > .btn` to the bottom. Under a finger, at any width, two buttons or
-  more sharing a row (`.kactions`, `.viewhead`, `.crm-engage-actions`) share
-  one width: the phone's rules below 560, above it 220px each, the row
-  wrapping rather than squeezing a label; a lone or quiet button keeps its
-  own. A field standing alone fills its container.
-- Controls made one height are brought down to the size token (`--ctl-h`, `--ctl-h-sm`), never raised to the tallest control a page holds; a page never sets `--ctl-h`, `--ctl-text` or `--field-text` to a figure of its own (2026-10-27: /quote/ was raised to 48, then read 16px words; `uxaudit` `ctlh`).
-- A segment stores a value; a segment that only switches the view is a view strip: every `data-seg` select says which, `data-seg-value` or `data-strip` (`tests/segkind.js`, uxaudit `segkind`; 2026-11-22).
-- A required field carries a red asterisk from `aria-required`.
-- A typed box (`textarea`) runs its row's width and stretches downwards only
-  (`resize: vertical`): a sideways drag never widens the page, and it grows
-  with its words (`CLAUDE.md`, `js/grow.js`). A field that may outrun its
-  width (a title, a link, a reason) is the one-line box: a field's height,
-  its words wrapping onto a second line rather than hidden, no handle.
-- A native field is reskinned to our box:
-  - `::file-selector-button` shaded (`--line-soft`), concentric, 13px;
-  - a date or time field with `appearance: none`, the value left aligned,
-    `min-height: var(--ctl-h)`, and a glyph on the left under a coarse pointer;
-  - at a desk a date box reads DD/MM/YYYY with the calendar mark at its right
-    edge (`.dmy`, `js/form.js` §7); written dates stay `12 Sept 2026`;
-  - the "Not set" hint on the field's wrapper.
-- A control that creates a need answers it in place: the tick grows into the
-  field (`.pbox`); the name grows out of Approve (`.namebox`). Both ends of a
-  width animation are stated.
-- One action is not a banner. A head's or bar's lone action keeps its own
-  width; `:only-of-type` and `:has(.btn + .btn)` count `:not([hidden])` only.
-- A field inside a growing box draws its focus ring inside itself
-  (`.cmdbar-find .input:focus`).
-- A value only read is not a field.
-- Equal halves grow from a half's basis (`flex: 1 1 50%`), never from 0: a
-  basis of 0 leaves each its own padding on top of its share (Request
-  changes stood 34px wider than Approve; 2026-10-20).
-- Delete has one place and one question (the user, 2026-10-10): the last
-  item of the thing's own ⋯ (§5 Menus and action groups), red, never inside
-  an Edit form and never a button on a row; it asks `ADspaceConfirm` (what goes, no restore), a
-  record or anything holding other work with its name typed back, one item
-  inside a record once, kept open on a refusal (`wait`). Remove is the soft
-  way, asking nothing, with Undo where it happened. Several at once is the
-  selection bar's red Delete with the count typed back (`tests/deletes.js`).
-- A button that acts carries its action's glyph wherever it is drawn: a plus
-  to add, a pen to edit, the copy mark, the file mark to download, the leaving
-  mark after anything that opens in a new tab (Preview, Open), the chevron
-  after a way to another console page. A form's own commit (Save, Cancel, a
-  submit, a sheet's foot, a confirm) is words. The act table is
-  `js/acts.js` (Publish the plane, Unpublish the struck eye, Edit the pen,
-  Download the file, Copy, Preview after the words, Add and New the plus, Invite, an email sent and Send code the envelope, Use passkey the key, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one):
-  a button drawn as words alone takes its act's mark, so a new screen
-  follows it untold. `uxaudit` `glyph` fails a label drawn both ways.
-- A press is answered on the button (Doherty): while its write is out the
-  button keeps its width and shows a turning ring in its own ink, after
-  150ms so a quick answer never flickers (`js/acts.js`), then the outcome
-  where it happened. The glyph is drawn in the button's own ink: a
-  head's rule for its own mark never reaches a button inside it (`uxaudit`
-  `glyphink`).
-- A border inside a border groups nothing, so the inner one is shaded.
-- A word or a value that acts inside a line of text (`.linkbtn`, `.tdate`,
-  `.tinline`, `.serial-copy`) keeps its whole target but never shows it: its
-  hover fill hugs the line (26px, a `::before`), never a slab the height of
-  the target.
-- A fact's value that opens its record (`dd > .linkbtn`: a client's
-  supplier, a supplier's client) reads as the value: left aligned, in ink,
-  wrapping as the facts beside it, the chevron after its last word, its
-  target a control's height at any type size, given back to the line.
-- A tonal toggle (`aria-pressed`, Review n changes) held on reads one step
-  deeper (`--tonal-press`), its words in ink; never blue.
-- Every button carries a base class (`.btn` and its variants, `.linkbtn`,
-  `.kmenu-btn`): a class no rule styles draws the browser's own grey pill on
-  an iPhone (2026-10-31: Show 1 removed quotation, `.linkish`). A list's
-  removed rows open from a `.btn-quiet .btn-sm` (`.crm-removed-toggle`).
-- The ⋯ is the lightest control. The account control, the bell and the
-  search carry no outline, only a `--line-soft` fill on hover and while
-  open.
-
-### Menus and action groups
-The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
-(`tests/menus.js`, uxaudit `menu`).
-1. Screen or ⋯. An act goes on the screen when it is the record's next
-   step, used on most visits, or its state is drawn beside it (a pen, a
-   switch, a step button); in the ⋯ when it is rare, administrative or
-   destructive. An item whose label matches a visible control on the same
-   screen is not in the ⋯.
-2. One ⋯ per thing: a record head's at its right edge after the state, a
-   row's as its last cell. A ⋯ whose every item is withheld is not drawn.
-3. Fixed order by group, a group with no item left out:
-   1. Open: Open, Open file, Versions, Download (here even beside Preview
-      PDF on screen).
-   2. Change: Edit, Rename, Duplicate, New version, Take, Offer to
-      team, Repeat, Reassign, Change reviewer, Transfer client, White label,
-      Move up, Move down.
-   3. Send: anything reaching a person outside the screen (Send on
-      WhatsApp, Request feedback, Resend booking, Send
-      invitation, Share with {name}).
-   4. Mark: a flag reading its current value (Mark as VIC / Remove VIC,
-      Mark restricted, Do not contact / Allow contact, Mark signed / Mark not signed, Confirm
-      internally / Revert confirmation, Mark as not sent).
-   5. Lifecycle: Set inactive / Set active, Archive / Restore, Pause /
-      Resume, Cancel, Unpublish, Withdraw, Revert to …, Reopen,
-      Stop, Cancel month, Reset link, Close link, Enable access / Revoke access.
-   6. Remove and destroy: Remove, Void, then Delete last.
-4. Separators (`hr.kmenu-sep`, `role="separator"`): always before group 6
-   when anything precedes it; between the other groups once the menu
-   shows four items or more.
-5. Red only for group 6 (Remove, Void, Delete). Withdraw and Revoke in ink.
-6. State gates the item: one that cannot apply in the record's stage or
-   state is not drawn, never greyed, and its function refuses it too.
-7. A toggle is one item naming its next state. Where the state and its way
-   back are drawn on screen (a restricted account's rail block and Clear),
-   the ⋯ offers only the way in.
-8. At most seven items; more are split by moving the commonest act onto the
-   screen, never by nesting. Never a ⋯ of one item beside another act (the
-   user, 2026-11-17: "menu only sit one option, edit stays outside?"): an
-   act standing beside a ⋯ that would hold one item joins it (a group's
-   Edit beside its Delete, a request's Reply). A bar's ⋯ that would hold
-   one item is that item's button instead (`.cmd-solo`, `.kmenu-solo`). A ⋯
-   of one item stays only where it is a lifecycle or destroy act and
-   nothing stands beside it. `tests/menus.js` holds it.
-9. Words: verb first, one to three words, no object the context gives; the
-   same act the same word everywhere (Reset link, Void, Issue
-   document, Make primary, Duplicate, Cancel); never a mood (Mark not signed);
-   the short word a familiar app uses, never a phrase where one word says
-   it (Duplicate, never Make a copy; Cancel, never Not proceeding; Submit,
-   never Submit for review; the user, 2026-10-31).
-10. One look: every item 13.5px, weight 400, ink (a `<b>` inside carries no
-    weight); one width at a desk (320px) and one on a phone; `role="menu"`
-    and `role="menuitem"`; every item written by `ADspaceMenu.items(groups)`
-    (`js/menu.js`, each item's group as `data-g`), or as static markup
-    carrying `data-g`; `ADspaceMenu.tidy` lays the roles, the red and the
-    separators whenever a menu shows.
-11. On a phone every ⋯ hangs from its own button, a record head's too
-    (under it, upward only where the room is above; it may cover the name
-    while open), as an iPhone's pull-down menu does: the menu opens where
-    the finger is (the user, 2026-10-24, reversing the foot dock of
-    2026-10-22).
-12. A bulk bar mirrors the row: only acts one row offers, in the same
-    words; drawn once something is ticked and hidden (never greyed) at
-    zero; Delete red and last.
-13. Action groups on screen (`.rec-ctl`, `.kactions`, `.viewhead`, row
-    acts): at most one blue; the state, the secondary, the primary at the
-    right edge, the ⋯ last; on a phone buttons in a row share one width.
-14. A sheet's foot is the form's commit: Cancel, an optional secondary, the
-    primary, nothing else; list management (Add, Read from …, Select,
-    Delete selected) goes in the sheet's own bar or its bulk bar.
-
-### Colour, state, hover
-- One status vocabulary and one colour set, on console and client pages alike
-  (`W.TONE`, every status word with its tone). Pending and reviewing are
-  amber.
-- Late is red, waiting is amber (the user, 2026-10-07): what is past its
-  date needs acting on today, so it takes the red dot or `--err`, the word
-  beside it (Overdue, late, Urgent); what waits, or is still running, takes
-  the amber dot. A count (`.tab-n`) is red only where it counts something to
-  act on now; a waiting or done count is neutral.
-- A stage select is toned by `stage_group`:
-  - not started (and ready to start): grey;
-  - in hand (in progress, a revision): amber, still running;
-  - waiting on a person: amber;
-  - cleared: green;
-  - blocked: red.
-- A lifecycle flag flipped once (Active / Inactive) is a chip plus a ⋯ item,
-  never a select on every row.
-- Hover is one step lighter than selected (`--sunk` against `--line-soft`),
-  never equal. Every hover lives inside `@media (hover: hover)`. A hover is the
-  next step of its ground, never `--fill`. Where the chosen is a white
-  thumb or row on a grey ground (a strip's tabs, a segment, the rail on the
-  frame), the hover is that white at half (`--card` at 55 to 60%), never a
-  grey the ground already is (2026-11-13: the hover read as missing).
-- The chosen one of several is a fill, never a shadow and never a weight:
-  every tab, view, segment, nav item and finder option reads at 400, chosen
-  or not (the user, 2026-10-04);
-  - a nav item: `--line-soft`;
-  - a tab, a view and a segment alike: one raised thumb that slides on the
-    tonal track (`.rectabs`, `.tabrow`, `.cmdbar-views`, `.seg`);
-  - a segment (a value picked) is a pill, track, options and thumb, its
-    options 14px either side of the word; a tab or view strip (a screen
-    moved to) keeps its corners. Round chooses, rectangular acts. A small
-    select (`select-sm`) makes a small segment (`.seg.is-sm`): the small
-    control's height and 12.5px type, options as wide as their words, the
-    height of the small button it sits with. One whose words do not fit
-    one line (four on a phone) is separate pills, two across and 8px
-    apart, each tonal, the chosen the ink fill (`.seg.is-wrap`), and one
-    still cut stacks (`is-stack`), never one block of four;
-  - an `.acttab` outside a strip: the ink fill.
-- A ticked row's fill must not cost a control its edge (an untinted select on
-  a ticked row takes the mute ink edge).
-- The iOS tap highlight is off (`-webkit-tap-highlight-color: transparent`).
-
-### Responsive and phone
-- Breakpoints:
-  - 640 is the phone line (`.crm-head` hides; facts go two across);
-  - 560 and 760 adjust some cards and sheets;
-  - 1100 splits the record rail.
-- `pointer: coarse` raises controls to 36px (32 small); a button's press stays 44px.
-- Test at 1280 and 390; the matrix adds 320 to 1440 and 200% zoom.
-- No horizontal overflow. A 16px side gutter. Never a sideways table (a
-  board's columns are not a table).
-- The head card ends above the fold. Nothing is clipped under the sticky bar.
-  Sheets are measured in `dvh` (falling back to `vh`); on a phone each is a
-  card risen from the floor to stand above the tab bar, never taller than
-  the screen less the bar's room, and pads the safe area.
-- A line of parts (`client · 10 creators · RM 8,640.00`) wraps between its
-  parts, never inside one: a count and an amount hold their spaces.
-- A chip on a name that clips stands beside the name, never inside its
-  clipped box, and takes the line under it where both do not fit (an Ad
-  error chip inside the name was cut away on a phone; 2026-10-20).
-- A fact's span by its content (a fact holding chips takes the row)
-  outranks its span by its place (the last of five takes two): a placing
-  rule never wins on specificity alone (2026-10-21: On the day stood in two
-  of three columns at a desk, a cell alone on its row).
-- A narrow cell keeps its heading's meaning: a bare figure names itself when
-  the header hides (`Over by | 4 days`).
-- The phone command bar is one row plus the view segment.
-- On a phone (and a touch screen narrower than a desk) the sections are the
-  tab bar at the foot; everything that rises from the foot keeps
-  `--tabbar-space` clear, and every panel is a card above the bar.
-- On a phone the bell's panel takes the page gutters
-  (`.kmenu.notif-menu`, fixed, 16px each side).
-- The My Work view strip scrolls sideways with faded edges
-  (`is-more-start`, `is-more-end`). Every view keeps its whole word.
-- **Phone checklist, read on every screenshot:**
-  - no cell alone on its row;
-  - no value wrapping inside a cell;
-  - buttons sharing a row share a width;
-  - the primary is nearest the thumb;
-  - a table row is two or three lines;
-  - a lone field fills its container;
-  - no pinned `style` width survives the phone line.
+Moved to `docs/rules/laws.md` (Layout and alignment, Records, Forms, sheets, buttons, Menus and action groups, Colour, state, hover, Responsive and phone, with the phone checklist), printed on the first edit of a screen's files: read it whole before building or changing a screen.
 
 ## 6. Copy
-- Every word on a screen, and every reply to the user, is proper, formal
-  corporate English (the user, 2026-10-09: "not conversational nor weird
-  language"): complete, plain statements of fact, never shorthand, slang or
-  a phrase coined for the screen ("The portal is covered for the team" read
-  as nonsense; "Everyone but admins sees the upgrade screen" does not).
-- What a client reads (client pages, the Quotation portal, every PDF) is
-  formal Malaysian business English, as a corporate letter here writes it
-  (the user, 2026-10-13: "natural corporate, professional, formal"): Per
-  month, billed separately, incl. SST, Registered Company Name; never a
-  clipped or coined phrase (a month, billed apart, see my price). Nothing is
-  said twice and nothing non-essential is said; a whole term's total is
-  stated in the PDF alone, never on a screen.
-- No explanatory copy: no hints, blurbs, notices or role descriptions.
-  - The heading and the controls are the explanation.
-  - Where a line is unavoidable, one neutral corporate sentence; no "we", no
-    "you should".
-  - A note on a client page reads one sentence a line (`ADspaceWords.note`,
-    every `.qs-note`, `.qs-notes` and `.rcv-note`), never two run on (the
-    user, 2026-11-25).
-  - Nothing says the same thing twice (a cover line never restates its title;
-    a chip never repeats its column).
-  - The one exception is the route's one-sentence purpose, which opens from
-    its name; the first-visit guides (two or three short steps a section, met
-    once, `js/guide.js`); and Health, which speaks as the company where a
-    colleague is asked to agree, answer honestly and seek help (the user,
-    2026-10-07).
-- Buttons:
-  - one to three words, sentence case, verb first;
-  - no article, and no object the context gives (**Delete**, never
-    `Delete client`);
-  - a menu item is the action's name only.
-  - a sheet that makes a record reads as the bar button that opened it: its
-    title is the button's words, and its commit repeats an Add button's words
-    (Add lead, Add link, Add service, Add member) or reads Create under a
-    New one (2026-11-03).
-- Formal names take title case: documents, agreements, forms, checklists and
-  reports (Letter of Offer, Service Agreement, HR Letter, Onboarding Checklist,
-  Social Media Accounts Report).
-  - Articles and short prepositions stay lower; acronyms keep their capitals;
-    Pre-Advertising Checklist.
-  - An official or professional term keeps its capitals wherever it is
-    written, on every page of the portal, a label, a refusal, a
-    placeholder, an email and a PDF line included (the user, 2026-11-09:
-    "Passport, Tax Identification Number (TIN) etc. not every wordings
-    should only capital the very first word", "not just cover the billing
-    section but entire portal"): the field names of Malaysian identity,
-    bank, LHDN and SSM forms, one name a field (Full Name as per NRIC, Full
-    Name as per Passport, Registered Company Name, NRIC, NRIC Number,
-    MyKad, Passport, Passport Number, Business Registration No. and
-    Business Registration Number (BRN), Old Registration No., Tax
-    Identification Number (TIN), SST Registration No. and SST Registration
-    Number); the formal names above; and a section's or product's own name
-    (Creators List, Content Review, Rate Card, Google Meet, Meta Business
-    Suite, Bukku; the user, 2026-11-10: Rate Card on every screen). The label's other words stay sentence case (Billing address,
-    Finance email, Payment method), as does a common noun (quotation,
-    invoice, letter) and a term not plainly an official one.
-    `tests/words.js` fails a lower-case official term.
-  - Everything else is sentence case.
-- Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
-- Remove and Delete are two promises (the user, 2026-10-31: "Remove means
-  can be added back; Delete then gone forever"): Remove hides or takes
-  away and can be brought back (Undo where it happened, Restore or Enable
-  after); Delete is gone for good, asked first and named so. A control
-  that cannot be brought back never reads Remove, and one that can never
-  reads Delete.
-- One word per act, everywhere (the user, 2026-10-09: "why do you use
-  different terms"): Publish / Unpublish (never Share, Unshare or Publish to
-  client), Download, Preview PDF beside it where a record draws one, Add
-  for the next of a series (Add script). `tests/words.js` fails a retired
-  word. A ⋯ item names what it opens or acts on wherever the bare word is
-  unclear out of its row (the user, 2026-11-21: "can you not too short",
-  "also check other parts menu wordings"): a bare noun takes its verb and
-  object (Show versions, Show document record, Show quotation link, Show
-  who acknowledged, Open signed copy, Set access code (Show access code
-  to a reader at View), Edit Meta accounts,
-  Add pictures from Meta), a download its file (Download PDF); a verb its
-  row makes plain stays bare (Edit, Delete, Remove, Duplicate, Rename,
-  Restore, Reset link, Void, Withdraw, Reopen).
-- One vocabulary:
-  - Creator steps: Confirmed, Pending visit, Pending draft, Submitted,
-    Reviewing, Changes requested, Scheduled, Posted, Completed, Withdrawn.
-  - Service lines: Enquired, To quote (never Quoted), Confirmed.
-  - Client stages: Lead, Contacted, Proposal sent, Active, Paused, Past.
-  - Requests: Requested, Reviewing, Approved, Declined, Applied, Withdrawn;
-    kinds Upgrade, Downgrade, Cancel, Change of details.
-  - On/off: Active / Inactive.
-  - Performance: Draft, Shared, Query raised, Query answered, Acknowledged,
-    Final; an issue (never breach), notes and a reference (never evidence),
-    a query (never dispute) answered Agreed, Partly agreed or Not agreed;
-    grades Needs support and Improvement plan; the recovery path.
-  - My Work: Assigned to, Content task, Posts, For, Month, Format, Due date,
-    Draft due, Post date, Checklists.
-- The first of several is primary, never main (the user, 2026-10-29: "who
-  says make main so weird"): Primary contact, Primary billing entity, Make
-  primary; the stored keys (`is_primary`, `is_main`) never move. A word a
-  corporate reader would not write in a letter is not on a screen.
-- A step the reader waits on is said as what will happen (ADspace will
-  review your request and send your quotation), an Undo answers Undone.
-  (never Put back.), and a line names the thing as its reader knows it (the
-  notice page, never the cover; Refresh the page, never Read again where no
-  Read again button stands) (2026-10-29).
-- Words are the ones people already use at work, never a legal, police or
-  system word (the user, 2026-10-05: "why use evidence. Sounds like some
-  criminals"). Only the words change; stored keys never move.
-- A state is named for what is true when it is set. A field about a person
-  records what we do ("Prefers English", Preferred language). A cover title
-  names the outcome (Access denied). A section is named for what it tells you
-  (Portal access, Person, Sign-in email).
-- A control is named for what it does:
-  - Enable backup selection.
-  - Add creator.
-  - Request extension, when it will only ask.
-  - Creators List (never "roster").
-  - Assigned to and Created by (never Task Owner, Owner or Manager);
-    Reassign; Unassigned.
-  - Add another; Create 3 tasks.
-  - Import from spreadsheet.
-  - Transfer client (a report to the client it belongs to), never Move to
-    client.
-  - White label (on a client's Brand: its reports carry the client's wide
-    logo; on a report: the white-label client and the brand it covers);
-    Wide logo; Brand on the report.
-- Headings name their content: Task details, Posts, Schedule, Repeat,
-  Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
-  details, Contact details, Task settings, Inclusions, Stage timeline, Team
-  member.
-- Messages:
-  - a success is one or two words ("Saved.");
-  - a validation names what is required;
-  - an empty list is two words ("No entries."), and no line says "yet"
-    (Not issued, Not set, No reviews.).
-  - A missing value in a table cell is a mute em dash (the one place a dash is
-    allowed).
-- A client document proposes and states, never demands: no payable, must
-  or shall pay in a heading or a label (Proposed Fees, never Fees
-  payable; the user, 2026-11-25); a contract clause in TERMS keeps its
-  legal shall.
-- Content is uncountable: a client page, a quotation and its PDF count
-  content pieces (`6 content pieces per month`), never contents; no
-  contraction or exclamation mark, and no chat words (Hand in, Needs you,
-  Let us know) where a client, creator, prospect or supplier reads (the
-  user, 2026-10-27). In Chinese a creator is 创作者 on every page, never
-  博主 or 达人.
-- What is billed once is one-time, never one-off (One-time subtotal, One-time incl. SST; the user, 2026-11-25), in every word a person reads; the stored keys (`once`, `basis`) stay.
-- Count creators, not slots. rednote is lower case; never Xiaohongshu or
-  RedNote. Say Post, never Note.
-- Placeholders: a value a person would type, from one generic set: John Doe
-  (Jane Doe for a creator), email@adspace.me (a colleague's
-  email@adspacestudios.com), @adspace.advertising, ADspace Advertising (a
-  Facebook page), 012-345 6789, 07-123 4567, https://adspace.me, COMPANY
-  NAME SDN BHD, AC001, AD001. A field with no natural example keeps a short
-  hint (Optional, One point a line). Never a real client, creator or
-  colleague, nor a code one could hold.
-- A WhatsApp template's body is set out as a letter (the user, 2026-10-31):
-  the greeting on its own line, a blank line, one point a paragraph, each
-  detail (reference, brand, date) on a line of its own, and a blank line
-  before the closing; never a sentence broken across lines.
-- A WhatsApp template's footer reads `{What it is} - ADspace Digital`
-  (Quotation - ADspace Digital, Approval Reminder - ADspace Digital; the
-  user, 2026-10-31), and its wording states a fact about the client's own
-  record, never asks them to buy or sign, or Meta files it as Marketing.
-- ADspace alone, never "ADspace Studio" (a strict rule).
-- Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The Mill
-  International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport,
-  Star Living, Niro Granite, Dale & Cecil, Dale, Gadang Holdings Berhad.
-- Chinese is localised, not translated: 下午2:00, never pm; a figure and its unit with no space (42分钟); the full-width comma (2026-10-20, POR-3, VER-1).
-- No dashes in copy where avoidable. Dates `12 Sept 2026`, months `Oct 2026`,
-  money `RM 8,490.00`, agreement prose `16 September 2026`.
-- A date the reader waits on (a deadline, an appointment, a page back by) carries its weekday: `20 Nov 2026 (Friday)`, `2026年11月20日（星期五）`, with its time `20 Nov 2026 (Friday), 12:30pm` (`ADspaceClock.date` `named`, `ADspaceClock.due`; `named: 'ahead'` once it has passed); a history date never does (the user, 2026-11-20).
-- Client-page cover words live in `js/words.js`:
-  - "Link not recognised / Please contact your ADspace account manager.";
-  - "Access code / Enter the access code provided.";
-  - "Unable to load / Please refresh…".
-
-### How copy is drafted (the user, 2026-10-29: "write down how you draft your tone … so it wont need me to repeatedly check")
-Every word a change puts in front of a person (a label, a button, a menu
-item, a message, a refusal, an empty line, a cover, an email, a WhatsApp
-template, a PDF line) is drafted and checked this way before it is
-screenshotted, and the push names any line it could not settle.
-1. **Who reads it.** A colleague in the console: plain, short, the team's
-   working words. A client, prospect, creator or supplier (client pages,
-   /quote/, /details/, /supplier/, emails, PDFs, WhatsApp): a formal
-   Malaysian business letter, full sentences, Please where it asks
-   something of them, no contraction, no exclamation, no chat word.
-2. **Say it as a letter would.** Read the line aloud as if it were in a
-   signed letter or on a bank's website. A word that would not be written
-   there is not written here: Primary, never main; Undone., never Put back.;
-   a control the short word a familiar app uses (Duplicate, Cancel, Repeat,
-   Clear filters, Reassign), never a phrase where one word says it;
-   Refresh the page, never Read again (unless a Read again button stands
-   beside it).
-3. **Never the system's word.** A stored key, a column, a function, an
-   internal term (`is_main`, cover, covered, slot, row, flag, payload,
-   scope, stale) never reaches a screen; say what the reader sees or does.
-4. **The reader's tense.** What has happened: past (Sent., Saved.). What
-   will happen: future (ADspace will review your request and send your
-   quotation). An instruction: the imperative with its object (Enter your
-   brand name., Choose a colleague.). Never the present tense for a step the
-   reader waits on.
-5. **A refusal says what to do next.** What failed, in the reader's words,
-   then the one act that resolves it: "The primary billing entity cannot be
-   removed. Make another entity primary first." Never a bare "Not allowed."
-   where a next step exists, never the database's words, never blame.
-6. **One word per thing, one thing per word.** Before a new noun or verb,
-   grep `js/words.js`, this section's vocabulary and the screen it joins;
-   use the word already in use. A new word for an existing thing is
-   refused; a word that names two things is split.
-7. **Nothing said twice, nothing that explains itself.** The heading and
-   the control are the explanation; a line under them adds a fact or is
-   deleted.
-8. **Chinese is written, not translated** (§6 above): the same check in
-   Chinese, a 中文 version for every client-facing English line, read by
-   its own rules.
-9. **The short word a familiar app uses** (the user, 2026-10-31: "dont
-   need long text just simple understanding ones would do"). A button or
-   menu item is the one or two words people already know from everyday
-   apps, never a phrase where one word says it; the screen around it gives
-   the object:
-
-   | Say | Never |
-   |---|---|
-   | Duplicate | Make a copy |
-   | Cancel (the state Cancelled) | Not proceeding |
-   | Repeat | Repeat on a schedule |
-   | Reassign | Change person in charge |
-   | Submit | Submit for review |
-   | Share | Share with management |
-   | Clear filters | Clear the filters |
-   | Add lead, Add service | Add the first lead, Add the first service |
-   | Make primary | Make primary contact |
-   | Enable access, Revoke access | Enable portal access, Revoke portal access |
-   | Do not contact, Allow contact | Mark Do not contact, Clear Do not contact |
-   | Use passkey | Unlock with a passkey |
-
-   Extra words stay only where they change what the act is (Confirm
-   without letter, Send on WhatsApp beside Resend on WhatsApp). A question's title may still name its object (Remove from
-   Content Review?).
-10. **Standard lines.** A delete question ends This cannot be undone.
-   (never There is no restore); a record changed meanwhile reads Not saved.
-   This record was changed by someone else. The latest version is now
-   shown.; a record gone reads This {thing} no longer exists.; a label
-   says per (Input price per million tokens, one per line), never "a";
-   an off figure says (0 turns this off). A note after a select's option is copy too, a plain
-   fact of one or two words, as long as the status beside it (Not planned,
-   No content, as Published), never a fragment that leaves the reader
-   guessing who asked (Not asked for; the user, 2026-11-02). A label cut to fit a column, a
-   tile or a button (Qty × rate, Per engagement) stays short (the user,
-   2026-10-31: "sometimes are cut short due to the width compatibility").
-11. **A label is a noun** (the user, 2026-11-05: "Why it goes now" should
-   be Reason). A field, a heading, a column or an option names the thing
-   (Reason, Changes, Note, Enquiry), never a clause or question
-   about it (Why it is late, What needs changing, Note for them); a refusal
-   names what to enter (Enter a reason.), never Say why. Approved section
-   names stay (What worked, Areas to improve, Why it stood out).
-   Where the reader must act (rate, choose, tick, upload, decide, confirm),
-   the heading over it says the act, verb first (Rate your experience,
-   Choose your platforms, Upload your invoice), never a noun that could read
-   as something already done (the user, 2026-11-22: "Your experience" over
-   five grey stars read as a rating given; "When u need users to do an
-   action needs to at least say it like Rate your experience"). A field's
-   own label stays a noun (Name, Email): its box already asks.
-12. **Retire it for good.** A word the user rejects joins
-   `tests/words.js` (RETIRED, with the word to use) in the same push, so it
-   can never return, and its rule joins this section; a kind of wording
-   joins its PATTERNS, and a line said on two screens joins
-   `ADspaceWords.line` and is read from there.
-13. **A second reader.** The writer's own read is not the check: before
-   merge the `/copy-review` skill hands the change's new words, with this
-   section alone, to a reader who did not write them (CLAUDE.md §1).
+Moved to `docs/rules/copy.md` (Copy and How copy is drafted), printed on the first edit of a screen's files or `supabase/`: read it whole before writing any word a person reads.
 
 ## 7. Architecture
 - The Dashboard sits alone above the three groups, with no label, drawn for
   every colleague (its Me tab; `CLAUDE.md`).
-- Analytics follows it, above the groups, drawn where any of its charts is readable (each at its section's access; 2026-11-13).
+- Analytics follows it, above the groups, drawn where any of its charts is readable (each at its section's access).
 - The rail runs in three groups, each under its label (12/600 mute, the desk
-  rail alone), the same sequence everywhere (the user, 2026-11-22: "The real
-  regroup"):
+  rail alone), the same sequence everywhere:
   - **Work**: My Work, Content Review, Video Scripts, Reports, Messages
     (Messages last; its WhatsApp and Email tabs).
   - **Partners**: Clients, Creators, Suppliers.
@@ -1151,7 +242,7 @@ screenshotted, and the push names any line it could not settle.
     2026-11-22): rows 40px and touching (36px under 760px tall, a mouse's
     rail; a finger's keeps 40), groups 8px apart, a label one 16px line 4px
     over its rows (`tests/rail.js`).
-  - The Handbook is a mark at the rail's foot before Settings' (2026-11-11).
+  - The Handbook is a mark at the rail's foot before Settings'.
   - The Activity record is a mark at the rail's foot, last of the row
     Arrange sections', the Handbook's and Settings' marks make, the build
     under them at a desk's 212px rail (`.sidebar-foot`, each a `.railrow`,
@@ -1178,30 +269,7 @@ screenshotted, and the push names any line it could not settle.
   - Remove hides and keeps history.
   - Delete permanently (Manage) is for data that should not exist. A contact's
     foreign keys are `on delete set null`.
-- Numbering:
-  - Letter of Offer `AQL/{client_code}/{YYMM}{NN}` (ADspace Quotation Letter): no longer issued since 2026-11-12, the quotation being the one contract; letters issued before keep their numbers;
-  - campaign invoice `AINV` plus six digits, typed;
-  - tasks `#WT00001`;
-  - task codes `YYMMW{week}{NN}`;
-  - HR `ADHR/…`;
-  - client letters `ACL/{client code}/{YYMMDD}{NN}` (ADspace Client Letter);
-  - Creator ID `ADC0001` (ADspace creator), Campaign ID `CC001` (creator campaign), a booking's Job reference
-    `ADC0001/CC001`, a creator's payment details `ADC0001/R001`, each
-    prefix, width, next number and the references' shape a setting
-    (`id_formats`);
-  - a website quotation request `ADP/REQ{YYMM}-{AAA}`, three random
-    letters, never a running count, so nobody can read how many requests
-    came in; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
-    confirmed.
-  - A new reference follows the house scheme (the user, 2026-11-26):
-    the shortest prefix is the top of the structure and the longer ones
-    hang under it. `ADP` names what the ADspace Digital Portal issued;
-    `AD` a team member, `AC` a client, `AS` a supplier, each with an
-    `NNN` serial; `ADHR` HR use (employment, `EMP`, files under HR);
-    `ACL` a letter to a client. Every other reference is
-    built from the record it belongs to, as a booking's
-    `ADC0001/CC001` is: references link into one loop, never stand
-    alone. References already issued keep their form.
+- Numbering (every number and reference, and the house scheme a new one follows): `docs/rules/numbering.md`.
 - Row ⋯ menus are placed on the viewport. A faded row fades its content, never
   its ⋯. The global click handler spares `.kcard-head`, `.kmenu` and
   `.team-act`. A modal that filters keeps one height.
@@ -1219,7 +287,7 @@ screenshotted, and the push names any line it could not settle.
   reload.
 - **Progressive disclosure**: a step appears when its stage is reached. What
   cannot apply yet is hidden, not disabled, and leaves again when reverted,
-  with one exception (the user, 2026-11-21): an act switched off in Settings,
+  with one exception: an act switched off in Settings,
   or past its daily limit, is drawn disabled with its reason (`data-gate`,
   `#gateWhy`); one the person is not permitted is hidden; what the portal
   would send by itself, switched off, is one `.msg.warn` line where the step
