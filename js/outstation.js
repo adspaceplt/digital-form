@@ -81,6 +81,7 @@
     'bad-client': 'You do not have access to this client. Please ask an admin.',
     'bad-companion': 'One of the colleagues chosen cannot join this trip. Untick them and try again.',
     'bad-location': 'The location could not be read. Press Locate again.',
+    'bad-time': 'The photo\'s time does not match this trip. Take the photo again.',
     'no-photo': 'Take a photo at this stop first.',
     'too-many': 'This trip has reached the maximum number of stops or photos. Check out and start a new trip.',
     'bad-key': 'The photo could not be saved. Take it again.',
@@ -352,7 +353,7 @@
       var here = !s.left_at && trip.state === 'open';
       if (s.km_from_prev != null) rows += legRow(s.km_from_prev);
       var small = [GLYPH.clock + '<span>' + esc(C.clock(s.arrived_at) + (s.left_at ? ' to ' + C.clock(s.left_at) : '')) + '</span>' +
-        (s.left_how === 'office' ? '<span class="ost-how">worked out from the drive back</span>' : ''),
+        (s.left_how === 'office' ? '<span class="ost-how">Estimated from the return drive</span>' : ''),
         GLYPH.target + '<span>' + esc(Math.round(Number(s.accuracy_m)) + ' m') + '</span>',
         GLYPH.camera + '<span>' + esc(plural(live(s).length, 'photo', 'photos')) + '</span>'];
       rows += '<li class="stl-row ost-stop' + (here ? ' is-here' : '') + '" data-stop="' + esc(s.id) + '">' +
@@ -657,7 +658,7 @@
       '<section class="rec-part ost-part"><div class="viewhead ost-vh"><div class="headmark"><h2>Trip · ' + esc(C.date(trip.started_at)) + '</h2></div>' +
           '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span></div>' +
         headFacts(trip) +
-        (long ? '<p class="msg warn ost-break" role="status">On the road for more than 4 hours. Take a break before you drive on.</p>' : '') +
+        (long ? '<p class="msg warn ost-break" role="status">You have been driving for more than 4 hours. Take a break before you drive on.</p>' : '') +
       '</section>' +
       '<section class="rec-part ost-part">' + partHead(GLYPH.pin, 'Route') + routeHtml(trip) +
         '<p class="msg" id="ostTripMsg" role="status"></p>' + credit(trip) + '</section>' +

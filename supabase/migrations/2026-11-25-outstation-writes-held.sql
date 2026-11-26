@@ -50,7 +50,7 @@ begin
     return jsonb_build_object('error', 'bad-key');
   end if;
   if p_taken_at is null or p_taken_at > now() + interval '2 minutes' or p_taken_at < v_t.started_at - interval '10 minutes' then
-    return jsonb_build_object('error', 'bad-location');
+    return jsonb_build_object('error', 'bad-time');
   end if;
   if (p_lat is not null and p_lat not between -90 and 90) or (p_lng is not null and p_lng not between -180 and 180)
      or (p_accuracy is not null and p_accuracy < 0) then

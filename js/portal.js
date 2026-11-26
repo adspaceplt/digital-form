@@ -269,7 +269,7 @@
   function empty(box, word) { UI.emptyLine(box, word, '', null); }
   /* A read that failed is said in its card with Try again, in the page's
      language, never an empty or hidden card (2026-11-25). */
-  function failCard(box, what, again) {
+  function failIn(box, what, again) {
     var w = t();
     box.innerHTML = '<div class="errline" role="alert"><b>' + esc(w.loadFail.replace('{x}', what)) + '</b>' +
       '<button class="btn btn-sm" type="button" data-a="retry">' + esc(w.tryAgain) + '</button></div>';
@@ -591,7 +591,7 @@
     load();
   }
   if (!db) {
-    showState('fail', 'Not configured.');
+    showState('fail');
   } else {
     db.auth.getSession().then(function (r) { gate(r.data.session); });
     db.auth.onAuthStateChange(function (_e, s) {
@@ -897,7 +897,7 @@
       /* Bukku not set up, or the contact not linked: nothing to show.
          Any other refusal is a read that failed, said in the card. */
       if (d.error && /not-set-up|needs-update|bad-request|no-access|not-signed-in/.test(String(d.error))) { wrap.hidden = true; return; }
-      if (r.error || d.error) { wrap.hidden = false; failCard(box, w.invoices, function () { paintInvoices(w, c); }); return; }
+      if (r.error || d.error) { wrap.hidden = false; failIn(box, w.invoices, function () { paintInvoices(w, c); }); return; }
       var list = (d.invoices || []).slice();
       wrap.hidden = !list.length;
       if (!list.length) { box.innerHTML = ''; return; }
@@ -926,7 +926,7 @@
     }).catch(function () {
       if (stale(c)) return;
       wrap.hidden = false;
-      failCard(box, w.invoices, function () { paintInvoices(w, c); });
+      failIn(box, w.invoices, function () { paintInvoices(w, c); });
     });
   }
 
@@ -1083,7 +1083,7 @@
     if (!card || !box) return;
     $('ovFbHead').textContent = w.tabs.feedback;
     card.hidden = false;
-    failCard(box, w.tabs.feedback, function () { paintFeedback(w, c); });
+    failIn(box, w.tabs.feedback, function () { paintFeedback(w, c); });
   }
   function submitFeedback(w, c, open, btn) {
     var F = window.ADspaceFeedback, form = $('ovFbForm');

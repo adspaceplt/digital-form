@@ -76,7 +76,7 @@
   function failed(r) { return r && (r.error || (r.data && r.data.error)); }
   function why(r) {
     var e = failed(r);
-    return String((e && (e.message || e)) || 'The request failed.');
+    return String((e && (e.message || e)) || 'The request failed. Please try again.');
   }
 
   var READ = {
@@ -335,7 +335,7 @@
     var x = I.by[e.id];
     if (!x) return [];
     if (x.state === 'none') {
-      return [{ kind: 'invoice', glyph: 'clients', name: 'Invoice', meta: parts(['Checked ' + esc(dayLong(dayMy(x.checked_at)))]),
+      return [{ kind: 'invoice', glyph: 'clients', name: 'Invoice', meta: parts(['Last checked in Bukku ' + esc(dayLong(dayMy(x.checked_at)))]),
         state: state('Not invoiced', 'is-warn') }];
     }
     return (x.invoices || []).map(function (v) {
@@ -377,7 +377,7 @@
       var R = window.ADspaceReports;
       if (!R || !R.clientFile) return;
       b.disabled = true;
-      say(msgEl, 'Drawing the PDF…');
+      say(msgEl, 'Generating the PDF…');
       R.clientFile(row.id, c.id).then(function (warn) {
         b.disabled = false;
         say(msgEl, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');

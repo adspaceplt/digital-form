@@ -65,7 +65,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     reads them, a company billing another brand too left out) and refuses
     any other client as `get_portal` does; nothing is kept. Bukku not set
     up, or no linked contact, draws no card; any other failed read says so
-    in it with Try again (`failCard`, the page's language), as a failed
+    in it with Try again (`failIn`, the page's language), as a failed
     Feedback read does under the tab's name, never a hidden card
     (2026-11-25, review fixes S3; `tests/portalinvoices.js`, `tests/portalpastsql.js`).
   - Letters: Download redraws the snapshot.
