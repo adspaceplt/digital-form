@@ -1897,10 +1897,19 @@
       var d = r.data;
       if (r.error || (d && d.error)) { msg(where, r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
-        title: 'Task numbering',
-        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task has a number.'),
+        title: 'Task numbers',
+        body: d.highest_serial ? 'The highest in use is ' + d.highest_serial + '.' : 'No task has a number.',
         go: 'Save',
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }, wait: true,
+        /* One Next: preview, as every numbering sheet's (NUMBERING,
+           2026-11-26): the number the next task takes as typed. */
+        preview: function (get) {
+          var n = String((get() || {}).value || '').trim().replace(/^#?WT/i, '');
+          var at = /^0*[1-9]\d{0,6}$/.test(n) ? String(Number(n)) : String(d.next);
+          var w = String(d.serial || '').replace(/^#?WT/i, '').length || 5;
+          while (at.length < w) at = '0' + at;
+          return ['Next:', '#WT' + at, ''];
+        },
         /* A number as typed, with or without its #WT (the overnight review,
            2026-11-10: 1008.5 was read as 10085); the sheet stays open on a
            refusal. */
