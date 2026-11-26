@@ -398,7 +398,8 @@
          Restore on the line and Delete in its ⋯. */
       if (showRemoved) html += '<div class="qt-gone" id="qtGoneList">' + gone.map(function (q) {
         var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>'];
-        if (mayDelete) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
+        /* One that reached the client or was signed stays, Void (2026-11-26). */
+        if (mayDelete && !q.sent_out_at && !q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
         return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + esc(q.ref) + '</b>' +
           '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
           '<span class="qt-goneacts">' + (maySet ? '<button class="btn btn-sm" data-a="restore" type="button">Restore</button>' : '') +
@@ -872,7 +873,8 @@
   var GONE_SAID = {
     denied: 'You do not have permission to delete quotations. Please ask an admin.',
     'not-removed': 'Remove this quotation first.',
-    'bad-ref': 'The reference does not match.'
+    'bad-ref': 'The reference does not match.',
+    sent: 'This quotation was sent or signed, so it is kept and reads Void.'
   };
   function remove(q, ctx) {
     window.ADspaceConfirm.ask({

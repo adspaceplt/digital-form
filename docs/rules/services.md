@@ -698,6 +698,16 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `signed`, `revised`, `not-proceeding`, `removed`; filed `{ref} edited ·
   RM a → RM b`), as often as needed; once sent out, Edit opens with
   Create quotation and makes the next quotation (`quotation_replace`).
+- A quotation is issued as it is created, and is sent once it reaches the
+  client (the user, 2026-11-26: "issued means created, only when issued to
+  client means someone viewed the link"; asked whether a WhatsApp, an email
+  or a website release still marks it sent, the user kept all four):
+  Issued is every quotation, listed on the Register and found by /verify/
+  by its reference and by its Document ID (`verify_find`, a removed one
+  Void); Sent is `sent_out_at` as above, unchanged. A removed quotation
+  that was sent out or signed is never deleted: its ⋯ offers no Delete
+  and `quotation_delete` refuses it `sent`
+  (`2026-11-26-quotations-issued-when-created.sql`).
 - A quotation sent out or signed, and a Letter of Offer issued, move the
   client from Lead or Contacted to Proposal sent (`client_proposal_sent`,
   triggers `quotations_sent_moves_lead` on every write and
