@@ -475,6 +475,9 @@
     /* A PDF that could not be generated, and one whose Chinese could not be
        drawn (2026-11-20, tone sweep 3: each PDF worded them its own way). */
     pdfLib: 'The PDF could not be generated. Check the connection and refresh the page.',
+    pdfFail: 'The PDF could not be generated. Please try again.',
+    issuedNoPdf: 'Issued. The PDF could not be generated. Download it from Documents.',
+    reissuedNoPdf: 'Reissued. The PDF could not be generated. Download it from Documents.',
     pdfCjk: 'The Chinese text could not be added to the PDF. Check the connection and try again.',
     /* A document's reference out of shape (the letters and the register). */
     serialShape: 'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots, underscores or dashes.',

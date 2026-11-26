@@ -361,7 +361,7 @@
       var out = r.data || {};
       if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
-        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be generated. Download it from the list.' }); return; }
+        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: window.ADspaceWords.line.issuedNoPdf }); return; }
         download(doc, function (warn) {
           then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
