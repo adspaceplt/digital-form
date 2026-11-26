@@ -224,6 +224,22 @@
   --section-bg: var(--sunk);
   --section-radius: var(--radius-lg);
 }
+/* v3's frame and hairlines (the console's; a client page in v3 reads the
+   part's): the grey the console's white sheet stands on, the sheet's edge,
+   and the edge of a part on it. The frame is the brand's own off white, #f5f5f5 (the user,
+   2026-11-15); the hairlines a neutral grey, never a warm one. */
+:root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
+:root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
+/* v3 on a client page (the user, 2026-11-26): the ground white to the
+   edge, no sheet, every part a white card edged by `--part-edge`, 16px
+   apart (V3 CLIENT PARTS, below the section cards). */
+:root[data-face="client"][data-layout="v3"] {
+  --ground: var(--card);
+  --section-bg: var(--card);
+  --section-edge: var(--part-edge);
+  --section-radius: var(--radius-lg);
+  --section-gap: 16px;
+}
 
 /* Dark is the team's, and only ever by choice. It is not taken from the
    system, because a client who happens to have their phone in dark mode would
@@ -411,6 +427,33 @@ body {
 :root[data-layout="shaded"] .softpanel { background: var(--card); border-radius: var(--radius); }
 /* The cards that stack by their own margin take the section's step. */
 :where(.panel, .crm-table, .ovcard, .kcard, .bookreg, .engcard) { margin-bottom: var(--section-gap); }
+/* V3 CLIENT PARTS (the user, 2026-11-26: "straight white background would
+   be nicer, and matches more like Apple's design"): on a client page in
+   `v3` the ground is white to the edge and the page's column draws no sheet
+   of its own; every part on it is a white card edged by `--part-edge`, 16px
+   apart, as a console record's parts are. A quotation's Summary is such a
+   card beside its column (under it on a phone). */
+:root[data-face="client"][data-layout="v3"] .qs-quote > .qs-main { gap: 16px; }
+/* The parts that are not section cards take the hairline too: a creator
+   option, a booking, a portal tile, a quotation's lines, totals and add-ons. */
+:root[data-face="client"][data-layout="v3"] :is(.cs-card, .booking, .cp-tile, .queue .qrow, .cardpair, .qs-table, .qs-tot, .qs-addons, .stepcard) {
+  background: var(--card); border-radius: var(--radius-lg);
+  outline: 1px solid var(--part-edge); outline-offset: -1px;
+}
+:root[data-face="client"][data-layout="v3"] .cardpair { box-shadow: none; }
+/* What stands white inside a shaded card (a step card's mark, the
+   representative's card) takes the shade inside a white one. */
+:root[data-face="client"][data-layout="v3"] :is(.stepcard-mark, .qs-rep) { background: var(--sunk); }
+/* A card inside a part is one surface with it (DESIGN §1). */
+:root[data-face="client"][data-layout="v3"] :is(.panel, .sumcard, .booking, .cardpair, .engcard, .rec-part, .kcard)
+  :is(.panel, .card, .softpanel, .crm-table, .kcard, .ovcard, .booking) { outline: 0; }
+:root[data-face="client"][data-layout="v3"] .cs-card.is-on { outline: 1.5px solid var(--action); outline-offset: -1.5px; }
+:root[data-face="client"][data-layout="v3"] :is(.qs-table, .qs-addons) { padding: 14px 20px 4px; }
+:root[data-face="client"][data-layout="v3"] .qs-addons { border-top: 0; padding-bottom: 18px; }
+@media (max-width: 640px) {
+  :root[data-face="client"][data-layout="v3"] .qs-headrow + .qs-row { border-top: 0; }
+  :root[data-face="client"][data-layout="v3"] :is(.qs-table, .qs-addons) { padding-inline: 16px; }
+}
 img, video { display: block; max-width: 100%; }
 /* Author rules beat the UA [hidden] default, so state it explicitly. */
 [hidden] { display: none !important; }
@@ -2060,7 +2103,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* Each line after the statement 8 under the one before. */
 .cover-panel :is(h1, h2) ~ p + p:not(.msg, .cover-ref) { margin-top: 8px; }
 :root[data-face="client"] .cover-panel p { font-size: 14px; }
-:root[data-face="client"] .cover-panel h2 + p { font-size: 17px; }
+:root[data-face="client"] .cover-panel :is(h1, h2) + p { font-size: 17px; }
 /* The sign-in's reference, last, where a sign-in is held (js/maintenance.js). */
 .cover-panel .cover-ref, :root[data-face="client"] .cover-panel .cover-ref {
   margin-top: 24px; color: var(--ink); font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; }
@@ -3197,15 +3240,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    shaded line, the view strip, a shaded card a creator beside the cart,
    and on a phone the cart as a bar at the foot. Cards are shaded, never
    outlined (the client forms' family, `.sumcard`). */
-.cs-head {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px;
-  margin-top: 16px; padding: 0 0 20px; border-bottom: 1px solid var(--line);
-}
-.cs-id { display: flex; align-items: center; gap: 14px; flex: 1 1 320px; min-width: 0; }
-.cs-who { min-width: 0; }
-.cs-who h1 { margin: 0; font-family: var(--font-head); font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; overflow-wrap: anywhere; }
-.cs-who p { margin: 2px 0 0; font-size: 14px; color: var(--ink-mute); }
-.cs-who p:empty { display: none; }
 .cs-facts { display: flex; gap: 24px; margin: 0; flex: 0 0 auto; }
 .cs-facts > div {
   display: grid; grid-template-columns: auto auto; grid-template-areas: "ic dt" "ic dd";
@@ -3213,20 +3247,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .cs-fact-ic {
   grid-area: ic; display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--sunk); color: var(--ink-soft);
+  width: 36px; height: 36px; border-radius: 50%; corner-shape: round; background: var(--card); color: var(--ink-soft);
 }
 .cs-fact-ic .ic { width: 16px; height: 16px; }
 .cs-facts dt { grid-area: dt; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .cs-facts dd { grid-area: dd; margin: 0; font-size: 14px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cs-head > .cx-standing { flex: 1 1 100%; }
-
-.cs-brief {
-  display: flex; gap: 12px; align-items: flex-start; margin-top: 16px;
-  padding: 14px 18px; border-radius: var(--radius); background: var(--sunk);
-}
-.cs-brief[hidden] { display: none; }
-.cs-brief-ic { flex: 0 0 auto; display: inline-flex; padding-top: 2px; color: var(--ink-soft); }
-.cs-brief-ic .ic { width: 16px; height: 16px; }
 .cs-brief-text { min-width: 0; display: grid; gap: 4px; }
 .cs-brief-text p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-soft); overflow-wrap: anywhere; white-space: pre-line; }
 .cs-brief-text .cs-purpose { color: var(--ink); font-weight: 500; }
@@ -3243,6 +3268,16 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .cs-main { min-width: 0; }
 .cs-main > .actstrip { padding-top: 0; }
 .cs-main .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+/* On a phone a client page's view strip runs the column's width, as the
+   portal's tabs and every console strip do (css/console.css, the same rule
+   for the console's sheet; the user, 2026-11-26): each view grows, two are
+   equal halves. */
+@media (max-width: 640px) {
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews { display: flex; width: 100%; }
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab { flex: 1 0 auto; justify-content: center; }
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab:first-child:nth-last-child(2),
+  :root[data-face="client"] .actstrip > .cmdbar-views.actviews > .acttab:last-child:nth-child(2) { flex: 1 1 50%; min-width: 0; }
+}
 .cs-main > .actstrip[hidden] { display: none; }
 .cs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .cs-empty { grid-column: 1 / -1; margin: 0; padding: 16px 0; font-size: 14px; color: var(--ink-mute); }
@@ -3324,7 +3359,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .cs-cartsheet .sheet-body { padding-bottom: 0; }
 .cs-cart.is-sheet { position: static; padding: 0 0 18px; background: none; }
 @media (max-width: 640px) {
-  .cs-head { gap: 14px; padding-bottom: 16px; }
   .cs-facts { flex: 1 1 100%; flex-direction: column; gap: 8px; }
   .cs-facts > div { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ic dt dd"; }
   .cs-fact-ic { width: 28px; height: 28px; }
@@ -6354,6 +6388,8 @@ body.is-canvas { overflow: hidden; }
 .cp-tabs { margin-bottom: 12px; }
 .cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-pane[hidden] { display: none; }
+/* A part named in the address (`?tab=scripts`) is brought into view clear of the bar (2026-11-26). */
+.cp-pane > .cp-card { scroll-margin-top: calc(var(--head-h) + 12px); }
 /* Overview: the summary on the left, who to reach and the company on the
    right, on the record's own proportion; one column once the pane is narrow. */
 .cp-overview { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); gap: 12px 16px; }
@@ -9795,6 +9831,67 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .sumcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sumcard-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .sumcard-head .btn { flex: 0 0 auto; }
+/* The selection page's sections (2026-11-26, the user: "looks like one
+   whole long page without proper hierarchy"): the head in the client
+   portal's head shape, then Summary, Brief, Amount and the results as
+   shaded cards titled inside, then Creators, a title over a shaded card a
+   creator, each folded to its name, state and next date. 12 between blocks. */
+.cs-head { margin: 16px 0 0; }
+.cs-head ~ .sumcard, .cs-head ~ .cx-needs, .cs-head ~ .cs-creators { margin-top: 12px; }
+.cs-head ~ .rollup-card { margin-bottom: 0; }
+.cs-summary > .cx-standing { margin: 0; padding: 0; border-top: 0; }
+.cs-summary > .cs-facts:not([hidden]) ~ .cx-standing { padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.cs-amount .sumcard-head h2 { flex: 1 1 auto; min-width: 0; }
+.cs-amount .amountfold-btn { font: inherit; width: 100%; justify-content: space-between; gap: 8px; }
+.cs-amount .totals { margin: 0; max-width: none; }
+.cs-sechead { justify-content: flex-start; gap: 8px; margin: 0 0 12px; }
+/* A creator's card: the head is the press that opens it (a fold, as every
+   fold runs, `grid-template-rows` 0fr to 1fr with opacity). */
+.cx-ccard { display: block; margin: 0 0 12px; }
+.cx-ccard:last-child { margin-bottom: 0; }
+.cx-ccard:has(> .cx-ccard-head) { padding: 0; }
+.cx-ccard-head {
+  width: 100%; min-height: 56px; padding: 14px 20px; flex-wrap: nowrap;
+  background: none; border: 0; border-radius: inherit; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.cx-ccard-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+.cx-ccard-who { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.cx-ccard-who b { overflow-wrap: anywhere; }
+.cx-ccard-head > .chip-state { flex: 0 0 auto; white-space: nowrap; }
+.cx-ccard-date { font-size: 13px; color: var(--ink-mute); }
+.cx-ccard-chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--ink-mute); transform: rotate(90deg); transition: transform var(--t) var(--ease); }
+.cx-ccard.is-shut .cx-ccard-chev { transform: none; }
+@media (hover: hover) { .cx-ccard-head:hover .cx-ccard-chev { color: var(--ink); } }
+.cx-ccard-body {
+  display: grid; grid-template-rows: 1fr; opacity: 1;
+  transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+}
+.cx-ccard.is-shut > .cx-ccard-body { grid-template-rows: 0fr; opacity: 0; }
+.cx-ccard-in { min-height: 0; overflow: hidden; padding: 0 20px; }
+.cx-ccard:not(.is-shut) .cx-ccard-in { padding-bottom: 18px; }
+.cx-ccard-in > :first-child { margin-top: 0; }
+@media (max-width: 640px) {
+  .cx-ccard-head { padding: 14px 16px; }
+  .cx-ccard-in { padding: 0 16px; }
+  .cx-ccard:not(.is-shut) .cx-ccard-in { padding-bottom: 16px; }
+}
+/* Facts two across; one column only where two cannot fit (under 390). */
+@media (max-width: 389px) {
+  #bookingList .booking .cx-facts.booking-facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr)); }
+}
+/* On a phone a booking's six steps keep their six parts and say the step
+   in hand alone, on one line, never six words wrapping (2026-11-26): the
+   other words stay for a screen reader. */
+@media (max-width: 640px) {
+  .cx-journey li { position: relative; }
+  .cx-journey li:not(.is-now) > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .cx-journey li.is-now > span { white-space: nowrap; }
+  .cx-journey:not(.has-discs) li.is-now:nth-child(n+4) > span { justify-self: end; }
+  .cx-journey.has-discs li.is-now:first-child > span { justify-self: start; }
+  .cx-journey.has-discs li.is-now:last-child > span { justify-self: end; }
+}
 .sumcard-group { display: grid; gap: 10px; min-width: 0; }
 .sumcard-group + .sumcard-group { border-top: 1px solid var(--line); padding-top: 14px; }
 .sumcard-group h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
@@ -10192,6 +10289,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .cp-prog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 12px; min-width: 0; }
 .cp-prog-top > .svc-state { flex: 0 0 auto; }
 .cp-prog-top > .cp-open { flex: 0 0 auto; align-self: center; }
+/* On a phone the name keeps the row's width; its state and Open go under it. */
+@media (max-width: 560px) {
+  .cp-prog-top { flex-wrap: wrap; align-items: center; }
+  .cp-prog-top > .svc-name { flex: 1 0 100%; }
+  .cp-prog-top > .cp-open { margin-left: auto; }
+}
 .cp-prog-body .cx-legend { margin: 0; }
 .cx-legend b { font-weight: 600; color: var(--ink); }
 .cp-prog-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }

@@ -33,12 +33,13 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   keep their solid head and one-line title. What holds words over other
   words (a menu, a popover, the finder, a sheet, a question) is solid
   `--raised`. Client pages keep their white.
-- A page's surface is one attribute, `data-layout` on `<html>`: `v3` the
-  console, `cards` white cards on the grey ground (the client portal),
-  `shaded` shaded cards on white (the forms, covers and every new page);
-  every section card family reads the section tokens (`--ground`,
-  `--section-bg`, `-edge`, `-radius`, `-pad`, `-gap`) through one base rule
-  and keeps only its arrangement (`docs/rules/components.md`, Surface).
+- A page's surface is one attribute, `data-layout` on `<html>`: `v3` on
+  the console (the grey frame, one white sheet) and on every client page
+  (plain white to the edge, each part a white card edged by the
+  `--part-edge` hairline); `shaded` on the front door alone; every section
+  card family reads the section tokens (`--ground`, `--section-bg`,
+  `-edge`, `-radius`, `-pad`, `-gap`) through one base rule and keeps only
+  its arrangement (`docs/rules/components.md`, Surface).
 - Marks stay light: a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never

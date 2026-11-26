@@ -122,7 +122,8 @@
       totalShort: function (v, tax) { return 'Total ' + v + (tax ? ' incl. ' + tax : ''); },
       invoice: 'Invoice',
       due: function (d) { return 'Campaign due ' + d; },
-      yourCampaign: 'Your campaign',
+      creatorsHead: 'Creators',
+      summaryHead: 'Summary',
       stillChoosing: 'Choose your creators',
       backupsHead: 'Choose backup creators',
       shootOn: 'Shoot visit',
@@ -236,7 +237,8 @@
       totalShort: function (v, tax) { return '总计 ' + v + (tax ? '（含 ' + tax + '）' : ''); },
       invoice: '发票',
       due: function (d) { return '合作截止 ' + d; },
-      yourCampaign: '合作进度',
+      creatorsHead: '创作者',
+      summaryHead: '概况',
       stillChoosing: '选择创作者',
       backupsHead: '选择备选创作者',
       shootOn: '拍摄',
@@ -496,6 +498,12 @@
       } else { mark.className = 'rec-mark'; mark.textContent = ini; }
     }
     if ($('campMeta')) $('campMeta').textContent = client.name || '';
+    /* Its state at the right of the head, the console's word and dot
+       (ADspaceWords.campState). */
+    var st = $('campState'), stWord = (t().campState || {})[c.state];
+    st.textContent = stWord || '';
+    st.className = 'chip-state ' + window.ADspaceWords.tone(c.state);
+    st.hidden = !stWord;
     mountWho();
     var forBar = document.querySelector('.brand-for');
     if (forBar) forBar.hidden = true;
@@ -508,7 +516,8 @@
     /* The brief is one shaded line under the head, never folded (the
        mockup of 2026-11-25): the client reads it before choosing. */
     $('campBriefBox').hidden = !brief && !purpose;
-    $('campBriefIc').innerHTML = icon('doc');
+    $('briefHead').textContent = t().briefHead;
+    $('summaryHead').textContent = t().summaryHead;
     paintFacts();
 
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
@@ -544,6 +553,8 @@
   /* How many creators are numbered above the list still to choose from, so
      its numbers carry on rather than start again at 1 (audit SEL-4). */
   var listedAbove = 0;
+  /* The creator cards opened on this visit, by booking (`bookingRow` fold). */
+  var openCards = {};
 
   function paintBookings() {
     var options = feed.options || [];
@@ -568,7 +579,8 @@
     $('bookingWrap').hidden = !rows.length;
     $('chooseHead').hidden = !rows.length;
     $('chooseHead').textContent = backupStage() ? t().backupsHead : t().stillChoosing;
-    $('bookingHead').textContent = t().yourCampaign;
+    $('bookingHead').textContent = t().creatorsHead;
+    $('bookingCount').textContent = String(rows.length);
     paintStanding(booked);
     listedAbove = rows.length;
     /* What the client owes leads the page (the client pages refresh,
@@ -583,7 +595,7 @@
       need.hidden = !owed.length;
       owed.forEach(function (o) { need.appendChild(bookingRow(o, { need: true, no: rows.indexOf(o) + 1 })); });
     }
-    if (!rows.length) return;
+    if (!rows.length) { $('amountFold').hidden = true; $('clientRollup').hidden = true; return; }
 
     /* With one post live, the campaign's results are that post's figures:
        its own table under the booking said them a second time (SEL-3). */
@@ -595,9 +607,13 @@
 
     var box = $('bookingList');
     box.innerHTML = '';
+    /* Each creator a card folded to its name, state and next date; a lone
+       one opens by itself, and one opened stays open through a repaint. */
+    var listed = rows.filter(function (o) { return !(need && owed.indexOf(o) > -1); });
     rows.forEach(function (o, i) {
-      if (need && owed.indexOf(o) > -1) return;
-      box.appendChild(bookingRow(o, { no: i + 1, sole: o.id === soleId }));
+      if (listed.indexOf(o) < 0) return;
+      box.appendChild(bookingRow(o, { no: i + 1, sole: o.id === soleId,
+        fold: true, open: listed.length === 1 || !!openCards[o.id] }));
     });
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
@@ -634,6 +650,7 @@
     var box = $('campStanding');
     if (!box) return;
     box.hidden = !booked.length;
+    paintSummary();
     if (!booked.length) { box.innerHTML = ''; return; }
     var rank = function (o) { var i = ORDER.indexOf(o.state); return i < 0 ? 0 : i; };
     var bars = booked.slice().sort(function (a, b) { return rank(b) - rank(a); });
@@ -682,7 +699,7 @@
     };
     var lead = vie ? ['eye', t().viewsWord, vie] : ['layers', t().impressions, imp];
     var measured = rows.map(function (r) { return r.p.measured_at; }).filter(Boolean).sort().pop();
-    $('rollupHead').innerHTML = '<span>' + esc(t().resultsHead) + '</span>' +
+    $('rollupHead').innerHTML = '<h2>' + esc(t().resultsHead) + '</h2>' +
       (measured ? '<span class="cx-quiet">' + esc(t().measuredWord(fmtDate(String(measured).slice(0, 10)))) + '</span>' : '');
     var figs = [];
     if (vie) figs.push(fig('layers', t().impressions, imp.toLocaleString()));
@@ -752,6 +769,24 @@
   }
   var FACT_ICON = {};
 
+  /* A folded card's one date, the one the client is watching for: when its
+     post went out once live, else the shoot (or the delivery) while it is
+     ahead or the only date held, else the post date; To be confirmed where
+     none is set. Said as `Shoot visit · 22 Sept (Tue)`. */
+  function nextDateOf(o, live, posts) {
+    var seeding = (feed.campaign || {}).push_format === 'seeding';
+    var say = function (label, v) { return label + ' · ' + v; };
+    if (live) {
+      var out = (posts.length ? posts : (o.posts || [])).map(function (p) { return p.published_at; }).filter(Boolean).sort()[0];
+      return out ? say(t().postedOn, fmtDate(out)) : '';
+    }
+    var today = ADspaceClock.today();
+    var shoot = seeding ? t().deliveryOn : t().shootOn;
+    if (o.visit_date && (o.visit_date >= today || !o.planned_publish)) return say(shoot, fmtDate(o.visit_date, 'ahead'));
+    if (o.planned_publish) return say(t().goLive, fmtDate(o.planned_publish));
+    return say(shoot, t().tbc);
+  }
+
   function bookingRow(o, opts) {
     opts = opts || {};
     var c = feed.campaign || {};
@@ -760,7 +795,8 @@
     /* Theirs to act on: drawn whole in the card at the top of the page,
        and left out of the list below while it waits. */
     var mine = opts.need === true;
-    row.className = 'booking' + (mine ? ' cx-need' : '') + (o.state === 'withdrawn' ? ' is-off' : '');
+    row.className = 'booking sumcard cx-ccard' + (mine ? ' cx-need' : '') + (o.state === 'withdrawn' ? ' is-off' : '');
+    row.setAttribute('data-id', o.id);
     var icon = function (n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; };
     FACT_ICON[t().shootOn] = 'camera'; FACT_ICON[t().deliveryOn] = 'box'; FACT_ICON[t().postedOn] = 'check';
     FACT_ICON[t().platformsLabel] = 'megaphone'; FACT_ICON[t().goLive] = 'calendar'; FACT_ICON[t().nextLabel] = 'hourglass';
@@ -799,16 +835,24 @@
       return '<div><dt>' + icon(FACT_ICON[f[0]]) + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
     }).join('') + '</dl>' : '';
 
-    row.innerHTML =
-      (mine ? '<p class="cx-eyebrow"><i class="cx-dot is-wait"></i>' + esc(t().waitingYou) + '</p>' : '') +
-      '<div class="booking-head">' +
+    /* Folded (the list, 2026-11-26): the head is the press that opens the
+       card, its name over its next date, the state at the right and the
+       chevron; the track and the facts open under it. */
+    var fold = opts.fold && o.state !== 'withdrawn';
+    var bodyId = 'bk-' + String(o.id).replace(/[^A-Za-z0-9_-]/g, '');
+    var open = fold && !!opts.open;
+    var when = fold ? nextDateOf(o, live, posts) : '';
+    var head =
         /* A creator is known by their number on the call (the user,
            2026-10-07: "The creator needs numbering not profile photos"). */
         (opts.no ? '<span class="rowno">' + opts.no + '</span>' : '') +
-        '<b>' + esc(o.name) + '</b>' +
+        (fold ? '<span class="cx-ccard-who"><b>' + esc(o.name) + '</b>' +
+            (when ? '<span class="cx-ccard-date">' + esc(when) + '</span>' : '') + '</span>'
+          : '<b>' + esc(o.name) + '</b>') +
         '<span class="chip-state ' + toneOf(o.state) + '">' + esc(chipFor(o)) + '</span>' +
         (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
-      '</div>' +
+        (fold ? '<svg class="cx-ccard-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' : '');
+    var inner =
       (o.state === 'withdrawn' ? '' : stepsOf(o)) +
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
@@ -822,6 +866,24 @@
       (mine ? '<div class="draft-decide' + ((o.files || []).some(function (f) { return f.kind === 'video' || f.kind === 'image'; }) ? ' has-media' : '') + '">' +
         draftPreview(o) + decisionBlock(o) + '</div>' : '');
 
+    if (fold) {
+      row.classList.toggle('is-shut', !open);
+      row.innerHTML =
+        '<button type="button" class="booking-head cx-ccard-head" aria-expanded="' + open + '" aria-controls="' + bodyId + '">' + head + '</button>' +
+        '<div class="cx-ccard-body" id="' + bodyId + '"' + (open ? '' : ' inert') + '><div class="cx-ccard-in">' + inner + '</div></div>';
+      row.querySelector('.cx-ccard-head').addEventListener('click', function () {
+        var now = row.classList.contains('is-shut');
+        row.classList.toggle('is-shut', !now);
+        this.setAttribute('aria-expanded', String(now));
+        var body = row.querySelector('.cx-ccard-body');
+        if (now) body.removeAttribute('inert'); else body.setAttribute('inert', '');
+        if (now) openCards[o.id] = true; else delete openCards[o.id];
+      });
+      return row;
+    }
+    row.innerHTML =
+      (mine ? '<p class="cx-eyebrow"><i class="cx-dot is-wait"></i>' + esc(t().waitingYou) + '</p>' : '') +
+      '<div class="booking-head">' + head + '</div>' + inner;
     if (mine) wireDecision(row, o);
     return row;
   }
@@ -1152,6 +1214,11 @@
         '<dt>' + esc(f[1]) + '</dt><dd>' + esc(f[2]) + '</dd></div>';
     }).join('');
     $('csFacts').hidden = !facts.length;
+    paintSummary();
+  }
+  /* The Summary card is drawn while it holds a fact or the standing. */
+  function paintSummary() {
+    $('campSummary').hidden = $('csFacts').hidden && $('campStanding').hidden;
   }
   /* 22 Sept (Tue): the year only where it is not this one (js/clock.js). */
   function dueShort(d) {
