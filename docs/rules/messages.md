@@ -128,7 +128,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   email; Feedback: Service rating and Performance review, each in English
   and 中文, `docs/rules/client-feedback.md`; New email's own), Supplier
   email templates (Supplier approved, Document, New email's own), Creator email templates
-  (the seven creator emails), Candidate email templates (the twelve candidate
+  (the seven creator emails), Candidate email templates (the thirteen candidate
   emails, each with its own switch, `hiring_email_templates`, 2026-11-21)
   and Sign-in and codes (Verification code, the one
   email every code the portal sends goes out in, `code_email_template`,

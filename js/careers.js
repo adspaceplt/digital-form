@@ -36,8 +36,8 @@
   var NEXT = {
     received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
-  var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview held',
-    cancelled: 'Interview cancelled', pending: 'Interview time pending confirmation',
+  var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview completed',
+    cancelled: 'Interview cancelled', pending: 'Interview time pending confirmation', missed: 'Interview missed',
     offer: 'Application in progress', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   /* A time the candidate waits on, in the portal's form (2026-11-20,
@@ -146,6 +146,17 @@
     }
     return '';
   }
+  /* Interview missed (2026-11-26): its date, then what follows: the new
+     times (drawn after it), the closing line, or that ADspace will contact
+     the candidate. */
+  function missed(d) {
+    var m = d.missed;
+    if (!m) return '';
+    var next = m.closed ? 'As you did not attend, your application has been closed. ADspace wishes you every success in your search.'
+      : d.interview ? '' : 'ADspace will contact you to arrange another time.';
+    return '<section class="qs-sec cr-iv" id="crMissed"><h2 class="qs-sec-h">Interview missed</h2><dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' +
+      esc(when(m.at, true)) + '</dd></div></dl>' + (next ? '<p class="cr-next">' + esc(next) + '</p>' : '') + '</section>';
+  }
   /* The decision (step C): Keep in talent pool asks the candidate to agree;
      Not proceed, or a pool declined, reads closed; Proceed waits on the offer. */
   function decision(d) {
@@ -155,6 +166,7 @@
     /* The talent pool declined: the details are not kept, the application never
        said to be refused (2026-11-20). */
     if (d.stage === 'closed' && d.pool_declined) return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will not keep your details on file.</p></section>';
+    if (d.stage === 'closed' && d.missed && d.missed.closed) return '';
     if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' +
       'ADspace will not be proceeding with your application at this time. ADspace wishes you every success in your search.</p></section>';
     var p = d.pool;
@@ -422,6 +434,8 @@
     var mail = CONTACT && window.ADspaceWords.emailOk(CONTACT) ? '<a class="plink" href="mailto:' + esc(CONTACT) + '">' + I.svg('mail') + esc(CONTACT) + '</a>' : '';
     root().innerHTML = I.received({
       title: STATUS.received, line: 'Dear ' + d.name + ', thank you for your interest in joining ADspace.', note: NEXT.received,
+      /* The application's reference (ONE REQUEST REFERENCE, 2026-11-26). */
+      reqRef: d.request_ref || '',
       steps: [
         { state: 'done', title: STATUS.received, sub: esc(window.ADspaceClock.date(d.received_at)) },
         { state: 'now', glyph: 'search', title: W.rcvByAdspace, now: W.rcvNow },
@@ -443,8 +457,9 @@
       '<p class="qs-lead">Dear ' + esc(d.name) + ', thank you for your interest in joining ADspace.</p></div>' +
       '<dl class="ovfacts cr-facts"><div><dt>Position</dt><dd>' + esc(d.position) + '</dd></div>' +
       '<div><dt>Received on</dt><dd>' + esc(day(d.received_at)) + '</dd></div>' +
-      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (i && i.state === 'picked' ? STATUS.pending : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
-      (d.docs && d.docs.length ? docsSection(d.docs) : (dec || (i ? interview(i) : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
+      (d.request_ref ? '<div><dt>Reference</dt><dd>' + esc(d.request_ref) + '</dd></div>' : '') +
+      '<div><dt>Status</dt><dd>' + esc(docStatus(d) || (d.missed && !i && d.stage !== 'closed' ? STATUS.missed : '') || (i && i.state === 'cancelled' ? STATUS.cancelled : '') || (i && i.state === 'picked' ? STATUS.pending : '') || (d.stage === 'interview' && i && i.held ? STATUS.held : '') || STATUS[d.stage] || STATUS.received) + '</dd></div></dl>' +
+      (d.docs && d.docs.length ? docsSection(d.docs) : missed(d) + (dec || (i ? interview(i) : d.missed ? '' : '<p class="cr-next">' + esc(NEXT.received) + '</p>'))) + '</div>';
     if (!(d.docs && d.docs.length) && !dec && i && i.state === 'invited') wire();
     if ($('crPool')) wirePool();
     if ($('crDocs')) wireDocs();
@@ -484,7 +499,7 @@
       if (d.contact) CONTACT = d.contact;
       if (d.error === 'expired') { cover('Link expired', W.contactAdspace); return; }
       if (d.error || !d.ok) { cover(W.notFound, W.contactAdspace); return; }
-      if (d.stage === 'received' && !d.interview && !(d.docs && d.docs.length) && !decision(d)) { paintReceived(d); return; }
+      if (d.stage === 'received' && !d.interview && !d.missed && !(d.docs && d.docs.length) && !decision(d)) { paintReceived(d); return; }
       paint(d);
     }).catch(function () { cover(W.failTitle, W.failTextAdspace); });
   }
