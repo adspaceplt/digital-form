@@ -11282,7 +11282,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var da = args || {}, dOut;
       idFormats();
       if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
-        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
+
+        var dTm = new Date(Date.now() + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
+        var dNx = k === 'trip' ? ((((DB.__ost || {}).refs) || {})[dTm] || 0) + 1 : (f.next_no || null);
+        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: dNx, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
         var dC = dO && (DB.creators || []).filter(function (c) { return c.id === dO.creator_id; })[0];
