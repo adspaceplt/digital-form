@@ -2863,10 +2863,19 @@ function cardSlugFree(name, self, email) {
     });
     if (held.length) return { error: 'already-quoted' };
 
-    var D = window.ADspaceDocs;
-    if (D && D.quoteOf && a.p_total != null) {
-      var now = D.quoteOf(JSON.parse(JSON.stringify(cl)), JSON.parse(JSON.stringify(rows)),
-        JSON.parse(JSON.stringify(DB.quotations || [])), Boolean(a.p_renewal));
+    var D = window.ADspaceDocs, M = window.ADspaceMoney;
+    if (D && D.priceOf && M && a.p_total != null) {
+
+      var pDay = (a.p_deal && a.p_deal.date) || appToday();
+      var pRate = {}; (DB.tax_codes || []).forEach(function (t) { pRate[t.code] = Number(t.rate); });
+      var pRows = JSON.parse(JSON.stringify(rows)).map(function (l) {
+        return l.tax_code && (l.tax_pct == null || l.tax_pct === '') && pRate[l.tax_code] != null ? Object.assign(l, { tax_pct: pRate[l.tax_code] }) : l; });
+      var pQ = pRows.length ? pRows[0].quotation_id : null;
+      var pHit = !a.p_renewal && pQ && pRows.every(function (l) { return l.quotation_id === pQ; }) &&
+        (DB.quotations || []).filter(function (x) { return x.id === pQ && !x.removed_at && String(x.valid_until || '').slice(0, 10) >= pDay; })[0];
+      if (pHit && pHit.totals) pRows = pRows.map(function (l) { return Object.assign(l, { quote_sst: cl.sst_applies === false ? 0 : Number(pHit.totals.sst_pct || 0),
+        quote_term: Math.max(1, Number(pHit.totals.term || 1)) }); });
+      var now = D.priceOf(pRows, M.curOf(cl), cl.sst_applies !== false, pDay);
       if (Math.abs(Number(now.total) - Number(a.p_total)) > 0.01) return { error: 'stale', total: now.total };
     }
 
