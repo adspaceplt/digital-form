@@ -78,10 +78,18 @@
       .sort(function (a, b) { return a.from < b.from ? -1 : 1; })[0];
     return r ? { from: r.from, value: Number(r.value) } : null;
   }
-  function load(force) {
-    if (loading && !force) return loading;
+  /* The figures are kept for a few minutes, never the page's life
+     (2026-11-26, F4: Build quote's S$ read 3.15 after Settings held 3.18):
+     a load() after STALE asks again, the page coming back into view or
+     focus asks again after ONVIEW, a new Malaysian day re-reads them, and
+     a save in another tab (its load(true)) tells this one through
+     localStorage (`adspace-settings-at`). Nothing is asked on a timer. */
+  var STALE = 5 * 60 * 1000, ONVIEW = 60 * 1000, askedAt = 0, readDay = '';
+  function fresh(within) { return Date.now() - askedAt < within && readDay === today(); }
+  function read() {
     var api = window.ADspaceAPI, db = api && api.client;
     if (!db) return (loading = Promise.resolve(null));
+    askedAt = Date.now(); readDay = today();
     /* A failed read is not kept: the next load() asks again (2026-10-19). */
     var p = loading = db.rpc('app_settings_read').then(function (r) {
       if (r.error || !r.data) { if (loading === p) loading = null; return null; }
@@ -93,6 +101,17 @@
     }).catch(function () { if (loading === p) loading = null; return null; });
     return p;
   }
+  function load(force) {
+    if (loading && !force && fresh(STALE)) return loading;
+    var p = read();
+    if (force) { try { localStorage.setItem('adspace-settings-at', String(Date.now())); } catch (e) { /* storage off */ } }
+    return p;
+  }
+  /* Only a page that has read the figures asks again. */
+  function again() { if (loading && !fresh(ONVIEW)) read(); }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') again(); });
+  window.addEventListener('focus', again);
+  window.addEventListener('storage', function (e) { if (e.key === 'adspace-settings-at' && loading) read(); });
 
   /* The tax codes a line may carry (2026-10-22, tax_codes_list): the team's
      alone, read once a page and again after a change. Each is { code, name,
