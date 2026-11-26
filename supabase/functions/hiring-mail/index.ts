@@ -20,7 +20,11 @@
  *                                     note to the candidate;
  *   { candidateId, kind: 'outcome' }  the decision (step C): Keep in talent
  *                                     pool asks the candidate to agree on
- *                                     their page; Not proceed thanks them.
+ *                                     their page; Not proceed thanks them;
+ *                                     an application closed at Did not
+ *                                     attend (2026-11-26) is the missed
+ *                                     interview's own email, its time and
+ *                                     the careers mailbox (kind `missed`).
  *                                     Never the team's note on the decision.
  *   { docId, kind: 'doc' }            an Employment Offer or Contract waits
  *                                     on the candidate's page (step D):
@@ -108,7 +112,7 @@ function signOff(m: Record<string, any>): string {
 export const NAMES: Record<string, string> = {
   invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed', cancelled: 'Interview cancelled',
   held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Talent pool', not: 'Application unsuccessful',
-  doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
+  missed: 'Interview missed', doc: 'Employment document', doc_again: 'Employment document sent again', confirmed: 'Document confirmed', expired: 'Document expired'
 };
 /* The template an email is written from (CANDIDATE EMAILS, 2026-11-21). */
 export function templateOf(m: Record<string, any>): string {
@@ -176,12 +180,12 @@ export function words(m: Record<string, any>, tpl: { subject: string; body: stri
   const subject = fill(tpl.subject, v).replace(/\s+/g, ' ').trim(), body = fill(tpl.body, v);
   const heading = ({
     doc: 'Your ' + title, expired: title + ' expired', confirmed: title + ' confirmed', cancelled: 'Interview cancelled',
-    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Your application', not: 'Your application',
+    held: 'Thank you for your interview', moved: 'Decision date changed', pool: 'Your application', not: 'Your application', missed: 'Interview missed',
     invite: 'Interview invitation', confirm: 'Interview confirmed', rescheduled: 'Interview time changed'
   } as Record<string, string>)[String(m.kind)] || 'Your application';
   const block = m.kind === 'doc' ? button(m.doc === 'contract' ? 'View contract' : 'View offer', PAGE + m.key)
     : m.kind === 'invite' ? button('Choose a time', PAGE + m.key)
-    : m.kind === 'expired' || m.kind === 'cancelled' || m.kind === 'not' ? ''
+    : m.kind === 'expired' || m.kind === 'cancelled' || m.kind === 'not' || m.kind === 'missed' ? ''
     : button('View your application', PAGE + m.key);
   return { subject, heading, body, block };
 }
@@ -253,7 +257,7 @@ async function drain(req: Request, origin: string | null): Promise<Response> {
   /* An automatic email (CANDIDATE EMAILS, 2026-11-21): sent only while the
      portal's Email, Automatic emails and its own template are on; else
      filed Not sent, never sent later. */
-  const gate = await db.rpc('hiring_mail_gate', { p_kinds: ['expired', 'pool', 'not'] });
+  const gate = await db.rpc('hiring_mail_gate', { p_kinds: ['expired', 'pool', 'not', 'missed'] });
   const g = (gate.data || {}) as Record<string, any>;
   if (gate.error || g.error || !g.tpl) return json({ error: 'gate' }, 200, origin);
   const who = await sender('careers');
