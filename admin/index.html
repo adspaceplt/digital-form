@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126qbc">
-<link rel="stylesheet" href="/css/console.css?v=20261126cib">
+<link rel="stylesheet" href="/css/portal.css?v=20261126y">
+<link rel="stylesheet" href="/css/console.css?v=20261126cid">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,14 +125,14 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126r"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126s"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261124zzfb"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261126cic"></script>
+<script src="/js/words.js?v=20261126cid"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/icons.js?v=20261125ct"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
@@ -145,10 +145,10 @@
 <script src="/js/form.js?v=20261122zzzc"></script>
 <script src="/js/otp.js?v=20261122zzr"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
-<script src="/js/group.js?v=20261117zzzf"></script>
+<script src="/js/group.js?v=20261126y"></script>
 <script src="/js/menu.js?v=20261125ofc"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
-<script src="/js/cmdbar.js?v=20261125fh"></script>
+<script src="/js/cmdbar.js?v=20261126y"></script>
 <script src="/js/records.js?v=20261125qla"></script>
 <script src="/js/chart.js?v=20261125fh"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
@@ -6825,10 +6825,10 @@ raya-2026        https://example.com/raya"></textarea>
   "letters": {"src": "/js/letters.js?v=20261125wh", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
-  "register": {"src": "/js/register.js?v=20261126r", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261126rfd", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261124za", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261126cib"},
+  "register": {"src": "/js/register.js?v=20261126s", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261126y", "uses": ["letters", "register", "bukku"]},
+  "hiring": {"src": "/js/hiring.js?v=20261126y", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261126cid"},
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
@@ -6838,7 +6838,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261126rfd", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261126y", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
   "team": {"src": "/js/team.js?v=20261126", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
@@ -6846,10 +6846,10 @@ raya-2026        https://example.com/raya"></textarea>
   "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
   "frames": {"src": "/js/frames.js?v=20261117zzzf"},
   "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
-  "scripts": {"src": "/js/scripts.js?v=20261121zzzz", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
+  "scripts": {"src": "/js/scripts.js?v=20261126y", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261120zzzp", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261126cib", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261126cid", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261124ru", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
@@ -6860,10 +6860,10 @@ raya-2026        https://example.com/raya"></textarea>
 }
 </script>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261126a"></script>
-<script src="/js/ops.js?v=20261126rfd"></script>
+<script src="/js/admin.js?v=20261126y"></script>
+<script src="/js/ops.js?v=20261126y"></script>
 <script src="/js/search.js?v=20261122zzzw"></script>
 <script src="/js/agent.js?v=20261126rfd"></script>
-<script src="/js/overview.js?v=20261126rfd"></script>
+<script src="/js/overview.js?v=20261126y"></script>
 </body>
 </html>

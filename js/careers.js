@@ -216,7 +216,8 @@
       var st = (DOCSTATE[d.state] || DOCSTATE.sent)(d.kind), on = openDoc.id === d.id;
       return '<div class="panel cr-doc" data-doc="' + esc(d.id) + '"><div class="cr-doc-head"><div class="cr-doc-who"><b>' + esc(DOCWORD[d.kind] || '') + '</b>' +
         '<span class="cr-doc-meta">' + esc(d.serial || '') + (d.state === 'sent' && d.reply_by ? ' · Reply by ' + esc(when(d.reply_by)) : '') + '</span></div>' +
-        '<span class="chip chip-state ' + st[1] + '">' + esc(st[0]) + '</span></div>' +
+        /* Awaiting your reply is the page's Status already: said once (2026-11-26). */
+        (d.state === 'sent' ? '' : '<span class="chip chip-state ' + st[1] + '">' + esc(st[0]) + '</span>') + '</div>' +
         (on ? '<div class="cr-doc-body" id="crDocBody"></div>' : '<div class="qs-foot cr-doc-foot"><button class="btn" type="button" data-docopen="' + esc(d.id) + '">' +
           (d.kind === 'contract' ? 'Read contract' : 'Read offer') + '</button></div>') + '</div>';
     }).join('') + '</section>';
@@ -262,8 +263,8 @@
       '<div><dt>Basic salary</dt><dd>' + esc(money(p.basic)) + ' per month' + (months && p.probation ? '<br>' + esc(money(p.probation)) + ' per month during probation' : '') + '</dd></div>' +
       '</dl>';
     var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('file') : '') + 'Download</button></div>';
-    if (d.returned_note) facts = '<p class="msg warn">ADspace returned this document: ' + esc(d.returned_note) + '</p>' + facts;
-    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and tell you by email.</p>' : '');
+    if (d.returned_note) facts = '<p class="msg warn">ADspace has returned this document with the following note: ' + esc(d.returned_note) + '</p>' + facts;
+    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and inform you by email.</p>' : '');
     var tick = function (id, text) {
       return '<label class="qs-consent cr-agree"><input type="checkbox" id="' + id + '">' + MARK + '<span class="qs-text">' + esc(text) + '</span></label>';
     };

@@ -155,5 +155,13 @@
     return t;
   }
 
-  window.ADspaceGroup = { shut: shut, keep: keep, section: section, more: more, table: table };
+  /* A row's Updated cell, where its card holds one state and the heading
+     already names it (Suppliers, Hiring; 2026-11-26): the day it last
+     moved, Malaysia's, or the mute dash. */
+  function upd(ts) {
+    var C = window.ADspaceClock, d = ts && C ? C.date(C.day(ts)) : '';
+    return '<span class="row-upd">' + (d ? esc(d) : '<span class="muted">\u2014</span>') + '</span>';
+  }
+
+  window.ADspaceGroup = { shut: shut, keep: keep, section: section, more: more, table: table, upd: upd };
 })();

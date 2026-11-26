@@ -22,7 +22,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   what it holds on one line, the AI analysis's headline first where one is
   written; a band with nothing drawn leaves. Sales: Act now the tiles (new
   leads, win rate, clients lost, committed value), What changed beside
-  Pipeline now; This week Sales moves, Sales by colleague, Clients who
+  Pipeline now; This week Client stage changes, Sales by colleague, Clients who
   moved, each across its row (tables of different lengths side by side
   left a gap); Monthly review the AI analysis, the trend (Lead to client a
   line under its directions, `.anl-dir.is-fact`), sources beside lost
