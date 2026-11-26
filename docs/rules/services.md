@@ -706,13 +706,35 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `signed`, `revised`, `not-proceeding`, `removed`; filed `{ref} edited ·
   RM a → RM b`), as often as needed; once sent out, Edit opens with
   Create quotation and makes the next quotation (`quotation_replace`).
-- A quotation is issued as it is created, and is sent once it reaches the
-  client (the user, 2026-11-26: "issued means created, only when issued to
-  client means someone viewed the link"; asked whether a WhatsApp, an email
-  or a website release still marks it sent, the user kept all four):
-  Issued is every quotation, listed on the Register and found by /verify/
-  by its reference and by its Document ID (`verify_find`, a removed one
-  Void); Sent is `sent_out_at` as above, unchanged. A removed quotation
+- A team's quotation is a draft until a colleague confirms it (the user,
+  2026-11-26: "only preview and edit and confirm (before confirm it uses
+  XXXX-DRAFT …) until it is confirmed, everything holds at the
+  pre-stage"; `2026-11-26-quotations-confirmed.sql`): Create quotation
+  makes a draft reading `ADP/QT{YYMM}-DRAFT` (stored with four letters
+  after it, `quote_draft_ref`, no number spent); its row offers Preview
+  PDF (DRAFT over every page), Confirm quotation (the one blue, asked
+  first), Edit and Remove; every send waits and its function refuses
+  `not-confirmed` (Copy link, Send link on WhatsApp, Send on WhatsApp,
+  Send by email, Mark signed, Issue Letter of Offer); `quotation_confirm`
+  gives it the month's `quote_ref`. A website request takes
+  `ADP/REQ{YYMM}-{AAA}` (`quote_request_ref`, consonants from a strong
+  source, a short deny list, never a count; kept as `request_ref`) and its
+  ADP/QT reference at Send quotation. A revision after Sent (Edit,
+  `quotation_replace`) is a draft naming what it revises (`revises`); at
+  Confirm it takes the family's next `-Rn` under its first quotation
+  (`quote_revision_ref`, the kept references counted) and only then
+  revises it, so the prospect never meets a draft; earlier revisions keep
+  their serials. Every quotation made before 2026-11-26 counts as
+  confirmed.
+- A quotation is issued once it is confirmed, and is sent once it reaches
+  the client (the user, 2026-11-26: "issued means created, only when
+  issued to client means someone viewed the link"; with drafts, issued
+  became confirmed; asked whether a WhatsApp, an email or a website
+  release still marks it sent, the user kept all four): Issued is every
+  confirmed quotation (`quotation_issued(q)`, one test), listed on the
+  Register and found by /verify/ by its reference and by its Document ID
+  (`verify_find`, a removed one Void); Sent is `sent_out_at` as above,
+  unchanged. A removed quotation
   that was sent out or signed is never deleted: its ⋯ offers no Delete
   and `quotation_delete` refuses it `sent`
   (`2026-11-26-quotations-issued-when-created.sql`).

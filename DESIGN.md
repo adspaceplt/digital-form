@@ -1193,7 +1193,9 @@ screenshotted, and the push names any line it could not settle.
   - a website quotation request `ADP/REQ{YYMM}-{AAA}`, three random
     letters, never a running count, so nobody can read how many requests
     came in; a team's quotation reads `ADP/QT{YYMM}-DRAFT` until
-    confirmed.
+    confirmed; a revision after Sent is numbered under its family's first
+    quotation, `ADP/QT2611-C02-R1`, `-R2`, never a new serial (the `request`
+    and `revision` rows of `id_formats`).
   - A new reference follows the house scheme (the user, 2026-11-26):
     the shortest prefix is the top of the structure and the longer ones
     hang under it. `ADP` names what the ADspace Digital Portal issued;
