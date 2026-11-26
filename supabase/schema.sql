@@ -159541,4 +159541,16 @@ grant execute on function public.careers_read(text) to anon, authenticated;
 
 -- END OF INTERVIEW CANCELLED MOVES THE STAGE -----------------------------------
 
+-- QUOTATION COVER WORDS -------------------------------------------------------
+
+-- The seeded words, as they stood, take the page's: the details are on the
+-- following pages of the same PDF, and the closing paragraph goes. A type the
+-- team has edited is left as it is.
+update public.doc_types
+   set body_en = E'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the following pages.\n\nShould you need any clarification or additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support your evaluation.'
+ where id = 'quote_cover'
+   and body_en = E'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the attached quotation.\n\nShould you need any clarification or additional information, please do not hesitate to reach out. We are happy to provide further materials to support your evaluation.\n\nThank you for the opportunity. We look forward to working with you and your team.';
+
+-- END OF QUOTATION COVER WORDS ------------------------------------------------
+
 select public.functions_tidy();

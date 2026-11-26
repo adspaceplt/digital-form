@@ -39,9 +39,9 @@
   var COVER = {
     title: 'QUOTATION FOR DIGITAL MARKETING SERVICES', salutation: 'Dear Sir/Madam,', closing: 'Yours sincerely,',
     body_en: 'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and ' +
-      'requirements discussed, with full details set out in the attached quotation.\n\nShould you need any clarification or ' +
+      'requirements discussed, with full details set out in the following pages.\n\nShould you need any clarification or ' +
       'additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support ' +
-      'your evaluation.\n\nThank you for the opportunity. We look forward to working with you and your team.'
+      'your evaluation.'
   };
   function inWords(n) {
     n = Math.floor(Number(n) || 0);
@@ -252,7 +252,7 @@
         wrap(String(t.title), FULL, 12, reg).forEach(function (ln) { text(ln, M, y, 12, reg); y -= 15; });
         y -= 7;
       }
-      var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))],
+      var facts = [['Quotation no.', q.ref], ['Date', D().refDate(q.issued_at)],
         ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
       /* Its brands (2026-11-24): one made from a list names its one brand. */
       if (Array.isArray(t.brands) && t.brands.length) facts.push([t.brands.length > 1 ? 'Brands' : 'Brand', t.brands.map(function (b) { return String((b && b.name) || '').trim(); }).join(', ')]);
@@ -453,7 +453,7 @@
         var WL = window.ADspaceWords.line, AS = 8.5, colGap = 24, colW = (FULL - colGap) / 2;
         var units = [], lastG = null;
         addons.forEach(function (r) {
-          var g = r.kind === 'extra' ? WL.addonExtra : (r.group || WL.addons);
+          var g = r.kind === 'extra' ? WL.addonExtraHead : (r.group || WL.addons);
           if (g !== lastG) { lastG = g; units.push({ g: g, h: 16 }); }
           var p = MONY.addonParts(r, t.currency), unit = p.unit ? ' ' + p.unit.charAt(0).toLowerCase() + p.unit.slice(1) : '';
           var runs = [[p.from ? 'from ' : '', mute], [p.fig, ink], [unit, mute]];

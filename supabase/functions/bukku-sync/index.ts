@@ -147,7 +147,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { esc, FONT, layout, resend, sender } from '../_shared/mail.ts';
+import { esc, FONT, layout, resend, sender, button } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
@@ -1451,7 +1451,7 @@ export function invoiceTable(lines: any[]): string {
     '<tr><td style="' + cell + 'font-weight:600;">Total due</td><td class="hide-sm" style="' + cell + '"></td><td class="hide-sm" style="' + cell + '"></td>' +
     '<td style="' + cell + 'font-weight:600;text-align:right;white-space:nowrap;">' + tot + '</td>' + (many ? '<td style="' + cell + '"></td>' : '') + '</tr></table>';
   const one = !many && lines[0] && lines[0].link
-    ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;padding:7px 14px;text-align:center;font-family:' + FONT + ';font-size:13px;line-height:16px;font-weight:500;color:#ffffff;text-decoration:none;">View PDF</a></td></tr></table>'
+    ? button({ label: 'View PDF', url: lines[0].link, margin: '0 0 16px' })
     : '';
   return table + one;
 }
