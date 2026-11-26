@@ -10897,8 +10897,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (paT.state !== 'open' || paS.left_at) return oNo('closed');
         if (!new RegExp('^private/outstation/' + paT.id + '/[0-9a-f-]{36}\\.jpg$').test(String(args.p_path || ''))) return oNo('bad-key');
         var paAt = Date.parse(args.p_taken_at);
-        if (!paAt || paAt > Date.now() + 120000 || paAt < Date.parse(paT.started_at) - 600000) return oNo('bad-location');
-        if (OST.photos.filter(function (p) { return p.stop_id === paS.id; }).length >= 10) return oNo('too-many');
+        if (!paAt || paAt > Date.now() + 120000 || paAt < Date.parse(paT.started_at) - 600000) return oNo('bad-time');
+        if (OST.photos.filter(function (p) { return p.stop_id === paS.id && !p.removed_at; }).length >= 10) return oNo('too-many');
         OST.photos.push({ id: oUuid(), stop_id: paS.id, path: args.p_path, taken_at: args.p_taken_at, lat: args.p_lat == null ? null : args.p_lat,
           lng: args.p_lng == null ? null : args.p_lng, accuracy_m: args.p_accuracy == null ? null : args.p_accuracy });
         return oOk({ ok: true, trip: oJson(paT) });
@@ -11286,7 +11286,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var da = args || {}, dOut;
       idFormats();
       if (name === 'id_formats_list') dOut = opsMe() ? ['creator', 'campaign', 'job', 'trip'].map(function (k) { var f = DB.id_formats[k];
-        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: f.next_no || null, pattern: f.pattern || null }; }) : [];
+
+        var dTm = new Date(Date.now() + 8 * 36e5).toISOString().slice(2, 7).replace('-', '');
+        var dNx = k === 'trip' ? ((((DB.__ost || {}).refs) || {})[dTm] || 0) + 1 : (f.next_no || null);
+        return { kind: k, prefix: f.prefix || null, width: f.width || null, next: dNx, pattern: f.pattern || null }; }) : [];
       else if (name === 'campaign_job_ref') {
         var dO = (DB.campaign_options || []).filter(function (o) { return o.id === da.p_option; })[0];
         var dC = dO && (DB.creators || []).filter(function (c) { return c.id === dO.creator_id; })[0];
@@ -20394,6 +20397,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (bkb.action === 'portal') {
             var piA = portalInvoiceContacts({ p_client: bkb.client });
             if (piA.error) return bkR({ error: piA.error });
+            if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
             var piT = appToday();
             var piAdd = function (n) { var d = new Date(Date.parse(piT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
             var piAll = window.__bukkuInvoices = window.__bukkuInvoices || ivSeed(piAdd);
