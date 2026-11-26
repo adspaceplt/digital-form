@@ -2336,6 +2336,15 @@
     return o.name + (/s$/i.test(o.name) ? ' are' : ' is') + ' requested for ' + o.qty + ' content ' + (o.qty === 1 ? 'piece' : 'pieces') + '. This quotation includes ' +
       (o.cap ? o.cap + ' ' + unit[o.cap === 1 ? 0 : 1] : 'no ' + unit[1]) + '.';
   }
+  /* The figures read afresh (another tab saved Tax and terms, or the day
+     turned; js/money.js): a build in hand takes the S$ rate in force and
+     prices again, so its foot and its lines never keep the old rate
+     (2026-11-26, F4). */
+  document.addEventListener('adspace-settings', function () {
+    if (!B || !B.ctx) return;
+    if (FX != null) { var fx = Number(MON.setting('fx_sgd')) || 0; if (fx > 0) FX = fx; }
+    if (B.priced) preview();
+  });
   var timer = null;
   function preview() {
     clearTimeout(timer);
