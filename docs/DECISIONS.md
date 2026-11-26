@@ -11868,3 +11868,17 @@ From the same review. A colleague set inactive (neither removed nor expired) kep
 ### 2026-11-26 · F6: a Quotation Cover is not added on its own
 
 The user, on HANDOVER §4 item 2: "Quotation Cover: remove it". A Quotation Cover has not been issued on its own since 2026-11-25, yet Documents' Add still offered it as a kind for a document issued elsewhere. Add now offers it only to keep an existing cover being edited; `register_add` refuses the family (`not-issuable`) and `register_update` refuses moving another document into it (`2026-11-26-quotation-cover-not-added.sql`). The cover page inside every quotation PDF, the covers already held (listed, read and verified as before) and the `quote_cover` type stay. `tests/docs.js` reads the Add sheet and the refusal.
+
+### 2026-11-26 · go.adspace.me retired
+
+The user: "go.adspace.me is going to be retired. use the new
+digital.adspace.me/verify instead". Every PDF's verify line and the console's
+fallbacks read digital.adspace.me/verify (`ADSPACE_ORG.verifyUrl`); the
+Service Terms a quotation names move to hi.adspace.me/svc-terms (the user's
+choice) and the report's ad-terms glossary to hi.adspace.me/fb-ad-terms, both
+short links the team keeps under Short Links; the Short Links note names
+hi.adspace.me alone. go.adspace.me was Rebrandly's host, not the Worker's, so
+QR codes and PDFs already issued with it stop resolving once it goes, unless a
+redirect is kept. Documents issued before keep the words they were issued with.
+The outstation notification's Lark form link (go.adspace.me/outstation) is a
+database value and is left for its own migration.

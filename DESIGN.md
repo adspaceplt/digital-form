@@ -221,7 +221,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     right edge; the monogram 20.3pt square top right), later pages the
     wordmark and the monogram; the foot the verify line centred in Slate
     Book 6pt (This is a computer-generated document. [No signature
-    required. ]Verify document authenticity: go.adspace.me/verify) and Page
+    required. ]Verify document authenticity: digital.adspace.me/verify) and Page
     n of N in 7.5pt at the right margin; the body PRIVATE & CONFIDENTIAL (Slate
     Medium) at 155.1pt, Our Ref and Date a blank line under it, the
     recipient's name (Slate Regular) over its lines, the title (Slate
@@ -267,7 +267,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
     video script as shared, the Monthly Performance Record) is one row on
     the page count's baseline (794.9pt; the user, 2026-11-24: "Document ID
     | Verify document | Page x of x"): `Document ID XXXX-XXXX · Verify document
-    authenticity: go.adspace.me/verify` in Slate Book 6.5pt from the left margin, Page n
+    authenticity: digital.adspace.me/verify` in Slate Book 6.5pt from the left margin, Page n
     of N 8pt at the right margin; an ALP form keeps PRIVATE & CONFIDENTIAL
     and the template's page count, and a draft and a white-label report the
     page count alone;

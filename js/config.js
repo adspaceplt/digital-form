@@ -44,7 +44,7 @@ window.ADSPACE_ORG = {
   // and refused by name when it cannot be, rather than drawing boxes.
   fontCjk: '/css/NotoSansSC-Regular.ttf',
   // The public page a letter's footer points to.
-  verifyUrl: 'go.adspace.me/verify'
+  verifyUrl: 'digital.adspace.me/verify'
 };
 
 window.ADSPACE_CONFIG = {
@@ -125,7 +125,7 @@ window.ADSPACE_CONFIG = {
   agencyName: 'ADspace',
   /* The agency's Service Terms, named by every quotation (its PDF and
      /quote/). Blank leaves the clause out. */
-  serviceTermsUrl: 'go.adspace.me/svc-terms',
+  serviceTermsUrl: 'hi.adspace.me/svc-terms',
   supportEmail: 'advertise@adspacestudios.com',
 
   // Reply-to on anything the portal sends on the team's behalf.
@@ -133,10 +133,8 @@ window.ADSPACE_CONFIG = {
 
   /* The host a new short link is written under. It was typed into js/admin.js
      and again into the console's markup, so changing it meant finding both.
-     `go.adspace.me` stays alive whatever this says: every QR already printed
-     encodes the whole address, so those codes keep working as long as that
-     host keeps redirecting. This value decides what the next link is built
-     with, nothing more. */
+     go.adspace.me is retired (2026-11-26); this value decides what the
+     next link is built with. */
   linkHost: 'hi.adspace.me',
   /* The script, selection and creator links are written as short links
      (/s/, /c/, /p/ on the host above), answered by the links Worker

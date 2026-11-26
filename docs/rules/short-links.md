@@ -7,7 +7,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   of four answers (ok, missing, paused, revoked).
   - Redirects are 302 and `no-store`.
   - The client's parameters are carried over, minus `q`.
-  - `go.adspace.me` is never retired: printed QR codes encode it.
+  - `go.adspace.me` is retired (the user, 2026-11-26): nothing the portal
+    writes names it; the verify line reads digital.adspace.me/verify and
+    the Service Terms and ad terms hi.adspace.me links.
   - The host is `ADSPACE_CONFIG.linkHost`.
 - A live link's row offers Copy, Open (its short address, a new tab), QR
   codes and the ⋯ (LNK-2, 2026-10-22), four fixed tracks on a phone

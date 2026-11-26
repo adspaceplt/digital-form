@@ -609,7 +609,8 @@ edit of its script; no page keeps a copy of its own.
   - Below 400px the glyph gives way and the name never does.
 - A standing fact about a route is a `.routenote` under the register:
   - the verify page as a link;
-  - the redirect hosts `hi.adspace.me` and `go.adspace.me` as links.
+  - the redirect host `hi.adspace.me` as a link (`go.adspace.me` retired,
+    2026-11-26).
 
 ### Area rules (read before changing an area)
 
