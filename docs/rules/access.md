@@ -252,20 +252,40 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
     beside it, `#grPresetNote`, worked out and never stored, no fold; a
     preset chosen over a Custom panel asks first, `Start from Staff?` · n
     changes will be replaced., S7; Admin in Start from is the only way to
-    make a group admin, offered to the super admin alone), then the
-    Dashboard (`#grDash`, Off / On, filed `Team dashboard: On → Off`), Use
-    AI, Send email, Send WhatsApp, Sensitive details, Clients they see
-    (`#grScope`) and Reports to (`#grReports`), a hairline between each.
+    make a group admin, offered to the super admin alone; under it
+    `#grPresetSum`, the preset under the pointer or focus, else the one
+    chosen, in one line: `Staff: Edit on 9 sections, and View on …`;
+    2026-11-26), then Dashboard Team tabs (`#grDash`, a `button.switch`,
+    filed `Dashboard Team tabs: On → Off`), Use AI, Send email, Send
+    WhatsApp, Sensitive details, Clients they see (`#grScope`) and Reports
+    to (`#grReports`, None or a group; its line: the group chosen sees this
+    group's colleagues' client feedback scores, `feedback_sees_manager`,
+    the one reader of `reports_to`), a hairline between each; headings
+    15/600, a section's name 14/500.
   - Section access: one row a section in the rail's order (`CHUNKS`), the
-    name, its segment at the right edge, the line for its level (`DESC`),
-    and one Advanced (n) fold (`advItems`): the section's own parts, the
-    admin tools that act on it as switches (`TOOL_HOME`: the portal's own,
-    Upgrade mode to Analytics, under Team), and its line of the Activity
+    name, its segment at the right edge on four fixed 76px tracks, a level
+    a column (a section offering fewer leaves its track empty, so a level
+    stands in one column down the panel; Full control's words need 76),
+    the line for its level (`DESC`), and Advanced (n), a `.btn-quiet
+    .btn-sm` with the act table's chevron turned down while open
+    (`advItems`): the section's own parts, the
+    admin tools that act on it as switches, each with its line naming the
+    Settings row it opens (`PART_DESC`; `team.settings` is Settings,
+    `team.upgrade` Page availability, `team.perfadmin` Performance admin;
+    `TOOL_HOME`: the portal's own, Page availability to Analytics, under
+    Team), and its line of the Activity
     record (`activity.{section}`, Same as Activity record; HR Letters under
     Documents, the Handbook under Team; `ACT_HOME`); shut,
     `#grDiff-{section}` names only what differs. No Admin tools block, no
     Customise. The My Work views (List, Board, Calendar) are not offered; a
     stored one is kept through a save.
+  - What this group can do (`#grPreview`, under Section access, read only,
+    2026-11-26): each section opened, its level beside its name, the
+    level's `DESC` line and what its Advanced sets apart, then the sections
+    left Off on one line; an admin group one line.
+  - Add member reads the chosen group's sentence (`sumText`) under User
+    group (`#tmRoleSum`); its More details line reads `Access until: No end
+    date` until a day is set.
   - Each group row reads its access as phrases held whole (`team-part`),
     and one ⋯ holding Edit then Delete for an admin alone, nothing beside
     it (a user group is made, changed and deleted by an admin: `roles_admin`
