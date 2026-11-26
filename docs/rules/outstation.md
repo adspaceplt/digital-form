@@ -35,7 +35,9 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   measures it); then the trip as `.facts` (Trip number as a copy token,
   Purpose with its glyph, Driver, Colleagues as names with their initials
   discs; two across on a phone, the last of an odd count taking the row;
-  the read whole adds Hours, Rating and the notes), never one dotted
+  the read whole adds Hours, Rating and the notes, three across on its
+  620px sheet, each note the whole row (`.facts-wide`), a word never broken
+  across lines, a long name ending in an ellipsis), never one dotted
   sentence. Route: its pin glyph in the 22px disc, then the stage timeline
   (`.stl`): the office's start mark, each leg's road km on the line before
   its stop, each stop a dot (filled once left, ringed amber while on site,
