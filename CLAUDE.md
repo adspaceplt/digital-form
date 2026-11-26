@@ -189,6 +189,7 @@ is empty and only shrinks (`--write` refuses to add).
   `tests/pagescripts.js` fails a page missing a script its own scripts call.
   A page holds no script nothing on it calls: a client page's weight is
   every visitor's.
+- A change a client page shows is sent to the user as screenshots (390 and 1280) and approved before it merges; a console change merges once tested (the user, 2026-11-26).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new thing joins every shared list of its kind in the same push that

@@ -5,11 +5,21 @@
   var feed = null;
 
   var $ = function (id) { return document.getElementById(id); };
+  /* This page is English only (no language action in its chrome), so it takes
+     the English half of the shared words. The covers say the same thing here
+     as on /creators/ and /client/ because they are the same words, not
+     because three files were kept in step by hand. */
+  var W = window.ADspaceWords.en;
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
-  var GUIDE = { name: 'Content Review', steps: [
-    { at: '#stageStrip', text: 'Posts waiting for your decision are under Pending.' },
-    { at: '.approve-row', text: 'Approve a post, or request changes with a note for the team.' }] };
+  /* Its steps follow the top as it reads (2026-11-26): the stage strip, the
+     Filter where one is drawn, then a post's decision. */
+  function guide() {
+    return { name: W.rvGuideName, steps: [
+      { at: '#stageStrip', text: W.rvGuidePending },
+      { at: '#filterBtn', text: W.rvGuideFilter },
+      { at: '.approve-row', text: W.rvGuideDecide }] };
+  }
 
   // ---- Token ---------------------------------------------------------------
   // GitHub Pages serves static files only, so the token travels as ?k=.
@@ -28,6 +38,7 @@
   function showState(title, body, wantsPass) {
     $('content').innerHTML = '';
     $('filterbar').hidden = true;
+    filterOpen(false);
     $('stageStrip').hidden = true;
     $('stageEmpty').hidden = true;
     $('qrBtn').hidden = true;
@@ -199,8 +210,13 @@
     $('safeWrap').hidden = !any;
   }
 
+  /* One state for the page, drawn on the Filter card's switch and on each
+     video post's own (2026-11-26: the switch moved off the top). */
   function setSafe(on) {
     $('safeToggle').setAttribute('aria-checked', on ? 'true' : 'false');
+    Array.prototype.forEach.call(document.querySelectorAll('.card-safe .switch'), function (b) {
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
     document.body.classList.toggle('is-safe', on);
   }
   $('safeToggle').addEventListener('click', function () {
@@ -208,6 +224,44 @@
     savePlace();
   });
   $('safeName').addEventListener('click', function () { $('safeToggle').click(); });
+
+  /* A set's content month (`period`), else the month it was made in. */
+  function setMonth(b) {
+    var v = b.period ? b.period + '-01' : b.created_at;
+    return v ? ADspaceClock.month(v, { long: true }) : '';
+  }
+  function setName(b) {
+    var m = setMonth(b), t = String(b.title || '').trim();
+    var plain = function (x) { return String(x).toLowerCase().replace(/[^a-z0-9]/g, ''); };
+    var short = b.period || b.created_at ? ADspaceClock.month(b.period ? b.period + '-01' : b.created_at) : '';
+    if (!m) return t || W.rvAdHoc;
+    if (!t || plain(t) === plain(m) || plain(t) === plain(short)) return m;
+    return m + ' · ' + t;
+  }
+  function postsWord(n) { return n === 1 ? W.rvPostsOne : W.rvPosts.replace('{n}', n); }
+
+  /* Filter: the formats, the sets and the safe area, on a popover card laid
+     by the one copy of where a card opens (js/menu.js). */
+  function filterOpen(on) {
+    var pop = $('filterPop'), btn = $('filterBtn');
+    if (!pop || !btn) return;
+    pop.hidden = !on;
+    btn.setAttribute('aria-expanded', String(on));
+    if (on && window.ADspaceMenu) window.ADspaceMenu.pop(btn, pop, 'right');
+  }
+  $('filterBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    filterOpen($('filterPop').hidden);
+  });
+  $('filterHide').addEventListener('click', function () { filterOpen(false); $('filterBtn').focus(); });
+  document.addEventListener('click', function (e) {
+    var pop = $('filterPop');
+    if (pop && !pop.hidden && !pop.contains(e.target) && e.target !== $('filterBtn')) filterOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('filterPop').hidden) { filterOpen(false); $('filterBtn').focus(); }
+  });
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { if (!$('filterPop').hidden) filterOpen(false); });
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -284,6 +338,19 @@
     if (stage.querySelector('.mk-phone')) card.classList.add('is-vertical');
     if (stage.querySelector('.mk-coverwrap')) card.classList.add('is-cover');
     card.appendChild(stage);
+    /* A video a platform draws its own controls over carries the safe area
+       switch under its preview, the same state as the Filter card's. */
+    if (stage.querySelector('.mk-safe')) {
+      var sid = 'safe-' + post.id;
+      var safe = document.createElement('div');
+      safe.className = 'safetoggle card-safe';
+      safe.innerHTML = '<span class="safetoggle-name" id="' + sid + '">' + escapeHtml(W.rvSafe) + '</span>' +
+        '<button class="switch" type="button" role="switch" aria-checked="' + (document.body.classList.contains('is-safe') ? 'true' : 'false') + '" aria-labelledby="' + sid + '"></button>';
+      var sw = safe.querySelector('.switch');
+      sw.addEventListener('click', function () { setSafe(sw.getAttribute('aria-checked') !== 'true'); savePlace(); });
+      safe.querySelector('.safetoggle-name').addEventListener('click', function () { sw.click(); });
+      card.appendChild(safe);
+    }
 
     // The mockup truncates like the real feed. This shows the caption in full.
     if (post.caption || post.caption_zh || post.title) {
@@ -969,6 +1036,12 @@
     root.innerHTML = '';
     var formats = {};
     restoring = readPlace();
+    /* A set is named by its content month, its own title after it only
+       where the title says more than the month (a new set is called by its
+       month). One set needs no head of its own: the line over the posts
+       says it, and there is nothing to fold. */
+    var several = feed.batches.length > 1;
+    document.body.classList.toggle('rv-one-set', !several);
 
     feed.batches.forEach(function (batch) {
       var section = document.createElement('section');
@@ -978,11 +1051,11 @@
       var head = document.createElement('button');
       head.type = 'button';
       head.className = 'batch-head';
+      head.hidden = !several;
       head.innerHTML =
         '<svg class="fold-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
-        '<span class="batch-title">' + escapeHtml(batch.title) + '</span>' +
-        '<span class="batch-date">' + fmtDate(batch.created_at) + ' &middot; ' +
-        batch.posts.length + ' post' + (batch.posts.length === 1 ? '' : 's') + '</span>' +
+        '<span class="batch-title">' + escapeHtml(setName(batch)) + '</span>' +
+        '<span class="batch-date">' + escapeHtml(postsWord(batch.posts.length)) + '</span>' +
         '<span class="batch-progress"></span>';
       section.appendChild(head);
 
@@ -1075,6 +1148,12 @@
     }
     paintStages(counts);
 
+    $('setLine').textContent = several ? '' : setName(feed.batches[0]) + ' · ' + postsWord(feed.batches[0].posts.length);
+    /* Filter is drawn where there is something to narrow. */
+    $('filterBtn').hidden = !several && Object.keys(formats).length < 2;
+    $('batchFilter').hidden = !several;
+    $('formatFilter').hidden = Object.keys(formats).length < 2;
+
     var ff = $('formatFilter');
     Object.keys(formats).sort().forEach(function (k) {
       var opt = document.createElement('option');
@@ -1085,7 +1164,7 @@
     var bf = $('batchFilter');
     feed.batches.forEach(function (b) {
       var opt = document.createElement('option');
-      opt.value = b.id; opt.textContent = b.title;
+      opt.value = b.id; opt.textContent = setName(b);
       bf.appendChild(opt);
     });
 
@@ -1094,7 +1173,7 @@
     $('filterbar').hidden = false;
     $('stageStrip').hidden = false;
     $('qrBtn').hidden = false;
-    if (window.ADspaceGuide) window.ADspaceGuide.offer('review', GUIDE);
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('review', guide());
     paintSafeSwitch();
     watchVideos(document);
 
@@ -1170,20 +1249,13 @@
       mark.textContent = window.ADspaceState ? window.ADspaceState.initials(c.name) : '';
     }
     $('rvName').textContent = c.name || '';
-    var hs = c.handles || {};
-    var handle = hs.instagram || hs.tiktok || hs.xhs || hs.facebook || '';
     var posts = 0, pending = 0;
     (f.batches || []).forEach(function (b) {
       (b.posts || []).forEach(function (p) { posts++; if (stageOf(p.review) === 'pending') pending++; });
     });
-    var bits = [];
-    if (handle) bits.push('@' + String(handle).replace(/^@/, ''));
-    bits.push(posts + (posts === 1 ? ' post' : ' posts'));
-    $('rvMeta').textContent = bits.join(' · ');
-    var st = $('rvState');
-    st.hidden = !pending;
-    st.textContent = pending + ' to review';
-    st.className = 'tone is-warn';
+    /* What waits, said once as a sentence; the counts live in the strip. */
+    $('rvMeta').textContent = pending ? (pending === 1 ? W.rvWaitingOne : W.rvWaiting.replace('{n}', pending))
+      : posts === 1 ? W.rvReviewedOne : W.rvReviewed.replace('{n}', posts);
     $('rvHead').hidden = false;
     /* Who this device decides as, with Change and Forget (2026-10-08). */
     if (!rvWho && window.ADspaceDecide && window.ADspaceDecide.whoLine) {
@@ -1222,9 +1294,9 @@
       shown += visibleHere;
     });
 
-    $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
-    /* No count over an empty tab: No posts. says it once (2026-10-31, RV-7). */
-    $('countLabel').hidden = !shown;
+    /* Filter says how many narrowings are on; the strip keeps the counts. */
+    var on = (fmt !== 'all' ? 1 : 0) + (bat !== 'all' ? 1 : 0);
+    $('filterWord').textContent = on ? W.rvFilter + ' · ' + on : W.rvFilter;
     $('stageEmpty').hidden = shown > 0;
     requestAnimationFrame(remeasure);
     savePlace();
@@ -1263,12 +1335,6 @@
   });
 
   // ---- Load ----------------------------------------------------------------
-  /* This page is English only (no language action in its chrome), so it takes
-     the English half of the shared words. The covers say the same thing here
-     as on /creators/ and /client/ because they are the same words, not
-     because three files were kept in step by hand. */
-  var W = window.ADspaceWords.en;
-
   var portalAsked = false;
   /* Back to the client portal, where a signed-in contact came from. */
   function portalBack() {

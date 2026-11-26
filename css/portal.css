@@ -520,14 +520,26 @@ a { color: inherit; }
 .pill:hover { border-color: var(--ink); color: var(--ink); }
 .pill svg { width: 15px; height: 15px; }
 
-/* One row: two selects that already name themselves, the count, and the safe
-   zone switch. The stacked labels above them were a second row saying what the
-   selects said. */
-.filterbar {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 16px 0 14px;
+/* The review page's set line (2026-11-26): the month and its size, Filter
+   at its right; the formats, the sets and the safe area on Filter's card. */
+.setline {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: var(--ctl-h-sm); padding: 12px 0;
 }
-.filterbar .count { margin-left: auto; padding-bottom: 0; }
+.setline-what { font-size: 14px; color: var(--ink-soft); min-width: 0; }
+.setline-filter { margin-left: auto; }
+.setline-filter svg { width: 15px; height: 15px; }
+.kmenu.filterpop { display: grid; gap: 12px; padding: 14px 16px 16px; width: 280px; }
+.kmenu.filterpop[hidden] { display: none; }
+.popcard.is-dock.filterpop { width: auto; }
+.filterpop-name { font-size: 15px; font-weight: 600; }
+.filterpop .safetoggle { justify-content: space-between; }
+/* A video's own safe area switch, under its preview. */
+.card-safe { padding: 10px 16px; }
+#rvHead .rec-id-meta { font-size: 14px; color: var(--ink-soft); }
+/* One set: the line says it, so the set has no head and nothing to fold. */
+.rv-one-set .batch-body { padding-top: 0; }
+.batch > .batch-head[hidden] { display: none; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
   font: inherit; font-size: var(--field-text); color: var(--ink); background: var(--field);
@@ -1438,7 +1450,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-xhs-stats b { font-size: 11.5px; font-weight: 400; margin-right: 5px; }
 
 @media print {
-  .topbar, .filterbar, .approve, .pill, .qr-modal { display: none !important; }
+  .topbar, .setline, .approve, .pill, .qr-modal { display: none !important; }
   .card { break-inside: avoid; box-shadow: none; }
 }
 
@@ -1460,19 +1472,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   .grid { grid-template-columns: 1fr; }
   /* Offering a "view on phone" QR code to someone already on a phone is noise. */
   #qrBtn { display: none; }
-  .filterbar { gap: 10px; padding: 14px 0 12px; }
-  .filterbar .select { flex: 1 1 140px; min-width: 0; }
-  .filterbar .count { flex: 1 1 100%; margin-left: 0; }
-  /* The one action keeps its own width and sits at the end of the row,
-     as it does in a section head. Stretched across the screen above the
-     list, Add lead outweighed every client on it. */
-  .filterbar .btn { flex: 0 0 auto; margin-left: auto; }
-  .filterbar .safetoggle { flex: 1 1 100%; }
-  /* The review page (ux-audit REVIEWPAGE-6): Show safe zones and the count
-     share one line, the count at its right edge; the set's approved count
-     stands on its title's line, the date under them. */
-  #filterbar .safetoggle { flex: 1 1 auto; }
-  #filterbar .safetoggle:not([hidden]) ~ .count { flex: 0 0 auto; margin-left: auto; }
+  /* The set's approved count stands on its title's line, its size under them. */
   .batch > .batch-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px; }
   .batch > .batch-head .batch-date { grid-column: 2 / -1; grid-row: 2; }
   .batch > .batch-head .batch-progress { grid-column: 3; grid-row: 1; align-self: center; white-space: nowrap; margin-left: 0; }
@@ -4048,7 +4048,6 @@ body > .shell { width: 100%; }
 
 @media (max-width: 560px) {
   .portalfoot-in { padding-inline: 16px; gap: 10px; font-size: 12px; }
-  .filterbar .select { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }
 
 /* The card arrives from its heading and leaves into it: a grid row from 0fr
@@ -8528,7 +8527,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    of the round before, in the neutral inset (it is news, not a caution). The
    copy is edited inside Request changes. */
 .stagestrip { margin-top: 16px; }
-.stagestrip + .filterbar { padding-top: 12px; }
+.stagestrip + .setline { padding-top: 12px; }
 /* A tab's count is a small chip of its own (the user, 2026-10-03: noticed
    at a glance): a soft neutral pill, red only where what it counts needs
    acting on now (Content Review: Changes requested; Overview: an item is
