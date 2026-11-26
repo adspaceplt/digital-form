@@ -20,14 +20,14 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126cp6">
+<link rel="stylesheet" href="/css/portal.css?v=20261126cp7">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
 <script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&/^DEMO0/.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126lo"><\/script>');}}catch(e){}</script>
 <script src="/js/config.js?v=20261126w"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261126rfe"></script>
+<script src="/js/words.js?v=20261126cp7"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/decide.js?v=20261117zzzf"></script>
@@ -68,56 +68,63 @@
 
   <div id="app" data-shown hidden>
 
-    <!-- The head (2026-11-25, the mockup the user approved): the client's
-         mark, the campaign over its client, and at the right the two facts
-         the client chooses against, Choose by and Creators. -->
-    <section class="cs-head" id="campHead">
-      <div class="cs-id">
+    <!-- The head (2026-11-26): the client portal's head shape on a shaded
+         card, the client's mark, the campaign over its client and its state
+         at the right. Then a shaded card a section, each titled inside it
+         (docs/rules/creator-campaigns.md, the selection page). -->
+    <section class="sumcard rec-head cs-head" id="campHead">
+      <div class="rec-id">
         <span class="rec-mark" id="campMark" aria-hidden="true"></span>
-        <div class="cs-who">
-          <h1 id="campTitle"></h1>
-          <p id="campMeta"></p>
+        <div class="rec-who">
+          <div class="rec-name"><h1 id="campTitle"></h1></div>
+          <p class="rec-id-meta" id="campMeta"></p>
         </div>
+        <div class="rec-ctl"><span class="chip-state" id="campState" hidden></span></div>
       </div>
+    </section>
+    <!-- Summary: Choose by, Creators and the invoice, then where the
+         campaign stands (n of N posted, the next shoot, a bar part a
+         creator and the counts). -->
+    <section class="sumcard cs-summary" id="campSummary" hidden>
+      <div class="sumcard-head"><h2 id="summaryHead"></h2></div>
       <dl class="cs-facts" id="csFacts"></dl>
-      <!-- Where the campaign stands: n of N posted, a bar part a creator. -->
       <div class="cx-standing" id="campStanding" hidden></div>
     </section>
-
-    <!-- The brief, one shaded line, never folded. -->
-    <div class="cs-brief" id="campBriefBox" hidden>
-      <span class="cs-brief-ic" id="campBriefIc" aria-hidden="true"></span>
+    <!-- The brief, never folded. -->
+    <section class="sumcard cs-brief" id="campBriefBox" hidden>
+      <div class="sumcard-head"><h2 id="briefHead"></h2></div>
       <div class="cs-brief-text">
         <p class="cs-purpose" id="campPurpose" hidden></p>
         <p id="campBrief"></p>
       </div>
-    </div>
-
+    </section>
     <!-- A draft waiting on the client leads the page. -->
     <div class="cx-needs" id="needBox" hidden></div>
-    <section id="bookingWrap" hidden>
-      <h2 class="sectionhead" id="bookingHead"></h2>
-      <!-- The amount is folded away. Campaigns get shown on a screen in a
-           meeting, and the billing figure is not always for that room. -->
-      <div class="amountfold" id="amountFold" hidden>
-        <div class="amountfold-head">
-          <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-            <span id="amountLabel"></span>
-          </button>
-          <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
-        </div>
-        <div class="msg err" id="amountMsg" role="status" hidden></div>
-        <div class="totals" id="bookedTotals" hidden></div>
+    <!-- The amount: its own card, the figure behind the title's chevron.
+         Campaigns get shown on a screen in a meeting, and the billing figure
+         is not always for that room. -->
+    <section class="sumcard cs-amount" id="amountFold" hidden>
+      <div class="sumcard-head">
+        <h2><button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
+          <span id="amountLabel"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button></h2>
+        <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
       </div>
-      <!-- Totals across every live post, the same figures the console adds up. -->
-      <section class="rollup-card" id="clientRollup" hidden>
-        <div class="rollup-head" id="rollupHead"></div>
-        <div class="cx-results" id="clientTally"></div>
-      </section>
+      <div class="msg err" id="amountMsg" role="status" hidden></div>
+      <div class="totals" id="bookedTotals" hidden></div>
+    </section>
+    <!-- Totals across every live post, the same figures the console adds up. -->
+    <section class="sumcard rollup-card" id="clientRollup" hidden>
+      <div class="sumcard-head rollup-head" id="rollupHead"></div>
+      <div class="cx-results" id="clientTally"></div>
+    </section>
+    <!-- Creators: their title over a shaded card a creator, each folded to
+         its name, state and next date. -->
+    <section class="cs-creators" id="bookingWrap" hidden>
+      <div class="sumcard-head cs-sechead"><h2 id="bookingHead"></h2><span class="tab-n" id="bookingCount"></span></div>
       <div id="bookingList"></div>
     </section>
-
     <h2 class="sectionhead" id="chooseHead" hidden></h2>
     <p class="listhint" id="chooseHint" hidden></p>
 
@@ -190,6 +197,6 @@
 
 <script src="/js/icons.js?v=20261125ct"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/creators.js?v=20261125ct"></script>
+<script src="/js/creators.js?v=20261126cp7"></script>
 </body>
 </html>
