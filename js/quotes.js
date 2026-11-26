@@ -31,17 +31,17 @@
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
-    'over-term': 'A line cannot run longer than the term. Set its months to the term or fewer.',
+    'over-term': 'An item cannot run longer than the term. Set its months to the term or fewer.',
     'bad-card': 'That Rate Card version is no longer available. Choose another.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     'bad-date': window.ADspaceWords.line.docDate,
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
     'bad-pay': 'Choose the payment terms.',
     'bad-valid': 'Choose how many days the quotation is valid for.',
-    'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the lines could not be read. Refresh the page.',
-    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
-    'bad-package': 'Enter the package name, its price and at least one Rate Card line, each with a quantity.',
-    'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
+    'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the items could not be read. Refresh the page.',
+    'bad-custom': 'Enter each custom item\'s name, quantity and rate, and its months from 1 to 36.',
+    'bad-package': 'Enter the package name, its price and at least one Rate Card service, each with a quantity.',
+    'bad-renewal': 'A service line to renew is no longer confirmed. Remove it and choose Renew service lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
     expired: 'This quotation has expired. Use Build quote to quote again.',
@@ -1110,7 +1110,7 @@
     window.ADspaceConfirm.ask({
       title: place ? 'Approve in place of ' + q.reviewer_name + '?' : 'Approve ' + q.ref + '?',
       body: (place ? q.reviewer_name + ' was asked to review it; the approval is filed under your name in their place. ' : '') +
-        'Its lines will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
+        'Its items will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
       /* Services start (2026-11-12, the user): the lines' first day, so the
          months they cover are read when a content month is made. */
       fields: [{ name: 'start', label: 'Start date', type: 'date', required: false, value: askedStart(q) || nextFirst(),
@@ -1242,7 +1242,7 @@
     'not-reviewed': 'Approve the signed quotation first.', 'no-start': 'Set the start date first.',
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
     creating: 'Bukku will finish creating this invoice shortly. Refresh the page in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Accounting, Bukku.',
-    nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
+    nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'An item\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Accounting, Tax codes.',
     'no-fx': window.ADspaceWords.line.fxUnset, 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
     'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Accounting, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
@@ -1662,7 +1662,7 @@
     if (p) bits.push('Plan ' + p.spec.plan);
     if (pl.length) bits.push(pl.length > 1 ? pl.slice(0, -1).join(', ') + ' and ' + pl[pl.length - 1] : pl[0]);
     if (!p && !pl.length && (b.once || []).length) bits.push('One-time items');
-    if (!bits.length && (b.custom || []).length) bits.push('Custom lines');
+    if (!bits.length && (b.custom || []).length) bits.push('Custom items');
     return bits.join(' · ');
   }
   function basket() {
@@ -2042,9 +2042,9 @@
   }
   function cusWrong() {
     var rows = cusRead();
-    if (rows.some(function (r) { return !r.label; })) return 'Enter each custom line\'s name.';
-    if (rows.some(function (r) { return !(r.qty >= 1); })) return 'Enter each custom line\'s quantity.';
-    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 36); })) return 'Enter each custom line\'s months, from 1 to 36.';
+    if (rows.some(function (r) { return !r.label; })) return 'Enter each custom item\'s name.';
+    if (rows.some(function (r) { return !(r.qty >= 1); })) return 'Enter each custom item\'s quantity.';
+    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 36); })) return 'Enter each custom item\'s months, from 1 to 36.';
     if ($('qbTerms').value.split(/\r?\n/).filter(function (x) { return x.trim(); }).length > 10) return window.ADspaceWords.line.terms;
     return '';
   }
@@ -2136,7 +2136,7 @@
         var taken = Array.prototype.map.call(document.querySelectorAll('#qbCusRows [data-renews]'), function (x) { return x.getAttribute('data-renews'); });
         var L = (r.data || []).filter(function (l) { return taken.indexOf(l.id) < 0; });
         B.renewable = L;
-        if (!L.length) { box.innerHTML = '<p class="qb-cusnote">No confirmed lines to renew.</p><div class="qb-renew-foot"><button class="btn btn-quiet btn-sm" type="button" data-a="shut">Close</button></div>'; return; }
+        if (!L.length) { box.innerHTML = '<p class="qb-cusnote">No confirmed service lines to renew.</p><div class="qb-renew-foot"><button class="btn btn-quiet btn-sm" type="button" data-a="shut">Close</button></div>'; return; }
         box.innerHTML = L.map(function (l) {
           return '<label class="tickline"><input type="checkbox" value="' + esc(l.id) + '"> <span>' + esc(l.label) + ' <small class="qb-cusnote">' +
             esc(Number(l.qty) + ' × ' + CUR + ' ' + rm(l.rate) + (Number(l.tenure) > 1 ? ' · ' + l.tenure + ' months' : '')) + '</small></span></label>';
@@ -2430,7 +2430,7 @@
     var names = (B && B.sent ? B.sent.map(function (i) { return B.brands[i]; }) : null) || t.brands || null, many = Boolean(names && names.length > 1 && rows.some(function (l) { return l.brand != null; }));
     var onBoard = B && B.sent ? boardAt() : null;
     var lastBrand = null;
-    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Line</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
+    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Item</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
       '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
         var ro = Boolean(B && B.sent && l.brand !== onBoard);
@@ -2634,7 +2634,7 @@
       if (B.kind === 'package') {
         var k = B.pkg || {};
         if (!String(k.name || '').trim()) return 'Enter the package name.';
-        if (!(k.items || []).length) return 'Add a Rate Card line to the package.';
+        if (!(k.items || []).length) return 'Add a Rate Card service to the package.';
         if (!/^\d{1,7}(\.\d{1,2})?$/.test(String(k.price || '').replace(/,/g, ''))) return 'Enter the package price.';
       }
       if (B.kind === 'items' && !Array.prototype.some.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return Number(i.value) > 0; }) &&
@@ -2686,7 +2686,7 @@
           '<button class="iconbtn qb-pkgx" type="button" aria-label="Remove ' + nm + '">' + X_ICON + '</button></div>';
       }).join('');
     var taken = k.items.map(function (it) { return it.slug; });
-    $('qbPkgAdd').innerHTML = '<option value="">Choose a Rate Card line</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
+    $('qbPkgAdd').innerHTML = '<option value="">Choose a Rate Card service</option>' + ((B.card.snapshot || {}).services || []).filter(function (s) {
       return s.active !== false && s.rate != null && !(s.spec && s.spec.role === 'plan') && taken.indexOf(s.slug) < 0;
     }).map(function (s) { return '<option value="' + esc(s.slug) + '">' + esc(s.name) + '</option>'; }).join('');
     var price = Number(String(k.price || '').replace(/,/g, ''));
