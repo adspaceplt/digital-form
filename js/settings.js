@@ -170,6 +170,16 @@
         return f ? 'Next ' + tripWord(f, f.next) : '';
       });
     },
+    /* Quotation numbers: the next request's shape and a revision's
+       suffix, as the database gives them. */
+    quoteno: function () {
+      return db.rpc('id_formats_list').then(function (r) {
+        if (r.error || !Array.isArray(r.data)) throw r.error || new Error('quoteno');
+        var by = {};
+        r.data.forEach(function (f) { by[f.kind] = f; });
+        return by.request && by.revision ? parts(['Next request ' + reqWord(by.request), 'Revision ' + revWord(by.revision)]) : '';
+      });
+    },
     industries: function () {
       return db.rpc('industries_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('industries');
@@ -329,6 +339,17 @@
          the charges"; renamed 2026-11-26, the Settings review): the
          database and files against the plan, and what was sent; the AI's
          cost is AI usage and limits'. */
+      /* NUMBERING (2026-11-26, the Settings review): every number the
+         portal gives, one part, each sheet Prefix · Digits · Next number
+         under one Next: preview (`id_formats`; the task number its own). */
+      ['Numbering', [
+        may('ops.numbering') && { id: 'numbering', name: 'Task numbers', kind: 'edit', meta: line('numbering'),
+          open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } },
+        biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } },
+        /* Creator and campaign IDs and the Job reference (2026-11-08). */
+        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
+        /* A website request's number and a revision's suffix (#1504). */
+        biz && { id: 'quoteno', name: 'Quotation numbers', kind: 'edit', meta: line('quoteno'), open: function () { openQuoteNo(); } }]],
       ['Plan', [biz && { id: 'usage', name: 'Storage and plan', kind: 'open', meta: line('usage'), open: openUsage }]]]);
     /* Company (the Settings review, 2026-11-26): the office, its security
        and health, out of Portal, which keeps what changes the portal
@@ -398,11 +419,7 @@
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months'),
           'Office radius ' + num('outstation_office_radius_m') + ' m',
-          'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) },
-      biz && { id: 'tripno', name: 'Outstation trip numbers', kind: 'edit', meta: line('tripno'), open: function () { openTripNo(); } }]],
-      ['Numbering', [
-      may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
-        open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
+          'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) }]]]);
     var meta = num('meta_checks') === 1;
     add('reports', 'Reports', 'reports', [['', [
       biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
@@ -507,8 +524,6 @@
           meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
             .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
       ['Creators', [
-        /* Creator and campaign IDs and the Job reference (2026-11-08). */
-        biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
         /* When a creator is paid after their post (2026-11-09). */
         biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
           meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
@@ -1015,6 +1030,71 @@
     var t = window.ADspaceClock.today();
     return '#' + (f.prefix || 'OS') + String(t).slice(2, 4) + String(t).slice(5, 7) + num;
   }
+  /* A website request's number (ADP/{prefix}{YYMM}-{letters}, the letters
+     random, never a count) and a revision's suffix under its family
+     ({quotation}-{prefix}{n}); neither holds a next number of its own. */
+  var REQ_EG = 'BCDFGH';
+  function reqWord(f) {
+    var t = window.ADspaceClock.today(), w = Math.max(3, Math.min(6, Number(f.width) || 3));
+    return 'ADP/' + (f.prefix || 'REQ') + String(t).slice(2, 4) + String(t).slice(5, 7) + '-' + REQ_EG.slice(0, w);
+  }
+  function revWord(f) {
+    var w = Math.max(1, Math.min(3, Number(f.width) || 1)), n = '1';
+    while (n.length < w) n = '0' + n;
+    return '-' + (f.prefix || 'R') + n;
+  }
+  var QNO_SAID = { 'bad-width-request': 'Enter a number of letters from 3 to 6.', 'bad-width-revision': 'Enter a number of digits from 1 to 3.' };
+  function openQuoteNo() {
+    db.rpc('id_formats_list').then(function (r) {
+      var by = {};
+      ((r && r.data) || []).forEach(function (f) { by[f.kind] = f; });
+      if (r.error || !by.request || !by.revision) {
+        rowSay('quoteno')(r.error && /function|schema cache/i.test(r.error.message) || !by.request ? window.ADspaceWords.line.notYet : 'Could not load. Refresh the page.', 'err');
+        return;
+      }
+      var typed = function (get, k) {
+        var f = by[k], p = String(get(k + '_prefix').value || '').trim().toUpperCase(), w = String(get(k + '_width').value || '').trim();
+        return { prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^\d$/.test(w) ? w : f.width };
+      };
+      window.ADspaceConfirm.ask({
+        title: 'Quotation numbers', go: 'Save', wait: true,
+        fields: [
+          { name: 'request_prefix', label: 'Prefix', head: 'Website request', half: true, value: by.request.prefix || '', required: true },
+          { name: 'request_width', label: 'Letters', half: true, value: String(by.request.width || ''), required: true },
+          { name: 'revision_prefix', label: 'Prefix', head: 'Revision', half: true, value: by.revision.prefix || '', required: true },
+          { name: 'revision_width', label: 'Digits', half: true, value: String(by.revision.width || ''), required: true }],
+        /* One Next: preview, as every numbering sheet's. */
+        preview: function (get) {
+          return ['Next:', reqWord(typed(get, 'request')), 'Revision: ' + revWord(typed(get, 'revision'))];
+        },
+        check: function (v) {
+          if (!/^[A-Za-z]{1,6}$/.test(String(v.request_prefix || '').trim()) || !/^[A-Za-z]{1,6}$/.test(String(v.revision_prefix || '').trim())) return IDS_SAID['bad-prefix'];
+          if (!/^[3-6]$/.test(String(v.request_width || '').trim())) return QNO_SAID['bad-width-request'];
+          if (!/^[1-3]$/.test(String(v.revision_width || '').trim())) return QNO_SAID['bad-width-revision'];
+          return '';
+        }
+      }, function (v) {
+        var steps = ['request', 'revision'].filter(function (k) {
+          return String(v[k + '_prefix']).trim().toUpperCase() !== by[k].prefix || Number(v[k + '_width']) !== Number(by[k].width);
+        });
+        function one(i) {
+          if (i >= steps.length) return Promise.resolve('');
+          var k = steps[i];
+          return db.rpc('id_format_set', { p_kind: k, p_prefix: String(v[k + '_prefix']).trim().toUpperCase(), p_width: Number(v[k + '_width']),
+            p_next: Number(by[k].next) || 1, p_pattern: null }).then(function (r2) {
+            if (r2.error) return /function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message;
+            var d = r2.data || {};
+            if (d.error) return d.error === 'bad-width' ? QNO_SAID['bad-width-' + k] : (IDS_SAID[d.error] || 'Not saved. Please try again.');
+            return one(i + 1);
+          });
+        }
+        return one(0).then(function (err) {
+          if (!err) { readLine('quoteno'); rowSay('quoteno')(steps.length ? 'Saved.' : '', 'ok'); }
+          return err;
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('quoteno')('Could not load. Refresh the page.', 'err'); });
+  }
   function openTripNo() {
     db.rpc('id_formats_list').then(function (r) {
       var f = ((r && r.data) || []).filter(function (x) { return x.kind === 'trip'; })[0];
@@ -1032,7 +1112,7 @@
            row's width under both (2026-11-25). */
         preview: function (get) {
           var p = String(get('prefix').value || '').trim().toUpperCase(), w = String(get('width').value || '').trim();
-          return ['Next trip:', tripWord({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width }, f.next),
+          return ['Next:', tripWord({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width }, f.next),
             'The count starts again each month.'];
         },
         check: function (v) {
