@@ -29,7 +29,7 @@
     empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.',
-    'not-confirmed': 'This quotation is still a draft. Confirm it first.', website: 'A website request is confirmed by Send quotation.', 'bad-budget': 'Choose an advertising budget.',
+    'not-confirmed': 'This quotation is still a draft. Confirm it first.', website: 'This quotation came from a website request. Use Send quotation to confirm it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimal places, and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
     'over-term': 'An item cannot run longer than the term. Set its months to the term or fewer.',
@@ -761,13 +761,13 @@
     }
     if (a === 'confirm') {
       window.ADspaceConfirm.ask({ title: 'Confirm quotation?',
-        body: refOf(q) + ' will take its reference' + (q.revises ? ' as the next revision of the quotation it revises' : '') +
-          '. It can then be sent to the client. A confirmed quotation does not return to a draft.',
+        body: 'This quotation will take its reference' + (q.revises ? ' as the next revision of the quotation it revises' : '') +
+          '. It can then be sent to the client. A confirmed quotation cannot be returned to a draft.',
         go: 'Confirm quotation', wait: true }, function () {
         return ctx.db.rpc('quotation_confirm', { p_id: q.id }).then(function (r) {
           var d = r.data || {};
           if (r.error) return said(r.error);
-          if (d.error === 'revised') return 'The quotation it revises was revised as ' + d.ref + ' meanwhile. Remove this draft, or edit ' + d.ref + ' instead.';
+          if (d.error === 'revised') return 'The quotation it revises has since been revised as ' + d.ref + '. Remove this draft, or edit ' + d.ref + ' instead.';
           if (d.error) return said(d.error);
           ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' confirmed.', 'ok'); });
           return '';
@@ -3414,7 +3414,7 @@
           if (B) B.made = true;
           window.ADspaceSheet.close();
           B = null;
-          ctx.reload(function () { ctx.msg('qtMsg', made.length + ' drafts saved. Confirm each to send it.', 'ok'); made.map(dref).forEach(markNew); });
+          ctx.reload(function () { ctx.msg('qtMsg', made.length + ' drafts saved.', 'ok'); made.map(dref).forEach(markNew); });
           return;
         }
         var one = Object.assign({}, sel, { brands: [sel.brands[at]] });
@@ -3444,14 +3444,14 @@
         B.made = true;
         window.ADspaceSheet.close();
         B = null;
-        if (!revises) { ctx.reload(function () { ctx.msg('qtMsg', 'Draft saved. Confirm it to send it.', 'ok'); markNew(dref(d.ref)); }); return; }
+        if (!revises) { ctx.reload(function () { ctx.msg('qtMsg', 'Draft saved.', 'ok'); markNew(dref(d.ref)); }); return; }
         ctx.db.rpc('quotation_replace', { p_new: d.id, p_old: revises.id }).then(function (r2) {
           var e2 = (r2 && r2.error) || (r2 && r2.data && r2.data.error);
           ctx.reload(function (rows) {
-            if (e2) { ctx.msg('qtMsg', 'Draft saved, but not linked to ' + revises.ref + ': ' + said(e2), 'err'); return; }
+            if (e2) { ctx.msg('qtMsg', 'Draft saved. It is not recorded as a revision of ' + revises.ref + ' (' + said(e2) + '). Remove it and edit ' + revises.ref + ' again.', 'err'); return; }
             /* The revision is a draft: confirmed, it takes the next -Rn under
                its family and revises the earlier then (2026-11-26). */
-            ctx.msg('qtMsg', 'Draft revision of ' + revises.ref + ' saved. Confirm it to send it.', 'ok'); markNew(dref(d.ref));
+            ctx.msg('qtMsg', 'Draft revision saved.', 'ok'); markNew(dref(d.ref));
           });
         }).catch(function (e) { ctx.reload(function () { ctx.msg('qtMsg', said(e), 'err'); }); });
       }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
