@@ -5,15 +5,13 @@
   var feed = null;
 
   var $ = function (id) { return document.getElementById(id); };
-  /* This page is English only (no language action in its chrome), so it takes
-     the English half of the shared words. The covers say the same thing here
-     as on /creators/ and /client/ because they are the same words, not
-     because three files were kept in step by hand. */
-  var W = window.ADspaceWords.en;
-  /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
-     this browser, the moment the page shows what it is for. */
-  /* Its steps follow the top as it reads (2026-11-26): the stage strip, the
-     Filter where one is drawn, then a post's decision. */
+  /* English only (no language action in its chrome): the shared words'
+     English half, under this page's own (the top, 2026-11-26). */
+  var RV = { rvWaiting: '{n} posts waiting for your review', rvWaitingOne: '1 post waiting for your review', rvReviewed: 'All {n} posts reviewed', rvReviewedOne: '1 post reviewed', rvPosts: '{n} posts', rvPostsOne: '1 post', rvAdHoc: 'Ad hoc', rvFilter: 'Filter', rvSafe: 'Show safe area', rvGuideName: 'Content Review', rvGuidePending: 'Posts waiting for your decision are under Pending.', rvGuideFilter: 'Show one format or set, or the safe area on videos.', rvGuideDecide: 'Approve each post, or request changes with a note for the team.' };
+  var W = {};
+  [window.ADspaceWords.en, RV].forEach(function (o) { Object.keys(o).forEach(function (k) { W[k] = o[k]; }); });
+  /* FIRST-VISIT GUIDE (js/guide.js): its steps follow the top as it reads,
+     the strip, Filter where drawn, then a post's decision (2026-11-26). */
   function guide() {
     return { name: W.rvGuideName, steps: [
       { at: '#stageStrip', text: W.rvGuidePending },
