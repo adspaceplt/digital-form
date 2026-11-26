@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126y">
-<link rel="stylesheet" href="/css/console.css?v=20261126cid">
+<link rel="stylesheet" href="/css/portal.css?v=20261126lo">
+<link rel="stylesheet" href="/css/console.css?v=20261126lo">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -136,7 +136,7 @@
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/icons.js?v=20261125ct"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
-<script src="/js/acts.js?v=20261124a"></script>
+<script src="/js/acts.js?v=20261126lo"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/ask.js?v=20261117zzzf"></script>
 <script src="/js/confirm.js?v=20261126a"></script>
@@ -146,7 +146,7 @@
 <script src="/js/otp.js?v=20261122zzr"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/group.js?v=20261126y"></script>
-<script src="/js/menu.js?v=20261125ofc"></script>
+<script src="/js/menu.js?v=20261126lo"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
 <script src="/js/cmdbar.js?v=20261126y"></script>
 <script src="/js/records.js?v=20261125qla"></script>
@@ -1898,23 +1898,6 @@
               <button class="btn btn-primary" id="qsgPaperSave" type="button">Save</button>
               <button class="btn btn-quiet" id="qsgPaperCancel" type="button">Cancel</button>
             </div>
-          </div>
-        </div>
-        <div class="sheet" id="pickSheet" hidden>
-          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
-            <div class="sheet-head">
-              <h3 id="pickTitle">Issue Letter of Offer</h3>
-              <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-              </button>
-            </div>
-            <div class="sheet-body" id="pickBody"></div>
-            <div class="sheet-foot">
-              <span class="lpicksum" id="pickSum"></span>
-              <button class="btn btn-primary" id="pickGo" type="button">Issue</button>
-              <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
-            </div>
-            <div class="msg" id="pickMsg"></div>
           </div>
         </div>
 
@@ -6821,7 +6804,7 @@ raya-2026        https://example.com/raya"></textarea>
      are bumped with every other. -->
 <script type="application/json" id="lazyScripts">
 {
-  "documents": {"src": "/js/documents.js?v=20261126a"},
+  "documents": {"src": "/js/documents.js?v=20261126lo"},
   "letters": {"src": "/js/letters.js?v=20261125wh", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
@@ -6838,7 +6821,7 @@ raya-2026        https://example.com/raya"></textarea>
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
   "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261126y", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "crm": {"src": "/js/crm.js?v=20261126lo", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
   "team": {"src": "/js/team.js?v=20261126", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
