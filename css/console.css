@@ -1445,6 +1445,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 /* A heading and the one control that opens what it summarises: the section
    head this portal already uses, drawn flat rather than as another card. */
 .ovsec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+/* A head over nothing shown (My Health's Earlier check-ins, shut) keeps no step under it. */
+.ovsec-head:has(+ [hidden]:last-child) { margin-bottom: 0; }
 .ovfacts dd b { font-weight: 600; }
 .ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
 /* A few real rows, on the record's own grid so every column starts at the
@@ -3356,7 +3358,7 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
    one over the other when narrow. */
 .health-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .is-narrow .health-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.health-pair { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
 /* The pair's gap is its step: a card gives its own margin back (stacked at 390). */
 .health-pair > .ovcard { margin-bottom: 0; }
 .is-narrow .health-pair { grid-template-columns: minmax(0, 1fr); }
@@ -4859,8 +4861,11 @@ label.inv-row { cursor: pointer; }
 .inv-who { display: grid; gap: 2px; min-width: 0; }
 .inv-who b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inv-who small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inv-amt { display: grid; justify-items: end; text-align: right; font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-span.inv-amt { font-weight: 600; }
+.inv-amt { display: grid; justify-items: end; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+span.inv-amt { font-weight: 500; }
+.inv-row:not(.crm-head) .inv-amt { font-size: 13.5px; }
+.inv-late { color: var(--err); }
+.inv-open { margin-inline-start: -8px; }
 .inv-amt small { font-weight: 400; font-size: 12px; color: var(--ink-mute); }
 .inv-due { font-size: 13.5px; white-space: nowrap; }
 .inv-days { font-size: 13.5px; color: var(--err); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -4871,23 +4876,24 @@ span.inv-amt { font-weight: 600; }
 .inv-last .linkbtn { font-size: 12.5px; }
 .inv-last .linkbtn svg { width: 13px; height: 13px; margin-left: 4px; }
 .is-narrow .crm-head.inv-row { display: none; }
-/* A phone row reads line by line: the client and the amount; the invoice
-   and its due date, and how long overdue; the last reminder, and Open in
-   Bukku (2026-10-31). */
+/* A phone row reads line by line (unslop 2, 2026-11-26): the client and
+   the amount; the invoice, its due date and the days overdue as one line of
+   parts under both; the last reminder, and Open in Bukku. */
 .is-narrow .inv-row, .is-narrow .can-pick .inv-row {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "who amt" "who days" "state open";
+  grid-template-areas: "who amt" "meta meta" "state open";
   align-items: start; gap: 2px 12px; padding: 12px 15px;
 }
-.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". who days" ". state open"; }
+.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". meta meta" ". state open"; }
 .is-narrow .inv-row > .inv-tick { grid-area: tick; padding-top: 2px; }
-.is-narrow .inv-row > .inv-who { grid-area: who; }
+.is-narrow .inv-row > .inv-who { display: contents; }
+.is-narrow .inv-who > b { grid-area: who; }
+.is-narrow .inv-who > small { grid-area: meta; }
 .is-narrow .inv-row > .inv-amt { grid-area: amt; }
-.is-narrow .inv-row > .inv-due { display: none; }
-.is-narrow .inv-row > .inv-days { grid-area: days; justify-self: end; }
+.is-narrow .inv-row > .inv-due, .is-narrow .inv-row > .inv-days { display: none; }
 .is-narrow .inv-row > .inv-last { display: contents; }
 .is-narrow .inv-last > .inv-state { grid-area: state; margin-top: 6px; }
-.is-narrow .inv-last > .inv-open { grid-area: open; justify-self: end; align-self: end; }
+.is-narrow .inv-last > .inv-open { grid-area: open; justify-self: end; align-self: end; margin-inline-start: 0; }
 .is-narrow .inv-due-m, .is-narrow .inv-word { display: inline; }
 /* The invoice's line wraps between its parts, never inside one. */
 .is-narrow .inv-who small { white-space: normal; }
@@ -5167,7 +5173,7 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .od-who b { font-weight: 500; overflow-wrap: anywhere; }
 .od-who small { font-size: 12.5px; color: var(--ink-mute); }
 .od-late { color: var(--err); }
-.od-amt { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.od-amt { font-size: 13.5px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .od-st { justify-self: start; }
 .od-none { margin: 0; }
 .od-sent-h { margin: 16px 0 4px; }
@@ -6503,10 +6509,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .prs-file-acts { justify-content: flex-start; }
 .dep-code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-mute); margin-left: 8px; }
 .prs-none { margin: 0; font-size: 13px; color: var(--ink-mute); }
-/* On a narrow pane the record's two acts take their own row, equal halves. */
+/* On a narrow pane the record's acts take their own row at the right
+   edge, each at its own width, wrapping rather than stacking full width
+   (unslop 2, 2026-11-26). */
 .is-narrow .readgroup-head:has(> .prs-acts) { flex-wrap: wrap; }
-.is-narrow .prs-acts { flex: 1 0 100%; justify-content: stretch; }
-.is-narrow .prs-acts > .btn { flex: 1 1 50%; }
+.is-narrow .prs-acts { flex: 1 0 100%; justify-content: flex-end; }
+.is-narrow .prs-acts > .btn { flex: 0 0 auto; }
 /* Interview scorecards (2026-11-17): Position · Criteria · the pen and ⋯;
    a candidate's scores and decision as the interviews' shaded cards. */
 .ind-row.is-hsc { grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 80px; }

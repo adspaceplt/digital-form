@@ -6413,7 +6413,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .ovsec { padding: 14px 15px; }
 .readgroup:first-child { border-top: 0; padding-top: 4px; }
 .readgroup .fsec-h { margin-bottom: 12px; }
-.ovfacts dd.is-missing { color: var(--err); font-weight: 600; }
+.ovfacts dd.is-missing { color: var(--warn); font-weight: 500; }
 .ovfacts dd.is-empty { color: var(--ink-mute); }
 .readlogo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: middle;
   border-radius: 50%; corner-shape: round; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
@@ -7412,7 +7412,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   align-self: stretch; margin: -10px 0; padding: 10px 0; min-height: var(--ctl-h);
   border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
 }
-.perf-open b, .mine-month b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perf-open b, .mine-month b { font-size: 14px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf-open small, .mine-month small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf-state, .perf-grade { min-width: 0; }
 .perf-chev svg { width: 16px; height: 16px; }
@@ -8875,7 +8875,7 @@ body.is-maint { overflow: hidden; }
 .health-talk + .health-talk { border-top: 1px solid var(--line-soft); }
 .health-talk-who b { font-size: 14px; font-weight: 600; }
 .health-talk-who small { font-size: 12px; color: var(--ink-mute); }
-.health-who b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-who b { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .health-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .health-prow { grid-template-columns: minmax(0, 1fr) 120px 16px; grid-template-areas: "who at chev"; gap: 4px 10px; }
 /* ---------- The client pages refresh (2026-10-07) ----------

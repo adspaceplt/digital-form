@@ -303,10 +303,14 @@
     /* On a phone the due date joins the invoice's line and the days say
        what they count, the column heads being hidden (2026-10-31; the
        user: "this row sequence quite confusing"). */
-    var part = function (t) { return '<span class="inv-part">' + t + '</span>'; };
-    var meta = part(esc(window.ADspaceWords.line.docNo(l.number, l.ref_no))) + (l.part ? ' · ' + part(esc(partWord(l.part))) : '') +
-      '<span class="inv-due-m"> · ' + part('Due ' + esc(day(l.due))) + '</span>' +
-      (l.client ? (st.many && st.many[l.client] && companyOf(l) ? ' · ' + esc(companyOf(l)) : '') : ' · ' + part('Not linked to a client'));
+    /* One line of parts (`ADspaceWords.parts`), the dot inside each part
+       after the first, so a wrap never leaves one at a line's end; on a
+       phone the due date and the days overdue join it (unslop 2). */
+    var meta = window.ADspaceWords.parts([window.ADspaceWords.line.docNo(l.number, l.ref_no),
+      l.part ? partWord(l.part) : '',
+      { text: 'Due ' + day(l.due), cls: 'inv-due-m' },
+      { text: plural(l.days, 'day', 'days') + ' overdue', cls: 'inv-due-m inv-late' },
+      l.client ? (st.many && st.many[l.client] && companyOf(l) ? companyOf(l) : '') : 'Not linked to a client']);
     row.innerHTML = (st.send ? '<span class="inv-tick"><input type="checkbox"' + (st.pick[l.id] ? ' checked' : '') +
         ' aria-label="' + esc(l.number + ', ' + nameOf(l)) + '"></span>' : '') +
       '<span class="inv-who"><b>' + esc(nameOf(l)) + '</b><small>' + meta + '</small></span>' +
