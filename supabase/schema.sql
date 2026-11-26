@@ -159589,7 +159589,8 @@ language plpgsql security definer set search_path = public as $$
 declare r record; n integer := 0;
 begin
   for r in
-    select e.id, e.meeting_at, coalesce(e.meeting_owner_id, e.manager_id) as who, c.name as client_name
+    select e.id, e.meeting_at, coalesce((select t.id from public.team_members t where t.id = e.meeting_owner_id and t.active),
+                                       (select t.id from public.team_members t where t.id = e.manager_id and t.active)) as who, c.name as client_name
       from public.ops_engagements e
       left join public.clients c on c.id = e.client_id
      where e.meeting_channel = 'onsite' and not e.meeting_na and e.meeting_at is not null
