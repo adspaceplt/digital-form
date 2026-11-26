@@ -1008,8 +1008,14 @@
         title: 'Outstation trip numbers', go: 'Save', wait: true,
         fields: [
           { name: 'prefix', label: 'Prefix', half: true, value: f.prefix || '', required: true },
-          { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true,
-            note: 'The first trip this month reads ' + tripWord(f, 1) + '. The count starts again each month.' }],
+          { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true }],
+        /* The first number this month, read again as Prefix or Digits is
+           typed, the whole row's width under both (2026-11-25). */
+        preview: function (get) {
+          var p = String(get('prefix').value || '').trim().toUpperCase(), w = String(get('width').value || '').trim();
+          return ['First this month:', tripWord({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width }, 1),
+            'The count starts again each month.'];
+        },
         check: function (v) {
           if (!/^[A-Za-z]{1,6}$/.test(String(v.prefix || '').trim())) return IDS_SAID['bad-prefix'];
           if (!/^[2-6]$/.test(String(v.width || '').trim())) return IDS_SAID['bad-width'];
@@ -1045,15 +1051,26 @@
         fields.push({ name: k[0] + '_width', label: 'Digits', third: true, value: String(f.width || ''), required: true });
         fields.push({ name: k[0] + '_next', label: 'Next number', third: true, value: String(f.next || ''), required: true });
       });
-      fields.push({ name: 'job', label: 'Pattern', head: 'Job reference', value: (by.job || {}).pattern || '', required: true,
-        note: 'A booking reads, for example, ' + ((by.job || {}).pattern || '').replace('{creator}', idNext(by.creator || {})).replace('{campaign}', idNext(by.campaign || {})) + '.' });
+      fields.push({ name: 'job', label: 'Format', head: 'Job reference', value: (by.job || {}).pattern || '', required: true });
       /* A creator's payment details reference (2026-11-08): its Creator ID
          and a run of n for the number, held on the creator's row. */
       var payPat = (by.creator || {}).pattern || '{creator}/R{nnn}';
-      fields.push({ name: 'payref', label: 'Pattern', head: 'Payment details reference', value: payPat, required: true,
-        note: 'A creator\'s first set of details reads, for example, ' + payRefOf(payPat, idNext(by.creator || {}), 1) + '.' });
+      fields.push({ name: 'payref', label: 'Format', head: 'Payment details reference', value: payPat, required: true });
+      /* The IDs typed, as a booking's reference and a creator's first
+         payment details read them, the whole row's width under the
+         figures, read again at every key (2026-11-25). */
+      var typed = function (get, k) {
+        var f = by[k] || {}, p = String(get(k + '_prefix').value || '').trim().toUpperCase(), w = String(get(k + '_width').value || '').trim(),
+          n = String(get(k + '_next').value || '').trim();
+        return idNext({ prefix: /^[A-Z]{1,6}$/.test(p) ? p : f.prefix, width: /^[2-6]$/.test(w) ? w : f.width, next: /^[1-9]\d{0,8}$/.test(n) ? n : f.next });
+      };
       window.ADspaceConfirm.ask({
         title: 'Creator and campaign IDs', go: 'Save', wait: true, fields: fields,
+        preview: function (get) {
+          var cr = typed(get, 'creator'), job = String(get('job').value || '').trim() || (by.job || {}).pattern || '';
+          return ['Job reference:', job.replace('{creator}', cr).replace('{campaign}', typed(get, 'campaign')),
+            'A creator\'s first payment details reference reads ' + payRefOf(String(get('payref').value || '').trim() || payPat, cr, 1) + '.'];
+        },
         check: function (v) {
           var bad = '';
           ['creator', 'campaign'].forEach(function (k) {

@@ -65,7 +65,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   its sheet, never a drill-down (refused 2026-10-11: "It now takes five
   layers"); with fewer than three groups every group shows. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
-  opening the one sheet that already edits it; a figure changed from a
+  opening the one sheet that already edits it. A sheet of figures
+  (`editSettings`, `SETTING_SHEETS`) asks each figure by a noun alone
+  (`SET_FIELD`: Office radius, never Office radius (metres, 20 to
+  1,000)), its unit inside the box, what 0 does one line under it (0
+  turns this off.), its range in the refusal (Enter a whole number from
+  20 to 1,000 m for Office radius.) from `SET_BOUND`, which names every
+  bound a sheet uses (`tests/settings.js`; 2026-11-25: Outstation, Client
+  feedback and the hiring limits named none, and their Save threw); a
+  section's figures pair only while every label of it fits a column (24
+  characters, three across at 14), a latitude always beside its
+  longitude; a numbering sheet's example is its preview (First this
+  month: #OS261101); a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
   (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
   never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). An Open

@@ -4954,8 +4954,11 @@ span.inv-amt { font-weight: 600; }
 .ost-vh-end .kmenu-btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 .ost-part > .ost-facts { margin-top: 4px; margin-bottom: 15px; }
 .ost-facts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-.ost-facts .serial-copy { margin-left: -6px; }
-.ost-purpose, .ost-person { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ost-facts .serial-copy { margin-left: -6px; white-space: nowrap; }
+.ost-purpose, .ost-person { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.ost-person > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ost-facts dd { overflow-wrap: normal; }
+.ost-facts .facts-wide dd { overflow-wrap: anywhere; }
 .ost-purpose svg { width: 15px; height: 15px; color: var(--ink-soft); flex: 0 0 auto; }
 .ost-people { display: grid; gap: 6px; }
 .ost-break { margin-top: 0; }
@@ -6746,3 +6749,25 @@ body.is-plain .topbar, :root[data-boot="out"] .topbar {
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 :root[data-boot="out"], :root:has(> body.is-plain), :root:has(> body.is-maint) { background: var(--card); }
+
+/* Settings' sheets of figures (2026-11-25): a unit in the box and a
+   worked example under the fields; the console's alone, so no client
+   page carries them. */
+/* A figure's unit inside its box (m, days, %) and a currency before it
+   (RM, US$): the label stays a noun alone (2026-11-25). The words are laid
+   over the box and the field pads by their length, never a width. */
+.unitbox { position: relative; display: block; width: 100%; }
+.unitbox > .input { width: 100%; }
+.unitbox > .input { padding-right: calc(var(--unit-post, 0) * 0.62em + 22px); }
+.unitbox[style*="--unit-pre"] > .input { padding-left: calc(var(--unit-pre) * 0.62em + 18px); }
+.unitbox-unit, .unitbox-pre { position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none;
+  font-size: var(--field-text); color: var(--ink-mute); white-space: nowrap; }
+.unitbox-unit { right: 12px; }
+.unitbox-pre { left: 12px; }
+/* A worked example under a sheet's figures, the whole row's width: the
+   first reference a number makes, in the token face, over one mute line. */
+.askpreview { grid-column: 1 / -1; margin-top: 16px; padding: 10px 12px; background: var(--sunk); border-radius: var(--radius-sm); }
+.askfields.has-half > .askpreview { margin-top: 0; }
+.askpreview-main { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.askpreview-token { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.askpreview > .asknote { margin-top: 2px; }
