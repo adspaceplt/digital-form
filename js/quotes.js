@@ -20,7 +20,7 @@
   function WA() { return window.ADspaceWhatsApp; }
   var esc = window.ADspaceWords.esc;
   var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   var SAID = {
     'send-off': window.ADspaceWords.line.whatsappSendOff,
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
@@ -670,7 +670,7 @@
     var url = q.access_key ? location.origin + '/quote/?q=' + encodeURIComponent(q.access_key) : '';
     var canCopy = item.hasAttribute('data-copy'), canPreview = item.hasAttribute('data-preview');
     linkPop.innerHTML = '<div class="popcard-head"><p class="rp-idspop-title" id="qtLinkTitle">' + esc(q.ref) + '</p>' +
-      '<button class="iconbtn popcard-x" type="button" data-a="x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      '<button class="iconbtn popcard-x" type="button" data-a="x" aria-label="Close">' + window.ADspaceIcons.glyph('x') + '</button></div>' +
       (url ? '<p class="qt-linkaddr">' + esc(url.replace(/^https?:\/\//, '')) + '</p>' : '') +
       '<div class="rp-idspop-acts">' +
         (canPreview && url ? '<button class="btn btn-sm" type="button" data-a="preview">Preview</button>' : '') +
@@ -948,7 +948,7 @@
      reviewer they choose. The reviewer, or an admin in their place,
      approves (Billing filled where it was empty, the lines confirmed) or
      sends it back with a note. */
-  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN_SVG = window.ADspaceIcons.glyph('pen');
   var CO = [['legal_name', 'Registered Company Name'], ['company_no', 'Business Registration No.'], ['company_no_old', 'Old Registration No.'],
     ['tin', 'TIN'], ['sst_no', 'SST Registration No.'], ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var CO_NEED = { legal_name: 1, company_no: 1, billing_address: 1 };
@@ -992,7 +992,7 @@
         note + '</dd></div>';
     }).join('');
     var sig = '';
-    if (s.signature && s.signature.type === 'drawn') sig = '<span class="qsg-sig"><svg class="qsg-sig-svg" role="img" aria-label="Signature of ' + esc(sg.name || '') + '"><path d="' + esc(s.signature.path) + '"/></svg></span>';
+    if (s.signature && s.signature.type === 'drawn') sig = '<span class="qsg-sig">' + window.ADspaceIcons.drawing('', '<path d="' + esc(s.signature.path) + '"/>', 'class="qsg-sig-svg" role="img" aria-label="Signature of ' + esc(sg.name || '') + '"') + '</span>';
     else if (s.signature && s.signature.type === 'typed') sig = '<span class="qsg-sig is-typed">' + esc(s.signature.text) + '</span>';
     var how = s.via === 'paper'
       ? fact('Signed', 'On paper') +
@@ -1744,7 +1744,7 @@
      the board (`#qbBoard`), so a brand is changed where it is read. A head
      repaints in place; the cards are drawn again only when they change. */
   var MARK = { plan: 'layers', package: 'box', items: 'file' };
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron');
   function brandFig(i) {
     var d = B && B.priced;
     if (!d || !d.totals) return ['—', ''];
@@ -1945,8 +1945,8 @@
   /* The plans of the chosen kind as cards: the letter and its fee over its
      platforms and contents; the one chosen pressed again leaves no plan
      (advertising or one-time items alone). */
-  var MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var MINUS = window.ADspaceIcons.glyph('minus');
+  var PLUS = window.ADspaceIcons.glyph('plus');
   function paintPlans() {
     var withAds = $('qbAds').value === 'ads';
     var list = svcs(B.card, 'plan').filter(function (p) { return Boolean(p.spec.ads) === withAds; });
@@ -2103,7 +2103,7 @@
      platform, each Monthly or One-time with its budget and, for Monthly,
      its months; prefilled from the budget chosen above and the term, every
      figure editable. Kept with the quotation, never a service line. */
-  var X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var X_ICON = window.ADspaceIcons.glyph('x');
   function adRow(r) {
     r = r || {};
     var opt = function (list, v) {
@@ -2586,8 +2586,8 @@
     if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-time');
     return out.length ? out.join(' · ') + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') : '';
   }
-  var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
-  var DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  var UP = window.ADspaceIcons.glyph('chevup');
+  var DOWN = window.ADspaceIcons.glyph('chevdown');
   /* The lines and the totals as the quotation will keep them. */
   /* A line written in the sheet itself (a custom line in More details, a
      package in its builder) is changed there, never in the lines. */

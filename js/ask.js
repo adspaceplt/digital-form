@@ -126,9 +126,7 @@
     /* The pen becomes a tick: the control that opened the edit is the one
        that closes it, so there is no second button to find and no row that
        grows by one while somebody is typing in it. */
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<path d="M20 6 9 17l-5-5"/></svg>';
+    btn.innerHTML = window.ADspaceIcons.glyph('check');
     btn.setAttribute('aria-label', opts.saveLabel || 'Save name');
     btn.classList.add('is-saving');
     btn.onclick = save;

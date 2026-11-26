@@ -902,8 +902,7 @@
     for (var k in VIC) if (String(VIC[k].name || '').trim().toLowerCase() === n) return k;
     return '';
   }
-  var CROWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
-    'stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg>';
+  var CROWN = window.ADspaceIcons.glyph('crown');
   /* The tag. A button wherever it stands alone; `inRow` where the row is one
      button already (a control is never nested), a part of that row that
      shows its card on a desk's hover and names itself to a screen reader. */
@@ -1660,7 +1659,7 @@
     scripts: 'Scripts', campaigns: 'Creators', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
-  var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
+  var TAB_MORE = window.ADspaceIcons.glyph('more');
   var tabMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   var tabbed = [];
   /* The person's own order (the user, 2026-10-10: "Add in the phone tab
@@ -2067,8 +2066,8 @@
        order and the bar for the rail and the bar alike; Reset puts the
        standard back in the sheet. */
     var roTabs = null;
-    var RO_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-    var RO_GRIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg>';
+    var RO_X = window.ADspaceIcons.glyph('x');
+    var RO_GRIP = window.ADspaceIcons.glyph('handle');
     var roBox = null;
     function roSheet() {
       if (roBox) return roBox;
@@ -3450,8 +3449,7 @@
     box.appendChild(sec);
   }
 
-  var GO_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var GO_CHEV = window.ADspaceIcons.glyph('chevron');
 
   if ($('crFind')) $('crFind').addEventListener('input', function () {
     crFind = this.value.trim().toLowerCase();
@@ -4457,7 +4455,7 @@
     if (clientId && may('clients', 'view')) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'linkbtn';
-      b.innerHTML = 'Open Brand' + GO_CHEV.replace('<svg ', '<svg class="ovgo-chev" ');
+      b.innerHTML = 'Open Brand' + window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
       b.addEventListener('click', function () {
         location.href = '/admin/?s=clients&client=' + encodeURIComponent(clientId) + '&tab=brand';
       });
@@ -4958,7 +4956,7 @@
       var id = 'pairSel' + i;
       return '<div class="paircard" data-cover="' + esc(c.id) + '">' +
         '<div class="paircard-media">' + coverTile((c.media || [])[0], c) +
-          '<span class="pairlink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>' +
+          '<span class="pairlink" aria-hidden="true">' + window.ADspaceIcons.glyph('link') + '</span>' +
           videoTile(next) + '</div>' +
         '<div class="paircard-ctl">' +
           '<label class="field-label" for="' + id + '">Video</label>' +
@@ -6704,22 +6702,10 @@
   }
 
   // The ⋯ this portal draws everywhere a row hides its rarer actions.
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
 
-  var ICON = {
-    pencil: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
-    trash:  '<path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/>' +
-            '<path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/>',
-    redo:   '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v4h-4"/>',
-    copy:   '<rect x="9" y="9" width="11" height="11" rx="2"/>' +
-            '<path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
-    tick:   '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-    qr:     '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
-            '<rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/>' +
-            '<path d="M20 14v3M14 20h3M20 20h.01"/>',
-    out:    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
-  };
+  /* Its marks by name from the one set (js/icons.js). */
+  var ICON = { pencil: 'pen', trash: 'trash', redo: 'rotate', copy: 'copy', tick: 'check', qr: 'qr', out: 'out' };
 
   /* The rail's own drawing for a section, for a list that mixes sections
      (the bell, search, Waiting for you), so a line says where it will take
@@ -6744,8 +6730,7 @@
   function iconBtn(name, action, label, tone) {
     return '<button class="iconbtn' + (tone ? ' ' + tone : '') + '" data-a="' + action +
       '" type="button" title="' + label + '" aria-label="' + label + '">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
-      'stroke-linejoin="round" aria-hidden="true">' + ICON[name] + '</svg></button>';
+      window.ADspaceIcons.glyph(ICON[name]) + '</button>';
   }
 
   /* THE BUSINESS FIGURES (2026-10-05): follow-up limits, SST, the term
@@ -7561,18 +7546,14 @@
   /* A thumbnail whose file fails, after the media pass's one retry (which
      holds the event until its answer), is a shaded tile with its kind's
      glyph, never the browser's broken picture (2026-10-22, REV-5). */
-  var MISS = {
-    image: '<path d="M4 5h16v14H4z"/><path d="m4 16 5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="8.5" r="1.5"/>',
-    video: '<path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3"/>'
-  };
+  var MISS = { image: 'image', video: 'video' };
   document.addEventListener('error', function (e) {
     var t = e.target, box = t && t.nodeType === 1 ? (t.tagName === 'SOURCE' ? t.parentNode : t) : null;
     if (!box || !box.getAttribute || !box.getAttribute('data-thumb')) return;
     if (t.tagName === 'SOURCE' && t !== box.lastElementChild) return;
     var tile = document.createElement('span');
     tile.className = 'thumb-miss';
-    tile.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      (MISS[box.getAttribute('data-thumb')] || MISS.image) + '</svg>';
+    tile.innerHTML = window.ADspaceIcons.glyph(MISS[box.getAttribute('data-thumb')] || MISS.image);
     if (box.parentNode) box.parentNode.replaceChild(tile, box);
   }, true);
 
@@ -7747,7 +7728,7 @@
     apBox.className = 'sheet'; apBox.id = 'postArrangeSheet'; apBox.hidden = true;
     apBox.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="apSheetH" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="apSheetH">Arrange posts</h3>' +
-      '<button class="iconbtn" type="button" data-a="x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + window.ADspaceIcons.glyph('x') + '</button></div>' +
       '<div class="sheet-body"><div class="ro-list ap-list" id="apList" role="list" aria-label="Posts"></div><div class="msg ro-msg" id="apMsg" role="status"></div></div>' +
       '<div class="sheet-foot">' +
         '<button class="btn btn-primary" type="button" id="apSave">Save</button>' +
@@ -7849,7 +7830,7 @@
         '<span class="ap-n">' + (i + 1) + '</span>' +
         '<span class="ap-thumb">' + ((p.media || [])[0] ? thumbOf(p.media[0]) : '') + '</span>' +
         '<span class="ro-name">' + esc(name) + ((p.media || []).length > 1 ? ' <span class="ap-meta">' + p.media.length + ' slides</span>' : '') + '</span>' +
-        '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg></button></div>';
+        '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown">' + window.ADspaceIcons.glyph('handle') + '</button></div>';
     }).join('');
     window.ADspaceSheet.show(apBox, { opener: $('setMenuBtn') });
   });
@@ -8625,7 +8606,7 @@
       '<span class="link-act">' +
         iconBtn('copy', 'copy', 'Copy short link') +
         (off ? '' : '<a class="iconbtn" data-a="open" href="' + esc(url) + '" target="_blank" rel="noopener" title="Open namecard" aria-label="Open namecard">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>') +
+          window.ADspaceIcons.glyph('out') + '</a>') +
       '</span>';
     row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
       window.ADspaceCopy.to(e.currentTarget, shortUrl(t.card_slug));
@@ -8645,7 +8626,7 @@
       '<span class="link-act">' +
         iconBtn('copy', 'copy', 'Copy short link') +
         '<a class="iconbtn" data-a="open" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open" aria-label="Open">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>' +
+          window.ADspaceIcons.glyph('out') + '</a>' +
       '</span>';
     row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
       window.ADspaceCopy.to(e.currentTarget, shortUrl(x.slug));
@@ -8670,7 +8651,7 @@
           /* Open tests the link as a person meets it, as a namecard's row
              does (LNK-2, 2026-10-22). */
           '<a class="iconbtn" data-a="open" href="' + esc(shortUrl(l.slug)) + '" target="_blank" rel="noopener" title="Open" aria-label="Open">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>' +
+            window.ADspaceIcons.glyph('out') + '</a>' +
           iconBtn('qr',   'qr',   'QR codes') +
           /* Every item here changes the link, so the ⋯ is drawn at Work, as
              each item is (a View group was offered Edit, audit 2026-10-03). */

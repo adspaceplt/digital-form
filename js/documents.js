@@ -1515,7 +1515,7 @@
     box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle"' + (trace ? ' data-trace' : '') + '>' +
       '<div class="sheet-head"><h3 id="pdfViewTitle">' + e(name) + '</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="' + (zh ? '关闭' : 'Close') + '">' +
-      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      window.ADspaceIcons.glyph('x', '', 'width="15" height="15"') + '</button></div>' +
       '<div class="sheet-body"><div class="pdfview pdfpages" role="document" aria-label="' + e(name) + '" aria-busy="true"></div></div>' +
       '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="dl">' + (zh ? '下载' : 'Download') + '</button>' +
       '<button class="btn btn-quiet" type="button" data-a="x">' + (zh ? '关闭' : 'Close') + '</button></div></div>';

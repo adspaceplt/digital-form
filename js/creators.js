@@ -382,7 +382,7 @@
     if (document.getElementById('cpPortalBack') || !main) return;
     var a = document.createElement('a');
     a.id = 'cpPortalBack'; a.className = 'backlink'; a.href = '/client/?tab=campaigns';
-    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' +
+    a.innerHTML = window.ADspaceIcons.glyph('chevleft') +
       window.ADspaceWords.esc(t().back || 'Back');
     main.insertBefore(a, main.firstChild);
   }
@@ -799,7 +799,7 @@
     row.setAttribute('data-id', o.id);
     var icon = function (n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; };
     FACT_ICON[t().shootOn] = 'camera'; FACT_ICON[t().deliveryOn] = 'box'; FACT_ICON[t().postedOn] = 'check';
-    FACT_ICON[t().platformsLabel] = 'megaphone'; FACT_ICON[t().goLive] = 'calendar'; FACT_ICON[t().nextLabel] = 'hourglass';
+    FACT_ICON[t().platformsLabel] = 'platform'; FACT_ICON[t().goLive] = 'calendar'; FACT_ICON[t().nextLabel] = 'hourglass';
 
     /* One line of small grey text left most of the card empty and made the
        client hunt for the date. The same facts as a labelled grid fill the
@@ -851,7 +851,7 @@
           : '<b>' + esc(o.name) + '</b>') +
         '<span class="chip-state ' + toneOf(o.state) + '">' + esc(chipFor(o)) + '</span>' +
         (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
-        (fold ? '<svg class="cx-ccard-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' : '');
+        (fold ? window.ADspaceIcons.glyph('chevron', 'cx-ccard-chev') : '');
     var inner =
       (o.state === 'withdrawn' ? '' : stepsOf(o)) +
       factsHtml +
@@ -1207,8 +1207,8 @@
     var open = choosable().length > 0;
     var facts = [];
     if (c.deadline) facts.push(['calendar', open ? t().chooseBy : t().dueLabel, dueShort(c.deadline)]);
-    if (slots) facts.push(['people', t().creatorsLabel, t().ofN(n, slots)]);
-    if (c.invoice_no) facts.push(['doc', t().invoice, c.invoice_no]);
+    if (slots) facts.push(['creators', t().creatorsLabel, t().ofN(n, slots)]);
+    if (c.invoice_no) facts.push(['invoice', t().invoice, c.invoice_no]);
     $('csFacts').innerHTML = facts.map(function (f) {
       return '<div><span class="cs-fact-ic" aria-hidden="true">' + icon(f[0]) + '</span>' +
         '<dt>' + esc(f[1]) + '</dt><dd>' + esc(f[2]) + '</dd></div>';

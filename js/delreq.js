@@ -244,7 +244,7 @@
     box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="delReqTitle" data-narrow="560">' +
         '<div class="sheet-head"><h3 id="delReqTitle">Delete requests</h3>' +
           '<button class="iconbtn" data-close type="button" aria-label="Close">' +
-          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+          window.ADspaceIcons.glyph('x', '', 'width="15" height="15"') + '</button></div>' +
         '<div class="sheet-body"><div id="delReqList"></div></div>' +
         '<div class="sheet-foot"><button class="btn btn-quiet" type="button" data-close>Close</button></div>' +
       '</div>';

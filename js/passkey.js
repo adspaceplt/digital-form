@@ -170,8 +170,8 @@
   function when(iso) {
     return iso && window.ADspaceClock ? ADspaceClock.date(iso) : '';
   }
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
-  var KEY = '<svg class="pk-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
+  var KEY = window.ADspaceIcons.glyph('key', 'pk-ico');
 
   var rows = [];
   function paint() {

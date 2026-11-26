@@ -376,7 +376,7 @@
 
   var state = { rows: [], roles: [], editing: null };
 
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   function menuItem(action, label, cls, disabled) {
     // Its group from the standard's one table (js/menu.js); never greyed.
     return window.ADspaceMenu.item(action, label, '', '', disabled ? 'disabled' : '');
@@ -786,9 +786,7 @@
         /* A request to reach the console from abroad, waiting on an admin. */
         : abroadWaiting(m.id) ? '<span class="tone is-warn">Overseas request</span>'
         : m.card_on === false ? '<span class="tone is-off">Namecard hidden</span>' : '') + '</span>' +
-      '<svg class="crm-c-go team-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M9 18l6-6-6-6"/></svg>';
+      window.ADspaceIcons.glyph('chevron', 'crm-c-go team-go');
     el.addEventListener('click', function () { openRec(m.id); });
     return el;
   }
@@ -1446,11 +1444,7 @@
   };
   /* Advanced is a quiet button with the shared chevron (the act table's
      `go` mark), turned down while open (2026-11-26, the Groups review). */
-  var FOLD_CHEV = (window.ADspaceActs && window.ADspaceActs.glyph ? window.ADspaceActs.glyph('go')
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>')
-    /* Its own mark, not an act's: the act table takes back a mark its
-       words do not name (js/acts.js). */
-    .replace(/ data-act="[^"]*"/, '').replace('<svg ', '<svg class="permsec-chev" ');
+  var FOLD_CHEV = window.ADspaceIcons.glyph('go', 'permsec-chev');
   function partRow(sec, p) {
     var key = sec[0] + '.' + p[0], granted = isGranted(key);
     return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) +
@@ -2305,7 +2299,7 @@
      Documents, Performance, Health, each drawn only where its section is
      readable. The list stays the way in; Back returns to it. */
   var rec = { id: null, pane: 'overview', seq: 0 };
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
+  var BACK = window.ADspaceIcons.glyph('back');  /* the one way back every record draws (`.backlink`) */
   var PANES = [['overview', 'Overview'], ['work', 'Work'], ['personnel', 'Personnel'], ['onboarding', 'Onboarding'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
   function paneOk(k) {
     if (k === 'work') return may('team', 'manage');
@@ -2448,7 +2442,7 @@
      (ADspaceAsk.rename), a choice a select drawn as the value; each saved on
      its own through `patchMember`, filed from and to, put back on a
      refusal. Nobody changes their own access date (`own-expiry`). */
-  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN_SVG = window.ADspaceIcons.glyph('pen');
   var MEMBER_LOG = [
     ['name', 'Name'], ['email', 'Email'], ['role', 'User group', function (v) { return roleName(v); }], ['staff_code', 'Employee ID'],
     ['designation', 'Position'], ['department', 'Department', deptName],
@@ -2660,7 +2654,7 @@
       }).catch(function (e) { then(null, e); });
   }
   var STAGE_WORD = window.ADspaceWords.en.stage, CAMP_WORD = window.ADspaceWords.en.campState;
-  var CHEV = '<svg class="crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'crm-c-go');
   function workRow(i, name, meta, end, late) {
     return '<button class="mrec-row" type="button" data-w="' + i + '"><span class="mrec-row-who"><b>' + esc(name) + '</b>' +
       (meta ? '<small>' + esc(meta) + '</small>' : '') + '</span>' +
