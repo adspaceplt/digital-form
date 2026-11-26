@@ -434,8 +434,8 @@
     cells.push(['Purpose', '<span class="ost-purpose">' + (GLYPH[trip.purpose] || '') + '<span>' + esc(PURPOSE[trip.purpose] || '') + '</span></span>']);
     cells.push(['Driver', mine ? person(trip.driver || 'You', 'You') : person(F.named(trip.driver_code, trip.driver))]);
     if ((trip.companions || []).length) cells.push(['Colleagues', '<span class="ost-people">' + trip.companions.map(function (c) { return person(c.name); }).join('') + '</span>']);
-    (more || []).forEach(function (f) { cells.push([f[0], esc(f[1])]); });
-    return '<dl class="facts ost-facts">' + cells.map(function (c) { return '<div><dt>' + esc(c[0]) + '</dt><dd>' + c[1] + '</dd></div>'; }).join('') + '</dl>';
+    (more || []).forEach(function (f) { cells.push([f[0], esc(f[1]), f[2]]); });
+    return '<dl class="facts ost-facts">' + cells.map(function (c) { return '<div' + (c[2] ? ' class="facts-wide"' : '') + '><dt>' + esc(c[0]) + '</dt><dd>' + c[1] + '</dd></div>'; }).join('') + '</dl>';
   }
   /* The road distance as a figure, so far or in total, its legs as rows
      under it and the return once checked out. */
@@ -1264,8 +1264,8 @@
     }
     var more = [['Hours', trip.ended_at ? span(trip.started_at, lastEnd(trip)) : 'In progress']]
       .concat(trip.rating ? [['Rating', plural(trip.rating, 'star', 'stars')]] : [])
-      .concat(trip.note ? [['Note', trip.note]] : [])
-      .concat(trip.end_note ? [['Check-out note', trip.end_note]] : []);
+      .concat(trip.note ? [['Note', trip.note, true]] : [])
+      .concat(trip.end_note ? [['Check-out note', trip.end_note, true]] : []);
     detail.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ostTripH" data-narrow="560">' +
       '<div class="sheet-head ost-sheet-head"><h3 id="ostTripH"><span class="ost-tw">Trip · </span>' + esc(C.date(trip.started_at)) + '</h3>' + '<span class="ost-vh-end">' + stateChip(trip) + menuHtml(trip) + '</span>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +

@@ -3678,8 +3678,19 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   margin: 6px 0 12px;
 }
-/* The column count follows the cell count, so no fact sits alone. */
-.facts:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+/* The column count follows the cell count, so no fact sits alone: six
+   across where each column holds 140px, else three (a 620px sheet reads
+   three over three), else two; never five over one, never a word broken
+   to fit a column. Each step's track is picked where the wider step's
+   would fall under 140px ((140px - track) * 1000 is a switch). A fact of
+   typed words (`.facts-wide`, a note) takes the whole row. */
+.facts:has(> :nth-child(6)) {
+  --facts-6: calc((100% - 5 * 24px) / 6 - 1px);
+  --facts-3: calc((100% - 2 * 24px) / 3 - 1px);
+  --facts-2: calc((100% - 24px) / 2 - 1px);
+  grid-template-columns: repeat(auto-fit, minmax(max(var(--facts-6), min(max(var(--facts-3), min(var(--facts-2), calc((140px - var(--facts-3)) * 1000))), calc((140px - var(--facts-6)) * 1000))), 1fr));
+}
+.facts > .facts-wide { grid-column: 1 / -1; }
 @media (max-width: 640px) {
   .facts:has(> :nth-child(6)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .facts:has(> :nth-child(5):last-child) > :last-child { grid-column: 1 / -1; }
