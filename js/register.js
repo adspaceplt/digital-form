@@ -1661,7 +1661,10 @@
       if (forSup && !ss.querySelector('option[value="' + forSup.id + '"]')) ss.add(new Option(F.named(forSup.code, forSup.name || forSup.code), forSup.id));
       ss.value = spId;
       Array.prototype.forEach.call($('regAddFam').options, function (o) {
-        o.hidden = forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
+        /* A Quotation Cover is never added (2026-11-26, the user: "remove
+           it"): offered only to keep one already filed as a cover. */
+        o.hidden = o.value === 'quote_cover' ? !(d && d.family === 'quote_cover') :
+          forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
       });
       var rc = (d && d.recipient) || {};
       $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add existing document';
