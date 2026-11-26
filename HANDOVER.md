@@ -69,9 +69,8 @@ Also done:
 
 ## Waiting on the user
 
-Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks.
+Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
-1. Delete the retired edge functions in the dashboard (the connector has no delete; steps given): `report-thumbs-move`, `bukku-peek`, `auth-templates`, `video-probe`.
-2. go.adspace.me's DNS stays for now; its removal is a future update.
-3. The outstation notification still links go.adspace.me/outstation, a database value. Move it to hi.adspace.me/outstation.
-4. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
+1. go.adspace.me's DNS stays for now; its removal is a future update.
+2. The outstation notification still links go.adspace.me/outstation, a database value. Move it to hi.adspace.me/outstation.
+3. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
