@@ -11893,3 +11893,12 @@ From the same review: 43 findings a fresh reader made on `js/crm.js` and `js/let
 ### 2026-11-26 · F7: a cancelled interview moves the candidate back
 
 The user: "hiring tab, interview stage, when cancelled interview, it still stucked at interview". `hiring_interview_cancel` cancelled the interview and never touched the candidate's stage, and Send new times after a confirmed interview left the candidate at Interview too (`hiring_invite` moved only New, Pool and Invited). Reopening a decision already derived the stage from the interviews; that derivation is now one function, `hiring_interview_stage(candidate, else)` (Interview while one is confirmed, Invited while one waits on the candidate, else the stage given), asked by the cancel (else New), by new times (else Invited) and by Reopen (else New). A candidate back at New still reads Interview cancelled on their page (`careers_read`). Walked each way in `tests/hiringsql.js`: a confirmed interview cancelled with none other (Interview → New, then new times → Invited), new times on a confirmed interview (Interview → Invited), a second round cancelled while a held first round stands (stays Interview), an invitation cancelled before confirmation (Invited → New), and a decision reopened (New). The stand-in shares the derivation. Applied live on 2026-11-26; the two candidates the old functions had left behind (one at Interview, one at Invited, neither with a live interview) were moved once to New by the same derivation, their link's clock left as it was.
+
+### 2026-11-26 · A client's pane opened from low on the page starts at its top
+
+The user pressed the rail's Recent activity View all and had to scroll up to
+find the Activity record: `showPane` swapped the pane but kept the scroll, so
+the new pane began above the screen. A pane opened by a press now brings the
+record's tab strip under the console's head where it had scrolled away; a pane
+already in view stays where it is. Every View all on the Overview and the rail
+goes through the same `showPane`, so all of them gain it.
