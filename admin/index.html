@@ -1644,7 +1644,7 @@
                 <div class="qb-types" id="qbTypes" role="radiogroup" aria-labelledby="qbTypesLabel">
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="plan"><span class="qb-typemark" data-mark="layers"></span><b>Plan</b><span>Social media management on a monthly plan, with platforms and advertising.</span></button>
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="package"><span class="qb-typemark" data-mark="box"></span><b>Package</b><span>Content planning and production at one price, without account management.</span></button>
-                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card lines, such as a one-time video or a KOC campaign.</span></button>
+                  <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card services, such as a one-time video or a KOC campaign.</span></button>
                 </div>
                   <div class="row qb-billrow" id="qbBillBox" hidden><div>
                     <label class="field-label" for="qbBillTo">Bill to</label>
@@ -1700,7 +1700,7 @@
                   <div><span class="field-label" id="qbPkgBasisLabel">Basis</span>
                   <select class="select select-sm" id="qbPkgBasis" data-seg data-seg-value aria-labelledby="qbPkgBasisLabel"><option value="month">Per month</option><option value="once">One-time</option></select></div></div>
                 <div class="qb-pkgtable" id="qbPkgRows"></div>
-                <div class="row"><div><label class="field-label" for="qbPkgAdd">Add from Rate Card</label>
+                <div class="row"><div><label class="field-label" for="qbPkgAdd">Rate Card service</label>
                   <select class="select" id="qbPkgAdd"></select></div></div>
                 <div class="row fgrid-3 qb-pkgfig"><div><span class="field-label">Rate Card value</span><p class="readfield" id="qbPkgList">—</p></div>
                   <div><label class="field-label" for="qbPkgPrice">Package price</label>
@@ -1708,8 +1708,8 @@
                   <div><span class="field-label">Discount</span><p class="readfield" id="qbPkgOff">—</p></div></div>
                 <div class="qb-pkgincl"><span class="field-label">Inclusions</span>
                   <div id="qbPkgIncl"></div>
-                  <button class="btn btn-sm" id="qbPkgInclAdd" type="button">Add line</button>
-                  <p class="qb-hint">Unticked lines print under Not included.</p></div>
+                  <button class="btn btn-sm" id="qbPkgInclAdd" type="button">Add inclusion</button>
+                  <p class="qb-hint">Unticked inclusions print under Not included.</p></div>
               </section>
               <div class="qb-for-items" id="qbItemsSlot"></div>
               </div>
@@ -1768,7 +1768,7 @@
                 <label class="tickline" id="qbDiscBox" hidden><input type="checkbox" id="qbTermDisc" checked> <span>Apply the term discount <small class="qb-rate" id="qbDiscPct"></small></span></label>
               </section>
               <details class="fmore qb-more" id="qbMore">
-                <summary>More details <span class="fmore-sum">Title, Rate Card version, bilingual content, custom lines and terms</span></summary>
+                <summary>More details <span class="fmore-sum">Title, Rate Card version, bilingual content, custom items and terms</span></summary>
                 <div class="qb-morebox">
                   <div class="row"><div><label class="field-label" for="qbHeading">Title</label>
                   <textarea class="input" id="qbHeading" rows="1" maxlength="120" data-oneline data-nodraft placeholder="Optional"></textarea></div></div>
@@ -1777,9 +1777,9 @@
                   <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Make every content piece bilingual <small class="qb-rate" id="qbTrRate"></small></span></label>
                   <div class="qb-advbox" id="qbAdvBox">
                   <div class="qb-advpart">
-                    <div class="qb-advparth"><span class="field-label">Custom lines</span>
-                      <span class="qb-advacts"><button class="btn btn-sm" id="qbRenew" type="button">Renew lines</button>
-                      <button class="btn btn-sm" id="qbCusAdd" type="button">Add line</button></span></div>
+                    <div class="qb-advparth"><span class="field-label">Custom items</span>
+                      <span class="qb-advacts"><button class="btn btn-sm" id="qbRenew" type="button">Renew service lines</button>
+                      <button class="btn btn-sm" id="qbCusAdd" type="button">Add custom item</button></span></div>
                     <div class="qb-renew" id="qbRenewBox" hidden></div>
                     <div id="qbCusRows"></div>
                   </div>
@@ -6857,7 +6857,7 @@ raya-2026        https://example.com/raya"></textarea>
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261125nx", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261125cartc", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261126b", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261125qsh", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
