@@ -144,7 +144,10 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   alike on the selection page and the creator's page, its words `W.journey`
   in `js/words.js` (Booked, Shoot visit or Delivery, Draft due, Client
   review, Post date, Results; never a bare verb or a word that could read
-  as one, the user, 2026-10-15), each breaking at its space, never cut.
+  as one, the user, 2026-10-15), each breaking at its space, never cut;
+  with discs, each step's column is its part's width, so a name wider than
+  its part never moves its disc off the centre its lines are placed from
+  (`demo` measures every line clear of both discs).
   `mark(key)` is a platform's own mark beside the platform's name where a
   prospect chooses platforms (/quote/): single colour in ink, never a brand
   colour fill, the cut-outs in the card's ground (`.ic-cut`), Meta drawn as
