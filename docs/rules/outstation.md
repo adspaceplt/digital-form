@@ -220,3 +220,8 @@ Form"; claims are release 2. One place per fact, as CLAUDE.md §0.
   nothing). It reads Closed automatically (a grey tag beside Checked out),
   and its driver adds a note and a rating from its ⋯, Edit check-out
   (`outstation_checkout_edit`, refused `not-auto` on any other trip).
+- Every writer takes the trip's row `for update` through
+  `outstation_own_trip`, waiting for the midnight close; a stop's ten photos
+  count only those not removed; each check-out reads the office position
+  again; a drive back never saved is asked again (OUTSTATION WRITES HELD,
+  2026-11-25, `tests/outstationsql.js`).

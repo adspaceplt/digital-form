@@ -64,8 +64,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     answers that client's Bukku contacts alone (as `month_invoice_contacts`
     reads them, a company billing another brand too left out) and refuses
     any other client as `get_portal` does; nothing is kept. Bukku not set
-    up, or no linked contact, draws no card; a failed read says so in it
-    (`tests/portalinvoices.js`, `tests/portalpastsql.js`).
+    up, or no linked contact, draws no card; any other failed read says so
+    in it with Try again (`failCard`, the page's language), as a failed
+    Feedback read does under the tab's name, never a hidden card
+    (2026-11-25, review fixes S3; `tests/portalinvoices.js`, `tests/portalpastsql.js`).
   - Letters: Download redraws the snapshot.
   - Content Review's tab groups its sets by content month (`.cp-group-head`,
     the month and its count), newest first.
