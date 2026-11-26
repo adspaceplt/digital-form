@@ -164,7 +164,7 @@
       may('suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }).catch(function () { return []; }) : Promise.resolve([])
     ]).then(function (r) {
       var bad = (r[0] && r[0].error) || (r[1] && r[1].error);
-      state.peopleErr = bad ? (bad.message || 'The request failed.') : null;
+      state.peopleErr = bad ? (bad.message || 'Colleagues could not be loaded. Refresh the page.') : null;
       state.clients = (r[0] && !r[0].error && r[0].data) || [];
       state.members = (r[1] && !r[1].error && r[1].data) || [];
       state.types = r[2] || [];
@@ -266,24 +266,30 @@
     }).catch(function () { then([]); });
   }
 
-  /* Every quotation that left ADspace (sent out or signed), read from the
+  /* Every quotation, issued as it is created (QUOTATIONS ISSUED WHEN
+     CREATED, 2026-11-26; the user: "issued means created"), read from the
      quotations themselves, never a copy (SEAL-SPEC decision 7): its state
-     as the client's record says it, the company that signed it, and its
-     sealed copy to download. A refused read lists none. */
+     as the client's record says it, a removed one Void, the company that
+     signed it, and its sealed copy to download. A refused read lists none. */
   function quoteRows(then) {
     if (!mayFamily('quotation', 'view') || !window.ADspaceAPI || !window.ADspaceAPI.readPages) { then([]); return; }
     var COLS = 'id, ref, client_id, brand, status, source, issued_at, valid_until, contact, signed_at, signed, reviewed_at, reviewed_by, ' +
       'submitted_at, reviewer_name, returned_at, returned_by, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on';
     window.ADspaceAPI.readPages(function () {
-      return db.from('quotations').select(COLS).is('removed_at', null).order('issued_at', { ascending: false });
+      return db.from('quotations').select(COLS).order('issued_at', { ascending: false });
     }).then(function (r) {
       var all = (!r.error && r.data) || [];
-      var rows = all.filter(function (q) { return q.sent_out_at || q.signed_at; });
       var revised = {};
-      all.forEach(function (q) { if (q.replaces) revised[q.replaces] = q.ref; });
-      then(rows.map(function (q) {
+      all.forEach(function (q) { if (q.replaces && !q.removed_at) revised[q.replaces] = q.ref; });
+      /* Every quotation is issued as `quotation_issued` says today; the
+         table's column grants refuse that row function to the page, so a
+         narrower test reaches the Register as a column (2026-11-26). */
+      then(all.map(function (q) {
         q._revised = revised[q.id] || null;
-        var st = window.ADspaceQuotes && window.ADspaceQuotes.stateOf ? window.ADspaceQuotes.stateOf(q) : ['', ''];
+        /* Removed: Void once it was sent or signed (kept for good), else
+           Removed, as the client's quotations say it (it can be restored). */
+        var st = q.removed_at ? [q.sent_out_at || q.signed_at ? 'Void' : 'Removed', 'is-off'] :
+          window.ADspaceQuotes && window.ADspaceQuotes.stateOf ? window.ADspaceQuotes.stateOf(q) : ['', ''];
         var co = (q.signed && q.signed.company && q.signed.company.legal_name) || '';
         return { id: 'qt-' + q.id, quote: q, serial: q.ref, family: 'quotation', kind: 'Quotation', source: 'quote',
                  client_id: q.client_id, issued_at: q.issued_at, created_at: q.issued_at, state: st,
@@ -1661,7 +1667,10 @@
       if (forSup && !ss.querySelector('option[value="' + forSup.id + '"]')) ss.add(new Option(F.named(forSup.code, forSup.name || forSup.code), forSup.id));
       ss.value = spId;
       Array.prototype.forEach.call($('regAddFam').options, function (o) {
-        o.hidden = forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
+        /* A Quotation Cover is never added (2026-11-26, the user: "remove
+           it"): offered only to keep one already filed as a cover. */
+        o.hidden = o.value === 'quote_cover' ? !(d && d.family === 'quote_cover') :
+          forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
       });
       var rc = (d && d.recipient) || {};
       $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add existing document';

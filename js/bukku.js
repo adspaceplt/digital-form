@@ -59,13 +59,14 @@
     /* A new contact sent and not answered may stand in Bukku: the next Send
        links it rather than making another (the Bukku review, 2026-11-25). */
     'not-confirmed': 'Bukku did not confirm the contact. Please refresh the page in a moment, then send it again.',
-    'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
+    'not-filed': 'The contact was sent to Bukku, but the portal did not save the link. Send again to link it.',
     moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-value': 'Choose a field from the list.',
     'bad-sku': 'Enter the item SKU as it appears in Bukku, for example P995.',
     'bad-class': 'Enter the classification code as three digits, for example 037.',
     'bad-account': 'Choose the account.',
+    'bad-number': 'Enter the invoice number as it appears in Bukku, for example AINV000123.',
     'not-held': 'Bukku and the portal have different details. Choose Send to Bukku or Use Bukku\'s first.',
     stale: 'Not saved. This record was changed in Bukku. The latest version is now shown.',
     'bad-email': 'Enter a valid email address.',
@@ -240,7 +241,7 @@
         host.innerHTML = head + '<span class="chip-state is-ok">Linked</span></div>' +
           (via || '<p class="bk-sub">' + (holds(kind) ? 'Billing details from Bukku · ' + readAt : readAt) + '</p>') +
           '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh" data-gate="bukku">Refresh</button>' + menu + '</div>' +
-          (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the last read: ' + esc(moved.join(', ')) + '.</p>' : '') +
+          (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the details were last loaded: ' + esc(moved.join(', ')) + '.</p>' : '') +
           (r.values && r.values.person && r.person_in === false
             ? '<div class="bk-person"><p class="msg warn">Bukku\'s billing contact, ' + esc(r.values.person) + ', is not in Contacts.</p>' +
               (opts.addContact && may('clients.contacts', 'work') ? '<button class="btn btn-sm" type="button" data-bk="addct">Add as contact</button>' : '') + '</div>' : '') +
@@ -481,7 +482,9 @@
         d.bill_class_code ? 'Classification code ' + d.bill_class_code : 'Classification code not set',
         d.bill_account_code ? 'Creator bill account ' + d.bill_account_code : 'Creator bill account not set',
         /* A quotation's advertising budget (2026-11-17). */
-        d.budget_account_code ? 'Advertising budget account ' + d.budget_account_code : 'Advertising budget account not set'];
+        d.budget_account_code ? 'Advertising budget account ' + d.budget_account_code : 'Advertising budget account not set',
+        /* A campaign's invoice copies this one's line (2026-11-26). */
+        d.campaign_invoice_model ? 'Campaign sample invoice ' + d.campaign_invoice_model : 'Campaign sample invoice not set'];
       if (!on.length) return ['Not set'].concat(acct).map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
       return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat(acct)
@@ -517,7 +520,11 @@
           /* A quotation's advertising budget is invoiced on its own account,
              with no tax (2026-11-17). */
           { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account', value: c.budget_account_code || '',
-            placeholder: '3000-01', required: false }
+            placeholder: '3000-01', required: false },
+          /* A campaign's invoice takes this invoice's product, account and
+             tax code (CAMPAIGN INVOICE FROM BUKKU, 2026-11-26). */
+          { name: 'model', head: 'Campaign invoices', label: 'Sample invoice number', value: c.campaign_invoice_model || '',
+            placeholder: 'AINV000123', required: false }
         ],
         check: function (v) {
           if (v.client && (v.client === v.supplier || v.client === v.creator)) return 'Choose a different field for the Client ID.';
@@ -525,6 +532,7 @@
           if (!/^[0-9]{3}$/.test(String(v.cls || '').trim())) return 'Enter the classification code as three digits, for example 037.';
           if (!v.account) return 'Choose the account.';
           if (String(v.budget || '').trim() && !/^[A-Za-z0-9._\/-]{1,30}$/.test(String(v.budget).trim())) return 'Enter the account code as it appears in Bukku, for example 3000-01.';
+          if (String(v.model || '').trim() && !/^[A-Za-z0-9._\/-]{3,40}$/.test(String(v.model).trim())) return 'Enter the invoice number as it appears in Bukku, for example AINV000123.';
           return '';
         }
       }, function (v) {
@@ -533,7 +541,10 @@
           if (d.error) return said(d);
           var sku = String(v.sku || '').trim(), cls = String(v.cls || '').trim(), bud = String(v.budget || '').trim();
           var budget = bud === (c.budget_account_code || '') ? Promise.resolve({}) : rpc('bukku_invoice_set', { p_budget_code: bud || null });
-          return budget.then(function (db) {
+          var mod = String(v.model || '').trim().toUpperCase();
+          var model = mod === (c.campaign_invoice_model || '') ? Promise.resolve({}) : rpc('bukku_campaign_model_set', { p_number: mod || null });
+          return Promise.all([budget, model]).then(function (both) {
+          var db = both[0].error ? both[0] : both[1];
           if (db.error) return said(db);
           if (sku === (c.bill_item_sku || '') && cls === (c.bill_class_code || '') && v.account === (c.bill_account_code || '')) { sayRow('Saved.', 'ok'); return ''; }
           var pick = acctChoices.filter(function (x) { return x[0] === v.account; })[0];

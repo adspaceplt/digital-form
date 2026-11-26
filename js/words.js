@@ -371,6 +371,16 @@
     else u = 'https://' + u.replace(/^\/+/, '');
     return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
   };
+  /* A line of parts (a row's meta on a phone: client · 3 of 4 booked):
+     each part kept whole, the dot leading every part after the first inside
+     it, so a wrap falls before a dot and never leaves one at a line's end
+     (2026-11-26). An item is its text, or { text, cls }. */
+  W.parts = function (items) {
+    return (items || []).filter(function (x) { return x && (typeof x !== 'object' || x.text); }).map(function (x, i) {
+      var t = typeof x === 'object' ? x : { text: x };
+      return '<span class="lpart' + (t.cls ? ' ' + t.cls : '') + '">' + (i ? '<span aria-hidden="true">\u00b7\u00a0</span>' : '') + W.esc(t.text) + '</span>';
+    }).join(' ');
+  };
   /* The one reading of an email address typed anywhere (2026-10-27, the
      user: "every email box"): a name, @, a host and a top-level domain of
      two letters or more, with no space, comma, quote, bracket or second @. */
@@ -382,9 +392,16 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* A list's state column where its card holds one state: the card's
+       heading already names it, so the row says when it last moved
+       (Creators, Suppliers, Hiring; 2026-11-26). */
+    updated: 'Updated',
     /* The S$ rate not set (2026-11-25, copy review): one refusal for
        every screen that prices a Singapore client. */
     fxUnset: 'Set the S$ exchange rate in Settings, Accounting, Tax and terms.',
+    /* A client not linked to Bukku (2026-11-25): Build quote's and a
+       campaign invoice's refusal alike. */
+    bukkuLinkClient: 'Link this client to Bukku in Billing first.',
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
        PDF and the quotation link say them alike; Build quote's ticks read
        the group words. */

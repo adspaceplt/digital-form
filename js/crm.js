@@ -832,9 +832,7 @@
            and Last activity stays at a desk and in the record: the row is two
            lines a side (the user, 2026-11-04, choosing it over a line that
            wraps). */
-        [c.client_code ? '<span class="nb crm-meta-code">' + esc(c.client_code) + '</span>' : '']
-          .concat(metaPeople(c).filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }))
-          .filter(Boolean).join(' · ') +
+        window.ADspaceWords.parts([c.client_code ? { text: c.client_code, cls: 'crm-meta-code' } : ''].concat(metaPeople(c))) +
       '</span>' +
       /* The mark that says the row goes somewhere, in the column the header
          leaves empty. The row is one button, so the whole of it opens the

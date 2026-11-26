@@ -158673,4 +158673,649 @@ create index if not exists ops_notifications_member_kind_idx
 
 -- END OF RETENTION AND JOBS HELD ----------------------------------------------
 
+-- ===========================================================================
+-- QUOTATIONS ISSUED WHEN CREATED (2026-11-26)
+-- ===========================================================================
+-- WHY: /verify/ found nothing for ADP/QT2611-C02, a quotation with its
+-- Document ID printed on its foot, and the Register left out four of nine
+-- quotations (F3 and F5 of the handover of 2026-11-26): both read a
+-- quotation only once sent out or signed. The user, 2026-11-26: "issued
+-- means created, only when issued to client means someone viewed the
+-- link". A quotation is issued the moment it is created; Sent
+-- (`sent_out_at`) stays what it is.
+--
+-- WHAT IT CHANGES
+--   * `quotation_issued(q)`: the one test of an issued quotation, true for
+--     every quotation today; `verify_find` and its Document ID lookup ask
+--     it (a row function the table's column grants refuse to a page, so the
+--     Register, which lists every quotation, takes a column when the test
+--     narrows).
+--   * `verify_find`: every quotation is found by its reference, whether or
+--     not it went out (a removed one Void, as before), and by its Document
+--     ID (`doc_code`), answered as a report's is: the code as the serial,
+--     `by_code`. Every other document and state stands.
+--   * `quotation_delete`: a removed quotation that was sent out or signed
+--     is refused `sent`; it stays on the Register and /verify/ as Void.
+--     Every other refusal stands.
+--
+-- ORDER: this file, then the page (an old tab offers Delete on a sent
+-- removed quotation and reads the refusal as its raw word). Safe to run
+-- twice. `quotation_delete` holds a delete: an SQL Editor run of its own
+-- where the connector holds it.
+-- ROLLBACK: run DOCUMENT ID ON EVERY FOOT's `verify_find` (2026-11-24)
+-- and QUOTATIONS DELETED AND REQUESTS RECORDED BY THE TEAM's
+-- `quotation_delete` again.
+-- ===========================================================================
+
+-- QUOTATIONS ISSUED WHEN CREATED --------------------------------------------
+
+/* Whether a quotation counts as issued: the one test verify_find and its
+   Document ID lookup ask, so a later change (a quotation issued once
+   confirmed) is made here. Today every quotation is issued as it is
+   created. */
+create or replace function public.quotation_issued(q public.quotations)
+returns boolean language sql stable set search_path = public as $$
+  select q.id is not null
+$$;
+revoke all on function public.quotation_issued(public.quotations) from public, anon;
+grant execute on function public.quotation_issued(public.quotations) to authenticated;
+
+/* Every quotation is issued as it is created: found by its reference
+   and by its Document ID, whether or not it went out; a removed one
+   reads Void. */
+create or replace function public.verify_find(p_serial text)
+returns jsonb
+language plpgsql stable set search_path = public as $$
+declare
+  s text := upper(btrim(coalesce(p_serial, '')));
+  sd text;
+  d public.documents%rowtype;
+  l public.client_documents%rowtype;
+  q public.quotations%rowtype;
+  h public.hiring_docs%rowtype;
+  rv public.perf_reviews%rowtype;
+  dl public.perf_deleted%rowtype;
+  rp public.sm_report_versions%rowtype;
+  vs public.video_scripts%rowtype;
+  v_code text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_state text;
+  v_rep date;
+  v_ref text;
+begin
+  if length(s) < 3 or length(s) > 40 then return null; end if;
+  sd := replace(s, '/', '-');
+  select * into d from public.documents x
+   where upper(replace(x.serial, '/', '-')) = sd
+   order by (upper(x.serial) = s) desc, (x.voided_at is null) desc, x.created_at desc limit 1;
+  if d.id is not null then
+    return jsonb_build_object('src', 'document', 'id', d.id, 'serial', d.serial,
+      'kind', case when d.family = 'hr' then 'HR Letter' else d.kind end,
+      'issued', d.issued_at, 'code', d.doc_code, 'sealed', false,
+      'names', public.verify_names(array[d.recipient ->> 'name',
+        (select c.legal_name from public.clients c where c.id = d.client_id),
+        (select m.name from public.team_members m where m.id = d.member_id),
+        (select coalesce(nullif(to_jsonb(u) ->> 'legal_name', ''), to_jsonb(u) ->> 'name') from public.suppliers u where u.id = d.supplier_id)]),
+      'state', case when d.voided_at is null then 'valid' else 'voided' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', d.issued_at),
+        jsonb_build_object('step', 'voided', 'day', (d.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into l from public.client_documents x
+   where upper(replace(x.number, '/', '-')) = sd
+   order by (upper(x.number) = s) desc limit 1;
+  if l.id is not null then
+    select x.issued_at into v_rep
+      from public.client_documents x where x.id = l.superseded_by;
+    return jsonb_build_object('src', 'letter', 'id', l.id, 'serial', l.number, 'kind', 'Letter of Offer',
+      'issued', l.issued_at, 'code', l.doc_code, 'sealed', false,
+      'names', public.verify_names(array[coalesce(nullif(l.bill_to ->> 'legal_name', ''), l.bill_to ->> 'name'), l.bill_to ->> 'contact',
+        (select c.legal_name from public.clients c where c.id = l.client_id)]),
+      'state', case when l.voided_at is not null then 'voided'
+                    when l.superseded_by is not null then 'replaced'
+                    else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', l.issued_at),
+        jsonb_build_object('step', 'signed', 'day', (l.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (l.verified_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'voided', 'day', (l.voided_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into q from public.quotations x
+   where (upper(replace(x.ref, '/', '-')) = sd)
+     and public.quotation_issued(x)
+   order by (upper(x.ref) = s) desc, x.issued_at desc limit 1;
+  if q.id is not null then
+    select (min(r.issued_at) at time zone 'Asia/Kuala_Lumpur')::date into v_rep
+      from public.quotations r where r.replaces = q.id and r.removed_at is null;
+    v_state := case when q.withdrawn_at is not null then 'withdrawn'
+                    when q.status = 'not_proceeding' or q.removed_at is not null then 'voided'
+                    when v_rep is not null then 'replaced'
+                    when q.signed_at is null and q.valid_until is not null and q.valid_until < v_today then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'quotation', 'id', q.id, 'serial', q.ref, 'kind', 'Quotation',
+      'issued', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', q.doc_code, 'sealed', q.seal_key is not null,
+      'names', public.verify_names(array[q.contact ->> 'name', to_jsonb(q) #>> '{bill_to,legal_name}',
+        (select c.legal_name from public.clients c where c.id = q.client_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sent', 'day', (q.sent_out_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (q.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (q.reviewed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (q.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', (q.declined_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'withdrawn', 'day', q.withdrawn_on),
+        jsonb_build_object('step', 'voided', 'day', (q.removed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'replaced', 'day', v_rep),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then q.valid_until + 1 end))));
+  end if;
+  /* An offer or a contract once sent: the version standing first (a
+     replacement keeps the reference, the one it replaced void). */
+  select * into h from public.hiring_docs x
+   where (upper(replace(x.serial, '/', '-')) = sd)
+     and x.sent_at is not null and x.state <> 'draft'
+   order by (upper(x.serial) = s) desc, (x.state <> 'void') desc, x.sent_at desc limit 1;
+  if h.id is not null then
+    v_state := case when h.state = 'void' then 'voided'
+                    when h.state = 'withdrawn' then 'withdrawn'
+                    when h.state = 'declined' then 'declined'
+                    when h.state = 'sent' and h.reply_by is not null and h.reply_by < now() then 'expired'
+                    else 'valid' end;
+    return jsonb_build_object('src', 'hiring', 'id', h.id, 'serial', h.serial, 'kind', 'HR Letter',
+      'issued', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', h.doc_code, 'sealed', h.seal_sha is not null,
+      'names', public.verify_names(array[(select k.name from public.hiring_candidates k where k.id = h.candidate_id)]),
+      'state', v_state,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (h.sent_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'signed', 'day', (h.signed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'confirmed', 'day', (h.confirmed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'sealed', 'day', (h.sealed_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'declined', 'day', case when h.state = 'declined' then (coalesce(h.answered_at, h.updated_at) at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'withdrawn', 'day', case when h.state = 'withdrawn' then (h.updated_at at time zone 'Asia/Kuala_Lumpur')::date end),
+        jsonb_build_object('step', 'voided', 'day', (h.voided_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'expired', 'day', case when v_state = 'expired' then (h.reply_by at time zone 'Asia/Kuala_Lumpur')::date end))));
+  end if;
+  select * into rv from public.perf_reviews pr
+   where (upper(replace(pr.serial, '/', '-')) = sd)
+     and exists (select 1 from public.perf_events pe where pe.review_id = pr.id and pe.kind = 'printed')
+   limit 1;
+  if rv.id is not null then
+    return jsonb_build_object('src', 'perf', 'id', rv.id, 'serial', rv.serial, 'kind', 'HR Letter',
+      'issued', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', rv.doc_code, 'sealed', false,
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = rv.team_member_id)]),
+      'state', case when rv.status = 'draft' then 'replaced' else 'valid' end,
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (rv.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'acknowledged', 'day', (rv.acknowledged_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'finalised', 'day', (rv.finalised_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  select * into dl from public.perf_deleted pd
+   where pd.printed and (upper(replace(pd.serial, '/', '-')) = sd)
+   order by pd.deleted_at desc limit 1;
+  if dl.id is not null then
+    return jsonb_build_object('src', 'perf_deleted', 'id', dl.id, 'serial', dl.serial, 'kind', 'HR Letter',
+      'issued', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', null, 'sealed', false, 'state', 'voided',
+      'names', public.verify_names(array[(select m.name from public.team_members m where m.id = dl.team_member_id)]),
+      'steps', public.verify_steps(jsonb_build_array(
+        jsonb_build_object('step', 'issued', 'day', (dl.released_at at time zone 'Asia/Kuala_Lumpur')::date),
+        jsonb_build_object('step', 'voided', 'day', (dl.deleted_at at time zone 'Asia/Kuala_Lumpur')::date))));
+  end if;
+  /* A report as published and a video script as shared hold no reference
+     of their own: the Document ID their foot prints is what /verify/ is
+     asked (DOCUMENT ID ON EVERY FOOT, 2026-11-24). */
+  v_code := regexp_replace(s, '[^0-9A-Z]', '', 'g');
+  if v_code ~ '^[2-9A-Z]{8}$' then
+    select * into rp from public.sm_report_versions x where x.doc_code = v_code limit 1;
+    if rp.id is not null then
+      select (min(n.published_at) at time zone 'Asia/Kuala_Lumpur')::date into v_rep
+        from public.sm_report_versions n where n.report_id = rp.report_id and n.version_no > rp.version_no;
+      return jsonb_build_object('src', 'report', 'id', rp.id, 'serial', substr(v_code, 1, 4) || '-' || substr(v_code, 5, 4), 'by_code', true,
+        'kind', case when coalesce(rp.snapshot #>> '{report,kind}', (select r.kind from public.sm_reports r where r.id = rp.report_id)) = 'ads'
+                     then 'Social Media Advertising Report' else 'Social Media Accounts Report' end,
+        'issued', (rp.published_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', rp.doc_code, 'sealed', false,
+        'state', case when rp.withdrawn_at is not null then 'withdrawn' when v_rep is not null then 'replaced' else 'valid' end,
+        'steps', public.verify_steps(jsonb_build_array(
+          jsonb_build_object('step', 'issued', 'day', (rp.published_at at time zone 'Asia/Kuala_Lumpur')::date),
+          jsonb_build_object('step', 'replaced', 'day', v_rep),
+          jsonb_build_object('step', 'withdrawn', 'day', (rp.withdrawn_at at time zone 'Asia/Kuala_Lumpur')::date))));
+    end if;
+    /* A quotation by the Document ID its foot prints (QUOTATIONS ISSUED
+       WHEN CREATED, 2026-11-26): its reference is what is typed, the code
+       found here stands for it, as a report's does. */
+    select x.ref into v_ref from public.quotations x where x.doc_code = v_code and public.quotation_issued(x) limit 1;
+    if v_ref is not null then
+      return public.verify_find(v_ref) || jsonb_build_object('serial', substr(v_code, 1, 4) || '-' || substr(v_code, 5, 4), 'by_code', true);
+    end if;
+    select * into vs from public.video_scripts x where x.doc_code = v_code and x.shared_at is not null limit 1;
+    if vs.id is not null then
+      return jsonb_build_object('src', 'script', 'id', vs.id, 'serial', substr(v_code, 1, 4) || '-' || substr(v_code, 5, 4), 'by_code', true,
+        'kind', 'Video Script',
+        'issued', (vs.shared_at at time zone 'Asia/Kuala_Lumpur')::date, 'code', vs.doc_code, 'sealed', false,
+        'state', case when vs.status = 'shared' then 'valid' else 'withdrawn' end,
+        'steps', public.verify_steps(jsonb_build_array(
+          jsonb_build_object('step', 'issued', 'day', (vs.shared_at at time zone 'Asia/Kuala_Lumpur')::date),
+          jsonb_build_object('step', 'withdrawn', 'day', case when vs.status <> 'shared' then (vs.updated_at at time zone 'Asia/Kuala_Lumpur')::date end))));
+    end if;
+  end if;
+  return null;
+end $$;
+revoke all on function public.verify_find(text) from public, anon, authenticated;
+
+create or replace function public.quotation_delete(p_id uuid, p_ref text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_q public.quotations;
+  v_n int;
+  v_doc text;
+  v_by text;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_q from public.quotations where id = p_id for update;
+  if v_q.id is null or not public.client_scope_ok('client', v_q.client_id, 'manage') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if v_q.removed_at is null then return jsonb_build_object('error', 'not-removed'); end if;
+  if btrim(coalesce(p_ref, '')) <> v_q.ref then return jsonb_build_object('error', 'bad-ref'); end if;
+  -- One that reached the client (its link opened, or sent) or was signed
+  -- is kept, Void on the Register and /verify/, never deleted
+  -- (QUOTATIONS ISSUED WHEN CREATED, 2026-11-26).
+  if v_q.sent_out_at is not null or v_q.signed_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  select count(*) into v_n from public.client_services s where s.quotation_id = v_q.id;
+  if v_n > 0 then return jsonb_build_object('error', 'lines', 'count', v_n); end if;
+  select d.number into v_doc from public.client_documents d
+   where d.lines @> jsonb_build_array(jsonb_build_object('quotation_id', v_q.id::text))
+   order by d.created_at limit 1;
+  if v_doc is not null then return jsonb_build_object('error', 'letter', 'number', v_doc); end if;
+  select x.ref into v_by from public.quotations x where x.replaces = v_q.id order by x.issued_at limit 1;
+  if v_by is not null then return jsonb_build_object('error', 'revised', 'ref', v_by); end if;
+  insert into public.quotation_refs_kept (ref, deleted_by) values (v_q.ref, me.name)
+  on conflict (ref) do nothing;
+  delete from public.quotations where id = v_q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', v_q.brand, v_q.ref || ' deleted');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quotation_delete(uuid, text) from public, anon;
+grant execute on function public.quotation_delete(uuid, text) to authenticated;
+
+-- END OF QUOTATIONS ISSUED WHEN CREATED -------------------------------------
+
+-- ===========================================================================
+-- QUOTATION COVER NOT ADDED (2026-11-26)
+-- ===========================================================================
+-- WHY: the user, 2026-11-26: "Quotation Cover: remove it" (HANDOVER §4 item
+-- 2). A Quotation Cover is the first page of every quotation's PDF and has
+-- not been issued on its own since 2026-11-25
+-- (`2026-11-25-quotation-cover-not-issued-alone.sql`), yet Documents' Add
+-- still offered it as a kind for a document issued elsewhere.
+--
+-- WHAT IT CHANGES
+--   * `register_add`: the `quote_cover` family is refused `not-issuable`.
+--   * `register_update`: a document is not moved into it (`not-issuable`);
+--     one already filed as a cover keeps its family and is edited as before.
+--   * Unchanged: covers already held stay listed, read and verified as
+--     before; the cover page inside every quotation PDF; the `quote_cover`
+--     type and the documents' family check, which existing rows still need.
+--
+-- ORDER: this file, then the page (an old tab offering Quotation Cover in
+-- Add meets the refusal as its words). Safe to run twice. Holds no drop or
+-- delete.
+-- ROLLBACK: run SUPPLIER ENTRIES' `register_add` and
+-- `register_update` again.
+-- ===========================================================================
+
+-- QUOTATION COVER NOT ADDED ---------------------------------------------------
+
+create or replace function public.register_add(
+  p_serial    text,
+  p_family    text,
+  p_kind      text,
+  p_issued_at date,
+  p_recipient text,
+  p_client    uuid,
+  p_note      text,
+  p_file_url  text,
+  p_member    uuid default null,
+  p_supplier  uuid default null
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who   text := lower(auth.jwt() ->> 'email');
+  me    public.team_members%rowtype;
+  v_serial text := nullif(btrim(coalesce(p_serial, '')), '');
+  v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
+  v_id  uuid;
+  cl    public.clients%rowtype;
+  tm    public.team_members%rowtype;
+  sp    public.suppliers%rowtype;
+begin
+  if v_fam not in ('quote_cover', 'client', 'hr', 'other', 'supplier') then return jsonb_build_object('error', 'bad-family'); end if;
+  if not public.register_may(v_fam, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+  -- A Quotation Cover is the first page of every quotation, never a
+  -- document added on its own (QUOTATION COVER NOT ADDED, 2026-11-26).
+  if v_fam = 'quote_cover' then return jsonb_build_object('error', 'not-issuable'); end if;
+  if v_serial is null then return jsonb_build_object('error', 'serial-required'); end if;
+  if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
+  if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
+  if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
+  if v_fam = 'hr' then
+    if p_member is not null then select * into tm from public.team_members where id = p_member; end if;
+  elsif v_fam = 'supplier' then
+    if p_supplier is not null then select * into sp from public.suppliers where id = p_supplier; end if;
+    if sp.id is null then return jsonb_build_object('error', 'no-supplier'); end if;
+  elsif p_client is not null then
+    select * into cl from public.clients where id = p_client;
+  end if;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  insert into public.documents
+    (family, kind, serial, client_id, member_id, supplier_id, issued_at, recipient, signed, source, file_url, note, issued_by)
+  values
+    (v_fam, btrim(p_kind), v_serial, cl.id, tm.id, sp.id, coalesce(p_issued_at, (now() at time zone 'Asia/Kuala_Lumpur')::date),
+     jsonb_build_object('name', coalesce(btrim(p_recipient), '')), false, 'manual',
+     nullif(btrim(p_file_url), ''), nullif(btrim(p_note), ''), coalesce(me.name, who))
+  returning id into v_id;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'register.added',
+          case when v_fam = 'hr' then 'HR' else coalesce(cl.name, sp.name, sp.code, btrim(p_recipient), '') end,
+          case when v_fam = 'hr' then btrim(p_kind) else v_serial || ' · ' || btrim(p_kind) end);
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', v_serial);
+exception
+  when unique_violation then return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.register_add(text, text, text, date, text, uuid, text, text, uuid, uuid) to authenticated;
+
+create or replace function public.register_update(
+  p_doc       uuid,
+  p_kind      text,
+  p_family    text,
+  p_issued_at date,
+  p_recipient text,
+  p_client    uuid,
+  p_note      text,
+  p_file_url  text,
+  p_member    uuid default null,
+  p_supplier  uuid default null
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who   text := lower(auth.jwt() ->> 'email');
+  d     public.documents%rowtype;
+  v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
+  cl    public.clients%rowtype;
+  was_cl public.clients%rowtype;
+  tm    public.team_members%rowtype;
+  sp    public.suppliers%rowtype;
+  was_sp public.suppliers%rowtype;
+  moves text[] := array[]::text[];
+  fam_word jsonb := '{"quote_cover":"Quotation Covers","client":"Client Letters","hr":"HR Letters","supplier":"Supplier Letters","other":"Other"}'::jsonb;
+  v_rec text := coalesce(btrim(p_recipient), '');
+  v_note text := nullif(btrim(p_note), '');
+  v_file text := nullif(btrim(p_file_url), '');
+begin
+  select * into d from public.documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.source <> 'manual' then return jsonb_build_object('error', 'not-manual'); end if;
+  if v_fam not in ('quote_cover', 'client', 'hr', 'other', 'supplier') then return jsonb_build_object('error', 'bad-family'); end if;
+  if not public.register_may(d.family, 'work') or not public.register_may(v_fam, 'work') then
+    return jsonb_build_object('error', 'not-allowed');
+  end if;
+  -- One already filed as a cover stays so; none is moved into it.
+  if v_fam = 'quote_cover' and d.family <> 'quote_cover' then return jsonb_build_object('error', 'not-issuable'); end if;
+  if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
+  if v_fam = 'hr' then
+    if p_member is not null then select * into tm from public.team_members where id = p_member; end if;
+  elsif v_fam = 'supplier' then
+    if p_supplier is not null then select * into sp from public.suppliers where id = p_supplier; end if;
+    if sp.id is null then return jsonb_build_object('error', 'no-supplier'); end if;
+  elsif p_client is not null then
+    select * into cl from public.clients where id = p_client;
+  end if;
+  if d.client_id is not null then select * into was_cl from public.clients where id = d.client_id; end if;
+  if d.supplier_id is not null then select * into was_sp from public.suppliers where id = d.supplier_id; end if;
+
+  /* What moved, in the order a reader looks: the type, the date, where it is
+     filed, who it went to, then whether the note or the file changed. An HR
+     row names only its type, date, note and file. */
+  if d.kind is distinct from btrim(p_kind) then
+    moves := moves || ('type ' || coalesce(d.kind, 'not set') || ' → ' || btrim(p_kind));
+  end if;
+  if d.issued_at is distinct from p_issued_at then
+    moves := moves || ('date ' || public.register_day(d.issued_at) || ' → ' || public.register_day(p_issued_at));
+  end if;
+  if v_fam <> 'hr' and d.family <> 'hr' then
+    if d.family is distinct from v_fam then
+      moves := moves || ('filed ' || coalesce(fam_word ->> d.family, d.family) || ' → ' || coalesce(fam_word ->> v_fam, v_fam));
+    end if;
+    if coalesce(d.recipient ->> 'name', '') is distinct from v_rec then
+      moves := moves || ('recipient ' || coalesce(nullif(d.recipient ->> 'name', ''), 'not set') || ' → ' || coalesce(nullif(v_rec, ''), 'not set'));
+    end if;
+    if d.client_id is distinct from cl.id then
+      moves := moves || ('client ' || coalesce(was_cl.name, 'not set') || ' → ' || coalesce(cl.name, 'not set'));
+    end if;
+    if d.supplier_id is distinct from sp.id then
+      moves := moves || ('supplier ' || coalesce(was_sp.code, 'not set') || ' → ' || coalesce(sp.code, 'not set'));
+    end if;
+  end if;
+  if d.note is distinct from v_note then moves := moves || 'note changed'::text; end if;
+  if d.file_url is distinct from v_file then moves := moves || 'file link changed'::text; end if;
+
+  update public.documents set
+    kind = btrim(p_kind), family = v_fam, issued_at = p_issued_at,
+    recipient = jsonb_build_object('name', v_rec),
+    client_id = cl.id, member_id = tm.id, supplier_id = sp.id,
+    note = v_note, file_url = v_file
+  where id = p_doc;
+  if array_length(moves, 1) > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'register.edited',
+            case when v_fam = 'hr' or d.family = 'hr' then 'HR' else coalesce(cl.name, sp.name, sp.code, nullif(v_rec, ''), d.serial) end,
+            case when v_fam = 'hr' or d.family = 'hr' then array_to_string(moves, '; ')
+                 else d.serial || ': ' || array_to_string(moves, '; ') end);
+  end if;
+  return jsonb_build_object('ok', true, 'serial', d.serial);
+end $$;
+grant execute on function public.register_update(uuid, text, text, date, text, uuid, text, text, uuid, uuid) to authenticated;
+
+-- END OF QUOTATION COVER NOT ADDED ------------------------------------------
+
+-- ===========================================================================
+-- CAMPAIGN INVOICE FROM BUKKU (2026-11-25)
+-- ===========================================================================
+-- WHY: the user, 2026-11-25. A campaign's invoice was typed (AINV and its
+-- number) and its PDF uploaded by hand in a form inside the Finance pane.
+-- It is now made in Bukku as a draft from the campaign, or an invoice made
+-- there is linked to it, and read from Bukku whenever it is shown.
+--
+-- WHAT CHANGES
+--   * `campaigns`: `bukku_invoice_id` (the invoice's Bukku id), and the
+--     press held ten minutes (`invoice_claimed_at`, `invoice_claimed_by`).
+--     `invoice_no` keeps the number; an invoice typed and uploaded before
+--     stays as it was (`invoice_url`), read only.
+--   * `bukku_settings.campaign_invoice_model`: the invoice whose line a new
+--     one copies (its product, account and tax code), seeded AINV2609023,
+--     the user's own on CC002; set in Settings, Accounting, Bukku
+--     (`bukku_campaign_model_set`, filed `team.changed`).
+--   * `campaign_invoice_prep(p_campaign, p_mode)` as the caller, at
+--     Campaigns: Finance Work and the client in scope: the client's Bukku
+--     contact (its own link, else the company billing it), the currency,
+--     the reference, and for `create` one line a booked creator at the
+--     client rate, the press held (`not-linked`, `invoiced`, `nothing`,
+--     `no-model`, `no-fx`, `creating`).
+--   * `campaign_invoice_take(p_campaign, p_bukku, p_number, p_linked)`
+--     files the number (filed `campaign.invoice`), or with no number lets
+--     go of the caller's own press.
+--   * `campaign_invoice_unlink(p_campaign)`: the link let go, the number
+--     with it, filed; nothing changes in Bukku.
+--   * `campaign_invoice_read(p_campaign)`: the Bukku id to read, at
+--     Campaigns View, the client in scope.
+--
+-- ORDER: this file (connector), then bukku-sync, then the pages. An old
+-- tab keeps its typed number and upload until refreshed. Safe to run twice.
+-- ROLLBACK: the functions and columns may stay unused; redeploy the
+-- previous bukku-sync and pages.
+-- ===========================================================================
+
+-- CAMPAIGN INVOICE FROM BUKKU ------------------------------------------------
+
+alter table public.campaigns add column if not exists bukku_invoice_id bigint;
+alter table public.campaigns add column if not exists invoice_claimed_at timestamptz;
+alter table public.campaigns add column if not exists invoice_claimed_by uuid;
+alter table public.bukku_settings add column if not exists campaign_invoice_model text default 'AINV2609023';
+
+create or replace function public.campaign_invoice_prep(p_campaign uuid, p_mode text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  m public.campaigns;
+  cl public.clients;
+  b public.bukku_settings;
+  v_contact bigint; v_cur text; v_fx numeric := 1; v_lines jsonb;
+begin
+  if me.id is null or not public.allowed('campaigns.finance', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_mode is null or p_mode not in ('create', 'link') then return jsonb_build_object('error', 'bad-request'); end if;
+  select * into m from public.campaigns x where x.id = p_campaign for update;
+  if m.id is null or not public.client_scope_ok('campaign', m.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  -- An invoice typed or uploaded before stays as it was (read only).
+  if m.bukku_invoice_id is not null or m.invoice_no is not null or m.invoice_url is not null then
+    return jsonb_build_object('error', 'invoiced', 'number', m.invoice_no);
+  end if;
+  select * into cl from public.clients x where x.id = m.client_id;
+  select l.contact_id into v_contact from public.bukku_links l where l.kind = 'client' and l.record_id = m.client_id;
+  if v_contact is null then v_contact := (public.bukku_shared('client', m.client_id)->>'contact_id')::bigint; end if;
+  if v_contact is null then return jsonb_build_object('error', 'not-linked'); end if;
+  v_cur := case when upper(coalesce(cl.market, '')) = 'SG' and cl.bill_sgd then 'SGD' else 'MYR' end;
+  if p_mode = 'link' then
+    return jsonb_build_object('ok', true, 'contact_id', v_contact, 'currency', v_cur);
+  end if;
+  select * into b from public.bukku_settings where id = 1;
+  if nullif(btrim(coalesce(b.campaign_invoice_model, '')), '') is null then return jsonb_build_object('error', 'no-model'); end if;
+  if v_cur = 'SGD' then
+    v_fx := nullif(public.app_setting('fx_sgd', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0);
+    if v_fx is null then return jsonb_build_object('error', 'no-fx'); end if;
+  end if;
+  -- One line a booked creator at the client rate, in the order they were booked.
+  select coalesce(jsonb_agg(jsonb_build_object('label', left(coalesce(c.name, 'Creator') || ' · ' || m.title, 255),
+           'amount', o.rate) order by o.position, o.added_at), '[]'::jsonb)
+    into v_lines
+    from public.campaign_options o left join public.creators c on c.id = o.creator_id
+   where o.campaign_id = m.id and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted',
+         'reviewing', 'changes', 'scheduled', 'posted', 'completed')
+     and not coalesce(o.goodwill, false) and coalesce(o.rate, 0) > 0;
+  if jsonb_array_length(v_lines) = 0 then return jsonb_build_object('error', 'nothing'); end if;
+  if m.invoice_claimed_at is not null and m.invoice_claimed_at > now() - interval '10 minutes' then
+    return jsonb_build_object('error', 'creating');
+  end if;
+  update public.campaigns x set invoice_claimed_at = now(), invoice_claimed_by = me.id where x.id = m.id;
+  return jsonb_build_object('ok', true, 'contact_id', v_contact, 'currency', v_cur, 'fx', v_fx, 'sst', cl.sst_applies,
+    'model', btrim(b.campaign_invoice_model), 'lines', v_lines,
+    'ref', left(coalesce(nullif(m.campaign_code, '') || ' · ', '') || m.title, 50),
+    'date', (now() at time zone 'Asia/Kuala_Lumpur')::date, 'description', left(m.title, 200));
+end $$;
+revoke all on function public.campaign_invoice_prep(uuid, text) from public, anon;
+grant execute on function public.campaign_invoice_prep(uuid, text) to authenticated;
+
+create or replace function public.campaign_invoice_take(p_campaign uuid, p_bukku bigint, p_number text, p_linked boolean)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  m public.campaigns;
+  v_num text := nullif(left(btrim(coalesce(p_number, '')), 60), '');
+begin
+  if me.id is null or not public.allowed('campaigns.finance', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into m from public.campaigns x where x.id = p_campaign for update;
+  if m.id is null or not public.client_scope_ok('campaign', m.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_num is null or coalesce(p_bukku, 0) <= 0 then
+    -- a press that made nothing lets go of the caller's own hold alone
+    update public.campaigns x set invoice_claimed_at = null, invoice_claimed_by = null
+     where x.id = m.id and x.invoice_claimed_by = me.id;
+    return jsonb_build_object('ok', true);
+  end if;
+  if m.bukku_invoice_id is not null and m.bukku_invoice_id <> p_bukku then return jsonb_build_object('error', 'invoiced', 'number', m.invoice_no); end if;
+  update public.campaigns x set bukku_invoice_id = p_bukku, invoice_no = v_num, invoice_claimed_at = null, invoice_claimed_by = null
+   where x.id = m.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'campaign.invoice', m.title, 'Invoice ' || v_num ||
+          case when p_linked then ' linked from Bukku' else ' created in Bukku as a draft' end);
+  return jsonb_build_object('ok', true, 'number', v_num);
+end $$;
+revoke all on function public.campaign_invoice_take(uuid, bigint, text, boolean) from public, anon;
+grant execute on function public.campaign_invoice_take(uuid, bigint, text, boolean) to authenticated;
+
+create or replace function public.campaign_invoice_unlink(p_campaign uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  m public.campaigns;
+begin
+  if me.id is null or not public.allowed('campaigns.finance', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into m from public.campaigns x where x.id = p_campaign for update;
+  if m.id is null or not public.client_scope_ok('campaign', m.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if m.bukku_invoice_id is null then return jsonb_build_object('error', 'not-linked'); end if;
+  update public.campaigns x set bukku_invoice_id = null, invoice_no = null where x.id = m.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'campaign.invoice', m.title, 'Invoice ' || coalesce(m.invoice_no, '') || ' unlinked');
+  return jsonb_build_object('ok', true, 'number', m.invoice_no, 'bukku', m.bukku_invoice_id);
+end $$;
+revoke all on function public.campaign_invoice_unlink(uuid) from public, anon;
+grant execute on function public.campaign_invoice_unlink(uuid) to authenticated;
+
+create or replace function public.campaign_invoice_read(p_campaign uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare m public.campaigns;
+begin
+  if (public.ops_me()).id is null or not public.allowed('campaigns.campaigns', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into m from public.campaigns x where x.id = p_campaign;
+  if m.id is null or not public.client_scope_ok('campaign', m.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  if m.bukku_invoice_id is null then return jsonb_build_object('error', 'not-linked'); end if;
+  return jsonb_build_object('ok', true, 'bukku', m.bukku_invoice_id, 'number', m.invoice_no);
+end $$;
+revoke all on function public.campaign_invoice_read(uuid) from public, anon;
+grant execute on function public.campaign_invoice_read(uuid) to authenticated;
+
+create or replace function public.bukku_campaign_model_set(p_number text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  b public.bukku_settings;
+  v_num text := nullif(upper(btrim(coalesce(p_number, ''))), '');
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if v_num is not null and v_num !~ '^[A-Z0-9._/-]{3,40}$' then return jsonb_build_object('error', 'bad-number'); end if;
+  select * into b from public.bukku_settings where id = 1 for update;
+  if b.campaign_invoice_model is not distinct from v_num then return jsonb_build_object('ok', true); end if;
+  insert into public.bukku_settings (id, campaign_invoice_model, set_by, set_at) values (1, v_num, me.id, now())
+  on conflict (id) do update set campaign_invoice_model = excluded.campaign_invoice_model, set_by = excluded.set_by, set_at = now();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Bukku', 'Campaign sample invoice: ' || coalesce(b.campaign_invoice_model, 'not set') || ' → ' || coalesce(v_num, 'not set'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_campaign_model_set(text) from public, anon;
+grant execute on function public.bukku_campaign_model_set(text) to authenticated;
+
+create or replace function public.bukku_config()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare b public.bukku_settings;
+begin
+  if (public.ops_me()).id is null or not (public.allowed('clients.billing', 'work') or public.allowed('suppliers', 'work')
+      or public.ops_granted('team.settings', 'work')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into b from public.bukku_settings where id = 1;
+  return jsonb_build_object('ok', true, 'field_client', b.field_client, 'field_supplier', b.field_supplier,
+    'field_creator', b.field_creator, 'bill_account', b.bill_account, 'bill_account_name', b.bill_account_name,
+    'bill_item_sku', b.bill_item_sku, 'bill_class_code', b.bill_class_code, 'bill_account_code', b.bill_account_code,
+    'budget_account_code', b.budget_account_code, 'campaign_invoice_model', b.campaign_invoice_model, 'set_at', b.set_at);
+end $$;
+revoke all on function public.bukku_config() from public, anon;
+grant execute on function public.bukku_config() to authenticated;
+
+-- END OF CAMPAIGN INVOICE FROM BUKKU -----------------------------------------
+
 select public.functions_tidy();

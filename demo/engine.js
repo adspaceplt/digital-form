@@ -17,7 +17,7 @@
     campaign_confirmations: 'id campaign_id kind person source note created_at idem snapshot campaign_title client_id',
     campaign_deliverables: 'id option_id url name kind bytes round uploaded_at removed_at hidden_at hidden_by',
     campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round earlier_job posted_on pay_by',
-    campaigns: 'id client_id title title_zh invoice_no slots deadline owner push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code',
+    campaigns: 'id client_id title title_zh invoice_no slots deadline owner push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code bukku_invoice_id invoice_claimed_at invoice_claimed_by',
     client_contacts: 'id client_id salutation name role phone email whatsapp lang is_primary notes created_at archived_at portal_access portal_login_at',
     client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at',
     client_document_seq: 'client_id ym next_val',
@@ -644,7 +644,9 @@
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', campaign_creator_bills: 'p_campaign', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number', creator_bill_made: 'p_option p_number', bukku_send_sent: 'p_kind p_id p_code p_contact',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
-    bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
+    bukku_invoice_set: 'p_budget_code', bukku_campaign_model_set: 'p_number', campaign_invoice_prep: 'p_campaign p_mode',
+    campaign_invoice_take: 'p_campaign p_bukku p_number p_linked', campaign_invoice_unlink: 'p_campaign', campaign_invoice_read: 'p_campaign',
+    client_ad_debtor_set: 'p_client p_contact p_code p_name',
     quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
@@ -2632,7 +2634,7 @@ function cardSlugFree(name, self, email) {
           ['replaced', by ? mday(by.issued_at) : null], ['voided', mday(o.voided_at)]]) };
     }
 
-    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at); })
+    var qt = (DB.quotations || []).filter(function (x) { return x.ref && same(x.ref); })
       .sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
     if (qt) {
       var rev = (DB.quotations || []).filter(function (r) { return r.replaces === qt.id && !r.removed_at; })
@@ -2686,6 +2688,9 @@ function cardSlugFree(name, self, email) {
           state: rv.withdrawn_at ? 'withdrawn' : rnext ? 'replaced' : 'valid',
           steps: steps([['issued', mday(rv.published_at)], ['replaced', rnext], ['withdrawn', mday(rv.withdrawn_at)]]) };
       }
+
+      var vq = (DB.quotations || []).filter(function (x) { return x.ref && x.doc_code === vc; })[0];
+      if (vq) { var fq = verifyFind(vq.ref); if (fq) { fq.serial = vser; fq.by_code = true; return fq; } }
       var vs = (DB.video_scripts || []).filter(function (x) { return x.doc_code === vc && x.shared_at; })[0];
       if (vs) return { src: 'script', id: vs.id, serial: vser, by_code: true, kind: 'Video Script',
         issued: mday(vs.shared_at), code: vs.doc_code, sealed: false, state: vs.status === 'shared' ? 'valid' : 'withdrawn',
@@ -14868,6 +14873,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, qdc.owner_id, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
         if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
         if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
+
+        if (qdq.sent_out_at || qdq.signed_at) return qtOk({ error: 'sent' });
         var qdn = (DB.client_services || []).filter(function (l) { return l.quotation_id === qdq.id; }).length;
         if (qdn) return qtOk({ error: 'lines', count: qdn });
         var qdd = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qdq.id; }); })[0];
@@ -16360,7 +16367,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
-    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku' || /^quotation_invoice/.test(name) || name === 'client_ad_debtor_set') {
+    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku' || /^quotation_invoice/.test(name) || /^campaign_invoice_/.test(name) || name === 'client_ad_debtor_set') {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return bkNo(window.__refuseRpc[name]);
@@ -16409,7 +16416,68 @@ function opsCodeRange(cid, period, ty, src, seq) {
           field_creator: DB.bukku_settings.field_creator || null, bill_account: DB.bukku_settings.bill_account || null,
           bill_account_name: DB.bukku_settings.bill_account_name || null, bill_item_sku: bkBillSet().bill_item_sku || null,
           bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null,
-          budget_account_code: DB.bukku_settings.budget_account_code || null });
+          budget_account_code: DB.bukku_settings.budget_account_code || null,
+          campaign_invoice_model: 'campaign_invoice_model' in DB.bukku_settings ? DB.bukku_settings.campaign_invoice_model : 'AINV2609023' });
+      }
+
+      if (name === 'bukku_campaign_model_set') {
+        if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
+        var cmn = args.p_number ? String(args.p_number).trim().toUpperCase() : null;
+        if (cmn && !/^[A-Z0-9._\/-]{3,40}$/.test(cmn)) return bkNo('bad-number');
+        var cmw = 'campaign_invoice_model' in DB.bukku_settings ? DB.bukku_settings.campaign_invoice_model : 'AINV2609023';
+        if (cmw === cmn) return bkOk();
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { campaign_invoice_model: cmn });
+        logAct('team.changed', 'Bukku', 'Campaign sample invoice: ' + (cmw || 'not set') + ' → ' + (cmn || 'not set'));
+        return bkOk();
+      }
+      if (/^campaign_invoice_(prep|take|unlink|read)$/.test(name)) {
+        var ciRead = name === 'campaign_invoice_read';
+        if (!bkMe || !opsAllowed(ciRead ? 'campaigns.campaigns' : 'campaigns.finance', ciRead ? 'view' : 'work')) return bkNo('denied');
+        if (name === 'campaign_invoice_prep' && ['create', 'link'].indexOf(args.p_mode) < 0) return bkNo('bad-request');
+        var ciC = (DB.campaigns || []).filter(function (x) { return x.id === args.p_campaign; })[0];
+        if (!ciC || !scopeSeen(ciC.client_id, ciRead ? 'view' : 'work')) return bkNo('not-found');
+        if (ciRead) return ciC.bukku_invoice_id ? bkOk({ bukku: ciC.bukku_invoice_id, number: ciC.invoice_no }) : bkNo('not-linked');
+        if (name === 'campaign_invoice_unlink') {
+          if (!ciC.bukku_invoice_id) return bkNo('not-linked');
+          var ciWas = { number: ciC.invoice_no, bukku: ciC.bukku_invoice_id };
+          ciC.bukku_invoice_id = null; ciC.invoice_no = null; ciC.updated_at = new Date().toISOString();
+          logAct('campaign.invoice', ciC.title, 'Invoice ' + (ciWas.number || '') + ' unlinked');
+          return bkOk(ciWas);
+        }
+        if (name === 'campaign_invoice_take') {
+          var ciNum = String(args.p_number || '').trim().slice(0, 60);
+          if (!ciNum || !(Number(args.p_bukku) > 0)) {
+            if (ciC.invoice_claimed_by === bkMe.id) { ciC.invoice_claimed_at = null; ciC.invoice_claimed_by = null; }
+            return bkOk();
+          }
+          if (ciC.bukku_invoice_id && ciC.bukku_invoice_id !== Number(args.p_bukku)) return bkNo('invoiced', { number: ciC.invoice_no });
+          ciC.bukku_invoice_id = Number(args.p_bukku); ciC.invoice_no = ciNum; ciC.invoice_claimed_at = null; ciC.invoice_claimed_by = null;
+          ciC.updated_at = new Date().toISOString();
+          logAct('campaign.invoice', ciC.title, 'Invoice ' + ciNum + (args.p_linked ? ' linked from Bukku' : ' created in Bukku as a draft'));
+          return bkOk({ number: ciNum });
+        }
+        if (ciC.bukku_invoice_id || ciC.invoice_no || ciC.invoice_url) return bkNo('invoiced', { number: ciC.invoice_no });
+        var ciCl = (DB.clients || []).filter(function (x) { return x.id === ciC.client_id; })[0] || {};
+        var ciLk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'client' && l.record_id === ciC.client_id; })[0];
+        if (!ciLk || !ciLk.contact_id) return bkNo('not-linked');
+        var ciCur = String(ciCl.market || '').toUpperCase() === 'SG' && ciCl.bill_sgd ? 'SGD' : 'MYR';
+        if (args.p_mode === 'link') return bkOk({ contact_id: ciLk.contact_id, currency: ciCur });
+        var ciModel = 'campaign_invoice_model' in DB.bukku_settings ? DB.bukku_settings.campaign_invoice_model : 'AINV2609023';
+        if (!ciModel) return bkNo('no-model');
+        var ciFx = 1;
+        if (ciCur === 'SGD') { ciFx = Number(appSet('fx_sgd', new Date().toISOString().slice(0, 10))) || 0; if (!ciFx) return bkNo('no-fx'); }
+        var ciOn = ['confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
+        var ciLines = (DB.campaign_options || []).filter(function (o) {
+          return o.campaign_id === ciC.id && ciOn.indexOf(o.state) > -1 && !o.goodwill && Number(o.rate) > 0;
+        }).sort(function (a, b) { return (a.position || 0) - (b.position || 0); }).map(function (o) {
+          var cr = (DB.creators || []).filter(function (x) { return x.id === o.creator_id; })[0];
+          return { label: ((cr && cr.name) || 'Creator') + ' · ' + ciC.title, amount: Number(o.rate) };
+        });
+        if (!ciLines.length) return bkNo('nothing');
+        if (ciC.invoice_claimed_at && Date.parse(ciC.invoice_claimed_at) > Date.now() - 6e5) return bkNo('creating');
+        ciC.invoice_claimed_at = new Date().toISOString(); ciC.invoice_claimed_by = bkMe.id;
+        return bkOk({ contact_id: ciLk.contact_id, currency: ciCur, fx: ciFx, sst: ciCl.sst_applies !== false, model: ciModel, lines: ciLines,
+          ref: ((ciC.campaign_code ? ciC.campaign_code + ' · ' : '') + ciC.title).slice(0, 50), description: ciC.title });
       }
 
       var qiQ = function (id) { return (DB.quotations || []).filter(function (x) { return x.id === id; })[0]; };
@@ -20245,6 +20313,48 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return rpc('bukku_config', {}).then(function (r) {
               if (r.data && r.data.error) return { data: r.data, error: null };
               return { data: { ok: true, accounts: bkAccounts() }, error: null };
+            });
+          }
+
+          if (bkb.action === 'campaigninvoice') {
+            var bci = window.__bukkuCampInvoices = window.__bukkuCampInvoices || [];
+            var bciOf = function (x) {
+              return { ok: true, number: x.number, bukku: x.id, state: x.status === 'draft' ? 'draft' : x.status === 'void' ? 'void' : Number(x.balance) <= 0 ? 'paid' : x.overdue ? 'overdue' : 'issued',
+                amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR', pdf: 'https://adspace.bukku.my/p/' + x.id, web: 'https://adspace.bukku.my/sales/invoices/' + x.id };
+            };
+            if (!/^(create|link|status)$/.test(String(bkb.op || ''))) return Promise.resolve({ data: { error: 'bad-request' }, error: { message: 'bad-request', context: { status: 400 } } });
+            if (bkb.op === 'status') {
+              return rpc('campaign_invoice_read', { p_campaign: bkb.campaign }).then(function (r) {
+                var d = r.data || {};
+                if (d.error) return bkR(d);
+                if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
+                var x = bci.filter(function (i) { return i.id === d.bukku; })[0];
+                return bkR(x ? bciOf(x) : { ok: true, gone: true, number: d.number });
+              });
+            }
+            return rpc('campaign_invoice_prep', { p_campaign: bkb.campaign, p_mode: bkb.op }).then(function (r) {
+              var p = r.data || {};
+              if (p.error) return bkR({ error: p.error, number: p.number });
+              if (bkb.op === 'link') {
+                var num = String(bkb.number || '').trim().toUpperCase();
+                if (!/^[A-Z0-9._\/-]{3,40}$/.test(num)) return bkR({ error: 'bad-number' });
+                var hit = bci.filter(function (x) { return x.number.toUpperCase() === num && x.contact_id === p.contact_id && x.status !== 'void'; })[0];
+                if (!hit) return bkR({ error: 'no-invoice', number: num });
+                return rpc('campaign_invoice_take', { p_campaign: bkb.campaign, p_bukku: hit.id, p_number: hit.number, p_linked: true }).then(function (t) {
+                  if (t.data && t.data.error) return bkR({ error: t.data.error, number: t.data.number });
+                  return bkR(Object.assign(bciOf(hit), { linked: true }));
+                });
+              }
+              var letGo = function () { return rpc('campaign_invoice_take', { p_campaign: bkb.campaign, p_bukku: null, p_number: null, p_linked: false }); };
+              if (window.__bukkuDown) return letGo().then(function () { return bkR({ error: 'bukku-unreachable' }); });
+              if (window.__bukkuModelMissing) return letGo().then(function () { return bkR({ error: 'no-model', number: p.model }); });
+              var sum = p.lines.reduce(function (a, l) { return a + Number(l.amount); }, 0);
+              var made = { id: 8000 + bci.length, number: 'IV-' + String(8000 + bci.length).padStart(5, '0'), contact_id: p.contact_id, status: 'draft',
+                amount: sum, balance: sum, currency_code: p.currency, lines: p.lines, number2: p.ref };
+              bci.push(made);
+              return rpc('campaign_invoice_take', { p_campaign: bkb.campaign, p_bukku: made.id, p_number: made.number, p_linked: false }).then(function () {
+                return bkR(Object.assign(bciOf(made), { made: made.number }));
+              });
             });
           }
 

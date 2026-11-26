@@ -482,7 +482,9 @@
     /* A ⋯ never holds one item (the user, 2026-11-17: "menu only sit one
        option"): where only one would show, its own button stands on the bar
        (`.cmd-solo`) and the ⋯ is not drawn. On a phone a button with a
-       glyph gives up its word, as the primary does. */
+       glyph gives up its word, as the primary does, unless the primary
+       stands beside it: then it keeps its words and the count gives way
+       (css/console.css; 2026-11-26). */
     function syncMore() {
       var shown = [];
       pairs.forEach(function (pr) {

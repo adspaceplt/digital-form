@@ -4110,6 +4110,12 @@ body > .shell { width: 100%; }
    wide cell, where it read as the Task Owner's (the user, 2026-09-28); on a
    narrow row it ends the title line beside the ⋯, as a card's chip does. */
 .task-top > b { flex: 0 1 auto; }
+/* On a phone the chips take the line under the name, never its width
+   (2026-11-26: Urgent delivery and Open to take drew the name 0px wide). */
+@media (max-width: 640px) {
+  .task-top { flex-wrap: wrap; row-gap: 4px; }
+  .task-top > b { flex: 1 0 100%; min-width: 0; }
+}
 /* PRIORITY DEADLINES (2026-10-11, the user's D3 + B): a task with a
    deadline carries a strip down its left edge in the level's colour (Urgent
    red, High amber, Medium yellow), red once the deadline has passed, and the
@@ -4303,7 +4309,7 @@ body > .shell { width: 100%; }
 /* A long reference in a register row is one line ending in an ellipsis,
    left aligned under the row's edge; the whole of it is the label, the
    hover and what Copy copies (DOC-3, 2026-10-22). */
-.reg-row .serial-copy { max-width: 100%; text-align: left; justify-content: flex-start; }
+.reg-row .serial-copy { font-weight: 500; letter-spacing: 0; max-width: 100%; text-align: left; justify-content: flex-start; }
 .reg-row .serial-copy > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-row > .svc-unit {
   color: var(--ink-mute); font-size: 13px;
@@ -4741,6 +4747,8 @@ body > .shell { width: 100%; }
    ellipsis of its own: a long name wraps under itself instead of being cut
    at the column's edge (2026-11-13). */
 .cl-who > :is(.cl-name, b) { white-space: normal; }
+/* A list row's name reads at 500 (DESIGN §1; 2026-11-26). */
+.cl-who > b { font-weight: 500; }
 /* Any row a client leads (Video Scripts, Reports, Creator Campaigns;
    2026-11-10): the mark beside what the row names, 4px of room for a VIC's
    ring inside a cell that clips its overflow. */
@@ -4751,8 +4759,9 @@ body > .shell { width: 100%; }
 .cl-lead > .cl-who { flex: 1 1 auto; }
 .cl-lead > .cl-who > :is(b, small) { display: block; }
 .camp-row .cl-lead > .cl-who { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A part of a line of parts that must stay whole (a date, a name). */
-.crm-c-meta .nb { white-space: nowrap; }
+/* A part of a line of parts, kept whole, its dot inside it
+   (`ADspaceWords.parts`): a wrap falls before the dot, never after it. */
+.lpart { white-space: nowrap; }
 .crm-seen-kind {
   font-size: 12px; color: var(--ink-mute);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -8554,7 +8563,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
 .hb-row.is-off > :not(.hb-act) { opacity: .55; }
-.hb-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-name b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hb-name small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .hb-row {
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -9891,7 +9900,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-done p { margin: 0; }
 .qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; corner-shape: round; background: var(--ok-solid); color: var(--on-ok); }
 body.qs-page { background: var(--card); }
-.qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
+.qs-change { display: inline-flex; align-items: center; gap: 6px; }
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
 /* A finished booking on the creator's page (2026-10-14): its name and state,
@@ -10009,7 +10018,7 @@ body.qs-page { background: var(--card); }
 /* A heading over one line of words (an interview cancelled, expired or
    other times asked) keeps the section's 12px alone (2026-11-20). */
 .cr-iv > .qs-sec-h:has(+ .cr-next) { margin-bottom: 0; }
-.cr-doc { display: grid; gap: 16px; }
+.cr-doc { display: grid; gap: 16px; background: var(--sunk); box-shadow: none; border: 0; }
 /* The state stands on the name's line while both fit and takes the line
    under it where they do not (320: the reference and Awaiting your reply
    widened the page by 17px); the name keeps its longest word whole. */
@@ -10141,6 +10150,7 @@ body.qs-page { background: var(--card); }
 .cp-prog-body { grid-area: body; display: grid; gap: 10px; min-width: 0; }
 .cp-prog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 12px; min-width: 0; }
 .cp-prog-top > .svc-state { flex: 0 0 auto; }
+.cp-prog-top > .cp-open { flex: 0 0 auto; align-self: center; }
 .cp-prog-body .cx-legend { margin: 0; }
 .cx-legend b { font-weight: 600; color: var(--ink); }
 .cp-prog-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
