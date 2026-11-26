@@ -8902,6 +8902,9 @@ body.is-maint { overflow: hidden; }
 @media (max-width: 640px) {
   .console .annbar { margin: 12px 16px 0; }
   .topbar + .annbar, .demobar + .annbar { padding-left: 16px; padding-right: 4px; }
+  /* Exit demo keeps the page's 16px gutter (an announcement's × keeps 4,
+     its glyph's own box the gap; 2026-11-27, Exit demo stood on the edge). */
+  .topbar + .annbar.demobar { padding-right: 16px; }
 }
 /* The console's list: a section an audience, every announcement a row, those
    live or set for later first; a stopped or ended one's words are faded, its
@@ -10340,7 +10343,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (hover: hover) { .queue .qrow:not(.is-on):hover { background: var(--sunk); } }
 
 .cx-journey.has-discs { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; margin: 16px 0 4px; }
-.cx-journey.has-discs li { position: relative; justify-items: center; align-content: start; grid-auto-rows: min-content; text-align: center; gap: 4px; }
+/* The step's own column is its part's width: the step in hand's name, one
+   line on a phone, spills both ways under its disc and never widens the
+   column, so every disc stands at its part's centre and each line stops at
+   both discs' edges (2026-11-27: the ring stood 8px off at 390, the line
+   crossing it). */
+.cx-journey.has-discs li { position: relative; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; grid-auto-rows: min-content; text-align: center; gap: 4px; }
 .cx-journey.has-discs li::before { position: absolute; top: 17px; left: calc(-50% + 22px); right: calc(50% + 22px); height: 2px; border-radius: 0; }
 .cx-journey.has-discs li:first-child::before { content: none; }
 .cx-journey.has-discs li.is-done::before, .cx-journey.has-discs li.is-now::before { background: var(--ok-solid); }
