@@ -6723,6 +6723,11 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-board > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 @media (hover: hover) { .qb-bopen:hover { background: var(--sunk); } }
 .qb-brands + .fsec, .qb-brands + .qb-boardhold + .fsec { margin-top: 24px; }
+/* The item table on the sheet under the brands at a desk (the user,
+   2026-11-26: "Same sheet at a desk"); the quotation's own part a step
+   under it whether or not it is drawn. */
+.qb-brands ~ .qb-linesbox, .qb-brands ~ .qb-quote { margin-top: 24px; }
+.qb-linesbox + #qbMsg:empty { display: none; }
 /* The Summary by brand: a brand's name across it over its figure. */
 .qb-sidebn { font-size: 13.5px; font-weight: 600; color: var(--ink); margin: 8px 0 0; overflow-wrap: anywhere; }
 .qb-sidebf { font-size: 12.5px; color: var(--ink-mute); margin: 0 0 4px; font-variant-numeric: tabular-nums; }

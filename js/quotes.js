@@ -2180,34 +2180,43 @@
     $('qbOnceAdd').hidden = on;
   }
   function adsShow() { $('qbAdAddFirst').hidden = $('qbAdOn').checked; }
-  /* View quote turns the sheet to the quotation so far, as a cart shows
-     what is in it; Back returns (the user, 2026-11-25: "It's like a
-     bucket or cart"). The step's own Back gives way while it is open, so
-     the foot never holds two Backs. */
+  /* At a desk the item table stands on the sheet under the brands, every
+     brand's typed there beside the cards that choose them (the user,
+     2026-11-26: "Same sheet at a desk"); the Summary beside it is the
+     cart. On a phone View quote turns the sheet to the items, as a cart
+     shows what is in it, and Back returns (2026-11-25: "It's like a
+     bucket or cart"). The desk is where the Summary is drawn, one media
+     line in css/console.css (760). */
+  var DESK = window.matchMedia ? window.matchMedia('(min-width: 761px)') : null;
+  function desk() { return !!(DESK && DESK.matches); }
   function linesView(on) {
     var card = $('qbBox').querySelector('.sheet-card');
-    card.classList.toggle('is-lines', on);
-    $('qbLinesBox').hidden = !on;
-    $('qbView').setAttribute('aria-expanded', on ? 'true' : 'false');
+    card.classList.toggle('is-lines', Boolean(on) && !desk());
     viewSay();
-    $('qbBox').querySelector('.sheet-body').scrollTop = 0;
+    if (on || !desk()) $('qbBox').querySelector('.sheet-body').scrollTop = 0;
   }
-  /* Drawn once a line is priced, with the count beside it as a cart's;
-     hidden on the review, which shows the quotation itself. */
+  /* View quote is drawn on a phone once an item is priced, with the count
+     beside it as a cart's; at a desk the items are already on the sheet. */
   function viewSay() {
     var b = $('qbView');
     if (!B || !b) return;
-    var on = $('qbBox').querySelector('.sheet-card').classList.contains('is-lines');
+    var card = $('qbBox').querySelector('.sheet-card');
+    if (desk()) card.classList.remove('is-lines');
+    var on = card.classList.contains('is-lines');
     var n = ((B.priced && B.priced.lines) || []).length;
-    /* View quote at every width: the lines as the client reads them, their
-       quantities, rates and months typed there (BUILD QUOTE ON ONE SHEET:
-       the review step that held them at a desk is gone). */
-    b.hidden = !n && !on;
+    $('qbLinesBox').hidden = desk() ? !n && !B.err : !on;
+    b.hidden = desk() || (!n && !on);
+    b.setAttribute('aria-expanded', on ? 'true' : 'false');
     /* Preview PDF stands in the foot beside the Summary; on a phone it is
-       under the lines View quote opens. */
+       under the items View quote opens. */
     $('qbPreviewFoot').hidden = !sideOn();
+    $('qbPreview').parentNode.hidden = desk();
     b.innerHTML = on ? 'Back' : 'View quote<span class="tab-n">' + n + '</span>';
     b.setAttribute('aria-label', on ? 'Back' : 'View quote, ' + n + (n === 1 ? ' item' : ' items'));
+  }
+  if (DESK) {
+    var deskTurn = function () { if (B && $('qbBox') && !$('qbBox').hidden) viewSay(); };
+    if (DESK.addEventListener) DESK.addEventListener('change', deskTurn); else if (DESK.addListener) DESK.addListener(deskTurn);
   }
   /* Bill to: the client's billing entities, the primary first, drawn
      where there are two or more. */
