@@ -2765,9 +2765,13 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields.has-third { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .askfields.has-third > .askentry.is-half { grid-column: span 3; }
 .askfields.has-third > .askentry.is-third { grid-column: span 2; }
-/* Fields side by side keep one line when a narrow label wraps: each entry
-   stands on the row's foot. */
-.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
+/* Fields side by side stand on the row's top (DESIGN.md §5, a row aligns
+   to the top): labels on one line, fields on one line, a note under its
+   own field never moving the other (2026-11-25, the numbering sheets drew
+   Prefix 120px under Digits). Labels are nouns short enough for a column;
+   a longer one takes the row whole. */
+.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-start; }
+.askentry:is(.is-half, .is-third) > .field-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 /* A select in a half or third column fits it: its own floor (180px) would
    run past the column on a phone (2026-11-20, Working hours' two times). */
