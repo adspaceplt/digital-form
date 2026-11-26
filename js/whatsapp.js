@@ -100,7 +100,7 @@
     'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
     sending: 'This message has already been sent. Check the WhatsApp tab before sending it again.',
     'bad-file': 'The PDF could not be attached. Please try again.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.'
+    'needs-update': window.ADspaceWords.line.notYet
   };
   /* Meta's reason a message was not delivered, in the team's words. */
   var REASON = {

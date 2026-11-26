@@ -52,7 +52,7 @@
     'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'needs-update': window.ADspaceWords.line.notYet,
     'email-off': 'Send by email is off. Turn it on in Settings, Messages.'
   };
   /* Resend's word on an email, as the record's line reads it. */
