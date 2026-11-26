@@ -9714,6 +9714,10 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
    statement and the reference; the track and every card shaded (a client
    page draws no card edge, DESIGN.md §2). */
 .rcv { gap: 24px; }
+/* A lone head (a form already sent): centred between the bar and the foot,
+   nudged above true centre, as the cover family is. */
+.rcv-alone { min-height: calc(100vh - var(--head-h) - 160px); align-content: center; padding-bottom: 8vh; }
+@supports (height: 100dvh) { .rcv-alone { min-height: calc(100dvh - var(--head-h) - 160px); } }
 .rcv-head { display: grid; justify-items: center; gap: 10px; text-align: center; }
 .rcv-line { margin: 0; max-width: 440px; font-size: 17px; line-height: 1.5; color: var(--ink-soft); }
 .rcv-note { margin: 0; max-width: 440px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
