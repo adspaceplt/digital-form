@@ -63,6 +63,12 @@ Moved from `CLAUDE.md` §2, Sign-in, security, secrets, on 2026-11-23. Secrets a
   `creator_code_try` does) on a client carrying it as `x-adspace-ip` beside
   the relay secret, never the bare service role, whose address every caller
   shares (`sign-upload`'s creator calls, 2026-11-24; `tests/iprelay.js`).
+- Every call an edge function makes outside Supabase carries a time limit
+  (`AbortSignal.timeout`: 15 seconds, 20 for S3 and Meta's Graph; a file
+  streamed from S3 is held only until S3 answers), and its catch names the
+  failure; every Claude call is `maxRetries: 0` with a timeout of what is
+  left of the function's budget (`max(5000, budget - elapsed)`), never a
+  fresh limit per call (the review of 2026-11-25).
 - An email is matched as itself in every edge function (`exactEmail`: `_`
   and `%` are letters, never wildcards; audit P2, 2026-10-10).
 - A colleague's upload names its purpose and record, and `sign-upload`

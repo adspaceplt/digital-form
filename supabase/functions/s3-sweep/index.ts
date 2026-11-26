@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const s = await sign({ method: 'GET', host, path: '/', query, accessKeyId, secretAccessKey,
       region, service: 's3', amzDate: amzDateOf(new Date()), s3: true });
     const qs = Object.entries(query).map(([k, v]) => uriEncode(k) + '=' + uriEncode(v)).join('&');
-    const r = await fetch(`https://${host}/?${qs}`, { method: 'GET', headers: s.headers });
+    const r = await fetch(`https://${host}/?${qs}`, { method: 'GET', headers: s.headers, signal: AbortSignal.timeout(20000) });
     const text = await r.text();
     if (!r.ok) throw new Error(`S3 list answered ${r.status}: ${text.slice(0, 300)}`);
     return text;

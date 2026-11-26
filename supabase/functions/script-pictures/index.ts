@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
   const kept = (id: string, i: number, o: number) => db.rpc('ai_draft_tokens', { p_id: id, p_in: i, p_out: o, p_model: model }).then(() => null, () => null);
 
   return held((async () => {
-    const client = new Anthropic({ apiKey: key });
+    const client = new Anthropic({ apiKey: key, maxRetries: 0 });
     const out: string[] = [];
     const presses: Record<string, string> = {};
     let refused = '';

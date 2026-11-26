@@ -348,7 +348,7 @@ const PLAT_WORD: Record<string, string> = { instagram: 'Instagram', facebook: 'F
    is returned (the user, 2026-10-09: "draft with AI already should have
    taken note of" what the check flags). */
 async function askCheck(client: Anthropic, data: Record<string, unknown>, parts: { ref: string; where: string; text: string }[],
-  mask: (s: string) => string, maxTokens: number, spent: Anthropic.Message[]): Promise<Record<string, unknown>[] | null> {
+  mask: (s: string) => string, maxTokens: number, spent: Anthropic.Message[], timeout = AI_TIMEOUT): Promise<Record<string, unknown>[] | null> {
   const refs = parts.map((p) => p.ref);
   const str = (d: string) => ({ type: 'string', description: d });
   const schema = { type: 'object', additionalProperties: false, required: ['findings'], properties: {
@@ -362,7 +362,7 @@ async function askCheck(client: Anthropic, data: Record<string, unknown>, parts:
     output_config: { format: { type: 'json_schema', schema } },
     messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
       '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
-  } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
+  } as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(5000, timeout) });
   spent.push(res);
   if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') return null;
   const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
@@ -423,7 +423,7 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
 
   const spent: Anthropic.Message[] = [];
   try {
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const got2 = await askCheck(client, data, parts, mask, 16000, spent);
     if (!got2) {
       console.error('report-draft check: no findings came back');
@@ -477,10 +477,11 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
      linked or refused, the suggestions read the report alone, and the
      answer says why. */
   let source: Record<string, unknown> = { meta: false, ads: ads.length };
+  const started = Date.now();
   try {
     const res = await fetch(Deno.env.get('SUPABASE_URL') + '/functions/v1/meta-import', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY') || '' },
-      body: JSON.stringify({ action: 'daily', report_id: id })
+      body: JSON.stringify({ action: 'daily', report_id: id }), signal: AbortSignal.timeout(20000)
     });
     const m = await res.json().catch(() => ({})) as Record<string, unknown>;
     if (res.ok && Array.isArray(m.ads)) {
@@ -505,14 +506,14 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
         points: { type: 'array', items: str('One step, one sentence') } } } } } };
   const spent: Anthropic.Message[] = [];
   try {
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
     const res = await client.messages.create({
       model: secret('REPORT_DRAFT_MODEL'),
       max_tokens: 12000,
       system: NEXT + '\n\n' + AVOID + (lang === 'zh' ? ZH.replace(/every field/, 'every suggestion') : ''),
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: (lang === 'zh' ? ZH_ASK : '') + 'Suggest the next batch for this report. Its figures follow as JSON.\n\n' + JSON.stringify(data) }]
-    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
+    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(5000, AI_TIMEOUT - (Date.now() - started)) });
     spent.push(res);
     const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
     let ans: Record<string, unknown> | null = null;
@@ -860,7 +861,11 @@ Deno.serve(async (req) => {
   const started = Date.now();
   const spent: Anthropic.Message[] = [];
   return held((async () => { try {
-    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY'), maxRetries: 0 });
+    /* Each ask within what is left of the press's time, never a fresh
+       limit of its own, so a re-ask or the self-check never outruns the
+       function (the review of 2026-11-25). */
+    const left = () => Math.max(5000, AI_TIMEOUT - (Date.now() - started));
     /* The answer is held to the schema by structured output, never a forced
        tool call: newer models refuse `tool_choice` of type tool. The model
        may think first, so the budget leaves room for that. */
@@ -870,7 +875,7 @@ Deno.serve(async (req) => {
       system: (lang === 'zh' ? ZH_ASK + '\n\n' : '') + (kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM) + SHARED + (lang === 'zh' ? ZH : ''),
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: (again ? 'The last answer was written in English. ' : '') + (lang === 'zh' ? ZH_ASK : '') + 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
-    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: AI_TIMEOUT });
+    } as Anthropic.MessageCreateParamsNonStreaming, { timeout: left() });
     let res = await ask(false);
     spent.push(res);
     /* A 中文 press that came back in English is asked once more, inside the
@@ -919,7 +924,7 @@ Deno.serve(async (req) => {
     ((out.posts || []) as Record<string, string>[]).forEach((pp) => put('n:' + pp.ref, 'Top post', pp.remark));
     let fixed = 0;
     if (parts.length && Date.now() - started < 70000) {
-      const found = await askCheck(client, data, parts, mask, 8000, spent).catch((e) => { console.error('report-draft: self-check failed', String(e)); return null; });
+      const found = await askCheck(client, data, parts, mask, 8000, spent, left()).catch((e) => { console.error('report-draft: self-check failed', String(e)); return null; });
       (found || []).forEach((f) => {
         const ref = String(f.ref), quote = brandIn(String(f.quote ?? '').trim(), forName), fix = brandIn(String(f.fix ?? '').trim(), forName);
         if (!quote) return;

@@ -53,11 +53,11 @@ async function human(token: string, ip: string | null): Promise<boolean> {
   form.append('response', token);
   if (ip) form.append('remoteip', ip);
   try {
-    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form });
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form, signal: AbortSignal.timeout(15000) });
     const a = await r.json();
     return Boolean(a && a.success);
   } catch (e) {
-    console.error('quote-request: siteverify failed', String(e));
+    console.error('quote-request: siteverify failed', String((e as Error)?.name || e));
     return false;
   }
 }
