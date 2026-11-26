@@ -1,6 +1,6 @@
 ---
 name: copy-review
-description: Have every word on every screen or PDF a change touches (a label, button, menu item, message, refusal, empty line, cover, email, WhatsApp template, PDF line), the standing words as well as the new, read by a second reader against DESIGN.md §6 once, before the change merges, then fix what it finds. Run on every release that touches a screen, before its merge, or when the user types /copy-review. Never a scan of the whole repo.
+description: Have the words a release adds or changes on any screen or PDF (a label, button, menu item, message, refusal, empty line, cover, email, WhatsApp template, PDF line) read by a second reader against DESIGN.md §6 once, before the change merges, then fix what it finds. Run on every release that touches a screen, before its merge, or when the user types /copy-review. Never a scan of the whole repo.
 argument-hint: "[base, default origin/main]"
 ---
 
@@ -18,6 +18,14 @@ quote's "View lines" stood on a screen two releases reworked, and was never
 read again, because the review listed only the lines a change added. A
 label already standing on a screen the change touches is read again with
 the new ones.
+
+## Scope (Token economy, CLAUDE.md §3; the user, 2026-11-26)
+Per release, the reviewer reads only the lines copyscan marks `+` (added or
+changed), with the file open where a line's reader is unclear. The standing
+words of the touched screens are read once a day, in the tone sweep after
+the day's merges (`node tests/copyscan.js <the day's first commit>`, handed
+out in parts). Where a step below says the standing words are read "just as
+closely", that is the daily sweep's reading, not a release's.
 
 ## Steps
 
@@ -37,11 +45,11 @@ the new ones.
    built. Give it this brief and nothing about why the words were chosen:
 
    > You review the words a web portal shows its users. Read
-   > `/home/user/digital-form/DESIGN.md` §6 (Copy, including "How copy is
+   > `/home/user/digital-form/docs/rules/copy.md` (DESIGN.md §6: Copy, including "How copy is
    > drafted") and `tests/words.js`'s RETIRED and PATTERNS lists. Then read
    > `/tmp/copyscan.txt`: each line is `file:line  text`, every word on
-   > the screens one change touches; a line marked `+` is new, the rest
-   > were already standing and are read just as closely. Skip what is plainly code, a log line or a type
+   > the screens one change touches; read the lines marked `+` (new or changed); the rest
+   > are context, read only where a `+` line needs them. Skip what is plainly code, a log line or a type
    > signature; for each file you may open the line to see whether the
    > reader is a colleague (the console: `js/*.js` other than the client
    > pages' scripts, `admin/`) or a client, prospect, creator or supplier

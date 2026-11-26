@@ -9,15 +9,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`2026-11-12-documents-on-their-own-date.sql`; the user, 2026-11-12:
   backdated "as per client's request", "the reference number must match"):
   a quotation (Build quote's `#qbDate`, `p_sel.date`, a team's alone, never
-  kept in the selection), a Letter of Offer (`#pickDate`, `p_deal.date`) and
-  a client, HR or supplier letter (`#docDate`, `p_issued_at`), 14 Aug 2023
+  kept in the selection), a Letter of Offer issued before 2026-11-12
+  (`p_deal.date`) and a client, HR or supplier letter (`#docDate`, `p_issued_at`), 14 Aug 2023
   to today (`doc_day_ok`, `bad-date`, `ADspaceWords.line.docDate`). Its
   reference takes the date's period (AQL, ADP/QT, ADHR and AD/SCA its
   month, ACL its day), and it is priced on it: the SST, terms and S$ rate in
   force, the quotation still standing (`quote_card(date)`,
-  `quote_tax_snap(…, date)`, `ADspaceDocs.quoteOf(…, at)`), its validity
-  from it (the Letter of Offer's validity line moving with the Date while
-  untouched). A quotation edited onto another month takes that month's
+  `quote_tax_snap(…, date)`), its validity from it. A quotation edited onto another month takes that month's
   reference, the one it held kept in `quotation_refs_kept`.
 - Every PDF's properties are `ADspaceDocs.meta(pdf, title, subject)`: the
   title the name it is saved under (a reference keeping its slashes), author
@@ -66,47 +64,25 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
   - Retired (2026-11-12, the user: the quotation is the one contract): no new
-    letter is issued; the client record draws no Issue Letter of Offer, Issue
-    letter or Replace; a letter issued before keeps Download, Void, Delete,
-    Verify, its sends and /verify/. `issue_letter` stands for the suites
-    (`tests/issueletter.js` issues as the retired sheet did).
-  - Billing first (2026-10-26; the user: "billing should be before LoO"):
-    trigger `client_documents_billing` refuses a letter while the registered
-    name, BRN or billing address is empty or no billing contact stands
-    (`needs-billing`, as Active holds); the letter sheet opens Billing on
-    its first missing field instead, offering the details form, and Billing's
-    Save carries on into the letter sheet.
-  - The ticked lines are locked before they are checked against live
-    letters; a Confirmed line is tickable for a renewal; Replace is refused
-    on a letter already replaced (`superseded`) or void (`voided`), and a
-    deleted replacement revives the letter it replaced only where no other
-    live letter holds its lines (`2026-11-07-letter-of-offer-fixes.sql`).
+    letter is issued. Since 2026-11-26 the console holds no way to issue one
+    (its sheet, `ADspaceDocs.issue`, `preview`, `quoteOf`, `quoteTerms` and
+    `validLine` removed; the coordinator, the user approving); a letter
+    issued before keeps Download, Void, Delete, Verify, its sends and
+    /verify/. `issue_letter` and its serial stand in the database for its
+    history and the suites (`tests/issueletter.js` seeds a letter through
+    it).
+  - Billing first (2026-10-26): trigger `client_documents_billing` refuses a
+    letter while the registered name, BRN or billing address is empty or no
+    billing contact stands (`needs-billing`, as Active holds).
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
     digits is a floor, not a width.
-  - A typed reference (`p_serial`, the `#pickRef` field, placeholder "Numbered
-    automatically") spends no number and is refused where taken
-    (`serial-taken`) or badly shaped (`serial-shape`).
-  - A client with no Client ID is asked for one in the letter sheet
-    (`#pickCode`, `#pickRefNote`), the next AC number a press away
-    (`#pickCodeNext`, Use AC…); the letter is refused until it is set,
-    which Issue writes to the client first (filed from and to) and then
-    numbers the letter from (the user, 2026-10-27, CLI-15).
   - The file name swaps `/` for `-`.
-  - Preview (`#pickPreview`, a `.btn-sm` under Terms, never in the foot;
-    the user, 2026-10-31) draws the letter Issue would keep: the database
-    makes it and rolls it back (`issue_letter_preview`, issue_letter inside a
-    subtransaction, its refusals passed on, `2026-10-31-letter-preview.sql`),
-    drawn under DRAFT (INTERNAL USE ONLY) with the reference PREVIEW; no
-    letter, number or Activity record row is kept.
 - Letter content:
   - Only To quote lines.
-  - Terms of its own (`#pickTerms`, one point a line, ten at most, 400
-    characters each; `bad-terms`): sent in `p_deal.terms`, kept in the
-    snapshot as `bill_to.terms` and printed under TERMS after the term
-    (`2026-10-23-letter-terms.sql`). The box opens on the validity, today
-    plus `quote_valid_days` (Tax and terms; `ADspaceDocs.validLine`),
-    editable, never a figure in the page; such a letter carries
+  - Terms of its own (one point a line, ten at most, 400 characters each;
+    `bad-terms`): kept in the snapshot as `bill_to.terms` and printed under
+    TERMS after the term (`2026-10-23-letter-terms.sql`); such a letter carries
     `bill_to.terms_own` and prints no validity of its own, one issued
     before redraws its 30 days (the user, 2026-10-23,
     `2026-10-23-letter-validity-in-terms.sql`).
@@ -298,7 +274,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     through the one pen (`pen({ code })`, `foot(i, n, code)` where one PDF
     holds several: an ACL letter's verify line ends ` · Document ID
     XXXX-XXXX`; an AL document's row reads `Document ID XXXX-XXXX · Verify
-    document authenticity: go.adspace.me/verify`, DESIGN.md Print); a report version and a
+    document authenticity: digital.adspace.me/verify`, DESIGN.md Print); a report version and a
     video script hold one too (`sm_report_versions`, `video_scripts`;
     2026-11-24) and, holding no reference, are found by it typed as the
     reference (`verify_find` `by_code`, the page opening the details at
@@ -378,8 +354,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     `ADspaceDocs.watermark`); a new tab, else a download.
   - A letter's foot is its template's (ACL_SIGN or ACL_NOSIGN, by To be
     signed; DESIGN.md, Print; 2026-11-20): the verify line centred
-    (`ADSPACE_ORG.verifyUrl`, go.adspace.me/verify, which redirects to
-    /verify/) and the page count; the reference stands in the body (Our
+    (`ADSPACE_ORG.verifyUrl`, digital.adspace.me/verify, the page itself; go.adspace.me phased out
+    2026-11-26) and the page count; the reference stands in the body (Our
     Ref) and, on a lettered document of two pages or more, on every page
     in the bottom margin's left (Slate Book 6.5pt, `#a1a1a1`, level with the
     Client initials, `pen()` `ref` or `letterFoot`'s serial; 2026-11-20,

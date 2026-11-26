@@ -2874,17 +2874,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    line — but it follows the actions rather than pushing them off the margin,
    because what must not move is the control somebody presses. */
 .lpicksum { order: 1; flex: 0 1 auto; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.lpickgroup + .lpickgroup { margin-top: 14px; }
-.lpickgroup .svc-cat { padding: 0 0 6px; }
-.lpickrow input { width: 18px; height: 18px; accent-color: var(--accent); }
-.lpickname { min-width: 0; display: grid; gap: 1px; font-size: 13.5px; }
-.lpickname b { font-weight: 600; }
-.lpickname small { font-size: 12.5px; color: var(--ink-mute); }
-.lpickamt { font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* A line already spoken for reads as a fact, not as something to argue with. */
-.lpickrow.is-held { cursor: default; }
-.lpickrow.is-held .lpickname b, .lpickrow.is-held .lpickamt { color: var(--ink-mute); }
-.lpicknote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .dueask-line { margin: 0; font-size: 13px; color: var(--ink); }
 .dueask-line small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
 .dueask-acts:empty { display: none; }
@@ -2964,11 +2954,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 /* And the same fact on the card, where the button that will not move is. */
 .qc-hold { margin: 0 0 10px; }
 
-.lpickref .input { width: 100%; }
-.lpickref .select { max-width: 100%; min-width: 0; }
-.lpickref input.input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 640px) {
-  .lpickrow input { grid-area: tick; }
   /* Equal halves, not proportional ones. At `auto` the basis is each label's
      own width, so Save came out a black slab across most of the row with
      Cancel squeezed beside it — two actions of the same standing drawn at two
