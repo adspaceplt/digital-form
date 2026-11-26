@@ -164,13 +164,6 @@ button.appver {
 
 /* ---------- Console head: a link rather than a card ---------- */
 .console-spacer { flex: 1 1 auto; }
-.lpickrow {
-  display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
-  min-height: var(--ctl-h); cursor: pointer;
-}
-.lpickrow:last-child { border-bottom: 0; }
 /* ---------- An extension somebody has asked for ----------
    It sits under the dates it is about, in the rail's own action shape: an
    edge one tone lighter, because it opens something, and the two answers
@@ -213,18 +206,7 @@ button.appver {
 }
 .qc-file.is-image img { object-fit: cover; }
 .qc-files .qc-file-row { flex: 1 1 100%; }
-/* The reference somebody types instead of the one the database makes. It sits
-   under the lines it prices and above the actions, on the block step, and the
-   field fills the sheet rather than sizing itself to its own placeholder. */
-.lpickref { margin-top: 12px; }
-/* A Client ID asked in the letter sheet, the next number a press beside it (CLI-15). */
-.pickcode-row { display: flex; gap: 8px; align-items: center; }
-.pickcode-row > .input { flex: 1 1 auto; min-width: 0; }
-.pickcode-row > .btn { flex: 0 0 auto; }
-.lpickref .msg { margin: 6px 0 0; }
-@media (max-width: 640px) {.lpickrow { grid-template-columns: 18px minmax(0, 1fr); grid-template-areas: "tick name" ". amt"; gap: 2px 12px; }
-  .lpickname { grid-area: name; }
-  .lpickamt { grid-area: amt; }
+@media (max-width: 640px) {
   .lpicksum { order: 0; flex: 1 1 100%; }
 }
 /* The confirm list is a name and an amount, not the activity record's five
@@ -4115,7 +4097,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* The totals end on the lines' own right edge, inside the rows' padding
    (2026-11-07). */
 .qb-table + .qb-tot { padding-right: 15px; }
-.lpicktot { max-width: none; margin: 12px 0 16px; }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's quantity, rate and months are typed where they are read
    (2026-10-15): each field keeps a row of words' height, its target

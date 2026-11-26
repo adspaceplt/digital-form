@@ -11868,6 +11868,21 @@ From the same review. A colleague set inactive (neither removed nor expired) kep
 ### 2026-11-26 · F6: a Quotation Cover is not added on its own
 
 The user, on HANDOVER §4 item 2: "Quotation Cover: remove it". A Quotation Cover has not been issued on its own since 2026-11-25, yet Documents' Add still offered it as a kind for a document issued elsewhere. Add now offers it only to keep an existing cover being edited; `register_add` refuses the family (`not-issuable`) and `register_update` refuses moving another document into it (`2026-11-26-quotation-cover-not-added.sql`). The cover page inside every quotation PDF, the covers already held (listed, read and verified as before) and the `quote_cover` type stay. `tests/docs.js` reads the Add sheet and the refusal.
+
+### 2026-11-26 · go.adspace.me phased out
+
+The user: "go.adspace.me is going to be retired. use the new
+digital.adspace.me/verify instead". Every PDF's verify line and the console's
+fallbacks read digital.adspace.me/verify (`ADSPACE_ORG.verifyUrl`); the
+Service Terms a quotation names move to hi.adspace.me/svc-terms (the user's
+choice) and the report's ad-terms glossary to hi.adspace.me/fb-ad-terms, both
+short links the team keeps under Short Links; the Short Links note names
+hi.adspace.me alone. go.adspace.me was Rebrandly's host, not the Worker's, so
+QR codes and PDFs already issued with it stop resolving once it goes, unless a
+redirect is kept. Documents issued before keep the words they were issued with.
+The outstation notification's Lark form link (go.adspace.me/outstation) is a
+database value and is left for its own migration.
+
 ### 2026-11-26 · A campaign's invoice is made in Bukku (#1476)
 
 The Finance pane asked a colleague to type `AINV` and a number and upload the PDF by hand. The invoice is now made in Bukku as a draft from the campaign (one line a confirmed creator at the client rate, on the sample invoice AINV2609023's product, account and tax code, set in Settings, Accounting, Bukku as Sample invoice number), or one made in Bukku is linked by its number on the client's own contact; the portal keeps the number and the Bukku id and reads the state, amount and PDF from Bukku each visit. Found while finishing it: the press answered `shortlisted` creators too (a client's pick, not yet confirmed; now confirmed onwards only), a campaign with an uploaded invoice could have been given a second (refused `invoiced` since), a refusal dropped the number it named ("Bukku holds no invoice undefined"; `invCall` now keeps the whole answer), and two ⋯ of one item stood beside other acts (Link existing invoice is a tonal button; the ⋯ holds Open in Bukku and Unlink). The client's selection page shows the number alone: Bukku's PDF link is a public page no access code guards, a draft may still change, and Bukku sends the issued invoice itself.
@@ -11878,6 +11893,161 @@ From the same review: 43 findings a fresh reader made on `js/crm.js` and `js/let
 ### 2026-11-26 · F7: a cancelled interview moves the candidate back
 
 The user: "hiring tab, interview stage, when cancelled interview, it still stucked at interview". `hiring_interview_cancel` cancelled the interview and never touched the candidate's stage, and Send new times after a confirmed interview left the candidate at Interview too (`hiring_invite` moved only New, Pool and Invited). Reopening a decision already derived the stage from the interviews; that derivation is now one function, `hiring_interview_stage(candidate, else)` (Interview while one is confirmed, Invited while one waits on the candidate, else the stage given), asked by the cancel (else New), by new times (else Invited) and by Reopen (else New). A candidate back at New still reads Interview cancelled on their page (`careers_read`). Walked each way in `tests/hiringsql.js`: a confirmed interview cancelled with none other (Interview → New, then new times → Invited), new times on a confirmed interview (Interview → Invited), a second round cancelled while a held first round stands (stays Interview), an invitation cancelled before confirmation (Invited → New), and a decision reopened (New). The stand-in shares the derivation. Applied live on 2026-11-26; the two candidates the old functions had left behind (one at Interview, one at Invited, neither with a live interview) were moved once to New by the same derivation, their link's clock left as it was.
+
+### 2026-11-26 · Rules loaded on every turn cut from 207 KB to 79 KB; nothing dropped
+
+The user asked to cut the tokens every session loads ("in order to minimize the tokens usage … cut off certain instructions or markdowns"). `CLAUDE.md` imported `DESIGN.md` and `STANDARD.md`, so 206,720 bytes loaded on every turn. Every block that is needed only while one kind of file is changed moved whole, word for word, to a `docs/rules/` file under that file's triggers (printed by `.claude/hooks/area-rules.sh` on the first edit of a matching path), with one loaded line naming it; the section headings stay where other text cites them (DESIGN.md §4, §5, §6, STANDARD.md Logged defects). Loaded now: `CLAUDE.md` 62,662 → 42,357 bytes, `DESIGN.md` 105,061 → 26,602, `STANDARD.md` 38,997 → 9,635; 78,594 in all.
+
+Moved: DESIGN.md §2 Typography's Print rules and letter tables → `docs/rules/print.md` (the PDF scripts, `docs/templates/`); the email palette line → `docs/rules/messages.md`; §4 Components → `docs/rules/components.md`, §5 Laws → `docs/rules/laws.md`, §6 Copy → `docs/rules/copy.md` (each under every screen path: `css/`, `js/`, `admin/`, the page folders, `demo/`, `index.html`, `404.html`, `docs/PAGE-TEMPLATE.html`; copy also `supabase/`); §7 Numbering → `docs/rules/numbering.md` (`supabase/`, `js/settings.js`). CLAUDE.md §2 Pages, chrome, boot → `docs/rules/chrome.md`, and Directories and the command bar → `docs/rules/directories.md` (every screen path); §3's migration and edge-function paragraphs → `docs/rules/release.md` (`supabase/`, `workers/`). STANDARD.md §1 and §3 to §23 → `docs/rules/standard.md` (no trigger: read when planning a task and before the final report; §2 Instruction Priority stays loaded); Logged defects → `docs/rules/logged-defects.md` (`tests/`); the closed audits under Open security findings → `docs/rules/security-findings.md` (the security triggers), the loaded section keeping what is open. The copy-review and ux-audit skills point at the new files.
+
+Condensed, never changed in meaning: the dated asides naming who asked and when, or the story behind a rule, came out of the loaded lines (103 of them); the rule each sat in stands. Each is kept here word for word (a script compared every sentence of the three old files with the new set: 2,190 sentences, 2,057 found verbatim, the rest explained by these asides or the ten pointer and wording edits in CLAUDE.md's opening, §0, the tiers table, the copy check and the guardrails):
+
+- CLAUDE.md: (the user, 2026-10-16: "note down all mistakes")
+- CLAUDE.md: (the user, 2026-11-18: "every changes, every fixes must add new values … else … waste of usage, waste of limits, waste of time")
+- CLAUDE.md: (2026-11-25: #1419 moved the email templates out of Settings into each section's ⋯; the user meant Settings' own Messages)
+- CLAUDE.md: (the user, 2026-11-25: Outstation's trip card shipped as lines of words)
+- CLAUDE.md: (the user, 2026-11-17)
+- CLAUDE.md: (the user, 2026-10-18: "no longer in use")
+- CLAUDE.md: (the user, 2026-11-22; "allow all sessions" since 2026-10-11)
+- CLAUDE.md: (the user, 2026-10-10)
+- CLAUDE.md: (the user, 2026-11-22)
+- CLAUDE.md: (2026-11-23)
+- CLAUDE.md: (the user, 2026-11-14)
+- CLAUDE.md: (2026-10-17: a creator's file address holding a quote ran script in the console)
+- CLAUDE.md: (the user, 2026-10-22: Read from Bukku took 32 tax codes and offered no Delete, "mentioned many times")
+- CLAUDE.md: (2026-10-29)
+- CLAUDE.md: (2026-10-21: six pressed a Publish #691 hid, myhr read a line #693 moved, uxaudit a month #693 took off a row)
+- CLAUDE.md: (2026-10-20: an approved supplier's details form stood open)
+- CLAUDE.md: (the user, 2026-11-21: "Every new pages added should also go into the availability section")
+- CLAUDE.md: (2026-11-22)
+- CLAUDE.md: (the user, 2026-10-08)
+- CLAUDE.md: (the user, 2026-10-11, the light version)
+- CLAUDE.md: (the user, 2026-11-22)
+- CLAUDE.md: (the user, 2026-10-12: "Once ready pr u can merge then only run the gate … wait till all tasks completed then run a full gate full suite … build all and merge first")
+- CLAUDE.md: (the user, 2026-10-15)
+- DESIGN.md: (the user, 2026-11-21)
+- DESIGN.md: (2026-11-11)
+- DESIGN.md: (the user, 2026-11-22: "The real regroup")
+- DESIGN.md: (2026-11-12: the revamp's glass drew dark cards on a light console)
+- DESIGN.md: (the user, 2026-10-23)
+- DESIGN.md: (the user, 2026-11-21: "Take note all client facing (brandmark \| {portal name}) height must be same")
+- DESIGN.md: (the user, 2026-10-07)
+- DESIGN.md: (2026-10-11)
+- DESIGN.md: (the user, 2026-10-15, gold A)
+- DESIGN.md: (the user, 2026-10-15, in place of purple)
+- DESIGN.md: (the user, 2026-10-31, option A)
+- DESIGN.md: (the user, 2026-10-31, option B)
+- DESIGN.md: (the user, 2026-11-12: the VIC ring read "bold and thick")
+- DESIGN.md: (the user, 2026-11-12: "tbh i really like v3", "ok yes all")
+- STANDARD.md: (2026-11-25)
+- STANDARD.md: (2026-10-19)
+- STANDARD.md: (2026-10-19)
+- STANDARD.md: (2026-10-10)
+- STANDARD.md: (the user, 2026-10-05: not needed)
+- STANDARD.md: (2026-10-05)
+- STANDARD.md: (the user, 2026-10-04)
+- STANDARD.md: (2026-10-07)
+- STANDARD.md: (the user, 2026-09-28)
+- STANDARD.md: (the user, 2026-11-25: "this is our first month … I don't suggest to build to lock it entirely yet … we will be building it so that it closes the loop entirely")
+- STANDARD.md: (the user, 2026-10-27, SUP-11)
+- STANDARD.md: (the user, 2026-10-28: "dont build the whatsapp first")
+- CLAUDE.md: ; the user, 2026-11-20: "Only run once. Run during full gate would do right") → )
+- CLAUDE.md: (one request, one release; the user, 2026-10-11) → (one request, one release)
+- CLAUDE.md: uxaudit and matrix included; the user, 2026-11-22) → uxaudit and matrix included)
+- CLAUDE.md: (2026-10-10, audit T1: a FAIL before the last line, or an empty output, passed) → (removed)
+- CLAUDE.md: (2026-11-17, the user: "ok all", the verification loop) → (removed)
+- CLAUDE.md: (2026-11-20: an orphaned `levels.js` shut the next run's Postgres cluster) → (removed)
+- CLAUDE.md: (2026-11-25: #1469's resolution took main's `admin/index.html` and put back the `#campPayBlock` it removed) → (removed)
+- CLAUDE.md: (2026-11-25: #1427 dropped `js/icons.js` from /details/ and /supplier/) → (removed)
+- CLAUDE.md: (2026-11-25: `js/state.js` on five forms that never called it, 3.7 KB each, put /quote/ over its budget) → (removed)
+- CLAUDE.md: (the user, 2026-11-24: "you kept missing this and that"; a trip number missing from Settings' numbering, a feedback email missing from Email templates, a seventh client tab) → (removed)
+- CLAUDE.md: (2026-11-04, the user: "every new build didnt follow your tone etc. rules"; 2026-11-25: "Please do not give me weird naming again", Build quote's View lines; "not every time run the whole repo checks") → (removed)
+- CLAUDE.md: (2026-10-29: /quote/'s Planned commencement took `start`, and the opening page's Start button read it) → (removed)
+- CLAUDE.md: (2026-11-09 form.js's `shape`, 2026-11-10 campaigns.js's `money`) → (removed)
+- CLAUDE.md: (2026-10-19: `smsql` cut `periodWord` at `mix`) → (removed)
+- CLAUDE.md: the one reading; the user, 2026-10-27: "every email boxes") → the one reading)
+- CLAUDE.md: loaded before it; one copy, 2026-10-26) → loaded before it; one copy)
+- CLAUDE.md: (2026-10-19: an Industry or push format reading `<span…` drew as markup) → (removed)
+- CLAUDE.md: the column's check refuses; 2026-10-17: `javascript://` passed the scheme test; a booking's file → the column's check refuses; a booking's file
+- CLAUDE.md: opened by `window.open` too, 2026-11-07) → opened by `window.open` too)
+- CLAUDE.md: (2026-10-29: a reminder refused `recent` read "Reminded . Not sent again.") → (removed)
+- CLAUDE.md: (2026-10-18: a `=======` line from #491 stood in `schema.sql`, `tests/sql.js`; 2026-11-18: one reached `docs/DECISIONS.md` through #1238) → (removed)
+- CLAUDE.md: never the slots alone; 2026-10-22, CMP-8) → never the slots alone)
+- CLAUDE.md: (2026-11-03, the user: "the more user friendly sequencing order") → (removed)
+- CLAUDE.md: (Content Review's read a client was a sixth of the live traffic, 2026-10-09; `tests/sets.js`) → (`tests/sets.js`)
+- CLAUDE.md: (2026-11-17, the user: "ok all"; the cost of loading every rule in every session) → (removed)
+- CLAUDE.md: (the user, 2026-11-22: "Its not the first time its happening") → (removed)
+- CLAUDE.md: (second audit, item 19, 2026-10-18) → (removed)
+- CLAUDE.md: (`cssguard`; 2026-10-18, the upload preview) → (`cssguard`)
+- CLAUDE.md: (`visitSection`; the user, 2026-10-09; `tests/visit.js`) → (`visitSection`; `tests/visit.js`)
+- CLAUDE.md: (`railPress`; the user, 2026-11-19: "return to the list like iPhone") → (`railPress`)
+- CLAUDE.md: (2026-11-21: the demo's quotation printed ADspace's; `tests/demo.js`) → (`tests/demo.js`)
+- CLAUDE.md: never a no-reply address, 2026-11-18, `2026-11-18-portal-sender.sql` → never a no-reply address, `2026-11-18-portal-sender.sql`
+- CLAUDE.md: (careers: every email to a candidate; the user, 2026-11-20) → (careers: every email to a candidate)
+- CLAUDE.md: `verify_details` `contact`; 2026-11-20) → `verify_details` `contact`)
+- CLAUDE.md: (2026-11-19, Resend's check: a link → (Resend's check: a link
+- CLAUDE.md: (2026-11-10, the user: "why need me to point out one by one": the client logo asked of Content Review was owed to Video Scripts, Reports and Creators too) → (removed)
+- CLAUDE.md: Replies go to and To; 2026-10-18) → Replies go to and To)
+- DESIGN.md: (`--font-head`, as every heading; the user, 2026-11-13: the system face read as another family) → (`--font-head`, as every heading)
+- DESIGN.md: the title over φ; the user, 2026-11-13) → the title over φ)
+- DESIGN.md: (64, 56 on a phone; the user, 2026-11-21: "Lets do all 64") → (64, 56 on a phone)
+- DESIGN.md: (the user, 2026-11-13: "keep white sheet is good. keep hairline too else it looks too bold") → (removed)
+- DESIGN.md: neutral in both themes; 2026-11-15) → neutral in both themes)
+- DESIGN.md: (`.btn-ink`, the user, 2026-11-22) → (`.btn-ink`)
+- DESIGN.md: Submit and Approve; the user, 2026-10-07) → Submit and Approve)
+- DESIGN.md: (palette B, the user, 2026-11-12) → (palette B)
+- DESIGN.md: (2026-11-20, "white with #515151, #f5f5f5 with #1a1a1a") → (removed)
+- DESIGN.md: (the user, 2026-10-07, after the colour audit, on Apple's guidelines) → (removed)
+- DESIGN.md: `#1a1a1a`; the user, 2026-11-15: "move to my palette") → `#1a1a1a`)
+- DESIGN.md: console routes; the user, 2026-10-24; 2026-11-07; 2026-11-22) → console routes)
+- DESIGN.md: (2026-10-31; uxaudit `figsize`) → (uxaudit `figsize`)
+- DESIGN.md: stylesheet alone; the user, 2026-11-20) → stylesheet alone)
+- DESIGN.md: 17/600, the user, 2026-10-31: kept for emphasis) → 17/600, kept for emphasis)
+- DESIGN.md: Dark; the user, 2026-10-10: "add the settings into the Name") → Dark)
+- DESIGN.md: section's access; 2026-11-13) → section's access)
+
+### 2026-11-26 · Token economy written into the rules
+
+On the day the old account ran out of its five-hour limit and five sessions
+ran at once, the user asked why the work spent so many tokens ("why is it
+being build this way wasting my tokens"). The overhead, measured: a session
+re-read its whole context every turn (one session read 195M cached tokens
+for $57); every fix took its own PR with its own test run, screenshots and a
+copy review that read every standing word of each touched file (150 to 300k
+tokens each), about twenty PRs in a day; every parallel PR's `?v=` stamps
+conflicted in sixteen page files; check-ins read other sessions'
+transcripts; two gate runs were stopped and restarted for a further edit;
+207 KB of rules loaded on every turn. The user approved the package ("Yes.
+As long as it helps adding value, reduce significant tokens usage. Then
+write this important rules or instructions into the repo so it wont be this
+claude acocunt's exclusive"): release trains (a hotfix alone, a minor
+release per area once or twice a day, a major release per migration
+feature), short sessions, a copy review of what changed with one daily
+sweep, screenshots of what changed, one test run per release, audits only
+when asked, held SQL run through the connector ("Run all sql dont care if
+its drop delete or what"), tight agent briefs; written in CLAUDE.md §3
+Token economy, docs/rules/release.md and the copy-review skill. Automatic
+`?v=` stamps from the build follow as their own release.
+
+### 2026-11-26 · A client's pane opened from low on the page starts at its top
+
+The user pressed the rail's Recent activity View all and had to scroll up to
+find the Activity record: `showPane` swapped the pane but kept the scroll, so
+the new pane began above the screen. A pane opened by a press now brings the
+record's tab strip under the console's head where it had scrolled away; a pane
+already in view stays where it is. Every View all on the Overview and the rail
+goes through the same `showPane`, so all of them gain it.
+The user then set the pace ("dont remove my dns first. Retirement planning
+would be that slowly shift out from go.adspace.me to digital.adspace.me or
+hi.adspace.me"): go.adspace.me's DNS and Rebrandly links stay up; the same
+slugs were made on hi.adspace.me the same day (svc-terms, fb-ad-terms and
+verify added beside outstation, each checked to redirect), so every address
+the portal now writes resolves, and every older one keeps working until the
+user removes the host.
+
+### 2026-11-26 · The Letter of Offer's issuing path leaves the console
+
+The Letter of Offer has not been issued since 2026-11-12 (the quotation is the one contract), but its sheet stood in the console, reached only by itself and by the billing gate's carry-on, and its code in `js/documents.js`. The user approved removing what no longer acts (through the coordinating session): the pick sheet (`#pickSheet`, `openPick` and its helpers, `pickPayload`, Preview and Issue), the billing gate's `toLetter` carry-on into it, the next-step lines that steered a colleague to issue one ("… not on a Letter of Offer.", "The Letter of Offer is with the client and unsigned."), `ADspaceDocs.issue`, `preview`, `quoteOf`, `quoteTerms`, `validLine` and the tax-rate cache only they read, the sheet's CSS (`.lpickrow` and kin; `.lpicksum` stays, the notice's), and Issue Letter of Offer from the act and menu tables and DESIGN.md's examples. Everything that reads a letter issued before stays: Documents, its ⋯ (Download, Send, Mark signed, Void, Delete; the empty Change group kept, the groups being positional), /verify/, the Register, the Activity record, Issue document (a client letter through the Register), and the database's `issue_letter` and AQL serial. The suites that need a letter to exist seed one through `tests/issueletter.js`, which now prices the lines in the page (`ADspaceDocs.priceOf`, exported for it) and calls the stand-in's `issue_letter` itself; `letter.js` reads the refusals' codes (the console's words for them went with the sheet), and uxaudit walks no Letter of Offer sheet. `lettersql`'s check that the page priced a letter as the database does is deleted: the page holds no such pricing now, and the database's own checks in the same suite stand. The stand-in, which priced a letter's stored rows through the page's `quoteOf`, prices them itself on `priceOf`. The copy review found the letter's refusal words still pointing at issuing and reissuing (Reissue the letter., You do not have permission to issue a letter.): the map now holds only what sign, verify, void and delete answer, each naming what is left to do, and a service's Confirmed state names the signed quotation and Confirm without letter.
 
 ### 2026-11-26 · Team › Groups read as the Settings rows they open
 

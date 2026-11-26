@@ -168,11 +168,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-10-31-quotation-delete-team-requests.sql`); a deleted reference is
   kept (`quotation_refs_kept`, RLS on, no policy, no grant), which
   `quote_ref` counts, so it is never issued again. The pane's one
-  blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
-  quote line, Build quote; one quotation that can be offered, its Issue
-  Letter of Offer (none blue where two can); To quote lines no live letter
-  holds, Issue letter, drawn only once a To quote or Confirmed line
-  exists; else none. An empty Quotations list reads No quotations. alone,
+  blue follows the deal (`paintDeal`, SL-M2): the quotation's next step,
+  else Build quote where nothing is quoted; no Letter of Offer is offered
+  (retired 2026-11-12). An empty Quotations list reads No quotations. alone,
   Build quote the heading's (2026-11-03); an empty Service lines list reads
   the enquiry (else No service lines.), its Add service the heading's alone
   (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
@@ -224,11 +222,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the signed quotation is the contract; `quotation_offer` stays for a
   page served before and nothing calls it); the reviewer's approval makes
   its lines Confirmed (Quotation signing, below). Letters issued before
-  are read, voided and deleted as before; a Letter of Offer is still
-  issued from To quote service lines (Issue letter), and one not yet
-  verified is reissued on its lines as changed from its ⋯ Replace
-  (`issue_letter` `p_replaces`; the old one reads Replaced; 2026-10-31,
-  the user: Car Connect SG's letter needed changes). The PDF (`js/quotepdf.js`,
+  are read, voided and deleted as before; none is issued or replaced from
+  the console since 2026-11-12 (its sheet and code removed 2026-11-26). The PDF (`js/quotepdf.js`,
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
