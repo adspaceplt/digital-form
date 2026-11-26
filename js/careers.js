@@ -263,8 +263,8 @@
       '<div><dt>Basic salary</dt><dd>' + esc(money(p.basic)) + ' per month' + (months && p.probation ? '<br>' + esc(money(p.probation)) + ' per month during probation' : '') + '</dd></div>' +
       '</dl>';
     var dl = '<div class="qs-foot cr-doc-dl"><button class="btn" type="button" data-docx="pdf">' + (window.ADspaceIcons ? window.ADspaceIcons.svg('file') : '') + 'Download</button></div>';
-    if (d.returned_note) facts = '<p class="msg warn">ADspace returned this document: ' + esc(d.returned_note) + '</p>' + facts;
-    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and tell you by email.</p>' : '');
+    if (d.returned_note) facts = '<p class="msg warn">ADspace has returned this document with the following note: ' + esc(d.returned_note) + '</p>' + facts;
+    if (d.state !== 'sent') return facts + dl + (d.state === 'signed' ? '<p class="cr-next">ADspace will confirm the document and inform you by email.</p>' : '');
     var tick = function (id, text) {
       return '<label class="qs-consent cr-agree"><input type="checkbox" id="' + id + '">' + MARK + '<span class="qs-text">' + esc(text) + '</span></label>';
     };

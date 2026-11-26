@@ -164,7 +164,7 @@
     'has-script': 'This task is already linked to a script. Remove that link first.',
     'record-link': 'To change a linked post or script, remove the link and add it again.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
-    'not-yours': 'Only the person asked can decide this.',
+    'not-yours': 'Only the colleague this request was sent to can decide it.',
     'decided': 'This request has already been decided.',
     'no-date': 'Choose a date.',
     /* The team's own milestone has to land before the commitment it feeds,
@@ -1807,7 +1807,7 @@
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' },
-        { name: 'why', label: 'Reason', need: 'A reason is required.' }
+        { name: 'why', label: 'Reason', need: 'Enter a reason.' }
       ]
     }, function (v) {
       db.rpc('ops_delete_tasks', { p_tasks: ids, p_confirm: v.n, p_reason: v.why }).then(function (r) {
@@ -4847,7 +4847,7 @@
   }
   function tplSave() {
     var name = String($('teName').value || '').trim();
-    if (!name) { msg('teMsg', 'A name is required.', 'err'); $('teName').focus(); return; }
+    if (!name) { msg('teMsg', 'Enter a name.', 'err'); $('teName').focus(); return; }
     var x = tplEditing || {};
     var wf = tplWfs.filter(function (f) { return f.id === x.workflow_id; })[0];
     /* A template keeps its own workflow; only a new one starts on content. */
@@ -5226,10 +5226,10 @@
         n.blocked = true;
         /* The step names what is missing; the stage stays the head's word
            (2026-11-26: Ready to start over Not ready to start). */
-        n.title = need.length > 1 ? 'Not assigned, no due date' : need[0] === 'owner' ? 'Not assigned' : 'No due date';
+        n.title = need.length > 1 ? 'Unassigned, no due date' : need[0] === 'owner' ? 'Unassigned' : 'No due date';
         var words = { owner: 'Assign someone', due: 'Set a due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
-        n.line = need.length > 1 ? 'Assign someone and set a due date before work can begin.'
+        n.line = need.length > 1 ? 'Both are required before work can begin.'
           : (need[0] === 'owner' ? 'Assign someone to continue.' : 'Set a due date to continue.');
         if (need[0] === 'owner') {
           if (manage) n.go = assign;
@@ -6410,7 +6410,7 @@
       title: 'Complete task',
       body: 'No delivery is recorded. Enter how it was closed.',
       go: 'Complete task',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
+      field: { label: 'Reason', rows: 2, need: 'Enter a reason.' }
     }, function (why) { move(key, why); });
   }
   /* The month inside a task's next step: the two ticks and the meeting,
@@ -6459,7 +6459,7 @@
       title: 'Reopen task',
       body: 'It will go back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
       go: 'Reopen',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
+      field: { label: 'Reason', rows: 2, need: 'Enter a reason.' }
     }, function (why) { move(to, why); });
   }
   // ---- The way back, drawn where the act happened --------------------------
@@ -6899,7 +6899,7 @@
     if (!k) { line.hidden = true; line.textContent = ''; return; }
     var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
     var d = String($('ntDesc').value || '').trim();
-    line.textContent = 'Named ' + code + (d ? ' ' + d : '') + '. The number will be given when it is saved.';
+    line.textContent = 'Code ' + code + (d ? ' ' + d : '') + '. The task number will be assigned when it is saved.';
     line.hidden = false;
   }
   // ---- Pieces --------------------------------------------------------------
@@ -8196,7 +8196,7 @@
             : 'The checklist ticks and the meeting will be deleted with it.') +
         ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
+      field: { label: 'Reason', rows: 2, need: 'Enter a reason.' }
     }, function (why) {
       db.rpc('ops_delete_engagement', { p_engagement: e.id, p_reason: why }).then(function (r) {
         var err = r.error ? r.error.message : (r.data && r.data.error ? said(r.data.error) : '');
@@ -8957,7 +8957,7 @@
     if (dg) dg.addEventListener('click', function () {
       var row = dueRow, t = row ? row.t : state.task;
       if (!t) return;
-      if (!$('dueDate').value) { msg('dueMsg', 'A date is required.', 'err'); return; }
+      if (!$('dueDate').value) { msg('dueMsg', 'Choose a date.', 'err'); return; }
       if (!$('dueReason').value) { msg('dueMsg', 'Choose a reason.', 'err'); $('dueReason').focus(); return; }
       /* One call, and the database decides whether this is a move or an ask:
          a person moving a date on a task they created themselves needs

@@ -11802,3 +11802,14 @@ names read at 500; Short Links' slugs at the mono size and 500. Not applied: My
 Work's board bar (the workflow select stays on the bar, `docs/rules/cmdbar.md`),
 Content Review's group count (a directory card's count, DESIGN §4), and the
 /client/ phone tiles (already full width when three).
+The pass's copy review (a second reader, 22 findings) was applied the same day:
+Unassigned in place of Not assigned (one word per thing); Nothing due. as the
+week's own days say it; Monthly fee of service lines lost under Monthly value
+lost; Draft due, never Draft owed; Target at most; No posts.; Results from and
+Results to; All creators are booked., and a withdrawn creator's place said as
+Another creator can be booked in their place.; rednote Safe Mode; Generating the
+PDF…; Enter a reason., Enter a name., Choose a date.; the decision refused to
+anyone but the colleague asked; Code {code}. The task number will be assigned
+when it is saved.; a candidate's returned document and confirmation in a
+letter's words. Kept as decided: Good night as the late greeting (dashboard.md)
+and Chat on WhatsApp (the front door and /quote/).

@@ -993,7 +993,7 @@
           ];
           if (val && f.money) {
             rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'Monthly fee of service lines won', true]);
-            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'Monthly fee of service lines churned', true]);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'Monthly fee of service lines lost', true]);
           }
           return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
             /* Churn and the two values take a row each, so a long label
@@ -1202,7 +1202,7 @@
         return R.bookings().then(function (list) {
           var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
           if (!list.length) return { empty: 'No open bookings.' };
-          return { kind: 'bars', inline: true, rows: [{ label: 'To shoot', value: n(['pending_visit']) }, { label: 'Draft owed', value: n(['pending_draft', 'changes']) },
+          return { kind: 'bars', inline: true, rows: [{ label: 'To shoot', value: n(['pending_visit']) }, { label: 'Draft due', value: n(['pending_draft', 'changes']) },
             { label: 'Quality check', value: n(['submitted']) }, { label: 'With client', value: n(['reviewing']) },
             { label: 'To post', value: n(['scheduled']) }], valueHead: 'Bookings' };
         });
@@ -1859,7 +1859,7 @@
     var dot = function (bad, words) { return '<span class="chip-state ' + (bad ? 'is-danger' : 'is-ok') + '">' + esc(words) + '</span>'; };
     return '<div class="tl-figs">' +
       fig('On time or early', rate == null ? '—' : rate + '%', rate == null ? esc('Target ' + T.pct + '%') : dot(s.lowRate, 'Target ' + T.pct + '%'), s.lowRate ? 'late' : '') +
-      fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target under ' + tlDays(T.late)) : dot(s.slowLate, 'Target under ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
+      fig('Average lateness', late == null ? '—' : tlDays(late), late == null ? esc('Target at most ' + tlDays(T.late)) : dot(s.slowLate, 'Target at most ' + tlDays(T.late)), s.slowLate ? 'late' : '') +
       fig('Average days early', lead == null ? '—' : tlDays(lead), esc('Before the due date'), '') +
       fig('Turnaround', turn == null ? '—' : tlDays(turn), p90 == null ? esc('Median') : esc('Slowest 10%: ' + tlDays(p90)), '') +
       '</div>';
@@ -2405,7 +2405,7 @@
         /* A week with nothing in it is one line, never five rows of
            Nothing due (the user, 2026-11-26); a refused meeting read keeps
            the days, since a free day is then not known. */
-        if (!any && ms !== null) UI.emptyLine(card.querySelector('.ovw-days'), 'Nothing is due.');
+        if (!any && ms !== null) UI.emptyLine(card.querySelector('.ovw-days'), 'Nothing due.');
         else card.querySelector('.ovw-days').innerHTML = html;
         /* A refused read of the meetings is said, never drawn as a free day. */
         if (ms === null) {

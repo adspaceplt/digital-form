@@ -2410,7 +2410,7 @@
       { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, followed by the addresses the portal creates for clients and creators. Every address in use is listed, so none is used twice.' }] },
     services: { name: 'Services', steps: [
       { at: '#svcAdd', text: 'Add a service or an add-on to the Rate Card.' },
-      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line is the starting point for a client\'s service line, which can then be edited.' }] },
+      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each Rate Card service is the starting point for a client\'s service line, which can then be edited.' }] },
     team: { name: 'Team', steps: [
       { at: '#teamTabs', text: 'Members, Hiring, the user groups that control what each member can open, Performance and Health.' },
       { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and digital namecard.' }] },

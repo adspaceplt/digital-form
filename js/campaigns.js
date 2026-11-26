@@ -4426,7 +4426,7 @@
     var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
     var booked = state.options.filter(isLive).length;
     if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
-      cardSay(o, 'All creator places are filled.', 'err');
+      cardSay(o, 'All creators are booked.', 'err');
       return;
     }
     db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
@@ -5987,7 +5987,7 @@
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
           /* Every slot already booked (`campaign_options_slots_hold`, audit 2026-11-15). */
-          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'Every creator place is booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
+          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);
@@ -6350,7 +6350,7 @@
       }
       var rows = r.data || [];
       if (!rows.length) {
-        box.innerHTML = head + '<div class="empty">No placements.</div>';
+        box.innerHTML = head + '<div class="empty">No posts.</div>';
         return;
       }
       box.innerHTML = head;
@@ -6403,9 +6403,9 @@
               '<textarea class="input" data-p="post_url" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://">' + esc(p.post_url || '') + '</textarea></label>' +
             '<label class="kfield"><span>Posted on</span>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
-            '<label class="kfield"><span>Count from</span>' +
+            '<label class="kfield"><span>Results from</span>' +
               '<input class="input" data-p="measure_from" type="date" value="' + esc(from) + '"></label>' +
-            '<label class="kfield"><span>Count to</span>' +
+            '<label class="kfield"><span>Results to</span>' +
               '<input class="input" data-p="measure_to" type="date" value="' + esc(to) + '"></label>' +
             num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
@@ -6436,7 +6436,7 @@
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
           if (badFig) { badFig.focus(); return no('Enter a whole number of 0 or more.'); }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Choose a Count to date on or after Count from.');
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Choose an end date on or after the start date.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
@@ -6507,8 +6507,8 @@
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
           cardSay(o, kind === 'withdrawn'
-            ? name + ' withdrawn. The place is open for a replacement.'
-            : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
+            ? name + ' withdrawn. Another creator can be booked in their place.'
+            : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' Another creator can be booked in their place.'), 'warn');
           loadOptions();
         });
     });

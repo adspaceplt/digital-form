@@ -1838,13 +1838,13 @@
       var fields = [];
       if (!$('vsLength').value) fields.push({ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
         value: keep('adspace-script-length:' + noteKey) || '30' });
-      if (plat === 'rednote') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
+      if (plat === 'rednote') fields.push({ name: 'safe', label: 'rednote Safe Mode', tick: true, value: false });
       fields.push({ name: 'notes', label: 'Notes for the script', rows: 4, required: false,
         placeholder: 'What the video is for, the product or offer, the call to action',
         value: keep('adspace-script-notes:' + noteKey) });
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: (st.pending && !st.pending.s.id ? 'The new script is saved first, taking its number. ' : '') + (hasWords(kind) ? 'The script in these fields will be replaced. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
+        body: (st.pending && !st.pending.s.id ? 'The new script will be saved first and given its number. ' : '') + (hasWords(kind) ? 'The script in these fields will be replaced. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
         var notes = String(v.notes || '').trim();
@@ -1916,7 +1916,7 @@
       var m = $('vsRecMsg');
       var tab = save ? (window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null) : openTab();
       btn.disabled = true;
-      say(m, 'Drawing the PDF…', 'ok');
+      say(m, 'Generating the PDF…', 'ok');
       var ids = whole ? st.series.map(function (x) { return x.id; }) : [st.open.id];
       var c = (st.open.clients || {}).name || 'Client';
       var name = c + ' Video Script ' + (whole && st.series.length > 1 ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(whole ? st.series[0] : st.open)) + '.pdf';
