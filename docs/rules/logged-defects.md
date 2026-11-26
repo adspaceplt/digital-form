@@ -64,3 +64,8 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
   time field under its old label) fail the same on main, likely with
   `waapprove` from #1479's relabelled sheets. Held here until they ship.
+- 2026-11-26, `pdfreal` (the Build quote and TERMS fit train, which
+  touches no letter): the Letter of Offer and the client letter (sign,
+  nosign) fail "its head and foot at the template's places on every
+  page" (the foot's reference at 6pt, 794.5 down); the same three fail
+  on main 8e9224f. Held here until it ships.
