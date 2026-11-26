@@ -850,7 +850,9 @@
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + adsOf(tt).map(function (r) {
       var once = r.freq === 'once';
-      return '<div class="qs-row"><span class="qs-what">' + esc(f(t().adLine, { p: window.ADspaceMoney.adWord(r.platform) })) +
+      /* A brand's own budget named after its brand (2026-11-26). */
+      var bn = Array.isArray(tt.brands) && tt.brands.length > 1 && r.brand != null && tt.brands[r.brand] ? String(tt.brands[r.brand].name || '').trim() : '';
+      return '<div class="qs-row"><span class="qs-what">' + esc((bn ? bn + ' · ' : '') + f(t().adLine, { p: window.ADspaceMoney.adWord(r.platform) })) +
         '<small>' + esc(once ? t().onceTag : f(t().months, { n: r.months })) + '</small></span>' +
         '<span class="qs-num qs-q">' + esc(once ? 1 : r.months) + '</span><span class="qs-num qs-r">' + esc(n2(r.budget)) + '</span><span class="qs-num">' + esc(n2(r.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {

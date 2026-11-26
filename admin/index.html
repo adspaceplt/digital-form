@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126rfc">
-<link rel="stylesheet" href="/css/console.css?v=20261126b">
+<link rel="stylesheet" href="/css/portal.css?v=20261126qbc">
+<link rel="stylesheet" href="/css/console.css?v=20261126c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126rfc"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261121zb"><\/script><script src="/demo/engine.js?v=20261126qbc"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -1613,47 +1613,37 @@
              selection priced by the database from the live rate card and
              kept as a quotation. -->
         <div class="sheet" id="qbBox" hidden>
-          <div class="sheet-card formsheet qb-card is-steps" role="dialog" aria-modal="true" aria-labelledby="qbTitle" data-at="1">
+          <div class="sheet-card formsheet qb-card has-side" role="dialog" aria-modal="true" aria-labelledby="qbTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qbTitle">Build quote</h3><p class="qb-for" id="qbFor"></p></div>
               <button class="iconbtn" id="qbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
-            <!-- Build quote in four steps (2026-11-25, the user's approved boards
-                 "Build quote, step by step" and "Build quote on a phone"): Type,
-                 Build, Extras, Term and review; each Continue checks its own step. -->
-            <p class="qb-stepword" id="qbStepWord" aria-live="polite"></p>
-            <ol class="qb-track" id="qbTrack" aria-label="Steps">
-              <li data-n="1"><span class="qb-trackbar" aria-hidden="true"></span><span class="qb-trackname">1. Type</span></li>
-              <li data-n="2"><span class="qb-trackbar" aria-hidden="true"></span><span class="qb-trackname">2. Build</span></li>
-              <li data-n="3"><span class="qb-trackbar" aria-hidden="true"></span><span class="qb-trackname">3. Extras</span></li>
-              <li data-n="4"><span class="qb-trackbar" aria-hidden="true"></span><span class="qb-trackname">4. Term and review</span></li>
-            </ol>
             <div class="sheet-body">
               <aside class="qb-side" id="qbSide" aria-label="Summary"></aside>
-              <div class="qb-pane" data-qbstep="1">
               <div class="draftline qb-draft" id="qbDraft" role="status" hidden></div>
-              <section class="fsec qb-basket" id="qbBasket" hidden>
-                <h4 class="fsec-h qb-baskethead">Brands in this quotation <span class="tab-n" id="qbBasketN"></span></h4>
-                <div class="crm-table softpanel qb-blist" id="qbBrandList"></div></section>
-              <section class="fsec" id="qbBrandRow" hidden>
+              <!-- Build quote on one sheet (the user, 2026-11-26, the approved
+                   boards): a card a brand, one open at a time holding the
+                   board (`#qbBoard`), then the quotation's own choices. -->
+              <section class="qb-brands" id="qbBrands" aria-labelledby="qbBrandsH">
+                <div class="qb-brandshead"><h4 class="fsec-h" id="qbBrandsH">Brands <span class="tab-n" id="qbBrandsN">1</span></h4>
+                  <button class="btn btn-quiet btn-sm" id="qbBrandAdd" type="button">Add brand</button></div>
+                <div class="qb-bcards" id="qbBrandCards"></div>
+              </section>
+              <div class="qb-boardhold" id="qbBoardHold" hidden>
+              <div class="qb-board" id="qbBoard">
+              <section class="fsec qb-bname">
                 <div class="row"><div><label class="field-label" for="qbBrandName">Brand name</label>
                   <input class="input" id="qbBrandName" type="text" maxlength="120" data-noenter data-nodraft placeholder="ADspace Advertising"></div></div>
               </section>
-              <section class="fsec">
+              <section class="fsec qb-typesec">
                 <h4 class="fsec-h" id="qbTypesLabel">Choose what to quote</h4>
                 <div class="qb-types" id="qbTypes" role="radiogroup" aria-labelledby="qbTypesLabel">
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="plan"><span class="qb-typemark" data-mark="layers"></span><b>Plan</b><span>Social media management on a monthly plan, with platforms and advertising.</span></button>
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="package"><span class="qb-typemark" data-mark="box"></span><b>Package</b><span>Content planning and production at one price, without account management.</span></button>
                   <button class="qb-type" type="button" role="radio" aria-checked="false" data-kind="items"><span class="qb-typemark" data-mark="file"></span><b>Items</b><span>Individual Rate Card services, such as a one-time video or a KOC campaign.</span></button>
                 </div>
-                  <div class="row qb-billrow" id="qbBillBox" hidden><div>
-                    <label class="field-label" for="qbBillTo">Bill to</label>
-                    <select class="select" id="qbBillTo" data-nofind></select>
-                  </div></div>
               </section>
-              </div>
-              <div class="qb-pane" data-qbstep="2">
-              <section class="fsec qb-stepsec qb-for-plan">
+              <section class="fsec qb-sec qb-for-plan">
                 <div class="qb-planhead"><h4 class="fsec-h">Plan</h4>
                   <select class="select select-sm" id="qbAds" data-seg data-seg-value aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
                 <div class="qb-plans" id="qbPlans" role="radiogroup" aria-label="Plan"></div>
@@ -1665,7 +1655,7 @@
                   <select class="select" id="qbBudget" data-nofind><option value="0">None</option></select></div>
                 </div>
               </section>
-              <section class="fsec qb-stepsec qb-for-plan">
+              <section class="fsec qb-sec qb-for-plan">
                 <h4 class="fsec-h">Platforms and content</h4>
                 <div><span class="field-label" id="qbPlatsLabel">Choose platforms</span>
                     <div class="tickrow" id="qbPlats" role="group" aria-labelledby="qbPlatsLabel">
@@ -1685,7 +1675,8 @@
                     <label class="tickline"><input type="checkbox" value="zh"> <span>Chinese</span></label>
                     <label class="tickline"><input type="checkbox" value="ms"> <span>Bahasa Melayu</span></label>
                   </div>
-                  <p class="qb-hint">Shared across content pieces at no charge</p>
+                  <p class="qb-hint">Content pieces may be divided across the languages at no charge.</p>
+                  <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Make every content piece bilingual <small class="qb-rate" id="qbTrRate"></small></span></label>
                   
                 </div>
                 </div>
@@ -1712,22 +1703,30 @@
                   <p class="qb-hint">Unticked inclusions print under Not included.</p></div>
               </section>
               <div class="qb-for-items" id="qbItemsSlot"></div>
-              </div>
-              <div class="qb-pane" data-qbstep="3">
               <section class="fsec qb-for-package" id="qbPkgExtraBox">
                 <h4 class="fsec-h">Rate per additional content piece</h4>
                 <div class="row fgrid" id="qbPkgExtra"></div>
               </section>
-              <section class="fsec qb-stepsec">
+              <section class="fsec qb-sec qb-extras">
                 <h4 class="fsec-h">Extras</h4>
                 <div class="qb-adds">
                   <button class="btn btn-sm" id="qbOnceAdd" type="button">Add one-time item</button>
-                  <button class="btn btn-sm" id="qbAdAddFirst" type="button">Add advertising budget</button>
                 </div>
                 <div class="qb-oncebox" id="qbOnceMore" hidden>
                   <span class="field-label">One-time items</span>
                   <div class="qb-once" id="qbOnce"></div>
                 </div>
+                <div class="qb-advpart qb-cuspart">
+                  <div class="qb-advparth"><span class="field-label">Custom items</span>
+                    <span class="qb-advacts"><button class="btn btn-sm" id="qbRenew" type="button">Renew service lines</button>
+                    <button class="btn btn-sm" id="qbCusAdd" type="button">Add custom item</button></span></div>
+                  <div class="qb-renew" id="qbRenewBox" hidden></div>
+                  <div id="qbCusRows"></div>
+                </div>
+              </section>
+              <section class="fsec qb-sec qb-adsec">
+                <h4 class="fsec-h">Advertising budget</h4>
+                <div class="qb-adds"><button class="btn btn-sm" id="qbAdAddFirst" type="button">Add advertising budget</button></div>
                 <!-- The advertising budget (2026-11-12): the client's money paid to
                      the platforms on their behalf, its own section of the
                      quotation, never a service line or revenue. -->
@@ -1739,19 +1738,10 @@
                     <span class="qb-adsum" id="qbAdSum" aria-live="polite"></span></div>
                 </div>
               </section>
-              <!-- Add-on rates (2026-11-25): the rates the quotation states for
-                   work asked in any month, ticked by default, never in a total. -->
-              <section class="fsec qb-stepsec" id="qbAddonBox" hidden>
-                <h4 class="fsec-h">Add-on rates</h4>
-                <div class="qb-aoticks" id="qbAddons"></div>
-              </section>
-              <div class="row acts qb-brandacts">
-                <button class="btn btn-sm" id="qbBrandAdd" type="button">Add to quotation</button>
-                <button class="btn btn-quiet" id="qbBrandCancel" type="button" hidden>Cancel</button>
               </div>
               </div>
-              <div class="qb-pane" data-qbstep="4">
-              <section class="fsec qb-stepsec">
+              <section class="fsec qb-sec qb-quote" id="qbQuote">
+                <h4 class="fsec-h">Quotation</h4>
                 <div class="row fgrid"><div><label class="field-label" for="qbTerm">Term</label>
                   <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select></div>
                   <div><label class="field-label" for="qbDate">Date</label>
@@ -1766,23 +1756,25 @@
                     <option value="14">14 days</option><option value="30">30 days</option><option value="45">45 days</option>
                     <option value="60">60 days</option><option value="90">90 days</option></select></div></div>
                 <label class="tickline" id="qbDiscBox" hidden><input type="checkbox" id="qbTermDisc" checked> <span>Apply the term discount <small class="qb-rate" id="qbDiscPct"></small></span></label>
+                  <div class="row qb-billrow" id="qbBillBox" hidden><div>
+                    <label class="field-label" for="qbBillTo">Bill to</label>
+                    <select class="select" id="qbBillTo" data-nofind></select>
+                  </div></div>
+              </section>
+              <!-- Add-on rates (2026-11-25): the rates the quotation states for
+                   work asked in any month, ticked by default, never in a total. -->
+              <section class="fsec qb-sec" id="qbAddonBox" hidden>
+                <h4 class="fsec-h">Add-on rates</h4>
+                <div class="qb-aoticks" id="qbAddons"></div>
               </section>
               <details class="fmore qb-more" id="qbMore">
-                <summary>More details <span class="fmore-sum">Title, Rate Card version, bilingual content, custom items and terms</span></summary>
+                <summary>More details <span class="fmore-sum">Title, Rate Card version and terms</span></summary>
                 <div class="qb-morebox">
                   <div class="row"><div><label class="field-label" for="qbHeading">Title</label>
                   <textarea class="input" id="qbHeading" rows="1" maxlength="120" data-oneline data-nodraft placeholder="Optional"></textarea></div></div>
                   <div class="row fgrid"><div><label class="field-label" for="qbCard">Rate Card version</label>
                   <select class="select" id="qbCard" data-nofind></select></div></div>
-                  <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Make every content piece bilingual <small class="qb-rate" id="qbTrRate"></small></span></label>
                   <div class="qb-advbox" id="qbAdvBox">
-                  <div class="qb-advpart">
-                    <div class="qb-advparth"><span class="field-label">Custom items</span>
-                      <span class="qb-advacts"><button class="btn btn-sm" id="qbRenew" type="button">Renew service lines</button>
-                      <button class="btn btn-sm" id="qbCusAdd" type="button">Add custom item</button></span></div>
-                    <div class="qb-renew" id="qbRenewBox" hidden></div>
-                    <div id="qbCusRows"></div>
-                  </div>
                   <div class="qb-advpart">
                     <label class="field-label" for="qbTerms">Terms</label>
                     <textarea class="textarea" id="qbTerms" rows="3" placeholder="One point per line" data-nodraft></textarea>
@@ -1790,7 +1782,6 @@
                   </div>
                 </div>
               </details>
-              </div>
               <!-- The quotation's priced lines (2026-11-24): View quote in the foot
                    turns the sheet to them, every brand's lines under its name,
                    the brand on the board changed where read; Back returns. -->
@@ -1804,9 +1795,8 @@
             </div>
             <div class="sheet-foot">
               <span class="lpicksum qb-sumrow"><span id="qbSum" aria-live="polite"></span><button class="btn btn-sm" id="qbView" type="button" aria-controls="qbLinesBox" aria-expanded="false" hidden>View quote</button></span>
-              <button class="btn btn-primary" id="qbSave" type="button" hidden>Create quotation</button>
-              <button class="btn btn-primary" id="qbNext" type="button">Continue</button>
-              <button class="btn btn-quiet" id="qbBack" type="button" hidden>Back</button>
+              <button class="btn btn-primary" id="qbSave" type="button">Create quotation</button>
+              <button class="btn" id="qbPreviewFoot" type="button" disabled>Preview PDF</button>
               <button class="btn btn-quiet" id="qbCancel" type="button">Cancel</button>
             </div>
           </div>
@@ -6846,7 +6836,7 @@ raya-2026        https://example.com/raya"></textarea>
      are bumped with every other. -->
 <script type="application/json" id="lazyScripts">
 {
-  "documents": {"src": "/js/documents.js?v=20261125ot"},
+  "documents": {"src": "/js/documents.js?v=20261126a"},
   "letters": {"src": "/js/letters.js?v=20261125wh", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261124dh", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261124v", "uses": ["documents", "smreport"]},
@@ -6857,8 +6847,8 @@ raya-2026        https://example.com/raya"></textarea>
   "invoices": {"src": "/js/invoices.js?v=20261123e", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
   "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261126e", "uses": ["documents", "bukku", "quotepdf", "seal"]},
-  "quotepdf": {"src": "/js/quotepdf.js?v=20261125qsh", "uses": ["documents", "seal"]},
+  "quotes": {"src": "/js/quotes.js?v=20261126qbc", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "quotepdf": {"src": "/js/quotepdf.js?v=20261126b", "uses": ["documents", "seal"]},
   "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},

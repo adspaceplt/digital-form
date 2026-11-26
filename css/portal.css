@@ -3052,7 +3052,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 /* Build quote's draft (QUOTATION DRAFTS): when it was saved, then Discard
    and Continue draft at the right edge. */
 .draftline-acts { display: flex; gap: 8px; margin-left: auto; }
-.draftline.qb-draft { margin: 12px 0 0; }
+.draftline.qb-draft { margin: 0 0 12px; }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
 
