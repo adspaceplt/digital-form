@@ -11,11 +11,11 @@ Moved whole from `CLAUDE.md` §3 Git and delivery, which keeps a one-line pointe
   states (commonly after the Pages deploy, so the page stops asking before
   the database stops answering), and verified on the live database
   afterwards. The report names what was applied.
-  - The connector holds any statement holding `drop` or `delete` (a function
-    body included) for a confirmation it cannot show, and times out: apply
-    the rest in small `execute_sql` pieces (`create or replace trigger`, a
-    policy created under `if not exists`), then hand the user the held part
-    for the SQL Editor as its own run. A storage policy goes in a run of its
+  - A statement holding `drop` or `delete` (a function body included) is
+    run through the connector like any other (the user, 2026-11-26: "Run
+    all sql dont care if its drop delete or what"), in small `execute_sql`
+    pieces where one would time out, and verified live; it is never left
+    for the SQL Editor. A storage policy goes in a run of its
     own, since the editor may not alter `storage.objects` and a failure rolls
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,

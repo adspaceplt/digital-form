@@ -11990,3 +11990,26 @@ Condensed, never changed in meaning: the dated asides naming who asked and when,
 - DESIGN.md: 17/600, the user, 2026-10-31: kept for emphasis) → 17/600, kept for emphasis)
 - DESIGN.md: Dark; the user, 2026-10-10: "add the settings into the Name") → Dark)
 - DESIGN.md: section's access; 2026-11-13) → section's access)
+
+### 2026-11-26 · Token economy written into the rules
+
+On the day the old account ran out of its five-hour limit and five sessions
+ran at once, the user asked why the work spent so many tokens ("why is it
+being build this way wasting my tokens"). The overhead, measured: a session
+re-read its whole context every turn (one session read 195M cached tokens
+for $57); every fix took its own PR with its own test run, screenshots and a
+copy review that read every standing word of each touched file (150 to 300k
+tokens each), about twenty PRs in a day; every parallel PR's `?v=` stamps
+conflicted in sixteen page files; check-ins read other sessions'
+transcripts; two gate runs were stopped and restarted for a further edit;
+207 KB of rules loaded on every turn. The user approved the package ("Yes.
+As long as it helps adding value, reduce significant tokens usage. Then
+write this important rules or instructions into the repo so it wont be this
+claude acocunt's exclusive"): release trains (a hotfix alone, a minor
+release per area once or twice a day, a major release per migration
+feature), short sessions, a copy review of what changed with one daily
+sweep, screenshots of what changed, one test run per release, audits only
+when asked, held SQL run through the connector ("Run all sql dont care if
+its drop delete or what"), tight agent briefs; written in CLAUDE.md §3
+Token economy, docs/rules/release.md and the copy-review skill. Automatic
+`?v=` stamps from the build follow as their own release.

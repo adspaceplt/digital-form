@@ -100,8 +100,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     which run once, in the day's full gate), its touched
     screens are screenshotted and read (1280 and 390, both themes in the
     console; every screen a shared layout, CSS or component change
-    reaches), and it merges at once on its own PR, never held for the next
-    (one request, one release). Beyond the suites
+    reaches), and it merges on its train's PR (§3, Token economy). Beyond the suites
     the diff reaches, a suite runs by hand only while a fault is being
     found. A migration still runs `sql` and its
     area's Postgres suite before it is applied to the live database. The
@@ -220,10 +219,11 @@ is empty and only shrinks (`--write` refuses to add).
 - Before a push, every word the diff puts in front of a person is drafted
   and checked by `docs/rules/copy.md` (DESIGN.md §6), How copy is drafted, and `tests/words.js`
   passes (a word the user rejects is added to it in the same push); copy is
-  never left for the user to review. Once a change, before
-  its merge, every word on every screen or PDF that change touches, the
-  standing words with the new, is read by a second reader (never a scan
-  of the whole repo): the `/copy-review` skill lists them
+  never left for the user to review. Once a release, before
+  its merge, the words that release adds or changes (copyscan's `+` lines,
+  never the standing words of a whole file; those are read once a day in
+  the tone sweep, §3 Token economy) are read by a second reader: the
+  `/copy-review` skill lists them
   (`tests/copyscan.js`) and hands them, with §6 alone, to a fresh agent
   that did not build the change, asking also whether a newcomer would
   understand each label at once as a familiar app's word; every finding is
@@ -444,8 +444,8 @@ Every sign-in and security rule: `docs/rules/security.md`.
   session opening on an open PR reads its latest handover first and
   continues its branch.
 - The session that starts others checks every one it started every 30
-  minutes while any runs (`list_sessions` children, a `send_later`
-  check-in), never waiting for a report: one blocked or idle with its PR
+  minutes while any runs (`list_sessions` children and their status line
+  alone, never a transcript; a `send_later` check-in), never waiting for a report: one blocked or idle with its PR
   unmerged is unblocked, or its PR merged by the starting session; a
   session's own brief says it merges without asking.
 - A release with a migration or a function states its order (pages,
@@ -469,6 +469,38 @@ Every sign-in and security rule: `docs/rules/security.md`.
 - Every go-live report names the version the console shows exactly as the rail reads it (`{YYMMDD}.{commit}`: `git log -1 --format=%h --abbrev=7` on the merge commit, its last four), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
+
+### Token economy (the user, 2026-11-26; binding on every account and session)
+Every session, agent and check-in is paid for in the account's usage, so
+work is shaped to spend it on the fix, not on overhead.
+- **Release trains, not a PR a fix.** A hotfix (a fault that blocks work
+  or that a client sees) ships alone at once. Every other fix, word and
+  polish is built on one branch per area through the day and ships as one
+  minor release per area once or twice a day: one test run, one screenshot
+  pass, one copy review, one merge. A feature with a migration is a major
+  release on its own PR. (This replaces "one request, one release".)
+- **Short sessions.** A session's context is re-read on every turn, so a
+  long session costs more each hour. A session holds one train or one
+  major release and ends when it merges; the next work starts in a fresh
+  session from the repo and the PR's handover, never by continuing a long
+  one. A coordinating session hands over and is replaced daily.
+- **Copy review reads what changed.** Per release, the second reader gets
+  copyscan's added and changed lines alone; the whole screens' standing
+  words are read once a day, in one tone sweep after the day's merges.
+- **Screenshots of what changed.** The changed screens at 1280 and 390;
+  both themes only where a stylesheet or a theme token changed.
+- **One test run per release.** Commit, then gate a frozen copy
+  (`tests/snap.sh`); never edit what a running gate tests, and never stop
+  and restart a run for a further edit: the edit waits for the next train.
+- **Whole-portal audits** (unslop, ux-audit, security) run only when the
+  user asks, once.
+- **Held SQL runs through the connector.** The user approves running a
+  migration's `drop` or `delete` statements directly (2026-11-26: "Run all
+  sql dont care if its drop delete"): nothing waits for the SQL Editor; the
+  release applies it and verifies it live (`docs/rules/release.md`).
+- **Agents and sub-sessions get a tight brief** (the goal, the files, what
+  not to do) and report in under 600 words; their transcripts are never
+  read whole.
 
 ### Folder and file rules
 - Never edit the user's root files: `ap01.html` and `accv-new.html`, the
