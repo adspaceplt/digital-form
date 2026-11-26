@@ -5792,7 +5792,7 @@
       loadRequests();
       // Putting access back does not email again: the login already exists,
       // and an undo is a correction, not a second announcement.
-      if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }, $('crmContacts')); return; }
+      if (!on) { undoBar('Access revoked.', function () { setPortal(ct, true, false); }, $('crmContacts')); return; }
       /* Access on its own is enough: the login is made when they sign in.
          An invitation only goes out when somebody asked for one. */
       if (!invite) { msg('crmWorkMsg', 'Access enabled.', 'ok'); return; }
