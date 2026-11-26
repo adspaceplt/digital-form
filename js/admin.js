@@ -6837,9 +6837,10 @@
     ['quote_valid_days', 'Quotation valid for', 'quote', 'Tax and validity'],
     /* A term takes the longest commitment it has reached (the user,
        2026-11-17): under 3 months, then 3, 6, 12, 18 and 24 months. */
-    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year'], ['term_4_5', '3 months', 'adj', 'Terms under a year'],
-    ['term_6_11', '6 months', 'adj', 'Terms under a year'],
-    ['term_12_23', '12 months', 'adj', 'Terms of a year or more'], ['term_18_23', '18 months', 'adj', 'Terms of a year or more'],
+    /* Each term reads its range (the Settings review, 2026-11-26). */
+    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year'], ['term_4_5', '3 to 5 months', 'adj', 'Terms under a year'],
+    ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year'],
+    ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more'],
     ['term_24', '24 months', 'adj', 'Terms of a year or more'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
@@ -6858,8 +6859,8 @@
   function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
   var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
-    term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 months', setSigned], term_6_11: ['6 months', setSigned],
-    term_12_23: ['12 months', setSigned], term_18_23: ['18 months', setSigned], term_24: ['24 months', setSigned],
+    term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 to 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
+    term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   /* A figure's field as the sheet asks it (2026-11-25, the user: units and
      ranges in the labels wrapped and broke the columns): the label a noun
@@ -6934,9 +6935,12 @@
       /* A VIC's own, shorter (2026-10-15). */
       ['vic_lead_followup_hours', 'VIC lead follow-up limit', 'hours', 'VIC clients', 'VIC lead', per('hour')],
       ['vic_proposal_followup_days', 'VIC proposal follow-up limit', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
-    tax: { title: 'Tax and terms', keys: TAX_KEYS.map(function (k) { return k.concat(SET_TAX_WORD[k[0]]); }) },
-    due: { title: 'Due dates', keys: [['report_due_days', 'Report due after the month ends', 'due', '', 'Report', per('day')],
-      ['revision_due_days', 'Revision (Client) due after changes are requested', 'due', '', 'Revision', per('working day')],
+    /* One line on the terms, under the last, its row's width (the Settings review,
+       2026-11-26). */
+    tax: { title: 'Tax and terms', keys: TAX_KEYS.map(function (k) { return k.concat(SET_TAX_WORD[k[0]]); }),
+      notes: { term_24: 'A positive figure adds to the price. A negative figure is a discount.' } },
+    due: { title: 'Due dates', keys: [['report_due_days', 'Report due', 'due', '', 'Report', per('day')],
+      ['revision_due_days', 'Client revision due', 'due', '', 'Revision', per('working day')],
       ['approval_reminder_days', 'Approval reminder after', 'due', '', 'Approval reminder', per('day')],
       /* How far back a new task's dates may go (2026-11-10). */
       ['task_past_days', 'Past dates on new tasks', 'back', '', 'Past dates', per('day')],
@@ -6985,9 +6989,22 @@
          the pin it draws round, one section (it stood under a second Office
          pin heading). */
       ['outstation_office_radius_m', 'Office radius', 'orad', 'Office pin', 'Office radius', function (v) { return v + ' m'; }],
-      ['outstation_accuracy_m', 'Location accuracy limit', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
+      ['outstation_accuracy_m', 'Location accuracy', 'accm', 'Trips', 'Within', function (v) { return v + ' m'; }],
       ['outstation_keep_months', 'Trips kept for', 'keep', 'Trips', 'Kept', per('month')],
-      ['outstation_remind_hours', 'Open trip reminder after', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]] },
+      ['outstation_remind_hours', 'Open trip reminder after', 'remh', 'Trips', 'Reminder after', function (v) { return setPlural(v, 'hour', 'hours'); }]],
+      /* The office pin from where the colleague stands (the Settings
+         review, 2026-11-26): a quiet button under the longitude. */
+      acts: { outstation_office_lng: ['Use this device\'s location', function (get, say, btn) {
+        if (!navigator.geolocation) { say('This device cannot share its location.', 'err'); return; }
+        btn.disabled = true; say('Finding this device\'s location…');
+        navigator.geolocation.getCurrentPosition(function (p) {
+          btn.disabled = false;
+          var put = function (name, v) { var x = get(name); x.value = String(Math.round(v * 1e6) / 1e6); x.dispatchEvent(new Event('input', { bubbles: true })); };
+          put('outstation_office_lat', p.coords.latitude); put('outstation_office_lng', p.coords.longitude);
+          say('Filled from this device, accurate to ' + Math.round(p.coords.accuracy) + ' m. Save to keep it.', 'ok');
+        }, function () { btn.disabled = false; say('The location could not be read. Allow location for this site and try again.', 'err'); },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      }] } },
     idle: { title: 'Signed-in devices', keys: [['session_idle_days', 'Signed out after', 'idle', '', 'After', function (v) { return setPlural(v, 'day', 'days') + ' unused'; }]] },
     /* Hidden personal details (2026-11-25): how long a value shown on an
        employee record stays shown (js/personnel.js). */
@@ -7070,7 +7087,10 @@
       short[s] = (short[s] !== false) && n <= 24;
       tiny[s] = (tiny[s] !== false) && n <= 14;
     });
-    var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
+    /* Every figure here is dated in app_settings, so each sheet asks the
+       day it applies from (the Settings review, 2026-11-26: From read as
+       a sender). */
+    var fields = [{ name: 'from', label: 'Applies from', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
       var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
       /* A named section of three short figures runs three across, so the
          sheet fits a phone (2026-10-15, ux-audit SET-10). */
@@ -7084,7 +7104,8 @@
         value: cur == null ? '' : String(cur), required: !opt,
         choices: SET_CHOICES[k[2]] ? SET_CHOICES[k[2]]() : undefined, seg: k[2] === 'weekend' || k[2] === 'onoff' || undefined,
         half: pairOnly || (!third && short[s] && n > 1 && !(n % 2 && at === n) && !SET_WHOLE[k[2]]), third: third,
-        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : u.zero };
+        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : (u.zero || (spec.notes && spec.notes[k[0]]) || ''),
+        act: spec.acts && spec.acts[k[0]] };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
          From moves to its day and the figure to the one in force the day
          before, which app_settings_set reads as a withdrawal. */
@@ -7116,7 +7137,7 @@
         });
       },
       check: function (v) {
-        if (!v.from || v.from < day) return 'Choose a From date of today or later.';
+        if (!v.from || v.from < day) return 'Choose an Applies from date of today or later.';
         for (var i = 0; i < spec.keys.length; i++) {
           var k = spec.keys[i], b = SET_BOUND[k[2]], x = String(v[k[0]] == null ? '' : v[k[0]]).trim(), n = Number(x);
           var dp = Math.pow(10, b[3] || 2);
@@ -7154,7 +7175,7 @@
         var d = r.data || {};
         if (r.error || d.error) {
           return r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
-            : d.error === 'past' ? 'Choose a From date of today or later.' : d.error === 'denied' ? window.ADspaceWords.line.noSettings
+            : d.error === 'past' ? 'Choose an Applies from date of today or later.' : d.error === 'denied' ? window.ADspaceWords.line.noSettings
             : d.error === 'bad-value' ? (function (k) { return k ? setName(k) + ': enter ' + setRange(k) + '.' : 'Enter each figure within its allowed range.'; })(spec.keys.filter(function (x) { return x[0] === d.key; })[0])
             : d.error === 'bad-hours' ? 'Choose an end time after the start time.' : d.error;
         }
@@ -7162,7 +7183,7 @@
            failed save. */
         return MON.load(true).catch(function () {}).then(function () {
           var word = ADspaceClock.date(v.from);
-          if (spec.msg) msg(spec.msg, withdrawn ? 'Planned change withdrawn.' : 'Saved. From ' + word + '.', 'ok');
+          if (spec.msg) msg(spec.msg, withdrawn ? 'Planned change withdrawn.' : 'Saved. Applies from ' + word + '.', 'ok');
           if (spec.done) spec.done();
           return '';
         });

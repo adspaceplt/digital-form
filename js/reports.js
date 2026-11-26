@@ -6466,7 +6466,7 @@
      this calendar month cost. Read again on every open. */
   var AI_USES = [['drafts', 'Report drafts', 'draft'], ['checks', 'Commentary checks', 'check'], ['caption', 'Captions', 'caption'],
     ['script', 'Scripts', 'script'], ['picture', 'Scene pictures', 'picture'], ['analysis', 'Brand analyses', 'analysis'], ['checklist', 'Checklists', 'checklist'],
-    ['analytics', 'Analytics analyses', 'analytics'], ['agent', 'Assistant', 'agent'], ['next', 'Next batch', 'next']];
+    ['analytics', 'Analytics analyses', 'analytics'], ['agent', 'Assistant', 'agent'], ['next', 'Next batch runs', 'next']];
   var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, next: 3, per_report: 1 };
   function aiTokens(n) {
     n = Number(n) || 0;
@@ -6500,7 +6500,8 @@
     var saveBtn = box.querySelector('[data-a="save"]'), unedit = box.querySelector('[data-a="unedit"]'), closeBtn = box.querySelector('[data-a="cancel"]');
     var d = null, editing = false;
     var lim = function (k) { return d && d.limits && d.limits[k] != null ? d.limits[k] : AI_STD[k]; };
-    var dayWord = function (v) { return v === 0 ? 'Off' : v + ' a day'; };
+    /* A limit reads per day (the Settings review, 2026-11-26: 10 per day). */
+    var dayWord = function (v) { return v === 0 ? 'Off' : v + ' per day'; };
     var stdHtml = function () {
       return '<section class="fsec aiu-std' + (editing ? ' is-editing' : '') + '"><div class="aiu-head"><h4 class="fsec-h">Standard limits</h4>' +
         (editing ? '' : '<button class="btn btn-sm" type="button" data-a="limits">' + PEN_MARK + 'Edit</button>') + '</div>' +
@@ -6508,7 +6509,7 @@
           var v = lim(u[0]);
           return '<div class="aiu-lim"><span class="aiu-lim-n">' + esc(u[1]) + '</span>' + (editing ?
             '<span class="aiu-field"><input class="input input-sm aiu-num" type="number" inputmode="numeric" min="0" max="500" step="1" data-k="' + u[0] +
-              '" value="' + v + '" aria-label="' + esc(u[1] + ', a day') + '"><span class="aiu-unit">a day</span></span>' :
+              '" value="' + v + '" aria-label="' + esc(u[1] + ', per day') + '"><span class="aiu-unit">per day</span></span>' :
             '<span class="aiu-lim-v">' + esc(dayWord(v)) + '</span>') + '</div>';
         }).join('') +
         '<div class="aiu-lim aiu-per"><span class="aiu-lim-n">One draft and one check per report per day</span>' + (editing ?
