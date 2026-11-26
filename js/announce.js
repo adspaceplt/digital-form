@@ -206,7 +206,7 @@
   };
   function said(e) {
     if (!e) return 'Not saved.';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet : e.message;
     return SAID[e] || e;
   }
 
