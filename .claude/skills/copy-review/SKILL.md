@@ -37,7 +37,7 @@ the new ones.
    built. Give it this brief and nothing about why the words were chosen:
 
    > You review the words a web portal shows its users. Read
-   > `/home/user/digital-form/DESIGN.md` §6 (Copy, including "How copy is
+   > `/home/user/digital-form/docs/rules/copy.md` (DESIGN.md §6: Copy, including "How copy is
    > drafted") and `tests/words.js`'s RETIRED and PATTERNS lists. Then read
    > `/tmp/copyscan.txt`: each line is `file:line  text`, every word on
    > the screens one change touches; a line marked `+` is new, the rest
