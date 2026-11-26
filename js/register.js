@@ -164,7 +164,7 @@
       may('suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }).catch(function () { return []; }) : Promise.resolve([])
     ]).then(function (r) {
       var bad = (r[0] && r[0].error) || (r[1] && r[1].error);
-      state.peopleErr = bad ? (bad.message || 'The request failed.') : null;
+      state.peopleErr = bad ? (bad.message || 'Colleagues could not be loaded. Refresh the page.') : null;
       state.clients = (r[0] && !r[0].error && r[0].data) || [];
       state.members = (r[1] && !r[1].error && r[1].data) || [];
       state.types = r[2] || [];
@@ -283,7 +283,9 @@
       all.forEach(function (q) { if (q.replaces && !q.removed_at) revised[q.replaces] = q.ref; });
       then(all.map(function (q) {
         q._revised = revised[q.id] || null;
-        var st = q.removed_at ? ['Void', 'is-off'] :
+        /* Removed: Void once it was sent or signed (kept for good), else
+           Removed, as the client's quotations say it (it can be restored). */
+        var st = q.removed_at ? [q.sent_out_at || q.signed_at ? 'Void' : 'Removed', 'is-off'] :
           window.ADspaceQuotes && window.ADspaceQuotes.stateOf ? window.ADspaceQuotes.stateOf(q) : ['', ''];
         var co = (q.signed && q.signed.company && q.signed.company.legal_name) || '';
         return { id: 'qt-' + q.id, quote: q, serial: q.ref, family: 'quotation', kind: 'Quotation', source: 'quote',

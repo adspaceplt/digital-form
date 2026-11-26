@@ -256,7 +256,7 @@
     if (!list.length) html += '<div class="empty">No quotations.</div>';
     else {
       html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
-        '<span class="svc-rate">Amount</span><span>State</span><span></span><span></span></div>' +
+        '<span class="svc-rate">Amount</span><span>Status</span><span></span><span></span></div>' +
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
           var items = [];
@@ -531,7 +531,7 @@
         body: { ext: 'pdf', clientId: q.client_id, size: b.size, private: true, purpose: 'seal', quotationId: q.id, sha256: b.seal.sha } });
     }).then(function (r) {
       var d = r.data || {};
-      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be stored.');
+      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be saved. Please try again.');
       /* The hash is signed into the PUT: S3 keeps this file or none (2026-11-24). */
       return window.ADspaceAdmin.putToS3(d.uploadUrl, blob, d.contentType || 'application/pdf', null,
         d.checksum ? { 'x-amz-checksum-sha256': d.checksum } : null).then(function () {
@@ -836,7 +836,7 @@
     if (q.reviewed_at) fields.push({ name: 'lines', label: 'Revert its confirmed service lines to To quote', tick: true, value: 'on' });
     window.ADspaceConfirm.ask({
       title: 'Mark withdrawn?',
-      body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
+      body: q.ref + ' will show as Withdrawn on the client\'s quotations and on the verify page. The signed copy is kept.',
       fields: fields, go: 'Mark withdrawn', tone: 'warn',
       check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a date between the signing date and today.' : ''; },
       wait: true
@@ -874,7 +874,7 @@
     denied: 'You do not have permission to delete quotations. Please ask an admin.',
     'not-removed': 'Remove this quotation first.',
     'bad-ref': 'The reference does not match.',
-    sent: 'This quotation was sent or signed, so it is kept and reads Void.'
+    sent: 'This quotation was sent or signed, so it cannot be deleted. It stays in Documents as Void.'
   };
   function remove(q, ctx) {
     window.ADspaceConfirm.ask({
@@ -1127,7 +1127,7 @@
         window.ADspaceSheet.close();
         RV = null;
         var line = q.ref + ' approved. ' + (d.lines || 0) + ' service line' + (d.lines === 1 ? '' : 's') + ' confirmed. ' + (BILLING_SAID[d.billing] || '') +
-          (c.stage && c.stage !== 'active' ? ' Move the client to Active from the record’s stage.' : '');
+          (c.stage && c.stage !== 'active' ? ' Set the client\'s stage to Active.' : '');
         /* The signed copy is sealed at once (SIGNED DOCUMENT SEAL): drawn
            from the row as it now stands, kept private, never drawn again.
            A seal that fails is said; the next Download seals it. */
@@ -1788,7 +1788,7 @@
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · ' + CUR + ' ' + esc(rm(cv(p.rate)).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
         '<small>' + p.spec.contents + ' content pieces: ' + mixWords(p.spec.mix || [], true) + '</small>' +
-        (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
+        (p.spec.ad_budget ? '<small>Advertising budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
         '</span></button>';
     }).join('');
   }
@@ -2685,7 +2685,7 @@
     $('qbPkgBasis').dispatchEvent(new Event('input'));
     $('qbPkgPrice').value = k.price || '';
     var list = 0;
-    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Value</span><span></span></div>' : '') +
+    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Amount</span><span></span></div>' : '') +
       k.items.map(function (it) {
         var s = pkgSvc(it.slug) || { name: it.slug, rate: 0 }, r = cv(s.rate || 0), id = 'qbPk-' + esc(it.slug), nm = esc(s.name);
         list += r * (Number(it.qty) || 0);
