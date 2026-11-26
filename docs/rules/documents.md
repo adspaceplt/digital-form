@@ -198,7 +198,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     and superseded letters keep theirs.
 - The Register lists `documents` and `client_documents` (`asOffer()`, family
   `offer`), banded Quotation Covers / Letters of Offer / Client Letters / HR
-  Letters / Other, a band drawn only while it holds any.
+  Letters / Other, a band drawn only while it holds any; and every
+  quotation, issued as it is created whether or not it was sent (the user,
+  2026-11-26: "issued means created"), a removed one reading Void once it
+  was sent or signed, else Removed, as the client's quotations say it
+  (`quoteRows`).
   - A Quotation Cover is never issued on its own (2026-11-25): every
     quotation's PDF opens with it. Issue (the Register's and a client
     record's, `families: ['client']`) offers no `quote_cover` type, and
@@ -208,6 +212,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Void and /verify/ as before, no Reissue. The `quote_cover` type stays
     built in and undeletable, listed in Document types as First page of
     every quotation, and New type offers no Quotation group.
+  - Nor is one added (the user, 2026-11-26: "Quotation Cover: remove it"):
+    Add offers no Quotation Cover kind, but keeps it for an existing cover
+    being edited, and `register_add` refuses one (`not-issuable`), as
+    `register_update` refuses moving another document into it
+    (`2026-11-26-quotation-cover-not-added.sql`).
   - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
     out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
     else an Employee ID in the reference). The search reads a dash as a slash,

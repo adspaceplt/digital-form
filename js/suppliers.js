@@ -51,7 +51,7 @@
     'bad-document': 'This letter is void or no longer belongs to this supplier. Choose another letter.', 'bad-purpose': 'Choose a template.',
     'bad-subject': window.ADspaceWords.line.subject, 'bad-body': window.ADspaceWords.line.message,
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
-    'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Please try again.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Please try again.', sending: window.ADspaceWords.line.mailSending,
     'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Refresh the page and try again.',
     'no-client': 'This client no longer exists, or you do not have access to it.',
     'no-link': 'No link is open.'

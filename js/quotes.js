@@ -256,7 +256,7 @@
     if (!list.length) html += '<div class="empty">No quotations.</div>';
     else {
       html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
-        '<span class="svc-rate">Amount</span><span>State</span><span></span><span></span></div>' +
+        '<span class="svc-rate">Amount</span><span>Status</span><span></span><span></span></div>' +
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
           var items = [];
@@ -398,7 +398,8 @@
          Restore on the line and Delete in its ⋯. */
       if (showRemoved) html += '<div class="qt-gone" id="qtGoneList">' + gone.map(function (q) {
         var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>'];
-        if (mayDelete) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
+        /* One that reached the client or was signed stays, Void (2026-11-26). */
+        if (mayDelete && !q.sent_out_at && !q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
         return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + esc(q.ref) + '</b>' +
           '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
           '<span class="qt-goneacts">' + (maySet ? '<button class="btn btn-sm" data-a="restore" type="button">Restore</button>' : '') +
@@ -530,7 +531,7 @@
         body: { ext: 'pdf', clientId: q.client_id, size: b.size, private: true, purpose: 'seal', quotationId: q.id, sha256: b.seal.sha } });
     }).then(function (r) {
       var d = r.data || {};
-      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be stored.');
+      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be saved. Please try again.');
       /* The hash is signed into the PUT: S3 keeps this file or none (2026-11-24). */
       return window.ADspaceAdmin.putToS3(d.uploadUrl, blob, d.contentType || 'application/pdf', null,
         d.checksum ? { 'x-amz-checksum-sha256': d.checksum } : null).then(function () {
@@ -872,7 +873,8 @@
   var GONE_SAID = {
     denied: 'You do not have permission to delete quotations. Please ask an admin.',
     'not-removed': 'Remove this quotation first.',
-    'bad-ref': 'The reference does not match.'
+    'bad-ref': 'The reference does not match.',
+    sent: 'This quotation was sent or signed, so it cannot be deleted. It stays in Documents as Void.'
   };
   function remove(q, ctx) {
     window.ADspaceConfirm.ask({
@@ -2699,7 +2701,7 @@
     $('qbPkgBasis').dispatchEvent(new Event('input'));
     $('qbPkgPrice').value = k.price || '';
     var list = 0;
-    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Value</span><span></span></div>' : '') +
+    $('qbPkgRows').innerHTML = (k.items.length ? '<div class="qb-pkgrow qb-pkghd" aria-hidden="true"><span>Service</span><span>Quantity</span><span class="qb-fig">Rate</span><span class="qb-fig">Amount</span><span></span></div>' : '') +
       k.items.map(function (it) {
         var s = pkgSvc(it.slug) || { name: it.slug, rate: 0 }, r = cv(s.rate || 0), id = 'qbPk-' + esc(it.slug), nm = esc(s.name);
         list += r * (Number(it.qty) || 0);

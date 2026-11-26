@@ -6491,7 +6491,7 @@
     if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
     if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be created (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
-      ? 'This feature is not available yet. Please contact an admin.' : m;
+      ? window.ADspaceWords.line.notYet : m;
   }
   function call(fn, args, msgId, then, onFail) {
     db.rpc(fn, args).then(function (r) {
@@ -7498,7 +7498,7 @@
   }
   function openMeetMessage(btn, say) {
     readMeetMsg(function (d) {
-      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? 'This feature is not available yet. Please contact an admin.' : MEET_SAID[d.error] || d.error, 'err'); return; }
+      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? window.ADspaceWords.line.notYet : MEET_SAID[d.error] || d.error, 'err'); return; }
       window.ADspaceConfirm.ask({
         title: 'Meeting message', go: 'Save', wait: true,
         body: 'Fields: {meeting}, {date}, {time}, {month}, {channel}, {link}. A line whose field has no value is left out.',
@@ -7515,7 +7515,7 @@
         }
       }, function (v) {
         return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
-          if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+          if (r.error) return /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message;
           if (r.data && r.data.error === 'unknown-field') return window.ADspaceWords.line.unknownField(r.data.field, r.data.fields);
           if (r.data && r.data.error) return MEET_SAID[r.data.error] || r.data.error;
           meetMsg.body = String(v.body || '').replace(/\r/g, '').trim();

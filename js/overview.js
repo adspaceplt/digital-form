@@ -256,7 +256,7 @@
       var r = rangeOf(period);
       return once('tl:' + r.from.toISOString() + ':' + r.to.toISOString(), function () {
         return db.rpc('ops_timeliness', { p_from: r.from.toISOString(), p_to: r.to.toISOString() }).then(rows).then(function (d) {
-          if (!d || !d.team) throw new Error('This feature is not available yet. Please contact an admin.');
+          if (!d || !d.team) throw new Error(window.ADspaceWords.line.notYet);
           return d;
         });
       });
@@ -1964,7 +1964,7 @@
       var run = function () {
         UI.skeleton(body, 3);
         R.report().then(function (d) {
-          if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
+          if (!Array.isArray(d.open_by_person)) throw new Error(window.ADspaceWords.line.notYet);
           var by = {};
           d.open_by_person.forEach(function (r) {
             if (!r.team_member_id) return;
