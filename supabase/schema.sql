@@ -159634,6 +159634,9 @@ grant select (confirmed_at, confirmed_by, revises, request_ref) on table public.
    numbering, beside the others (`id_formats`). */
 alter table public.id_formats drop constraint if exists id_formats_kind_check;
 alter table public.id_formats add constraint id_formats_kind_check check (kind in ('creator', 'campaign', 'job', 'trip', 'request', 'revision'));
+alter table public.id_formats drop constraint if exists id_formats_check;
+alter table public.id_formats add constraint id_formats_check check ((kind = 'job' and pattern is not null)
+  or (kind <> 'job' and prefix ~ '^[A-Z]{1,6}$' and width between (case when kind = 'revision' then 1 else 2 end) and 6 and next_no >= 1));
 insert into public.id_formats (kind, prefix, width, next_no) values ('request', 'REQ', 3, 1), ('revision', 'R', 1, 1) on conflict (kind) do nothing;
 
 /* A draft's reference: its month and DRAFT, then four letters that keep
