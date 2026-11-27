@@ -21,7 +21,7 @@
   /* Layers, lowest to highest: every page-level z-index is one of these;
      a rule inside a component keeps its own small figure. */
   --z-sticky: 20; --z-head: 30; --z-cover: 39; --z-bar: 40;
-  --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
+  --z-dock: 42; --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
   --z-drawer-scrim: 55; --z-drawer: 60; --z-pull: 70; --z-sheet-side: 85;
   --z-sheet: 90; --z-guide-sheet: 92; --z-pop-sheet: 93; --z-ask: 95; --z-picker: 96;
   --z-trace: 10;

@@ -86,7 +86,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
-| `--z-trace`, `--z-sticky` … `--z-picker` | 10 the viewer's trace over its screen, 20 sticky bar, 30 console head, 39 notice cover, 40 top and confirm bars, 43 to 45 the tab bar, 50 menus and cards, 55 and 60 the drawer, 70 pull mark, 85 side sheet, 90 sheets, 92 and 93 a card over a sheet, 95 the question and canvas, 96 the finder | | Every page-level layer is one of these; a component's own stacking keeps a small figure. A new layer joins the scale, never a literal |
+| `--z-trace`, `--z-sticky` … `--z-picker` | 10 the viewer's trace over its screen, 20 sticky bar, 30 console head, 39 notice cover, 40 top and confirm bars, 42 the Dashboard's Ask dock, 43 to 45 the tab bar, 50 menus and cards, 55 and 60 the drawer, 70 pull mark, 85 side sheet, 90 sheets, 92 and 93 a card over a sheet, 95 the question and canvas, 96 the finder | | Every page-level layer is one of these; a component's own stacking keeps a small figure. A new layer joins the scale, never a literal |
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.

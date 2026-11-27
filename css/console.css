@@ -9413,6 +9413,25 @@ svg.sec {
 @media (hover: hover) { .ovw-ask-q:hover { background: var(--tonal-hover); color: var(--ink); } }
 .ovw-ask-q:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 .is-narrow .ovw-ask-q + .ovw-ask-q { display: none; }
+/* Under a thumb (the user, 2026-11-27: high on the page, nobody reached
+   it): where the tab bar shows, the Ask field and its question dock as one
+   card on the bar, the question over the field, the field nearest the
+   thumb. The pane keeps the dock's measured height clear (`--ask-dock`, set
+   by the page), so its last card scrolls out from under it; while the
+   keyboard is up the bar steps away and the dock rides the keyboard's top
+   (`--ask-kb`). Under More's scrim and every sheet (`--z-dock`). */
+:root.has-tabbar .ovw-ask-host:not(:empty) {
+  position: fixed; z-index: var(--z-dock);
+  left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: var(--tabbar-space); max-width: calc(5 * 120px + 10px); margin: 0 auto;
+  padding: 8px; background: var(--raised); border: 1px solid var(--line-lift);
+  border-radius: calc(var(--radius) + 8px); box-shadow: var(--shadow-lift);
+}
+:root.has-tabbar .ovw-ask-host .ovw-ask-try { order: -1; }
+:root.has-tabbar .ovw-ask-host .ovw-ask-q + .ovw-ask-q { display: none; }
+:root.has-tabbar body.is-typing .ovw-ask-host:not(:empty) { bottom: calc(8px + env(safe-area-inset-bottom, 0px) + var(--ask-kb, 0px)); }
+:root.has-tabbar.tabbar-side .ovw-ask-host:not(:empty) { bottom: calc(8px + var(--tabbar-space)); right: var(--tabbar-room); }
+:root.has-tabbar #ovwBody:has(> .ovw-ask-host:not(:empty)) { padding-bottom: var(--ask-dock, 0px); }
 .ovw-me-cols { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-me-cols.is-one, .is-narrow .ovw-me-cols { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1100px) { .ovw-me-cols { grid-template-columns: minmax(0, 1fr); } }
