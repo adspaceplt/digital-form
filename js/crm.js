@@ -3069,7 +3069,7 @@
       if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
       return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
     }).join('');
-    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : q.channel === 'whatsapp' ? 'Submitted through the link shared on WhatsApp' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : q.channel === 'whatsapp' ? 'Submitted through the link shared on WhatsApp' : 'Submitted through the emailed link', q.manager ? 'Person in charge when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
     var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
       ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
     return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';
@@ -7949,7 +7949,7 @@
   }
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published. Enter a later version.', 'bad-date': 'Valid until cannot be in the past.',
-    'no-change': 'Nothing has changed since the live version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
+    'no-change': 'Nothing has changed since the published version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
     denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
@@ -8002,7 +8002,7 @@
       title: 'Publish the Rate Card',
       body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '.\n' : '') +
         (list.length ? list.slice(0, SVC_LIST).join('\n') + (more > 0 ? '\nand ' + more + ' more' : '') + '\n\n' : '') +
-        'Quotations, client service lines and the Rate Card download use this version from now on.',
+        'Quotations, client service lines and the Rate Card download will use this version once it is published.',
       go: 'Publish', wait: true,
       fields: [
         { name: 'v', label: 'Version', value: live ? nextVersion(live.version) : '2.0.6', placeholder: '2.0.7', type: 'text',
