@@ -677,7 +677,7 @@
     quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
-    quotation_submit: 'p_id p_reviewer p_company',
+    quotation_submit: 'p_id p_reviewer p_company p_record',
     quotation_review: 'p_id p_ok p_note',
     quotation_paper: 'p_id p_payload',
     quotation_resign: 'p_id',
@@ -10656,6 +10656,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (window.__deleteCode && args.p_code !== window.__deleteCode) return Promise.resolve({ data: 'wrong-code', error: null });
       var dcRow = DB.clients.filter(function (x) { return x.id === args.p_client; })[0];
       if (!dcRow) return Promise.resolve({ data: 'not-found', error: null });
+
+      if ((DB.quotations || []).some(function (q) { return q.client_id === dcRow.id && q.signed_at; })) return Promise.resolve({ data: 'has-signed', error: null });
       removalRefused('clients', dcRow);
       DB.clients = DB.clients.filter(function (x) { return x !== dcRow; });
       ['client_contacts', 'client_services', 'client_documents', 'client_touches', 'batches', 'campaigns'].forEach(function (t) {
@@ -15070,8 +15072,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
               sq2.signed.corrections = (sq2.signed.corrections || []).concat(moved);
             }
           }
+
+          var pkHeld = (DB.bukku_links || []).some(function (b) { return b.kind === 'client' && b.record_id === sq2.client_id && b.held_at; });
+          var picks = {}, pkWords = [];
+          if (!pkHeld && !(sq2.totals && sq2.totals.bill_to) && sc2) {
+            for (var pki = 0, pkl = ['legal_name', 'company_no']; pki < pkl.length; pki++) {
+              var pk = pkl[pki];
+              var pn2 = function (v) { return String(v || '').trim().replace(/\s+/g, pk === 'company_no' ? '' : ' ').toUpperCase(); };
+              var pr = pn2(sc2[pk]), ps = pn2(sq2.signed.company[pk]);
+              if (pr && ps && pr !== ps) {
+                var pv = args.p_record && args.p_record[pk];
+                if (pv !== 'keep' && pv !== 'use') return qtOk({ error: 'pick-company', field: pk, record: pr });
+                picks[pk] = { pick: pv, record: pr };
+                pkWords.push((pk === 'legal_name' ? 'Registered Company Name' : 'Business Registration No.') + (pv === 'keep' ? ': client record kept as ' + pr : ': client record will change from ' + pr + ' on approval'));
+              }
+            }
+          }
+          delete sq2.signed.record_pick;
+          if (Object.keys(picks).length) sq2.signed.record_pick = picks;
           Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
-          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : '') + (pkWords.length ? (moved.length ? '; ' : ' · ') + pkWords.join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
@@ -15107,6 +15127,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!opsAllowed('clients.billing', 'work')) return qtOk({ error: 'billing-access' });
             ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'billing_address', 'finance_email'].forEach(function (k) { if (co[k]) sc2[k] = co[k]; });
             billing = 'filled';
+          } else if (!(sq2.totals && sq2.totals.bill_to) && sc2 && sq2.signed.record_pick && Object.keys(sq2.signed.record_pick).some(function (k) { return sq2.signed.record_pick[k].pick === 'use'; })) {
+            if (!opsAllowed('clients.billing', 'work')) return qtOk({ error: 'billing-access' });
+            Object.keys(sq2.signed.record_pick).forEach(function (k) { if (sq2.signed.record_pick[k].pick === 'use') sc2[k] = co[k]; });
+            billing = 'updated';
           }
           var have = DB.client_services.filter(function (l) { return l.quotation_id === sq2.id && !l.archived_at; });
 
@@ -15133,7 +15157,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
             ' · ' + (have.length + renewed) + (have.length + renewed === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
             (renewed ? renewed + ' renewed · ' : '') +
-            { filled: 'Billing filled from the signed quotation', held: 'Billing not changed, as Bukku keeps this client\'s billing details', kept: 'Billing not changed' }[billing]);
+            { filled: 'Billing filled from the signed quotation', updated: 'Billing updated from the signed quotation', held: 'Billing not changed, as Bukku keeps this client\'s billing details', kept: 'Billing not changed' }[billing]);
           qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
             'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true, billing: billing, lines: have.length + renewed });
@@ -15362,7 +15386,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
-        DB.quotations.push(qrow);
+        qtBrandFollows(qrow); DB.quotations.push(qrow);
 
         (DB.quotation_drafts || []).forEach(function (d) { if (d.client_id === qc.id && qtMe && d.member_id === qtMe.id) { d.selection = null; d.card = null; d.saved_at = qtNow.toISOString(); } });
         qtLog(qc.name, qrow.ref + ' drafted · ' + (qpr.totals.month ? 'Monthly incl. SST ' + (qcFx ? 'S$ ' : 'RM ') + qpr.totals.month.incl.toFixed(2) : 'one-time') + ' · rate card v.' + qrow.version +
@@ -15373,6 +15397,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qcl = qq && DB.clients.filter(function (c) { return c.id === qq.client_id; })[0];
       if (!qq || (qcl && !scopeRowOk(qcl.stage, qcl.owner, qcl.owner_id, 'work', qcl.sales_by))) return qtOk({ error: 'not-found' });
 
+      function qtBrandFollows(row) {
+        var bs = row.selection && row.selection.brands;
+        var nm = Array.isArray(bs) && bs.length === 1 && bs[0] ? String(bs[0].name || '').trim() : '';
+        if (nm) row.brand = nm;
+      }
       if (name === 'quotation_edit') {
         qtStampOut();
         if (!args.p_sel || typeof args.p_sel !== 'object') return qtOk({ error: 'bad-request' });
@@ -15397,7 +15426,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!(qe.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var fig = function (t) { t = t || {}; return t.month ? t.month.incl : t.once ? t.once.incl : null; };
         var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
-        qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
+        qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel)); qtBrandFollows(qq);
         qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
 
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });

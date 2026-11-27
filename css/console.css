@@ -8406,6 +8406,8 @@ button.pyn-row { font: inherit; color: inherit; cursor: pointer; }
 .qsg-facts dd.mfield.is-pre > .mval { white-space: pre-line; }
 .qsg-facts dd.mfield > .tl-pen { flex: 0 0 auto; }
 .qsg-facts .qsg-was { flex: 1 0 100%; font-size: 12.5px; color: var(--ink-mute); }
+.qsg-facts .qsg-pick { flex: 1 0 100%; display: grid; gap: 4px; margin-top: 4px; }
+.qsg-facts .qsg-pick .tickline { margin: 0; overflow-wrap: anywhere; }
 .qsg-facts .qsg-who small { display: block; font-size: 12.5px; color: var(--ink-mute); }
 .qsg-facts .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .qsg-sig { display: block; width: min(280px, 100%); height: 88px; padding: 8px 12px; background: #fff; border-radius: var(--radius-sm); }

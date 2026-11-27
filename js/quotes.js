@@ -60,6 +60,7 @@
     'not-signed': 'This quotation has not been signed. Mark it signed, or send the client the link to sign.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
     'in-review': 'This quotation is already with its reviewer. Refresh the page.',
+    'pick-company': 'Choose Keep or Use for each company detail that differs from the client record.',
     'bad-reviewer': 'Choose a colleague with Clients: Quotations at Full control.', own: 'Choose a reviewer other than yourself.',
     'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
     'not-reviewer': 'Only the chosen reviewer or an admin can approve this quotation.',
@@ -1157,8 +1158,24 @@
   /* What was signed, read first: the company (each value its pen while it is
      checked), the billing contact, the signing itself. `fix` holds the
      corrections not yet submitted. */
-  function signedHtml(q, fix, edit, held) {
+  /* The signed name or number against the client record (QUOTATION BRAND
+     AND COMPANY PICK, 2026-11-27): read as the database reads it, a
+     difference of case or spacing alone none. */
+  var PICK = ['legal_name', 'company_no'];
+  function coDiffers(k, signedV, recV) {
+    var a = coNorm(k, signedV), b = coNorm(k, recV);
+    return PICK.indexOf(k) > -1 && a !== '' && b !== '' && a !== b;
+  }
+  function pickHtml(k, label, signedV, recV, chosen) {
+    var nm = 'qsgPick-' + k;
+    return '<small class="qsg-was"><span class="chip-state is-warn">Differs from the client record</span></small>' +
+      '<span class="qsg-pick" role="radiogroup" aria-label="Choose a value for ' + esc(label) + '">' +
+      '<label class="tickline"><input type="radio" name="' + nm + '" value="keep" data-pick="' + k + '"' + (chosen === 'keep' ? ' checked' : '') + '> <span>Keep ' + esc(recV) + '</span></label>' +
+      '<label class="tickline"><input type="radio" name="' + nm + '" value="use" data-pick="' + k + '"' + (chosen === 'use' ? ' checked' : '') + '> <span>Use ' + esc(signedV) + '</span></label></span>';
+  }
+  function signedHtml(q, fix, edit, held, recCo, picks) {
     var s = q.signed || {}, co = s.company || {}, ct = s.contact || {}, sg = s.signer || {}, rec = s.record || {};
+    var kept = s.record_pick || {};
     var was = {};
     (s.corrections || []).forEach(function (c) { if (!(c.field in was)) was[c.field] = c.from; });
     var rows = CO.map(function (f) {
@@ -1167,6 +1184,10 @@
       var note = '';
       if (fix && k in fix) note = '<small class="qsg-was">Signed as ' + esc(co[k] || 'Not set') + '</small>';
       else if (k in was) note = '<small class="qsg-was">Signed as ' + esc(was[k] || 'Not set') + '</small>';
+      if (edit && held === false && recCo && coDiffers(k, v, recCo[k])) note += pickHtml(k, f[1], v, recCo[k], picks && picks[k]);
+      else if (!edit && kept[k] && kept[k].record) {
+        note += '<small class="qsg-was">' + esc(kept[k].pick === 'use' ? 'Client record will change from ' + kept[k].record + ' on approval' : 'Client record keeps ' + kept[k].record) + '</small>';
+      }
       return '<div><dt>' + esc(f[1]) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + (k === 'billing_address' ? ' is-pre' : '') + '">' +
         '<span class="mval" data-k="' + k + '">' + esc(v || 'Not set') + '</span>' +
         (edit && held === false ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(f[1].toLowerCase()) + '">' + PEN_SVG + '</button>' : '') +
@@ -1232,7 +1253,7 @@
        approval leaves its Billing alone (`quotation_review` `held`), so the
        check offers no correction to it; asked of the database, as the
        approval reads it, and drawn without pens until it answers. */
-    CK = { q: q, ctx: ctx, fix: {}, held: null };
+    CK = { q: q, ctx: ctx, fix: {}, held: null, rec: null, pick: {} };
     $('qsgCheckFor').textContent = q.ref + ' · ' + q.brand;
     var back = $('qsgCheckBack');
     back.hidden = !q.returned_at;
@@ -1254,6 +1275,13 @@
       if (held) CK.fix = {};
       paintCheck();
     });
+    /* The client record's name and number (Billing, as the record reads
+       it), for a signed one that differs. */
+    window.ADspaceAPI.clientBilling([q.client_id]).then(function (by) {
+      if (!CK || CK.q !== q) return;
+      CK.rec = (by || {})[q.client_id] || null;
+      paintCheck();
+    }).catch(function () { return null; });
     ctx.db.rpc('quotation_reviewers', { p_id: q.id }).then(function (r) {
       if (!CK || CK.q !== q) return;
       var d = r.data || {};
@@ -1269,7 +1297,10 @@
   }
   function paintCheck() {
     var host = $('qsgCheckFacts'), q = CK.q;
-    host.innerHTML = signedHtml(q, CK.fix, true, CK.held);
+    host.innerHTML = signedHtml(q, CK.fix, true, CK.held, CK.rec, CK.pick);
+    Array.prototype.forEach.call(host.querySelectorAll('[data-pick]'), function (r) {
+      r.addEventListener('change', function () { if (r.checked) CK.pick[r.getAttribute('data-pick')] = r.value; });
+    });
     fitSig(host);
     Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
       var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
@@ -1297,6 +1328,18 @@
     if (!sel.value) { sheetMsg('qsgCheckMsg', 'Choose a reviewer.', 'err'); sel.focus(); return; }
     var who = sel.options[sel.selectedIndex].textContent.replace(/^[A-Z0-9]+ · /, '');
     var fix = !CK.held && Object.keys(CK.fix).length ? CK.fix : null;
+    var co = q.signed.company || {}, rec = null;
+    if (CK.held === false && CK.rec) {
+      var open = PICK.filter(function (k) { return coDiffers(k, k in CK.fix ? CK.fix[k] : co[k], CK.rec[k]); });
+      var miss = open.filter(function (k) { return !CK.pick[k]; })[0];
+      if (miss) {
+        sheetMsg('qsgCheckMsg', SAID['pick-company'], 'err');
+        var first = $('qsgCheckFacts').querySelector('[data-pick="' + miss + '"]');
+        if (first) first.focus();
+        return;
+      }
+      if (open.length) { rec = {}; open.forEach(function (k) { rec[k] = CK.pick[k]; }); }
+    }
     go.disabled = true;
     /* The agency's name and Service Terms address as the quotation was
        signed under, kept once for its sealed copy (2026-11-24); a refusal
@@ -1304,7 +1347,9 @@
     var cfg = window.ADSPACE_CONFIG || {};
     ctx.db.rpc('quotation_words_keep', { p_id: q.id, p_agency: cfg.agencyName || 'ADspace', p_terms_url: cfg.serviceTermsUrl || null })
       .then(function () { return null; }).catch(function () { return null; }).then(function () {
-        return ctx.db.rpc('quotation_submit', { p_id: q.id, p_reviewer: sel.value, p_company: fix });
+        var args = { p_id: q.id, p_reviewer: sel.value, p_company: fix };
+        if (rec) args.p_record = rec;
+        return ctx.db.rpc('quotation_submit', args);
       }).then(function (r) {
       var d = r.data || {};
       go.disabled = false;
@@ -1331,7 +1376,7 @@
     window.ADspaceSheet.show($('qsgReviewSheet'), { opener: opener || null, onClose: function () { RV = null; } });
     requestAnimationFrame(function () { fitSig(host); });
   }
-  var BILLING_SAID = { filled: 'Billing filled from the signed quotation.', held: 'Billing not changed, as Bukku keeps this client\'s billing details.', kept: 'Billing not changed.' };
+  var BILLING_SAID = { filled: 'Billing filled from the signed quotation.', updated: 'Billing updated from the signed quotation.', held: 'Billing not changed, as Bukku keeps this client\'s billing details.', kept: 'Billing not changed.' };
   /* The first day of next month in Malaysia: a new service's usual start. */
   function nextFirst() {
     var t = window.ADspaceClock.today(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7));

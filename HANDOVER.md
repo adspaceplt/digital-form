@@ -106,6 +106,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | A website request's ⋯ in three groups (Download PDF, Show quotation link, Ask for details · Edit, Cancel quote · Delete), Delete under the delete rule (migration `2026-11-27-quote-request-deleted.sql`, applied and read back); every quotation reference pressed to copy (`ADspaceCopy.ref`, the Register's too); Preview keeps its leaving mark in a sheet's foot | (this PR) |
 | Facts: an address keeps its line (two facts, the value the rest; it breaks only after @ or a dot); a quotation's check reads a Bukku-held company as words under Kept in Bukku. | (this PR) |
 | #1560 A client's history kept by its id: `activity_log.client_id` (migration `2026-11-27-activity-client-id.sql`, applied and read back; 2,834 of 4,568 lines backfilled, 1,734 null, Bizgrowth 24 of 24); a campaign's and a creator's panes still read by name (next) | 261127.d45e |
+| A quotation's brand follows its one named brand (1 row backfilled: ADP/QT2611-B02 → Lemmermeyer Malaysia); a signed company that differs from the client record is kept or taken at the check and applied on approval; a signed quotation is never deleted, with its client or alone (same migration) | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;

@@ -1296,7 +1296,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.touches = []; state.touchesGone = []; state.touchesRead = null; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
+    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.touches = []; state.touchesGone = []; state.touchesRead = null; state.ovFail = {}; state.quotes = null; ba.id = null; if (document.querySelector('[data-a="delclient"]')) document.querySelector('[data-a="delclient"]').hidden = false; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -2816,6 +2816,7 @@
           var out = r.data;
           if (out === 'wrong-code') return 'The delete code is incorrect.';
           if (out === 'not-found') return 'This client no longer exists.';
+          if (out === 'has-signed') return 'This client has a signed quotation, so it cannot be deleted. Set the client to Past instead.';
           if (out !== 'deleted') return String(out || 'Not deleted. Please try again.');
           /* `delete_client` files the deletion itself (audit R1). */
           state.client = null;
@@ -6676,6 +6677,10 @@
       if (!state.client || state.client.id !== id) return;
       if (err) { state.quotes = null; failLine(host, 'Quotations', err.message || String(err), function () { loadQuotes(); }); host.hidden = false; if (always && done) done(); return; }
       state.quotes = rows;
+      /* A signed quotation is the contract: `delete_client` refuses
+         `has-signed`, so Delete is not drawn (2026-11-27). */
+      var del = document.querySelector('[data-a="delclient"]');
+      if (del) del.hidden = rows.some(function (q) { return q.signed_at; });
       Q.paint(host, quoteCtx(), rows);
       paintSummary();
       railNext(state.client); wireGo($('crmNextBlock')); lastRule();
