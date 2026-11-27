@@ -83,7 +83,7 @@
     /* My Work: the client's months, how far each is, and what is past its
        final date among the open tasks the reader sees. */
     content: function (c, out) {
-      return db.from('ops_engagements').select('id, period, start_day, reports, status')
+      return db.from('ops_engagements').select('id, period, start_day, reports, status, meeting_at, meeting_minutes, meeting_channel, meeting_link, meeting_owner_id')
         .eq('client_id', c.id).order('period', { ascending: false })
         .then(function (r) {
           if (failed(r)) throw new Error(why(r));
@@ -497,6 +497,18 @@
       has('content', d.eng); has('sets', d.sets); has('camps', d.camps); has('scripts', d.scripts);
       has('reports', d.reports); has('finished', d.finished);
       return out;
+    },
+    /* The client's content meetings, from the months read for the pane
+       (2026-11-27): the record's Calls and visits lists them, derived on
+       every read, never written. Null until read; `failed` where the months'
+       read was refused; none where the reader is not given the months. */
+    meetings: function (clientId) {
+      var d = kept.client === clientId ? kept.data : null;
+      if (!d) return null;
+      if (d.keys.indexOf('content') < 0) return { list: [] };
+      if (d.fail.content) return { failed: true, list: [] };
+      return { list: (d.eng || []).filter(function (e) { return e.meeting_at && e.status !== 'cancelled'; })
+        .sort(function (a, b) { return a.meeting_at < b.meeting_at ? 1 : -1; }) };
     },
     /* What the record asks after a block read again by Try again. */
     onData: function (fn) { kept.onData = fn; }
