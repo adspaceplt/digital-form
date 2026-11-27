@@ -230,6 +230,9 @@ is empty and only shrinks (`--write` refuses to add).
   script that types one, and its PATTERNS stop kinds of wording (a system
   word, a refusal that is no instruction, a tab named wrongly), not only
   phrases already met.
+- An agency value, agency wording or a lookup by name is never added in
+  code: `brandguard`, `contentguard` and `idguard` hold their baselines,
+  which only shrink (`docs/MAP.md` §F).
 - A word table holds one key a word: a new field's label takes a key of
   its own, grepped in the table first.
 - A function's name is declared once in its script: a second declaration
