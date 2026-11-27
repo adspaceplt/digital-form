@@ -6862,3 +6862,39 @@ body.is-plain .topbar, :root[data-boot="out"] .topbar {
 .askpreview-main { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
 .askpreview-token { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .askpreview > .asknote { margin-top: 2px; }
+
+/* =========================================================================
+   THE CONFIDENTIALITY LINE (2026-11-27, the user's design): the console's
+   alone, above the rail and the sheet, signed in and out. No bar, no
+   ground, no hairline: the words on the page's own ground (the frame
+   signed in, the sign-in's white signed out), centred, the lock 5px before
+   them. It scrolls away with the page; every sticky offset and --head-h
+   are left as they were.
+   ========================================================================= */
+:root { --confline-h: 24px; }
+.confline {
+  margin: 0; padding: 0 16px; height: var(--confline-h);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 12px; line-height: var(--confline-h); color: var(--ink-mute);
+  white-space: nowrap; overflow: hidden;
+}
+.confline-ic { width: 11px; height: 11px; flex: 0 0 auto; }
+.confline-long, .confline-short { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.confline-short { display: none; }
+@media (max-width: 640px) {
+  .confline-long { display: none; }
+  .confline-short { display: inline; }
+}
+/* The page stays one screen tall where the section is short: the line
+   takes its height from the console's floor, never adds a scroll. */
+.confline:not([hidden]) ~ .console { min-height: calc(100vh - var(--confline-h)); }
+@supports (height: 100dvh) { .confline:not([hidden]) ~ .console { min-height: calc(100dvh - var(--confline-h)); } }
+@media (min-width: 861px) {
+  /* At a desk the rail keeps the window's whole height from the top (it
+     never scrolls from 720px tall, `tests/rail.js`): it rises beside the
+     line, and the line centres over the sheet, from the rail's edge to the
+     sheet's. */
+  :root:not(.has-tabbar) .confline:not([hidden]):has(~ .console:not([hidden])) { padding: 0 12px 0 212px; }
+  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .sidebar { margin-top: calc(-1 * var(--confline-h)); }
+  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .console-main { min-height: calc(100dvh - 24px - var(--confline-h)); }
+}
