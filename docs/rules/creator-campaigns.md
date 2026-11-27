@@ -532,7 +532,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (Creators List View: the payment details with Approve and Decline, the
     Bukku band, the payments; its tab counts details to review), Bookings
     (every campaign they were booked on, its step, opening the campaign) and
-    Activity (`activity.campaigns` View: the record filed under their name);
+    Activity (`activity.campaigns` View: the record filed under their id, `creator_id`);
     the rail's Next action (Review payment details), Record (campaigns,
     last shoot) and Totals (`creator_totals`, read once a visit and again
     after Read from Bukku; 2026-11-12): Billed to clients, each booking's

@@ -29,6 +29,7 @@
     empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.',
+    'draft-expired': 'This quotation has expired. Edit it to set a new Valid until date, then confirm it.',
     'not-confirmed': 'This quotation is still a draft. Confirm it first.', website: 'This quotation came from a website request. Use Send quotation to confirm it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimal places, and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
@@ -214,7 +215,7 @@
     return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-time' + incl : 'One-time total'] : ['—', ''];
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
-    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
+    'valid_until, made_by, made_by_id, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
     'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at, ' +
     'confirmed_at, confirmed_by, revises, request_ref, ' +
@@ -571,11 +572,14 @@
       .then(function (r) { COVER = (r && r.data) || window.ADspaceQuotePdf.COVER; return COVER; })
       .catch(function () { return window.ADspaceQuotePdf.COVER; });
   }
-  function roleOf(ctx, name) {
-    if (!name) return Promise.resolve('');
-    if (ROLES[name] != null) return Promise.resolve(ROLES[name]);
-    return ctx.db.from('team_members').select('name, designation').eq('name', name).limit(1)
-      .then(function (r) { ROLES[name] = (((r && r.data) || [])[0] || {}).designation || ''; return ROLES[name]; })
+  /* A colleague's role read by their id (`quotations.made_by_id`, a
+     client's `owner_id`; 2026-11-27), never by the name a quotation keeps:
+     a rename keeps it. */
+  function roleOf(ctx, id) {
+    if (!id) return Promise.resolve('');
+    if (ROLES[id] != null) return Promise.resolve(ROLES[id]);
+    return ctx.db.from('team_members').select('id, designation').eq('id', id).limit(1)
+      .then(function (r) { ROLES[id] = (((r && r.data) || [])[0] || {}).designation || ''; return ROLES[id]; })
       .catch(function () { return ''; });
   }
   /* SIGNED DOCUMENT SEAL (2026-11-17): a confirmed quotation's PDF is the
@@ -656,8 +660,14 @@
   function drawPlain(q, ctx, extra) {
     var c = ctx.client || {};
     var by = q.made_by || (q.source === 'website' ? c.owner : '') || '';
+    /* A website request names nobody: the client's person in charge, by
+       the id the client keeps (`clients.owner_id`). */
+    var byId = q.made_by ? Promise.resolve(q.made_by_id || null)
+      : q.source === 'website' && c.id ? ctx.db.from('clients').select('owner_id').eq('id', c.id).maybeSingle()
+        .then(function (r) { return ((r && r.data) || {}).owner_id || null; }).catch(function () { return null; })
+      : Promise.resolve(null);
     var kept = keptWords(q);
-    return Promise.all([kept && kept.cover ? Promise.resolve(kept.cover) : coverWords(ctx), roleOf(ctx, by)]).then(function (got) {
+    return Promise.all([kept && kept.cover ? Promise.resolve(kept.cover) : coverWords(ctx), byId.then(function (id) { return roleOf(ctx, id); })]).then(function (got) {
       var named = q.contact && q.contact.name;
       var o = { attention: named || ctx.attention || '', attentionRole: named ? '' : (ctx.attentionRole || ''),
         to: { name: c.legal_name || c.name || q.brand, address: c.billing_address || '' },
