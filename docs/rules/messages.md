@@ -125,8 +125,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   alone; no section's bar or ⋯ offers them (#1419's Edit email templates
   removed): Client email templates
   (Quotation, Letter of Offer, Client letter; Overdue reminder, Invoice
-  email; Feedback: Service rating and Performance review, each in English
-  and 中文, `docs/rules/client-feedback.md`; New email's own), Supplier
+  email; Feedback: Service rating and Performance review,
+  `docs/rules/client-feedback.md`; Quotation requests: Ask for details; New email's own), Supplier
   email templates (Supplier approved, Document, New email's own), Creator email templates
   (the seven creator emails), Candidate email templates (the thirteen candidate
   emails, each with its own switch, `hiring_email_templates`, 2026-11-21)
@@ -145,6 +145,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   from `template_fields_all()` as chips inserting at the caret, a field it
   cannot fill marked as it is typed; no test email (Send test to me
   removed, the user, 2026-11-10; `2026-11-10-template-test-email-removed.sql`).
+- An email written in two languages is one templates row, never one a
+  language (the user, 2026-11-27: "use a switch in one item"): its line
+  names both (`English · 中文`, a language with no subject or message
+  `中文 not written`, that email going out in English), its editor opens
+  in English under a Language view strip (`#mt-lang`) that swaps subject,
+  message and button, keeping what was typed in each, and Save writes
+  each language changed through its own `p_lang` (`langRows` in
+  `js/mailtpl.js`; Feedback, Ask for details); `count` counts emails.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1
