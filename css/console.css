@@ -10046,7 +10046,7 @@ body.is-plain .topbar, :root[data-boot="out"] .topbar {
    them. It scrolls away with the page; every sticky offset and --head-h
    are left as they were.
    ========================================================================= */
-:root { --confline-h: 24px; }
+:root { --confline-band: 24px; --confline-h: var(--confline-band); }
 .confline {
   margin: 0; padding: 0 16px; height: var(--confline-h);
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -10069,7 +10069,11 @@ body.is-plain .topbar, :root[data-boot="out"] .topbar {
      never scrolls from 720px tall, `tests/rail.js`): it rises beside the
      line, and the line centres over the sheet, from the rail's edge to the
      sheet's. */
+  /* Signed in, the line is the whole band over the sheet (24px line and
+     the sheet's 12px margin as one 36px band, the sheet's margin taken
+     off), so its words stand with 12px above and 12px below. */
+  :root:not(.has-tabbar):has(> body > .confline:not([hidden]) ~ .console:not([hidden])) { --confline-h: calc(var(--confline-band) + 12px); }
   :root:not(.has-tabbar) .confline:not([hidden]):has(~ .console:not([hidden])) { padding: 0 12px 0 212px; }
   :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .sidebar { margin-top: calc(-1 * var(--confline-h)); }
-  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .console-main { min-height: calc(100dvh - 24px - var(--confline-h)); }
+  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .console-main { margin-top: 0; min-height: calc(100dvh - 12px - var(--confline-h)); }
 }

@@ -164950,6 +164950,746 @@ grant execute on function public.quotation_edit(uuid, jsonb) to authenticated;
 -- END OF COLLEAGUE'S SAVE ON A WEBSITE REQUEST ---------------------------------
 
 -- ===========================================================================
+-- FEEDBACK FROM PAST CLIENTS (2026-11-27)
+-- ===========================================================================
+-- WHY (the user, 2026-11-27: "what if clients ended and the following month
+-- i wanna get feedback"): Request feedback was refused for a Past client,
+-- and a link already sent read Closed the day its client moved to Past. A
+-- client is asked while Active, Paused or Past; a lead never.
+--
+-- WHAT CHANGES
+--   * `feedback_request` (restated whole from FEEDBACK COPIED FOR WHATSAPP)
+--     refuses a lead alone (`not-active`), no longer a Past client; by email
+--     and copied for WhatsApp alike.
+--   * `feedback_read` and `feedback_submit` (restated whole from ONE
+--     REQUEST REFERENCE FOR EVERY PUBLIC SUBMISSION) no longer close a link
+--     because its client is Past. The link answers its one request whatever
+--     the client's portal access: neither asks `portal_client_open`.
+--
+-- ORDER: this file, then the pages (an open tab draws Request feedback on a
+-- Past client already; before this file it is refused as before). Safe to
+-- run twice.
+-- ROLLBACK: run `feedback_request` from FEEDBACK COPIED FOR WHATSAPP and
+-- `feedback_read` and `feedback_submit` from ONE REQUEST REFERENCE FOR
+-- EVERY PUBLIC SUBMISSION again.
+-- ===========================================================================
+
+-- FEEDBACK FROM PAST CLIENTS ---------------------------------------------------
+
+create or replace function public.feedback_request(p_client uuid, p_kind text, p_again boolean default false,
+  p_channel text default 'email')
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_cl   public.clients;
+  v_ct   public.client_contacts;
+  v_mgr  public.team_members;
+  v_key  text;
+  v_req  public.feedback_requests;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('quick', 'review') then return jsonb_build_object('error', 'bad-kind'); end if;
+  if p_channel is null or p_channel not in ('email', 'whatsapp') then return jsonb_build_object('error', 'bad-channel'); end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  if v_cl.id is null or not public.client_seen(v_cl.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_cl.stage in ('lead', 'contacted', 'proposal') then return jsonb_build_object('error', 'not-active'); end if;
+  -- An email needs the primary contact's address; a copy for WhatsApp
+  -- needs the contact alone (their name and language).
+  select * into v_ct from public.client_contacts k
+   where k.client_id = p_client and k.is_primary and k.archived_at is null
+     and (p_channel = 'whatsapp' or nullif(btrim(coalesce(k.email, '')), '') is not null)
+   limit 1;
+  if v_ct.id is null then
+    return jsonb_build_object('error', case when p_channel = 'whatsapp' then 'no-primary' else 'no-contact' end);
+  end if;
+  perform pg_advisory_xact_lock(hashtext('feedback_request:' || p_client::text || ':' || p_kind));
+  -- None while one is still going out, and none again within the repeat
+  -- hours unless asked again, whichever way either went.
+  if exists (select 1 from public.feedback_requests r where r.client_id = p_client and r.kind = p_kind
+              and r.mail_status = 'sending' and r.created_at > now() - interval '10 minutes') then
+    return jsonb_build_object('error', 'sending');
+  end if;
+  select * into v_req from public.feedback_requests r
+   where r.client_id = p_client and r.kind = p_kind and coalesce(r.mail_status, 'sent') not in ('failed', 'sending')
+     and r.closed_reason is distinct from 'withdrawn'
+     and r.created_at > now() - make_interval(hours => coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24)::int)
+   order by r.created_at desc limit 1;
+  if v_req.id is not null and not coalesce(p_again, false) then
+    return jsonb_build_object('error', 'recent', 'recent',
+      jsonb_build_object('at', v_req.created_at, 'by', v_req.sent_by_name, 'to', v_req.sent_to_name,
+        'channel', v_req.channel));
+  end if;
+  v_req := null;
+  select * into v_mgr from public.team_members m
+   where m.active and lower(btrim(m.name)) = lower(btrim(coalesce(v_cl.owner, '')))
+   order by m.created_at limit 1;
+  update public.feedback_requests r set closed_at = now(), closed_reason = 'replaced'
+   where r.client_id = p_client and r.kind = p_kind and r.closed_at is null;
+  loop
+    v_key := public.new_link_key() || public.new_link_key();
+    exit when not exists (select 1 from public.feedback_requests r where r.access_key = v_key);
+  end loop;
+  insert into public.feedback_requests (client_id, kind, access_key, sent_by, sent_by_name, contact_id,
+    sent_to_name, sent_to_email, manager_id, manager_name, channel)
+  values (p_client, p_kind, v_key, me.id, me.name, v_ct.id, v_ct.name, nullif(lower(btrim(coalesce(v_ct.email, ''))), ''),
+    v_mgr.id, coalesce(v_mgr.name, nullif(btrim(coalesce(v_cl.owner, '')), '')), p_channel)
+  returning * into v_req;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.edited', v_cl.name,
+          (case p_kind when 'quick' then 'Service rating' else 'Performance review' end)
+          || ' requested from ' || v_ct.name
+          || case when p_channel = 'whatsapp' then ', copied for WhatsApp' else '' end);
+  return jsonb_build_object('ok', true, 'id', v_req.id, 'key', v_req.access_key, 'kind', v_req.kind,
+    'to_name', v_req.sent_to_name, 'to_email', v_req.sent_to_email, 'lang', coalesce(v_ct.lang, 'en'),
+    'manager', v_req.manager_name, 'created_at', v_req.created_at, 'channel', v_req.channel);
+end $$;
+revoke all on function public.feedback_request(uuid, text, boolean, text) from public, anon;
+grant execute on function public.feedback_request(uuid, text, boolean, text) to authenticated;
+
+create or replace function public.feedback_read(p_key text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_req  public.feedback_requests;
+  v_cl   public.clients;
+  v_lang text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{16}$' then
+    perform public.feedback_throttle(true);
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  select * into v_req from public.feedback_requests r where r.access_key = p_key;
+  if not public.feedback_throttle(v_req.id is null) then return jsonb_build_object('error', 'busy'); end if;
+  if v_req.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_cl from public.clients c where c.id = v_req.client_id;
+  if v_req.closed_reason = 'answered' then
+    return jsonb_build_object('error', 'answered', 'answered_at', v_req.answered_at, 'kind', v_req.kind, 'client', v_cl.name,
+      'request_ref', (select s.request_ref from public.feedback_responses s where s.request_id = v_req.id));
+  end if;
+  if v_req.closed_at is not null then
+    return jsonb_build_object('error', 'closed', 'client', v_cl.name);
+  end if;
+  if v_req.opened_at is null then
+    update public.feedback_requests r set opened_at = now() where r.id = v_req.id;
+  end if;
+  select k.lang into v_lang from public.client_contacts k where k.id = v_req.contact_id;
+  return jsonb_build_object('ok', true, 'kind', v_req.kind, 'client', v_cl.name,
+    'requested_at', v_req.created_at, 'manager', v_req.manager_name, 'lang', coalesce(v_lang, 'en'),
+    'questions', public.feedback_questions_of(v_req.kind, v_req.manager_name));
+end $$;
+revoke all on function public.feedback_read(text) from public;
+grant execute on function public.feedback_read(text) to anon, authenticated;
+
+create or replace function public.feedback_submit(p_key text, p_answers jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_req   public.feedback_requests;
+  v_cl    public.clients;
+  a       jsonb := coalesce(p_answers, '{}'::jsonb);
+  q       record;
+  v_out   jsonb := '{}'::jsonb;
+  v_val   text;
+  v_int   int;
+  v_lead  int;
+  v_band  text;
+  v_mgr   int;
+  v_ct    public.client_contacts;
+  v_resp  uuid;
+  v_kword text;
+  v_ref   text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{16}$' then
+    perform public.feedback_throttle(true);
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  if jsonb_typeof(a) <> 'object' then return jsonb_build_object('error', 'bad-answers'); end if;
+  select * into v_req from public.feedback_requests r where r.access_key = p_key for update;
+  if not public.feedback_throttle(v_req.id is null) then return jsonb_build_object('error', 'busy'); end if;
+  if v_req.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_cl from public.clients c where c.id = v_req.client_id;
+  if v_req.closed_reason = 'answered' then
+    return jsonb_build_object('error', 'answered', 'answered_at', v_req.answered_at,
+      'request_ref', (select s.request_ref from public.feedback_responses s where s.request_id = v_req.id));
+  end if;
+  if v_req.closed_at is not null then return jsonb_build_object('error', 'closed'); end if;
+
+  -- The lead question first: its band chooses which note is asked.
+  for q in select * from public.feedback_questions x
+            where x.kind = v_req.kind and x.lead loop
+    v_val := a ->> q.key;
+    if v_val is null or v_val !~ '^[0-9]{1,2}$' then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+    v_lead := v_val::int;
+    if v_lead < q.scale_min or v_lead > q.scale_max then return jsonb_build_object('error', 'bad-score', 'key', q.key); end if;
+    v_band := case when v_lead <= q.band_low_max then 'low' when v_lead <= q.band_mid_max then 'mid' else 'high' end;
+  end loop;
+  if v_lead is null then return jsonb_build_object('error', 'bad-kind'); end if;
+
+  for q in select * from public.feedback_questions x
+            where x.kind = v_req.kind
+              and (not x.about_manager or v_req.manager_name is not null)
+              and (x.band is null or x.band = v_band)
+            order by x.n loop
+    v_val := a ->> q.key;
+    if q.type = 'scale' then
+      if v_val is null or v_val !~ '^[0-9]{1,2}$' then
+        if q.required then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+        continue;
+      end if;
+      v_int := v_val::int;
+      if v_int < q.scale_min or v_int > q.scale_max then return jsonb_build_object('error', 'bad-score', 'key', q.key); end if;
+      v_out := v_out || jsonb_build_object(q.key, v_int);
+      if q.about_manager then v_mgr := v_int; end if;
+    else
+      v_val := nullif(btrim(coalesce(v_val, '')), '');
+      if v_val is null then
+        if q.required then return jsonb_build_object('error', 'required', 'key', q.key); end if;
+        continue;
+      end if;
+      if length(v_val) > 2000 then return jsonb_build_object('error', 'too-long', 'key', q.key); end if;
+      v_out := v_out || jsonb_build_object(q.key, v_val);
+    end if;
+  end loop;
+
+  -- A signed-in contact of this client is named; anyone else is the link.
+  if public.portal_contact_name(v_req.client_id) is not null then
+    select * into v_ct from public.client_contacts k
+     where k.client_id = v_req.client_id and k.portal_access and k.archived_at is null
+       and lower(k.email) = lower(auth.jwt() ->> 'email')
+     order by k.is_primary desc limit 1;
+  end if;
+
+  insert into public.feedback_responses (request_id, client_id, kind, answers, score, band,
+    manager_id, manager_score, contact_id, contact_name)
+  values (v_req.id, v_req.client_id, v_req.kind, v_out, v_lead, v_band,
+    v_req.manager_id, v_mgr, v_ct.id, v_ct.name)
+  returning id, request_ref into v_resp, v_ref;
+  update public.feedback_requests r set answered_at = now(), closed_at = now(), closed_reason = 'answered',
+         opened_at = coalesce(r.opened_at, now())
+   where r.id = v_req.id;
+
+  v_kword := case v_req.kind when 'quick' then 'Service rating' else 'Performance review' end;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_ct.name, 'Feedback form'), 'client.edited', v_cl.name,
+          v_kword || ' answered: ' || v_lead || ' of ' ||
+          (select x.scale_max from public.feedback_questions x where x.kind = v_req.kind and x.lead) ||
+          coalesce(' · ' || v_ref, ''));
+  -- The account manager told, else whoever sent it; a low score says so.
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, 'client.feedback',
+         case when v_band = 'low' then 'Low score · ' else 'Feedback received · ' end || v_cl.name,
+         v_kword || ': ' || v_lead || ' of ' ||
+         (select x.scale_max from public.feedback_questions x where x.kind = v_req.kind and x.lead) ||
+         case when v_band = 'low' then '. Open the client''s Feedback to follow up.' else '.' end,
+         v_cl.id, 'client.feedback:' || v_resp || ':' || m.id
+    from public.team_members m
+   where m.active and m.id = coalesce(v_req.manager_id, v_req.sent_by)
+  on conflict (dedupe_key) do nothing;
+  return jsonb_build_object('ok', true, 'request_ref', v_ref);
+end $$;
+revoke all on function public.feedback_submit(text, jsonb) from public;
+grant execute on function public.feedback_submit(text, jsonb) to anon, authenticated;
+
+-- END OF FEEDBACK FROM PAST CLIENTS --------------------------------------------
+
+-- ===========================================================================
+-- DELETES AT FULL CONTROL — every delete asks Full control (2026-11-27)
+-- ===========================================================================
+-- WHY: only Full control deletes; at Edit a Delete is a request an admin
+-- approves (the user, 2026-11-17; "go all 13", 2026-11-27). A live audit
+-- found 13 delete functions an admin tool's Edit could run for good, none
+-- on `delete_kinds`: `analytics_read_delete` (team.analytics),
+-- `announcement_delete` (team.announce), `campaign_file_delete`
+-- (campaigns.files_delete), `department_delete`, `industry_delete`,
+-- `public_holiday_delete`, `tax_codes_delete` (team.settings),
+-- `doc_type_delete` (register.types), `handbook_delete` (team.handbook),
+-- `hiring_delete`, `hiring_scorecard_delete` (team.hiring),
+-- `ops_template_delete` (ops.workflows), `team_notice_delete` (team.notice).
+--
+-- WHAT IT CHANGES
+--   * Each of the 13 asks its grant at Full control (`ops_granted(…,
+--     'manage')`), refusing `denied` below it; every other check as before.
+--   * Each joins `delete_kinds`, so at Edit its Delete files a request.
+--   * `delete_request_file`: a granted part is asked through `ops_granted`
+--     (`allowed()` reads an unset part as its section, which a granted part
+--     never takes); tax codes are requested several at once, each held and
+--     named; an approved file is named by its creator and held to its
+--     campaign's client.
+--
+-- ORDER: this migration, then the pages (each Delete at Edit reads Request
+-- delete). An open tab from before draws Delete at Edit and is refused
+-- `denied`, said as each screen's permission line.
+--
+-- ROLLBACK: run the 13 functions and `delete_request_file` as their
+-- previous last definitions in schema.sql state them, and delete the 13
+-- `rpc:` rows this band adds to `delete_kinds` (none while a request names
+-- one: decide or withdraw it first).
+-- ===========================================================================
+
+create or replace function public.analytics_read_delete(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  a public.analytics_reads;
+begin
+  if not public.ops_granted('team.analytics', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  delete from public.analytics_reads x where x.id = p_id returning * into a;
+  if a.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(m.name, m.email), 'team.changed', 'Analytics',
+          'Analysis version ' || a.version || ' deleted · ' || a.period);
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.announcement_delete(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  a public.announcements;
+begin
+  if me.id is null or not public.ops_granted('team.announce', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into a from public.announcements x where x.id = p_id for update;
+  if a.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if a.ended_at is null and (a.ends_at is null or a.ends_at > now()) then
+    return jsonb_build_object('error', 'live');
+  end if;
+  delete from public.announcements x where x.id = a.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Announcements', 'Deleted · ' || public.announcement_said(a));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.campaign_file_delete(p_file uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me   public.team_members;
+  d    public.campaign_deliverables%rowtype;
+  o    public.campaign_options%rowtype;
+  c    public.campaigns%rowtype;
+  cr   text;
+begin
+  if not public.ops_granted('campaigns.files_delete', 'manage') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.campaign_deliverables where id = p_file for update;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.hidden_at is null then return jsonb_build_object('error', 'not-hidden'); end if;
+  select * into o from public.campaign_options where id = d.option_id;
+  select * into c from public.campaigns where id = o.campaign_id;
+  if not public.client_scope_ok('campaign', c.id, 'manage') then
+    return jsonb_build_object('error', 'client-scope');
+  end if;
+  select cx.name into cr from public.creators cx where cx.id = o.creator_id;
+  delete from public.campaign_deliverables where id = d.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'campaign.file_deleted', c.title,
+          coalesce(cr, 'Creator') || ' · ' || coalesce(d.name, 'file'));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.department_delete(p_key text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare v_me public.team_members; v_old public.departments; v_n int;
+begin
+  if not public.ops_granted('team.settings', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  select * into v_old from public.departments d where d.key = p_key for update;
+  if v_old.key is null then return jsonb_build_object('error', 'not-found'); end if;
+  select count(*)::int into v_n from public.team_members t where t.department = p_key;
+  if v_n > 0 or exists (select 1 from public.perf_people p where p.department = p_key)
+     or exists (select 1 from public.perf_dept_scores s where s.department = p_key) then
+    return jsonb_build_object('error', 'in-use', 'members', v_n);
+  end if;
+  delete from public.departments d where d.key = p_key;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, 'admin'), 'team.changed', 'Departments', 'Removed: ' || v_old.name);
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.industry_delete(p_name text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_n int;
+begin
+  if not public.ops_granted('team.settings', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  perform pg_advisory_xact_lock(hashtextextended('industries', 0));
+  if not exists (select 1 from public.industries i where i.name = p_name) then return jsonb_build_object('error', 'not-found'); end if;
+  -- Other stays, the website's last choice (2026-11-04, review 6).
+  if p_name = 'Other' then return jsonb_build_object('error', 'fixed'); end if;
+  select count(*)::int into v_n from public.clients c where c.industry = p_name;
+  if v_n > 0 then return jsonb_build_object('error', 'in-use', 'clients', v_n); end if;
+  delete from public.industries i where i.name = p_name;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Industries', 'Deleted: ' || p_name);
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.public_holiday_delete(p_day date)
+returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_me public.team_members;
+  v_old public.public_holidays;
+begin
+  if not public.ops_granted('team.settings', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  select * into v_old from public.public_holidays h where h.day = p_day;
+  if v_old.day is null then return jsonb_build_object('error', 'not-found'); end if;
+  delete from public.public_holidays h where h.day = p_day;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, 'admin'), 'team.changed', 'Public holidays',
+    'Removed: ' || public.register_day(v_old.day) || ' · ' || v_old.name);
+  return jsonb_build_object('ok', true, 'day', p_day, 'name', v_old.name);
+end $$;
+
+create or replace function public.tax_codes_delete(p_codes text[])
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members := public.ops_me();
+  v_codes text[];
+  v_used text[];
+  v_gone text[];
+begin
+  if v_me.id is null or not public.ops_granted('team.settings', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select array_agg(distinct btrim(c)) into v_codes from unnest(coalesce(p_codes, '{}')) c where btrim(coalesce(c, '')) <> '';
+  if v_codes is null or array_length(v_codes, 1) > 100 then return jsonb_build_object('error', 'bad-row'); end if;
+  perform 1 from public.tax_codes t where t.code = any(v_codes) for update;
+  select array_agg(t.code order by t.code) into v_used
+    from public.tax_codes t where t.code = any(v_codes) and public.tax_code_uses(t.code) > 0;
+  if v_used is not null then return jsonb_build_object('error', 'in-use', 'codes', to_jsonb(v_used)); end if;
+  with d as (delete from public.tax_codes t where t.code = any(v_codes) returning t.code)
+  select array_agg(d.code order by d.code) into v_gone from d;
+  if v_gone is not null then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (v_me.name, 'team.changed', 'Tax codes',
+            array_length(v_gone, 1) || ' deleted: ' || array_to_string(v_gone, ', '));
+  end if;
+  return public.tax_codes_list() || jsonb_build_object('deleted', coalesce(array_length(v_gone, 1), 0));
+end $$;
+
+create or replace function public.doc_type_delete(p_id text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_t public.doc_types%rowtype;
+  v_docs integer;
+begin
+  if not public.ops_granted('register.types', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_t from public.doc_types d where d.id = p_id for update;
+  if v_t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  /* The types the portal itself reads by name stay: the quotation's cover
+     letter, the supplier's letter and its Service Agreement. */
+  if v_t.id in ('quote_cover', 'supplier_letter', 'supplier_sca') then return jsonb_build_object('error', 'built-in'); end if;
+  select count(*) into v_docs from public.documents x where x.type_id = p_id;
+  if v_docs > 0 then return jsonb_build_object('error', 'in-use', 'documents', v_docs); end if;
+  delete from public.doc_types d where d.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, lower(auth.jwt() ->> 'email')), 'team.changed', 'Document types', v_t.name || ' · Deleted');
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.handbook_delete(p_id uuid, p_title text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  d public.handbook_docs;
+  v_paths jsonb;
+begin
+  if not public.ops_granted('team.handbook', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.handbook_docs h where h.id = p_id;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if lower(btrim(coalesce(p_title, ''))) <> lower(btrim(d.title)) then
+    return jsonb_build_object('error', 'mismatch');
+  end if;
+  select coalesce(jsonb_agg(v.file_path order by v.version_no), '[]'::jsonb) into v_paths
+    from public.handbook_versions v where v.doc_id = p_id;
+  delete from public.handbook_docs h where h.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'handbook.deleted', d.title,
+          jsonb_array_length(v_paths) || case when jsonb_array_length(v_paths) = 1 then ' version' else ' versions' end);
+  return jsonb_build_object('ok', true, 'paths', v_paths);
+end $$;
+
+create or replace function public.hiring_delete(p_id uuid, p_name text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.hiring_candidates;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.removed_at is null then return jsonb_build_object('error', 'not-removed'); end if;
+  if lower(btrim(coalesce(p_name, ''))) <> lower(c.name) then return jsonb_build_object('error', 'bad-name'); end if;
+  /* A hired candidate, or one holding a signed or confirmed document, is
+     an employment record: removed, never deleted. */
+  if c.stage = 'hired' or c.member_id is not null or exists (select 1 from public.hiring_docs d
+       where d.candidate_id = c.id and (d.state in ('signed', 'confirmed') or d.confirmed_at is not null)) then
+    return jsonb_build_object('error', 'has-contract');
+  end if;
+  delete from public.hiring_candidates where id = p_id;
+  return jsonb_build_object('ok', true, 'cv_path', c.cv_path);
+end $$;
+
+create or replace function public.hiring_scorecard_delete(p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare me public.team_members := public.ops_me(); s public.hiring_scorecards;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into s from public.hiring_scorecards where id = p_id for update;
+  if s.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if s.standard then return jsonb_build_object('error', 'standard'); end if;
+  delete from public.hiring_scorecards where id = s.id;
+  insert into public.activity_log (actor, action, subject, detail) values (me.email, 'team.changed', 'Interview scorecards', s.position || ' deleted');
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.ops_template_delete(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  m public.team_members := public.ops_me();
+  t public.ops_task_templates;
+  v_tasks integer; v_rules integer;
+begin
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_granted('ops.workflows', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.ops_task_templates x where x.id = p_id for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select count(*) into v_tasks from public.ops_tasks x where x.template_id = p_id;
+  select count(*) into v_rules from public.ops_recurring_rules x where x.template_id = p_id;
+  if v_tasks + v_rules > 0 then
+    return jsonb_build_object('error', 'in-use', 'tasks', v_tasks, 'rules', v_rules);
+  end if;
+  delete from public.ops_task_templates x where x.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (m.name, 'team.changed', 'Task templates', t.name || ' · Deleted');
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.team_notice_delete(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v public.team_notices;
+  n int;
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.team_notices tn where tn.id = p_id for update;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v.withdrawn_at is null then return jsonb_build_object('error', 'live'); end if;
+  delete from public.ops_notifications o where o.notice_id = v.id;
+  get diagnostics n = row_count;
+  delete from public.team_notices tn where tn.id = v.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Notices', 'Deleted: ' || v.title);
+  return jsonb_build_object('ok', true, 'copies', n);
+end $$;
+
+revoke all on function public.analytics_read_delete(uuid) from public, anon;
+grant execute on function public.analytics_read_delete(uuid) to authenticated;
+revoke all on function public.announcement_delete(uuid) from public, anon;
+grant execute on function public.announcement_delete(uuid) to authenticated;
+revoke all on function public.campaign_file_delete(uuid) from public, anon;
+grant execute on function public.campaign_file_delete(uuid) to authenticated;
+revoke all on function public.department_delete(text) from public, anon;
+grant execute on function public.department_delete(text) to authenticated;
+revoke all on function public.industry_delete(text) from public, anon;
+grant execute on function public.industry_delete(text) to authenticated;
+revoke all on function public.public_holiday_delete(date) from public, anon;
+grant execute on function public.public_holiday_delete(date) to authenticated;
+revoke all on function public.tax_codes_delete(text[]) from public, anon;
+grant execute on function public.tax_codes_delete(text[]) to authenticated;
+revoke all on function public.doc_type_delete(text) from public, anon;
+grant execute on function public.doc_type_delete(text) to authenticated;
+revoke all on function public.handbook_delete(uuid, text) from public, anon;
+grant execute on function public.handbook_delete(uuid, text) to authenticated;
+revoke all on function public.hiring_delete(uuid, text) from public, anon;
+grant execute on function public.hiring_delete(uuid, text) to authenticated;
+revoke all on function public.hiring_scorecard_delete(uuid) from public, anon;
+grant execute on function public.hiring_scorecard_delete(uuid) to authenticated;
+revoke all on function public.ops_template_delete(uuid) from public, anon;
+grant execute on function public.ops_template_delete(uuid) to authenticated;
+revoke all on function public.team_notice_delete(uuid) from public, anon;
+grant execute on function public.team_notice_delete(uuid) to authenticated;
+
+insert into public.delete_kinds (kind, section, id_arg, word, label_table, label_key, label_col) values
+  ('rpc:analytics_read_delete',   'team.analytics',         'p_id',   'AI analysis',         'analytics_reads',    'id',   'period'),
+  ('rpc:announcement_delete',     'team.announce',          'p_id',   'Announcement',        'announcements',      'id',   'body_en'),
+  ('rpc:campaign_file_delete',    'campaigns.files_delete', 'p_file', 'Approved file',       null,                 null,   null),
+  ('rpc:department_delete',       'team.settings',          'p_key',  'Department',          'departments',        'key',  'name'),
+  ('rpc:industry_delete',         'team.settings',          'p_name', 'Industry',            'industries',         'name', 'name'),
+  ('rpc:public_holiday_delete',   'team.settings',          'p_day',  'Public holiday',      'public_holidays',    'day',  'name'),
+  ('rpc:tax_codes_delete',        'team.settings',          'p_codes','Tax code',            null,                 null,   null),
+  ('rpc:doc_type_delete',         'register.types',         'p_id',   'Document type',       'doc_types',          'id',   'name'),
+  ('rpc:handbook_delete',         'team.handbook',          'p_id',   'Handbook file',       'handbook_docs',      'id',   'title'),
+  ('rpc:hiring_delete',           'team.hiring',            'p_id',   'Candidate',           'hiring_candidates',  'id',   'name'),
+  ('rpc:hiring_scorecard_delete', 'team.hiring',            'p_id',   'Interview scorecard', 'hiring_scorecards',  'id',   'position'),
+  ('rpc:ops_template_delete',     'ops.workflows',          'p_id',   'Task template',       'ops_task_templates', 'id',   'name'),
+  ('rpc:team_notice_delete',      'team.notice',            'p_id',   'Notice',              'team_notices',       'id',   'title')
+on conflict (kind) do update set section = excluded.section, id_arg = excluded.id_arg, word = excluded.word,
+  label_table = excluded.label_table, label_key = excluded.label_key, label_col = excluded.label_col;
+
+create or replace function public.delete_request_file(p_kind text, p_args jsonb, p_reason text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me       public.team_members := public.ops_me();
+  k        public.delete_kinds;
+  v_rec    text;
+  v_label  text;
+  v_client uuid;
+  v_why    text := btrim(regexp_replace(coalesce(p_reason, ''), '\s+', ' ', 'g'));
+  v_id     uuid;
+  v_ids    uuid[];
+  v_n      integer;
+  v_seen   integer;
+  v_names  text;
+  v_cls    uuid[];
+  v_codes  text[];
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into k from public.delete_kinds x where x.kind = p_kind;
+  if k.kind is null then return jsonb_build_object('error', 'bad-kind'); end if;
+  /* A granted part (an admin tool) never takes its section's level: it is
+     asked as its delete asks it (DELETES AT FULL CONTROL, 2026-11-27). */
+  if exists (select 1 from public.access_keys a where a.key = k.section and a.tier = 'granted') then
+    if not public.ops_granted(k.section, 'work') then return jsonb_build_object('error', 'denied'); end if;
+    if public.ops_granted(k.section, 'manage') then return jsonb_build_object('error', 'may-delete'); end if;
+  else
+    if not public.allowed(k.section, 'work') then return jsonb_build_object('error', 'denied'); end if;
+    if public.allowed(k.section, 'manage') then return jsonb_build_object('error', 'may-delete'); end if;
+  end if;
+  if p_args is null or jsonb_typeof(p_args) <> 'object' or length(p_args::text) > 4000 then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  if length(v_why) < 3 or length(v_why) > 500 then return jsonb_build_object('error', 'bad-reason'); end if;
+  if jsonb_typeof(p_args -> k.id_arg) = 'array' then
+    v_rec := null;
+    v_n := jsonb_array_length(p_args -> k.id_arg);
+    if v_n not between 1 and 200 then return jsonb_build_object('error', 'bad-request'); end if;
+    if k.kind = 'rpc:tax_codes_delete' then
+      /* Tax codes, deleted several at once: every one held and named. */
+      select array_agg(distinct btrim(e) order by btrim(e)) into v_codes
+        from jsonb_array_elements_text(p_args -> k.id_arg) e where btrim(coalesce(e, '')) <> '';
+      if v_codes is null or array_length(v_codes, 1) > 100 then return jsonb_build_object('error', 'bad-request'); end if;
+      select count(*) into v_seen from public.tax_codes t where t.code = any(v_codes);
+      if v_seen <> array_length(v_codes, 1) then return jsonb_build_object('error', 'not-found'); end if;
+      v_label := v_seen::text || ' ' || lower(k.word) || case when v_seen = 1 then '' else 's' end || ' · ' || array_to_string(v_codes[1:3], ', ')
+        || case when v_seen > 3 then ' and ' || (v_seen - 3)::text || ' more' else '' end;
+    else
+    /* A list (several tasks): every one held, each in the requester's
+       sight, their names kept for the admin's question. */
+    if k.kind <> 'rpc:ops_delete_tasks' then return jsonb_build_object('error', 'bad-request'); end if;
+    begin
+      select array_agg(distinct e::uuid) into v_ids from jsonb_array_elements_text(p_args -> k.id_arg) e;
+    exception when invalid_text_representation then return jsonb_build_object('error', 'bad-request');
+    end;
+    select count(*), string_agg(t.title, ', ' order by t.title) filter (where t.rn <= 3),
+           array_agg(distinct t.client_id) filter (where t.client_id is not null)
+      into v_seen, v_names, v_cls
+      from (select x.id, x.title, x.client_id, row_number() over (order by x.title) as rn
+              from public.ops_tasks x where x.id = any(v_ids) and public.ops_may_see_task(x.id)
+               and (x.client_id is null or public.client_seen(x.client_id, 'view'))) t;
+    if v_seen <> coalesce(array_length(v_ids, 1), 0) then return jsonb_build_object('error', 'not-found'); end if;
+    v_label := v_seen::text || ' ' || lower(k.word) || ' · ' || coalesce(v_names, '')
+      || case when v_seen > 3 then ' and ' || (v_seen - 3)::text || ' more' else '' end;
+    if coalesce(array_length(v_cls, 1), 0) = 1 then v_client := v_cls[1]; end if;
+    end if;
+  else
+    v_rec := nullif(btrim(coalesce(p_args ->> k.id_arg, '')), '');
+    if v_rec is null or length(v_rec) > 100 then return jsonb_build_object('error', 'bad-request'); end if;
+    if k.label_table is not null then
+      execute format('select %I::text from public.%I where %I::text = $1', k.label_col, k.label_table, k.label_key)
+        into v_label using v_rec;
+      if not found then return jsonb_build_object('error', 'not-found'); end if;
+      begin
+        execute format('select client_id from public.%I where %I::text = $1', k.label_table, k.label_key)
+          into v_client using v_rec;
+      exception when undefined_column then v_client := null;
+      end;
+      if k.label_table = 'clients' then v_client := v_rec::uuid; end if;
+      /* A supplier's client is the one it is linked to, not its owner. */
+      if k.label_table = 'suppliers' then v_client := null; end if;
+    elsif k.kind = 'rpc:sm_report_version_delete' then
+      /* A report's version: its report's title and number. */
+      select coalesce(nullif(btrim(r.title), ''), 'Report') || ' · version ' || v.version_no, r.client_id
+        into v_label, v_client
+        from public.sm_report_versions v join public.sm_reports r on r.id = v.report_id
+       where v.id::text = v_rec;
+      if not found then return jsonb_build_object('error', 'not-found'); end if;
+    elsif k.kind = 'rpc:campaign_file_delete' then
+      /* An approved file: its creator and its name, its campaign's client. */
+      select coalesce(c.name, 'Creator') || ' · ' || coalesce(nullif(btrim(d.name), ''), 'File'), g.client_id
+        into v_label, v_client
+        from public.campaign_deliverables d
+        join public.campaign_options o on o.id = d.option_id
+        join public.campaigns g on g.id = o.campaign_id
+        left join public.creators c on c.id = o.creator_id
+       where d.id::text = v_rec;
+      if not found then return jsonb_build_object('error', 'not-found'); end if;
+    elsif k.kind = 'table:campaign_options' then
+      /* A booking: its creator and campaign. */
+      select coalesce(c.name, 'Creator') || ' · ' || coalesce(nullif(btrim(g.title), ''), 'Campaign'), g.client_id
+        into v_label, v_client
+        from public.campaign_options o
+        join public.campaigns g on g.id = o.campaign_id
+        left join public.creators c on c.id = o.creator_id
+       where o.id::text = v_rec;
+      if not found then return jsonb_build_object('error', 'not-found'); end if;
+    else
+      return jsonb_build_object('error', 'bad-kind');
+    end if;
+    if v_client is not null and not public.client_seen(v_client, 'view') then
+      return jsonb_build_object('error', 'not-found');
+    end if;
+    v_label := coalesce(nullif(btrim(coalesce(v_label, '')), ''), k.word);
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('delete-request:' || me.id::text, 0));
+  if (select count(*) from public.delete_requests x where x.requested_by = me.id
+        and x.created_at > now() - interval '24 hours') >= 30 then
+    return jsonb_build_object('error', 'too-many');
+  end if;
+  if v_rec is not null and exists (select 1 from public.delete_requests x
+       where x.kind = k.kind and x.record = v_rec and x.state in ('open', 'approving')) then
+    return jsonb_build_object('error', 'already');
+  end if;
+  insert into public.delete_requests (kind, args, record, label, client_id, reason, requested_by)
+  values (k.kind, p_args, v_rec, left(v_label, 200), v_client, v_why, me.id)
+  returning id into v_id;
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, 'delete.request', 'Delete requested · ' || k.word || ' · ' || left(v_label, 120),
+         me.name || ' · ' || v_why,
+         v_client, 'delreq:' || v_id || ':' || m.id
+    from public.team_members m
+   where m.active and (m.is_admin or m.role = 'admin') and m.id <> me.id
+  on conflict (dedupe_key) do nothing;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Delete requests', 'Requested: ' || k.word || ' · ' || left(v_label, 120) || ' · ' || v_why);
+  return jsonb_build_object('ok', true, 'id', v_id, 'label', v_label, 'word', k.word);
+end $$;
+revoke all on function public.delete_request_file(text, jsonb, text) from public, anon;
+grant execute on function public.delete_request_file(text, jsonb, text) to authenticated;
+
+-- END OF DELETES AT FULL CONTROL ---------------------------------------------
+
+-- ===========================================================================
 -- QUOTATION VALID FOR ITS OWN DAYS (2026-11-27)
 -- ===========================================================================
 -- WHY: ADP/REQ2611-SBD (a website request) was set Valid for: 14 days in

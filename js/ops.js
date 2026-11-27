@@ -4764,7 +4764,7 @@
         /* Edit and Delete in one ⋯ (2026-11-23, the user: "things have to
            be able to create, manage or modify and delete"). */
         '<span class="team-act"><button class="kmenu-btn" data-tmenu type="button" aria-label="More actions for ' + esc(x.name) + '" aria-expanded="false">' + TPL_DOTS + '</button>' +
-          '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [], [{ a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span>' +
+          '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [], [{ a: 'delete', label: 'Delete', need: 'ops.workflows:manage' }]], 'data-t') + '</div></span>' +
         '</div>';
     }).join('') : '<p class="ovnote mute">No templates.</p>';
     Array.prototype.forEach.call($('tplList').querySelectorAll('.tplrow'), function (rowEl, i) {

@@ -101,6 +101,15 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
     and a request another admin is approving is refused `approving` for
     ten minutes from their press (`2026-11-24-delete-requests-held.sql`,
     `tests/delreq.js`).
+  - Every function named as a delete or a purge that removes rows asks
+    Full control (`'manage'`) or an admin, a colleague's own item aside
+    (`health_talk_delete`, `email_template_delete`, `hiring_doc_delete`);
+    an admin tool's delete asks its granted part at Full control and is on
+    `delete_kinds`, and a request against a granted part asks `ops_granted`,
+    never the section `allowed()` falls back to
+    (`2026-11-27-deletes-at-full-control.sql`, `tests/sql.js`). A Delete
+    drawn as a button carries `data-g="6"` and its `data-need` as a ⋯ item
+    does.
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no

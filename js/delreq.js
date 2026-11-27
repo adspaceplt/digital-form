@@ -51,6 +51,7 @@
       var list = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
       kinds = {}; sections = {};
       list.forEach(function (k) { kinds[k.kind] = k; sections[k.section] = true; });
+      adapt(document);
       return kinds;
     }).catch(function () { kinds = {}; return kinds; });
   }
@@ -71,10 +72,12 @@
   }
 
   /* A ⋯ is tidied as it shows (js/menu.js): its Delete, at Edit, becomes
-     Request delete. */
+     Request delete. A Delete drawn as a button (a row opened in place, a
+     Select bar) carries `data-g="6"` too, and is adapted where it is drawn
+     (DELETES AT FULL CONTROL, 2026-11-27). */
   function adapt(menu) {
     if (!kinds || !menu || !menu.querySelectorAll) return;
-    Array.prototype.forEach.call(menu.querySelectorAll('.kmenu-item[data-g="6"]'), function (it) {
+    Array.prototype.forEach.call(menu.querySelectorAll('.kmenu-item[data-g="6"], .btn[data-g="6"]'), function (it) {
       if (!isDelete(it)) return;
       var sec = sectionOf(it.getAttribute('data-need'));
       if (!asksFor(sec)) return;
@@ -90,7 +93,7 @@
 
   /* The press arms the request; the screen's own handler runs on. */
   document.addEventListener('click', function (e) {
-    var it = e.target && e.target.closest && e.target.closest('.kmenu-item[data-req]');
+    var it = e.target && e.target.closest && e.target.closest('.kmenu-item[data-req], .btn[data-req]');
     if (!it) return;
     var open = document.querySelector('.kmenu-btn[aria-expanded="true"]');
     armed = { section: it.getAttribute('data-req'), host: open, at: Date.now(), reason: '' };

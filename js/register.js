@@ -1451,7 +1451,7 @@
           (BUILT_IN.indexOf(t.id) > -1 ? '<span class="team-act"><button class="iconbtn" data-dtedit="' + esc(t.id) + '" type="button" aria-label="Edit ' + esc(t.name) + '">' + PEN + '</button></span></div>' :
           '<span class="team-act"><button class="kmenu-btn" data-dtmenu="' + esc(t.id) + '" type="button" aria-label="More actions for ' + esc(t.name) + '" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" hidden>' + window.ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit' }], [], [], [],
-              [{ a: 'delete', label: 'Delete' }]], 'data-t') + '</div></span></div>');
+              [{ a: 'delete', label: 'Delete', need: 'register.types:manage' }]], 'data-t') + '</div></span></div>');
       }).join('') + '</section>';
     }).join('');
     if (html) box.innerHTML = html; else UI.emptyLine(box, 'No document types.');

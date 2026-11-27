@@ -12950,7 +12950,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fcl = DB.clients.filter(function (c) { return c.id === fr.client_id; })[0] || {};
         if (fr.closed_reason === 'answered') return fbNo('answered', { answered_at: fr.answered_at, kind: fr.kind, client: fcl.name,
           request_ref: ((DB.feedback_responses || []).filter(function (x) { return x.request_id === fr.id; })[0] || {}).request_ref || null });
-        if (fr.closed_at || fcl.stage === 'past') return fbNo('closed', { client: fcl.name });
+        if (fr.closed_at) return fbNo('closed', { client: fcl.name });
         if (name === 'feedback_read') {
           if (!fr.opened_at) fr.opened_at = fbNow;
           var fct = (DB.client_contacts || []).filter(function (k) { return k.id === fr.contact_id; })[0] || {};
@@ -13074,7 +13074,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (['email', 'whatsapp'].indexOf(fbCh) < 0) return fbNo('bad-channel');
         var rc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
         if (!rc || !scopeSeen(rc.id, 'work')) return fbNo('not-found');
-        if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
+        if (['lead', 'contacted', 'proposal'].indexOf(rc.stage) >= 0) return fbNo('not-active');
         var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && (fbCh === 'whatsapp' || String(k.email || '').trim()); })[0];
         if (!rk2) return fbNo(fbCh === 'whatsapp' ? 'no-primary' : 'no-contact');
 
