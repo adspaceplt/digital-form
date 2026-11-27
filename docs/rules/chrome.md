@@ -47,6 +47,11 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   every section (a ⋯ shut on a press elsewhere) is its own, never a listed
   script's (2026-11-22: Content Review read `laman-citra` as an id
   and Analytics left the rail, crm.js and analytics.js not yet fetched).
+- The on-demand loader is `js/chrome.js`'s, one copy (`ADspaceChrome.need`, `needHeld`, `needThen`; admin's
+  wrappers call it): a client page lists a script it uses only at a press (the PDF scripts) in its own
+  `#lazyScripts`, warmed where the Download is drawn so the press opens its tab at once (iOS), awaited at
+  the press only as a fallback; `js/demo.js` is written only while a demo is held (`ADSPACE_DEMO` or
+  `localStorage` `adspace-demo`); a rule only the console meets lives in `css/console.css` (2026-11-27).
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied; a
@@ -89,6 +94,13 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   (`body.is-plain`); the grey frame is the signed-in console's alone (the
   user, 2026-11-13: "fully white would be ok"). Client pages stay as they
   are, never v3 (the user, 2026-11-13).
+- The confidentiality line (`#confLine`, `.confline`, the console's alone,
+  never a client page): the first thing in `admin/index.html`'s body,
+  signed in and out, 12px mute words after the lock on the page's own
+  ground, no bar, scrolling away; at a desk the rail rises beside it and it
+  centres over the sheet (the rail keeps the window's height, `tests/rail.js`);
+  words `ADspaceWords.line.confidential(agencyName)` / `confidentialShort`
+  under 640px, English in every language setting (the user, 2026-11-27).
 - Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
   portal should follow the timezone of malaysia"): a device whose clock is
   not GMT+8 (Malaysia and Singapore share it) is told on every page that

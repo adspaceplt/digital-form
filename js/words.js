@@ -395,6 +395,12 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* The console's confidentiality line, at the top of every console page
+       signed in and out (2026-11-27, the user's option A; "authorised" is
+       British on purpose). English in every language setting: the user
+       chose no Chinese for it, so it has no 中文 copy. */
+    confidential: function (agency) { return 'Confidential. This system is for authorised ' + agency + ' personnel only. Unauthorised access, use or disclosure is strictly prohibited.'; },
+    confidentialShort: 'Confidential. Authorised personnel only.',
     /* Where a meeting is held (a month's `meeting_channel`): My Work, the
        Assistant and a client's Calls and visits say it alike (2026-11-27). */
     meetChannel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Other' },
@@ -411,6 +417,11 @@
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
        PDF and the quotation link say them alike; Build quote's ticks read
        the group words. */
+    /* The advertising budget on a quotation (2026-11-27, the user): /quote/,
+       the quotation link and the PDF say it alike; How ad spend works
+       opens its explainer on /quote/ and the link. */
+    adNotIncluded: 'The advertising budget is not included in this quotation.',
+    adHow: 'How ad spend works',
     addonRates: 'Add-on Rates',
     addons: 'Add-ons',
     addonExtra: 'Additional content',
