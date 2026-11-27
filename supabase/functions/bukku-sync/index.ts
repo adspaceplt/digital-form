@@ -316,6 +316,36 @@ function termFor(terms: any[], term: unknown): any | null {
     || terms.find((x: any) => (String(x.name).match(/\d+/) || [])[0] === d) || null;
 }
 
+/* A contact's addresses and numbers are lists in Bukku (its API, 2026-11-26:
+   `emails` and `phones`, five each, a number in digits with its country
+   code; the single `email` and `phone_no` refused). A list read as words,
+   the old single value read where Bukku still answers one; ours goes first
+   and Bukku's others are kept after it, since a list sent replaces Bukku's
+   whole. */
+export function listOf(c: any, many: string, one: string): string[] {
+  const raw = c && Array.isArray(c[many]) ? c[many] : (c && c[one] ? [c[one]] : []);
+  return raw.map((x: any) => String((x && typeof x === 'object' ? (x.email ?? x.phone ?? x.phone_no ?? x.number ?? x.value) : x) ?? '').trim())
+    .filter(Boolean);
+}
+export const mailOf = (c: any) => listOf(c, 'emails', 'email')[0] || '';
+export const phoneOf = (c: any) => listOf(c, 'phones', 'phone_no')[0] || '';
+export function phoneDigits(v: unknown, country?: string): string {
+  const d = String(v ?? '').replace(/[^0-9]/g, '');
+  if (d.length < 8 || d.length > 15) return '';
+  if (country === 'SG' && d.length === 8) return '65' + d;
+  return d.startsWith('0') ? '60' + d.slice(1) : d;
+}
+export function mailList(first: unknown, held: string[]): string[] {
+  const out: string[] = [];
+  for (const m of [String(first ?? '').trim()].concat(held)) if (m && !out.some((x) => x.toLowerCase() === m.toLowerCase())) out.push(m);
+  return out.slice(0, 5);
+}
+export function phoneList(first: unknown, held: string[], country?: string): string[] {
+  const out: string[] = [];
+  for (const n of [first].concat(held).map((x) => phoneDigits(x, country))) if (n && !out.includes(n)) out.push(n);
+  return out.slice(0, 5);
+}
+
 function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
   const c = cur || {};
   const out: Record<string, any> = {
@@ -327,10 +357,14 @@ function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
   };
   if (!cur) out.entity_type = p.entity_type;
   if (p.other_name || c.other_name) out.other_name = p.other_name || c.other_name;
-  for (const k of ['reg_no_type', 'reg_no', 'old_reg_no', 'tax_id_no', 'sst_reg_no', 'email', 'phone_no']) {
+  for (const k of ['reg_no_type', 'reg_no', 'old_reg_no', 'tax_id_no', 'sst_reg_no']) {
     const v = p[k] ?? c[k] ?? null;
     if (v !== null && v !== '') out[k] = v;
   }
+  const mails = mailList(p.email, listOf(c, 'emails', 'email'));
+  if (mails.length) out.emails = mails;
+  const phones = phoneList(p.phone_no, listOf(c, 'phones', 'phone_no'), p.country);
+  if (phones.length) out.phones = phones;
   if (out.reg_no && !out.reg_no_type) out.reg_no_type = 'BRN';
   // Kept as Bukku holds them.
   for (const k of ['group_ids', 'price_level_id', 'tag_ids', 'default_term_id', 'default_income_account_id',
@@ -341,8 +375,16 @@ function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
   // A supplier's agreed term over Bukku's, where Bukku holds the same.
   if (term && term.id) out.default_term_id = term.id;
   // The billing person: the default billing one renamed, else added as it.
-  const persons = (c.contact_persons || []).map((x: any) => ({ id: x.id, first_name: x.first_name, last_name: x.last_name,
-    is_default_billing: !!x.is_default_billing, is_default_shipping: !!x.is_default_shipping }));
+  const persons = (c.contact_persons || []).map((x: any) => {
+    const y: Record<string, any> = { id: x.id, first_name: x.first_name, last_name: x.last_name,
+      is_default_billing: !!x.is_default_billing, is_default_shipping: !!x.is_default_shipping };
+    // A person's own role, addresses and numbers kept as Bukku holds them.
+    if (x.designation) y.designation = x.designation;
+    const pm = listOf(x, 'emails', 'email').slice(0, 5), pp = listOf(x, 'phones', 'phone_no').map((n) => phoneDigits(n)).filter(Boolean).slice(0, 5);
+    if (pm.length) y.emails = pm;
+    if (pp.length) y.phones = pp;
+    return y;
+  });
   /* With its salutation (2026-10-19); a name Bukku already holds in full
      (every word of ours in Bukku's) is kept, the salutation put before it
      where Bukku's lacks it, and in place of another it opens on
@@ -405,8 +447,8 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
     ['old_reg_no', 'Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
     ['tax_id_no', 'TIN', c.tax_id_no || '', next.tax_id_no || ''],
     ['sst_reg_no', 'SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
-    ['email', 'Email', c.email || '', next.email || ''],
-    ['phone_no', 'Phone', c.phone_no || '', next.phone_no || ''],
+    ['email', 'Email', mailOf(c), mailOf(next)],
+    ['phone_no', 'Phone', phoneOf(c), phoneOf(next)],
     ['person', 'Billing contact', person(c), person(next)],
     ['address', 'Billing address', addr(c), addr(next)],
     ['term', 'Payment term', termName(c.default_term_id), termName(next.default_term_id)],
@@ -421,7 +463,7 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
 
 /* The fields left unticked kept as Bukku holds them. */
 const KEEP: Record<string, string[]> = { legal_name: ['legal_name'], reg_no: ['reg_no', 'reg_no_type'],
-  old_reg_no: ['old_reg_no'], tax_id_no: ['tax_id_no'], sst_reg_no: ['sst_reg_no'], email: ['email'], phone_no: ['phone_no'],
+  old_reg_no: ['old_reg_no'], tax_id_no: ['tax_id_no'], sst_reg_no: ['sst_reg_no'], email: ['emails'], phone_no: ['phones'],
   person: ['contact_persons'], address: ['addresses'], term: ['default_term_id'], our_id: ['fields'] };
 export function keepAsHeld(next: Record<string, any>, cur: any, skip: unknown): Record<string, any> {
   if (!cur || !Array.isArray(skip)) return next;
@@ -429,7 +471,7 @@ export function keepAsHeld(next: Record<string, any>, cur: any, skip: unknown): 
   // Lists in the shape a send writes them (merged's own), as Bukku holds them.
   const held = merged({}, cur, cur.contact_code || '');
   for (const k of skip) for (const f of KEEP[String(k)] || []) {
-    const v = ['contact_persons', 'addresses', 'fields'].includes(f) ? held[f] : cur[f];
+    const v = ['contact_persons', 'addresses', 'fields', 'emails', 'phones'].includes(f) ? held[f] : cur[f];
     if (v === undefined || v === null) delete out[f]; else out[f] = v;
   }
   return out;
@@ -457,7 +499,7 @@ export function valuesOf(c: any) {
   const s = (v: unknown) => { const x = String(v ?? '').replace(/\s+/g, ' ').trim(); return x || null; };
   const ba = (c.addresses || []).find((a: any) => a.is_default_billing) || null;
   const bp = (c.contact_persons || []).find((x: any) => x.is_default_billing) || null;
-  const name = s(c.legal_name), mail = s(c.email);
+  const name = s(c.legal_name), mail = s(mailOf(c));
   return { legal_name: name ? name.toUpperCase() : null, company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
     tin: s(c.tax_id_no), sst_no: s(c.sst_reg_no), finance_email: mail ? mail.toLowerCase() : null,
     billing_address: s(addressLine(ba)), person: s(bp ? [bp.first_name, bp.last_name].filter(Boolean).join(' ') : '') };
@@ -551,12 +593,14 @@ async function billingAction(action: string, kind: string, id: string, body: Rec
       legal_name: has('legal_name') ? p.legal_name : cur.legal_name,
       reg_no: has('company_no') ? p.reg_no : cur.reg_no, reg_no_type: has('company_no') ? p.reg_no_type : cur.reg_no_type,
       old_reg_no: has('company_no_old') ? p.old_reg_no : cur.old_reg_no, tax_id_no: has('tin') ? p.tax_id_no : cur.tax_id_no,
-      sst_reg_no: has('sst_no') ? p.sst_reg_no : cur.sst_reg_no, email: has('finance_email') ? p.email : cur.email,
+      sst_reg_no: has('sst_no') ? p.sst_reg_no : cur.sst_reg_no, email: has('finance_email') ? p.email : mailOf(cur) || null,
       address: has('billing_address') ? p.address : null, person: has('bill_contact_id') ? p.person : null,
-      salutation: has('bill_contact_id') ? p.salutation : null, phone_no: cur.phone_no, other_name: cur.other_name
+      salutation: has('bill_contact_id') ? p.salutation : null, phone_no: phoneOf(cur) || null, other_name: cur.other_name
     });
     const next = merged(p2, cur, cur.contact_code);
     for (const k of (Array.isArray(p.clear) ? p.clear : [])) delete next[k];
+    // The finance email emptied: Bukku's first address goes, its others stay.
+    if (Array.isArray(p.clear) && p.clear.includes('email')) next.emails = listOf(cur, 'emails', 'email').slice(1, 6);
     if (Array.isArray(p.clear) && p.clear.includes('reg_no')) delete next.reg_no_type;
     const r = await bukku('PUT', `/contacts/${cur.id}`, next);
     const saved = r && r.contact;
@@ -1562,7 +1606,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     p_purpose: deliver ? 'invoice' : 'reminder', p_to: pickTo, p_ccs: pickCc,
     p_actor: scope.me && scope.me.id, p_client: fromClient || (link ? link.client : null), p_contact: contact,
     p_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
-    p_email: String((bc && bc.email) || lines[0].contact_email || ''),
+    p_email: String((bc && mailOf(bc)) || lines[0].contact_email || ''),
     p_invoices: lines.map((l) => ({ id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency,
       link: l.link, part: l.part })),
     p_cc: body.cc !== false, p_subject: String(body.subject || ''), p_body: String(body.body || ''), p_again: body.again === true });
