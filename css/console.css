@@ -7264,7 +7264,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    (2026-10-15): each field keeps a row of words' height, its target
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
-.qb-row { grid-template-columns: minmax(0, 1fr) 84px 64px 112px 84px 112px; grid-template-areas: "name tax qty rate mo amt"; align-items: center; }
+.qb-row { grid-template-columns: minmax(0, 1fr) 84px 64px 112px 84px 112px; grid-template-areas: "name tax qty rate mo amt"; align-items: start; }
 /* A line's inclusions run under its name, the figures staying on the
    name's line (2026-11-04). */
 .qb-row:has(> .qb-incl) { grid-template-areas: "name tax qty rate mo amt" "incl incl incl incl incl incl"; }
