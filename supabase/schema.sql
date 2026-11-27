@@ -166952,7 +166952,8 @@ select public.functions_tidy();
 -- colleague drew no role under their name. A record is traced by its id,
 -- never by its name.
 -- WHAT IT CHANGES
---   * `quotations.made_by_id` (uuid, nullable, on delete set null). The
+--   * `quotations.made_by_id` (uuid, nullable, on delete set null), read
+--     by a signed-in colleague as the list's other columns are. The
 --     name stays as written, a snapshot never rewritten.
 --   * `quotations_made_by_id()` (before insert): a quotation made with a
 --     name takes the caller's own id where the caller is that colleague,
@@ -166970,6 +166971,7 @@ select public.functions_tidy();
 
 alter table public.quotations add column if not exists made_by_id uuid
   references public.team_members(id) on delete set null;
+grant select (made_by_id) on table public.quotations to authenticated;
 
 create or replace function public.quotations_made_by_id()
 returns trigger
