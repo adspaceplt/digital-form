@@ -363,7 +363,7 @@
     el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (st[1] === 'is-off' ? ' is-off' : '');
     el.setAttribute('data-doc', d.id);
     el.innerHTML =
-      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button></b>' +
+      '<span class="svc-name"><b>' + window.ADspaceCopy.ref(d.serial) + '</b>' +
         '<small>' + (st[0] ? '<span class="chip-state ' + esc(st[1]) + '">' + esc(st[0]) + '</span>' : esc(d.kind)) + '</small></span>' +
       (own ? '' : '<span class="reg-brand">' + (brandOf(d) || q.brand ? esc(brandOf(d) || q.brand) : '<span class="muted">—</span>') + '</span>') +
       '<span class="reg-who">' + (recipientOf(d) ? esc(recipientOf(d)) : '<span class="muted">—</span>') + '</span>' +
@@ -372,8 +372,6 @@
         '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([
           [q.sealed_at && { a: 'sealed', label: 'Download PDF' }, { a: 'record', label: 'Open client' }]]) + '</div></span>';
     wireMenu(el);
-    var cp = el.querySelector('[data-a="copy"]');
-    if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
     var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(b); }); };
     on('record', function () {
       var c = clientOf(d.client_id);
@@ -402,7 +400,7 @@
     el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (d.voided_at ? ' is-off' : '');
     el.setAttribute('data-doc', d.id);
     el.innerHTML =
-      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button>' +
+      '<span class="svc-name"><b>' + window.ADspaceCopy.ref(d.serial) +
         (d.voided_at ? ' <span class="tone">Void</span>' : '') + '</b>' +
         '<small>' + esc(d.kind) + '</small></span>' +
       (own ? '' : '<span class="reg-brand">' + (brandOf(d) ? esc(brandOf(d)) : '<span class="muted">—</span>') + '</span>') +
@@ -413,8 +411,6 @@
           '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([[{ a: 'sealed', label: 'Download PDF' }]]) + '</div>'
         : '') + '</span>';
     wireMenu(el);
-    var cp = el.querySelector('[data-a="copy"]');
-    if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
     var b = el.querySelector('[data-a="sealed"]');
     if (b) b.addEventListener('click', function () {
       shutMenus();
@@ -464,7 +460,7 @@
       /* The reference is what somebody came to copy, so the reference is
          the control: one press, and it says Copied the way every other copy
          in this portal does. */
-      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button>' +
+      '<span class="svc-name"><b>' + window.ADspaceCopy.ref(d.serial) +
         /* The version a reissue replaced says so, because on this list the
            team can see both versions and the word tells them which is which;
            the verify page never says it. */
@@ -526,11 +522,6 @@
     if (!any && !offer && !perf) el.querySelector('.team-act').innerHTML = '';
     wireMenu(el);
     var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(); }); };
-    var cp = el.querySelector('[data-a="copy"]');
-    if (cp) cp.addEventListener('click', function (e) {
-      e.stopPropagation();
-      if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial);
-    });
     on('download', function () {
       /* Two engines, because they are two documents: a Letter of Offer is
          redrawn from its priced snapshot by js/documents.js, every other
