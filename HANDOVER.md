@@ -136,6 +136,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 | Client pages from J's review (8, 13): a failed read keeps Content Review and Video Scripts drawn with Try again; a quotation's TERMS never split onto an extra page; demo engine rebuilt | (this PR) |
 | Quotation holds from J's review (5, 6, 14, 15): a confirmed revision opened by the client is sent out; an expired draft is refused at Confirm; a change request re-checks under its lock; a bad price-check input still counts. Migration `2026-11-27-quotation-review-holds.sql` | (this PR) |
 | Bukku from J's review (7): a retry never links a contact that took the same code under another company; bukku-sync redeployed | (this PR) |
+| Personnel numbers masked (J3, option A): the read holds last fours alone, Show reveals and records, a save never writes the mask back; migration `2026-11-27-personnel-numbers-masked.sql`. Design rule: a section never resizes a base element | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
