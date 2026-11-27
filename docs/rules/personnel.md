@@ -76,7 +76,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   keeps it hidden and says why. A value shown hides again after
   `reveal_seconds` (Business setting, 30, 10 to 600; Settings, Portal:
   Hidden personal details), on a second press, when the record is redrawn
-  or left, and when the page is hidden. The edit sheet shows the real
-  values. The salary is drawn nowhere but its own sheet, which edits it.
-  Page-side masking over what the read already answers: the access rules
-  and the master code stand as they are (`tests/reveal.js`).
+  or left, and when the page is hidden. The salary is drawn nowhere but
+  its own sheet, which edits it.
+- The read never holds a hidden number (`2026-11-27-personnel-numbers-masked.sql`;
+  review J3, the user's option A): `personnel_json` answers each as its last
+  four under `hidden` (`personnel_hidden()`, the one list), and the value
+  comes only from `personnel_revealed`, which files it. The edit sheet shows
+  each masked and read-only with Show (that same call); a number never shown
+  is sent in `_keep` and kept as stored (`personnel_kept`), and a save with
+  no `_keep` (a sheet from before) keeps every one it lacks, so the mask is
+  never written back. The Employee Record Form PDF reveals each through the
+  same call (`tests/reveal.js`, `tests/presssql.js`).

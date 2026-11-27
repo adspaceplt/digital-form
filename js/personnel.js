@@ -270,11 +270,11 @@
     return SECTIONS.map(function (s) {
       var rows = FIELDS.filter(function (f) { return f[0] === s[0]; }).filter(function (f) {
         if (/^spouse_/.test(f[1]) && data.marital !== 'Married') return false;
-        return valueWord(f, data[f[1]]) || miss.indexOf(f[1]) > -1;
+        return valueWord(f, data[f[1]]) || hiddenTail(rec, f[1]) !== null || miss.indexOf(f[1]) > -1;
       });
       var inner = rows.length ? '<dl class="ovfacts">' + rows.map(function (f) {
-        var w = valueWord(f, data[f[1]]);
-        if (w && HIDDEN.indexOf(f[1]) > -1) return secretFact(f, w);
+        var w = valueWord(f, data[f[1]]), tl = hiddenTail(rec, f[1]);
+        if (tl !== null) return secretFact(f, tl);
         return '<div><dt>' + esc(f[2]) + '</dt><dd' + (w ? '' : ' class="is-missing"') + '>' + esc(w || 'Not set') + '</dd></div>';
       }).join('') + '</dl>' : '<p class="prs-none">Not set</p>';
       return group(s[1], inner);
@@ -288,12 +288,23 @@
      setting), when the page is left or hidden, and on every redraw. Editing
      in the sheet shows the real values, as before. */
   var HIDDEN = ['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'];
-  function masked(w) { var s = String(w); return '•••• ' + (s.length > 4 ? s.slice(-4) : ''); }
+  /* The database answers each hidden number as its last four characters
+     alone (`hidden`; review J3, 2026-11-27): the value comes only from
+     `personnel_revealed`, which files the reveal. A record read before that
+     band still carries the value, drawn the same way. */
+  function tailOf(v) { var s = String(v == null ? '' : v); return s.length > 4 ? s.slice(-4) : ''; }
+  function hiddenTail(rec, k) {
+    if (HIDDEN.indexOf(k) < 0) return null;
+    var h = (rec && rec.hidden) || {}, d = (rec && rec.data) || {};
+    if (Object.prototype.hasOwnProperty.call(h, k)) return String(h[k] || '');
+    return d[k] != null && String(d[k]).trim() !== '' ? tailOf(d[k]) : null;
+  }
+  function masked(tail) { return '•••• ' + (tail || ''); }
   function eyeGlyph(shown) {
     return shown ? window.ADspaceActs.glyph('hide') : window.ADspaceIcons.svg('eye');
   }
-  function secretFact(f, w) {
-    return '<div class="prs-secret"><dt>' + esc(f[2]) + '</dt><dd><span class="prs-secret-v" data-secret="' + esc(f[1]) + '">' + esc(masked(w)) + '</span>' +
+  function secretFact(f, tail) {
+    return '<div class="prs-secret"><dt>' + esc(f[2]) + '</dt><dd><span class="prs-secret-v" data-secret="' + esc(f[1]) + '" data-tail="' + esc(tail) + '">' + esc(masked(tail)) + '</span>' +
       '<button class="iconbtn prs-eye" type="button" data-eye="' + esc(f[1]) + '" aria-pressed="false" aria-label="Show ' + esc(f[2]) + '">' +
       eyeGlyph(false) + '</button></dd></div>';
   }
@@ -305,8 +316,7 @@
   function setShown(b, value) {
     var k = b.getAttribute('data-eye'), f = field(k), v = b.parentNode.querySelector('[data-secret]');
     var on = value != null;
-    v.textContent = on ? value : masked(v.getAttribute('data-real') || '');
-    if (!on) v.removeAttribute('data-real');
+    v.textContent = on ? value : masked(v.getAttribute('data-tail') || '');
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.setAttribute('aria-label', (on ? 'Hide ' : 'Show ') + (f ? f[2] : k));
     b.innerHTML = eyeGlyph(on);
@@ -321,13 +331,12 @@
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-eye');
         if (b.getAttribute('aria-pressed') === 'true') { setShown(b, null); return; }
-        var real = valueWord(field(k), (rec.data || {})[k]);
         b.disabled = true;
         (member ? call : mineCall)('personnel_revealed', { p_member: member || null, p_field: k }, function (d) {
           b.disabled = false;
           if (d.error) { msg(line, said(d)); return; }
           msg(line, '');
-          b.parentNode.querySelector('[data-secret]').setAttribute('data-real', real);
+          var real = d.value != null ? String(d.value) : valueWord(field(k), (rec.data || {})[k]);
           setShown(b, real);
           var secs = revealSeconds();
           if (secs) shownTimers.push(setTimeout(function () { if (b.isConnected) setShown(b, null); }, secs * 1000));
@@ -444,8 +453,26 @@
       return window.ADspaceAPI.fileOf(r.data).then(function (b) { return b && /^image\//.test(b.type) ? b : null; });
     }).catch(function () { return null; });
   }
+  /* The form's hidden numbers, each read through `personnel_revealed`
+     (filed as shown) for the PDF alone, never kept. */
+  function revealAll(rec, member) {
+    var keys = Object.keys(rec.hidden || {});
+    return Promise.all(keys.map(function (k) {
+      return new Promise(function (ok) {
+        call('personnel_revealed', { p_member: member, p_field: k }, function (d) { ok(d.error ? null : [k, d.value]); });
+      });
+    })).then(function (pairs) {
+      var out = {};
+      Object.keys(rec.data || {}).forEach(function (k) { out[k] = rec.data[k]; });
+      pairs.forEach(function (p) { if (p && p[1] != null) out[p[0]] = p[1]; });
+      return out;
+    });
+  }
   function recordForm() {
-    var rec = team.rec, m = team.m, data = rec.data || {}, files = rec.files || {};
+    return revealAll(team.rec, team.m.id).then(recordFormOf);
+  }
+  function recordFormOf(whole) {
+    var rec = team.rec, m = team.m, data = whole, files = rec.files || {};
     var sup = rec.superior_id && team.people.filter(function (t) { return t.id === rec.superior_id; })[0];
     var sections = [{ h: 'Employment terms', rows: [
       ['Join date', dateWord(rec.join_date)], ['Employee status', rec.employee_status],
@@ -522,12 +549,22 @@
       : '<input class="input" id="' + id + '" maxlength="' + max + '" data-k="' + k + '" value="' + esc(val) + '"' + ar +
         (/mobile|phone/.test(k) ? ' type="tel" inputmode="tel"' : /email/.test(k) ? ' type="email" inputmode="email"' : '') + '>') + '</div>';
   }
+  /* A hidden number the sheet holds only as its last four: shown masked,
+     Show asks `personnel_revealed` (filed) and opens it to edit; never
+     revealed, Save keeps it as stored (`_keep`). Never kept in a draft. */
+  function maskedInput(f, tail) {
+    var k = f[1], id = 'prs_' + k;
+    return '<div><label class="field-label" for="' + id + '">' + esc(f[2]) + '</label><div class="prs-secret-edit">' +
+      '<input class="input" id="' + id + '" data-k="' + k + '" data-masked data-nodraft readonly value="' + esc(masked(tail)) + '">' +
+      '<button class="btn btn-sm" type="button" data-reveal="' + k + '" aria-label="Show ' + esc(f[2]) + '">Show</button></div></div>';
+  }
   function formBody(data) {
     return SECTIONS.map(function (s) {
       var fs = FIELDS.filter(function (f) { return f[0] === s[0]; });
       return '<section class="fsec" data-sec="' + s[0] + '"><h4 class="fsec-h">' + esc(s[1]) + '</h4><div class="row fgrid">' +
         fs.map(function (f) {
-          var html = inputOf(f, data[f[1]]);
+          var tl = data[f[1]] == null ? hiddenTail(form.rec, f[1]) : null;
+          var html = tl !== null ? maskedInput(f, tl) : inputOf(f, data[f[1]]);
           return /^spouse_/.test(f[1]) ? html.replace(/^<div/, '<div data-spouse' + (data.marital === 'Married' ? '' : ' hidden')) : html;
         }).join('') + '</div></section>';
     }).join('') + (form.own ? '<section class="fsec"><h4 class="fsec-h">Declaration</h4>' +
@@ -561,15 +598,30 @@
     if (mar) mar.addEventListener('change', function () {
       Array.prototype.forEach.call($('prsBody').querySelectorAll('[data-spouse]'), function (el) { el.hidden = mar.value !== 'Married'; });
     });
+    Array.prototype.forEach.call($('prsBody').querySelectorAll('[data-reveal]'), function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-reveal'), inp = $('prs_' + k);
+        b.disabled = true;
+        (form.own ? mineCall : call)('personnel_revealed', { p_member: form.member || null, p_field: k }, function (d) {
+          b.disabled = false;
+          if (d.error) { msg('prsSheetMsg', said(d)); return; }
+          msg('prsSheetMsg', '');
+          inp.value = d.value == null ? '' : String(d.value);
+          inp.removeAttribute('readonly'); inp.removeAttribute('data-masked');
+          b.hidden = true; inp.focus();
+        });
+      });
+    });
     if (window.ADspaceForm && window.ADspaceForm.init) window.ADspaceForm.init($('prsBody'));
     window.ADspaceSheet.show($('prsSheet'), { opener: opener });
   }
   function collect() {
-    var out = {};
+    var out = { _keep: [] };
     Array.prototype.forEach.call($('prsBody').querySelectorAll('[data-k]'), function (el) {
       var k = el.getAttribute('data-k'), f = field(k);
       if (!f) return;
       if (el.closest('[data-spouse][hidden]')) return;
+      if (el.hasAttribute('data-masked')) { out._keep.push(k); return; }
       if (el.type === 'checkbox') { if (el.checked) (out[k] = out[k] || []).push(el.value); return; }
       var v = String(el.value || '').trim();
       if (!v) return;
@@ -577,6 +629,9 @@
       if (f[3].indexOf('i:') === 0) { out[k] = /^\d+$/.test(v) ? Number(v) : v; return; }
       out[k] = v;
     });
+    /* `_keep` goes only to a database that masks (its read carries
+       `hidden`); one from before refuses an unknown key. */
+    if (!form.rec || !form.rec.hidden) delete out._keep;
     return out;
   }
   function refuse(d) {

@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at ref client_id',
+    activity_log: 'id actor action subject detail created_at ref client_id campaign_id creator_id',
     agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -1955,7 +1955,7 @@
                   x.owner = rnNew;
                   if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
-                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
+                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, campaign_id: tb === 'campaigns' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
               });
             }
@@ -4913,6 +4913,29 @@ function cardSlugFree(name, self, email) {
     if (!r && make) { r = { team_member_id: id, data: {}, files: {}, updated_at: new Date().toISOString() }; DB.personnel_records.push(r); }
     return r;
   }
+
+  var PRS_HIDDEN = ['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'];
+  function prsMasked(data) {
+    var out = JSON.parse(JSON.stringify(data || {})), hid = {};
+    PRS_HIDDEN.forEach(function (k) {
+      if (!Object.prototype.hasOwnProperty.call(out, k)) return;
+      var v = String(out[k] == null ? '' : out[k]);
+      delete out[k];
+      if (v.trim()) hid[k] = v.length > 4 ? v.slice(-4) : '';
+    });
+    return { data: out, hidden: hid };
+  }
+  function prsKept(id, data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+    var out = JSON.parse(JSON.stringify(data)), keep = Array.isArray(out._keep) ? out._keep : PRS_HIDDEN;
+    delete out._keep;
+    var old = (prsRow(id) || {}).data;
+    if (!old) return out;
+    keep.forEach(function (k) {
+      if (PRS_HIDDEN.indexOf(k) > -1 && !Object.prototype.hasOwnProperty.call(out, k) && Object.prototype.hasOwnProperty.call(old, k)) out[k] = old[k];
+    });
+    return out;
+  }
   function prsJson(id, team) {
     var r = prsRow(id) || { data: {}, files: {} }, t = DB.team_members.filter(function (x) { return x.id === id; })[0] || {};
     var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
@@ -4922,7 +4945,8 @@ function cardSlugFree(name, self, email) {
     var prefill = {};
     if (String(t.email || '').trim()) prefill.email = String(t.email).trim();
     if (String(t.mobile || '').trim()) prefill.mobile = String(t.mobile).trim();
-    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), prefill: prefill, files: files,
+    var mk = prsMasked(r.data);
+    return { ok: true, member: id, name: t.name, data: mk.data, hidden: mk.hidden, prefill: prefill, files: files,
       consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
       requested_at: r.requested_at || null, updated_at: r.updated_at || null,
       updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,
@@ -4990,7 +5014,7 @@ function cardSlugFree(name, self, email) {
         if (t0.erased_at) return { error: 'erased' };
         id = t0.id;
       }
-      var c = prsClean(a.p_data);
+      var c = prsClean(prsKept(id, a.p_data));
       if (c.error) return c;
       if (own) {
         var miss = prsMissing(c.data);
@@ -5036,12 +5060,13 @@ function cardSlugFree(name, self, email) {
       if (own2) { if (!m) return { error: 'not-team' }; if (!fresh) return { error: 'code-needed' }; tr = m; }
       else { if (!part) return { error: 'denied' }; tr = who(a.p_member); if (!tr) return { error: 'not-found' }; }
       if (!m) return { error: 'denied' };
-      if (['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'].indexOf(a.p_field) < 0) return { error: 'bad-field' };
+      if (PRS_HIDDEN.indexOf(a.p_field) < 0) return { error: 'bad-field' };
       var lab = (prsFields()[a.p_field] || [])[2] || a.p_field;
       var line = lab + ' shown';
       var since = Date.now() - 60000;
       if (!DB.activity_log.some(function (x) { return x.action === 'team.revealed' && x.actor === whoNow() && x.subject === tr.name && x.detail === line && Date.parse(x.created_at) > since; })) logAct('team.revealed', tr.name, line);
-      return { ok: true };
+      var rr = prsRow(tr.id);
+      return { ok: true, value: rr && rr.data && rr.data[a.p_field] != null ? rr.data[a.p_field] : null };
     }
     if (name === 'personnel_request') {
       if (!part) return { error: 'denied' };
@@ -15389,7 +15414,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
         var qrow = { id: nid('qt'), ref: qtDraftRef(), confirmed_at: null, confirmed_by: null, revises: null, request_ref: null, client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
-          status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
+          status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name, made_by_id: qtMe.id,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         qtBrandFollows(qrow); DB.quotations.push(qrow);
 
