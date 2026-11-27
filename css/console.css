@@ -7212,7 +7212,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    what it is over its period, the amount, the state, Create in Bukku. */
 .qi-note { margin: 12px 0 0; }
 .qi-list { margin-top: 16px; }
-.qi-row { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--state-w) auto; align-items: center; gap: 0 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.qi-row { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--state-w) var(--ctl-h); align-items: center; gap: 0 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .qi-row:first-child { border-top: 0; }
 .qi-what { display: flex; flex-direction: column; min-width: 0; }
 .qi-what b { font-weight: 500; }
@@ -7227,7 +7227,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qi-row.has-acts2 .qi-act, .is-narrow .qi-row.has-acts2 .qi-act { grid-area: auto; grid-column: 1 / -1; justify-content: flex-start; margin-top: 8px; }
 /* At Quotations View without Billing no amount is answered (2026-11-22):
    the state takes the amount's place. */
-.qi-list.is-noamt .qi-row { grid-template-columns: minmax(0, 1fr) var(--state-w) auto; }
+.qi-list.is-noamt .qi-row { grid-template-columns: minmax(0, 1fr) var(--state-w) var(--ctl-h); }
 .is-narrow .qi-list.is-noamt .qi-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "what state" "act act"; }
 .is-narrow .qi-list.is-noamt .qi-act:empty { display: none; }
 .qt-gonename { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13.5px; }
