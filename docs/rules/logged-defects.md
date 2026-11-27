@@ -78,3 +78,14 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-27, found by the gate fixes release (aa07bb1), the same on
+  `main` 11d7466:
+  - `quotesite`: the Option 1 or Option 2 comparison reads #1567's words
+    (Paid to Meta, charged to your credit card; Payment timing) the suite
+    does not yet ask for.
+  - `quotes`: the quotation PDF's TERMS check fails on #1572's terms at
+    1280 and 390.
+  - `weight`: the console is 3.6 KB over its budget of 1332.6 KB on main
+    (this release takes about 0.2 KB off).
+  - `sql`: timed out at 900 s while 67 suites ran.
+  Held here until each ships.
