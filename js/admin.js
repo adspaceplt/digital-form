@@ -2696,54 +2696,11 @@
      load. Scripts run in the page's own order (`async = false`), so one is
      never run before what it reads; a fetch that fails is let go, so the
      next ask fetches it again. `need('*')` fetches them all. */
-  var LAZY = (function () {
-    try { return JSON.parse(document.getElementById('lazyScripts').textContent) || {}; } catch (e) { return {}; }
-  })();
-  var LAZY_ORDER = Object.keys(LAZY), lazyAsked = {}, lazyRan = {};
-  /* A script is added only once what it reads as it loads (`first`) has
-     run: a dependency that fails to fetch leaves the scripts after it
-     unadded and unmarked, so the next ask fetches them all again (review
-     2026-11-24: a script run without its dependency was marked loaded and
-     never fetched again). */
-  function lazyOne(k) {
-    if (lazyAsked[k]) return lazyAsked[k];
-    var mine = lazyAsked[k] = Promise.resolve().then(function () {
-      return Promise.all((LAZY[k].first || []).filter(function (d) { return LAZY[d] && d !== k; }).map(lazyOne));
-    }).then(function () {
-      return new Promise(function (ok, bad) {
-        var el = document.createElement('script');
-        el.src = LAZY[k].src;
-        el.async = false;
-        el.onload = function () { lazyRan[k] = true; ok(); };
-        el.onerror = function () {
-          if (el.parentNode) el.parentNode.removeChild(el);
-          bad(new Error('Failed to fetch ' + k));
-        };
-        document.body.appendChild(el);
-      });
-    });
-    mine.catch(function () { if (lazyAsked[k] === mine) delete lazyAsked[k]; });
-    return mine;
-  }
-  function lazyKeys(keys, whole) {
-    var want = {};
-    var add = function (k) {
-      if (!LAZY[k] || want[k]) return;
-      want[k] = true;
-      (LAZY[k].first || []).forEach(add);
-      if (whole) (LAZY[k].uses || []).forEach(add);
-    };
-    (keys === '*' ? LAZY_ORDER : [].concat(keys || [])).forEach(add);
-    return LAZY_ORDER.filter(function (k) { return want[k]; });
-  }
-  function need(keys, whole) { return Promise.all(lazyKeys(keys, whole).map(lazyOne)).then(function () {}); }
-  function needHeld(keys, whole) { return lazyKeys(keys, whole).every(function (k) { return lazyRan[k]; }); }
-  /* What runs at a press runs in that press where everything is already
-     here (a tab opened at the press stays the press's), else once it is. */
-  function needThen(keys, whole, fn) {
-    if (needHeld(keys, whole)) { fn(); return Promise.resolve(); }
-    return need(keys, whole).then(fn);
-  }
+  /* The loader itself is js/chrome.js's, one copy for every page. */
+  var C = window.ADspaceChrome;
+  function need(keys, whole) { return C.need(keys, whole); }
+  function needHeld(keys, whole) { return C.needHeld(keys, whole); }
+  function needThen(keys, whole, fn) { return C.needThen(keys, whole, fn); }
   /* The scripts each section draws with. The Dashboard reads only a
      helper or two of each (a source's name, a status's words, the sales
      figures), so it fetches those scripts alone, each where its card is
