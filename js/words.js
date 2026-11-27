@@ -395,6 +395,9 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    /* Where a meeting is held (a month's `meeting_channel`): My Work, the
+       Assistant and a client's Calls and visits say it alike (2026-11-27). */
+    meetChannel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Other' },
     /* A list's state column where its card holds one state: the card's
        heading already names it, so the row says when it last moved
        (Creators, Suppliers, Hiring; 2026-11-26). */
