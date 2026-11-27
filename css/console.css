@@ -9803,6 +9803,16 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .fbc-acts { display: flex; justify-content: flex-start; }
 .is-narrow .fbc-row .pr-main small { display: block; }
 
+/* A client's Short links (SHORT LINK CLICKS, 2026-11-27, js/crm.js): a link a
+   row, its label and campaign under it, its visits in the last 30 days. */
+.lkc-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 12px; align-items: center;
+  padding: 10px 15px; border-top: 1px solid var(--line-soft); }
+.lkc-row.crm-head { border-top: 0; padding: 12px 15px 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.lkc-row .pr-main { display: grid; gap: 2px; min-width: 0; }
+.lkc-row .pr-main b { font-weight: 500; overflow-wrap: anywhere; }
+.lkc-row .pr-main small { font-size: 13px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lkc-row .pr-end { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 /* THE PHONE ROW (2026-11-18, the user: every list's phone layout from one
    component, never written by hand again). On a narrow pane a list row that
    carries `.prow` is two columns, top aligned: its lead (a tick, a ring, a

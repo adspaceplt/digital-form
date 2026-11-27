@@ -1577,6 +1577,17 @@
         </section>
           </div>
 
+          <!-- The client's short links and their campaigns', each with its
+               visits in the last 30 days (SHORT LINK CLICKS, 2026-11-27). -->
+          <div class="rec-pane" data-pane="links" hidden>
+        <section class="rec-part">
+        <div class="viewhead">
+          <span class="headmark"><h2>Short links <span class="tab-n" id="crmLinkN" hidden></span></h2></span>
+        </div>
+        <div id="crmLinks"></div>
+        </section>
+          </div>
+
         <!-- What goes on the letter, chosen before it is issued. To quote
              lines that are not already on a live letter are ticked; a
              confirmed line is listed apart and stays unticked, because a
@@ -5761,6 +5772,14 @@
           <div>
             <label class="field-label" for="newLinkLabel">Label (optional)</label>
             <input class="input" id="newLinkLabel" placeholder="Event poster QR">
+          </div>
+        </div>
+        <!-- Whose link it is (SHORT LINK CLICKS, 2026-11-27): a client, or a
+             campaign and so its client. -->
+        <div class="row">
+          <div>
+            <label class="field-label" for="newLinkOwner">Client or campaign (optional)</label>
+            <select class="select" id="newLinkOwner"><option value="">Not set</option></select>
           </div>
         </div>
         

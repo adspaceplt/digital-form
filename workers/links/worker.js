@@ -328,8 +328,29 @@ async function resolve(env, slug, code) {
   return Array.isArray(rows) && rows.length ? rows[0] : { url: null, state: 'missing' };
 }
 
+/* A day's visit counted after the visitor is on their way (SHORT LINK
+   CLICKS, 2026-11-27): the redirect never waits on it, and a count that
+   fails is lost, never retried. Counts only: the slug and the QR code,
+   nothing about the visitor. */
+async function hit(env, slug, code) {
+  try {
+    await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/link_hit', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: env.SUPABASE_ANON_KEY,
+        authorization: 'Bearer ' + env.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ p_slug: slug, p_qr: code || null }),
+      signal: AbortSignal.timeout(5000)
+    });
+  } catch (e) {
+    console.error('link_hit failed for ' + slug + ': ' + e.message);
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
     }
@@ -374,6 +395,8 @@ export default {
     }
 
     if (row.state !== 'ok' || !row.url) return page(row.state === 'ok' ? 'missing' : row.state);
+    /* A person's visit is counted; a HEAD (a link checker) is not. */
+    if (request.method === 'GET' && ctx && ctx.waitUntil) ctx.waitUntil(hit(env, slug, (url.searchParams.get('q') || '').trim()));
     return goTo(carryQuery(row.url, url.searchParams));
   }
 };

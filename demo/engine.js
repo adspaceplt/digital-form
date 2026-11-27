@@ -45,7 +45,8 @@
     handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required',
     handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by',
     link_qrs: 'code slug label active revoked_at created_by created_at',
-    links: 'slug target_url title active created_by created_at updated_at',
+    links: 'slug target_url title active created_by created_at updated_at client_id campaign_id',
+    link_clicks: 'slug code day n',
     ops_due_requests: 'id task_id kind was_at wants_at reason note asked_by asked_at decider_id state decided_by decided_at decide_note',
     ops_engagement_checks: 'id engagement_id key state owner_id note updated_by updated_at',
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
@@ -1232,6 +1233,16 @@
         o.clients = sc ? pick(sc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
       }
 
+      if (table === 'links' && /(^|[\s,])clients\s*\(/.test(sel)) {
+        var lkc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
+        if (lkc && session && !scopeSeen(lkc.id, 'view')) lkc = null;
+        o.clients = lkc ? pick(lkc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
+      }
+      if (table === 'links' && /(^|[\s,])campaigns\s*\(/.test(sel)) {
+        var lkp = (DB.campaigns || []).filter(function (c) { return c.id === r.campaign_id; })[0];
+        if (lkp && session && !policyOk('campaigns', 'r')) lkp = null;
+        o.campaigns = lkp ? pick(lkp, sel.match(/campaigns\s*\(([^)]*)\)/)[1]) : null;
+      }
       if (table === 'campaigns' && sel.indexOf('clients') > -1) {
         var cc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
         var ccols = sel.match(/clients\s*\(([^)]*)\)/);
@@ -1380,6 +1391,7 @@
     quotations: { r: 'clients.quotes:view' },
     links: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
     link_qrs: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
+    link_clicks: { r: 'links:view' },
     services: { r: 'team', i: 'services:manage', u: 'services:manage', d: 'services:manage' },
     rate_card_text: { r: 'services:view' },
     rate_card_versions: { r: 'services:view' },
@@ -2170,6 +2182,10 @@
       if (arr.some(function (x) { return (DB[table] || []).some(function (y) { return same(x, y); }); }) && !policyOk(table, 'u')) {
         rows = []; api.__err = POLICY_REFUSED(table); return api;
       }
+
+      if (table === 'links') arr.forEach(function (x) {
+        if (x.campaign_id) { var lc = (DB.campaigns || []).filter(function (c) { return c.id === x.campaign_id; })[0]; x.client_id = lc ? lc.client_id : x.client_id; }
+      });
       var fresh = [], out = [];
       arr.forEach(function (x) {
         var held = (DB[table] || []).filter(function (y) { return same(x, y); })[0];
