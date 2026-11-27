@@ -94,6 +94,13 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   (`body.is-plain`); the grey frame is the signed-in console's alone (the
   user, 2026-11-13: "fully white would be ok"). Client pages stay as they
   are, never v3 (the user, 2026-11-13).
+- The confidentiality line (`#confLine`, `.confline`, the console's alone,
+  never a client page): the first thing in `admin/index.html`'s body,
+  signed in and out, 12px mute words after the lock on the page's own
+  ground, no bar, scrolling away; at a desk the rail rises beside it and it
+  centres over the sheet (the rail keeps the window's height, `tests/rail.js`);
+  words `ADspaceWords.line.confidential(agencyName)` / `confidentialShort`
+  under 640px, English in every language setting (the user, 2026-11-27).
 - Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
   portal should follow the timezone of malaysia"): a device whose clock is
   not GMT+8 (Malaysia and Singapore share it) is told on every page that
