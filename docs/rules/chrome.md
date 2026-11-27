@@ -129,7 +129,9 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
 - A plain console page (sign-in, its code step, every cover, the
   whole-screen Upgrade, `admin/offline.html`) is one ground from the
   browser's toolbar down: its bar, its root and the `theme-color` meta take
-  `--card` in both themes, the signed-in console `--chrome-solid`, set from
+  `--card` in both themes; the signed-in console's meta is the frame
+  (`--frame`) in light and `--chrome-solid` in dark (the user, 2026-11-27),
+  the head script and `wearToolbar()` alike, set from
   the tokens by `wearToolbar()` on every `is-plain` or `is-maint` change,
   both ways (2026-11-25, `tests/covers.js`).
 - The bar is two families: the console's `.console-head` (`css/console.css`)
