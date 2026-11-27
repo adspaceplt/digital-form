@@ -18,7 +18,7 @@
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     /* A meeting: two people at one table (the user, 2026-11-27: a meeting
        is its own glyph, never the calendar a date carries). */
-    meet: '<circle cx="7" cy="6.5" r="2.5"/><circle cx="17" cy="6.5" r="2.5"/><path d="M3 14a4 4 0 0 1 8 0M13 14a4 4 0 0 1 8 0M2 14h20M6 14v7M18 14v7"/>',
+    meet: '<circle cx="6.5" cy="7" r="3"/><circle cx="17.5" cy="7" r="3"/><path d="M2 16.5a4.5 4.5 0 0 1 9 0M13 16.5a4.5 4.5 0 0 1 9 0M2 16.5h20M5 16.5V21M19 16.5V21"/>',
     calplus: '<path d="M8 2v4M16 2v4M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8M3 10h18M16 19h6M19 16v6"/>',
     clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
