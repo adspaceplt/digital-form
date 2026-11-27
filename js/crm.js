@@ -281,7 +281,7 @@
         AHEAD_COLS.forEach(function (k) { c[k] = r.data[k] == null ? null : r.data[k]; if (mine) mine[k] = c[k]; });
       }
       then();
-    }, then);
+    }).catch(function () { then(); });
   }
 
   /* How long, in the units a sales cycle is actually discussed in. An hour's
@@ -2278,7 +2278,10 @@
       if (!brandHeld(c) && mayPart('clients.brand', 'work')) return { text: 'Add brand', act: 'brand', icon: 'tag' };
       if (quotes && !quotes.length && mayPart('clients.quotes', 'work')) return { text: 'Build quote', act: 'quote', icon: 'file' };
       if (quotes && quotes.some(function (q) { return q.signed_at; }) && missing.length && maySeeBilling()) {
-        return { text: 'Add billing details', act: 'billing', icon: 'file' };
+        /* The sheet that writes is drawn at Work alone; at View the line
+           goes to the pane (review J11). */
+        if (mayPart('clients.billing', 'work')) return { text: 'Add billing details', act: 'billing', icon: 'file' };
+        return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') + ' missing.', go: 'billing', icon: 'file' };
       }
     }
     if (stage === 'active' && window.ADspaceEngage && bridge.may && bridge.may('ops', 'view')) {

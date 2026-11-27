@@ -100,8 +100,12 @@
 
   /* Every template of the recipient open, each with how it is edited and
      saved: only that recipient's lists are read. */
-  function load() {
-    return read(st.rec).then(function (d) {
+  var STALE = {};
+  function load(seq) {
+    var rec = st.rec;
+    return read(rec).then(function (d) {
+      /* An answer for a recipient no longer open is dropped (review J19). */
+      if (seq != null && seq !== st.seq) throw STALE;
       st.fields = d.fields; st.free = d.free; st.items = d.items;
       return d.items;
     });
@@ -110,7 +114,7 @@
      sheet's list and the count under its Settings row alike. */
   function read(r, bare) {
     var on = function (want, ok, fn) { return r === want && ok ? soft(rpc(fn)) : null; };
-    return Promise.all([
+    var calls = [
       bare ? null : soft(rpc('template_fields_all')),
       on('clients', biz(), 'client_email_templates_list'),
       on('clients', biz(), 'invoice_email_template_get'),
@@ -122,7 +126,12 @@
       on('candidates', biz(), 'hiring_email_templates_get'),
       on('clients', biz(), 'feedback_email_templates_get'),
       on('clients', biz(), 'quote_email_templates_get')
-    ]).then(function (a) {
+    ];
+    var asked = calls.filter(Boolean).length;
+    return Promise.all(calls).then(function (a) {
+      /* Every list asked for failed: a failed read, never 0 of 0 and No
+         templates (review J10). */
+      if (asked && !a.filter(Boolean).length) throw new Error('');
       var out = [];
       var CK = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
       ((a[1] && a[1].rows) || []).forEach(function (t) {
@@ -278,7 +287,9 @@
     window.ADspaceSheet.show($('mtSheet'), { opener: st.opener });
     var box = $('mtList');
     if (window.ADspaceState && window.ADspaceState.skeleton) window.ADspaceState.skeleton(box, 3);
-    load().then(paint).catch(function (e) {
+    var seq = st.seq = (st.seq || 0) + 1;
+    load(seq).then(paint).catch(function (e) {
+      if (e === STALE) return;
       if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'Email templates', (e && e.message) || '', function () { open(btn, say, rec); });
     });
   }

@@ -1935,7 +1935,13 @@
         }).join('');
       }).join('') + '<p class="msg warn" id="qbFilesMsg" role="status" hidden></p>';
       fill(s1);
-      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { draftKeep(); B = null; } });
+      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () {
+        /* One per brand stopped partway: the brands already made are
+           listed, never kept in the draft to be made again. */
+        var part = B && B.partMade, c = B && B.ctx;
+        draftKeep(); B = null;
+        if (part && c) c.reload();
+      } });
       cards(true);
       $('qbBox').querySelector('.sheet-body').scrollTop = 0;
       sidePaint(null);
@@ -2718,6 +2724,11 @@
     if (!B || B.made || B.editing || B.revises || !B.card || B.base == null) return;
     var s;
     try { s = draftOut(); } catch (e) { return; }
+    if (B.partMade) {
+      s.brands = s.brands.slice(B.partMade);
+      s._bi = Math.max(0, (s._bi || 0) - B.partMade);
+      if (!s.brands.length) return;
+    }
     if (draftCmp(s) === B.base) return;
     var ctx = B.ctx;
     var bad = function (e) { ctx.msg('qtMsg', 'The draft was not saved. ' + said(e), 'err'); };
@@ -3868,6 +3879,7 @@
           if (r.error || d.error) {
             go.disabled = false; if (B) B.saving = false;
             if (!B) return;
+            B.partMade = made.length;
             $('qbMsg').textContent = (made.length ? made.length + (made.length === 1 ? ' draft' : ' drafts') + ' saved. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
             $('qbMsg').className = 'msg err';
             return;
