@@ -110,7 +110,7 @@ with recursive hist(client_id, name) as (
   select h.client_id, lower(btrim(m[1]))
     from hist h
     join public.activity_log a on a.action = 'client.edited' and lower(btrim(a.subject)) = h.name
-    cross join lateral regexp_matches(a.detail, 'Brand name: (.+?) → ([^;]+)', 'g') m
+    cross join lateral regexp_matches(a.detail, 'Brand name: ([^;→]+) → ([^;]+)', 'g') m
    where lower(btrim(m[2])) = h.name and nullif(btrim(m[1]), '') is not null and lower(btrim(m[1])) <> 'not set'
 ),
 one as (
