@@ -1374,7 +1374,8 @@
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
        WhatsApp Manage and its Feedback request part, the client read. */
     /* Request feedback (CLIENT FEEDBACK, 2026-11-24; the user: "only
-       requested feedback (via email) to main pic"): a client, never a lead,
+       requested feedback (via email) to main pic"): a client (Active, Paused
+       or Past, 2026-11-27), never a lead,
        at Clients Work, where this colleague may send email by hand; the
        database refuses the same (`feedback_mail_begin`). */
     /* FEEDBACK COPIED FOR WHATSAPP (2026-11-27): or copied for the
@@ -2059,7 +2060,7 @@
   }
   /* PAST CLIENTS LEAVE THE CLIENT PORTAL (2026-11-24; the review's finding
      3): a Past client's contacts are refused by the portal unless the team
-     keeps its access on, from the ⋯ (Enable access / Revoke access, at
+     keeps its access on, from the ⋯ (Allow portal sign-in / Stop portal sign-in, at
      Clients: Contacts Work, the Past band at Work). Moved back to Active,
      the client is open again by itself; moved to Past again, an earlier keep
      no longer stands (`portal_kept_at` against `stage_since`, as
@@ -2092,16 +2093,16 @@
   }
   function askPortalKept(c) {
     window.ADspaceConfirm.ask({
-      title: 'Enable access', go: 'Enable access', wait: true,
+      title: 'Allow portal sign-in', go: 'Allow portal sign-in', wait: true,
       body: 'The contacts of ' + c.name + ' with portal access will be able to sign in to the client portal while it is Past.'
     }, function () {
-      return setPortalKept(c, true, function () { msg('crmWorkMsg', 'Access enabled.', 'ok'); });
+      return setPortalKept(c, true, function () { msg('crmWorkMsg', 'Portal sign-in allowed.', 'ok'); });
     });
   }
   function portalKeptOff(c) {
     setPortalKept(c, false, function () {
       msg('crmWorkMsg', '', '');
-      undoBar('Access revoked.', function () {
+      undoBar('Portal sign-in stopped.', function () {
         setPortalKept(c, true).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
       });
     }).then(function (said) { if (said) msg('crmWorkMsg', said, 'err'); });
@@ -2888,7 +2889,7 @@
   var FB_SAID = { denied: 'You do not have permission to request feedback. Please ask an admin.',
     'send-off': 'Sending email is switched off for you. Please ask an admin.',
     'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
-    'not-active': 'Feedback can be requested of an active client only. Set the client to Active first.',
+    'not-active': 'Feedback can be requested from a client only. Set the lead to Active first.',
     'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
@@ -2965,7 +2966,7 @@
   }
   function askFeedback(c) {
     var primary = (state.contacts || []).filter(function (k) { return k.client_id === c.id && k.is_primary && !k.archived_at; })[0];
-    var byMail = !bridge.may || bridge.may('send.email'), byWa = !bridge.may || bridge.may('send.whatsapp');
+    var ways = fbWays(), byMail = ways.mail, byWa = ways.wa;
     var copy = { label: 'Copy for WhatsApp', gate: 'whatsapp',
       run: function (v, b) { return copyFeedback(c, (v && v.k) || 'quick', false, b); } };
     window.ADspaceConfirm.ask({
@@ -2999,14 +3000,25 @@
   /* Request feedback is the Feedback part's head act while that part is
      shown (the user approved the mockup, 2026-11-24), else the record's ⋯:
      offered once on a screen, as Log call is. */
+  /* Drawn only where it can be made (2026-11-27): an email needs the
+     primary contact's address, a copy for WhatsApp a primary contact; read
+     once the client's contacts are in. */
+  function fbWays() {
+    var c = state.client;
+    var p = c && state.contactsFor === c.id && (state.contacts || []).filter(function (k) {
+      return k.client_id === c.id && k.is_primary && !k.archived_at;
+    })[0];
+    return { mail: !!p && !!String(p.email || '').trim() && (!bridge.may || bridge.may('send.email')),
+      wa: !!p && (!bridge.may || bridge.may('send.whatsapp')) };
+  }
   function paintFbAct() {
-    var here = TABS[groupOf(pane)].indexOf('feedback') > -1;
-    if ($('crmFbAsk')) $('crmFbAsk').hidden = !state.fbMay;
-    if ($('crmFeedback')) $('crmFeedback').hidden = !state.fbMay || here;
-    /* Where only one way is this colleague's, the act opening the sheet
-       is that way's send (`data-gate`); with both, each answer in the
-       sheet carries its own, so one switched off leaves the other. */
-    var byMail = !bridge.may || bridge.may('send.email'), byWa = !bridge.may || bridge.may('send.whatsapp');
+    var here = TABS[groupOf(pane)].indexOf('feedback') > -1, ways = fbWays(), may = state.fbMay && (ways.mail || ways.wa);
+    if ($('crmFbAsk')) $('crmFbAsk').hidden = !may;
+    if ($('crmFeedback')) $('crmFeedback').hidden = !may || here;
+    /* Where only one way is open, the act opening the sheet is that way's
+       send (`data-gate`); with both, each answer in the sheet carries its
+       own, so one switched off leaves the other. */
+    var byMail = ways.mail, byWa = ways.wa;
     var gate = byMail && byWa ? '' : byMail ? 'email' : 'whatsapp';
     ['crmFbAsk', 'crmFeedback'].forEach(function (id) {
       var b = $(id);
@@ -5619,6 +5631,7 @@
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         state.contactsFor = state.client.id;
+        paintFbAct();
         partN('crmContacts', state.contacts.length);
         paintSummary();
         var gone = all.filter(function (c) { return c.archived_at; });
