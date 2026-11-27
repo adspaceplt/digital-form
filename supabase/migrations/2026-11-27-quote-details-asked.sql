@@ -194,7 +194,7 @@ begin
    where x.kind = t.kind and x.lang = t.lang;
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'team.changed', 'Email templates',
-          'Details needed (' || case t.lang when 'zh' then '中文' else 'English' end || ') · ' || array_to_string(moved, ' · '));
+          'Ask for details (' || case t.lang when 'zh' then '中文' else 'English' end || ') · ' || array_to_string(moved, ' · '));
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.quote_email_template_save(text, text, text, text, text) from public, anon;
@@ -218,7 +218,7 @@ returns text
 language sql immutable set search_path = public as $$
   select string_agg('• ' || x.w, E'\n' order by x.o) from (
     select f.o, case f.k
-      when 'registration' then case when p_zh then '商业登记号码（BRN）及注册名称' else 'Business Registration No. (BRN) and registered name' end
+      when 'registration' then case when p_zh then '商业注册号码（BRN）及注册名称' else 'Business Registration No. (BRN) and Registered Name' end
       when 'industry' then case when p_zh then '行业' else 'Industry' end
       when 'online' then case when p_zh then '网站或社交媒体账号' else 'Website or social media account' end
       when 'commence' then case when p_zh then '计划开始时间' else 'Planned commencement' end end as w
@@ -863,7 +863,7 @@ begin
         when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
         when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'feedback_quiet_months' then 'Feedback last requested within' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
         when 'quote_reply_days' then 'Contact within'
-        when 'quote_details_days' then 'Details reply window' when 'quote_details_close_days' then 'Closing period after Reply by'
+        when 'quote_details_days' then 'Details reply within' when 'quote_details_close_days' then 'Close after Reply by'
         when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
         when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
         when 'stage_back_days' then 'Past dates on stage moves'

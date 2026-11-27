@@ -6834,8 +6834,8 @@
     ['quote_reply_days', 'Contact a prospect ready to proceed within', 'reply', 'Quotation portal'],
     /* Details asked of a website prospect: their reply window, then the
        days after it before the request closes as Not quoted (2026-11-27). */
-    ['quote_details_days', 'Details reply window', 'reply', 'Quotation portal'],
-    ['quote_details_close_days', 'Closing period after Reply by', 'due', 'Quotation portal']];
+    ['quote_details_days', 'Details reply within', 'reply', 'Quotation portal'],
+    ['quote_details_close_days', 'Close after Reply by', 'due', 'Quotation portal']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
      Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a
@@ -6848,7 +6848,7 @@
   function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
   var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
-    quote_details_days: ['Details reply window', per('working day')], quote_details_close_days: ['Closing period after Reply by', per('day')],
+    quote_details_days: ['Details reply within', per('working day')], quote_details_close_days: ['Close after Reply by', per('day')],
     term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 to 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
     term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };

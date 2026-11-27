@@ -148,7 +148,7 @@
          ASKED, 2026-11-27), in English and Chinese. */
       ((a[10] && a[10].rows) || []).forEach(function (t) {
         out.push({ id: 'quote:' + t.kind + ':' + t.lang, rec: 'clients', sec: 'Quotation requests',
-          name: 'Details needed (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'quote', btn: true,
+          name: 'Ask for details (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'quote', btn: true,
           subject: t.subject, body: t.body, button: t.button,
           save: function (v) {
             return saveWith('quote_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });

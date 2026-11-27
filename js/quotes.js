@@ -957,10 +957,10 @@
     'no-email': 'This prospect gave no email address. Choose Copy for WhatsApp.',
     'email-off': window.ADspaceWords.line.emailHandOff,
     'send-off': window.ADspaceWords.line.emailPortalOff,
-    'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but its delivery could not be confirmed. Check the Email log before sending again.',
+    'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but its delivery could not be confirmed. Check the Email tab before sending again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
-  var ASK_FIELDS = [['registration', 'Business Registration No. and registered name'], ['industry', 'Industry'],
+  var ASK_FIELDS = [['registration', 'Business Registration No. and Registered Name'], ['industry', 'Industry'],
     ['online', 'Website or social media account'], ['commence', 'Planned commencement']];
   function lacks(q) {
     var k = q.contact || {};
@@ -992,7 +992,7 @@
       var words = ask(v).then(function (d) { if (d.why) { why = d.why; return null; } return d.text || null; });
       return window.ADspaceCopy.later(b, words).then(function (copied) {
         if (why) return why;
-        done(copied ? 'Copied. Paste it into WhatsApp to ' + (((q.contact || {}).name) || 'the prospect') + '.' : 'Details asked. Copy the message again from Ask again.');
+        done(copied ? 'Copied. Paste it into WhatsApp to ' + (((q.contact || {}).name) || 'the prospect') + '.' : 'Request saved, but the message was not copied. Choose Ask again to copy it.');
         return '';
       });
     } };
@@ -1058,7 +1058,7 @@
         if (r.error || d.error) return MATCH_SAID[d.error] || said(r.error || d.error);
         ctx.reload(function () {
           if (take === 'lead') {
-            ctx.undo('Kept as a new lead.', function () {
+            ctx.undo('New lead kept.', function () {
               ctx.db.rpc('quotation_match_take', { p_id: q.id, p_take: null }).then(function (u) {
                 var e = u.error || (u.data && u.data.error);
                 if (e) { ctx.msg('qtMsg', MATCH_SAID[e] || said(e), 'err'); return; }
@@ -1072,7 +1072,7 @@
     };
     if (take === 'lead') { go().then(function (why) { if (why) ctx.msg('qtMsg', why, 'err'); }); return; }
     window.ADspaceConfirm.ask({ title: 'Add as a new brand of ' + name + '?', go: 'Add', wait: true,
-      body: q.brand + ' will be billed through ' + name + '\'s primary billing entity. Billing can remove it later.' }, go);
+      body: q.brand + ' will be billed through ' + name + '\'s primary billing entity. It can be removed later in Billing.' }, go);
   }
   function set(q, what, ctx, ok) {
     ctx.db.rpc('quotation_set', { p_id: q.id, p_what: what }).then(function (r) {
