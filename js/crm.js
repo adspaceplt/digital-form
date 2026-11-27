@@ -2889,7 +2889,7 @@
   var FB_SAID = { denied: 'You do not have permission to request feedback. Please ask an admin.',
     'send-off': 'Sending email is switched off for you. Please ask an admin.',
     'email-off': 'Send by email is switched off in Settings. Please ask an admin.',
-    'not-active': 'Feedback can be requested of a client only, not a lead.',
+    'not-active': 'Feedback can be requested from a client only. Set the lead to Active first.',
     'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
