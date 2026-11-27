@@ -111,8 +111,14 @@
     /* A line about a client names it by its record ({ name, id }): the
        client's id is kept with the line, so its history follows the record
        through a rename (`activity_log.client_id`, 2026-11-27). */
-    var cid = null;
-    if (subject && typeof subject === 'object') { cid = subject.id || null; subject = subject.name; }
+    /* A campaign's or a creator's line names it the same way, by
+       { name, campaign } or { name, creator } (`activity_log.campaign_id`,
+       `creator_id`). */
+    var cid = null, camp = null, cr = null;
+    if (subject && typeof subject === 'object') {
+      cid = subject.id || null; camp = subject.campaign || null; cr = subject.creator || null;
+      subject = subject.name;
+    }
     var row = {
       actor: actor || 'unknown',
       action: action,
@@ -120,6 +126,8 @@
       detail: detail || null
     };
     if (cid) row.client_id = cid;
+    if (camp) row.campaign_id = camp;
+    if (cr) row.creator_id = cr;
     /* The record the line is about, where one is named (a report's id,
        2026-11-03), so that record reads its own lines. */
     if (ref) row.ref = ref;
@@ -8360,6 +8368,9 @@
   ];
   var sys = {};
   var editingSlug = null;
+  /* Each link's visits in the last 30 days (SHORT LINK CLICKS, 2026-11-27),
+     by slug; null where the read failed, and then no count is drawn. */
+  var clicks = {};
 
   // What a slug may be: the part after the slash, and safe in a URL as typed.
   function slugOk(s) { return /^[a-z0-9][a-z0-9._-]{2,79}$/.test(s); }
@@ -8385,7 +8396,7 @@
   function loadLinks() {
     var box = $('linkList');
     box.innerHTML = '<div class="empty">Loading…</div>';
-    var left = 2, failed = null;
+    var left = 3, failed = null;
     var settle = function () {
       if (--left) return;
       if (failed) {
@@ -8400,10 +8411,15 @@
       }
       paintLinks();
     };
-    db.from('links').select('*').order('slug').then(function (r) {
+    db.from('links').select('*, clients(name), campaigns(title)').order('slug').then(function (r) {
       if (r.error) failed = r.error.message; else links = r.data || [];
       settle();
     }).catch(function (e) { failed = String((e && e.message) || e); settle(); });
+    db.from('link_clicks').select('slug, n').gte('day', window.ADspaceClock.addDays(window.ADspaceClock.today(), -29)).then(function (r) {
+      clicks = r.error ? null : {};
+      if (clicks) (r.data || []).forEach(function (k) { clicks[k.slug] = (clicks[k.slug] || 0) + Number(k.n || 0); });
+      settle();
+    }).catch(function () { clicks = null; settle(); });
     db.from('team_members').select('id, name, card_slug, card_key, card_on, active').order('card_slug')
       .then(function (r) {
         cards = r.error ? null : (r.data || []).filter(function (t) { return t.card_slug; });
@@ -8468,7 +8484,8 @@
     var q = $('linkSearch').value.trim().toLowerCase();
     return links.filter(function (l) {
       if (!q) return true;
-      return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || ''))
+      return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || '') + ' ' +
+        ((l.clients && l.clients.name) || '') + ' ' + ((l.campaigns && l.campaigns.title) || ''))
         .toLowerCase().indexOf(q) > -1;
     });
   }
@@ -8612,6 +8629,13 @@
     return row;
   }
 
+  /* The label, then whose link it is and its visits in the last 30 days
+     (SHORT LINK CLICKS, 2026-11-27). */
+  function linkMeta(l) {
+    var n = clicks && clicks[l.slug] != null ? clicks[l.slug] : (clicks ? 0 : null);
+    return [l.title || '', (l.campaigns && l.campaigns.title) || (l.clients && l.clients.name) || '',
+      n == null ? '' : n + (n === 1 ? ' visit' : ' visits') + ' in 30 days'].filter(Boolean).join(' \u00b7 ');
+  }
   function linkRow(l) {
       var off = l.active === false;
       var row = document.createElement('div');
@@ -8623,7 +8647,7 @@
            (2026-10-27, LNK-10). */
         '<span class="link-slug">/' + esc(l.slug) + '</span>' +
         '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
-        '<span class="link-label">' + esc(l.title || '') + '</span>' +
+        '<span class="link-label">' + esc(linkMeta(l)) + '</span>' +
         '<span class="link-act">' +
           iconBtn('copy', 'copy', 'Copy short link') +
           /* Open tests the link as a person meets it, as a namecard's row
@@ -8696,12 +8720,48 @@
     $('newSlug').value = link ? link.slug : '';
     $('newTarget').value = link ? (link.target_url || '') : '';
     $('newLinkLabel').value = link ? (link.title || '') : '';
+    ownerChoices(link ? (link.campaign_id ? 'campaign:' + link.campaign_id : link.client_id ? 'client:' + link.client_id : '') : '');
     msg('linkMsg', '');
     /* The portal's one form sheet, so it opens over the register rather than
        unfolding above it, and nothing inside takes focus: a field taking
        focus on a phone raises the keyboard and zooms the page past the rest
        of the form. */
     window.ADspaceSheet.show($('addLinkBox'), { opener: opener || null });
+  }
+  /* Whose link it is (SHORT LINK CLICKS, 2026-11-27): a client, or one of
+     the clients' campaigns, which makes the link its client's too. The
+     choices are the clients and campaigns this colleague may read; one
+     they may not keeps its place so a save never clears it. */
+  function ownerChoices(want) {
+    var sel = $('newLinkOwner');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Not set</option>';
+    sel.value = '';
+    var keep = function () {
+      if (want && !sel.querySelector('option[value="' + want + '"]')) {
+        var o = document.createElement('option'); o.value = want; o.textContent = 'Unchanged'; o.setAttribute('data-kept', '');
+        sel.appendChild(o);
+      }
+      sel.value = want || '';
+    };
+    Promise.all([
+      may('clients', 'view') ? db.from('clients').select('id, name, stage').order('name') : Promise.resolve({ data: [] }),
+      may('campaigns.campaigns', 'view') ? db.from('campaigns').select('id, title, clients(name)').order('created_at', { ascending: false }) : Promise.resolve({ data: [] })
+    ]).then(function (r) {
+      var add = function (label, rows) {
+        if (!rows.length) return;
+        var g = document.createElement('optgroup'); g.label = label;
+        rows.forEach(function (x) { var o = document.createElement('option'); o.value = x[0]; o.textContent = x[1]; g.appendChild(o); });
+        sel.appendChild(g);
+      };
+      /* A lead is not yet a client: its links wait until it is one. */
+      add('Clients', ((r[0] && !r[0].error && r[0].data) || []).filter(function (c) { return c.stage !== 'lead'; })
+        .map(function (c) { return ['client:' + c.id, c.name || '']; }));
+      add('Campaigns', ((r[1] && !r[1].error && r[1].data) || []).map(function (c) {
+        return ['campaign:' + c.id, (c.title || 'Untitled campaign') + (c.clients && c.clients.name ? ' \u00b7 ' + c.clients.name : '')];
+      }));
+      keep();
+    }).catch(keep);
   }
   function shutLinkForm() {
     if (window.ADspaceSheet.isOpen($('addLinkBox'))) window.ADspaceSheet.close();
@@ -8814,11 +8874,19 @@
       linkBad('newSlug', '/' + slug + ' is a colleague\'s namecard. Choose another short link.'); return;
     }
 
+    var owner = String(($('newLinkOwner') && $('newLinkOwner').value) || '').split(':');
     var body = {
       slug: slug, target_url: target,
       title: $('newLinkLabel').value.trim() || null,
-      created_by: actor || null
+      created_by: actor || null,
+      client_id: owner[0] === 'client' ? owner[1] : null,
+      campaign_id: owner[0] === 'campaign' ? owner[1] : null
     };
+    /* Unchanged: an owner this colleague may not read stays as it was. */
+    var was0 = links.filter(function (l) { return l.slug === editingSlug; })[0];
+    if (was0 && $('newLinkOwner') && $('newLinkOwner').selectedOptions[0] && $('newLinkOwner').selectedOptions[0].hasAttribute('data-kept')) {
+      body.client_id = was0.client_id || null; body.campaign_id = was0.campaign_id || null;
+    }
     var was = editingSlug;
     var go = this;
     /* The press answers on the button while the write is out, and a write

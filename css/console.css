@@ -4693,6 +4693,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    way there sits under the facts it changes, on their margin. */
 #perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
+/* A late part of a fact (a client not sent a feedback request within the setting). */
+.ovfacts dd .is-late { color: var(--err); }
 .pane-form-head > .btn { margin-left: auto; }
 /* The client record's read groups (Billing, Brand) stand on white cards, as
    its lists and the colleague's and the supplier's records do; the rail
@@ -9698,6 +9700,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    showing a value moves nothing. */
 .prs-secret dd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .prs-secret-v { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+/* A hidden number in the edit sheet: masked until Show (review J3). */
+.prs-secret-edit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.prs-secret-edit > .input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
 .prs-eye { align-self: center; margin-block: calc((1.55em - var(--ctl-h)) / 2); }
 @media (pointer: coarse) { .prs-eye { margin-block: calc((1.55em - var(--tap)) / 2); } }
 .prs-files { display: grid; }
@@ -9792,6 +9797,16 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .fbc-by { margin: 0; font-size: 13px; color: var(--ink-mute); }
 .fbc-acts { display: flex; justify-content: flex-start; }
 .is-narrow .fbc-row .pr-main small { display: block; }
+
+/* A client's Short links (SHORT LINK CLICKS, 2026-11-27, js/crm.js): a link a
+   row, its label and campaign under it, its visits in the last 30 days. */
+.lkc-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 12px; align-items: center;
+  padding: 10px 15px; border-top: 1px solid var(--line-soft); }
+.lkc-row.crm-head { border-top: 0; padding: 12px 15px 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.lkc-row .pr-main { display: grid; gap: 2px; min-width: 0; }
+.lkc-row .pr-main b { font-weight: 500; overflow-wrap: anywhere; }
+.lkc-row .pr-main small { font-size: 13px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lkc-row .pr-end { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* THE PHONE ROW (2026-11-18, the user: every list's phone layout from one
    component, never written by hand again). On a narrow pane a list row that

@@ -16,7 +16,7 @@ item it takes.
 | A `session_01RVzkaPG9yZ8jep5cyPdzJv` | Campaign and creator activity keyed by a system id, not name (as #1560 did for clients); quotation salesperson designation read by member id, not name; tests/sql.js split under its 900 s limit; a list of other name-keyed lookups in supabase/ | Nothing |
 | J `session_01RVzkaRQqvJgqAzQmNrcu77` | J's #1507 review findings: R2 console (4,9,10,11,12,16,17,18,19), R3 client pages (8,13; user "go" given), R4 migration (5,6,14,15) `2026-11-27-quotation-review-holds.sql`, R5 bukku-sync (7), R6 finding 3 option A (personnel IC and bank numbers masked; Show in Edit recorded; branch claude/personnel-masked). Merges in that order. | Nothing |
 | TS `session_01RVzkaMbprQAtTmbzFaydv7` | Tone sweep since 863dddc (includes every 27 Nov build); the user's approved words are kept | "go" if a client page's words change |
-| LK `session_01RVzkaMKCUxnGsrPFDHT7wm` | Linked sections (user: "proceed"), one release each, from the flows https://claude.ai/artifact/FGEaGHupbvsRAeApy4c86Y: 1 the client's change note on the My Work task; 2 Completed booking makes a draft Bukku bill; 3 feedback feeds r_satisfaction and the client's band; 4 Short Links daily click counts on the client or campaign (a Worker deploy) | "go" if a client page changes |
+| LK `session_01RVzkaMKCUxnGsrPFDHT7wm` | Linked sections: all four merged (#1566, #1575, #1578, #1581); the `adspace-links` Worker deployed from main by the coordinator 27 Nov 15:24 UTC (sha256 d33e8f90, a test visit counted and removed) | Done, ended |
 | V2 `session_01RVzkaQaHg2BNhbgxqs2w82` | Automatic ?v= stamps: `?v=dev` placeholder, `.github/workflows/pages.yml`, per-file content hash (user "go"). Builds and opens a PR but does NOT merge. | **The user's click** at merge: GitHub → Settings → Pages → Source → "GitHub Actions". The coordinator tells the user when, then merges. |
 
 Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
@@ -40,7 +40,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 2. **Surface tokens and `data-layout`**: merged, #1502 (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
 3. **Style comparison** (session H) on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
 4. **Client pages**: merged, #1507 (J): the portal at six tabs, `/creators/` and `/creator/` in sections, `data-layout="v3"` on every client page, the 404 and the page template (the front door stays `shaded`); the selection page's view strip full width on a phone. J's review of main since 25 Nov (19 findings, 2 must fix: the health retention trigger, Build quote's key on a tab switch) is with the coordinator.
-5. **Linked sections** (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
+5. **Linked sections**: DONE (27 Nov, LK): Content Review → My Work note #1566 (261127.edbc); creator bill on Completed #1575 (261127.4242, `bukku-sync` v72); client feedback → Performance and the Overview #1578 (261127.b7b5); Short Links clicks #1581 (261127.07b9, Worker deployed 27 Nov). Was: (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
    - Content Review → My Work: a client's approval or request for changes on a set moves its task's stage (derived on load where the rules prefer it).
    - Creator campaign → Bukku bills: a completed booking creates the creator's payable bill in Bukku (check `creator_bill_made` first).
    - Client feedback → Performance and the Dashboard: a client's ratings feed the account manager's month and the client's standing.
@@ -56,6 +56,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 
 13. **DONE #1550 (261127.f663), #1553 (261127.529f), #1556 (261127.d6c1).** The Build quote tick, the PDF (fees page and Figures agreed), the /quote/ link, Build quote's Summary and the S$ line; migration `2026-11-27-quote-period-total.sql` live. **Period total on a quotation** (approved by the user, 27 Nov, coordinator session): a tick in Build quote's Quotation section, "Show totals for the whole period", off by default, per quotation. Ticked: under Monthly incl. SST a line "Total for {n} months incl. SST" (each monthly line's own Months, term discount included); then, set apart below the One-time block (spaced down as its own block, so it never reads as the One-time section's total), "Total incl. SST" = period total + one-time incl. SST, with one note line "{n} months of the monthly fee, plus one-time fees. Advertising budget not included." Only the period line where there are no one-time fees; no effect on a one-time-only quotation; S$ approximation on both for SG billed in RM. PDF and the /quote/ link: client-facing, screenshots to the user for "go". Planning snapshot sent to the user 27 Nov. Start in a fresh session after the weekly usage limit allows.
 14. **Today's full gate on main**: run on 7c85e8b (27 Nov); four suites failing (words, adsreport, uxaudit, pdflibhash), logged in `docs/rules/logged-defects.md`; they are the next batch.
+15. **Colleague lookups by system ID, not name** (the user, 27 Nov: "queue it"): `quote_sign_member` (45 call sites), `quote_sign_member_sees`, `client_rep`, `client_details_submit`, `sm_reports_published_notice`, `feedback_request` still match `team_members` by name. Move each to the colleague's id, as #1571 did for `quotations.made_by_id` (column, before-insert trigger, backfill only where one colleague holds the name, column grant to `authenticated`). One migration release; list in `docs/DECISIONS.md` (A, #1571).
 
 ## Logged defects (fail on main, not yet fixed)
 
@@ -65,6 +66,10 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 
 | Release | Build |
 |---|---|
+| #1566 The client's changes on its My Work task | 261127.edbc |
+| #1575 Creator draft bill on Completed (bukku-sync v72) | 261127.4242 |
+| #1578 Client satisfaction from feedback; the Overview's Client feedback | 261127.b7b5 |
+| #1581 Short links' owner and visits (Worker deployed) | 261127.07b9 |
 | Copy review since 863dddc, console (#1565) | 261127.940d |
 | #1478 Build quote copy | 261126.2136 |
 | #1479 Settings sheets | 261126.2fe0 |
@@ -127,11 +132,15 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 | A website request's ⋯ in three groups (Download PDF, Show quotation link, Ask for details · Edit, Cancel quote · Delete), Delete under the delete rule (migration `2026-11-27-quote-request-deleted.sql`, applied and read back); every quotation reference pressed to copy (`ADspaceCopy.ref`, the Register's too); Preview keeps its leaving mark in a sheet's foot | (this PR) |
 | Facts: an address keeps its line (two facts, the value the rest; it breaks only after @ or a dot); a quotation's check reads a Bukku-held company as words under Kept in Bukku. | (this PR) |
 | #1560 A client's history kept by its id: `activity_log.client_id` (migration `2026-11-27-activity-client-id.sql`, applied and read back; 2,834 of 4,568 lines backfilled, 1,734 null, Bizgrowth 24 of 24); a campaign's and a creator's panes still read by name (next) | 261127.d45e |
+| #1571 A campaign's and a creator's history kept by id (`activity_log.campaign_id`, `creator_id`; migration `2026-11-27-activity-campaign-creator-id.sql`, applied by the coordinator: 155 of 417 campaign lines, 69 of 153 creator lines); a quotation's Prepared by role by `made_by_id` (`2026-11-27-quotation-made-by-id.sql` with its column grant, applied: 5 of 12 filled); `tests/sql.js` 897 s → 258 s (`lastDefs` linear, memoised). Listed, not fixed: functions still matching a colleague by `clients.owner` name or `made_by` (DECISIONS 2026-11-27) | (this PR) |
 | A quotation's brand follows its one named brand (1 row backfilled: ADP/QT2611-B02 → Lemmermeyer Malaysia); a signed company that differs from the client record is kept or taken at the check and applied on approval; a signed quotation is never deleted, with its client or alone (same migration) | (this PR) |
 | Full gate on main 7c85e8b (tests 1d34edb): 263 passed, 4 failing (words #1556, adsreport, uxaudit, pdflibhash), logged; taxcodes passes again | (this PR) |
 | Rate Card PDF: a term discount reads −10% (true minus, no space), PDF item 13 | (this PR) |
 | Console fixes from J's review (4, 9, 10, 11, 12, 16, 17, 18, 19): One per brand partway, failed reads named (creators, email templates), view-only billing to its tab, old check-in photos retaken, Bukku PDF link, `.then(ok).catch`, migrations' apply order; `sql` stops a leftover server | (this PR) |
 | Client pages from J's review (8, 13): a failed read keeps Content Review and Video Scripts drawn with Try again; a quotation's TERMS never split onto an extra page; demo engine rebuilt | (this PR) |
+| Quotation holds from J's review (5, 6, 14, 15): a confirmed revision opened by the client is sent out; an expired draft is refused at Confirm; a change request re-checks under its lock; a bad price-check input still counts. Migration `2026-11-27-quotation-review-holds.sql` | (this PR) |
+| Bukku from J's review (7): a retry never links a contact that took the same code under another company; bukku-sync redeployed | (this PR) |
+| Personnel numbers masked (J3, option A): the read holds last fours alone, Show reveals and records, a save never writes the mask back; migration `2026-11-27-personnel-numbers-masked.sql`. Design rule: a section never resizes a base element | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;

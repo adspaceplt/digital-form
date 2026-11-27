@@ -36,8 +36,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   record as subject), a function's line takes the client its transaction
   wrote (`activity_log_client`, `activity_client_note`; an id, never a
   name), and the client's Activity and rail read by it. A campaign's and a
-  creator's panes still key on the subject the row was written with, so
-  their rename leaves older rows behind.
+  creator's lines carry theirs the same way (`activity_log.campaign_id`,
+  `creator_id`: the console's `{ name, campaign }` / `{ name, creator }`, a
+  function's `campaign.*` / `creator.*` line from `activity_campaign_note`,
+  `activity_creator_note` and `activity_log_ids`), and their panes read by it.
 - The Activity record reads its chosen section alone (`.in('action', actionsOf(k))`), newest first, 200 a page, Show older reading the next; a failed read is `failLine` with Try again (ACT-1, ACT-2, 2026-10-22).
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity, and every Performance history) is

@@ -1301,6 +1301,8 @@
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
     if (!same && !restoring) window.scrollTo(0, 0);
+    state.fbOvFor = null; state.fbOv = null;
+    state.links = null;
     state.client = c;
     /* The list was read once; Content Review's settings edit the same
        handles and logo, so a record opened from the list is read again and
@@ -1474,7 +1476,7 @@
      open it on their part). */
   /* In the order a client is won (2026-11-25, the user): Overview,
      Interactions, Brand, Services, Account, Engagements. */
-  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], brand: ['brand'], services: ['services', 'documents'],
+  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], brand: ['brand'], services: ['services', 'documents', 'links'],
     account: ['contacts', 'billing'], engagements: ['engagements', 'checklists'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
@@ -1508,6 +1510,9 @@
     if (k === 'activity') return maySeeActivity();
     /* Feedback is asked of a client, never a lead (CLIENT FEEDBACK, 2026-11-24). */
     if (k === 'feedback') return !!state.client && bandKey(state.client.stage) !== 'clients.leads' && mayPart('clients', 'view');
+    /* A client's short links (SHORT LINK CLICKS, 2026-11-27): read at Short
+       Links View, drawn once the client holds one. */
+    if (k === 'links') return !!state.client && mayPart('links', 'view') && !!(state.links && state.links.length);
     if (k === 'engagements') {
       var c = state.client, ENG = window.ADspaceEngage;
       return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
@@ -1554,6 +1559,7 @@
     if (parts.indexOf('calls') > -1 && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
     if (parts.indexOf('feedback') > -1) loadFeedback();
+    if (group === 'services' && (visit || !state.links)) loadShortLinks();
     paintFbAct();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
@@ -1780,7 +1786,7 @@
     /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
        the services and the letters; a section the reader may not open is
        not drawn, and one whose read was refused says so, never empty. */
-    var secs = [ovQuotes(), ovTouches(), ovServices(c), ovDocuments(c), ovContact(c)].join('');
+    var secs = [ovQuotes(), ovTouches(), ovFeedback(c), ovServices(c), ovDocuments(c), ovContact(c)].join('');
     box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
@@ -1840,6 +1846,44 @@
   /* Nothing there is a line, not a dashed box and not a sentence explaining
      what the section would have held. */
   function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
+
+  /* The client's standing (the linked sections, 2026-11-27): the newest
+     answer's score in the Feedback part's own words, its form and day, red
+     in the low band, and when a request was last sent, {n} months ago in red
+     past the Business setting. Read with the record from the Feedback
+     part's own function, once a client. */
+  function ovFeedback(c) {
+    if (!partOk('feedback')) return '';
+    if (state.fbOvFor !== c.id) {
+      state.fbOvFor = c.id; state.fbOv = null;
+      db.rpc('feedback_client', { p_client: c.id }).then(function (r) {
+        if (!state.client || state.client.id !== c.id) return;
+        if (r.error || (r.data || {}).error) throw r.error || new Error((r.data || {}).error);
+        state.fbOv = r.data.requests || [];
+        ovFailed('feedback', false);
+        paintSummary();
+      }).catch(function () { if (state.client && state.client.id === c.id) ovFailed('feedback', true); });
+      return '';
+    }
+    var rows = state.fbOv;
+    if (!rows) return '';
+    if (!rows.length) return ovSection('Client feedback', 'feedback', 'View all', ovNone(window.ADspaceWords.line.noFeedback));
+    var by = function (k) { return function (a, b) { return String(b[k] || '') < String(a[k] || '') ? -1 : 1; }; };
+    var asked = rows.slice().sort(by('created_at'))[0];
+    var answered = rows.filter(function (r) { return r.response; }).map(function (r) { return Object.assign({ kind: r.kind }, r.response); })
+      .sort(by('submitted_at'))[0];
+    var months = Number(window.ADspaceMoney.setting('feedback_quiet_months')) || 0;
+    /* Whole months since the client was last asked, Malaysia's days. */
+    var a0 = window.ADspaceClock.day(asked.created_at).split('-').map(Number);
+    var t0 = String(window.ADspaceClock.today()).split('-').map(Number);
+    var since = (t0[0] - a0[0]) * 12 + t0[1] - a0[1] - (t0[2] < a0[2] ? 1 : 0);
+    var pairs = [];
+    pairs.push(['Latest score', answered
+      ? '<span' + (answered.band === 'low' ? ' class="is-late"' : '') + '>' + esc([fbScore(answered), FB_KIND[answered.kind], niceDate(answered.submitted_at)].filter(Boolean).join(' · ')) + '</span>'
+      : '<span class="mute">Not answered</span>']);
+    pairs.push(['Last sent', esc(niceDate(asked.created_at)) + (months && since >= months ? ' <span class="is-late">· ' + esc(since + (since === 1 ? ' month ago' : ' months ago')) + '</span>' : '')]);
+    return ovSection('Client feedback', 'feedback', 'View all', ovRows(pairs));
+  }
 
   function ovRows(pairs) {
     return '<dl class="ovfacts">' + pairs.map(function (p) {
@@ -3024,6 +3068,53 @@
       else ['data-gate', 'data-gate-off', 'aria-disabled', 'aria-description'].forEach(function (x) { b.removeAttribute(x); });
     });
   }
+  /* SHORT LINK CLICKS (2026-11-27): the client's links and its campaigns',
+     each with its visits in the last 30 days (Malaysia's days, today
+     included). Read on a visit to Services; the part is drawn only where
+     there is one, so a client without links keeps its two parts. */
+  function loadShortLinks() {
+    var c = state.client;
+    if (!c || !mayPart('links', 'view')) return;
+    var forId = c.id;
+    var from = window.ADspaceClock.addDays(window.ADspaceClock.today(), -29);
+    db.from('links').select('slug, target_url, title, active, campaign_id, campaigns(title)').eq('client_id', c.id).order('slug').then(function (r) {
+      if (!state.client || state.client.id !== forId) return;
+      if (r.error) throw r.error;
+      var rows = r.data || [];
+      if (!rows.length) return [rows, []];
+      return db.from('link_clicks').select('slug, n').in('slug', rows.map(function (l) { return l.slug; })).gte('day', from)
+        .then(function (k) { if (k.error) throw k.error; return [rows, k.data || []]; });
+    }).then(function (both) {
+      if (!both || !state.client || state.client.id !== forId) return;
+      var sums = {};
+      both[1].forEach(function (k) { sums[k.slug] = (sums[k.slug] || 0) + Number(k.n || 0); });
+      var had = !!(state.links && state.links.length);
+      state.links = both[0].map(function (l) { return Object.assign({ clicks: sums[l.slug] || 0 }, l); });
+      if (had !== !!state.links.length) showPane(pane, false);
+      paintShortLinks();
+    }).catch(function (e) {
+      if (!state.client || state.client.id !== forId) return;
+      state.links = state.links && state.links.length ? state.links : [{ failed: true }];
+      showPane(pane, false);
+      var box = $('crmLinks');
+      if (box) ADspaceState.failLine(box, 'Short links', e && e.message, loadShortLinks);
+    });
+  }
+  function paintShortLinks() {
+    var box = $('crmLinks'), rows = (state.links || []).filter(function (l) { return !l.failed; });
+    var n = $('crmLinkN');
+    if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
+    if (!box || !rows.length) return;
+    var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+    box.innerHTML = '<div class="crm-table lkc-table"><div class="lkc-row crm-head prow"><span class="pr-main">Short link</span>' +
+      '<span class="pr-end">Visits in 30 days</span></div>' + rows.map(function (l) {
+        return '<div class="lkc-row prow' + (l.active === false ? ' is-off' : '') + '">' +
+          '<span class="pr-main"><b>' + esc(host + '/' + l.slug) + (l.active === false ? ' <span class="tone is-off">Paused</span>' : '') + '</b>' +
+            '<small>' + esc([l.title || l.target_url || '', l.campaigns && l.campaigns.title].filter(Boolean).join(' \u00b7 ')) + '</small></span>' +
+          '<span class="pr-end">' + esc(String(l.clicks)) + '</span></div>';
+      }).join('') + '</div>';
+  }
+
   function loadFeedback() {
     var c = state.client, box = $('crmFbBox');
     if (!c || !box) return;
@@ -3042,7 +3133,7 @@
     var box = $('crmFbBox'), rows = fbRows || [];
     var n = $('crmFbN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
-    if (!rows.length) { ADspaceState.emptyLine(box, 'No feedback requested.'); return; }
+    if (!rows.length) { ADspaceState.emptyLine(box, window.ADspaceWords.line.noFeedback); return; }
     box.innerHTML = '<div class="crm-table fbc-table"><div class="fbc-row crm-head prow"><span class="pr-main">Request</span><span>Sent</span><span>Answered</span>' +
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
