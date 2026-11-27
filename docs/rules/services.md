@@ -716,11 +716,18 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   quotation is sent, set aside or past the close days. Details sent are
   kept on the request (`details`, merged into `contact`); the lead the
   request made takes each where it holds none, any other record holds the
-  registration for Use details alone. A website request is never
-  Cancelled: Not quoted with its reason (Incomplete details, Not a fit,
-  Duplicate, Spam; `quotation_not_quote`), the link reading This quotation
-  request has been closed, Undo where it happened and Reopen in its ⋯ (a
-  request closed for no response too, its ask set aside).
+  registration for Use details alone. A website request is closed by
+  Cancel quote with its reason (Incomplete details, Not a fit, Duplicate,
+  Spam; `quotation_not_quote`), reading Not quoted, the link reading This
+  quotation request has been closed, Undo where it happened and Reopen in
+  its ⋯ (a request closed for no response too, its ask set aside). Its ⋯
+  until sent is three groups (the user, 2026-11-27): Download PDF, Show
+  quotation link, Ask for details · Edit, Cancel quote · Delete; no Do not
+  contact (Allow contact stays on one marked); Delete, never Remove, under
+  the delete rule (`quotation_delete` takes a request never released
+  unremoved, `2026-11-27-quote-request-deleted.sql`; Request delete at
+  Edit). A quotation sent or signed keeps its own ⋯ and is never deleted.
+  Every quotation reference is pressed to copy (`ADspaceCopy.ref`).
 - What changed before Submit (QUOTATION PREFLIGHT, `2026-11-25-quotation-preflight.sql`;
   the user, 2026-11-25: "like a concert ticket checkout"): `/quote/` asks
   `quote_preflight` (anon, 240 an address an hour, `limit`; never a price)

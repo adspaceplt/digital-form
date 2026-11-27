@@ -185,7 +185,7 @@
     var items = maySet ? ['<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>',
       '<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>'] : [];
     return '<div class="svc-row qt-row has-acts" data-id="' + esc(q.id) + '">' +
-      '<span class="svc-name qt-name"><b class="qt-ref">' + esc(refOf(q)) + '</b>' +
+      '<span class="svc-name qt-name"><b class="qt-ref">' + window.ADspaceCopy.ref(refOf(q)) + '</b>' +
         '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small></span>' +
       '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
       '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
@@ -278,8 +278,6 @@
     var shown = rows.filter(function (q) { return !q.removed_at; });
     var gone = rows.filter(function (q) { return q.removed_at; });
     var maySet = ctx.may('clients.quotes', 'work');
-    /* Delete, a removed quotation's alone, is Full Access (2026-10-31). */
-    var mayDelete = ctx.may('clients.quotes', 'manage');
     /* The part is a card, its count beside its title and its add act quiet
        until it is the record's next step (the user, 2026-11-13, A to D). */
     var html = '<div class="viewhead qt-head"><span class="headmark"><h2>Quotations</h2>' +
@@ -310,6 +308,8 @@
           var st = stateOf(q, live), h = headline(q);
           if (isDraft(q)) return draftRow(q, st, h, maySet);
           var items = [];
+          /* A website request the team has not sent (open or cancelled). */
+          var req = q.source === 'website' && !q.released_at && !q.sent_out_at && !q.signed_at && !q._revised && !q.removed_at;
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>');
           /* The quotation's link (2026-11-08): one item opening a card with
              the address, Copy link and Preview, so the ⋯ keeps to seven.
@@ -401,7 +401,11 @@
             /* The signature set aside and kept, so the client signs again;
                never once reviewed. */
             if (q.signed_at && !q.reviewed_at) items.push('<button class="kmenu-item" data-g="5" data-a="resign" type="button" role="menuitem">Request again</button>');
-            if (q.source === 'website') {
+            /* A website request not yet sent is three groups (the user,
+               2026-11-27): Download PDF, Show quotation link, Ask for
+               details · Edit, Cancel quote · Delete; no Do not contact
+               (Allow contact stays where one is marked, its way back). */
+            if (q.source === 'website' && (q.no_contact_at || !req)) {
               items.push(q.no_contact_at
                 ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Allow contact</button>'
                 : '<button class="kmenu-item" data-g="4" data-a="no_contact" type="button" role="menuitem">Do not contact</button>');
@@ -412,22 +416,26 @@
                reason, never Cancelled; a closed one is reopened (QUOTE
                DETAILS ASKED, 2026-11-27). */
             if (askable(q) && !q.no_contact_at) {
-              items.push('<button class="kmenu-item" data-g="3" data-a="ask" type="button" role="menuitem">' + (q.details_asked_at && !q.details_at ? 'Ask again' : 'Ask for details') + '</button>');
+              items.push('<button class="kmenu-item" data-g="1" data-a="ask" type="button" role="menuitem">' + (q.details_asked_at && !q.details_at ? 'Ask again' : 'Ask for details') + '</button>');
             }
             if (q.match && !q.match_taken && !q._revised) {
               items.push('<button class="kmenu-item" data-g="4" data-a="brand" type="button" role="menuitem">Add as a new brand of ' + esc(q.match.name || 'the client') + '</button>');
               items.push('<button class="kmenu-item" data-g="4" data-a="keeplead" type="button" role="menuitem">Keep as a new lead</button>');
             }
             if ((awaiting(q) && !askable(q)) || (q.source === 'website' && !q.released_at && q.not_quoted && q.status === 'not_proceeding')) {
-              items.push('<button class="kmenu-item" data-g="5" data-a="reopen" type="button" role="menuitem">Reopen</button>');
+              items.push('<button class="kmenu-item" data-g="2" data-a="reopen" type="button" role="menuitem">Reopen</button>');
             } else if (askable(q)) {
-              items.push('<button class="kmenu-item" data-g="5" data-a="notquote" type="button" role="menuitem">Not quoted</button>');
+              items.push('<button class="kmenu-item" data-g="2" data-a="notquote" type="button" role="menuitem">Cancel quote</button>');
             } else if (!q.reviewed_at && q.status === 'not_proceeding') {
               items.push('<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>');
             } else if (!q.signed_at) {
               items.push('<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
             }
-            if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            /* A request is deleted, never removed: at Full control with its
+               reference typed back, at Edit a request (js/delreq.js). One
+               sent out or signed keeps its own menu and is never deleted. */
+            if (req) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" data-need="clients.quotes:manage" type="button" role="menuitem">Delete</button>');
+            else if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
             /* Once signed it is withdrawn from a day, never deleted (QUOTATION
                WAYS OUT, 2026-11-17), at Full Access. */
             if (q.signed_at && !q.withdrawn_at && ctx.may('clients.quotes', 'manage')) {
@@ -442,7 +450,7 @@
           if (edit) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
-            '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
+            '<span class="svc-name qt-name"><b class="qt-ref">' + window.ADspaceCopy.ref(refOf(q)) + '</b>' +
               (q.no_contact_at ? '<span class="chip qt-tag">Do not contact</span>' : '') +
               '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small>' +
               (q.match && !q.match_taken ? '<small class="qt-match">' + esc('Matches existing client · ' + (q.match.name || '')) + '</small>' : '') +
@@ -464,8 +472,8 @@
       if (showRemoved) html += '<div class="qt-gone" id="qtGoneList">' + gone.map(function (q) {
         var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download PDF</button>'];
         /* One that reached the client or was signed stays, Void (2026-11-26). */
-        if (mayDelete && !q.sent_out_at && !q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
-        return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + esc(q.ref) + '</b>' +
+        if (maySet && !q.sent_out_at && !q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" data-need="clients.quotes:manage" type="button" role="menuitem">Delete</button>');
+        return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + window.ADspaceCopy.ref(refOf(q)) + '</b>' +
           '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
           '<span class="qt-goneacts">' + (maySet ? '<button class="btn btn-sm" data-a="restore" type="button">Restore</button>' : '') +
           '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS +
@@ -1022,8 +1030,8 @@
      the ⋯ later. */
   function notQuote(q, ctx) {
     window.ADspaceConfirm.ask({
-      title: 'Not quoted', tone: 'warn', go: 'Not quoted', wait: true,
-      body: q.ref + ' will close, and the prospect\'s link will read that the request has been closed.',
+      title: 'Cancel quote', tone: 'warn', go: 'Cancel quote', cancel: 'Keep quote', wait: true,
+      body: q.ref + ' will close, and the prospect\'s link will show the request as closed.',
       fields: [{ name: 'why', label: 'Reason', choices: [['incomplete', NOT_QUOTED.incomplete], ['fit', NOT_QUOTED.fit],
         ['duplicate', NOT_QUOTED.duplicate], ['spam', NOT_QUOTED.spam]], value: 'incomplete' }]
     }, function (v) {
@@ -1641,7 +1649,7 @@
     if (!list.length) return '';
     return '<div class="qt-ov">' + list.map(function (q) {
       var st = stateOf(q, live), h = headline(q);
-      return '<div class="qt-ovrow"><span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + esc(metaOf(q)) + '</small></span>' +
+      return '<div class="qt-ovrow"><span class="svc-name qt-name"><b class="qt-ref">' + window.ADspaceCopy.ref(refOf(q)) + '</b><small>' + esc(metaOf(q)) + '</small></span>' +
         '<span class="qt-ovend"><b>' + esc(h[0]) + '</b><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span></div>';
     }).join('') + '</div>';
   }

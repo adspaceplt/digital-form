@@ -55,6 +55,10 @@
     /* A way out or another way in keeps its mark on a cover too (the
        sign-in's Use passkey, 2026-11-22); a sheet's foot, a question and
        an Undo bar stay words. */
+    /* A way out to a new tab (Preview, Preview PDF) is never the form's
+       commit, so it keeps its leaving mark in a sheet's foot too: one
+       meaning, one glyph (Build quote's foot, 2026-11-27). */
+    if (act && act[1] === 'out' && act[2] && act[3] && b.type !== 'submit') return false;
     if (b.type === 'submit' || b.closest(act && act[3] ? '.sheet-foot, .askcard, .undobar' : HARD)) return true;
     if (act && act[3]) return false;
     if (b.closest(COMMIT)) return true;
