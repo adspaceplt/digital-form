@@ -1,4 +1,4 @@
-# Handover (27 Nov 2026, 00:40 UTC)
+# Handover (27 Nov 2026, 02:25 UTC)
 
 The single source of truth for work in flight. A fresh session reads this file,
 then CLAUDE.md (§3 **Token economy** is binding), then the PR or branch of the
@@ -8,7 +8,9 @@ item it takes. The previous coordinator session ended here; nothing lives in it.
 
 | Session | Work | When done |
 |---|---|---|
-| O `session_01RVzkaPZsbDxdJeDU96S2pn` | Content Review top redesign, branch `claude/review-top` (both repos), migration `2026-11-27-review-feed-content-month.sql` (pages first). Tests pass; screenshots with the user | On the user's OK: send_message O "go" (it merges, applies the migration, reports the build); then archive |
+| T `session_01RVzkaQPY1uMkNhrDk9jsg8` | Client page weight (`claude/page-weight`): PDF scripts and demo.js on demand, console-only CSS moved to console.css, budgets lowered. Client-facing | Artifact to the user; merges on "go" |
+| U `session_01RVzkaN7KdT1SgstjgtBM4C` | #1526 /quote/ ad budget follows the plan (+ quote_change_sel migration), brand notice, commitment sentences removed. User said "go" 02:20 | Merges, applies migration, reports, stops |
+| V `session_01RVzkaQPkA3uJTzfE4hBcnw` | Request feedback: Copy for WhatsApp (`claude/feedback-wa-copy`, migration `2026-11-27-feedback-whatsapp-copy.sql`, pages first). Console | Merges itself |
 
 G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 (index.ts 140 KB, too large for one connector call) is being deployed by session `session_01RVzkaQdpVPqkzAb7ChdveC` through the Management API; `SUPABASE_ACCESS_TOKEN` is now set in the environment for later deploys. PDF item 13 (the Rate Card discount sign, as G proposed in #1499/#1501's handover) is approved by the user ("2 ok"): build it, with its suite edit, on the next documents/PDF train.
 
@@ -29,6 +31,8 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
 9. **Full gate on main**: run 27 Nov on 7158470 (P, #1519); its findings shipped as #1520 and #1521 (Q). Next full gate after the next day's merges.
 10. J's other 17 review findings (J's handover on #1507).
+11. **Ad-spend explainer** (fresh session after U; brief in U's handover comment on #1526): "billed separately" replaced on /quote/, the quote link, Build quote and the quotation PDF by "The advertising budget is not included in this quotation." + How ad spend works (sheet: Option 1 own ad account, recommended; Option 2 prepaid through us: month 1 before start, later months at {80}% spent, ads pause unpaid; on the quotation's payment terms an Agency Credit Term Fee of {20}%, e.g. RM 6,000 → RM 1,200). Explainer only, no choice; 80 and 20 are app_settings. Client-facing: screenshots first.
+12. **/quote/ intake and follow-up loop** (major; after 11, never in parallel: both edit js/quote.js). Mockup https://claude.ai/artifact/HYP2kxVanTLo6wMbtapdrZ. Decided (the user, 27 Nov): Contact person (name, email, WhatsApp); Registering as = two-option segment "Company · Sole / Partnership" (公司 · 独资 / 合伙), no Individual; Business Registration No. (BRN), 12 digits, required for both (Company codes 01/02/04, Sole / Partnership 03); Registered name; Brand name; Industry (console list, required); website or No website tick, social handle (one of the two required); Urgency to commence (console options, keep On a specific date); Comments (→ Enquiry); Source set automatically; consent and notice. Statuses: add only Waiting for details and Details received; our refusal is "Not quoted" with a reason (Incomplete details, Not a fit, Duplicate, Spam), Undo, Reopen; Ask for details sheet (tick what is missing; Send email, Copy for WhatsApp by hand); Reply by and close days as settings; prospect's own link opens Complete your details with only the ticked fields; the link's details step closes once sent. Matching: never shown on the public page; after submit BRN, then email + number; team sees "Matches existing client"; same brand → its record, registration held for Use details; new brand → Add as a new brand of {client} / Keep as a new lead; prospect always sees the same thank-you. Desk width: steps at 760px with paired fields side by side (recommended, the user's "rest as recommended"); phone unchanged. Client-facing: screenshots first.
 
 ## Logged defects (fail on main, not yet fixed)
 
@@ -69,6 +73,9 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1513 Hotfix (M): a leaver's health data kept its six months (inactive stamp on every update; migration live); Build quote keeps its key on a settings re-read; tests #305 | 261127.c7a6 |
 | #1514 Team › Groups (M): each section's levels as wide as its own, no empty slots; tests #306 | 261127.5f23 |
 | #1515 Step track (M): every line clear of its discs; the bar's name alone under 400px; Exit demo's gutter; tests #307 (weight +0.1 KB on three client pages) | 261127.39bd |
+| #1523 Content Review top (O; migration live) | 261127.d9e7 |
+| #1524 Meeting glyph: two people at a table (R) | 261127.aaf2 |
+| #1525 Content meetings in Calls and visits (R) | 261127.fa10 |
 | #1519 Full gate findings logged (P) | 261127.f805 |
 | #1520 Trip card controls at full height; stale suites corrected (Q); tests #309 | 261127.b06a |
 | #1521 pdfreal reads the printed verify address (Q); tests #310 | 261127.fd37 |
@@ -84,8 +91,8 @@ Also done:
 
 Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
+Done by the user on 27 Nov: the expectations listed on 26 Nov approved; O merged (#1523); meetings glyph = two people at a table (#1524); content meetings in Calls and visits (#1525); intake decisions all settled.
+
 1. go.adspace.me's DNS stays for now; its removal is a future update.
-2. Approve the expectations changed in #1496, #1497, #1500, #1504, #1506, #1508, #1511 (quoteconfirmsql), #1514, #1515, #1517, #1520 (weight budgets +0.1–3.9 KB a client page, namecard +10.6 KB) and the SKBBK line.
-3. OK to merge O (Content Review +1.4 KB, 404 +0.1 KB; English only, or 中文 too).
-4. Meetings glyph = calendar (same as dates): keep?
-5. A read-only white-label readiness audit: queue it?
+2. White-label: ON HOLD by the user (27 Nov). Audit https://claude.ai/artifact/Mgqdt58TYua1wdMetrxDQR; start only on the user's word, step 1 (agency profile, additive) first, after items 11 and 12 merge.
+3. Page weight (T): approve its screenshots.

@@ -83,6 +83,7 @@
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months'], ['date', 'On a specific date']],
       startOn: 'Preferred start date',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
+      fullBrand: 'Your quotation is prepared for your brand. Incomplete requests may not receive a quotation.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Choose when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
@@ -139,7 +140,6 @@
       chgNone: 'Change a choice to see the revised price.', chgPendT: 'Changes requested',
       chgPend: 'Your changes were requested on {d}. ADspace will send the revised quotation by {r}.', chgWithdraw: 'Withdraw request',
       perMonth: '{a} per month', plusMonth: '+{a} per month', incl: 'Included', each: '{a} each', eachMonth: '{a} each per month',
-      termOff: 'A {n}-month commitment reduces every monthly charge by {p}%.',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
@@ -231,6 +231,7 @@
       commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后'], ['date', '指定日期']],
       startOn: '期望开始日期',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
+      fullBrand: '报价将按您的品牌拟定。资料不完整的申请可能无法获得报价。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', startOn: '请选择今天或之后的期望开始日期。', consent: window.ADspaceWords.zh.tickToContinue },
@@ -288,7 +289,6 @@
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
       chgPend: '您已于{d}提交修改请求，ADspace 将于{r}前发送修订后的报价。', chgWithdraw: '撤回请求',
       perMonth: '每月 {a}', plusMonth: '每月另加 {a}', incl: '已包含', each: '每项 {a}', eachMonth: '每项每月 {a}',
-      termOff: '签订{n}个月合约，每月费用减免{p}%。',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
@@ -770,7 +770,8 @@
       '<div id="qsStartOnBox"' + (c.commence_on || c.commence === 'date' ? '' : ' hidden') + '>' +
       field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>' +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
-      '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
+      '<span class="msg" id="qsConsentMsg"></span>' +
+      '<p class="qs-note">' + noteH(t().fullBrand) + '</p><div class="qs-cf" data-cf></div></form>', navFoot());
   }
 
   /* A Singapore lead's quotation is in S$: its totals say so and carry the
@@ -1206,9 +1207,8 @@
     h += '<div class="qs-xbox" id="qsChFilesBox">' + chFilesHtml() + '</div>';
     var terms = (card.terms || []).map(function (x) { return Number(x.months); });
     if (terms.length) {
-      var off = (card.terms || []).filter(function (x) { return Number(x.pct) < 0; }).map(function (x) { return f(w.termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
-      h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true) +
-        (off.length ? '<p class="qs-note">' + noteH(off.join(lang === 'zh' ? '' : ' ')) + '</p>' : ''));
+      // No discount sentence under the term: the totals carry it (the user, 2026-11-27).
+      h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true));
     }
     return h;
   }
@@ -1659,6 +1659,8 @@
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
+    // The budget follows the selection on every paint.
+    if (CAT && !adsAsked()) S.budget = null;
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
@@ -2194,7 +2196,9 @@
 
   /* A quotation's own selection, to change and make again. */
   function adopt(sel) {
-    S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
+    // A plan with ads carries its own budget: not Advertising asked.
+    var sp = CAT && sel.plan ? CAT.plans.filter(function (x) { return x.slug === sel.plan; })[0] : null;
+    S.need = { social: Boolean(sel.plan), ads: sel.budget != null && !(sp && sp.ads), content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
     S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate) && S.langs.length > 1; S.budget = sel.budget == null ? null : Number(sel.budget);
     S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.files = {}; S.koc = ''; S.kol = false; S.verify = [];
