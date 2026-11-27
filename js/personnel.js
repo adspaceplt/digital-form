@@ -890,7 +890,7 @@
             body: issues.slice(0, 10).join('\n') + (issues.length > 10 ? '\nAnd ' + (issues.length - 10) + ' more.' : '') }, function () {});
           return;
         }
-        fetch('/admin/hr/achrms-template.xlsx?v=20261116').then(function (r) {
+        fetch('/admin/hr/achrms-template.xlsx?v=dev').then(function (r) {
           if (!r.ok) throw new Error('template');
           return r.arrayBuffer();
         }).then(function (buf) {
