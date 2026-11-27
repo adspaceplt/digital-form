@@ -241,6 +241,65 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tzBar, { once: true });
   else tzBar();
 
+  /* Scripts fetched on first ask, one loader for every page (the console's
+     sections since 2026-11-22; a client page's PDF scripts and the demo's
+     since 2026-11-27, so a visitor who downloads nothing downloads none of
+     them). A page lists them in `#lazyScripts` (its address with its ?v=
+     stamp, `first` what it reads as it loads, `uses` what it calls later),
+     read at the first ask, since the console's list stands after this
+     script. `need(keys, whole)` answers once each has run: `whole` brings
+     everything the scripts call, else only what they read as they load.
+     Scripts run in the page's own order (`async = false`), so one is never
+     run before what it reads; a script is added only once its `first` have
+     run, and a fetch that fails is let go, so the next ask fetches it again
+     (review 2026-11-24). `need('*')` fetches them all. */
+  var LAZY = null, LAZY_ORDER = [], lazyAsked = {}, lazyRan = {};
+  function lazyList() {
+    if (LAZY) return LAZY;
+    try { LAZY = JSON.parse(document.getElementById('lazyScripts').textContent) || {}; } catch (e) { LAZY = {}; }
+    LAZY_ORDER = Object.keys(LAZY);
+    return LAZY;
+  }
+  function lazyOne(k) {
+    if (lazyAsked[k]) return lazyAsked[k];
+    var mine = lazyAsked[k] = Promise.resolve().then(function () {
+      return Promise.all((LAZY[k].first || []).filter(function (d) { return LAZY[d] && d !== k; }).map(lazyOne));
+    }).then(function () {
+      return new Promise(function (ok, bad) {
+        var el = document.createElement('script');
+        el.src = LAZY[k].src;
+        el.async = false;
+        el.onload = function () { lazyRan[k] = true; ok(); };
+        el.onerror = function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          bad(new Error('Failed to fetch ' + k));
+        };
+        document.body.appendChild(el);
+      });
+    });
+    mine.catch(function () { if (lazyAsked[k] === mine) delete lazyAsked[k]; });
+    return mine;
+  }
+  function lazyKeys(keys, whole) {
+    var L = lazyList(), want = {};
+    var add = function (k) {
+      if (!L[k] || want[k]) return;
+      want[k] = true;
+      (L[k].first || []).forEach(add);
+      if (whole) (L[k].uses || []).forEach(add);
+    };
+    (keys === '*' ? LAZY_ORDER : [].concat(keys || [])).forEach(add);
+    return LAZY_ORDER.filter(function (k) { return want[k]; });
+  }
+  function need(keys, whole) { return Promise.all(lazyKeys(keys, whole).map(lazyOne)).then(function () {}); }
+  function needHeld(keys, whole) { return lazyKeys(keys, whole).every(function (k) { return lazyRan[k]; }); }
+  /* What runs at a press runs in that press where everything is already
+     here (a tab opened at the press stays the press's), else once it is. */
+  function needThen(keys, whole, fn) {
+    if (needHeld(keys, whole)) { fn(); return Promise.resolve(); }
+    return need(keys, whole).then(fn);
+  }
+
   /* Pages that build their own chrome (the signed-in console) still want the
      mark handled the same way, so the helper is shared rather than copied. */
   window.ADspaceChrome = {
@@ -259,6 +318,7 @@
       var logo = document.getElementById(logoId);
       if (logo) wireMark(logo, wordmarkId, null);
     },
-    actions: function () { return document.getElementById('chromeActions'); }
+    actions: function () { return document.getElementById('chromeActions'); },
+    need: need, needHeld: needHeld, needThen: needThen
   };
 })();
