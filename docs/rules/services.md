@@ -299,6 +299,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   a Letter of Offer's To quote line, each cycle's invoice line to Bukku) is
   named after its brand, `{brand} · {line}` (`quote_line_label`,
   `2026-11-24-quotation-brands-lines.sql`); one brand reads as before.
+  A quotation's `brand` is its one named brand where `selection.brands`
+  holds exactly one (`quotations_brand_follows`, on insert and on a change
+  of selection), never the brand a prospect typed.
 - A package (`2026-11-25-quotation-packages.sql`; the user, 2026-11-25):
   `p_sel.packages` (per brand where several, 1 to 5, console only, a
   website selection holding one `bad-package`), each a name, a basis
@@ -472,7 +475,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   prepared it checks the entries (each company field correctable, kept
   from and to; none where Bukku holds the client's billing, as
   `bukku_link_get` `held` reads it: the company drawn as words, no pen,
-  its head reading Kept in Bukku., nothing sent) and submits to a reviewer they pick
+  its head reading Kept in Bukku., nothing sent); a signed Registered Company Name
+  or Business Registration No. that differs from the client record (case
+  and spacing aside) reads Differs from the client record with Keep
+  {record} and Use {signed}, Submit refused `pick-company` until each is
+  chosen, kept in `signed.record_pick` and applied on approval (`updated`,
+  Billing Work); none where Bukku holds it or the quotation bills another
+  (`2026-11-27-quote-brand-company-pick.sql`) and submits to a reviewer they pick
   (`quotation_reviewers`: Clients: Quotations Full Access or an admin,
   never themselves; `quotation_submit`); the reviewer, or an admin in
   their place after asking, approves (`quotation_review`: Billing filled

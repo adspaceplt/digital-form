@@ -104,6 +104,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | Email templates: each two-language email (Service rating, Performance review, Ask for details) is one row with an English · 中文 strip in its editor; a missing 中文 reads 中文 not written; no database change | (this PR) |
 | A website request's ⋯ in three groups (Download PDF, Show quotation link, Ask for details · Edit, Cancel quote · Delete), Delete under the delete rule (migration `2026-11-27-quote-request-deleted.sql`, applied and read back); every quotation reference pressed to copy (`ADspaceCopy.ref`, the Register's too); Preview keeps its leaving mark in a sheet's foot | (this PR) |
 | Facts: an address keeps its line (two facts, the value the rest; it breaks only after @ or a dot); a quotation's check reads a Bukku-held company as words under Kept in Bukku. | (this PR) |
+| A quotation's brand follows its one named brand (1 row backfilled: ADP/QT2611-B02 → Lemmermeyer Malaysia); a signed company that differs from the client record is kept or taken at the check and applied on approval (migration `2026-11-27-quote-brand-company-pick.sql`) | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
