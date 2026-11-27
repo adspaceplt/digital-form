@@ -1633,6 +1633,9 @@
   }
   /* The sealed copy, read through sign-download by the link's own key. */
   function sealedPdf(btn) {
+    withPdf(btn, sealedNow, function () { say('qsSideMsg', t().err.any); });
+  }
+  function sealedNow(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
     db.functions.invoke('sign-download', { body: { quoteKey: qKey() } }).then(function (r) {
@@ -1673,7 +1676,12 @@
   }
   function decorate() {
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
-    Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"], [data-a="sealed"]'), function (b) { addGlyph(b, 'file'); });
+    var dl = root().querySelectorAll('[data-a="pdf"], [data-a="sealed"]');
+    Array.prototype.forEach.call(dl, function (b) { addGlyph(b, 'file'); });
+    /* The PDF scripts are fetched where a Download is drawn (js/chrome.js
+       need), so they are here by the press: a tab an iPhone opens at the
+       press stays the press's. The opening page fetches neither. */
+    if (dl.length) window.ADspaceChrome.need(['quotepdf']).catch(function () {});
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
     signWire();
   }
@@ -1939,7 +1947,23 @@
       paint();
     }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
+  /* At the press, once the PDF scripts are here (fetched where the button
+     was drawn; at the press if that fetch failed). */
+  function withPdf(btn, fn, fail) {
+    btn.disabled = true;
+    window.ADspaceChrome.needThen(['quotepdf'], false, function () { btn.disabled = false; fn(btn); })
+      .catch(function () { btn.disabled = false; fail(); });
+  }
   function pdf(btn) {
+    withPdf(btn, pdfNow, function () { pdfSay(btn); });
+  }
+  function pdfSay(btn) {
+    var said = $('qsPdfMsg'); if (said) said.remove();
+    var acts = btn.closest('.qs-acts'), m = document.createElement('p');
+    m.className = 'msg err'; m.id = 'qsPdfMsg'; m.setAttribute('role', 'status'); m.textContent = t().pdfFail;
+    if (acts) acts.insertAdjacentElement('afterend', m);
+  }
+  function pdfNow(btn) {
     var said = $('qsPdfMsg'); if (said) said.remove();
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
@@ -1956,9 +1980,7 @@
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {}
       /* Said under its button, drawn only when there is something to say. */
-      var acts = btn.closest('.qs-acts'), m = document.createElement('p');
-      m.className = 'msg err'; m.id = 'qsPdfMsg'; m.setAttribute('role', 'status'); m.textContent = t().pdfFail;
-      if (acts) acts.insertAdjacentElement('afterend', m);
+      pdfSay(btn);
     });
   }
 

@@ -25,7 +25,10 @@
   var UI  = window.ADspaceState;
   var ORG = window.ADSPACE_ORG || {};
   var CFG = window.ADSPACE_CONFIG || {};
-  var DOCS = window.ADspaceDocs;
+  /* The PDF scripts are fetched on first ask (js/chrome.js need): where a
+     letter's or a report's Download is drawn, and at its press if still
+     on its way, so a visit with nothing to download fetches neither. */
+  var need = function (keys) { return window.ADspaceChrome.need(keys); };
   var $   = function (id) { return document.getElementById(id); };
   /* The page's worker holds a drawn PDF under its own name, so an iPhone's
      Save to Files keeps it (client/sw.js, js/file-sw.js; 2026-10-07). */
@@ -572,10 +575,14 @@
   });
   $('codeBack').addEventListener('click', function () { msg('stateMsg', ''); showState('sign'); });
   $('portalOut').addEventListener('click', function () {
-    var D = window.ADspaceDocs;
     // The media pass goes with the session (second audit, item 7).
     if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget();
-    (D && D.forgetFiles ? D.forgetFiles() : Promise.resolve()).then(function () { return db.auth.signOut(); })
+    /* The files an earlier visit drew go too, so js/documents.js is fetched
+       to let them go when this visit has not. */
+    need(['documents']).then(function () {
+      var D = window.ADspaceDocs;
+      return D && D.forgetFiles ? D.forgetFiles() : null;
+    }).catch(function () {}).then(function () { return db.auth.signOut(); })
       .then(function () { location.reload(); });
   });
 
@@ -633,7 +640,7 @@
      the browser from the published snapshot, so it is the same file the team
      issued. A database without the reports migration answers with an error,
      which is read as "none". */
-  var SMR = window.ADspaceSmReport;
+  var SMR = window.ADspaceSmReport;   /* set once fetched (paintReports) */
   function monthOf(a, b) {
     var x = String(a).slice(0, 10), y = String(b).slice(0, 10);
     var whole = /-01$/.test(x) && ADspaceClock.addDays(ADspaceClock.addMonths(x, 1) + '-01', -1) === y;
@@ -647,29 +654,36 @@
       if (stale(c)) return;
       if (refused(r)) { tabShown('reports', false); failCard('ovRep', 'ovRepBox', 'ovRepGo'); return; }
       var list = (!r.error && r.data && r.data.reports) || [];
-      tabShown('reports', list.length > 0);
-      paintLatestReport(w, list[0]);
-      if (!list.length) { box.innerHTML = ''; return; }
-      setTile('reports', { head: monthOf(list[0].period_start, list[0].period_end), sub: w.published });
-      var fc = SMR ? ' is-file' : '';
-      var tb = table('<div class="crm-head svc-row doc-row' + fc + '"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
-        '</span><span>' + esc(w.state) + '</span><span></span></div>');
-      list.forEach(function (v) {
-        var row = document.createElement('div');
-        row.className = 'svc-row doc-row' + fc;
-        row.innerHTML =
-          /* The report's own name, as its cover and file print it: the first
-             kind was stored as Social Media Report (2026-09-27). */
-          led('reports', '<b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
-            parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small>') +
-          '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
-          '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
-          (SMR ? dlCell(w) : '<span class="team-act"></span>');
-        var dlb = row.querySelector('[data-a="download"]');
-        if (dlb) dlb.addEventListener('click', function () { downloadReport(v, null, dlb); });
-        tb.appendChild(row);
+      /* A report to list fetches js/smreport.js (and js/documents.js) first:
+         its words and its Download; a fetch refused draws it as before,
+         with no Download. */
+      return (list.length ? need(['smreport']).catch(function () {}) : Promise.resolve()).then(function () {
+        if (stale(c)) return;
+        SMR = window.ADspaceSmReport;
+        tabShown('reports', list.length > 0);
+        paintLatestReport(w, list[0]);
+        if (!list.length) { box.innerHTML = ''; return; }
+        setTile('reports', { head: monthOf(list[0].period_start, list[0].period_end), sub: w.published });
+        var fc = SMR ? ' is-file' : '';
+        var tb = table('<div class="crm-head svc-row doc-row' + fc + '"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
+          '</span><span>' + esc(w.state) + '</span><span></span></div>');
+        list.forEach(function (v) {
+          var row = document.createElement('div');
+          row.className = 'svc-row doc-row' + fc;
+          row.innerHTML =
+            /* The report's own name, as its cover and file print it: the first
+               kind was stored as Social Media Report (2026-09-27). */
+            led('reports', '<b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
+              parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small>') +
+            '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
+            '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
+            (SMR ? dlCell(w) : '<span class="team-act"></span>');
+          var dlb = row.querySelector('[data-a="download"]');
+          if (dlb) dlb.addEventListener('click', function () { downloadReport(v, null, dlb); });
+          tb.appendChild(row);
+        });
+        box.innerHTML = ''; box.appendChild(tb);
       });
-      box.innerHTML = ''; box.appendChild(tb);
     });
   }
   // ---- The Overview's tiles ------------------------------------------------
@@ -1441,7 +1455,10 @@
     var docs = feed.documents || [];
     if (!docs.length) empty(dbox, w.noLetters);
     else {
-      var dc = DOCS ? ' is-file' : '';
+      /* js/documents.js is fetched now, so it is here by the press (a tab
+         an iPhone opens at the press stays the press's). */
+      need(['documents']).catch(function () {});
+      var dc = ' is-file';
       var dtb = table('<div class="crm-head svc-row doc-row' + dc + '"><span>' + esc(w.document) + '</span><span class="svc-rate">' + esc(w.total) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       docs.forEach(function (d) {
@@ -1451,12 +1468,14 @@
           led('mail', '<b>' + esc(d.number) + '</b><small>' + parts([w.offer, niceDate(d.issued_at)]) + '</small>') +
           '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
           '<span class="svc-state">' + chip(w.issued, 'is-ok') + '</span>' +
-          (DOCS ? dlCell(w) : '<span class="team-act"></span>');
+          dlCell(w);
         var dlb = row.querySelector('[data-a="download"]');
         if (dlb) dlb.addEventListener('click', function () {
           if (dlb.disabled) return;
           var done = pending(dlb);
-          DOCS.download(d, function (warn) { done(); msg('docMsg', warn || '', warn ? 'err' : ''); });
+          window.ADspaceChrome.needThen(['documents'], false, function () {
+            window.ADspaceDocs.download(d, function (warn) { done(); msg('docMsg', warn || '', warn ? 'err' : ''); });
+          }).catch(function () { done(); msg('docMsg', window.ADspaceWords.line.pdfLib, 'err'); });
         });
         dtb.appendChild(row);
       });
