@@ -7363,6 +7363,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .qb-row:has(.qb-name-in) > .qb-name { grid-column: 1 / -1; }
   .qb-row:has(.qb-name-in) > .qb-amt { display: none; }
   .qb-name .qb-desc-acts > .btn { flex: 1 1 50%; }
+  /* Rename, Edit description and Move up and Move down share one row on a
+     phone: the words without their glyphs (2026-11-27). */
+  .qb-incl .qb-desc-acts { gap: 6px; }
+  .qb-incl .qb-desc-acts > .btn > svg { display: none; }
   .qb-row.crm-head { display: none; }
   .qb-row > .qb-amt { align-self: start; }
   .qb-row > .qb-taxc, .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }

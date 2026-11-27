@@ -86,6 +86,9 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1523 Content Review top (O): one sentence in the head, counts in the strip alone, the set line with Filter, a video's own safe area switch; migration `2026-11-27-review-feed-content-month.sql`; tests #311 | see the coordinator's report |
 | #1534 Bukku contact emails and phones as lists (hotfix, bukku-sync v70) | 261127.ce42 |
 | #1529 Ad-spend explainer and approximate S$ (Z): How ad spend works as Option 1 or Option 2 with a comparison, 80/20 settings; a Singapore client billed in RM sees each quotation total's S$; migration live; tests #318 | 261127.e9a3 |
+| #1536 Build quote: one-time reads One-time, tax a column (hotfix) | 261127.f21a |
+| #1540 Build quote: a line's figures on its name's first line | 261127.daa5 |
+| Build quote on a phone: tax on the Qty row, arrows on the Rename row | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
