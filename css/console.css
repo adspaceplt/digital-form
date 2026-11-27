@@ -9914,7 +9914,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .qb-sidetot { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--line); }
 .qb-sidetot > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px 0; }
 .qb-sidetot dt, .qb-sidetot dd { margin: 0; }
-.qb-sidetot dt { min-width: 0; white-space: nowrap; }
+.qb-sidetot dt { min-width: 0; }
+/* The whole period with the one-time fees, set apart from the One-time total (2026-11-27). */
+.qb-sidetot > .is-all, .qb-tot > .is-all { margin-top: 12px; }
 .qb-sidetot dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .qb-sidetot > .is-total { font-size: 14px; font-weight: 600; }
 .qb-sidenote { font-size: 12px; color: var(--ink-mute); margin: 8px 0 0; }

@@ -423,7 +423,7 @@
         mr.push([taxed.word, amt(t.month.sst, q)], [mWord, amt(t.month.incl, q), 1]);
         sums(mr);
         nearOf(mWord, Number(t.month.incl), bolds > 1);
-        if (pt) sums([[WD.periodTotal(pt.months, sstOn), amt(pt.period, q)]]);
+        if (pt) { sums([[WD.periodTotal(pt.months, sstOn), amt(pt.period, q)]]); nearOf(WD.periodTotal(pt.months, sstOn), Number(pt.period), true); }
         agreed.push([mWord, amt(t.month.incl, q)], ['Minimum term', t.term + ' months']);
         /* What is signed names the whole period's figures too (2026-11-27). */
         if (pt) agreed.push([WD.periodTotal(pt.months, sstOn), amt(pt.period, q)]);
@@ -444,6 +444,7 @@
       if (pt && pt.total != null && onceL.length) {
         y -= 8;
         sums([[WD.periodAll(sstOn), amt(pt.total, q), 1]]);
+        nearOf(WD.periodAll(sstOn), Number(pt.total), true);
         y -= 13; right(WD.periodNote(pt.months), R, y + 3, SM, book, mute);
         agreed.push([WD.periodAll(sstOn), amt(pt.total, q)]);
         y -= 20;
