@@ -6832,15 +6832,15 @@
     /* A website prospect ready to proceed is contacted within these working
        days (2026-10-26). */
     ['quote_reply_days', 'Contact a prospect ready to proceed within', 'reply', 'Quotation portal'],
+    /* Details asked of a website prospect: their reply window, then the
+       days after it before the request closes as Not quoted (2026-11-27). */
+    ['quote_details_days', 'Details reply within', 'reply', 'Quotation portal'],
+    ['quote_details_close_days', 'Close after Reply by', 'due', 'Quotation portal'],
     /* How ad spend works (2026-11-27): when the next month's prepaid budget
        is requested, and the fee on a budget billed on the quotation's
        payment terms; /quote/ and the PDF print both. */
     ['ad_prepay_pct', 'Next month\'s budget requested at', 'adreq', 'Advertising budget'],
-    ['ad_credit_fee_pct', 'Agency Credit Term Fee', 'pct', 'Advertising budget'],
-    /* Details asked of a website prospect: their reply window, then the
-       days after it before the request closes as Not quoted (2026-11-27). */
-    ['quote_details_days', 'Details reply within', 'reply', 'Quotation portal'],
-    ['quote_details_close_days', 'Close after Reply by', 'due', 'Quotation portal']];
+    ['ad_credit_fee_pct', 'Agency Credit Term Fee', 'pct', 'Advertising budget']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
      Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a

@@ -3643,7 +3643,9 @@ function cardSlugFree(name, self, email) {
 
     work_start: 1000, work_end: 1900, work_lunch_min: 60, work_weekend: 1,
 
-    analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
+    analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10,
+
+    ad_prepay_pct: 80, ad_credit_fee_pct: 20 };
   var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
     fx_sgd: ['Singapore dollar rate', ' per S$1'], creator_pay_days_myr: ['Creator payment in MYR', ' working days'], creator_pay_days_other: ['Creator payment in other currencies', ' working days'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
     term_1_3: ['Under 3 months', '%'], term_4_5: ['3-month commitment', '%'], term_6_11: ['6-month commitment', '%'], term_12_23: ['12-month commitment', '%'], term_18_23: ['18-month commitment', '%'],
@@ -3662,6 +3664,7 @@ function cardSlugFree(name, self, email) {
     bench_msg_min: ['Messaging cost per result, low', ''], bench_msg_target: ['Messaging cost per result, target', ''], bench_msg_max: ['Messaging cost per result, high', ''],
     bench_form_min: ['Lead form cost per result, low', ''], bench_form_target: ['Lead form cost per result, target', ''], bench_form_max: ['Lead form cost per result, high', ''],
     bench_cpm_min: ['Cost per 1,000 impressions, low', ''], bench_cpm_max: ['Cost per 1,000 impressions, high', ''], bench_cpl_rise: ['Yearly rise in cost per lead', '%'],
+    ad_prepay_pct: ['Next month\'s budget requested at', '%'], ad_credit_fee_pct: ['Agency Credit Term Fee', '%'],
     bench_reels_share: ['Reels share of impressions', '%'], bench_ad_spend_pct: ['Ad spend share of the budget', '%'], bench_adset_daily: ['Minimum daily budget per ad set', ''] };
   var APP_PRE = function (k) { return k === 'fx_sgd' ? 'RM ' : /^ai_price_/.test(k) ? 'US$' : /^bench_/.test(k) && APP_WORD[k][1] === '' ? 'RM ' : ''; };
   function appDb() {
@@ -4287,7 +4290,7 @@ function cardSlugFree(name, self, email) {
     var m = opsMe(), team = !!m, admin = opsGranted('team.settings', 'work');
     var nameOf = function (id) { var t = DB.team_members.filter(function (x) { return x.id === id; })[0]; return t ? t.name : null; };
 
-    var OPEN = ['sst_pct', 'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'fx_sgd'];
+    var OPEN = ['sst_pct', 'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'fx_sgd', 'ad_prepay_pct', 'ad_credit_fee_pct'];
     var read = function () {
       return { today: appToday(), admin: admin, settings: DB.app_settings.filter(function (r) {
         return team || OPEN.indexOf(r.key) >= 0; }).sort(function (x, y) {
@@ -4327,6 +4330,7 @@ function cardSlugFree(name, self, email) {
           (k === 'work_lunch_min' && (v < 0 || v > 180 || v % 15)) || (k === 'work_weekend' && [0, 1, 2].indexOf(v) < 0) ||
           (k === 'timely_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'stage_back_days' && (v < 0 || v > 30 || v % 1)) || (k === 'timely_late_days' && (v < 0 || v > 30 || Math.round(v * 10) / 10 !== v)) ||
           (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
+          (k === 'ad_prepay_pct' && (v < 1 || v > 100 || v % 1)) || (k === 'ad_credit_fee_pct' && (v < 0 || v > 100)) ||
           (k === 'bench_reels_share' && (v < 0 || v > 100)) || (k === 'bench_ad_spend_pct' && (v < 1 || v > 100)) ||
           (k === 'bench_cpl_rise' && (v < -100 || v > 100)) ||
           (/^bench_/.test(k) && ['bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise'].indexOf(k) < 0 && (v < 0 || v > 10000))) return { error: 'bad-value', key: k };
@@ -15182,6 +15186,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return qtOk(JSON.parse(JSON.stringify({ ref: wsh.ref, first_ref: wq.ref, revised: wsh.id !== wq.id,
             brand: (wq.contact && wq.contact.brand) || wq.brand, market: wHeld ? (/^\+65/.test(String((wq.contact || {}).whatsapp || '')) ? 'SG' : 'MY') : wqc && wqc.market === 'SG' ? 'SG' : 'MY',
             version: wUnsent ? null : wsh.version, issued_at: wsh.issued_at,
+
+            fx_sgd: !wUnsent && !wHeld && wqc && wqc.market === 'SG' && (wsh.totals || {}).currency !== 'SGD'
+              ? (Number(appSet('fx_sgd', new Date(Date.parse(wsh.issued_at) + 8 * 3600e3).toISOString().slice(0, 10))) || null) : null,
             valid_until: wUnsent ? null : wsh.valid_until, lines: wUnsent ? null : wsh.lines,
             totals: wUnsent ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
             details_at: wstage === 'review' ? wsh.details_at || null : null,
