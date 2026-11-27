@@ -1659,6 +1659,9 @@
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
+    /* The budget is the current selection's, derived on every paint: none
+       while ads are not asked, never left from an earlier plan. */
+    if (CAT && !adsAsked()) S.budget = null;
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
@@ -2194,7 +2197,10 @@
 
   /* A quotation's own selection, to change and make again. */
   function adopt(sel) {
-    S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
+    /* Advertising was asked on its own only where a budget stands beside no
+       plan with ads: a plan with ads carries its budget (0, its cover). */
+    var sp = CAT && sel.plan ? CAT.plans.filter(function (x) { return x.slug === sel.plan; })[0] : null;
+    S.need = { social: Boolean(sel.plan), ads: sel.budget != null && !(sp && sp.ads), content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
     S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate) && S.langs.length > 1; S.budget = sel.budget == null ? null : Number(sel.budget);
     S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.files = {}; S.koc = ''; S.kol = false; S.verify = [];
