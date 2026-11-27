@@ -4929,6 +4929,29 @@ function cardSlugFree(name, self, email) {
     if (!r && make) { r = { team_member_id: id, data: {}, files: {}, updated_at: new Date().toISOString() }; DB.personnel_records.push(r); }
     return r;
   }
+
+  var PRS_HIDDEN = ['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'];
+  function prsMasked(data) {
+    var out = JSON.parse(JSON.stringify(data || {})), hid = {};
+    PRS_HIDDEN.forEach(function (k) {
+      if (!Object.prototype.hasOwnProperty.call(out, k)) return;
+      var v = String(out[k] == null ? '' : out[k]);
+      delete out[k];
+      if (v.trim()) hid[k] = v.length > 4 ? v.slice(-4) : '';
+    });
+    return { data: out, hidden: hid };
+  }
+  function prsKept(id, data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+    var out = JSON.parse(JSON.stringify(data)), keep = Array.isArray(out._keep) ? out._keep : PRS_HIDDEN;
+    delete out._keep;
+    var old = (prsRow(id) || {}).data;
+    if (!old) return out;
+    keep.forEach(function (k) {
+      if (PRS_HIDDEN.indexOf(k) > -1 && !Object.prototype.hasOwnProperty.call(out, k) && Object.prototype.hasOwnProperty.call(old, k)) out[k] = old[k];
+    });
+    return out;
+  }
   function prsJson(id, team) {
     var r = prsRow(id) || { data: {}, files: {} }, t = DB.team_members.filter(function (x) { return x.id === id; })[0] || {};
     var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
@@ -4938,7 +4961,8 @@ function cardSlugFree(name, self, email) {
     var prefill = {};
     if (String(t.email || '').trim()) prefill.email = String(t.email).trim();
     if (String(t.mobile || '').trim()) prefill.mobile = String(t.mobile).trim();
-    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), prefill: prefill, files: files,
+    var mk = prsMasked(r.data);
+    return { ok: true, member: id, name: t.name, data: mk.data, hidden: mk.hidden, prefill: prefill, files: files,
       consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
       requested_at: r.requested_at || null, updated_at: r.updated_at || null,
       updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,
@@ -5006,7 +5030,7 @@ function cardSlugFree(name, self, email) {
         if (t0.erased_at) return { error: 'erased' };
         id = t0.id;
       }
-      var c = prsClean(a.p_data);
+      var c = prsClean(prsKept(id, a.p_data));
       if (c.error) return c;
       if (own) {
         var miss = prsMissing(c.data);
@@ -5052,12 +5076,13 @@ function cardSlugFree(name, self, email) {
       if (own2) { if (!m) return { error: 'not-team' }; if (!fresh) return { error: 'code-needed' }; tr = m; }
       else { if (!part) return { error: 'denied' }; tr = who(a.p_member); if (!tr) return { error: 'not-found' }; }
       if (!m) return { error: 'denied' };
-      if (['nric', 'old_ic', 'passport', 'immigration_no', 'spouse_ic', 'spouse_tax', 'bank_account', 'epf_no', 'socso_no', 'tax_no'].indexOf(a.p_field) < 0) return { error: 'bad-field' };
+      if (PRS_HIDDEN.indexOf(a.p_field) < 0) return { error: 'bad-field' };
       var lab = (prsFields()[a.p_field] || [])[2] || a.p_field;
       var line = lab + ' shown';
       var since = Date.now() - 60000;
       if (!DB.activity_log.some(function (x) { return x.action === 'team.revealed' && x.actor === whoNow() && x.subject === tr.name && x.detail === line && Date.parse(x.created_at) > since; })) logAct('team.revealed', tr.name, line);
-      return { ok: true };
+      var rr = prsRow(tr.id);
+      return { ok: true, value: rr && rr.data && rr.data[a.p_field] != null ? rr.data[a.p_field] : null };
     }
     if (name === 'personnel_request') {
       if (!part) return { error: 'denied' };
