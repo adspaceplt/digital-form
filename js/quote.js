@@ -345,7 +345,7 @@
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
       monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
-      packH: '套餐', aoH: '附加服务费率', aoLead: '以下服务可于合约期内任何月份另行申请，费率如下。所有费率均不含SST。',
+      packH: '套餐', aoH: '附加服务费率', aoLead: '以下服务可于合约期内任何月份另行申请，费率如下。所有费率均未含 SST。',
       aoTerm: '附加服务不包括在上述费用内。每项附加服务须于开始前以书面确认，并于确认后次月开具发票。', aoExtra: '追加内容', pack: { not: function (list) { return '本套餐不包括' + list.map(function (x) { return String(x || '').trim().replace(/[.;。；]+$/, ''); }).join('、') + '。'; } },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
