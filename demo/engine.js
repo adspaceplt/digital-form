@@ -20943,10 +20943,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '000000012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];
 
+          var bkMail = function (k) { return (Array.isArray(k.emails) ? k.emails[0] : k.email) || ''; };
           var bkVals = function (k) {
             var t = function (v) { var x = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return x || null; };
             return { legal_name: t(k.legal_name) ? t(k.legal_name).toUpperCase() : null, company_no: t(k.reg_no), company_no_old: t(k.old_reg_no),
-              tin: t(k.tax_id_no), sst_no: t(k.sst_reg_no), finance_email: t(k.email) ? t(k.email).toLowerCase() : null,
+              tin: t(k.tax_id_no), sst_no: t(k.sst_reg_no), finance_email: t(bkMail(k)) ? t(bkMail(k)).toLowerCase() : null,
               billing_address: t(k.address), person: t(k.person) };
           };
           var bkSame = function (f, a, b) {
@@ -21176,7 +21177,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 if ('company_no_old' in vals) ct.old_reg_no = p.old_reg_no;
                 if ('tin' in vals) ct.tax_id_no = p.tax_id_no;
                 if ('sst_no' in vals) ct.sst_reg_no = p.sst_reg_no;
-                if ('finance_email' in vals && p.email) ct.email = p.email;
+                if ('finance_email' in vals && p.email) ct.emails = [p.email].concat((ct.emails || []).filter(function (m) { return String(m).toLowerCase() !== p.email.toLowerCase(); })).slice(0, 5);
                 if ('billing_address' in vals) ct.address = p.address;
                 if ('bill_contact_id' in vals) ct.person = [p.salutation, p.person].filter(Boolean).join(' ') || ct.person;
                 window.__bukkuSaved = { kind: bkb.kind, id: bkb.id, contact: ct.id, values: JSON.parse(JSON.stringify(vals)) };
@@ -21282,7 +21283,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             ct.legal_name = p.legal_name; ct.address = p.address || ct.address; if (ct.types.indexOf(p.type) < 0) ct.types.push(p.type);
             ct.fields = (ct.fields || []).filter(function (f) { return f.field_id !== p.field_id; }).concat([{ field_id: p.field_id, value: p.our_id }]);
             window.__bukkuSent = { kind: p.kind, id: p.id, contact: ct.id, code: ct.contact_code, skip: bkb.skip || [] };
-            if (p.email) ct.email = p.email;
+            if (p.email) ct.emails = [p.email].concat((ct.emails || []).filter(function (m) { return String(m).toLowerCase() !== p.email.toLowerCase(); })).slice(0, 5);
             ['old_reg_no', 'tax_id_no', 'sst_reg_no'].forEach(function (k) { if (p[k]) ct[k] = p[k]; });
             if (p.person) ct.person = [p.salutation, p.person].filter(Boolean).join(' ');
             return rpc('bukku_linked', { p_kind: p.kind, p_id: p.id, p_contact: ct.id, p_code: ct.contact_code }).then(function () {
