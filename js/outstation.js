@@ -45,7 +45,7 @@
   var DOTS = window.ADspaceIcons.glyph('more');
   /* The trip card's glyphs (2026-11-25): each purpose its own, the route's
      pin, the office, and the small facts under a stop. */
-  var GLYPH = { meeting: 'users', shooting: 'camera', event: 'calendar', other: 'more', pin: 'pin', road: 'route',
+  var GLYPH = { meeting: 'meeting', shooting: 'camera', event: 'calendar', other: 'more', pin: 'pin', road: 'route',
     office: 'building', clock: 'clock', target: 'target', camera: 'camera', pen: 'pen' };
   Object.keys(GLYPH).forEach(function (k) { GLYPH[k] = window.ADspaceIcons.glyph(GLYPH[k]); });
   /* Recording acts wait for a phone (2026-11-25, the user: a desk computer
