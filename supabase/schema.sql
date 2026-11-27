@@ -166770,6 +166770,935 @@ create trigger quotations_signed_kept before delete on public.quotations
 -- END OF QUOTATION BRAND AND COMPANY PICK ---------------------------------
 
 -- ===========================================================================
+-- CREATOR BILL ON COMPLETED (2026-11-27)
+-- ===========================================================================
+-- WHY: the linked sections (the user, 27 Nov: "the link could proceed on",
+-- flow 2 as recommended): a booking marked Completed with its creator fee
+-- set makes the creator's draft bill in Bukku at once, in the colleague's
+-- own session, through the same `bukku-sync` `createbill` as Create bill.
+-- A Business setting turns it off.
+--
+-- WHAT CHANGES
+--   * `creator_bill_on_completed` (0 Off, 1 On, from a day; seeded On),
+--     read by `creator_bill_auto_on()`, set by `creator_bill_auto_set(p_on)`
+--     (team.settings Work, filed `team.changed` under Settings).
+--   * `creator_bill_auto_ok(p_option)`: asked by `bukku-sync` before a bill
+--     made on Completed (`auto`), as the caller: `auto-off` with the
+--     setting off, `not-completed` for a booking not Completed, `denied`
+--     outside the team. `creator_bill_prep` then holds every other rule
+--     (the fee, the link, the account, a bill already held).
+--
+-- ORDER: this file (connector), then `bukku-sync` (Management API, with its
+-- _shared files, read back), then the pages (Pages deploy). An old page
+-- never asks `auto`; a page served before the function answers nothing
+-- for `auto` and the booking still completes.
+-- Safe to run twice.
+-- ROLLBACK: `creator_bill_auto_set(false)` stops it at once; the functions
+-- and the setting may stay. To remove: drop the three functions and
+-- `delete from app_settings where key = 'creator_bill_on_completed'`.
+-- ===========================================================================
+
+-- CREATOR BILL ON COMPLETED --------------------------------------------------
+
+insert into public.app_settings (key, from_date, value)
+select 'creator_bill_on_completed', date '2023-08-14', 1
+ where not exists (select 1 from public.app_settings s where s.key = 'creator_bill_on_completed');
+
+create or replace function public.creator_bill_auto_on()
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(public.app_setting('creator_bill_on_completed', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) = 1
+$$;
+revoke all on function public.creator_bill_auto_on() from public, anon, authenticated;
+
+create or replace function public.creator_bill_auto_set(p_on boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me      public.team_members := public.ops_me();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_was   numeric;
+  v_to    numeric := case when coalesce(p_on, false) then 1 else 0 end;
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_was := public.app_setting('creator_bill_on_completed', v_today);
+  if v_was is not distinct from v_to then return jsonb_build_object('ok', true); end if;
+  insert into public.app_settings (key, from_date, value, set_by, set_at)
+  values ('creator_bill_on_completed', v_today, v_to, me.id, now())
+  on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Settings',
+          'Bill creators on Completed: ' || case when v_was = 1 then 'On' else 'Off' end || ' → ' ||
+          case when v_to = 1 then 'On' else 'Off' end || ' · from ' || public.register_day(v_today));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.creator_bill_auto_set(boolean) from public, anon, authenticated;
+grant execute on function public.creator_bill_auto_set(boolean) to authenticated;
+
+create or replace function public.creator_bill_auto_ok(p_option uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me      public.team_members := public.ops_me();
+  v_state text;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if not public.creator_bill_auto_on() then return jsonb_build_object('error', 'auto-off'); end if;
+  select o.state into v_state from public.campaign_options o where o.id = p_option;
+  if v_state is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_state <> 'completed' then return jsonb_build_object('error', 'not-completed'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.creator_bill_auto_ok(uuid) from public, anon, authenticated;
+grant execute on function public.creator_bill_auto_ok(uuid) to authenticated;
+
+/* The setting is one the Business settings sheet takes too (`tests/sql.js`),
+   restated whole from AD SPEND FIGURES with the key added. */
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_details_days', 'quote_details_close_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links', 'creator_bill_on_completed',
+    'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days', 'hiring_pool_months', 'hiring_keep_months', 'feedback_quiet_months', 'plan_db_mb', 'plan_db_alert_pct',
+    'timely_pct', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'hiring_decision_days', 'verify_code_from',
+    'work_start', 'work_end', 'work_lunch_min', 'work_weekend',
+    'health_cap_default', 'health_near_pct', 'health_task_hours', 'health_remind_days', 'health_alert',
+    'outstation_office_lat', 'outstation_office_lng', 'outstation_accuracy_m', 'outstation_keep_months',
+    'outstation_office_radius_m', 'outstation_remind_hours',
+    'reveal_seconds', 'ad_prepay_pct', 'ad_credit_fee_pct'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 when v_k in ('outstation_office_lat', 'outstation_office_lng') then 6 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert', 'creator_bill_on_completed') and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'task_past_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_invite_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_link_days' and (v_v < 7 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_pool_months' and (v_v < 1 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'ad_prepay_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'ad_credit_fee_pct' and (v_v < 0 or v_v > 100))
+       or (v_k = 'feedback_quiet_months' and (v_v < 1 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_keep_months' and (v_v < 1 or v_v > 36 or v_v <> trunc(v_v)))
+       or (v_k = 'plan_db_mb' and (v_v < 100 or v_v > 1000000 or v_v <> trunc(v_v)))
+       or (v_k = 'plan_db_alert_pct' and (v_v < 10 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'timely_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'timely_late_days' and (v_v < 0 or v_v > 30 or round(v_v, 1) <> v_v))
+       or (v_k = 'stage_back_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_reply_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'session_idle_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'reveal_seconds' and (v_v < 10 or v_v > 600 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_decision_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_details_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_details_close_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k in ('creator_pay_days_myr', 'creator_pay_days_other') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'health_cap_default' and (v_v < 1 or v_v > 80 or v_v <> trunc(v_v)))
+       or (v_k = 'health_near_pct' and (v_v < 50 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k = 'health_task_hours' and (v_v < 0.5 or v_v > 40 or v_v * 2 <> trunc(v_v * 2)))
+       or (v_k = 'health_remind_days' and (v_v < 0 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_office_lat' and (v_v < -90 or v_v > 90))
+       or (v_k = 'outstation_office_lng' and (v_v < -180 or v_v > 180))
+       or (v_k = 'outstation_accuracy_m' and (v_v < 5 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_office_radius_m' and (v_v < 20 or v_v > 1000 or v_v <> trunc(v_v)))
+       or (v_k = 'outstation_remind_hours' and (v_v < 1 or v_v > 12 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'verify_code_from' and (v_v < 20230814 or v_v > 20991231 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 31 or mod(trunc(v_v / 100), 100) not between 1 and 12))
+       or (v_k in ('work_start', 'work_end') and (v_v < 0 or v_v > 2345 or v_v <> trunc(v_v) or mod(v_v, 100) not in (0, 15, 30, 45)))
+       or (v_k = 'work_lunch_min' and (v_v < 0 or v_v > 180 or v_v <> trunc(v_v) or mod(v_v, 15) <> 0))
+       or (v_k = 'work_weekend' and v_v not in (0, 1, 2))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  /* A working day ends after it starts, as the two stand on the From day. */
+  if (p_values ? 'work_start' or p_values ? 'work_end')
+     and coalesce((p_values ->> 'work_end')::numeric, public.app_setting('work_end', p_from))
+      <= coalesce((p_values ->> 'work_start')::numeric, public.app_setting('work_start', p_from)) then
+    return jsonb_build_object('error', 'bad-hours');
+  end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'Lead follow-up limit' when 'proposal_followup_days' then 'Proposal follow-up limit'
+        when 'vic_lead_followup_hours' then 'VIC lead follow-up limit' when 'vic_proposal_followup_days' then 'VIC proposal follow-up limit'
+        when 'sst_pct' then 'SST' when 'term_1_3' then 'Under 3 months' when 'term_4_5' then '3-month commitment'
+        when 'term_6_11' then '6-month commitment' when 'term_12_23' then '12-month commitment' when 'term_18_23' then '18-month commitment' when 'term_24' then '24-month commitment'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'ai_price_image' then 'AI price per scene picture' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email' when 'report_post_links' then 'Posts linked to tasks' when 'creator_bill_on_completed' then 'Bill creators on Completed'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'feedback_quiet_months' then 'Feedback last requested within' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'quote_details_days' then 'Details reply within' when 'quote_details_close_days' then 'Close after Reply by'
+        when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
+        when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
+        when 'stage_back_days' then 'Past dates on stage moves'
+        when 'hiring_reply_days' then 'Interview reply time'
+        when 'session_idle_days' then 'Signed-in devices'
+        when 'reveal_seconds' then 'Hidden personal details'
+        when 'hiring_decision_days' then 'Decision time'
+        when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'quote_wa_day' then 'Quotation portal on WhatsApp'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Yearly rise in cost per lead' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend share of the budget' when 'bench_adset_daily' then 'Minimum daily budget per ad set'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
+        when 'health_cap_default' then 'Health default weekly capacity' when 'health_near_pct' then 'Health near capacity'
+        when 'health_task_hours' then 'Health default hours per task' when 'health_remind_days' then 'Health check-in reminder'
+        when 'health_alert' then 'Health heavy workload notice'
+        when 'outstation_office_lat' then 'Office latitude' when 'outstation_office_lng' then 'Office longitude'
+        when 'outstation_accuracy_m' then 'Location accuracy limit' when 'outstation_keep_months' then 'Outstation trips kept'
+        when 'outstation_office_radius_m' then 'Office radius' when 'outstation_remind_hours' then 'Reminder for open trips'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'verify_code_from' then 'Document IDs printed from'
+        when 'ad_prepay_pct' then 'Next month''s budget requested at' when 'ad_credit_fee_pct' then 'Agency Credit Term Fee'
+        when 'work_start' then 'Working hours start' when 'work_end' then 'Working hours end'
+        when 'work_lunch_min' then 'Lunch' when 'work_weekend' then 'Saturday and Sunday'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours', 'health_cap_default', 'health_task_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'quote_details_close_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days') then ' days'
+        when v_k in ('quote_reply_days', 'quote_details_days', 'creator_pay_days_myr', 'creator_pay_days_other', 'hiring_decision_days') then ' working days'
+        when v_k = 'quote_wa_day' then ' per day'
+        when v_k = 'plan_db_mb' then ' MB'
+        when v_k = 'work_lunch_min' then ' minutes'
+        when v_k = 'reveal_seconds' then ' seconds'
+        when v_k in ('outstation_accuracy_m', 'outstation_office_radius_m') then ' m'
+        when v_k = 'outstation_remind_hours' then ' hours'
+        when v_k in ('outstation_office_lat', 'outstation_office_lng') then ''
+        when v_k in ('health_keep_months', 'hiring_pool_months', 'hiring_keep_months', 'feedback_quiet_months', 'health_leaver_months', 'outstation_keep_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert', 'creator_bill_on_completed') then case when v_was = 1 then 'On' else 'Off' end
+              when v_k like 'work\_%' and v_k <> 'work_lunch_min' then coalesce(public.work_hours_word(v_k, v_was), 'not set')
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set')
+              when v_k = 'verify_code_from' then coalesce(public.register_day(to_date(v_was::bigint::text, 'YYYYMMDD')), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert', 'creator_bill_on_completed') then case when v_v = 1 then 'On' else 'Off' end
+              when v_k like 'work\_%' and v_k <> 'work_lunch_min' then public.work_hours_word(v_k, v_v)
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3)
+              when v_k = 'verify_code_from' then public.register_day(to_date(v_v::bigint::text, 'YYYYMMDD')) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k in ('analytics_from', 'verify_code_from') or (v_k like 'work\_%' and v_k <> 'work_lunch_min') then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert', 'creator_bill_on_completed') then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k in ('meta_checks', 'client_email_on', 'report_post_links', 'health_alert', 'creator_bill_on_completed') then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' when v_k in ('outstation_office_lat', 'outstation_office_lng') then 'FM990.999999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF CREATOR BILL ON COMPLETED -------------------------------------------
+
+-- ===========================================================================
+-- FEEDBACK SATISFACTION RATE (2026-11-27)
+-- ===========================================================================
+-- WHY: the linked sections (the user, 27 Nov: "the link could proceed on",
+-- flow 3 as recommended): Performance's Client satisfaction rate was typed
+-- by hand each month while the clients' own answers sat in Client feedback.
+-- The review sheet now offers the month's rate from those answers, as it
+-- offers My Work's two figures; management presses it or types its own.
+--
+-- WHAT CHANGES
+--   * `perf_ops_rate(member, month)` (restated whole from THE REVIEW'S MY
+--     WORK FIGURES) answers `satisfaction: {answers, rate}` beside
+--     `posting` and `timeline`: the account manager question alone (the
+--     lead score rates the agency, not the person), each answer as a
+--     percentage of its own scale's maximum (Service rating 1 to 5,
+--     Performance review 1 to 10), averaged over the answers submitted in
+--     the month (MYT) naming this colleague as manager. No answer: no key,
+--     never 0. Withheld where `feedback_sees_manager` withholds the score.
+--     Read only through `perf_json`'s full view (management), as before.
+--
+-- ORDER: this file (connector), then the pages. An old page reads no
+-- `satisfaction` and draws nothing for it. Safe to run twice.
+-- ROLLBACK: run perf_ops_rate from THE REVIEW'S MY WORK FIGURES again.
+-- ===========================================================================
+
+-- FEEDBACK SATISFACTION RATE -------------------------------------------------
+
+create or replace function public.perf_ops_rate(p_member uuid, p_period date)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m_from timestamptz := (date_trunc('month', p_period)::date)::timestamp at time zone 'Asia/Kuala_Lumpur';
+  m_to   timestamptz := ((date_trunc('month', p_period) + interval '1 month')::date)::timestamp at time zone 'Asia/Kuala_Lumpur';
+  today  date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  p_due integer; p_ok integer; t_reached integer; t_met integer; s_n integer := 0; s_rate numeric;
+begin
+  if to_regclass('public.ops_tasks') is null then return null; end if;
+
+  select count(*),
+         count(*) filter (where t.live_at is not null
+                            and (t.live_at at time zone 'Asia/Kuala_Lumpur')::date
+                                <= (t.publish_at at time zone 'Asia/Kuala_Lumpur')::date)
+    into p_due, p_ok
+    from public.ops_tasks t
+   where t.publish_at >= m_from and t.publish_at < m_to
+     and t.cancelled_at is null
+     and (t.live_at is not null or (t.publish_at at time zone 'Asia/Kuala_Lumpur')::date < today)
+     and exists (select 1 from public.ops_workflow_stages s
+                  where s.workflow_id = t.workflow_id and s.stage_group = 'live')
+     and (select a.team_member_id from public.ops_task_assignees a
+           where a.task_id = t.id and a.responsibility = 'owner'
+           order by a.ended_at nulls first, a.assigned_at desc limit 1) = p_member;
+
+  with owned as (
+    select t.id, t.workflow_id, t.current_final_due_at as due,
+           coalesce(t.completed_at, t.delivered_at) as ended,
+           public.ops_priority_by(coalesce(t.priority_at, t.created_at), t.priority_level) as prio_by,
+           (select min(s.position) from public.ops_workflow_stages s
+             where s.workflow_id = t.workflow_id and s.stage_group = 'client_review') as review_at,
+           (select min(s.position) from public.ops_workflow_stages s
+             where s.workflow_id = t.workflow_id and s.stage_group = 'internal_review') as first_review_at
+      from public.ops_tasks t
+     where t.cancelled_at is null
+       and (t.current_final_due_at is not null or t.priority_level in (1, 2, 4))
+       and (select a.team_member_id from public.ops_task_assignees a
+             where a.task_id = t.id and a.responsibility = 'owner'
+             order by a.ended_at nulls first, a.assigned_at desc limit 1) = p_member
+  ),
+  /* When each deadline was met: the first move to its stage or beyond, never
+     into On hold, Blocked or Cancelled. The due date's is client review, else
+     the finish; a priority's is client review, else the first review. */
+  marks as (
+    select o.*,
+           case when o.review_at is null then o.ended
+                else coalesce((select min(e.created_at)
+                                 from public.ops_task_events e
+                                 join public.ops_workflow_stages w
+                                   on w.workflow_id = o.workflow_id and w.key = e.to_value ->> 'stage_key'
+                                where e.task_id = o.id and e.event_type = 'stage_changed'
+                                  and w.position >= o.review_at
+                                  and w.stage_group not in ('kiv', 'blocked', 'cancelled')), o.ended) end as due_met,
+           coalesce((select min(e.created_at)
+                       from public.ops_task_events e
+                       join public.ops_workflow_stages w
+                         on w.workflow_id = o.workflow_id and w.key = e.to_value ->> 'stage_key'
+                      where e.task_id = o.id and e.event_type = 'stage_changed'
+                        and w.position >= coalesce(o.review_at, o.first_review_at)
+                        and w.stage_group not in ('kiv', 'blocked', 'cancelled')), o.ended) as prio_met
+      from owned o
+  ),
+  /* A task is counted in the month it met the last of its deadlines. */
+  settled as (
+    select m.*,
+           case when (m.due is null or m.due_met is not null)
+                 and (m.prio_by is null or m.prio_met is not null)
+                then greatest(case when m.due is not null then m.due_met end,
+                              case when m.prio_by is not null then m.prio_met end) end as at
+      from marks m
+  )
+  select count(*),
+         count(*) filter (where (s.due is null
+                                 or (s.due_met at time zone 'Asia/Kuala_Lumpur')::date
+                                    <= (s.due at time zone 'Asia/Kuala_Lumpur')::date)
+                            and (s.prio_by is null or s.prio_met <= s.prio_by))
+    into t_reached, t_met
+    from settled s
+   where s.at >= m_from and s.at < m_to;
+
+  /* Client satisfaction (FEEDBACK SATISFACTION RATE): the account manager
+     question of each answer submitted in the month (MYT) naming this
+     colleague, each as a percentage of its own scale's maximum, then
+     averaged; a month with no answer has no rate, never 0. Withheld where
+     the reader may not see the manager's score. */
+  if public.feedback_sees_manager(p_member) then
+    select count(*), round(avg(r.manager_score::numeric * 100 / q.scale_max), 1)
+      into s_n, s_rate
+      from public.feedback_responses r
+      join public.feedback_questions q on q.kind = r.kind and q.about_manager and q.type = 'scale' and q.scale_max > 0
+     where r.manager_id = p_member and r.manager_score is not null
+       and r.submitted_at >= m_from and r.submitted_at < m_to;
+  end if;
+
+  return jsonb_build_object(
+    'posting',  jsonb_build_object('due', p_due, 'on_time', p_ok),
+    'timeline', jsonb_build_object('reached', t_reached, 'met', t_met))
+    || case when s_n > 0 then jsonb_build_object('satisfaction', jsonb_build_object('answers', s_n, 'rate', s_rate)) else '{}'::jsonb end;
+end $$;
+revoke all on function public.perf_ops_rate(uuid, date) from public, anon, authenticated;
+
+-- END OF FEEDBACK SATISFACTION RATE ------------------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- A CAMPAIGN'S AND A CREATOR'S HISTORY KEPT BY ITS ID (2026-11-27)
+-- ===========================================================================
+-- WHY: a campaign's Activity read `activity_log` by subject, the title the
+-- line was written with, and a creator's by the name; a rename left the
+-- earlier lines behind, as a client's did before `activity_log.client_id`
+-- (A CLIENT'S HISTORY KEPT BY ITS ID). A record is traced by its id, never
+-- by its name.
+-- WHAT IT CHANGES
+--   * `activity_log.campaign_id` and `activity_log.creator_id` (uuid,
+--     nullable, on delete set null), each indexed.
+--   * `activity_campaign_note()` / `activity_creator_note()`: after a write
+--     to a campaign's own rows (`campaigns`, `campaign_options`,
+--     `campaign_confirmations`) or a creator's (`creators` and the tables
+--     keyed on one creator), the transaction remembers that id
+--     (`adspace.log_campaign`, `adspace.log_creator`) and gives it to the
+--     `campaign.*` or `creator.*` lines it already filed without one.
+--   * `activity_log_ids()` (before insert): a `campaign.*` line filed
+--     without a campaign id takes the one the transaction remembers, a
+--     `creator.*` line the creator's. A line given one (the console names
+--     the record it acts on) keeps it; an id no longer held is dropped, so
+--     the line is still filed. Never resolved from a name.
+--   * Backfill: a `campaign.*` line takes the campaign whose title it was
+--     written with (its title, and each title a client confirmed it under),
+--     a `creator.*` line the creator whose name it was written with (its
+--     name and its earlier names from its own `Name: A → B` lines); a name
+--     more than one record has held, a line older than the record, and a
+--     title a deleted campaign held while this one stood, are left unfilled.
+-- ORDER: this file first (the columns must stand before the pages send
+-- them), then the pages. An open tab served before reads by name as it did.
+-- ROLLBACK: drop trigger activity_log_ids on public.activity_log; drop each
+-- `<table>_activity_campaign` and `<table>_activity_creator` trigger; drop
+-- function public.activity_log_ids(), public.activity_campaign_note(),
+-- public.activity_creator_note(); the pages read by id, so the columns stay
+-- (dropping them breaks the console). Safe to run twice.
+
+-- ACTIVITY CAMPAIGN AND CREATOR ID ---------------------------------------------
+
+alter table public.activity_log add column if not exists campaign_id uuid
+  references public.campaigns(id) on delete set null;
+alter table public.activity_log add column if not exists creator_id uuid
+  references public.creators(id) on delete set null;
+create index if not exists activity_log_campaign_idx on public.activity_log (campaign_id, created_at desc)
+  where campaign_id is not null;
+create index if not exists activity_log_creator_idx on public.activity_log (creator_id, created_at desc)
+  where creator_id is not null;
+
+create or replace function public.activity_campaign_note()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  j jsonb := to_jsonb(case when tg_op = 'DELETE' then old else new end);
+  v uuid;
+begin
+  v := case when tg_table_name = 'campaigns' then (j ->> 'id')::uuid else (j ->> 'campaign_id')::uuid end;
+  if v is null or not exists (select 1 from public.campaigns c where c.id = v) then return null; end if;
+  if coalesce(current_setting('adspace.log_campaign', true), '') <> v::text then
+    perform set_config('adspace.log_campaign', v::text, true);
+    update public.activity_log a set campaign_id = v
+     where a.campaign_id is null and a.created_at = now() and a.action like 'campaign.%';
+  end if;
+  return null;
+end $$;
+revoke all on function public.activity_campaign_note() from public, anon, authenticated;
+
+create or replace function public.activity_creator_note()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  j jsonb := to_jsonb(case when tg_op = 'DELETE' then old else new end);
+  v uuid;
+begin
+  v := case when tg_table_name = 'creators' then (j ->> 'id')::uuid else (j ->> 'creator_id')::uuid end;
+  if v is null or not exists (select 1 from public.creators c where c.id = v) then return null; end if;
+  if coalesce(current_setting('adspace.log_creator', true), '') <> v::text then
+    perform set_config('adspace.log_creator', v::text, true);
+    update public.activity_log a set creator_id = v
+     where a.creator_id is null and a.created_at = now() and a.action like 'creator.%';
+  end if;
+  return null;
+end $$;
+revoke all on function public.activity_creator_note() from public, anon, authenticated;
+
+create or replace function public.activity_log_ids()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v text;
+begin
+  if new.campaign_id is not null and not exists (select 1 from public.campaigns c where c.id = new.campaign_id) then
+    new.campaign_id := null;
+  end if;
+  if new.creator_id is not null and not exists (select 1 from public.creators c where c.id = new.creator_id) then
+    new.creator_id := null;
+  end if;
+  if new.campaign_id is null and new.action like 'campaign.%' then
+    v := nullif(current_setting('adspace.log_campaign', true), '');
+    if v is not null and exists (select 1 from public.campaigns c where c.id = v::uuid) then new.campaign_id := v::uuid; end if;
+  end if;
+  if new.creator_id is null and new.action like 'creator.%' then
+    v := nullif(current_setting('adspace.log_creator', true), '');
+    if v is not null and exists (select 1 from public.creators c where c.id = v::uuid) then new.creator_id := v::uuid; end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.activity_log_ids() from public, anon, authenticated;
+
+drop trigger if exists activity_log_ids on public.activity_log;
+create trigger activity_log_ids before insert on public.activity_log
+  for each row execute function public.activity_log_ids();
+
+do $$
+declare t text;
+begin
+  foreach t in array array['campaigns', 'campaign_options', 'campaign_confirmations'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop trigger if exists %I on public.%I', t || '_activity_campaign', t);
+      execute format('create trigger %I after insert or update or delete on public.%I for each row execute function public.activity_campaign_note()',
+                     t || '_activity_campaign', t);
+    end if;
+  end loop;
+  foreach t in array array['creators', 'creator_profiles', 'creator_profile_changes', 'creator_emails',
+                           'creator_standard_fees', 'creator_earlier_jobs', 'creator_bills', 'creator_pay_requests'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop trigger if exists %I on public.%I', t || '_activity_creator', t);
+      execute format('create trigger %I after insert or update or delete on public.%I for each row execute function public.activity_creator_note()',
+                     t || '_activity_creator', t);
+    end if;
+  end loop;
+end $$;
+
+-- Backfill: the titles each campaign has held, and the names each creator has.
+with held(campaign_id, name) as (
+  select c.id, lower(btrim(c.title)) from public.campaigns c where nullif(btrim(c.title), '') is not null
+  union
+  select f.campaign_id, lower(btrim(f.campaign_title)) from public.campaign_confirmations f
+   where f.campaign_id is not null and nullif(btrim(f.campaign_title), '') is not null
+),
+one as (
+  select h.name, min(h.campaign_id::text)::uuid campaign_id from held h group by h.name
+  having count(distinct h.campaign_id) = 1
+)
+update public.activity_log a set campaign_id = o.campaign_id
+  from one o, public.campaigns c
+ where c.id = o.campaign_id and a.campaign_id is null and a.action like 'campaign.%'
+   and lower(btrim(a.subject)) = o.name and a.created_at >= c.created_at
+   and not exists (select 1 from public.activity_log d where d.action = 'campaign.deleted'
+                    and lower(btrim(d.subject)) = o.name and d.created_at >= c.created_at);
+
+with recursive held(creator_id, name) as (
+  select c.id, lower(btrim(c.name)) from public.creators c where nullif(btrim(c.name), '') is not null
+  union
+  select h.creator_id, lower(btrim(m[1]))
+    from held h
+    join public.activity_log a on a.action = 'creator.updated' and lower(btrim(a.subject)) = h.name
+    cross join lateral regexp_matches(a.detail, 'Name: ([^;→]+) → ([^;]+)', 'g') m
+   where lower(btrim(m[2])) = h.name and nullif(btrim(m[1]), '') is not null and lower(btrim(m[1])) <> 'not set'
+),
+one as (
+  select h.name, min(h.creator_id::text)::uuid creator_id from held h group by h.name
+  having count(distinct h.creator_id) = 1
+)
+update public.activity_log a set creator_id = o.creator_id
+  from one o, public.creators c
+ where c.id = o.creator_id and a.creator_id is null and a.action like 'creator.%'
+   and lower(btrim(a.subject)) = o.name and a.created_at >= c.created_at
+   and not exists (select 1 from public.activity_log d where d.action = 'creator.removed'
+                    and lower(btrim(d.subject)) = o.name and d.created_at >= c.created_at);
+
+-- END OF ACTIVITY CAMPAIGN AND CREATOR ID -------------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- QUOTATION MADE BY ITS COLLEAGUE'S ID (2026-11-27)
+-- ===========================================================================
+-- WHY: a quotation held who made it by name alone (`made_by`), and the
+-- PDF read that colleague's designation by `team_members.name`; a renamed
+-- colleague drew no role under their name. A record is traced by its id,
+-- never by its name.
+-- WHAT IT CHANGES
+--   * `quotations.made_by_id` (uuid, nullable, on delete set null), read
+--     by a signed-in colleague as the list's other columns are. The
+--     name stays as written, a snapshot never rewritten.
+--   * `quotations_made_by_id()` (before insert): a quotation made with a
+--     name takes the caller's own id where the caller is that colleague,
+--     else a revision's the id of the quotation it revises or replaces
+--     under the same name. Never resolved from a name.
+--   * Backfill: a quotation's `made_by` held by exactly one colleague
+--     takes that colleague's id; a name two hold is left unfilled.
+-- ORDER: this file first, then the pages (which read `made_by_id`). An
+-- open tab served before reads the role by name as it did.
+-- ROLLBACK: drop trigger quotations_made_by_id on public.quotations; drop
+-- function public.quotations_made_by_id(); the pages read the column, so
+-- it stays. Safe to run twice.
+
+-- QUOTATION MADE BY ID ------------------------------------------------------
+
+alter table public.quotations add column if not exists made_by_id uuid
+  references public.team_members(id) on delete set null;
+grant select (made_by_id) on table public.quotations to authenticated;
+
+create or replace function public.quotations_made_by_id()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members;
+  v uuid;
+begin
+  if new.made_by_id is not null or nullif(btrim(coalesce(new.made_by, '')), '') is null then return new; end if;
+  me := public.ops_me();
+  if me.id is not null and me.name = btrim(new.made_by) then
+    new.made_by_id := me.id;
+    return new;
+  end if;
+  select x.made_by_id into v from public.quotations x
+   where x.id = coalesce(new.revises, new.replaces) and x.made_by = new.made_by;
+  new.made_by_id := v;
+  return new;
+end $$;
+revoke all on function public.quotations_made_by_id() from public, anon, authenticated;
+
+drop trigger if exists quotations_made_by_id on public.quotations;
+create trigger quotations_made_by_id before insert on public.quotations
+  for each row execute function public.quotations_made_by_id();
+
+with one as (
+  select m.name, min(m.id::text)::uuid id from public.team_members m
+   where nullif(btrim(m.name), '') is not null group by m.name having count(*) = 1
+)
+update public.quotations q set made_by_id = o.id
+  from one o
+ where q.made_by_id is null and btrim(q.made_by) = o.name;
+
+-- END OF QUOTATION MADE BY ID -------------------------------------------------
+
+-- ===========================================================================
+-- QUOTATION REVIEW HOLDS (2026-11-27)
+-- ===========================================================================
+-- WHY: session J's review of 26 Nov, findings 5, 6, 14 and 15.
+--   5  A confirmed revision a client opened by the original's link was never
+--      sent out: its prices stayed editable and the stage stood short of
+--      Proposal sent.
+--   6  quotation_confirm took a draft past its valid-until date, so its link
+--      opened on "expired".
+--   14 quote_change_request checked that changes were open before taking
+--      the row's lock, so a quotation signed a moment before took one.
+--   15 quote_preflight's function-wide handler undid the hour's count on a
+--      bad input, so bad inputs were never rate limited.
+-- WHAT IT CHANGES: quote_opened also stamps the revision shown;
+-- quotation_confirm refuses `draft-expired`; quote_change_request asks
+-- quote_change_open again under the lock; quote_preflight's handler wraps
+-- the work after the throttle alone. No table or grant changes.
+-- ROLLBACK: re-run quote_opened from 2026-11-25-quotation-copier-opening.sql,
+-- quotation_confirm from 2026-11-26-quotations-confirmed.sql,
+-- quote_change_request from 2026-11-25-minor-abuse-paths-held.sql and
+-- quote_preflight from 2026-11-25-quotation-preflight.sql.
+-- Safe to run twice.
+
+create or replace function public.quote_opened(p_key text, p_device text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+  v_ip  text := nullif(public.request_ip(), '');
+  v_dev text := public.seal_device(p_device);
+  v_team boolean := false;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  if public.is_team() then return jsonb_build_object('ok', true, 'kept', false); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  if q.id is null or (q.source = 'website' and q.released_at is null) then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  -- An opening from where a colleague copied this quotation's link in the
+  -- last 30 days is the team's own, never the client's.
+  v_team := v_ip is not null and exists (select 1 from public.quotation_link_copies c
+              where c.quotation_id in (w.id, q.id) and c.ip = v_ip and c.at > now() - interval '30 days');
+  -- A team's quotation reaches the client the first time its own link is
+  -- opened by anyone but a colleague: it is sent out then, once. The
+  -- quotation the key belongs to, never a revision still being made, nor
+  -- one not proceeding.
+  if w.source = 'console' and w.sent_out_at is null and w.status <> 'not_proceeding' and not v_team then
+    update public.quotations set sent_out_at = now() where id = w.id and sent_out_at is null;
+  end if;
+  -- The confirmed revision the link shows is sent out with it, so its
+  -- prices freeze and the stage reaches Proposal sent (review J5).
+  if q.id <> w.id and q.source = 'console' and q.confirmed_at is not null and q.sent_out_at is null
+     and q.status <> 'not_proceeding' and not v_team then
+    update public.quotations set sent_out_at = now() where id = q.id and sent_out_at is null;
+  end if;
+  if exists (select 1 from public.signing_steps s
+              where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened'
+                and s.at > now() - interval '6 hours'
+                and s.ip is not distinct from v_ip and s.device is not distinct from v_dev)
+     or (select count(*) from public.signing_steps s
+          where s.doc_kind = 'quotation' and s.doc_id = q.id and s.step = 'opened') >= 100 then
+    return jsonb_build_object('ok', true, 'kept', false);
+  end if;
+  insert into public.signing_steps (doc_kind, doc_id, step, ip, country, device)
+  values ('quotation', q.id, 'opened', v_ip, nullif(public.request_country(), ''), v_dev);
+  -- The same opening, kept once, is the Activity record's line.
+  perform public.quote_activity(q, 'quotation.opened', q.ref || case when v_team then ' · Opened by the team' else '' end, q.contact);
+  return jsonb_build_object('ok', true, 'kept', true);
+end $$;
+
+
+create or replace function public.quotation_confirm(p_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  n public.quotations;
+  o public.quotations;
+  v_by text;
+  v_ref text;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into n from public.quotations x where x.id = p_id for update;
+  if n.id is null or n.removed_at is not null or not public.client_scope_ok('client', n.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if n.confirmed_at is not null then return jsonb_build_object('ok', true, 'same', true, 'ref', n.ref); end if;
+  if n.source <> 'console' then return jsonb_build_object('error', 'website'); end if;
+  if n.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  -- A draft past its valid-until date is never confirmed: its link would
+  -- open on "expired" (review J6). Edit sets a new date first.
+  if n.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'draft-expired'); end if;
+  if n.revises is not null then
+    select * into o from public.quotations x where x.id = n.revises for update;
+  end if;
+  if o.id is not null and o.removed_at is null then
+    if o.signed_at is not null or o.reviewed_at is not null then return jsonb_build_object('error', 'signed'); end if;
+    select x.ref into v_by from public.quotations x where x.replaces = o.id and x.removed_at is null and x.id <> n.id limit 1;
+    if v_by is not null then return jsonb_build_object('error', 'revised', 'ref', v_by); end if;
+    -- A website request revised before it was sent holds no ADP/QT number:
+    -- its revision takes a fresh one; else the family's next -Rn.
+    v_ref := case when o.confirmed_at is null then public.quote_ref(n.brand, n.issued_at) else public.quote_revision_ref(o.id) end;
+    update public.quotations set ref = v_ref, confirmed_at = now(), confirmed_by = me.name, replaces = o.id, revises = null
+     where id = n.id returning * into n;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'client.quotation', n.brand, n.ref || ' confirmed · revises ' || o.ref);
+  else
+    -- What it was to revise is gone: it stands as a quotation of its own.
+    v_ref := public.quote_ref(n.brand, n.issued_at);
+    update public.quotations set ref = v_ref, confirmed_at = now(), confirmed_by = me.name, revises = null
+     where id = n.id returning * into n;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'client.quotation', n.brand, n.ref || ' confirmed');
+  end if;
+  return jsonb_build_object('ok', true, 'ref', n.ref);
+end $$;
+
+
+create or replace function public.quote_change_request(p_key text, p_sel jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  o jsonb := public.quote_change_open(p_key);
+  q public.quotations;
+  cl public.clients;
+  c jsonb;
+  v_fx numeric;
+  v_sel jsonb;
+  v_p jsonb;
+  v_now timestamptz := now();
+  v_body text;
+begin
+  if o ? 'error' then return o; end if;
+  select * into q from public.quotations where id = (o->>'id')::uuid for update;
+  -- Asked again under the row's lock, as signing is: a quotation signed a
+  -- moment before takes no change request (review J14).
+  o := public.quote_change_open(p_key);
+  if o ? 'error' then return o; end if;
+  select * into cl from public.clients where id = q.client_id;
+  -- Ten requests or withdrawals a link an hour (MINOR ABUSE PATHS HELD):
+  -- each tells the team, and a withdrawal clears the minute's wait.
+  if (select count(*) from public.activity_log a
+       where a.action in ('quotation.changes', 'quotation.withdrawn') and a.meta->>'ref' = q.ref
+         and a.created_at > v_now - interval '1 hour') >= 10 then
+    return jsonb_build_object('error', 'busy');
+  end if;
+  if p_sel is null then
+    if q.change_requested_at is null then return jsonb_build_object('ok', true, 'again', true); end if;
+    update public.quotations set change_request = null, change_requested_at = null where id = q.id;
+    perform public.quote_activity(q, 'quotation.withdrawn', q.ref, q.contact);
+    return jsonb_build_object('ok', true);
+  end if;
+  if q.selection ? 'brands' then return jsonb_build_object('error', 'brands'); end if;
+  if q.change_requested_at > v_now - interval '1 minute' then return jsonb_build_object('error', 'recent'); end if;
+  c := public.quote_change_snap(q);
+  if c is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_fx := (c->>'fx')::numeric;
+  if v_fx = 0 then return jsonb_build_object('error', 'no-fx'); end if;
+  v_sel := public.quote_change_sel(q.selection, p_sel, c->'snap');
+  if v_sel ? 'error' then return v_sel; end if;
+  -- Unchanged whatever order the platforms were held in.
+  if (v_sel - 'platforms') = (q.selection - 'platforms')
+     and (select coalesce(jsonb_agg(x order by x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(v_sel->'platforms', '[]'::jsonb)) x)
+       = (select coalesce(jsonb_agg(x order by x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(q.selection->'platforms', '[]'::jsonb)) x) then
+    return jsonb_build_object('error', 'unchanged');
+  end if;
+  v_p := public.quote_fx_out(public.quote_compose(c->'snap', v_sel, q.source <> 'website'), v_fx);
+  if v_p ? 'error' then return jsonb_build_object('error', v_p->>'error'); end if;
+  update public.quotations
+     set change_request = jsonb_build_object('selection', v_sel,
+           'month', v_p->'totals'->'month'->'incl', 'once', v_p->'totals'->'once'->'incl', 'version', c->>'version'),
+         change_requested_at = v_now, reply_due = public.quote_reply_by(v_now)
+   where id = q.id
+   returning * into q;
+  perform public.quote_activity(q, 'quotation.changes', q.ref || coalesce(' · ' || coalesce(q.totals->>'currency', 'RM') || ' ' ||
+    to_char((v_p->'totals'->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', ''), q.contact);
+  v_body := q.ref || coalesce(' · ' || coalesce(q.totals->>'currency', 'RM') || ' ' ||
+              to_char((v_p->'totals'->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', '')
+            || ' · Send by ' || public.register_day((q.reply_due at time zone 'Asia/Kuala_Lumpur')::date)
+            || ' (' || trim(to_char(q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMDay')) || '), ' ||
+            lower(to_char(q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam'));
+  -- Who prepared it and the person in charge are told; where neither is
+  -- here, the team who work leads.
+  if public.quote_sign_member(q.made_by) is null and public.quote_sign_member(cl.owner) is null then
+    perform public.quote_tell(q.client_id, 'quote.changes', 'Changes requested · ' || q.brand, v_body,
+      q.id::text || ':' || v_now::text);
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by), public.quote_sign_member(cl.owner)],
+      'quote.changes', 'Changes requested · ' || q.brand, v_body, q.client_id, q.id::text || ':' || v_now::text);
+  end if;
+  return jsonb_build_object('ok', true, 'reply_due', q.reply_due);
+end $$;
+
+
+create or replace function public.quote_preflight(p_sel jsonb, p_seen jsonb default null, p_key text default null)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_chk jsonb;
+  o     jsonb;
+  q     public.quotations;
+  c     jsonb;
+  v_fx  numeric;
+  v_sel jsonb;
+  v_p   jsonb;
+  v_out jsonb := '[]'::jsonb;
+begin
+  if not public.quote_throttle() then return jsonb_build_object('error', 'limit'); end if;
+  -- A bad input is refused inside its own block, so the hour's count the
+  -- throttle took stands (review J15: the function-wide handler undid it).
+  begin
+  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
+  if p_key is null then
+    v_chk := public.quote_web_check(p_sel, case when jsonb_typeof(p_seen) = 'object' then p_seen->>'version' end);
+    return jsonb_build_object('ok', jsonb_array_length(v_chk->'changes') = 0, 'changes', v_chk->'changes', 'version', v_chk->'version');
+  end if;
+  -- A sent quotation's changed selection, as quote_change_request reads it.
+  o := public.quote_change_open(p_key);
+  if o ? 'error' then return o; end if;
+  select * into q from public.quotations where id = (o->>'id')::uuid;
+  if q.selection ? 'brands' then return jsonb_build_object('error', 'brands'); end if;
+  c := public.quote_change_snap(q);
+  v_fx := (c->>'fx')::numeric;
+  if c is null or v_fx = 0 then return jsonb_build_object('error', 'no-card'); end if;
+  v_sel := public.quote_change_sel(q.selection, p_sel, c->'snap');
+  if v_sel ? 'error' then
+    v_out := v_out || jsonb_build_object('kind', case v_sel->>'error' when 'bad-plan' then 'plan' when 'bad-extra' then 'extra'
+                                                   when 'bad-once' then 'once' when 'bad-term' then 'term' else 'selection' end);
+  else
+    v_p := public.quote_fx_out(public.quote_compose(c->'snap', v_sel, q.source <> 'website'), v_fx);
+    if v_p ? 'error' then
+      v_out := v_out || jsonb_build_object('kind', 'selection');
+    elsif jsonb_typeof(p_seen) = 'object'
+          and (coalesce((p_seen->>'month')::numeric, -1) is distinct from coalesce((v_p->'totals'->'month'->>'incl')::numeric, -1)
+               or coalesce((p_seen->>'once')::numeric, -1) is distinct from coalesce((v_p->'totals'->'once'->>'incl')::numeric, -1)) then
+      v_out := v_out || jsonb_build_object('kind', 'price');
+    end if;
+  end if;
+  return jsonb_build_object('ok', jsonb_array_length(v_out) = 0, 'changes', v_out);
+  exception when invalid_text_representation then
+    return jsonb_build_object('error', 'bad-selection');
+  end;
+end $$;
+
+
+revoke all on function public.quote_opened(text, text) from public;
+grant execute on function public.quote_opened(text, text) to anon, authenticated;
+revoke all on function public.quotation_confirm(uuid) from public, anon;
+grant execute on function public.quotation_confirm(uuid) to authenticated;
+revoke all on function public.quote_change_request(text, jsonb) from public;
+grant execute on function public.quote_change_request(text, jsonb) to anon, authenticated;
+revoke all on function public.quote_preflight(jsonb, jsonb, text) from public;
+grant execute on function public.quote_preflight(jsonb, jsonb, text) to anon, authenticated;
+
+-- END OF QUOTATION REVIEW HOLDS ---------------------------------------------
+
+-- ===========================================================================
 -- PERSONNEL NUMBERS MASKED (2026-11-27)
 -- ===========================================================================
 -- WHY: session J's review of 26 Nov, finding 3. The ten hidden numbers

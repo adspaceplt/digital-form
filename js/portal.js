@@ -834,8 +834,18 @@
     }
     paintEng(w, null);
     if (!c.id) return;
+    /* A failed read keeps both parts drawn with Try again, never hidden as
+       nothing to review (review J8). */
+    var workFail = function () {
+      if (stale(c)) return;
+      tabShown('review', true); tabShown('scripts', true);
+      var again = function () { paintWork(w, c, feed); };
+      if ($('crBox')) failIn($('crBox'), w.tabs.review, again);
+      if ($('vsBox')) failIn($('vsBox'), w.tabs.scripts, again);
+    };
     db.rpc('portal_work', { p_client: c.id }).then(function (r) {
       if (stale(c)) return;
+      if (refused(r)) { workFail(); return; }
       var d = (!r.error && r.data && !r.data.error) ? r.data : {};
       var rv = d.review, sets = (rv && rv.sets) || [];
       var waiting = sets.reduce(function (n, x) { return n + (x.waiting || 0); }, 0);
@@ -891,7 +901,7 @@
         setTile('scripts', { head: next ? w.shoot(niceDate(next.shoot_on, 'ahead')) : [sx.code, sx.title].filter(Boolean).join(' · '),
           sub: (w.scriptKind || {})[sx.kind] || '' });
       }
-    }).catch(function () { tabShown('review', false); tabShown('scripts', false); });
+    }).catch(workFail);
   }
 
   /* A failed read is never drawn as nothing (js/state.js): a refusal keeps

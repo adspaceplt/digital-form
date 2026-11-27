@@ -281,7 +281,7 @@
         AHEAD_COLS.forEach(function (k) { c[k] = r.data[k] == null ? null : r.data[k]; if (mine) mine[k] = c[k]; });
       }
       then();
-    }, then);
+    }).catch(function () { then(); });
   }
 
   /* How long, in the units a sales cycle is actually discussed in. An hour's
@@ -1301,6 +1301,7 @@
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
     if (!same && !restoring) window.scrollTo(0, 0);
+    state.fbOvFor = null; state.fbOv = null;
     state.client = c;
     /* The list was read once; Content Review's settings edit the same
        handles and logo, so a record opened from the list is read again and
@@ -1785,7 +1786,7 @@
     /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
        the services and the letters; a section the reader may not open is
        not drawn, and one whose read was refused says so, never empty. */
-    var secs = [ovQuotes(), ovTouches(), ovServices(c), ovDocuments(c), ovContact(c)].join('');
+    var secs = [ovQuotes(), ovTouches(), ovFeedback(c), ovServices(c), ovDocuments(c), ovContact(c)].join('');
     box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
@@ -1845,6 +1846,44 @@
   /* Nothing there is a line, not a dashed box and not a sentence explaining
      what the section would have held. */
   function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
+
+  /* The client's standing (the linked sections, 2026-11-27): the newest
+     answer's score in the Feedback part's own words, its form and day, red
+     in the low band, and when a request was last sent, {n} months ago in red
+     past the Business setting. Read with the record from the Feedback
+     part's own function, once a client. */
+  function ovFeedback(c) {
+    if (!partOk('feedback')) return '';
+    if (state.fbOvFor !== c.id) {
+      state.fbOvFor = c.id; state.fbOv = null;
+      db.rpc('feedback_client', { p_client: c.id }).then(function (r) {
+        if (!state.client || state.client.id !== c.id) return;
+        if (r.error || (r.data || {}).error) throw r.error || new Error((r.data || {}).error);
+        state.fbOv = r.data.requests || [];
+        ovFailed('feedback', false);
+        paintSummary();
+      }).catch(function () { if (state.client && state.client.id === c.id) ovFailed('feedback', true); });
+      return '';
+    }
+    var rows = state.fbOv;
+    if (!rows) return '';
+    if (!rows.length) return ovSection('Client feedback', 'feedback', 'View all', ovNone(window.ADspaceWords.line.noFeedback));
+    var by = function (k) { return function (a, b) { return String(b[k] || '') < String(a[k] || '') ? -1 : 1; }; };
+    var asked = rows.slice().sort(by('created_at'))[0];
+    var answered = rows.filter(function (r) { return r.response; }).map(function (r) { return Object.assign({ kind: r.kind }, r.response); })
+      .sort(by('submitted_at'))[0];
+    var months = Number(window.ADspaceMoney.setting('feedback_quiet_months')) || 0;
+    /* Whole months since the client was last asked, Malaysia's days. */
+    var a0 = window.ADspaceClock.day(asked.created_at).split('-').map(Number);
+    var t0 = String(window.ADspaceClock.today()).split('-').map(Number);
+    var since = (t0[0] - a0[0]) * 12 + t0[1] - a0[1] - (t0[2] < a0[2] ? 1 : 0);
+    var pairs = [];
+    pairs.push(['Latest score', answered
+      ? '<span' + (answered.band === 'low' ? ' class="is-late"' : '') + '>' + esc([fbScore(answered), FB_KIND[answered.kind], niceDate(answered.submitted_at)].filter(Boolean).join(' · ')) + '</span>'
+      : '<span class="mute">Not answered</span>']);
+    pairs.push(['Last sent', esc(niceDate(asked.created_at)) + (months && since >= months ? ' <span class="is-late">· ' + esc(since + (since === 1 ? ' month ago' : ' months ago')) + '</span>' : '')]);
+    return ovSection('Client feedback', 'feedback', 'View all', ovRows(pairs));
+  }
 
   function ovRows(pairs) {
     return '<dl class="ovfacts">' + pairs.map(function (p) {
@@ -2278,7 +2317,10 @@
       if (!brandHeld(c) && mayPart('clients.brand', 'work')) return { text: 'Add brand', act: 'brand', icon: 'tag' };
       if (quotes && !quotes.length && mayPart('clients.quotes', 'work')) return { text: 'Build quote', act: 'quote', icon: 'file' };
       if (quotes && quotes.some(function (q) { return q.signed_at; }) && missing.length && maySeeBilling()) {
-        return { text: 'Add billing details', act: 'billing', icon: 'file' };
+        /* The sheet that writes is drawn at Work alone; at View the line
+           goes to the pane (review J11). */
+        if (mayPart('clients.billing', 'work')) return { text: 'Add billing details', act: 'billing', icon: 'file' };
+        return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') + ' missing.', go: 'billing', icon: 'file' };
       }
     }
     if (stage === 'active' && window.ADspaceEngage && bridge.may && bridge.may('ops', 'view')) {
@@ -3044,7 +3086,7 @@
     var box = $('crmFbBox'), rows = fbRows || [];
     var n = $('crmFbN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
-    if (!rows.length) { ADspaceState.emptyLine(box, 'No feedback requested.'); return; }
+    if (!rows.length) { ADspaceState.emptyLine(box, window.ADspaceWords.line.noFeedback); return; }
     box.innerHTML = '<div class="crm-table fbc-table"><div class="fbc-row crm-head prow"><span class="pr-main">Request</span><span>Sent</span><span>Answered</span>' +
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
@@ -3066,7 +3108,7 @@
       if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
       return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
     }).join('');
-    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : q.channel === 'whatsapp' ? 'Submitted through the link shared on WhatsApp' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : q.channel === 'whatsapp' ? 'Submitted through the link shared on WhatsApp' : 'Submitted through the emailed link', q.manager ? 'Person in charge when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
     var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
       ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
     return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';
@@ -7946,7 +7988,7 @@
   }
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published. Enter a later version.', 'bad-date': 'Valid until cannot be in the past.',
-    'no-change': 'Nothing has changed since the live version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
+    'no-change': 'Nothing has changed since the published version. Change a service or the wording first.', 'too-long': 'Enter a note of up to 500 characters.',
     denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
@@ -7999,7 +8041,7 @@
       title: 'Publish the Rate Card',
       body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '.\n' : '') +
         (list.length ? list.slice(0, SVC_LIST).join('\n') + (more > 0 ? '\nand ' + more + ' more' : '') + '\n\n' : '') +
-        'Quotations, client service lines and the Rate Card download use this version from now on.',
+        'Quotations, client service lines and the Rate Card download will use this version once it is published.',
       go: 'Publish', wait: true,
       fields: [
         { name: 'v', label: 'Version', value: live ? nextVersion(live.version) : '2.0.6', placeholder: '2.0.7', type: 'text',

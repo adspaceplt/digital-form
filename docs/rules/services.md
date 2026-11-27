@@ -253,7 +253,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   certificate in Acrobat) and each value a text field, through
   `ADspaceDocs.formFields`, the letter's own). Prepared by
   is the quotation's `made_by` (a website quotation's person in charge)
-  with their position; Reviewed by the colleague who approved it, once
+  with their position, read by their id (`made_by_id`, the client's `owner_id`), never by the name; Reviewed by the colleague who approved it, once
   reviewed; a signed copy draws the client's signature in its box and how
   it was signed under it (online: when, the email the code went to, the
   address and country, the fingerprint; paper: the day). Every page's foot: the reference, PRIVATE &

@@ -1,7 +1,7 @@
 /* Email templates (2026-11-10; the overnight Settings review): every email
  * wording the portal sends, one editor for all of them, opened from one
  * place: Settings, Messages, Email templates, a row a family (Client,
- * Supplier, Creator and Candidate email templates, Sign-in and codes; the
+ * Supplier, Creator and Candidate email templates, Sign-in email templates; the
  * user, 2026-11-25: "Sorry inside Messages"), each opening that family's
  * templates alone. #1419 had put them in each section's ⋯, a misread of
  * the ask.
@@ -73,7 +73,7 @@
   var L_NOT = { en: 'English not written', zh: '中文 not written' };
   /* Each family's name: its Settings row and the sheet's title, one copy. */
   var REC_WORD = { clients: 'Client email templates', suppliers: 'Supplier email templates', creators: 'Creator email templates',
-    candidates: 'Candidate email templates', codes: 'Sign-in and codes' };
+    candidates: 'Candidate email templates', codes: 'Sign-in email templates' };
   var RECS = ['clients', 'suppliers', 'creators', 'candidates', 'codes'];
 
   /* One read of a list; a refusal or a missing function is null, so a
@@ -100,8 +100,12 @@
 
   /* Every template of the recipient open, each with how it is edited and
      saved: only that recipient's lists are read. */
-  function load() {
-    return read(st.rec).then(function (d) {
+  var STALE = {};
+  function load(seq) {
+    var rec = st.rec;
+    return read(rec).then(function (d) {
+      /* An answer for a recipient no longer open is dropped (review J19). */
+      if (seq != null && seq !== st.seq) throw STALE;
       st.fields = d.fields; st.free = d.free; st.items = d.items;
       return d.items;
     });
@@ -110,7 +114,7 @@
      sheet's list and the count under its Settings row alike. */
   function read(r, bare) {
     var on = function (want, ok, fn) { return r === want && ok ? soft(rpc(fn)) : null; };
-    return Promise.all([
+    var calls = [
       bare ? null : soft(rpc('template_fields_all')),
       on('clients', biz(), 'client_email_templates_list'),
       on('clients', biz(), 'invoice_email_template_get'),
@@ -122,7 +126,12 @@
       on('candidates', biz(), 'hiring_email_templates_get'),
       on('clients', biz(), 'feedback_email_templates_get'),
       on('clients', biz(), 'quote_email_templates_get')
-    ]).then(function (a) {
+    ];
+    var asked = calls.filter(Boolean).length;
+    return Promise.all(calls).then(function (a) {
+      /* Every list asked for failed: a failed read, never 0 of 0 and No
+         templates (review J10). */
+      if (asked && !a.filter(Boolean).length) throw new Error('');
       var out = [];
       var CK = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
       ((a[1] && a[1].rows) || []).forEach(function (t) {
@@ -278,7 +287,9 @@
     window.ADspaceSheet.show($('mtSheet'), { opener: st.opener });
     var box = $('mtList');
     if (window.ADspaceState && window.ADspaceState.skeleton) window.ADspaceState.skeleton(box, 3);
-    load().then(paint).catch(function (e) {
+    var seq = st.seq = (st.seq || 0) + 1;
+    load(seq).then(paint).catch(function (e) {
+      if (e === STALE) return;
       if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(box, 'Email templates', (e && e.message) || '', function () { open(btn, say, rec); });
     });
   }

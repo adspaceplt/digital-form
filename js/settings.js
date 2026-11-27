@@ -420,7 +420,7 @@
         meta: num('outstation_accuracy_m') == null ? '' : parts(['Location within ' + num('outstation_accuracy_m') + ' m',
           'Trips kept ' + plural(num('outstation_keep_months'), 'month', 'months'),
           'Office radius ' + num('outstation_office_radius_m') + ' m',
-          'Reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) }]]]);
+          'Open trip reminder after ' + plural(num('outstation_remind_hours'), 'hour', 'hours')]) }]]]);
     var meta = num('meta_checks') === 1;
     add('reports', 'Reports', 'reports', [['', [
       biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
@@ -440,7 +440,11 @@
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes'), open: openTax },
       /* Named by its word, as every row is (the Settings review, 2026-11-26). */
       biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku'),
-        open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } }]]]);
+        open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } },
+      /* A creator's draft bill made when a booking is marked Completed (2026-11-27). */
+      biz && { id: 'billdone', name: 'Bill creators on Completed', kind: 'switch', on: num('creator_bill_on_completed') === 1,
+        meta: num('creator_bill_on_completed') === 1 ? 'On' : 'Off',
+        open: function (btn) { flipOwn(btn, 'billdone', 'creator_bill_auto_set', 'Bill creators on Completed'); } }]]]);
     add('ai', 'AI', 'ai', [['', [
       may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse'),
         open: function (btn) { if (W.ADspaceReports && W.ADspaceReports.aiUsage) W.ADspaceReports.aiUsage(btn); } },
@@ -1104,7 +1108,7 @@
         return;
       }
       window.ADspaceConfirm.ask({
-        title: 'Outstation trip numbers', go: 'Save', wait: true,
+        title: 'Trip numbering', go: 'Save', wait: true,
         fields: [
           { name: 'prefix', label: 'Prefix', half: true, value: f.prefix || '', required: true },
           { name: 'width', label: 'Digits', half: true, value: String(f.width || ''), required: true }],
@@ -1682,7 +1686,7 @@
      select all"). */
   var pg = { rows: null, err: null, picking: false, picked: {} };
   var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details', 'feedback']],
-    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['System pages', ['home', 'notfound', 'card']]];
+    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify', 'careers']], ['Other pages', ['home', 'notfound', 'card']]];
   var PG_SYS = { home: '/', notfound: 'Page not found', card: '/card/' };
   function pgMain() { return (pg.rows || []).filter(function (p) { return !PG_SYS[p.key]; }); }
   function pgSys() { return (pg.rows || []).filter(function (p) { return PG_SYS[p.key]; }); }
@@ -1774,7 +1778,7 @@
   }
   /* What setting the page does, said under the choice. */
   function pgNote(keys) {
-    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is unavailable.';
+    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent remain open while the Quotation portal is unavailable.';
     if (keys.indexOf('admin') >= 0) return 'Admins continue to work under a notice bar; every other colleague sees the notice page.';
     return 'Visitors see the notice page in its place. Nothing on the page is changed.';
   }

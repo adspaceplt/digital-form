@@ -1766,10 +1766,19 @@ Deno.serve(async (req) => {
          all again). */
       const run = Array.isArray(body.options) ? body.options.map(String) : [String(body.option || '')];
       if (!run.length || run.length > 20 || run.some((x: string) => !/^[0-9a-f-]{36}$/i.test(x))) return json({ error: 'bad-request' }, 400, origin);
+      /* A bill made on Completed (CREATOR BILL ON COMPLETED, 2026-11-27):
+         one booking, asked of the setting and the booking's state first. */
+      const auto = body.auto === true;
+      if (auto && run.length !== 1) return json({ error: 'bad-request' }, 400, origin);
       const items = new Map<string, any>();
       const results: any[] = [];
       const reads = new Map<string, { creator: string; contact: number; pins: { id: number; option: string }[]; options: string[] }>();
       for (const oid of run) {
+        if (auto) {
+          const ok = await db.rpc('creator_bill_auto_ok', { p_option: oid });
+          const code = ok.error ? 'needs-update' : (ok.data && ok.data.error) || '';
+          if (code) { results.push({ option: oid, error: code }); continue; }
+        }
         const prep = await db.rpc('creator_bill_prep', { p_option: oid });
         if (prep.error) { results.push({ option: oid, error: 'needs-update' }); continue; }
         const p = prep.data || {};
@@ -2249,8 +2258,12 @@ Deno.serve(async (req) => {
          answer never came, is linked as Bukku holds it, never made again
          (the Bukku review, 2026-11-25). */
       if (!cur && claim && (claim.made || claim.sent_code)) {
+        /* A contact found by the code alone is this company's only when its
+           registration no. or name agrees: another company may have taken
+           the code since (review J7); else a fresh code is made below. */
+        const bySent = claim.made ? null : (every || []).find((c) => String(c.contact_code || '') === String(claim.sent_code));
         const had = claim.made ? (every || []).find((c) => Number(c.id) === Number(claim.made))
-          : (every || []).find((c) => String(c.contact_code || '') === String(claim.sent_code));
+          : bySent && ['brn', 'name'].indexOf(matchOf(p, bySent)) > -1 ? bySent : null;
         if (had) {
           const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: had.id, p_code: had.contact_code || null });
           if (l.error || (l.data && l.data.error)) return json({ error: 'not-filed', contact: had.id, code: had.contact_code }, 200, origin);

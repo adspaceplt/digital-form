@@ -2350,8 +2350,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qlinks li:first-child, .qcomments li:first-child { padding-top: 2px; }
 .qlink-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .qlink-main a, .qlink-main span.qlink-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--ink); }
-.qcomments p { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
-.qcomments small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
+.qcomments p, .qlink-note { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.qlink-note { margin-top: 4px; }
+.qcomments small, .qlink-by { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
 .qhead-name .rec-pen {
   display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
   width: var(--ctl-h); height: var(--ctl-h); margin-block: calc((25px - var(--ctl-h)) / 2);
@@ -4692,6 +4693,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
    way there sits under the facts it changes, on their margin. */
 #perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
+/* A late part of a fact (a client not sent a feedback request within the setting). */
+.ovfacts dd .is-late { color: var(--err); }
 .pane-form-head > .btn { margin-left: auto; }
 /* The client record's read groups (Billing, Brand) stand on white cards, as
    its lists and the colleague's and the supplier's records do; the rail
