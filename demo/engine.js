@@ -15377,7 +15377,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
-        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qq.source === 'console' ? qeSel : Object.assign({}, qeSel, { edits: undefined }), qq.source === 'console'), qeFx);
+        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, true), qeFx);
         if (qe.error) return qtOk(qe);
         var qex = qtExtras(qq.source === 'console' ? qeSel : {});
         if (qex.error) return qtOk(qex);
@@ -15387,10 +15387,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
         qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
         qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
-        if (qq.source === 'console') {
-          var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
-          qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
-        }
+
+        if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
+        var qeFrom = qq.source !== 'console' && qq.released_at ? new Date(qq.released_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }) : qtToday;
+        var qev = new Date(qeFrom + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
+        qq.valid_until = qev.toISOString().slice(0, 10);
+        if (qq.source === 'console') qq.issued_at = qtNow.toISOString();
 
         var qeOld = qq.ref;
         if (qq.source === 'console' && qq.ref.indexOf('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-') !== 0) {
@@ -15455,7 +15457,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qsSend && qq.no_contact_at) return qtOk({ error: 'no-contact' });
 
         if (qsSend && !qtWaAllowed()) return qtOk({ error: 'wa-limit', cap: Number(appSet('quote_wa_day', qtToday)) });
-        var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
+        var qsOwn = Number((qq.selection || {}).valid);
+        var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + ([14, 30, 45, 60, 90].indexOf(qsOwn) > -1 ? qsOwn : Number(appSet('quote_valid_days', qtToday) || 30)));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
 
         if (!qtIssued(qq)) { qq.ref = qtNextRef('ADP/QT' + qtYm() + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase()); qq.confirmed_at = qtNow.toISOString(); qq.confirmed_by = qtMe.name; }
