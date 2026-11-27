@@ -1275,10 +1275,11 @@
       if (held) CK.fix = {};
       paintCheck();
     });
-    /* The client record's name and number, for a signed one that differs. */
-    ctx.db.from('clients').select('legal_name, company_no').eq('id', q.client_id).maybeSingle().then(function (r) {
+    /* The client record's name and number (Billing, as the record reads
+       it), for a signed one that differs. */
+    window.ADspaceAPI.clientBilling([q.client_id]).then(function (by) {
       if (!CK || CK.q !== q) return;
-      CK.rec = r.error ? null : (r.data || null);
+      CK.rec = (by || {})[q.client_id] || null;
       paintCheck();
     }).catch(function () { return null; });
     ctx.db.rpc('quotation_reviewers', { p_id: q.id }).then(function (r) {
