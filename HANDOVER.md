@@ -56,6 +56,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 
 13. **DONE #1550 (261127.f663), #1553 (261127.529f), #1556 (261127.d6c1).** The Build quote tick, the PDF (fees page and Figures agreed), the /quote/ link, Build quote's Summary and the S$ line; migration `2026-11-27-quote-period-total.sql` live. **Period total on a quotation** (approved by the user, 27 Nov, coordinator session): a tick in Build quote's Quotation section, "Show totals for the whole period", off by default, per quotation. Ticked: under Monthly incl. SST a line "Total for {n} months incl. SST" (each monthly line's own Months, term discount included); then, set apart below the One-time block (spaced down as its own block, so it never reads as the One-time section's total), "Total incl. SST" = period total + one-time incl. SST, with one note line "{n} months of the monthly fee, plus one-time fees. Advertising budget not included." Only the period line where there are no one-time fees; no effect on a one-time-only quotation; S$ approximation on both for SG billed in RM. PDF and the /quote/ link: client-facing, screenshots to the user for "go". Planning snapshot sent to the user 27 Nov. Start in a fresh session after the weekly usage limit allows.
 14. **Today's full gate on main**: run on 7c85e8b (27 Nov); four suites failing (words, adsreport, uxaudit, pdflibhash), logged in `docs/rules/logged-defects.md`; they are the next batch.
+15. **Colleague lookups by system ID, not name** (the user, 27 Nov: "queue it"): `quote_sign_member` (45 call sites), `quote_sign_member_sees`, `client_rep`, `client_details_submit`, `sm_reports_published_notice`, `feedback_request` still match `team_members` by name. Move each to the colleague's id, as #1571 did for `quotations.made_by_id` (column, before-insert trigger, backfill only where one colleague holds the name, column grant to `authenticated`). One migration release; list in `docs/DECISIONS.md` (A, #1571).
 
 ## Logged defects (fail on main, not yet fixed)
 
@@ -133,6 +134,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 | Rate Card PDF: a term discount reads −10% (true minus, no space), PDF item 13 | (this PR) |
 | Console fixes from J's review (4, 9, 10, 11, 12, 16, 17, 18, 19): One per brand partway, failed reads named (creators, email templates), view-only billing to its tab, old check-in photos retaken, Bukku PDF link, `.then(ok).catch`, migrations' apply order; `sql` stops a leftover server | (this PR) |
 | Client pages from J's review (8, 13): a failed read keeps Content Review and Video Scripts drawn with Try again; a quotation's TERMS never split onto an extra page; demo engine rebuilt | (this PR) |
+| Quotation holds from J's review (5, 6, 14, 15): a confirmed revision opened by the client is sent out; an expired draft is refused at Confirm; a change request re-checks under its lock; a bad price-check input still counts. Migration `2026-11-27-quotation-review-holds.sql` | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;

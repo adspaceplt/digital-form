@@ -85,6 +85,13 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   sender) on the bell, `client.feedback`, opening the client; its follow-up
   is a My Work task linked by `feedback_followup`, the score open until that
   task is done.
+- The record's Overview holds Client feedback (after Calls and visits, where
+  the Feedback part is readable): Latest score, the newest answer's score in
+  the part's own words (`fbScore`), its form and day, red in the low band,
+  or Not answered; Last sent, the newest request's day, with {n} months ago
+  in red past `feedback_quiet_months`; View all opens Feedback; none reads
+  `ADspaceWords.line.noFeedback`, as the part does. Read from
+  `feedback_client` once a record is opened (`tests/feedbackui.js`).
 - The figures (`feedback_figures(p_from, p_to)`, one read a span, at
   Clients Full Access; nothing is drawn or read below it): the Dashboard's
   Team tab, Client feedback after Sales (`#ovwFb`, the lead row's tiles,

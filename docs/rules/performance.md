@@ -134,6 +134,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   how many went live by its day; Timeline adherence, the tasks they own
   that reached their review in the month, and how many by every deadline
   they had (My Work's late rule).
+  Client satisfaction carries the month's client feedback the same way
+  (`perf_ops_rate` `satisfaction`, `2026-11-27-feedback-satisfaction-rate.sql`):
+  the account manager question of the answers submitted in the month (MYT)
+  naming the colleague, each as a percentage of its own scale's maximum,
+  averaged; Client feedback: {rate}% from {n} answers, pressed it is the
+  rate; no answer, no offer, never 0; withheld where `feedback_sees_manager`
+  withholds the score (`tests/feedbacksql.js`, `tests/perfui.js`).
 - A category is scored by the letter ladder (the user, 2026-11-24), on the
   review sheet and in Rate yourself alike (`ladderHtml`, `ladderWire`): the
   letter (A Exceptional, B Strong, C Meets, D Below, E Poor; a select of
