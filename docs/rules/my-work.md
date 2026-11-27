@@ -478,7 +478,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Add changes (`review_record_changes`, a published set, no decision on
   the round) keeps the client's WhatsApp words as the team's changes, Undo
   where it happened (`review_revert_confirm`, any team decision); the set's
-  panel names each task's post (`tests/contentloop.js`). Phase 2
+  panel names each task's post (`tests/contentloop.js`). The client's changes on
+  a linked post read under it in the task's Files and links while the task
+  is at Revision (Client): the newest decision standing on the post, read
+  from `reviews` at Content Review › Sets at View on every load, never
+  copied onto the task (`.qlink-note`; 2026-11-27). Phase 2
   (`2026-11-10-script-follows-task.sql`): the picker offers the client's
   video scripts (`ops_link_script`, `ops_task_links.script_id`, one each
   way: `has-script`, `script-taken`); the script fills its task's Video
