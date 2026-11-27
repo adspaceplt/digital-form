@@ -44,7 +44,10 @@
     analytics_change_pct: 10, analytics_churn_pct: 10,
     /* Working hours (2026-11-20): Monday to Friday 10:00am to 7:00pm, a
        one-hour lunch, Saturday and Sunday on demand (1). */
-    work_start: 1000, work_end: 1900, work_lunch_min: 60, work_weekend: 1 };
+    work_start: 1000, work_end: 1900, work_lunch_min: 60, work_weekend: 1,
+    /* How ad spend works (2026-11-27): the next month's prepaid budget
+       requested at about 80% spent; the Agency Credit Term Fee, 20%. */
+    ad_prepay_pct: 80, ad_credit_fee_pct: 20 };
   var ROWS = [];
   var loading = null;
   function today() {
@@ -316,9 +319,10 @@
     if (!(r > 0) || !isFinite(v)) return null;
     return cents(v / r);
   }
-  function approx(n, c, at, fx) {
+  /* In Chinese the same aside reads （约 S$ 952.38） (2026-11-27). */
+  function approx(n, c, at, fx, zh) {
     var v = approxSgd(n, c, at, fx);
-    return v == null ? '' : ' (approximately ' + money2(v, 'SG') + ')';
+    return v == null ? '' : zh ? '（约 ' + money2(v, 'SG') + '）' : ' (approximately ' + money2(v, 'SG') + ')';
   }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.

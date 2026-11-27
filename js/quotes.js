@@ -2903,7 +2903,8 @@
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
     var notes = [];
-    if (t.budget > 0) notes.push('Advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is billed separately.');
+    /* Said as the quotation says it (2026-11-27, How ad spend works). */
+    if (t.budget > 0) notes.push('The advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is not included in this quotation.');
     if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + CUR + ' ' + whole(topBudget()) : x; }).join(', ') + '.');
     if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
     return out;
@@ -3128,7 +3129,7 @@
       return '<div class="qb-sidegroup"><p class="qb-sidegh">' + esc(name) + '</p>' + list.map(row).join('') + '</div>';
     };
     var month = lines.filter(function (l) { return l.basis === 'month'; }), once = lines.filter(function (l) { return l.basis !== 'month'; });
-    var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, billed separately</span>' +
+    var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, not included</span>' +
       '<span class="qb-fig">' + esc('Up to ' + CUR + ' ' + whole(t.budget)) + '</span><span class="qb-sideact"></span></div></div>' : '';
     var n = B ? aoAll().filter(function (k) { return (B.aoOn || []).indexOf(k) >= 0; }).length : 0;
     /* Several brands (BUILD QUOTE ON ONE SHEET): a group a brand, its name

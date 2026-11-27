@@ -113,8 +113,8 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   Performance they are `app_settings` (`2026-10-05-app-settings.sql`, key,
   from_date, value; RLS on, no policy, no grant): `app_setting(key, at)` for
   functions, `app_settings_read()` for pages (anyone the team does not hold
-  is answered `sst_pct`, the term percentages and `fx_sgd` alone, what a client page
-  prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
+  is answered `sst_pct`, the term percentages, `fx_sgd`, `ad_prepay_pct` and `ad_credit_fee_pct` alone, what a client page
+  prices with or prints (`2026-11-27-ad-spend-figures.sql`); `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
   p_values)` an admin's, from today (MYT) or later (`past`); a figure is the
   one in force on the day, the first row standing in for an earlier day
   only where the schema seeded it (`app_setting`, `setting()`; a figure
