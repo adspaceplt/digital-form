@@ -11,6 +11,13 @@ Moved whole from `CLAUDE.md` §3 Git and delivery, which keeps a one-line pointe
   states (commonly after the Pages deploy, so the page stops asking before
   the database stops answering), and verified on the live database
   afterwards. The report names what was applied.
+  - The migrations stand in the order they were applied, never their
+    file names' order: a rebuild replays them as applied (the live
+    `supabase_migrations` list), and a file named after its predecessor
+    that it replaces says so in its header. Standing case: `quote_opened`
+    is `2026-11-25-quotation-copier-opening.sql`'s, applied after the two
+    later-named files (`-link-activity`, `-sent-when-opened`) that also
+    define it.
   - A statement holding `drop` or `delete` (a function body included) is
     run through the connector like any other (the user, 2026-11-26: "Run
     all sql dont care if its drop delete or what"), in small `execute_sql`

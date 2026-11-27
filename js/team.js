@@ -294,7 +294,7 @@
   /* Since the revamp (2026-11-13) every colleague has the Dashboard's Me
      tab; this row decides the Team tabs alone. */
   var DASH_DESC = { on: 'Shows the Team tabs with the cards of each section the group has at Full control.', none: 'The Team tabs are hidden. Me is always shown.',
-    empty: 'The Team tabs are empty, as this group has no section at Full control. Give it Full control of a section to show its cards.' };
+    empty: 'The Team tabs are empty, as this group has no section at Full control. Give it Full control of a section.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
@@ -1059,7 +1059,7 @@
            own, holds the delete (review 2026-11-24). */
         if (a.error === 'in-use') {
           return (a.held || []).indexOf('trips') >= 0
-            ? 'This colleague cannot be deleted while they are the driver on other colleagues\' outstation trips. They remain removed.'
+            ? 'This colleague cannot be deleted while they are the driver on other colleagues\' outstation trips. Change the driver on those trips, then delete again.'
             : 'This colleague cannot be deleted because other work in the portal still names this colleague. This colleague remains removed.';
         }
         if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
@@ -1424,23 +1424,23 @@
     'team.performance': 'Monthly performance reviews. The master code is required.',
     /* Each admin tool says what it opens, naming the Settings row where it
        opens one (2026-11-26, the Groups review). */
-    'team.upgrade': 'Settings › Page availability and Require latest version.',
-    'team.announce': 'Settings › Announcements, shown to every colleague.',
-    'team.notice': 'Settings › Notices: a notice to all colleagues or to those chosen.',
-    'team.settings': 'Every business figure and portal switch in Settings.',
-    'reports.ai': 'Settings › AI usage and limits.',
+    'team.upgrade': 'Edit Settings › Page availability and Require latest version.',
+    'team.announce': 'Write Settings › Announcements, shown to every colleague.',
+    'team.notice': 'Send a notice from Settings › Notices to all colleagues or to those chosen.',
+    'team.settings': 'Edit every business figure and portal switch in Settings.',
+    'reports.ai': 'Edit Settings › AI usage and limits.',
     'team.analytics': 'Write the AI analysis on Analytics.',
-    'ops.numbering': 'Settings › Task numbering.',
+    'ops.numbering': 'Edit Settings › Task numbering.',
     'ops.override': 'Move any colleague\'s task and its due date.',
-    'reports.meta': 'Import from Meta and Meta checks, while Settings › Meta checks is on.',
-    'reports.whitelabel': 'A client\'s logo on its reports, and White label on a client\'s Brand.',
-    'reports.transfer': 'Move a report to the client it belongs to.',
+    'reports.meta': 'Import from Meta and run Meta checks, while Settings › Meta checks is on.',
+    'reports.whitelabel': 'Show a client\'s logo on its reports, and set White label on a client\'s Brand.',
+    'reports.transfer': 'Transfer a report to the client it belongs to.',
     'clients.vic': 'Mark a client as VIC, or remove it.',
     'campaigns.files_delete': 'Hide a file the client approved, and delete it.',
-    'register.types': 'Settings › Document types.',
+    'register.types': 'Edit Settings › Document types.',
     'team.invite': 'Send a colleague the email that invites them to sign in.',
     'team.handbook': 'Add, edit and archive Handbook files.',
-    'team.perfadmin': 'Revenue and profit, Settings › Performance figures, department scores and deleting reviews.'
+    'team.perfadmin': 'See revenue and profit, edit Settings › Performance figures and department scores, and delete reviews.'
   };
   /* Advanced is a quiet button with the shared chevron (the act table's
      `go` mark), turned down while open (2026-11-26, the Groups review). */
