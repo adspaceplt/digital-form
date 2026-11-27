@@ -8,6 +8,7 @@ item it takes. The previous coordinator session ended here; nothing lives in it.
 
 | Session | Work | When done |
 |---|---|---|
+| `session_01RVzkaPFoPdcxAevsudniSN` | Quotation Invoices: Link existing invoice and Unlink on each row, One-time label (`claude/quote-link-invoice`): migration `2026-11-27-quotation-invoice-link.sql` applied, `bukku-sync` v71 deployed and read back | Merges itself, then ends |
 | T `session_01RVzkaQPY1uMkNhrDk9jsg8` | #1532 client page weight (user said "go"): merging main with #1531, re-proving the 1,452 moved CSS rules, then merges itself; tests branch claude/page-weight goes to tests main at merge | Reports build, stops |
 | Z `session_01RVzkaMf4aAp62531br68JM` | #1529 ad-spend explainer + approximate S$ on the sent quote link, Change selection, signing step and link PDF (SG billed in RM only). Migration restates #1531's app_settings_set and quote_website_read. Client-facing | Artifact to the user; merges on "go" |
 
