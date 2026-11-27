@@ -2894,13 +2894,14 @@
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
     'needs-update': ADspaceWords.line.notYet, sending: ADspaceWords.line.mailSending,
     'no-primary': 'The client has no primary contact. Add one under Account first.',
-    'not-copied': 'Not copied. Please press Copy for WhatsApp again.' };
+    'not-copied': 'Not copied. Please try again.', 'copy-again': 'Not copied. Press Copy again.' };
   /* A request made within the repeat hours, either way it went. */
   function fbRecentLine(rc) {
     var when = (rc.at ? ' on ' + ADspaceClock.date(rc.at) : '') + (rc.by ? ' by ' + rc.by : '') + '.';
-    return rc.channel === 'whatsapp' ? 'This request was copied for WhatsApp' + when
-      : 'This request went to ' + (rc.to || 'the primary contact') + when;
+    return rc.channel === 'whatsapp' ? 'A request was copied for WhatsApp' + when
+      : 'A request was emailed to ' + (rc.to || 'the primary contact') + when;
   }
+  function fbRecentTitle(rc) { return rc.channel === 'whatsapp' ? 'Copied recently' : 'Sent recently'; }
   /* Sends the request; answers the refusal's words, or '' once sent or
      once a request sent within the repeat hours has asked first
      (RETENTION AND JOBS HELD, 2026-11-25: when, by whom and to whom, then
@@ -2912,7 +2913,7 @@
       if (d.error === 'recent' && !again) {
         var rc = d.recent || {};
         setTimeout(function () {
-          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Send again', wait: true, gate: 'email',
+          window.ADspaceConfirm.ask({ title: fbRecentTitle(rc), tone: 'warn', go: 'Send again', wait: true, gate: 'email',
             body: fbRecentLine(rc) },
             function () { return sendFeedback(c, kind, true); });
         }, 0);
@@ -2942,7 +2943,7 @@
     return ADspaceCopy.later(btn, words).then(function (copied) {
       if (why === 'recent') {
         setTimeout(function () {
-          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Copy again', wait: true, gate: 'whatsapp',
+          window.ADspaceConfirm.ask({ title: fbRecentTitle(fbAgain), tone: 'warn', go: 'Copy again', wait: true, gate: 'whatsapp',
             body: fbRecentLine(fbAgain) },
             function (v, b) { return copyFeedback(c, kind, true, b); });
         }, 0);
@@ -2953,7 +2954,7 @@
       if (!copied) {
         setTimeout(function () {
           window.ADspaceConfirm.ask({ title: 'Request feedback', go: 'Copy again', wait: true, gate: 'whatsapp',
-            body: FB_SAID['not-copied'] },
+            body: FB_SAID['copy-again'] },
             function (v, b) { return copyFeedback(c, kind, true, b); });
         }, 0);
         return '';
@@ -2969,7 +2970,7 @@
       run: function (v, b) { return copyFeedback(c, (v && v.k) || 'quick', false, b); } };
     window.ADspaceConfirm.ask({
       title: 'Request feedback', go: byMail ? 'Send' : copy.label, wait: true, gate: byMail ? 'email' : 'whatsapp',
-      body: byMail && primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
+      body: byMail && primary && primary.email ? 'Email to ' + primary.name + ', ' + primary.email + '.' : '',
       alt: byMail && byWa ? copy : null,
       fields: [{ name: 'k', label: 'Form', seg: true, choices: [['quick', 'Service rating'], ['review', 'Performance review']], value: 'quick' }]
     }, function (v, b) { return byMail ? sendFeedback(c, (v && v.k) || 'quick', false) : copy.run(v, b); });
@@ -2987,7 +2988,7 @@
     if (r.mail_status === 'failed') return ['Not sent', 'is-off'];
     if (r.closed_reason === 'withdrawn') return ['Withdrawn', 'is-off'];
     if (r.closed_reason === 'replaced') return ['Closed', 'is-off'];
-    return [r.opened_at ? 'Opened' : 'Sent', 'is-warn'];
+    return [r.opened_at ? 'Opened' : r.channel === 'whatsapp' ? 'Copied' : 'Sent', 'is-warn'];
   }
   function fbScore(s) {
     if (!s) return '';

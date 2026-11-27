@@ -87,13 +87,10 @@
     }
   }
 
-  /* Text that only exists once the server answers (a request made at the
-     press, FEEDBACK COPIED FOR WHATSAPP, 2026-11-27). The clipboard takes a
-     write only inside the press, so the write is begun there with the text
-     still on its way (a ClipboardItem holding a promise); a browser without
-     that writes once the text arrives. `text` is a promise of the words, or
-     of null where there is nothing to copy (a refusal). Answers a promise of
-     true once copied, false where nothing was. */
+  /* Words the server makes at the press (FEEDBACK COPIED FOR WHATSAPP,
+     2026-11-27): the write is begun inside the press, a ClipboardItem
+     holding the promise; `text` resolves to the words or null. Answers a
+     promise of whether anything was copied. */
   function later(btn, text, word) {
     var said = function () { say(btn, word || 'Copied'); return true; };
     var plain = function (t) {
