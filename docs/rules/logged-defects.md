@@ -67,3 +67,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   and passes alone on the same commit; the check reads the next step before
   the record repaints from the seeded touch. Held here until its wait is
   fixed at the cause.
+- 2026-11-27, `settings` (the same release's re-run): "Sign-in and codes:
+  its Settings row counts its templates" read an empty count once (its
+  5-second wait for the row's line) and passes alone on the same commit.
+  Held here until its wait is fixed at the cause.
