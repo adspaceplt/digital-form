@@ -1296,7 +1296,7 @@
         return '<div class="ind-row is-hol is-edit" data-day="' + esc(h.day) + '">' +
           '<input class="input input-sm" type="date" id="holEdDay" aria-label="Date"' + holSpan() + ' value="' + esc(h.day) + '">' +
           '<input class="input input-sm" id="holEdName" maxlength="80" aria-label="Holiday" value="' + esc(h.name) + '">' +
-          '<span class="ind-acts"><button class="btn btn-danger btn-sm" type="button" data-h="delete">Delete</button>' +
+          '<span class="ind-acts"><button class="btn btn-danger btn-sm" type="button" data-h="delete" data-g="6" data-need="team.settings:manage">Delete</button>' +
             '<button class="btn btn-quiet btn-sm" type="button" data-h="cancel">Cancel</button>' +
             '<button class="btn btn-primary btn-sm" type="button" data-h="save">Save</button></span></div>';
       }
@@ -1312,6 +1312,7 @@
         '<input class="input input-sm" type="date" id="holNewDay" aria-label="New holiday\'s date"' + holSpan() + ' value="' + esc(firstDay) + '">' +
         '<input class="input input-sm" id="holNewName" maxlength="80" placeholder="Deepavali" aria-label="New holiday">' +
         '<span class="ind-acts"><button class="btn btn-sm" type="button" data-h="add">' + PLUS + 'Add</button></span></div>';
+    if (window.ADspaceDelReq) window.ADspaceDelReq.adapt(box);
     if (!rows.length) window.ADspaceState.emptyLine(box.querySelector('.hol-none'), 'No holidays.');
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(box);
     if (hol.editing) { var f = $('holEdName'); if (f) f.focus(); }
@@ -1426,7 +1427,7 @@
             '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-d="active">' + (d.active ? 'Set inactive' : 'Set active') + '</button>' +
             /* Offered only where it would go through: nobody in it and no
                record naming it (`in_records`, TEAM2-15). */
-            (n || d.in_records ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-d="delete">Delete</button>') +
+            (n || d.in_records ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-d="delete" data-need="team.settings:manage">Delete</button>') +
           '</div></span></span></div>';
       }).join('');
   }
@@ -1580,7 +1581,7 @@
           indCount(i.clients) +
           (i.clients ? '<p class="ind-note">Saving a new name will also change the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
           '<span class="ind-acts">' +
-            (i.clients || i.name === 'Other' ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
+            (i.clients || i.name === 'Other' ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete" data-g="6" data-need="team.settings:manage">Delete</button>') +
             '<button class="btn btn-quiet btn-sm" type="button" data-i="cancel">Cancel</button>' +
             '<button class="btn btn-primary btn-sm" type="button" data-i="save">Save</button></span>' +
           '</div>';
@@ -1596,6 +1597,7 @@
         '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Hospitality" aria-label="New industry in English">' +
         '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="酒店业" aria-label="New industry in Chinese">' +
         '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">' + PLUS + 'Add</button></span></div>';
+    if (window.ADspaceDelReq) window.ADspaceDelReq.adapt(box);
     if (ind.editing) { var f = $('indEdName') || $('indEdZh'); if (f) f.focus(); }
   }
   function indSave(was) {
@@ -2021,7 +2023,7 @@
           '<span class="ind-acts"><button class="iconbtn" type="button" data-t="edit" aria-label="Edit ' + esc(t.code) + '" title="Edit">' + PEN + '</button>' +
           '<span class="team-act"><button class="kmenu-btn" type="button" data-t="menu" aria-label="More actions for ' + esc(t.code) + '" aria-expanded="false">' +
             window.ADspaceIcons.glyph('more') + '</button>' +
-          '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-t="delete">Delete</button></div></span></span></div>';
+          '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-t="delete" data-need="team.settings:manage">Delete</button></div></span></span></div>';
       }).join('');
   }
   function taxShut() { shutMenus('#taxList', 't'); }

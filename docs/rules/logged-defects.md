@@ -85,3 +85,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
+- 2026-11-27, `taxcodes` (DELETES AT FULL CONTROL's affected run): "each
+  line offers its tax, the client's SST first as Bukku's SV8, never twice"
+  fails at 1280 and 390, the same on `main` (1668f21) as on the branch;
+  Build quote's lines, untouched by that release. Held here until it ships.

@@ -279,7 +279,7 @@
     var menu = (keeps && !removed ? '<button class="kmenu-item" data-g="2" type="button" data-h="edit" role="menuitem">Edit</button>' +
         '<button class="kmenu-item" data-g="5" type="button" data-h="reset" role="menuitem">Reset link</button>' : '') +
       (role === 'admin' ? (removed ? '<button class="kmenu-item" data-g="5" type="button" data-h="restore" role="menuitem">Restore</button>' +
-          '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="delete" role="menuitem">Delete</button>'
+          '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="delete" data-need="team.hiring:manage" role="menuitem">Delete</button>'
         : '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="remove" role="menuitem">Remove</button>') : '');
     var cv = c.cv_path ? '<button class="linkbtn" type="button" data-h="cvfile">' + esc(c.cv_name || 'CV') + window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button>'
       : c.cv_url ? '<a class="plink" href="' + esc(window.ADspaceWords.absUrl(c.cv_url) || '#') + '" target="_blank" rel="noopener">' + FILE + '<span>Open CV</span></a>' : '';
@@ -1932,7 +1932,7 @@
           '<span class="hsc-crit">' + esc((r.criteria || []).join(' · ')) + '</span>' +
           '<span class="ind-acts"><button class="iconbtn" type="button" data-k="edit" aria-label="Edit ' + esc(r.position) + '" title="Edit">' + PEN + '</button>' +
           (r.standard ? '' : '<span class="team-act"><button class="kmenu-btn" type="button" data-k="menu" aria-label="More actions for ' + esc(r.position) + '" aria-expanded="false">' + DOTS + '</button>' +
-            '<div class="kmenu" hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-k="delete">Delete</button></div></span>') +
+            '<div class="kmenu" hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-k="delete" data-need="team.hiring:manage">Delete</button></div></span>') +
           '</span></div>';
       }).join('');
   }

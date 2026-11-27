@@ -938,7 +938,7 @@
       '<div class="kmenu" data-menu hidden role="menu">' +
         '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="versions">Show versions</button>' +
         '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="download">Download PDF</button>' +
-        '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button></div></span></div></div>' +
+        '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete" data-need="team.analytics:manage">Delete</button></div></span></div></div>' +
       '<p class="msg" data-m="msg" role="status"></p><div class="anl-ai-body" data-m="body"></div>';
     box.appendChild(el);
     var body = el.querySelector('[data-m="body"]');

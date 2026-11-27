@@ -93,6 +93,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1540 Build quote: a line's figures on its name's first line | 261127.daa5 |
 | #1546 Feedback from Past clients (Active, Paused or Past asked, a lead never; a sent link stays open whatever the portal's access); Request feedback drawn only where it can be sent; a Past client's ⋯ reads Allow portal sign-in / Stop portal sign-in (migration `2026-11-27-feedback-from-past-clients.sql`, applied and read back); tests 55add78 | 261127.e56e |
 | Build quote on a phone: tax back on the Qty row | (this PR) |
+| Deletes at Full control (access fix, "go all 13"): 13 admin tools' deletes ask Full control and join `delete_kinds`, Edit files Request delete; a request against a granted part asks `ops_granted`; guard in `tests/sql.js`; migration `2026-11-27-deletes-at-full-control.sql` live | see the coordinator's report |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;

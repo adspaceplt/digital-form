@@ -154,10 +154,10 @@
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261126rfd"></script>
-<script src="/js/delreq.js?v=20261126gl"></script>
+<script src="/js/delreq.js?v=20261127fc"></script>
 <script src="/js/maintenance.js?v=20261127zg"></script>
-<script src="/js/announce.js?v=20261126gl"></script>
-<script src="/js/notice.js?v=20261126gl"></script>
+<script src="/js/announce.js?v=20261127fc"></script>
+<script src="/js/notice.js?v=20261127fc"></script>
 <script src="/js/whatsapp.js?v=20261127qi"></script>
 <script src="/js/mailtpl.js?v=20261127qi"></script>
 <script src="/js/docmail.js?v=20261126rfd"></script>
@@ -6340,7 +6340,7 @@ raya-2026        https://example.com/raya"></textarea>
         <span class="tax-acts">
           <button class="btn btn-sm" id="taxBukku" type="button" data-gate="bukku">Read from Bukku</button>
           <button class="btn btn-sm" id="taxAdd" type="button">Add code</button>
-          <button class="btn btn-sm btn-danger" id="taxDel" type="button" hidden>Delete</button>
+          <button class="btn btn-sm btn-danger" id="taxDel" type="button" data-g="6" data-need="team.settings:manage" hidden>Delete</button>
           <button class="btn btn-sm" id="taxSelect" type="button">Select</button>
         </span></div>
       <div id="taxList"></div>
@@ -6809,9 +6809,9 @@ raya-2026        https://example.com/raya"></textarea>
   "letters": {"src": "/js/letters.js?v=20261126rfe", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261126w", "uses": ["documents"]},
   "reports": {"src": "/js/reports.js?v=20261126gl", "uses": ["documents", "smreport"]},
-  "register": {"src": "/js/register.js?v=20261126gl", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "register": {"src": "/js/register.js?v=20261127fc", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
   "suppliers": {"src": "/js/suppliers.js?v=20261126gm", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261126gm", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "hiring": {"src": "/js/hiring.js?v=20261127fc", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
   "bukku": {"src": "/js/bukku.js?v=20261126gl"},
   "invoices": {"src": "/js/invoices.js?v=20261126gl", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
@@ -6827,25 +6827,25 @@ raya-2026        https://example.com/raya"></textarea>
   "team": {"src": "/js/team.js?v=20261126gl", "uses": ["register", "onboard", "perf", "health", "personnel"]},
   "namecard": {"src": "/js/namecard.js?v=20261126gl"},
   "onboard": {"src": "/js/onboard.js?v=20261126gl", "uses": ["bukku", "hrforms"]},
-  "handbook": {"src": "/js/handbook.js?v=20261126gl", "uses": ["onboard"]},
+  "handbook": {"src": "/js/handbook.js?v=20261127fc", "uses": ["onboard"]},
   "frames": {"src": "/js/frames.js?v=20261117zzzf"},
   "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
   "scripts": {"src": "/js/scripts.js?v=20261126gl", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261126ga", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261126gl", "uses": ["bukku"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261127fc", "uses": ["bukku"]},
   "perf": {"src": "/js/perf.js?v=20261126gl", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
   "health": {"src": "/js/health.js?v=20261126gl", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
   "personnel": {"src": "/js/personnel.js?v=20261126gl", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261126gl", "uses": ["documents", "crm", "sales"]},
+  "analytics": {"src": "/js/analytics.js?v=20261127fc", "uses": ["documents", "crm", "sales"]},
   "outstation": {"src": "/js/outstation.js?v=20261127a"},
-  "settings": {"src": "/js/settings.js?v=20261126gm", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "settings": {"src": "/js/settings.js?v=20261127fc", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
 <script src="/js/passkey.js?v=20261126gl"></script>
 <script src="/js/admin.js?v=20261127co"></script>
-<script src="/js/ops.js?v=20261127b"></script>
+<script src="/js/ops.js?v=20261127fc"></script>
 <script src="/js/search.js?v=20261126gm"></script>
 <script src="/js/agent.js?v=20261127b"></script>
 <script src="/js/overview.js?v=20261126gl"></script>
