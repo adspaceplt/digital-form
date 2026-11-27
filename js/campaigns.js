@@ -6278,10 +6278,40 @@
       if (r.error) { cardSay(o, reviewSaid(r.error.message), 'err'); return; }
       if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
+      if (to === 'completed') { billOnDone(o); loadOptions(); return; }
       if (to !== 'posted') { loadOptions(); return; }
       seedPosts(o, function () { loadOptions(); });
     });
   }
+  /* A booking marked Completed makes its creator's draft bill in Bukku
+     (CREATOR BILL ON COMPLETED, 2026-11-27): the same createbill as Create
+     bill, asked `auto`, so bukku-sync checks the Business setting and the
+     state first, then the fee, the link and a bill already held. Said on
+     the card only to a colleague who sees creator payments; nothing else
+     on the campaign shows a bill. */
+  function billOnDone(o) {
+    var on = Number(window.ADspaceMoney && window.ADspaceMoney.setting && window.ADspaceMoney.setting('creator_bill_on_completed')) === 1;
+    if (!on || !mayPart('campaigns.pay', 'view')) return;
+    if (!mayPart('campaigns.pay', 'work')) { cardSay(o, BILL_DONE.notMade + ' ' + BILL_DONE.denied, 'warn'); return; }
+    db.functions.invoke('bukku-sync', { body: { action: 'createbill', options: [o.id], auto: true } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }).then(function (d) {
+      var x = (d.results || [])[0] || d;
+      if (x.error === 'auto-off' || x.error === 'not-completed') return;
+      if (x.error === 'not-confirmed' || x.error === 'failed') { cardSay(o, BILL_DONE.unsure, 'warn'); return; }
+      if (x.error === 'in-bukku') { cardSay(o, BILL_DONE.notMade + ' ' + 'Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.', 'warn'); return; }
+      if (x.error) {
+        cardSay(o, BILL_DONE.notMade + ' ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)), 'warn');
+        return;
+      }
+      cardSay(o, 'Draft bill ' + (x.made || '') + ' created in Bukku.', 'ok');
+    }).catch(function () { cardSay(o, BILL_DONE.unsure, 'warn'); });
+  }
+  var BILL_DONE = {
+    notMade: 'No bill created in Bukku.',
+    denied: 'You do not have permission to create bills. Please ask an admin.',
+    unsure: 'Bukku did not confirm the bill. Open the creator\u2019s Payment tab and press Read from Bukku.'
+  };
 
   /* A placement as the page names it. Older rows hold what somebody typed
      ("RedNote", "xhs"); the stored value is left alone and only the word

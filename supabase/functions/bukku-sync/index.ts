@@ -1766,10 +1766,19 @@ Deno.serve(async (req) => {
          all again). */
       const run = Array.isArray(body.options) ? body.options.map(String) : [String(body.option || '')];
       if (!run.length || run.length > 20 || run.some((x: string) => !/^[0-9a-f-]{36}$/i.test(x))) return json({ error: 'bad-request' }, 400, origin);
+      /* A bill made on Completed (CREATOR BILL ON COMPLETED, 2026-11-27):
+         one booking, asked of the setting and the booking's state first. */
+      const auto = body.auto === true;
+      if (auto && run.length !== 1) return json({ error: 'bad-request' }, 400, origin);
       const items = new Map<string, any>();
       const results: any[] = [];
       const reads = new Map<string, { creator: string; contact: number; pins: { id: number; option: string }[]; options: string[] }>();
       for (const oid of run) {
+        if (auto) {
+          const ok = await db.rpc('creator_bill_auto_ok', { p_option: oid });
+          const code = ok.error ? 'needs-update' : (ok.data && ok.data.error) || '';
+          if (code) { results.push({ option: oid, error: code }); continue; }
+        }
         const prep = await db.rpc('creator_bill_prep', { p_option: oid });
         if (prep.error) { results.push({ option: oid, error: 'needs-update' }); continue; }
         const p = prep.data || {};
