@@ -443,7 +443,7 @@
         open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } },
       /* A creator's draft bill made when a booking is marked Completed (2026-11-27). */
       biz && { id: 'billdone', name: 'Bill creators on Completed', kind: 'switch', on: num('creator_bill_on_completed') === 1,
-        meta: num('creator_bill_on_completed') === 1 ? 'On · Draft bill in Bukku' : 'Off',
+        meta: num('creator_bill_on_completed') === 1 ? 'On' : 'Off',
         open: function (btn) { flipOwn(btn, 'billdone', 'creator_bill_auto_set', 'Bill creators on Completed'); } }]]]);
     add('ai', 'AI', 'ai', [['', [
       may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse'),

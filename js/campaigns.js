@@ -6287,14 +6287,14 @@
   function billOnDone(o) {
     var on = Number(window.ADspaceMoney && window.ADspaceMoney.setting && window.ADspaceMoney.setting('creator_bill_on_completed')) === 1;
     if (!on || !mayPart('campaigns.pay', 'view')) return;
-    if (!mayPart('campaigns.pay', 'work')) { cardSay(o, BILL_DONE.notMade + ' ' + BILL_DONE.finance, 'warn'); return; }
+    if (!mayPart('campaigns.pay', 'work')) { cardSay(o, BILL_DONE.notMade + ' ' + BILL_DONE.denied, 'warn'); return; }
     db.functions.invoke('bukku-sync', { body: { action: 'createbill', options: [o.id], auto: true } }).then(function (r) {
       return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
     }).then(function (d) {
       var x = (d.results || [])[0] || d;
       if (x.error === 'auto-off' || x.error === 'not-completed') return;
       if (x.error === 'not-confirmed' || x.error === 'failed') { cardSay(o, BILL_DONE.unsure, 'warn'); return; }
-      if (x.error === 'in-bukku') { cardSay(o, BILL_DONE.notMade + ' ' + 'Bill ' + (x.number || '') + ' in Bukku already has this Job reference.', 'warn'); return; }
+      if (x.error === 'in-bukku') { cardSay(o, BILL_DONE.notMade + ' ' + 'Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.', 'warn'); return; }
       if (x.error) {
         cardSay(o, BILL_DONE.notMade + ' ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)), 'warn');
         return;
@@ -6304,7 +6304,7 @@
   }
   var BILL_DONE = {
     notMade: 'No bill created in Bukku.',
-    finance: 'Ask Finance to create it.',
+    denied: 'You do not have permission to create bills. Please ask an admin.',
     unsure: 'Bukku did not confirm the bill. Open the creator\u2019s Payment tab and press Read from Bukku.'
   };
 

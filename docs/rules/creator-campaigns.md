@@ -475,8 +475,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`auto-off`, `not-completed`), then every rule of Create bill; never
   Posted, never on the nightly run. Only a colleague at `campaigns.pay`
   View reads its line on the card (Draft bill {n} created in Bukku., No bill
-  created in Bukku. with the reason; at View alone, Ask Finance to create
-  it.); a booking without a fee keeps Create bill. Business setting
+  created in Bukku. with the reason; at View alone, the refused permission's
+  line); a booking without a fee keeps Create bill. Business setting
   `creator_bill_on_completed` (seeded On; Settings › Accounting, Bill
   creators on Completed, `creator_bill_auto_set`, team.settings) (`tests/billdone.js`).
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
