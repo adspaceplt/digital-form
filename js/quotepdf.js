@@ -33,6 +33,14 @@
     'October', 'November', 'December'];
   var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
     'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  /* The days a quotation stands (QUOTATION VALID FOR ITS OWN DAYS,
+     2026-11-27): its own Valid for, else the days from the day it went out
+     (a website request's send, a team's date) to its valid_until. */
+  function validDays(q) {
+    var v = Number(q && q.selection && q.selection.valid);
+    if ([14, 30, 45, 60, 90].indexOf(v) > -1) return v;
+    return Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.released_at || q.issued_at) + 'T00:00:00Z')) / 864e5);
+  }
   var TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
   /* The cover's words where the team's own Quotation Cover type is not to
      hand (a client page reads no document types): the type as seeded. */
@@ -567,7 +575,7 @@
       var groups = [];
       var grp = function (h, list) { list = list.filter(Boolean); if (list.length) groups.push({ h: h, list: list }); };
       var fee = t.month ? Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100 : 0;
-      var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
+      var days2 = validDays(q);
       grp('Validity', ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
         longDay(q.valid_until) + ' unless accepted before that date.']);
       grp('Fees and payment', [
@@ -661,7 +669,7 @@
     y -= 22;
 
     // TERMS.
-    var days = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
+    var days = validDays(q);
     var notes = ['This quotation is valid for ' + both(days) + ' days from its date of issue, until ' + longDay(q.valid_until) + '.'];
     var holds = [];
     if (own && t.once) holds.push('the one-time items');
