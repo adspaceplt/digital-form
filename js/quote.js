@@ -100,7 +100,7 @@
         askNote: 'Note from ADspace', submit: 'Submit', rcvDetails: 'Details received', reqClosedT: 'This quotation request has been closed'
       },
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
-      fullBrand: 'Your quotation will be prepared for your brand. Incomplete requests may not receive a quotation.',
+      fullBrand: 'Your quotation is prepared for your brand. Incomplete requests may not receive a quotation.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Choose when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
@@ -131,7 +131,7 @@
       ads: {
         lead: 'Choose one of the two options below to pay the advertising budget.', opt: 'Option {n}', or: 'or',
         /* The two options side by side (the user, 2026-11-27: either one, never both). */
-        cmp: { paid: 'Paid to', paidA: 'Meta, charged to your credit card', paidB: 'ADspace', when: 'Payment timing', whenA: 'As the ads run', whenB: 'Before each month',
+        cmp: { paid: 'Paid to', paidA: 'Meta, by your credit card', paidB: 'ADspace', when: 'When', whenA: 'As the ads run', whenB: 'Before each month',
           fee: 'Agency Credit Term Fee', feeA: 'None', feeB: 'None when prepaid; {fee}% if billed with the invoice' },
         own: 'Your own ad account',
         ownPts: ['Meta charges the ads directly to your own credit card.',
@@ -345,11 +345,11 @@
       withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
       monthSub: '每月小计', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
-      packH: '套餐', aoH: '附加服务费率', aoLead: '以下服务可于合约期内任何月份另行申请，费率如下。所有费率均未含 SST。',
+      packH: '套餐', aoH: '附加服务费率', aoLead: '以下服务可于合约期内任何月份另行申请，费率如下。所有费率均不含SST。',
       aoTerm: '附加服务不包括在上述费用内。每项附加服务须于开始前以书面确认，并于确认后次月开具发票。', aoExtra: '追加内容', pack: { not: function (list) { return '本套餐不包括' + list.map(function (x) { return String(x || '').trim().replace(/[.;。；]+$/, ''); }).join('、') + '。'; } },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
-      ptMonths: '{n}个月总额（含 SST）', ptMonthsNone: '{n}个月总额', ptAll: '总额（含 SST）', ptAllNone: '总额', ptNote: '{n}个月月费加一次性费用，不含广告预算。',
+      ptMonths: '{n} 个月总额（含 SST）', ptMonthsNone: '{n} 个月总额', ptAll: '总额（含 SST）', ptAllNone: '总额', ptNote: '{n} 个月月费加一次性费用，不含广告预算。',
       newQuote: '申请新报价',
       chgT: '修改您的选择', chgReq: '提交修改请求', chgCancel: '取消', chgTotal: '修改后的报价',
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
