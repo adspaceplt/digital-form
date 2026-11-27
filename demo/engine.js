@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at ref client_id',
+    activity_log: 'id actor action subject detail created_at ref client_id campaign_id creator_id',
     agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by made_by_id contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines doc_code commence_on',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id commence_on portal_kept_at portal_kept_by stage_next stage_next_on stage_next_reason stage_next_note',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -45,7 +45,8 @@
     handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required',
     handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by',
     link_qrs: 'code slug label active revoked_at created_by created_at',
-    links: 'slug target_url title active created_by created_at updated_at',
+    links: 'slug target_url title active created_by created_at updated_at client_id campaign_id',
+    link_clicks: 'slug code day n',
     ops_due_requests: 'id task_id kind was_at wants_at reason note asked_by asked_at decider_id state decided_by decided_at decide_note',
     ops_engagement_checks: 'id engagement_id key state owner_id note updated_by updated_at',
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
@@ -1232,6 +1233,16 @@
         o.clients = sc ? pick(sc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
       }
 
+      if (table === 'links' && /(^|[\s,])clients\s*\(/.test(sel)) {
+        var lkc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
+        if (lkc && session && !scopeSeen(lkc.id, 'view')) lkc = null;
+        o.clients = lkc ? pick(lkc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
+      }
+      if (table === 'links' && /(^|[\s,])campaigns\s*\(/.test(sel)) {
+        var lkp = (DB.campaigns || []).filter(function (c) { return c.id === r.campaign_id; })[0];
+        if (lkp && session && !policyOk('campaigns', 'r')) lkp = null;
+        o.campaigns = lkp ? pick(lkp, sel.match(/campaigns\s*\(([^)]*)\)/)[1]) : null;
+      }
       if (table === 'campaigns' && sel.indexOf('clients') > -1) {
         var cc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
         var ccols = sel.match(/clients\s*\(([^)]*)\)/);
@@ -1380,6 +1391,7 @@
     quotations: { r: 'clients.quotes:view' },
     links: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
     link_qrs: { r: 'links:view', i: 'links:work', u: 'links:work', d: 'links:manage' },
+    link_clicks: { r: 'links:view' },
     services: { r: 'team', i: 'services:manage', u: 'services:manage', d: 'services:manage' },
     rate_card_text: { r: 'services:view' },
     rate_card_versions: { r: 'services:view' },
@@ -1955,7 +1967,7 @@
                   x.owner = rnNew;
                   if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
-                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
+                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, campaign_id: tb === 'campaigns' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
               });
             }
@@ -2170,6 +2182,10 @@
       if (arr.some(function (x) { return (DB[table] || []).some(function (y) { return same(x, y); }); }) && !policyOk(table, 'u')) {
         rows = []; api.__err = POLICY_REFUSED(table); return api;
       }
+
+      if (table === 'links') arr.forEach(function (x) {
+        if (x.campaign_id) { var lc = (DB.campaigns || []).filter(function (c) { return c.id === x.campaign_id; })[0]; x.client_id = lc ? lc.client_id : x.client_id; }
+      });
       var fresh = [], out = [];
       arr.forEach(function (x) {
         var held = (DB[table] || []).filter(function (y) { return same(x, y); })[0];
@@ -15389,7 +15405,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
         var qrow = { id: nid('qt'), ref: qtDraftRef(), confirmed_at: null, confirmed_by: null, revises: null, request_ref: null, client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
-          status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
+          status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name, made_by_id: qtMe.id,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         qtBrandFollows(qrow); DB.quotations.push(qrow);
 
