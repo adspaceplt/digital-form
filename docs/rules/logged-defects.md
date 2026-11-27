@@ -69,3 +69,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
 - 2026-11-27, `copyscan` (the same release): a word-table line holding a
   semicolon (`fullBrand` in `js/quote.js`) is not listed, so the copy
   review never reads it. Held here until it ships.
+- 2026-11-27, `demo` (found gating the page weight release, which does not
+  touch the stand-in): "demo/engine.js is the stand-in of today" fails on
+  main since the quote ad budget hotfix (#1526) changed `tests/stub2.js`'s
+  plan change without `node tests/demo-build.js`. Held here until it ships.
