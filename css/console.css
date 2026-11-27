@@ -9703,7 +9703,8 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .prs-secret dd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .prs-secret-v { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
 /* A hidden number in the edit sheet: masked until Show (review J3). */
-.prs-secret-edit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* Show stands at the field's height beside it (the user, 2026-11-27). */
+.prs-secret-edit { display: flex; align-items: center; gap: 8px; min-width: 0; --ctl-h-sm: var(--ctl-h); }
 .prs-secret-edit > .input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
 .prs-eye { align-self: center; margin-block: calc((1.55em - var(--ctl-h)) / 2); }
 @media (pointer: coarse) { .prs-eye { margin-block: calc((1.55em - var(--tap)) / 2); } }
