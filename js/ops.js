@@ -3622,9 +3622,16 @@
     $('dwLinks').innerHTML = live.length ? '<ul class="qlinks">' + live.map(function (l) {
       var href = l.ref_type || l.script_id ? refHref(l) : safeUrl(l.url);
       var menu = work && !fin ? itemMenu(l.label || l.url, linkMenu(l)) : '';
-      return '<li class="qitem" data-link="' + esc(l.id) + '"><span class="qlink-main"><span class="tone">' + esc(linkWord(l)) + '</span>' +
+      var main = '<span class="qlink-main"><span class="tone">' + esc(linkWord(l)) + '</span>' +
         (href ? '<a href="' + esc(href) + '"' + (l.ref_type || l.script_id ? '' : ' target="_blank" rel="noopener"') + '>' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
-        '</span>' + menu + '</li>';
+        '</span>';
+      /* The client's changes on its post, while the task is at Revision (Client). */
+      var asked = l.asked && t.stage_key === 'revision_client' ? l.asked : null;
+      if (asked) {
+        main = '<div>' + main + '<p class="qlink-note">' + esc(String(asked.note).trim()) + '</p>' +
+          '<small class="qlink-by">' + esc([window.ADspaceWords.en.step.changes, asked.reviewer ? String(asked.reviewer).trim() : '', niceTime(asked.created_at)].filter(Boolean).join(' · ')) + '</small></div>';
+      }
+      return '<li class="qitem" data-link="' + esc(l.id) + '">' + main + menu + '</li>';
     }).join('') + '</ul>' : '<p class="qempty">No files or links.</p>';
     Array.prototype.forEach.call($('dwLinks').querySelectorAll('.qitem'), function (row) {
       var l = live.filter(function (x) { return x.id === row.getAttribute('data-link'); })[0];
@@ -4068,11 +4075,28 @@
     var reads = [];
     if (ids.campaign.length) reads.push(['campaign', db.from('campaigns').select('id, title').in('id', ids.campaign)]);
     if (ids.set.length) reads.push(['set', db.from('batches').select('id, title').in('id', ids.set)]);
+    /* The client's changes on a task's post, read from the review each time,
+       never copied onto the task (the linked sections, 2026-11-27): the
+       newest decision standing, drawn under the post while the task is at
+       Revision (Client). */
+    var posts = links.filter(function (l) { return l.post_id && !l.archived_at; }).map(function (l) { return l.post_id; });
+    if (posts.length && may('review.sets', 'view') && state.task && state.task.stage_key === 'revision_client') {
+      reads.push(['post', db.from('reviews').select('post_id, decision, note, reviewer, created_at')
+        .in('post_id', posts).is('undone_at', null).order('created_at', { ascending: false })]);
+    }
     if (!reads.length) { then(); return; }
     Promise.all(reads.map(function (x) { return x[1]; })).then(function (res) {
       res.forEach(function (r, i) {
         if (!r || r.error) return;
         var type = reads[i][0], by = {};
+        if (type === 'post') {
+          (r.data || []).forEach(function (row) { if (!by[row.post_id]) by[row.post_id] = row; });
+          links.forEach(function (l) {
+            var rv = l.post_id && !l.archived_at ? by[l.post_id] : null;
+            l.asked = rv && rv.decision === 'changes' && String(rv.note || '').trim() ? rv : null;
+          });
+          return;
+        }
         (r.data || []).forEach(function (row) { by[row.id] = row; });
         links.forEach(function (l) {
           if (l.ref_type !== type || l.archived_at) return;
@@ -6910,7 +6934,7 @@
     if (!k) { line.hidden = true; line.textContent = ''; return; }
     var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
     var d = String($('ntDesc').value || '').trim();
-    line.textContent = 'Code ' + code + (d ? ' ' + d : '') + '. The task number will be assigned when it is saved.';
+    line.textContent = 'Task number ' + code + (d ? ' ' + d : '') + ', assigned when the task is saved.';
     line.hidden = false;
   }
   // ---- Pieces --------------------------------------------------------------
