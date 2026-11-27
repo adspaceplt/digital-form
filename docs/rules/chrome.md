@@ -159,8 +159,10 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   file, the copy under an older stamp let go when the new one is stored
   (2026-10-26: a reopen after ten minutes asked the server about 69 files).
   The page itself always goes to the network (navigation preload on), and
-  an unstamped file is never kept: a changed file without a new stamp would
-  be served stale, so the `?v=` bump below is load bearing. It also holds a
+  an unstamped file is never kept, nor one carrying the repository's
+  placeholder (`?v=dev`, served unbuilt). The stamp is the file's own
+  content, written by the Pages build (`.github/stamp.js`, 2026-11-27), so
+  a file keeps its stamp, and its stored copy, until its bytes change. It also holds a
   PDF the console drew, for an hour, at `/admin/file/` (`js/file-sw.js`,
   `adspace-files`; see `ADspaceDocs.save`). `client/sw.js` holds that
   alone, at `/client/file/`, registered by `js/portal.js`. A failed

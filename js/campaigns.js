@@ -3178,6 +3178,11 @@
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         return new Promise(function (res) { readJobPattern(function () { res(r); }); });
       }).then(function (r) {
+        /* A failed read is never drawn as no creators (review J9). */
+        if (r.error) {
+          if ($('pickList')) UI.failLine($('pickList'), 'The creators offered', r.error.message, loadOptions);
+          return;
+        }
         state.options = (r.data) || [];
         state.optionsFor = state.campaign.id;
         syncCampState();
@@ -5966,7 +5971,7 @@
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
           /* Every slot already booked (`campaign_options_slots_hold`, audit 2026-11-15). */
-          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
+          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Increase Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logOf(), name);
@@ -6624,8 +6629,8 @@
             (r.amount != null ? '<b class="invamt">' + esc(billMoney(r.amount, r.currency)) + '</b>' : '') +
             '<span class="invend">' + (st ? '<span class="chip-state ' + st[0] + '">' + st[1] + '</span>' : '') + menu + '</span></div>' +
           (r.error ? '<p class="msg err">' + esc(invSaid(r)) + '</p>' : '') +
-          (r.error || r.pdf ? '<div class="row acts invacts">' +
-            (r.pdf ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
+          (r.error || absUrl(r.pdf) ? '<div class="row acts invacts">' +
+            (absUrl(r.pdf) ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
             (r.error ? '<button class="btn btn-sm" type="button" data-a="invagain">Try again</button>' : '') +
           '</div>' : '');
         if (r.web) invWeb = r.web;

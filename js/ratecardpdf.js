@@ -408,7 +408,7 @@
       var ttop = y;
       termRows.forEach(function (t) {
         var v = Number(set[t[0]]);
-        row([C('', thirds[0], { skip: true }), L(t[1], thirds[1]), C(v > 0 ? '+' + v + '%' : v < 0 ? '- ' + Math.abs(v) + '%' : 'Quoted', thirds[2])]);
+        row([C('', thirds[0], { skip: true }), L(t[1], thirds[1]), C(v > 0 ? '+' + v + '%' : v < 0 ? '\u2212' + Math.abs(v) + '%' : 'Quoted', thirds[2])]);
       });
       merged(L('Term Commitment', thirds[0], { fill: head }), M, ttop, y);
       gap(30);

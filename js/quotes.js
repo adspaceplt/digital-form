@@ -60,7 +60,7 @@
     'not-signed': 'This quotation has not been signed. Mark it signed, or send the client the link to sign.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
     'in-review': 'This quotation is already with its reviewer. Refresh the page.',
-    'pick-company': 'Choose Keep or Use for each company detail that differs from the client record.',
+    'pick-company': 'Choose Keep or Use for each company detail that differs from Billing.',
     'bad-reviewer': 'Choose a colleague with Clients: Quotations at Full control.', own: 'Choose a reviewer other than yourself.',
     'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
     'not-reviewer': 'Only the chosen reviewer or an admin can approve this quotation.',
@@ -818,7 +818,7 @@
     }
     if (a === 'confirm') {
       window.ADspaceConfirm.ask({ title: 'Confirm quotation?',
-        body: 'This quotation will take its reference' + (q.revises ? ' as the next revision of the quotation it revises' : '') +
+        body: (q.revises ? 'This quotation will receive the next revision number' : 'This quotation will receive its reference number') +
           '. It can then be sent to the client. A confirmed quotation cannot be returned to a draft.',
         go: 'Confirm quotation', wait: true }, function () {
         return ctx.db.rpc('quotation_confirm', { p_id: q.id }).then(function (r) {
@@ -1067,7 +1067,7 @@
      new lead for another brand of a client the team keeps. Add as a new
      brand bills it through that client's entity (Billing's Remove takes
      it back); Keep as a new lead has its Undo here. */
-  var MATCH_SAID = { 'no-entity': 'That client has no billing entity yet. Add one in its Billing first.', taken: 'Already chosen. Refresh the page.',
+  var MATCH_SAID = { 'no-entity': 'That client has no billing entity. Add one in the client\'s Billing first.', taken: 'Already chosen. Refresh the page.',
     denied: 'You do not have permission to change billing entities. Please ask an admin.' };
   function takeMatch(q, ctx, take) {
     var name = (q.match && q.match.name) || 'the client';
@@ -1177,7 +1177,7 @@
   }
   function pickHtml(k, label, signedV, recV, chosen) {
     var nm = 'qsgPick-' + k;
-    return '<small class="qsg-was"><span class="chip-state is-warn">Differs from the client record</span></small>' +
+    return '<small class="qsg-was"><span class="chip-state is-warn">Differs from Billing</span></small>' +
       '<span class="qsg-pick" role="radiogroup" aria-label="Choose a value for ' + esc(label) + '">' +
       '<label class="tickline"><input type="radio" name="' + nm + '" value="keep" data-pick="' + k + '"' + (chosen === 'keep' ? ' checked' : '') + '> <span>Keep ' + esc(recV) + '</span></label>' +
       '<label class="tickline"><input type="radio" name="' + nm + '" value="use" data-pick="' + k + '"' + (chosen === 'use' ? ' checked' : '') + '> <span>Use ' + esc(signedV) + '</span></label></span>';
@@ -1195,7 +1195,7 @@
       else if (k in was) note = '<small class="qsg-was">Signed as ' + esc(was[k] || 'Not set') + '</small>';
       if (edit && held === false && recCo && coDiffers(k, v, recCo[k])) note += pickHtml(k, f[1], v, recCo[k], picks && picks[k]);
       else if (!edit && kept[k] && kept[k].record) {
-        note += '<small class="qsg-was">' + esc(kept[k].pick === 'use' ? 'Client record will change from ' + kept[k].record + ' on approval' : 'Client record keeps ' + kept[k].record) + '</small>';
+        note += '<small class="qsg-was">' + esc(kept[k].pick === 'use' ? 'Billing will change from ' + kept[k].record + ' on approval' : 'Billing keeps ' + kept[k].record) + '</small>';
       }
       return '<div><dt>' + esc(f[1]) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + (k === 'billing_address' ? ' is-pre' : '') + '">' +
         '<span class="mval" data-k="' + k + '">' + esc(v || 'Not set') + '</span>' +
@@ -1944,7 +1944,13 @@
         }).join('');
       }).join('') + '<p class="msg warn" id="qbFilesMsg" role="status" hidden></p>';
       fill(s1);
-      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { draftKeep(); B = null; } });
+      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () {
+        /* One per brand stopped partway: the brands already made are
+           listed, never kept in the draft to be made again. */
+        var part = B && B.partMade, c = B && B.ctx;
+        draftKeep(); B = null;
+        if (part && c) c.reload();
+      } });
       cards(true);
       $('qbBox').querySelector('.sheet-body').scrollTop = 0;
       sidePaint(null);
@@ -2727,6 +2733,11 @@
     if (!B || B.made || B.editing || B.revises || !B.card || B.base == null) return;
     var s;
     try { s = draftOut(); } catch (e) { return; }
+    if (B.partMade) {
+      s.brands = s.brands.slice(B.partMade);
+      s._bi = Math.max(0, (s._bi || 0) - B.partMade);
+      if (!s.brands.length) return;
+    }
     if (draftCmp(s) === B.base) return;
     var ctx = B.ctx;
     var bad = function (e) { ctx.msg('qtMsg', 'The draft was not saved. ' + said(e), 'err'); };
@@ -3877,6 +3888,7 @@
           if (r.error || d.error) {
             go.disabled = false; if (B) B.saving = false;
             if (!B) return;
+            B.partMade = made.length;
             $('qbMsg').textContent = (made.length ? made.length + (made.length === 1 ? ' draft' : ' drafts') + ' saved. ' : '') + 'The quotation for ' + brandWord(sel.brands[at]) + ' was not made. ' + said(r.error || d.error);
             $('qbMsg').className = 'msg err';
             return;

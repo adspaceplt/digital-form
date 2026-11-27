@@ -9,7 +9,9 @@
    yesterday's file is never served for today's address (the risk this file
    was first written against, 2026-09-25). The page itself always goes to
    the network, so a release reaches everybody on their next load; a file
-   with no stamp goes to the network as before. Each file is kept once: the
+   with no stamp, or the repository's placeholder, goes to the network as
+   before. Stamps are written by the Pages build from each file's bytes
+   (.github/stamp.js, 2026-11-27). Each file is kept once: the
    copy under an older stamp goes when the new one is stored. Measured on a
    throttled phone, a reopen after ten minutes was ready in 2.2s against
    3.4s. Scope is /admin/: the client pages and the root site are never
@@ -29,7 +31,7 @@ var ASSETS = 'adspace-console-assets';
 // A colleague's notifications, shown and opened (the one copy for every page).
 importScripts('/js/push-sw.js');
 // A PDF the console drew, held under its own name (the one copy for both pages).
-importScripts('/js/file-sw.js?v=20261031w');
+importScripts('/js/file-sw.js?v=dev');
 var OFFLINE = '/admin/offline.html';
 var KEEP = [OFFLINE, '/admin/icons/wordmark.png'];
 
@@ -69,7 +71,9 @@ self.addEventListener('fetch', function (e) {
     }));
     return;
   }
-  if (/[?&]v=[^&]+/.test(url.search)) e.respondWith(stamped(r, url));
+  /* The placeholder the repository writes (.github/stamp.js) is no stamp:
+     a file served unbuilt is never kept. */
+  if (/[?&]v=[^&]+/.test(url.search) && !/[?&]v=dev(&|$)/.test(url.search)) e.respondWith(stamped(r, url));
 });
 
 /* A stamped file: from the store, else the network, stored once it answers
