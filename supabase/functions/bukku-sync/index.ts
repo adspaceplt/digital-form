@@ -2249,8 +2249,12 @@ Deno.serve(async (req) => {
          answer never came, is linked as Bukku holds it, never made again
          (the Bukku review, 2026-11-25). */
       if (!cur && claim && (claim.made || claim.sent_code)) {
+        /* A contact found by the code alone is this company's only when its
+           registration no. or name agrees: another company may have taken
+           the code since (review J7); else a fresh code is made below. */
+        const bySent = claim.made ? null : (every || []).find((c) => String(c.contact_code || '') === String(claim.sent_code));
         const had = claim.made ? (every || []).find((c) => Number(c.id) === Number(claim.made))
-          : (every || []).find((c) => String(c.contact_code || '') === String(claim.sent_code));
+          : bySent && ['brn', 'name'].indexOf(matchOf(p, bySent)) > -1 ? bySent : null;
         if (had) {
           const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: had.id, p_code: had.contact_code || null });
           if (l.error || (l.data && l.data.error)) return json({ error: 'not-filed', contact: had.id, code: had.contact_code }, 200, origin);
