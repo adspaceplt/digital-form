@@ -139,6 +139,9 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   an off-screen textarea. Words the server makes at the press are copied by
   `later(btn, promise)`, the write begun inside the press (a ClipboardItem
   holding the promise), never after the answer alone (Safari refuses it).
+  A reference a person comes to copy is the control itself:
+  `ADspaceCopy.ref(text)` draws it (`.serial-copy`) and one capture-phase
+  listener copies it without opening the row (the Register, quotations).
 - `js/icons.js` is the one glyph set of every page, console and client
   alike (the user, 2026-11-26), and its drawing the standard: 24 grid,
   stroke 1.8, round ends, outline in ink, never filled or coloured; a new

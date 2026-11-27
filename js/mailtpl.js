@@ -68,6 +68,9 @@
      Chinese, its subject, message and button (feedback_email_templates). */
   var FB_WORD = { quick: 'Service rating', review: 'Performance review' };
   var LANG_WORD = { en: 'English', zh: '中文' };
+  var LANGS = ['en', 'zh'];
+  /* An email with no 中文 goes out in English. */
+  var L_NOT = { en: 'English not written', zh: '中文 not written' };
   /* Each family's name: its Settings row and the sheet's title, one copy. */
   var REC_WORD = { clients: 'Client email templates', suppliers: 'Supplier email templates', creators: 'Creator email templates',
     candidates: 'Candidate email templates', codes: 'Sign-in and codes' };
@@ -136,24 +139,13 @@
             return saveWith(x[3], { p_subject_one: v.subject, p_subject_many: v.subject2, p_body: v.body, p_legal: v.legal, p_disclaimer: v.disclaimer });
           } });
       });
-      ((a[9] && a[9].rows) || []).forEach(function (t) {
-        out.push({ id: 'feedback:' + t.kind + ':' + t.lang, rec: 'clients', sec: 'Feedback',
-          name: (FB_WORD[t.kind] || t.kind) + ' (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'feedback', btn: true,
-          subject: t.subject, body: t.body, button: t.button,
-          save: function (v) {
-            return saveWith('feedback_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
-          } });
-      });
-      /* A website request's details asked of the prospect (QUOTE DETAILS
-         ASKED, 2026-11-27), in English and Chinese. */
-      ((a[10] && a[10].rows) || []).forEach(function (t) {
-        out.push({ id: 'quote:' + t.kind + ':' + t.lang, rec: 'clients', sec: 'Quotation requests',
-          name: 'Ask for details (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'quote', btn: true,
-          subject: t.subject, body: t.body, button: t.button,
-          save: function (v) {
-            return saveWith('quote_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
-          } });
-      });
+      /* A client's feedback request and a website request's Ask for details
+         (QUOTE DETAILS ASKED, 2026-11-27) are each one email in English and
+         中文: one row, its editor switching the language (the user,
+         2026-11-27: "use a switch in one item"); each language stays its
+         own row in the database, saved with its p_lang. */
+      langRows(out, a[9], 'feedback', 'Feedback', function (k) { return FB_WORD[k] || k; }, 'feedback_email_template_save');
+      langRows(out, a[10], 'quote', 'Quotation requests', function () { return 'Ask for details'; }, 'quote_email_template_save');
       ((a[4] && a[4].rows) || []).forEach(function (t) {
         var to = t.audience === 'supplier' ? 'suppliers' : 'clients';
         if (to === r) out.push(free(t));
@@ -191,6 +183,30 @@
       return { fields: a[0] || {}, free: Boolean(a[4]), items: out };
     });
   }
+  /* One row an email, its languages inside it: English first, then 中文. */
+  function langRows(out, d, kind, sec, word, fn) {
+    var by = {}, order = [];
+    ((d && d.rows) || []).forEach(function (t) {
+      if (!by[t.kind]) { by[t.kind] = {}; order.push(t.kind); }
+      by[t.kind][t.lang] = t;
+    });
+    order.forEach(function (k) {
+      var L2 = by[k], langs = LANGS.filter(function (l) { return L2[l]; });
+      var first = L2[langs[0]];
+      out.push({ id: kind + ':' + k, rec: 'clients', sec: sec, name: word(k), kind: kind, btn: true, langs: langs,
+        text: langs.reduce(function (m, l) { m[l] = { subject: L2[l].subject || '', body: L2[l].body || '', button: L2[l].button || '' }; return m; }, {}),
+        subject: first.subject, body: first.body, button: first.button,
+        save: function (v, lang) {
+          return saveWith(fn, { p_kind: k, p_lang: lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
+        } });
+    });
+  }
+  /* A language counts as written once it has a subject and a message. */
+  function written(t) { return Boolean(t && String(t.subject || '').trim() && String(t.body || '').trim()); }
+  function langLine(i) {
+    return LANGS.map(function (l) { return written(i.text[l]) ? LANG_WORD[l] : L_NOT[l]; }).join(' · ');
+  }
+
   /* The Settings row's line: how many templates, and how many are on
      where each has its own switch. */
   function count(rec) {
@@ -232,7 +248,7 @@
     }).join('');
   }
   function rowHtml(i) {
-    var meta = i.sw && !i.on ? 'Off' : i.subject;
+    var meta = i.sw && !i.on ? 'Off' : i.langs ? langLine(i) : i.subject;
     return '<div class="stg-row mt-row" data-id="' + esc(i.id) + '">' +
       '<div class="stg-what"><p class="stg-name">' + esc(i.name) + '</p><p class="stg-meta mt-subj">' + esc(meta) + '</p></div>' +
       '<div class="stg-ctl">' +
@@ -278,6 +294,16 @@
     var f = fieldsOf(it.kind);
     $('mtEdTitle').textContent = it.isNew ? 'Add template' : it.name;
     var h = '';
+    /* An email in two languages: the strip swaps its subject, message and
+       button; what is typed in one is kept while the other is shown. */
+    if (it.langs) {
+      it.lang = it.langs[0];
+      var two = it.langs.length > 1;
+      it.draft = JSON.parse(JSON.stringify(it.text));
+      if (two) h += '<div class="row mt-lang"><select class="select" id="mt-lang" data-seg data-strip aria-label="Language">' +
+        it.langs.map(function (l) { return '<option value="' + l + '">' + LANG_WORD[l] + '</option>'; }).join('') + '</select></div>';
+      it.subject = it.draft[it.lang].subject; it.body = it.draft[it.lang].body; it.button = it.draft[it.lang].button;
+    }
     if (it.named) h += box('name', 'Template name', it.name, 'input');
     if (it.sw) h += '<div class="mt-on"><span class="field-label" id="mtOnL">Send this email</span>' +
       '<button class="switch" type="button" role="switch" id="mtOn" aria-labelledby="mtOnL" aria-checked="' + (it.on ? 'true' : 'false') + '"></button></div>';
@@ -307,6 +333,25 @@
         : '<textarea class="input" data-oneline id="' + id + '" rows="1" aria-required="true">' + esc(value || '') + '</textarea>';
     return '<div class="row"><label class="field-label" for="' + id + '">' + label + '</label>' + ctl +
       (note ? '<p class="asknote" id="' + id + 'N">' + note + '</p>' : '') + '</div>';
+  }
+  /* The language shown is kept, the chosen one drawn in its place. */
+  function keepLang() {
+    var it = st.ed;
+    if (it && it.langs) it.draft[it.lang] = { subject: val('subject'), body: val('body'), button: val('button') };
+  }
+  function showLang(l) {
+    var it = st.ed;
+    if (!it || !it.langs || l === it.lang || !it.draft[l]) return;
+    keepLang();
+    it.lang = l;
+    ['subject', 'body', 'button'].forEach(function (n) {
+      var el = $('mt-' + n);
+      if (el) { el.value = it.draft[l][n]; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+    var sel = $('mt-lang');
+    if (sel && sel.value !== l) sel.value = l;
+    edMsg('');
+    preview();
   }
   function val(name) { var el = $('mt-' + name); return el ? String(el.value || '').trim() : ''; }
 
@@ -358,12 +403,11 @@
   }
   function edMsg(t, tone) { $('mtEdMsg').textContent = t || ''; $('mtEdMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
 
-  function save() {
-    var it = st.ed, go = $('mtEdSave');
-    var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), button: val('button'), legal: val('legal'),
-      disclaimer: val('disclaimer'), foot: val('foot'), to: val('to'), on: $('mtOn') ? $('mtOn').getAttribute('aria-checked') === 'true' : true };
-    var bad = odd(texts(), fieldsOf(it.kind));
-    var refuse = it.named && (v.name.length < 2 || v.name.length > 80) ? ['name', SAID['bad-name']]
+  /* What the sender would refuse in what was typed, as [field, words]. */
+  function refusal(it, v) {
+    var list = fieldsOf(it.kind);
+    var bad = odd([v.subject, v.subject2, v.body, v.button, v.legal, v.disclaimer, v.foot].join('\n'), list);
+    return it.named && (v.name.length < 2 || v.name.length > 80) ? ['name', SAID['bad-name']]
       : it.to && !window.ADspaceWords.emailOk(v.to) ? ['to', SAID['bad-email']]
       : v.subject.length < 2 ? ['subject', SAID['bad-subject']]
       : it.two && v.subject2.length < 2 ? ['subject2', SAID['bad-subject']]
@@ -372,12 +416,41 @@
       : it.kind === 'invoice' && !/\{\s*invoices\s*\}/i.test(v.body) ? ['body', SAID['no-invoices']]
       : it.kind === 'code' && /\{\s*code\s*\}/i.test(v.subject) ? ['subject', SAID['code-in-subject']]
       : it.kind === 'code' && !/\{\s*code\s*\}/i.test(v.body) ? ['body', SAID['no-code']]
-      : bad.length ? ['body', L().unknownField(bad[0], fieldsOf(it.kind))] : null;
-    if (refuse) { edMsg(refuse[1], 'err'); var f = $('mt-' + refuse[0]); if (f) f.focus(); return; }
+      : bad.length ? ['body', L().unknownField(bad[0], list)] : null;
+  }
+  function refuseAt(r) { edMsg(r[1], 'err'); var f = $('mt-' + r[0]); if (f) f.focus(); }
+
+  function save() {
+    var it = st.ed, go = $('mtEdSave');
+    var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), button: val('button'), legal: val('legal'),
+      disclaimer: val('disclaimer'), foot: val('foot'), to: val('to'), on: $('mtOn') ? $('mtOn').getAttribute('aria-checked') === 'true' : true };
+    var p;
+    if (it.langs) {
+      /* Each language changed is saved with its own p_lang; one left
+         unwritten stays so, and that email goes out in English. */
+      keepLang();
+      var same = function (a, b) { return a.subject === b.subject && a.body === b.body && a.button === b.button; };
+      var todo = it.langs.filter(function (l) { return !same(it.draft[l], it.text[l]) && !(l !== 'en' && !written(it.text[l]) && !written(it.draft[l]) && !it.draft[l].button); });
+      if (!todo.length) todo = [it.lang];
+      for (var n = 0; n < todo.length; n++) {
+        var d = it.draft[todo[n]];
+        var r = refusal(it, { name: '', subject: d.subject, subject2: '', body: d.body, button: d.button, legal: '', disclaimer: '', foot: '', to: '' });
+        if (r) { showLang(todo[n]); refuseAt(r); return; }
+      }
+      p = todo.reduce(function (q, l) {
+        return q.then(function (err) {
+          if (err) return err;
+          return it.save(it.draft[l], l).then(function (e) { if (e) showLang(l); else it.text[l] = JSON.parse(JSON.stringify(it.draft[l])); return e; });
+        });
+      }, Promise.resolve(''));
+    } else {
+      var refuse = refusal(it, v);
+      if (refuse) { refuseAt(refuse); return; }
+      p = it.isNew
+        ? saveWith('email_template_save', { p_id: null, p_audience: it.rec === 'suppliers' ? 'supplier' : 'client', p_name: v.name, p_subject: v.subject, p_body: v.body })
+        : it.save(v);
+    }
     go.disabled = true;
-    var p = it.isNew
-      ? saveWith('email_template_save', { p_id: null, p_audience: it.rec === 'suppliers' ? 'supplier' : 'client', p_name: v.name, p_subject: v.subject, p_body: v.body })
-      : it.save(v);
     p.then(function (err) {
       go.disabled = false;
       if (err) { edMsg(err, 'err'); return; }
@@ -427,6 +500,7 @@
     var form = $('mtEdForm');
     form.addEventListener('focusin', function (e) { if (/^(TEXTAREA|INPUT)$/.test(e.target.tagName) && e.target.id !== 'mt-to' && e.target.id !== 'mt-name') last = e.target; });
     form.addEventListener('input', function () { if (st.ed) preview(); });
+    form.addEventListener('change', function (e) { if (e.target.id === 'mt-lang') showLang(e.target.value); });
     form.addEventListener('mousedown', function (e) { if (e.target.closest('.mt-chip')) e.preventDefault(); });
     form.addEventListener('click', function (e) {
       var c = e.target.closest('.mt-chip');

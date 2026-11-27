@@ -246,7 +246,8 @@ Moved whole from `DESIGN.md` §5, which keeps a one-line pointer here; read whol
   to add, a pen to edit, the copy mark, the file mark to download, the leaving
   mark after anything that opens in a new tab (Preview, Open), the chevron
   after a way to another console page. A form's own commit (Save, Cancel, a
-  submit, a sheet's foot, a confirm) is words. The act table is
+  submit, a sheet's foot, a confirm) is words; a Preview in a sheet's foot
+  is a way out, never its commit, and keeps its leaving mark. The act table is
   `js/acts.js` (Publish the plane, Unpublish the struck eye, Edit the pen,
   Download the file, Copy, Preview after the words, Add and New the plus, Invite, an email sent and Send code the envelope, Use passkey the key, Open in Bukku the leaving mark after, Open {a console page} and View the chevron after; a quiet button as a filled one):
   a button drawn as words alone takes its act's mark, so a new screen
@@ -303,6 +304,9 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
       Stop, Cancel month, Reset link, Close link, Enable access / Revoke access
       (a contact), Allow portal sign-in / Stop portal sign-in (a Past client).
    6. Remove and destroy: Remove, Void, then Delete last.
+   A website request not yet sent is the one exception (the user,
+   2026-11-27): Download PDF, Show quotation link, Ask for details ·
+   Edit, Cancel quote · Delete (`docs/rules/services.md`).
 4. Separators (`hr.kmenu-sep`, `role="separator"`): always before group 6
    when anything precedes it; between the other groups once the menu
    shows four items or more.
