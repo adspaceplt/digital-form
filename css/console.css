@@ -5001,7 +5001,11 @@ span.inv-amt { font-weight: 500; }
 .ost-name-w { min-width: 0; }
 .ost-time { color: var(--ink-mute); font-size: 12.5px; text-align: right; white-space: nowrap; }
 .ost-under { display: grid; gap: 4px; margin-top: 2px; min-width: 0; }
-.ost-addr, .ost-credit { display: block; max-width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+/* A line of words that opens whole is still a control: its box takes the
+   control height and gives the extra back, so the line keeps its place
+   (2026-11-27, the day's gate: 17 to 19px tall). */
+.ost-addr, .ost-credit { display: block; max-width: 100%; min-height: var(--ctl-h); padding: calc((var(--ctl-h) - 1lh) / 2) 0; margin-block: calc((1lh - var(--ctl-h)) / 2);
+  border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ost-addr.is-whole, .ost-credit.is-whole { white-space: normal; overflow-wrap: anywhere; }
 .ost-small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }

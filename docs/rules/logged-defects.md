@@ -44,22 +44,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
-- 2026-11-26, `hiringiv` (the five list fixes, which touch neither
-  Settings nor Hiring's settings): "its Edit opens the figures, the reply
-  time among them" fails at 1280 and 390, and failed the same on the
-  branch's base (c881fdb, main with #1479, Settings sheets on one line):
-  the Time limits sheet no longer reads its three figures' words as the
-  suite asks. Held here until it ships.
-- 2026-11-26, `hiringheld` (the unslop pass, which touches no Settings
-  sheet): "its Edit asks the decision time" fails at 1280 and 390, as
-  `hiringiv` does, from #1479's relabelled Settings sheets.
-  Held here until it ships.
-- 2026-11-26, `weight` (review fixes S4, whose always-loaded scripts are
-  108 bytes smaller than main's by gzip): the console reads 1328.8 to
-  1328.9 KB against its 1328.8 KB budget on main 2800345 itself; the
-  hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
-  time field under its old label) fail the same on main, likely from
-  #1479's relabelled sheets. Held here until they ship.
 - 2026-11-26, `pdfreal` (the Build quote and TERMS fit train, which
   touches no letter): the Letter of Offer and the client letter (sign,
   nosign) fail "its head and foot at the template's places on every
@@ -75,27 +59,3 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   function): "the schema's last wa_compose_prepare is this one, refusing
   feedback to a lead…" fails since F8 (#1504) redefined
   `wa_compose_prepare` after that band. Held here until it ships.
-- 2026-11-27, the day's full gate on main 7158470 (tests 6c536c7), run
-  22:40 to 00:13 UTC; each found in code no release that day meant to move:
-  - `priority`: "Edit asks From and each level's hours" reads `Applies
-    from | Urgent | High | Medium`; `caption`: "Edit prices asks From,
-    Input, Output and Web searches" reads `Applies from` and the prices'
-    long labels. Likely #1479/#1500's relabelled Settings sheets, as
-    `hiringheld` and `hiringiv`.
-  - `analysis` (as `caption`'s logged usage-page check): "the usage page
-    lists the analysis limit…" finds no `Brand analyses 3 a day` on the
-    AI usage sheet (`js/reports.js` `aiUseSheet`, about line 6490): the
-    sheet draws only the `2/3` cells. Either the limits line went with
-    #1500 or the same after-16:00-UTC cause as `caption`.
-  - `clientsends` (1280 and 390): the details form's Copy message reads
-    `open until 11 Dec 2026 (Friday).`, the suite asking `{d} {Mon}
-    {yyyy}.`; the day is drawn `named: true` (`js/crm.js` `dfMessage`,
-    line 4199, #1490). And "a contact with a number offers Send on
-    WhatsApp in its ⋯": no `[data-a="wa"]` on the contact's row; likely
-    `waMsg` (`js/crm.js` line 5631) reading `ADspaceWhatsApp` before the
-    on-demand script has arrived on a direct visit to Contacts.
-  - `uxaudit` (my work outstation, outstation photo, outstation trip at
-    1280), `matrix1` (Duo outer), `matrix2` (320): `button.ost-addr` (a
-    stop's address) and `button.ost-credit` draw 17 to 19px tall against
-    the 34 / 36px target floor (`css/console.css` line 5004, from #1469).
-  Held here until they ship.
