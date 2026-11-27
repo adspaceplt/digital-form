@@ -20,6 +20,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   reads the contact first and keeps Bukku's code, terms, accounts, groups,
   other people and addresses; its types gain Customer or Supplier and never
   lose one; nothing is deleted or archived in Bukku (`tests/bukkufn.js`).
+  A contact's email and phone go as Bukku's lists, `emails` and `phones`
+  (five each, a number in digits with its country code), never the single
+  `email` or `phone_no`, which Bukku refuses since 2026-11-26: ours first,
+  Bukku's others kept after it (a list sent replaces Bukku's whole), each
+  other person's role and lists kept; read from each list's first, the old
+  single field still read (`listOf`, `mailOf`, `phoneOf` in `bukku-sync`).
   The address is read into Bukku's parts (street, postcode, city, state,
   country; a line break a comma), and an address or a billing person Bukku
   already holds however set out (the same letters and digits; every word of

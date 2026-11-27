@@ -1,16 +1,15 @@
-# Handover (27 Nov 2026, 02:25 UTC)
+# Handover (27 Nov 2026, 06:35 UTC)
 
 The single source of truth for work in flight. A fresh session reads this file,
 then CLAUDE.md (§3 **Token economy** is binding), then the PR or branch of the
 item it takes. The previous coordinator session ended here; nothing lives in it.
 
-## Running now (coordinator session_01RVzkaPPW14NcAA63Kz5Sf2; at most four sessions)
+## Running now (coordinator: the session named in the latest coordinator handover; at most four sessions)
 
 | Session | Work | When done |
 |---|---|---|
-| T `session_01RVzkaQPY1uMkNhrDk9jsg8` | Client page weight (`claude/page-weight`): PDF scripts and demo.js on demand, console-only CSS moved to console.css, budgets lowered. Client-facing | Artifact to the user; merges on "go" |
-| U `session_01RVzkaN7KdT1SgstjgtBM4C` | #1526 /quote/ ad budget follows the plan (+ quote_change_sel migration), brand notice, commitment sentences removed. User said "go" 02:20 | Merges, applies migration, reports, stops |
-| V `session_01RVzkaQPkA3uJTzfE4hBcnw` | Request feedback: Copy for WhatsApp (`claude/feedback-wa-copy`, migration `2026-11-27-feedback-whatsapp-copy.sql`, pages first). Console | Merges itself |
+| T `session_01RVzkaQPY1uMkNhrDk9jsg8` | #1532 client page weight (user said "go"): merging main with #1531, re-proving the 1,452 moved CSS rules, then merges itself; tests branch claude/page-weight goes to tests main at merge | Reports build, stops |
+| Z `session_01RVzkaMf4aAp62531br68JM` | #1529 ad-spend explainer + approximate S$ on the sent quote link, Change selection, signing step and link PDF (SG billed in RM only). Migration restates #1531's app_settings_set and quote_website_read. Client-facing | Artifact to the user; merges on "go" |
 
 G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 (index.ts 140 KB, too large for one connector call) is being deployed by session `session_01RVzkaQdpVPqkzAb7ChdveC` through the Management API; `SUPABASE_ACCESS_TOKEN` is now set in the environment for later deploys. PDF item 13 (the Rate Card discount sign, as G proposed in #1499/#1501's handover) is approved by the user ("2 ok"): build it, with its suite edit, on the next documents/PDF train.
 
@@ -31,8 +30,8 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
 9. **Full gate on main**: run 27 Nov on 7158470 (P, #1519); its findings shipped as #1520 and #1521 (Q). Next full gate after the next day's merges.
 10. J's other 17 review findings (J's handover on #1507).
-11. **Ad-spend explainer** (fresh session after U; brief in U's handover comment on #1526): "billed separately" replaced on /quote/, the quote link, Build quote and the quotation PDF by "The advertising budget is not included in this quotation." + How ad spend works (sheet: Option 1 own ad account, recommended; Option 2 prepaid through us: month 1 before start, later months at {80}% spent, ads pause unpaid; on the quotation's payment terms an Agency Credit Term Fee of {20}%, e.g. RM 6,000 → RM 1,200). Explainer only, no choice; 80 and 20 are app_settings. Client-facing: screenshots first.
-12. **/quote/ intake and follow-up loop** (major; after 11, never in parallel: both edit js/quote.js). Mockup https://claude.ai/artifact/HYP2kxVanTLo6wMbtapdrZ. Decided (the user, 27 Nov): Contact person (name, email, WhatsApp); Registering as = two-option segment "Company · Sole / Partnership" (公司 · 独资 / 合伙), no Individual; Business Registration No. (BRN), 12 digits, required for both (Company codes 01/02/04, Sole / Partnership 03); Registered name; Brand name; Industry (console list, required); website or No website tick, social handle (one of the two required); Urgency to commence (console options, keep On a specific date); Comments (→ Enquiry); Source set automatically; consent and notice. Statuses: add only Waiting for details and Details received; our refusal is "Not quoted" with a reason (Incomplete details, Not a fit, Duplicate, Spam), Undo, Reopen; Ask for details sheet (tick what is missing; Send email, Copy for WhatsApp by hand); Reply by and close days as settings; prospect's own link opens Complete your details with only the ticked fields; the link's details step closes once sent. Matching: never shown on the public page; after submit BRN, then email + number; team sees "Matches existing client"; same brand → its record, registration held for Use details; new brand → Add as a new brand of {client} / Keep as a new lead; prospect always sees the same thank-you. Desk width: steps at 760px with paired fields side by side (recommended, the user's "rest as recommended"); phone unchanged. Client-facing: screenshots first.
+11. **Ad-spend explainer** (now Z, #1529, with approximate S$ added) (fresh session after U; brief in U's handover comment on #1526): "billed separately" replaced on /quote/, the quote link, Build quote and the quotation PDF by "The advertising budget is not included in this quotation." + How ad spend works (sheet: Option 1 own ad account, recommended; Option 2 prepaid through us: month 1 before start, later months at {80}% spent, ads pause unpaid; on the quotation's payment terms an Agency Credit Term Fee of {20}%, e.g. RM 6,000 → RM 1,200). Explainer only, no choice; 80 and 20 are app_settings. Client-facing: screenshots first.
+12. **DONE #1531 (261127.b981), with the representative rule.** /quote/ intake and follow-up loop (major; after 11, never in parallel: both edit js/quote.js). Mockup https://claude.ai/artifact/HYP2kxVanTLo6wMbtapdrZ. Decided (the user, 27 Nov): Contact person (name, email, WhatsApp); Registering as = two-option segment "Company · Sole / Partnership" (公司 · 独资 / 合伙), no Individual; Business Registration No. (BRN), 12 digits, required for both (Company codes 01/02/04, Sole / Partnership 03); Registered name; Brand name; Industry (console list, required); website or No website tick, social handle (one of the two required); Urgency to commence (console options, keep On a specific date); Comments (→ Enquiry); Source set automatically; consent and notice. Statuses: add only Waiting for details and Details received; our refusal is "Not quoted" with a reason (Incomplete details, Not a fit, Duplicate, Spam), Undo, Reopen; Ask for details sheet (tick what is missing; Send email, Copy for WhatsApp by hand); Reply by and close days as settings; prospect's own link opens Complete your details with only the ticked fields; the link's details step closes once sent. Matching: never shown on the public page; after submit BRN, then email + number; team sees "Matches existing client"; same brand → its record, registration held for Use details; new brand → Add as a new brand of {client} / Keep as a new lead; prospect always sees the same thank-you. Desk width: steps at 760px with paired fields side by side (recommended, the user's "rest as recommended"); phone unchanged. Client-facing: screenshots first.
 
 ## Logged defects (fail on main, not yet fixed)
 
@@ -76,11 +75,16 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1523 Content Review top (O; migration live) | 261127.d9e7 |
 | #1524 Meeting glyph: two people at a table (R) | 261127.aaf2 |
 | #1525 Content meetings in Calls and visits (R) | 261127.fa10 |
+| #1527 Handover; carries #1526 /quote/ ad budget follows the plan, notice, commitment lines removed (migration live) | 261127.0c8b |
+| #1528 Request feedback: Copy for WhatsApp (migration live) | 261127.a3c2 |
+| #1530 Record rows keep the card's rounded edge | 261127.6393 |
+| #1531 /quote/ intake, follow-up loop, representative rule (Sales by on quotation pages, Person in charge in the portal, none if unassigned); supplier-mail v34; three migrations live | 261127.b981 |
 | #1519 Full gate findings logged (P) | 261127.f805 |
 | #1520 Trip card controls at full height; stale suites corrected (Q); tests #309 | 261127.b06a |
 | #1521 pdfreal reads the printed verify address (Q); tests #310 | 261127.fd37 |
 | #1517 One glyph set (N): every page draws from `js/icons.js`, one meaning one glyph (`MEANS`), WhatsApp's own mark on wa.me links; `tests/glyphs.js`; weight budgets raised with reason | 261127.67f8 |
 | #1523 Content Review top (O): one sentence in the head, counts in the strip alone, the set line with Filter, a video's own safe area switch; migration `2026-11-27-review-feed-content-month.sql`; tests #311 | see the coordinator's report |
+| #1534 Bukku contact emails and phones as lists (hotfix, bukku-sync v70) | 261127.ce42 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
@@ -95,4 +99,6 @@ Done by the user on 27 Nov: the expectations listed on 26 Nov approved; O merged
 
 1. go.adspace.me's DNS stays for now; its removal is a future update.
 2. White-label: ON HOLD by the user (27 Nov). Audit https://claude.ai/artifact/Mgqdt58TYua1wdMetrxDQR; start only on the user's word, step 1 (agency profile, additive) first, after items 11 and 12 merge.
-3. Page weight (T): approve its screenshots.
+3. Approved by the user 27 Nov: #1528 expectations; #1531 and #1532 "go". Waiting: Z's screenshots (#1529) for "go".
+4. Logged, not yet queued: uxaudit cannot reach Settings › Public holidays; csStrip missing from STRIP_NAMES; crm and settings timing flakes (from #1531); My Work "Open Months" capital M.
+5. Next after Z: the full gate on main (`bash tests/snap.sh all`), then J's 17 review findings, automatic ?v= stamps, the tone sweep since 863dddc, linked sections.
