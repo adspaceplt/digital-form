@@ -2758,8 +2758,6 @@
     if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-time');
     return out.length ? out.join(' · ') + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') : '';
   }
-  var UP = window.ADspaceIcons.glyph('chevup');
-  var DOWN = window.ADspaceIcons.glyph('chevdown');
   /* The lines and the totals as the quotation will keep them. */
   /* A line written in the sheet itself (a custom line in More details, a
      package in its builder) is changed there, never in the lines. */
@@ -2846,31 +2844,18 @@
            this quotation (2026-11-13, the user: "shouldnt be dead end when
            inside admin"); the card itself changes only when it is
            published. A custom line is written in Advanced. */
-        var le = B ? editsAt(l.brand)[l.key] : null;
-        var own = !!(le && (le.detail || le.name));
         /* Changed from the Rate Card for this quotation (2026-11-16): its
            name, its description or its rate, said once on the line. */
         var edited = !ownLine(l) && (l.list_label != null || l.list_detail != null || l.list_rate != null);
-        var grp = B && B.sent ? rows.filter(function (x) { return x.brand === l.brand; }) : rows;
-        var at = grp.indexOf(l);
-        var move = B ? '<button type="button" class="iconbtn qb-move" data-move="-1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move up, ' + l.label) + '"' + (at === 0 ? ' disabled' : '') + '>' + UP + '</button>' +
-          '<button type="button" class="iconbtn qb-move" data-move="1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move down, ' + l.label) + '"' + (at === grp.length - 1 ? ' disabled' : '') + '>' + DOWN + '</button>' : '';
         var desc = '';
-        if (!ownLine(l) && B) {
+        if (!ownLine(l) && B && B.descKey === id) {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
-            (B.descKey === id ?
-              '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
-              '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div>' :
-              (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-              '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Changed</span>' : '') +
-                '<button type="button" class="btn btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
-                '<button type="button" class="btn btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
-                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
-            '</div>';
-        } else {
+            '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
+            '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div></div>';
+        } else if (incl.length || edited) {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
             (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-            (B ? '<div class="qb-desc-acts"><span class="qb-moves">' + move + '</span></div>' : '') + '</div>';
+            (edited ? '<div class="qb-desc-acts"><span class="qb-desc-own">Changed</span></div>' : '') + '</div>';
         }
         /* The line's name, changed for this quotation where it is read. */
         var naming = B && B.nameKey === id && !ownLine(l);
@@ -2879,7 +2864,7 @@
           '<span class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-name-cancel" data-key="' + esc(l.key || '') + '">Cancel</button><button type="button" class="btn btn-sm qb-name-done" data-key="' + esc(l.key || '') + '">Done</button></span>' :
           esc(l.label);
         if (l.list_label != null) sub.unshift('Rate Card: ' + l.list_label);
-        return bhead + '<div class="svc-row qb-row" data-brand="' + esc(bk) + '"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
+        return bhead + '<div class="svc-row qb-row" data-brand="' + esc(bk) + '" data-key="' + esc(l.key || '') + '"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           desc +
           /* A Rate Card one-time item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
@@ -2894,7 +2879,8 @@
             (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval' + (flex ? ' qb-flex' : ''), 'numeric', 'Months') :
               flex ? box('months', '', 'qb-moval qb-flex', 'numeric', 'Months, empty for one-time').replace('value=""', 'value="" placeholder="One-time"') :
               '<span class="qb-once">One-time</span>') + '</span>' +
-          '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span></div>';
+          '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span>' +
+          (B ? lineMenu(l, { tax: false }) : '') + '</div>';
       }).join('') + '</div>';
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
        the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
@@ -3103,22 +3089,10 @@
     var lines = d ? MON.planFold(d.lines || [], t.currency) : [];
     var board = B ? boardLines().map(function (l) { return l.key; }) : [];
     var row = function (l) {
-      var ours = B && onBoard(l.brand) && (!B.sent || l.brand === boardAt());
-      var mine = ours && board.indexOf(l.key) > -1, at = ours ? board.indexOf(l.key) : -1, items = [];
-      if (mine) {
-        if (l.kind === 'custom') items.push(['edit', 2, 'Edit']);
-        if (taxOpts(l, t)) items.push(['tax', 2, 'Change tax code']);
-        if (at > 0) items.push(['up', 2, 'Move up']);
-        if (at > -1 && at < board.length - 1) items.push(['down', 2, 'Move down']);
-        if (l.kind === 'custom' || (l.basis === 'once' && l.slug && onceBox(l.slug))) items.push(['remove', 6, 'Remove']);
-      }
-      return '<div class="qb-sideline" data-key="' + esc(l.key || '') + '"><span class="qb-sidename">' + esc(l.label) +
+      return '<div class="qb-sideline" data-brand="' + esc(l.brand == null ? '' : String(l.brand)) + '" data-key="' + esc(l.key || '') + '"><span class="qb-sidename">' + esc(l.label) +
         (Number(l.qty) > 1 && l.kind !== 'package' && l.kind !== 'plan' ? ' × ' + esc(l.qty) : '') + '</span>' +
         '<span class="qb-fig">' + esc(l.in_plan ? 'In plan' : CUR + ' ' + acct(l.amount)) + '</span>' +
-        '<span class="team-act qb-sideact">' + (items.length ? '<button class="kmenu-btn" type="button" aria-label="' + esc('More actions, ' + l.label) + '" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
-            return '<button class="kmenu-item" data-g="' + x[1] + '" data-a="' + x[0] + '" type="button" role="menuitem">' + esc(x[2]) + '</button>';
-          }).join('') + '</div>' : '') + '</span></div>';
+        (B ? lineMenu(l, { tax: true, cls: 'qb-sideact' }) : '<span class="qb-sideact"></span>') + '</div>';
     };
     /* The totals in the quotation's own order, each subtotal before its
        SST, so no tax row stands apart from the figure it is on. */
@@ -3157,33 +3131,124 @@
     if (body && body.clientHeight) body.style.setProperty('--qb-side-max', Math.max(160, body.clientHeight - 32) + 'px');
   }
   function sideOn() { var b = $('qbSide'); return !!b && b.getClientRects().length > 0; }
-  function onceBox(slug) {
-    return Array.prototype.filter.call(document.querySelectorAll('#qbOnce input[data-slug]'), function (i) { return i.getAttribute('data-slug') === slug; })[0] || null;
+  /* ADD, MANAGE, REMOVE (the user, 2026-11-27): every item on the
+     quotation, whatever added it (a plan, its platforms and extras, a
+     one-time item, a verification, a package, a custom item), carries one
+     ⋯ in the item table and in the Summary alike: Rename, Edit
+     description (Use Rate Card where changed), Change tax code, Move up,
+     Move down, then Remove, with Undo where it happened. Remove changes
+     the brand's own choices, never a stepper that may not be drawn. */
+  function lineAt(k, key) { return linesAt(k).filter(function (x) { return x.key === key; })[0] || null; }
+  function brandIx(k) { return B.sent && k != null && B.sent[k] != null ? B.sent[k] : B.bi; }
+  function platOf(slug) {
+    var s0 = ((B.card && B.card.snapshot && B.card.snapshot.services) || []).filter(function (x) { return x.slug === slug; })[0];
+    return s0 && s0.spec ? s0.spec.platform : null;
   }
-  function sideAct(a, key) {
+  /* Whether a line can leave, and how: the brand's choice it came from. */
+  function dropOf(l, b) {
+    var k = l.kind, slug = l.slug;
+    if (k === 'plan') return function () {
+      delete b.plan; delete b.mix; b.platforms = []; b.extra = {}; b.langs = ['en']; b.translate = false; b.budget = 0;
+    };
+    if (k === 'platform' || k === 'platform_in') {
+      var pl = platOf(slug), list = b.platforms || [];
+      /* A plan keeps one platform at least (it is the plan's). */
+      if (!pl || list.indexOf(pl) < 0 || (b.plan && list.length < 2)) return null;
+      return function () { b.platforms = list.filter(function (x) { return x !== pl; }); };
+    }
+    if (k === 'extra') return function () { b.extra = Object.assign({}, b.extra); delete b.extra[slug]; };
+    if (k === 'translation') return function () { b.translate = false; b.langs = (b.langs || ['en']).slice(0, 1); };
+    if (k === 'ads') return function () { b.budget = 0; };
+    if (k === 'package') return function () { b.packages = []; };
+    if (k === 'custom') {
+      var n = Number(String(l.key).split('|')[1]) - 1;
+      if (!(n >= 0) || !(b.custom || [])[n]) return null;
+      return function () { b.custom = b.custom.slice(); b.custom.splice(n, 1); };
+    }
+    if (l.basis === 'once' && slug && (b.once || []).some(function (o) { return o.slug === slug; })) {
+      return function () { b.once = b.once.filter(function (o) { return o.slug !== slug; }); };
+    }
+    return null;
+  }
+  /* The brand's choices as they stand: the open card's read from the
+     board once a pricing, every other brand's as kept. */
+  function brandNow(k) {
+    var ix = brandIx(k);
+    if (ix !== B.bi) return B.brands[ix] || null;
+    if (B.nowFor !== B.priced || !B.now) { B.now = pickBrand(selection()); B.nowFor = B.priced; }
+    return B.now;
+  }
+  function lineMenu(l, o) {
+    var k = l.brand, grp = linesAt(k), at = grp.map(function (x) { return x.key; }).indexOf(l.key);
+    var b = brandNow(k);
+    var own = ownLine(l), le = editsAt(k)[l.key] || {};
+    var pts = (l.detail || []).filter(function (x) { return String(x == null ? '' : x).trim(); }).length;
+    var ch = [
+      own ? { a: 'edit', label: 'Edit' } : null,
+      own ? null : { a: 'name', label: 'Rename' },
+      own ? null : { a: 'desc', label: pts ? 'Edit description' : 'Add description' },
+      !own && (le.detail || le.name) ? { a: 'card', label: 'Use Rate Card' } : null,
+      o.tax && taxOpts(l, (B.priced && B.priced.totals) || {}) ? { a: 'tax', label: 'Change tax code' } : null,
+      at > 0 ? { a: 'up', label: 'Move up' } : null,
+      at > -1 && at < grp.length - 1 ? { a: 'down', label: 'Move down' } : null
+    ];
+    var rm0 = b && dropOf(l, b) ? [{ a: 'remove', label: 'Remove' }] : [];
+    var html = window.ADspaceMenu.items([[], ch, [], [], [], rm0]);
+    return '<span class="team-act ' + (o.cls || 'qb-lineact') + '">' + (html ? '<button class="kmenu-btn" type="button" aria-label="' + esc('More actions, ' + l.label) + '" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" data-menu hidden>' + html + '</div>' : '') + '</span>';
+  }
+  function lineRemove(k, key) {
+    var l = lineAt(k, key);
+    if (!l) return;
+    keepBrand(selection());
+    var ix = brandIx(k), b = B.brands[ix], was = JSON.parse(JSON.stringify(b));
+    var go = dropOf(l, b);
+    if (!go) return;
+    go();
+    var left = kindOf(b);
+    if (left) b.kind = left; else if (l.kind === 'plan' || l.kind === 'package') delete b.kind;
+    B.descKey = null; B.nameKey = null;
+    fill(B.brands[B.bi]); cards(true); preview();
+    var undo = function () {
+      if (!B || !B.brands[ix]) return;
+      keepBrand(selection());
+      B.brands[ix] = Object.assign(was, { name: B.brands[ix].name });
+      fill(B.brands[B.bi]); cards(true); preview();
+    };
+    if (window.ADspaceAdmin && window.ADspaceAdmin.undoHere) window.ADspaceAdmin.undoHere(l.label + ' removed.', undo, $('qbLines'));
+  }
+  function lineAct(a, k, key) {
     if (!B || !B.priced) return;
-    var l = boardLines().filter(function (x) { return x.key === key; })[0];
+    var l = lineAt(k, key);
     if (!l) return;
     if (a === 'up' || a === 'down') {
-      var keys = boardLines().map(function (x) { return x.key; });
+      var keys = linesAt(k).map(function (x) { return x.key; });
       var i = keys.indexOf(key), j = i + (a === 'up' ? -1 : 1);
       if (i < 0 || j < 0 || j >= keys.length) return;
       var tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
-      B.order = keys;
+      setOrder(k, keys);
       preview();
       return;
     }
-    var cus = l.kind === 'custom' ? document.querySelectorAll('#qbCusRows [data-cus]')[Number(String(key).split('|')[1]) - 1] : null;
+    if (a === 'remove') { lineRemove(k, key); return; }
     if (a === 'edit') {
-      if (!B.open) boardTo(B.bi);
-      var nm = cus && cus.querySelector('.qb-cusname');
-      if (nm) { nm.scrollIntoView({ block: 'center' }); nm.focus(); }
+      if (!B.open || brandIx(k) !== B.bi) boardTo(brandIx(k));
+      var cus = l.kind === 'custom' ? document.querySelectorAll('#qbCusRows [data-cus]')[Number(String(key).split('|')[1]) - 1] : null;
+      var f = l.kind === 'custom' ? cus && cus.querySelector('.qb-cusname') : $('qbPkgName');
+      if (f) { f.scrollIntoView({ block: 'center' }); f.focus(); }
       return;
     }
-    if (a === 'remove') {
-      if (cus) { var x = cus.querySelector('.qb-cusx'); if (x) x.click(); return; }
-      var ob = l.slug && onceBox(l.slug);
-      if (ob) { ob.value = '0'; ob.dispatchEvent(new Event('input', { bubbles: true })); ob.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (a === 'name' || a === 'desc') {
+      if (a === 'name') { B.nameKey = lineId(k, key); B.descKey = null; } else { B.descKey = lineId(k, key); B.nameKey = null; }
+      $('qbLines').innerHTML = table(B.priced);
+      var el = $('qbLines').querySelector(a === 'name' ? '.qb-name-in' : '.qb-desc');
+      if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); if (a === 'name') el.select(); else el.setSelectionRange(el.value.length, el.value.length); }
+      return;
+    }
+    if (a === 'card') {
+      var e5 = editsAt(k)[key];
+      if (e5) { delete e5.detail; delete e5.name; putEdit(k, key, e5); }
+      preview();
       return;
     }
     if (a === 'tax') {
@@ -3193,12 +3258,30 @@
         field: { name: 'tax', label: l.label, choices: tx.opts, value: tx.cur, required: false } }, function (v) {
         if (!B) return;
         v = typeof v === 'string' ? v : (v && v.tax) || '';
-        var e0 = B.edits[key] || {};
+        var e0 = editsAt(k)[key] || {};
         if (v) e0.tax = v; else delete e0.tax;
-        if (Object.keys(e0).length) B.edits[key] = e0; else delete B.edits[key];
+        putEdit(k, key, e0);
         preview();
       });
     }
+  }
+  /* A line's ⋯ opened and its item pressed, in the item table and the Summary. */
+  function lineMenuClick(e) {
+    var btn = e.target.closest('.kmenu-btn'), it = e.target.closest('.kmenu-item');
+    if (it) {
+      if (!it.closest('.qb-lineact, .qb-sideact')) return false;
+      it.closest('[data-menu]').hidden = true;
+      var host = it.closest('.qb-row, .qb-sideline');
+      lineAct(it.getAttribute('data-a'), brandOf(host), host.getAttribute('data-key'));
+      return true;
+    }
+    if (!btn || !btn.closest('.qb-lineact, .qb-sideact')) return false;
+    var menu = btn.parentNode.querySelector('[data-menu]'), open = menu.hidden;
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    if (open) window.ADspaceMenu.place(btn, menu);
+    return true;
   }
 
   function wire() {
@@ -3211,20 +3294,8 @@
       if (m && I && I.svg) m.innerHTML = I.svg(m.getAttribute('data-mark'));
       t.addEventListener('click', function () { kindPick(t.getAttribute('data-kind')); brandSay(''); });
     });
-    $('qbSide').addEventListener('click', function (e) {
-      var btn = e.target.closest('.kmenu-btn'), it = e.target.closest('.kmenu-item');
-      if (it) {
-        it.closest('[data-menu]').hidden = true;
-        sideAct(it.getAttribute('data-a'), it.closest('[data-key]').getAttribute('data-key'));
-        return;
-      }
-      if (!btn) return;
-      var menu = btn.parentNode.querySelector('[data-menu]'), open = menu.hidden;
-      Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-      menu.hidden = !open;
-      btn.setAttribute('aria-expanded', String(open));
-      if (open) window.ADspaceMenu.place(btn, menu);
-    });
+    $('qbSide').addEventListener('click', lineMenuClick);
+    $('qbLines').addEventListener('click', function (e) { if (B) lineMenuClick(e); });
     /* The Summary shows or gives way as the sheet narrows: View quote
        follows it, and the lines turned open close where the Summary
        holds them. */
@@ -3422,24 +3493,6 @@
     /* A line renamed, or moved, for this quotation (2026-11-16). */
     $('qbLines').addEventListener('click', function (e) {
       if (!B) return;
-      var mv = e.target.closest('.qb-move');
-      if (mv) {
-        var mb = brandOf(mv), keys = linesAt(mb).map(function (l) { return l.key; });
-        var i = keys.indexOf(mv.getAttribute('data-key')), j = i + Number(mv.getAttribute('data-move'));
-        if (i < 0 || j < 0 || j >= keys.length) return;
-        var tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
-        setOrder(mb, keys);
-        preview();
-        return;
-      }
-      var nk = e.target.closest('.qb-name-edit');
-      if (nk) {
-        B.nameKey = lineId(brandOf(nk), nk.closest('.qb-incl').getAttribute('data-key')); B.descKey = null;
-        $('qbLines').innerHTML = table(B.priced);
-        var ni = $('qbLines').querySelector('.qb-name-in');
-        if (ni) { ni.focus(); ni.select(); }
-        return;
-      }
       if (e.target.closest('.qb-name-cancel')) { B.nameKey = null; $('qbLines').innerHTML = table(B.priced); return; }
       var nd = e.target.closest('.qb-name-done');
       if (nd) nameDone(nd.getAttribute('data-key'), brandOf(nd));
@@ -3467,11 +3520,7 @@
       var w = e.target.closest('.qb-incl[data-key]');
       if (!w || !B) return;
       var k = w.getAttribute('data-key'), wb = brandOf(w);
-      if (e.target.closest('.qb-desc-edit')) {
-        B.descKey = lineId(wb, k); $('qbLines').innerHTML = table(B.priced);
-        var ta = $('qbLines').querySelector('.qb-desc');
-        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
-      } else if (e.target.closest('.qb-desc-cancel')) {
+      if (e.target.closest('.qb-desc-cancel')) {
         B.descKey = null; $('qbLines').innerHTML = table(B.priced);
       } else if (e.target.closest('.qb-desc-done')) {
         var pts = String(w.querySelector('.qb-desc').value).split(/\r?\n/)
@@ -3484,10 +3533,6 @@
         if (pts.length) e3.detail = pts; else delete e3.detail;
         putEdit(wb, k, e3);
         B.descKey = null; $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
-        preview();
-      } else if (e.target.closest('.qb-desc-card')) {
-        var e5 = editsAt(wb)[k];
-        if (e5) { delete e5.detail; delete e5.name; putEdit(wb, k, e5); }
         preview();
       }
     });
