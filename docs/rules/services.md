@@ -603,10 +603,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   anon; `bad-answer`, `expired`, `not-proceeding`; `proceed_at`,
   `proceed_due` the moment plus `quote_reply_days` working days, 2, Tax
   and terms), Request received with the day the team will be in touch.
-  Once a colleague takes the lead the page names them (Your
+  Every quotation surface (the sent link, Request received, Complete your
+  details, the billing details form) names the client's Sales by alone
+  (`client_rep(p_client, 'sales')`, CLIENT REPRESENTATIVE, 2026-11-27; Your
   representative: name, position, Chat on their WhatsApp only where their
-  namecard shows the mobile, else the office's); until then every step
-  offers the office's Chat on WhatsApp (2026-10-27, QTE-2). The link shows the latest
+  namecard shows the mobile, else the office's); never the Person in charge
+  standing in. Unassigned, inactive, removed or a system account, no person
+  is named and every step offers the office's Chat on WhatsApp. The link shows the latest
   revision (`quotations.replaces`, `quote_shown`: Revised on {d}. It
   replaces {ref}.). The link follows the prospect to the client portal
   (`2026-10-26-quotation-to-client-portal.sql`): `quote_website_read`

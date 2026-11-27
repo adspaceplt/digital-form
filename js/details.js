@@ -30,7 +30,7 @@
       badBrn: 'Enter the Business Registration Number as shown on the company\'s registration.',
       badEmail: 'Enter a valid email address.', 
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.',
-      doneP: 'Thank you. Your ADspace account manager will review your details.',
+      doneP: 'Thank you. ADspace will review your details.',
       /* The form in steps (2026-11-25, the approved canvas). */
       introP: 'Provide your company\'s billing details to ADspace.', billing: 'Billing',
       companyLine: 'Registered Company Name, Business Registration No., Old Registration No., Tax Identification Number (TIN) and SST Registration No.',
@@ -51,7 +51,7 @@
       badBrn: '请按公司注册文件填写商业注册号码。',
       badEmail: '请输入有效的邮箱地址。', 
       badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。',
-      doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
+      doneP: '谢谢。ADspace 将审阅这些资料。',
       introP: '请向 ADspace 提供贵公司的账单资料。', billing: '账单',
       companyLine: '公司注册名称、商业注册号码、旧注册号码、税务识别号（TIN）及 SST 注册号码。',
       billingLine: '账单地址及财务邮箱。', contactLine: '称谓、姓名、手机号码及邮箱。',
@@ -173,10 +173,10 @@
       title: title, line: text, ref: sent && info ? info.brand : '', reqRef: reqRef, reqLabel: (zh ? window.ADspaceWords.zh : window.ADspaceWords.en).coverRef,
       steps: sent ? [
         { state: 'done', title: w.detailsSent, sub: esc(when) },
-        { state: 'now', glyph: 'search', title: w.rcvByManager, now: w.rcvNow },
+        { state: 'now', glyph: 'search', title: w.rcvByAdspace, now: w.rcvNow },
         { glyph: 'verified', title: w.dfConfirmed }
       ] : [],
-      cards: sent ? [yours(null), rep ? I.contactCard(w.accountManager, rep.name, rep.title, wa) : ''] : []
+      cards: sent ? [yours(null), rep ? I.contactCard(w.representative, rep.name, rep.title, wa) : ''] : []
     });
   }
   function paint() {

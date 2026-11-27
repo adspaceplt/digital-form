@@ -40,7 +40,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     of `.cx-track`), Engagements (Content Review over its latest month's
     sets, each campaign still running, each as it stands); on the right
     Your account manager (a person's round tile, the name over Account
-    manager, WhatsApp and Email), Next meeting (a calendar leaf and the time
+    manager, WhatsApp and Email; the Person in charge alone, `get_portal`
+    `owner` through `client_rep(…, 'service')`, CLIENT REPRESENTATIVE
+    2026-11-27; nobody assigned or on the team, Contact ADspace with the
+    company's WhatsApp and Email and no person), Next meeting (a calendar leaf and the time
     in MYT, Join and Add to calendar, an .ics), Latest report (Download) and
     Company. One column at 900, read in the order rate, tiles, Services,
     Next meeting, Latest report, Engagements, account manager, Company. Each

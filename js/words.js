@@ -58,7 +58,7 @@
     yourDetails: 'Your details', stepEdit: 'Edit', stepReview: 'Review and submit',
     /* The received page's track (js/icons.js received, 2026-11-25). */
     rcvNow: 'In progress', rcvByAdspace: 'Review by ADspace', rcvByManager: 'Review by your account manager',
-    accountManager: 'Your account manager', detailsSent: 'Details submitted',
+    accountManager: 'Your account manager', representative: 'Your representative', detailsSent: 'Details submitted',
     // A wait past the expected, and a read the connection lost (2026-11-10).
     stillLoading: 'Still loading…',
     offline: 'The connection was lost or is too slow. Please try again.',
@@ -193,7 +193,7 @@
     formSubmitted: '此表格已提交。', tickToContinue: '请勾选后继续。',
     stepOf: '第{n}步，共{m}步', stepStart: '开始', stepBack: '返回', stepNext: '继续', stepExpect: '流程说明',
     yourDetails: '您的资料', stepEdit: '编辑', stepReview: '检查并提交',
-    rcvNow: '进行中', rcvByAdspace: 'ADspace 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', detailsSent: '资料已提交',
+    rcvNow: '进行中', rcvByAdspace: 'ADspace 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', representative: '您的专属顾问', detailsSent: '资料已提交',
     badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
     stillLoading: '仍在加载…',
     offline: '网络连接中断或过慢，请重试。',
