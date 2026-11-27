@@ -205,7 +205,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   again by `quote_adjust` inside `quote_preview` and `quotation_make`
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
-  filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
+  filed `n lines changed`; the public page never adjusts a quotation nor sends brands, but a colleague's Save on a website request keeps its edits and its one brand (`quotation_edit` prices as the team, 2026-11-27-colleague-save-website-request.sql); empty puts the card's
   figure back. A line's description is the Rate Card's until Edit under
   it rewrites it for that quotation (the edit's `detail`, one to twelve
   points of 300 at most, the card's kept as `list_detail`; Use Rate Card
