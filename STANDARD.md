@@ -62,11 +62,15 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch: `docs/rules/logged-defects.md` (held there until each ships).
 ### Not built, or waiting on the user
-- Linking sections, on hold (the user, 2026-11-26: "1 2 6 8 on hold until
-  further notice"): quotation → Bukku invoices, Outstation → My Work and
-  claims, Meta reports → Analytics, and the closed loop below. Approved and
-  queued: Content Review → My Work, creator booking → Bukku bill, client
-  feedback → Performance and the Dashboard, Short Links → client record.
+- Linking sections: on hold (the user, 2026-11-26) are Outstation → My
+  Work and claims, Meta reports → Analytics, and the closed loop below.
+  Built: quotation → Bukku invoices (`quotation_invoices`,
+  `quotation_invoice_link`), and the four approved on 2026-11-27, Content
+  Review → My Work, creator booking → Bukku bill, client feedback →
+  Performance and the Dashboard, Short Links → client record
+  (`docs/MAP.md` §B).
+- The restructure (`docs/MAP.md` §G, approved 2026-11-27): release 0, the
+  three guards, is built; releases 1 to 18 are open, in the map's order.
 - Open at the handover of 2026-11-25 (the user moves to another account;
   a session opening here picks these up, oldest first, before new work):
   1. Tone sweep 9's findings (#1434 to #1461, every word on the 51
