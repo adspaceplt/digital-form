@@ -82,6 +82,23 @@
       waHint: 'Malaysian or Singaporean number', brand: 'Brand', industry: 'Industry', optional: 'Optional',
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months'], ['date', 'On a specific date']],
       startOn: 'Preferred start date',
+      /* The intake (QUOTE INTAKE, 2026-11-27): what the team needs to quote
+         a business on day one, and the fields the team asks for later. */
+      ik: {
+        secContact: 'Contact person', secBiz: 'Business registration', secBrand: 'Brand', secStart: 'Commencement',
+        kind: 'Registering as', kinds: [['company', 'Company'], ['soleprop', 'Sole / Partnership']],
+        brn: 'Business Registration No. (BRN)', legal: 'Registered name', site: 'Website', noSite: 'No website',
+        plat: 'Platform', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote']],
+        handle: 'Social media account', comments: 'Comments',
+        say: { brn: 'Enter the 12-digit Business Registration No., such as 202301012345.',
+          toSole: 'This number is registered to a sole proprietorship or partnership. Choose Sole / Partnership above.',
+          toCo: 'This number is registered to a company. Choose Company above.', legal: 'Enter the registered name.',
+          industry: 'Choose your industry.', site: 'Enter your website, or tick No website.', siteBad: 'Enter a web address.',
+          handle: 'Enter a social media account.', handleBad: 'Enter the account name only, such as @adspace.',
+          comments: 'Enter no more than 1,000 characters.' },
+        askT: 'Complete your details', askP: 'ADspace requires the following details to prepare your quotation. Please provide them by {d}.',
+        askNote: 'Note from ADspace', submit: 'Submit', rcvDetails: 'Details received', reqClosedT: 'This quotation request has been closed'
+      },
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       fullBrand: 'Your quotation is prepared for your brand. Incomplete requests may not receive a quotation.',
       freeMail: 'A work email address is recommended.',
@@ -230,6 +247,21 @@
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
       commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后'], ['date', '指定日期']],
       startOn: '期望开始日期',
+      ik: {
+        secContact: '联系人', secBiz: '商业登记', secBrand: '品牌', secStart: '开始时间',
+        kind: '登记类别', kinds: [['company', '公司'], ['soleprop', '独资 / 合伙']],
+        brn: '商业登记号码（BRN）', legal: '注册名称', site: '网站', noSite: '没有网站',
+        plat: '平台', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', '小红书']],
+        handle: '社交媒体账号', comments: '备注',
+        say: { brn: '请填写12位数的商业登记号码，例如202301012345。',
+          toSole: '此号码属于独资或合伙企业，请在上方选择“独资 / 合伙”。',
+          toCo: '此号码属于公司，请在上方选择“公司”。', legal: '请填写注册名称。',
+          industry: '请选择行业。', site: '请填写网站，或勾选“没有网站”。', siteBad: '请填写有效的网址。',
+          handle: '请填写社交媒体账号。', handleBad: '请只填写账号名称，例如 @adspace。',
+          comments: '请勿超过1,000个字符。' },
+        askT: '补充您的资料', askP: '为拟定报价，ADspace需要以下资料。请于{d}前提供。',
+        askNote: 'ADspace 备注', submit: '提交', rcvDetails: '资料已收到', reqClosedT: '本报价申请已关闭'
+      },
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       fullBrand: '报价将按您的品牌拟定。资料不完整的申请可能无法获得报价。',
       freeMail: '建议使用工作邮箱。',
@@ -415,7 +447,11 @@
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
       plan: null, mix: 0, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, files: {}, koc: '', kol: false, verify: [],
-      contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', commence_on: '', consent: false }, step: 'intro', idem: null };
+      contact: blankContact(), step: 'intro', idem: null };
+  }
+  function blankContact() {
+    return { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', commence: '', commence_on: '', consent: false,
+      kind: 'company', brn: '', legal: '', website: '', no_site: false, platform: 'instagram', handle: '', comments: '' };
   }
   var S = blank();
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
@@ -542,9 +578,9 @@
   // ---- Drawing ----------------------------------------------------------------
   function frame(body, foot) {
     var a = steps(), i = a.indexOf(S.step) + 1;
-    return '<div class="qs-step" data-shown>' + window.ADspaceIcons.stepTrack(i, a.length + 1, f(t().step, { n: i, m: a.length + 1 })) + body +
+    return '<div class="qs-step qs-wide" data-shown>' + window.ADspaceIcons.stepTrack(i, a.length + 1, f(t().step, { n: i, m: a.length + 1 })) + body +
       '<p class="msg" id="qsMsg" role="status"></p></div>' +
-      '<div class="qs-foot">' + foot + '</div>';
+      '<div class="qs-foot qs-wide">' + foot + '</div>';
   }
   function navFoot(first) {
     return (first ? '' : '<button class="btn qs-back" type="button" data-a="back">' + esc(t().back) + '</button>') +
@@ -749,29 +785,161 @@
     return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
       (hint ? '<span class="qs-hint">' + esc(hint) + '</span>' : '') + '<span class="msg" id="' + id + 'Msg"></span></div>';
   }
+  /* The intake's fields (QUOTE INTAKE, 2026-11-27), one copy for Your
+     details and for Complete your details, each group as the team may ask
+     for it: registration, industry, online, commence. Paired at a desk
+     (`.qs-duo`), one column on a phone. */
+  var GROUPS = ['registration', 'industry', 'online', 'commence'];
+  var FIELD_IDS = ['qsKind', 'qsBrn', 'qsLegal', 'qsInd', 'qsSite', 'qsNoSite', 'qsPlat', 'qsHandle', 'qsStart', 'qsStartOn'];
+  function pair(a, b) { return '<div class="qs-duo">' + a + b + '</div>'; }
+  function opts(list, cur) {
+    return list.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(cur) === String(o[0]) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('');
+  }
+  function regHtml(c) {
+    var k = t().ik;
+    return seg('qsKind', k.kind, k.kinds, c.kind || 'company') +
+      pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="202301012345" aria-required="true" value="' + esc(c.brn) + '">'),
+        field('qsLegal', k.legal, true, '<input class="input qs-caps" id="qsLegal" autocomplete="organization" placeholder="ADSPACE ADVERTISING SDN BHD" aria-required="true" value="' + esc(c.legal) + '">'));
+  }
+  function industryHtml(c) {
+    return field('qsInd', t().industry, true, '<select class="select" id="qsInd" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
+      INDUSTRIES.map(function (i) { return '<option value="' + esc(i.name) + '"' + (c.industry === i.name ? ' selected' : '') + '>' + esc((lang === 'zh' && i.name_zh) || i.name) + '</option>'; }).join('') + '</select>');
+  }
+  function onlineHtml(c) {
+    var k = t().ik;
+    return '<div id="qsSiteBox"' + (c.no_site ? ' hidden' : '') + '>' +
+      field('qsSite', k.site, false, '<input class="input" id="qsSite" type="url" inputmode="url" autocomplete="url" placeholder="adspace.me" value="' + esc(c.website) + '">') + '</div>' +
+      '<label class="qs-consent"><input type="checkbox" id="qsNoSite"' + (c.no_site ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(k.noSite) + '</span></label>' +
+      pair(field('qsPlat', k.plat, false, '<select class="select" id="qsPlat">' + opts(k.plats, c.platform || 'instagram') + '</select>'),
+        field('qsHandle', k.handle, false, '<input class="input" id="qsHandle" autocomplete="off" autocapitalize="none" placeholder="@adspace" value="' + esc(c.handle) + '">'));
+  }
+  function commenceHtml(c) {
+    /* One question for the start (ONE START QUESTION, 2026-11-21; the user:
+       "Yes"): a period, or On a specific date, which opens the day, from
+       today in Malaysia, the period then worked out from it (`startPeriod`). */
+    return pair(field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
+        t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + ((c.commence_on ? 'date' : c.commence) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'),
+      '<div id="qsStartOnBox"' + (c.commence_on || c.commence === 'date' ? '' : ' hidden') + '>' +
+        field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>');
+  }
   function paintDetails() {
-    var c = S.contact;
+    var c = S.contact, k = t().ik;
     return frame('<h1 class="qs-title">' + esc(t().detailsT) + '</h1>' +
       '<div class="qs-pfbox" id="qsPfBox"' + (pfPending().length ? '' : ' hidden') + '>' + pfHtml() + '</div>' +
       '<form class="qs-form" id="qsDetails" novalidate>' +
-      field('qsSal', t().salutation, false, '<select class="select" id="qsSal"><option value="">' + esc(t().optional) + '</option>' +
-        SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
-      field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">') +
-      field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">') +
-      field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="012-345 6789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
-      field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
-      field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
-        INDUSTRIES.map(function (i) { return '<option value="' + esc(i.name) + '"' + (c.industry === i.name ? ' selected' : '') + '>' + esc((lang === 'zh' && i.name_zh) || i.name) + '</option>'; }).join('') + '</select>') +
-      /* One question for the start (ONE START QUESTION, 2026-11-21; the user:
-         "Yes"): a period, or On a specific date, which opens the day, from
-         today in Malaysia, the period then worked out from it (`startPeriod`). */
-      field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
-        t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + ((c.commence_on ? 'date' : c.commence) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
-      '<div id="qsStartOnBox"' + (c.commence_on || c.commence === 'date' ? '' : ' hidden') + '>' +
-      field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>' +
+      sec(k.secContact,
+        pair(field('qsSal', t().salutation, false, '<select class="select" id="qsSal"><option value="">' + esc(t().optional) + '</option>' +
+            SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>'),
+          field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">')) +
+        pair(field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">'),
+          field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="012-345 6789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint))) +
+      sec(k.secBiz, regHtml(c)) +
+      sec(k.secBrand,
+        pair(field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="off" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">'),
+          industryHtml(c)) + onlineHtml(c)) +
+      sec(k.secStart, commenceHtml(c)) +
+      field('qsCm', k.comments, false, '<textarea class="textarea" id="qsCm" rows="3" maxlength="1000" placeholder="' + esc(t().optional) + '">' + esc(c.comments) + '</textarea>') +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span>' +
       '<p class="qs-note">' + noteH(t().fullBrand) + '</p><div class="qs-cf" data-cf></div></form>', navFoot());
+  }
+  /* What a group's fields hold, read where they stand on the page. */
+  function readFields(c) {
+    var v = function (id) { return $(id) ? $(id).value : null; };
+    if ($('qsKind')) { c.kind = v('qsKind'); c.brn = v('qsBrn').trim(); c.legal = v('qsLegal').replace(/\s+/g, ' ').trim(); }
+    if ($('qsInd')) c.industry = v('qsInd');
+    if ($('qsNoSite')) {
+      c.no_site = $('qsNoSite').checked; c.website = c.no_site ? '' : v('qsSite').trim();
+      c.platform = v('qsPlat'); c.handle = v('qsHandle').trim();
+    }
+    if ($('qsStart')) { c.commence = v('qsStart'); c.commence_on = c.commence === 'date' && $('qsStartOn') ? v('qsStartOn') : ''; }
+  }
+  function brnDigits(s) { return String(s || '').replace(/[\s-]+/g, ''); }
+  /* The number's own refusal: 12 digits from a year, then the entity code
+     for what is chosen (a company 01, 02 or 04; Sole / Partnership 03). */
+  function brnSay(c) {
+    var d = brnDigits(c.brn), k = t().ik.say, y = Number(d.slice(0, 4)), code = d.slice(4, 6);
+    if (!/^\d{12}$/.test(d) || y < 1900 || y > Number(todayMY().slice(0, 4))) return k.brn;
+    if (c.kind === 'soleprop') return code === '03' ? '' : /^0[124]$/.test(code) ? k.toCo : k.brn;
+    return /^0[124]$/.test(code) ? '' : code === '03' ? k.toSole : k.brn;
+  }
+  function siteOk(s) {
+    var u = /^https?:\/\//i.test(s) ? s : 'https://' + s;
+    return !!window.ADspaceWords.absUrl(u) && /^https?:\/\/[^\/\s]+\.[^\/\s.]{2,}/i.test(u) && u.length <= 200;
+  }
+  function checkFields(c, groups, bad) {
+    var k = t().ik.say, has = function (g) { return groups.indexOf(g) >= 0; };
+    if (has('registration')) {
+      var b = brnSay(c);
+      if (b) bad('qsBrn', b);
+      if (c.legal.length < 2) bad('qsLegal', k.legal);
+    }
+    if (has('industry') && !c.industry) bad('qsInd', k.industry);
+    if (has('online')) {
+      if (!c.no_site && !c.website) bad('qsSite', k.site);
+      else if (!c.no_site && !siteOk(c.website)) bad('qsSite', k.siteBad);
+      if (c.handle && !/^@?[A-Za-z0-9._-]{1,60}$/.test(c.handle)) bad('qsHandle', k.handleBad);
+      else if (c.no_site && !c.handle) bad('qsHandle', k.handle);
+    }
+    if (has('commence')) {
+      if (!c.commence) bad('qsStart', t().req.commence);
+      else if (c.commence === 'date' && !(/^\d{4}-\d{2}-\d{2}$/.test(c.commence_on) && c.commence_on >= todayMY() && c.commence_on <= '2099-12-31')) bad('qsStartOn', t().req.startOn);
+    }
+  }
+  /* A refusal the server names by field is said at that field. */
+  function fieldRefused(d) {
+    var k = t().ik.say;
+    var to = { 'bad-brn': ['qsBrn', k.brn], 'bad-kind': ['qsBrn', k.brn], 'brn-kind': ['qsBrn', d.kind === 'soleprop' ? k.toSole : k.toCo],
+      'bad-legal': ['qsLegal', k.legal], 'need-industry': ['qsInd', k.industry], 'need-site': ['qsSite', k.site], 'bad-site': ['qsSite', k.siteBad],
+      'need-handle': ['qsHandle', k.handle], 'bad-handle': ['qsHandle', k.handleBad], 'bad-platform': ['qsPlat', k.handle],
+      'bad-comments': ['qsCm', k.comments], 'bad-commence': ['qsStart', t().req.commence], 'bad-start-date': ['qsStartOn', t().req.startOn] }[d.error];
+    if (!to || !$(to[0])) return false;
+    say(to[0] + 'Msg', to[1]); $(to[0]).setAttribute('aria-invalid', 'true'); $(to[0]).focus();
+    return true;
+  }
+  /* Complete your details (QUOTE DETAILS ASKED, 2026-11-27): the prospect's
+     own link while the team asks for details, the fields ticked alone,
+     prefilled with what was typed, the team's note as a card, Submit. */
+  function paintAsk() {
+    var q = Q, a = q.ask || {}, k = t().ik, fl = a.fields || [], c = Object.assign(blankContact(), a.known || {});
+    if (a.known && a.known.commence_on) c.commence = 'date';
+    var due = a.due ? day(a.due, false, 'ahead') : '';
+    var has = function (g) { return fl.indexOf(g) >= 0; };
+    return '<div class="qs-step qs-wide" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(k.askT) + '</h1>' +
+      '<p class="qs-lead">' + esc(f(k.askP, { d: due })) + '</p><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
+      (a.note ? window.ADspaceIcons.card(k.askNote, '<p>' + esc(a.note) + '</p>') : '') +
+      (fl.length ? '<form class="qs-form" id="qsAsk" novalidate>' +
+        (has('registration') ? sec(k.secBiz, regHtml(c)) : '') +
+        (has('industry') || has('online') ? sec(k.secBrand, (has('industry') ? industryHtml(c) : '') + (has('online') ? onlineHtml(c) : '')) : '') +
+        (has('commence') ? sec(k.secStart, commenceHtml(c)) : '') + '</form>' : '') +
+      '<p class="msg" id="qsMsg" role="status"></p></div>' +
+      '<div class="qs-foot qs-wide"><button class="btn btn-primary" type="button" data-a="askSend">' + esc(k.submit) + '</button></div>';
+  }
+  function askSend(btn) {
+    var a = (Q && Q.ask) || {}, fl = a.fields || [], c = blankContact(), first = null;
+    var bad = function (id, w) { say(id + 'Msg', w); var el = $(id); if (el) el.setAttribute('aria-invalid', 'true'); first = first || el; };
+    FIELD_IDS.forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
+    say('qsMsg', '');
+    readFields(c);
+    checkFields(c, fl, bad);
+    if (first) { first.focus(); return; }
+    var ans = {};
+    if (fl.indexOf('registration') >= 0) { ans.kind = c.kind; ans.brn = brnDigits(c.brn); ans.legal = c.legal; }
+    if (fl.indexOf('industry') >= 0) ans.industry = c.industry;
+    if (fl.indexOf('online') >= 0) { ans.website = c.no_site ? '' : c.website; ans.no_site = !!c.no_site; ans.platform = c.handle ? c.platform : null; ans.handle = c.handle; }
+    if (fl.indexOf('commence') >= 0) { ans.commence = startPeriod(c); ans.commence_on = c.commence_on || null; }
+    btn.disabled = true;
+    db.rpc('quote_details_submit', { p_key: qKey(), p_answers: ans }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) {
+        btn.disabled = false;
+        if (d.error && fieldRefused(d)) return;
+        if (['closed', 'sent', 'received', 'not-found'].indexOf(d.error) >= 0) { read(qKey()); return; }
+        say('qsMsg', t().err[d.error] || t().err.any);
+        return;
+      }
+      read(qKey());
+    }).catch(function () { btn.disabled = false; say('qsMsg', t().err.any); });
   }
 
   /* A Singapore lead's quotation is in S$: its totals say so and carry the
@@ -934,10 +1102,11 @@
       title: w.reviewT, line: due ? f(w.reviewP, { d: due }) : '', ref: q.ref + ' · ' + q.brand,
       steps: [
         { state: 'done', title: w.rcvSent, sub: esc(sentAt) },
+      ].concat(q.details_at ? [{ state: 'done', title: w.ik.rcvDetails, sub: esc(C ? C.date(q.details_at, { zh: zh }) + (zh ? '' : ', ') + C.clock(q.details_at, { zh: zh }) : '') }] : []).concat([
         { state: 'now', glyph: 'search', title: w.rcvReview, now: w.rcvNow },
         { glyph: 'doc', title: w.rcvSend, sub: due ? esc(f(w.rcvBy, { d: due })) : '' },
         { glyph: 'pen', title: w.rcvSign }
-      ],
+      ]),
       cards: [
         rows.length ? I.card(w.rcvYours, '<ul class="qs-asklist">' + rows.map(function (r) {
           return '<li><span class="qs-disc is-sm">' + ic(r[0], 'qs-g') + '</span><span>' + esc(r[1]) + '</span></li>'; }).join('') + '</ul>') : '',
@@ -1034,7 +1203,8 @@
     var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>'
       : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     if (st === 'expired' || st === 'closed') {
-      return '<h2>' + esc(st === 'closed' ? (q.declined ? w.declinedT : w.closedT) : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
+      /* A request never quoted reads closed, never cancelled (QUOTE DETAILS ASKED). */
+      return '<h2>' + esc(st === 'closed' ? (q.declined ? w.declinedT : !q.lines ? w.ik.reqClosedT : w.closedT) : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
         '<a class="btn" href="' + esc(repHref(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
@@ -1662,7 +1832,7 @@
     // The budget follows the selection on every paint.
     if (CAT && !adsAsked()) S.budget = null;
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
-    if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
+    if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : stageOf(Q) === 'details' ? paintAsk() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
       S = blank(); PF = { items: [], key: null };
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
@@ -1809,8 +1979,8 @@
     c.salutation = $('qsSal') ? $('qsSal').value : '';
     c.name = $('qsName').value.replace(/\s+/g, ' ').trim(); c.email = $('qsEmail').value.trim();
     c.whatsapp = $('qsWa').value.trim(); c.brand = $('qsBrand').value.replace(/\s+/g, ' ').trim();
-    c.industry = $('qsInd').value; c.commence = $('qsStart').value;
-    c.commence_on = c.commence === 'date' && $('qsStartOn') ? $('qsStartOn').value : ''; c.consent = $('qsConsent').checked;
+    readFields(c); c.consent = $('qsConsent').checked;
+    c.comments = $('qsCm') ? $('qsCm').value.trim() : '';
     keep();
   }
   /* The lead's Urgency to commence, the date's period where a day is chosen:
@@ -1824,14 +1994,14 @@
   function checkDetails() {
     readDetails();
     var c = S.contact, first = null, bad = function (id, w) { say(id + 'Msg', w); var el = $(id); if (el) el.setAttribute('aria-invalid', 'true'); first = first || el; };
-    ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsStart', 'qsStartOn', 'qsConsent'].forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
+    ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsConsent', 'qsCm'].concat(FIELD_IDS).forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
     if (c.name.length < 2) bad('qsName', t().req.name);
     if (!ADspaceWords.emailOk(c.email)) bad('qsEmail', t().req.email);
     else if (FREE.test(c.email)) say('qsEmailMsg', t().freeMail, 'warn');
     if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
     if (c.brand.length < 2) bad('qsBrand', t().req.brand);
-    if (!c.commence) bad('qsStart', t().req.commence);
-    else if (c.commence === 'date' && !(/^\d{4}-\d{2}-\d{2}$/.test(c.commence_on) && c.commence_on >= todayMY() && c.commence_on <= '2099-12-31')) bad('qsStartOn', t().req.startOn);
+    checkFields(c, GROUPS, bad);
+    if (c.comments.length > 1000) bad('qsCm', t().ik.say.comments);
     if (!c.consent) bad('qsConsent', t().req.consent);
     if (first) first.focus();
     return !first;
@@ -1858,7 +2028,10 @@
        create refuses a card moved on since (`changed`), and keeps nothing of it. */
     var body = { sel: Object.assign(selection(), { seen: CAT.version }), idem: S.idem,
       contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
-        industry: S.contact.industry || null, commence: startPeriod(S.contact), commence_on: S.contact.commence_on || null, consent: true, lang: lang } };
+        industry: S.contact.industry || null, commence: startPeriod(S.contact), commence_on: S.contact.commence_on || null, consent: true, lang: lang,
+        kind: S.contact.kind, brn: brnDigits(S.contact.brn), legal: S.contact.legal, website: S.contact.no_site ? '' : S.contact.website,
+        no_site: !!S.contact.no_site, platform: S.contact.handle ? S.contact.platform : null, handle: S.contact.handle || '',
+        comments: S.contact.comments || '' } };
     var C = window.ADspaceCaptcha;
     var token = C && C.on ? C.token(root().querySelector('[data-cf]')) : Promise.resolve(null);
     token.then(function (tk) {
@@ -1877,6 +2050,7 @@
             .catch(function () {}).then(function () { paint(); say('qsMsg', t().err['bad-industry']); });
           return;
         }
+        if (fieldRefused(d)) return;
         say('qsMsg', t().err[d.error] || t().err.any);
         return;
       }
@@ -2026,6 +2200,7 @@
       if (CH && (g === 'chx' || g === 'chf')) chPrice();
       return;
     }
+    if (a === 'askSend') { askSend(b); return; }
     if (a === 'svc') {
       var k = b.getAttribute('data-k'), on = !S.need[k];
       S.need[k] = on; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); keep();
@@ -2139,6 +2314,15 @@
       el.removeAttribute('aria-invalid'); say('qsStartMsg', ''); return;
     }
     else if (id === 'qsConsent') { el.removeAttribute('aria-invalid'); say('qsConsentMsg', ''); }
+    /* No website hides the address; Registering as clears the number's refusal. */
+    else if (id === 'qsNoSite') {
+      var siteBox = $('qsSiteBox');
+      if (siteBox) siteBox.hidden = el.checked;
+      ['qsSite', 'qsHandle'].forEach(function (x) { say(x + 'Msg', ''); if ($(x)) $(x).removeAttribute('aria-invalid'); });
+      if (!Q) { S.contact.no_site = el.checked; keep(); }
+      return;
+    }
+    else if (id === 'qsKind') { say('qsBrnMsg', ''); if ($('qsBrn')) $('qsBrn').removeAttribute('aria-invalid'); if (!Q) { S.contact.kind = el.value; keep(); } return; }
     else if (id === 'qsBudget') { S.budget = Number(el.value); }
     else if (id === 'qsTerm') { S.term = Number(el.value); }
     else if (id === 'qsKoc') { S.koc = el.value; }
@@ -2152,6 +2336,7 @@
   });
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
+    if (e.target.id === 'qsAsk') { e.preventDefault(); var send2 = root().querySelector('[data-a="askSend"]'); if (send2 && !send2.disabled) askSend(send2); }
     /* Enter in a field of the signing card presses its forward step. */
     if (e.target.id === 'sgForm') { e.preventDefault(); var go = e.target.querySelector('.qs-sfoot .btn-primary'); if (go && !go.disabled) go.click(); }
   });

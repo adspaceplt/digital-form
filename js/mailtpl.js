@@ -117,7 +117,8 @@
       on('creators', biz(), 'creator_email_templates_get'),
       on('codes', biz(), 'code_email_template_get'),
       on('candidates', biz(), 'hiring_email_templates_get'),
-      on('clients', biz(), 'feedback_email_templates_get')
+      on('clients', biz(), 'feedback_email_templates_get'),
+      on('clients', biz(), 'quote_email_templates_get')
     ]).then(function (a) {
       var out = [];
       var CK = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
@@ -141,6 +142,16 @@
           subject: t.subject, body: t.body, button: t.button,
           save: function (v) {
             return saveWith('feedback_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
+          } });
+      });
+      /* A website request's details asked of the prospect (QUOTE DETAILS
+         ASKED, 2026-11-27), in English and Chinese. */
+      ((a[10] && a[10].rows) || []).forEach(function (t) {
+        out.push({ id: 'quote:' + t.kind + ':' + t.lang, rec: 'clients', sec: 'Quotation requests',
+          name: 'Details needed (' + (LANG_WORD[t.lang] || t.lang) + ')', kind: 'quote', btn: true,
+          subject: t.subject, body: t.body, button: t.button,
+          save: function (v) {
+            return saveWith('quote_email_template_save', { p_kind: t.kind, p_lang: t.lang, p_subject: v.subject, p_body: v.body, p_button: v.button });
           } });
       });
       ((a[4] && a[4].rows) || []).forEach(function (t) {
@@ -257,7 +268,7 @@
   }
 
   /* ---- The editor -------------------------------------------------------- */
-  var KIND_FIELDS = { feedback: 'feedback', client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code', candidate: 'candidate' };
+  var KIND_FIELDS = { quote: 'quote', feedback: 'feedback', client: 'client', invoice: 'invoice', free: 'free', supplier: 'supplier', 'creator-details': 'creator-details', 'creator-booking': 'creator-booking', code: 'code', candidate: 'candidate' };
   function fieldsOf(kind) { return st.fields[KIND_FIELDS[kind]] || []; }
   var last = null;
 

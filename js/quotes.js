@@ -114,7 +114,8 @@
     }
     var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
     if (held) return ['Letter of Offer issued', 'is-ok', held];
-    if (q.status === 'not_proceeding') return q.declined_at ? ['Declined', 'is-off', 'By the client'] : ['Cancelled', 'is-off'];
+    if (q.status === 'not_proceeding') return q.declined_at ? ['Declined', 'is-off', 'By the client']
+      : q.not_quoted ? ['Not quoted', 'is-off', NOT_QUOTED[q.not_quoted] || ''] : ['Cancelled', 'is-off'];
     /* A later quotation made from this one revises it; the prospect's link
        shows that one (2026-10-26). */
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
@@ -124,6 +125,14 @@
        (QUOTATION CHANGES REQUESTED, 2026-11-25): the team owes the
        revision by its reply day. */
     if (q.change_requested_at) return ['Changes requested', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
+    /* Details asked of the prospect (QUOTE DETAILS ASKED, 2026-11-27), worked
+       out on every load: owed by Reply by, red once it passes, Not quoted ·
+       No response once the close days pass too; Details received owes the
+       quotation again by its Send by. */
+    var ds = awaiting(q) ? detailsState(q) : 'none';
+    if (ds === 'closed') return ['Not quoted', 'is-off', 'No response'];
+    if (ds === 'asked' || ds === 'late') return ['Waiting for details', ds === 'late' ? 'is-danger' : 'is-warn', 'Reply by ' + shortDay(q.details_due)];
+    if (ds === 'received') return ['Details received', 'is-warn', q.reply_due ? 'Send by ' + shortDay(q.reply_due) : ''];
     if (awaiting(q)) return ['Awaiting review', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     var today = window.ADspaceClock.today();
     if (q.valid_until < today) return ['Expired', 'is-off'];
@@ -148,6 +157,19 @@
   function editable(q) {
     return !q.removed_at && !q.signed_at && !q.reviewed_at && q.status !== 'not_proceeding' && !q._revised;
   }
+  var NOT_QUOTED = { incomplete: 'Incomplete details', fit: 'Not a fit', duplicate: 'Duplicate', spam: 'Spam' };
+  function shortDay(ts) { return window.ADspaceClock.date(window.ADspaceClock.day(ts)).replace(/ \d{4}$/, ''); }
+  function detailsState(q) {
+    if (!q.details_asked_at) return 'none';
+    if (q.details_at) return 'received';
+    var due = new Date(q.details_due).getTime(), now = Date.now();
+    var close = Number(MON.setting('quote_details_close_days', window.ADspaceClock.day(q.details_due))) || 7;
+    if (now > due + close * 864e5) return 'closed';
+    return now > due ? 'late' : 'asked';
+  }
+  /* A website request the team may still ask about or decline: unsent and
+     open (never once Not quoted, worked out or chosen). */
+  function askable(q) { return awaiting(q) && detailsState(q) !== 'closed'; }
   function awaiting(q) { return q.source === 'website' && !q.released_at && !q._revised && !q.removed_at && q.status !== 'not_proceeding'; }
   /* A quotation that can still become a Letter of Offer: valid, or the
      client has asked for the letter (2026-10-22, QT-M1). */
@@ -193,7 +215,8 @@
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
     'sealed_at, seal_sha, seal_pages_sha, sealed_by, signed_words, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by, commence_on, change_request, change_requested_at, ' +
-    'confirmed_at, confirmed_by, revises, request_ref';
+    'confirmed_at, confirmed_by, revises, request_ref, ' +
+    'details_ask, details_asked_at, details_asked_by, details_due, details_at, details, not_quoted, match, match_taken';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -311,7 +334,7 @@
              sends the quotation-ready WhatsApp, drawn once its template is on
              (`data-wa-ready`) and never for a prospect marked Do not contact,
              which quotation_send refuses (audit 2026-10-30). */
-          if (maySet && awaiting(q)) {
+          if (maySet && askable(q)) {
             if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready data-gate="whatsapp quotewa" hidden type="button">Send quotation</button>');
             acts.push('<button class="btn btn-sm" data-a="publish" type="button">Publish</button>');
           }
@@ -385,7 +408,21 @@
             }
             /* A signed quotation is the client's record: no Cancel or Remove
                (Request again sets the signature aside; audit 2026-11-04). */
-            if (!q.reviewed_at && q.status === 'not_proceeding') {
+            /* A website request is asked for details, or Not quoted with a
+               reason, never Cancelled; a closed one is reopened (QUOTE
+               DETAILS ASKED, 2026-11-27). */
+            if (askable(q) && !q.no_contact_at) {
+              items.push('<button class="kmenu-item" data-g="3" data-a="ask" type="button" role="menuitem">' + (q.details_asked_at && !q.details_at ? 'Ask again' : 'Ask for details') + '</button>');
+            }
+            if (q.match && !q.match_taken && !q._revised) {
+              items.push('<button class="kmenu-item" data-g="4" data-a="brand" type="button" role="menuitem">Add as a new brand of ' + esc(q.match.name || 'the client') + '</button>');
+              items.push('<button class="kmenu-item" data-g="4" data-a="keeplead" type="button" role="menuitem">Keep as a new lead</button>');
+            }
+            if ((awaiting(q) && !askable(q)) || (q.source === 'website' && !q.released_at && q.not_quoted && q.status === 'not_proceeding')) {
+              items.push('<button class="kmenu-item" data-g="5" data-a="reopen" type="button" role="menuitem">Reopen</button>');
+            } else if (askable(q)) {
+              items.push('<button class="kmenu-item" data-g="5" data-a="notquote" type="button" role="menuitem">Not quoted</button>');
+            } else if (!q.reviewed_at && q.status === 'not_proceeding') {
               items.push('<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>');
             } else if (!q.signed_at) {
               items.push('<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
@@ -408,6 +445,7 @@
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
               (q.no_contact_at ? '<span class="chip qt-tag">Do not contact</span>' : '') +
               '<small>' + wholeDays(esc(metaOf(q))) + '</small><small>' + wholeDays(esc(fromOf(q))) + '</small>' +
+              (q.match && !q.match_taken ? '<small class="qt-match">' + esc('Matches existing client · ' + (q.match.name || '')) + '</small>' : '') +
               (askedStart(q) ? '<small class="qt-start">' + wholeDays(esc('Preferred start ' + window.ADspaceClock.date(askedStart(q)))) + '</small>' : '') + '</span>' +
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
@@ -849,6 +887,10 @@
       return;
     }
     if (a === 'withdraw') { withdraw(q, ctx); return; }
+    if (a === 'ask') { askDetails(q, ctx); return; }
+    if (a === 'notquote') { notQuote(q, ctx); return; }
+    if (a === 'reopen') { reopen(q, ctx, false); return; }
+    if (a === 'brand' || a === 'keeplead') { takeMatch(q, ctx, a === 'brand' ? 'brand' : 'lead'); return; }
     if (a === 'adjust') { build(ctx, q.change_requested_at && q.change_request && q.change_request.selection ? q.change_request.selection : q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */
@@ -901,6 +943,136 @@
         return '';
       }).catch(function (e) { return said(e); });
     });
+  }
+  /* Ask for details (QUOTE DETAILS ASKED, 2026-11-27): what the request
+     lacks ticked as the question opens, a note, then Send email (to the
+     address the prospect typed, in their language) or Copy for WhatsApp,
+     sent by hand. Either keeps the request Waiting for details until its
+     Reply by; the prospect's own link opens the fields ticked alone. */
+  var ASK_SAID = {
+    denied: 'You do not have permission to ask for details. Please ask an admin.',
+    sent: 'This quotation has been sent. Refresh the page.', closed: 'This request is closed. Reopen it first.',
+    'bad-fields': 'Tick at least one detail, or enter a note.', 'bad-note': 'Enter a note of up to 500 characters, without a web address.',
+    'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
+    'no-email': 'This prospect gave no email address. Choose Copy for WhatsApp.',
+    'email-off': window.ADspaceWords.line.emailHandOff,
+    'send-off': window.ADspaceWords.line.emailPortalOff,
+    'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but its delivery could not be confirmed. Check the Email log before sending again.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.'
+  };
+  var ASK_FIELDS = [['registration', 'Business Registration No. and registered name'], ['industry', 'Industry'],
+    ['online', 'Website or social media account'], ['commence', 'Planned commencement']];
+  function lacks(q) {
+    var k = q.contact || {};
+    return { registration: !k.brn || !k.legal, industry: !k.industry, online: !k.website && !k.handle, commence: !k.commence };
+  }
+  function askVals(v) {
+    return { f: ASK_FIELDS.map(function (x) { return x[0]; }).filter(function (k) { return v[k] === 'on'; }), note: (v.note || '').trim() };
+  }
+  function askDetails(q, ctx) {
+    var miss = q.details_asked_at && q.details_ask ? (q.details_ask.fields || []).reduce(function (o, k) { o[k] = true; return o; }, {}) : lacks(q);
+    var note = q.details_asked_at && q.details_ask ? q.details_ask.note || '' : '';
+    var byMail = !!(window.ADspaceDocMail && window.ADspaceDocMail.may('quotation')), to = (q.contact || {}).email;
+    var ask = function (v) {
+      var x = askVals(v);
+      return ctx.db.rpc('quotation_details_ask', { p_id: q.id, p_fields: x.f, p_note: x.note || null }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return { why: /function|schema cache/i.test(r.error.message || '') ? ASK_SAID['needs-update'] : said(r.error) };
+        if (d.error) return { why: ASK_SAID[d.error] || said(d.error) };
+        return d;
+      }).catch(function (e) { return { why: said(e) }; });
+    };
+    var done = function (line) {
+      ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
+    };
+    var copy = { label: 'Copy for WhatsApp', gate: 'whatsapp', run: function (v, b) {
+      var x = askVals(v);
+      if (!x.f.length && !x.note) return Promise.resolve(ASK_SAID['bad-fields']);
+      var why = '';
+      var words = ask(v).then(function (d) { if (d.why) { why = d.why; return null; } return d.text || null; });
+      return window.ADspaceCopy.later(b, words).then(function (copied) {
+        if (why) return why;
+        done(copied ? 'Copied. Paste it into WhatsApp to ' + (((q.contact || {}).name) || 'the prospect') + '.' : 'Details asked. Copy the message again from Ask again.');
+        return '';
+      });
+    } };
+    window.ADspaceConfirm.ask({
+      title: q.details_asked_at && !q.details_at ? 'Ask again' : 'Ask for details', wait: true,
+      go: byMail ? 'Send email' : copy.label, gate: byMail ? 'email' : 'whatsapp',
+      body: byMail && to ? 'Email to ' + to + '.' : '',
+      alt: byMail ? copy : null,
+      fields: ASK_FIELDS.map(function (x) { return { name: x[0], label: x[1], tick: true, value: miss[x[0]] ? 'on' : '' }; })
+        .concat([{ name: 'note', label: 'Note', rows: 2, required: false, value: note }]),
+      check: function (v) { var x = askVals(v); return !x.f.length && !x.note ? ASK_SAID['bad-fields'] : ''; }
+    }, function (v, b) {
+      if (!byMail) return copy.run(v, b);
+      return ask(v).then(function (d) {
+        if (d.why) return d.why;
+        return ctx.db.functions.invoke('supplier-mail', { body: { quoteAsk: true, quotation: q.id } }).then(function (r) {
+          var m = (r && r.data) || {};
+          if (r.error || m.error) return ASK_SAID[m.error] || ASK_SAID['not-sent'];
+          done('Email sent to ' + (m.to_name || m.to || to) + '.');
+          return '';
+        }).catch(function () { return ASK_SAID['not-sent']; });
+      });
+    });
+  }
+  /* Not quoted: a website request the team will not quote, with its reason;
+     the prospect's link reads closed. Undo where it happened, Reopen from
+     the ⋯ later. */
+  function notQuote(q, ctx) {
+    window.ADspaceConfirm.ask({
+      title: 'Not quoted', tone: 'warn', go: 'Not quoted', wait: true,
+      body: q.ref + ' will close, and the prospect\'s link will read that the request has been closed.',
+      fields: [{ name: 'why', label: 'Reason', choices: [['incomplete', NOT_QUOTED.incomplete], ['fit', NOT_QUOTED.fit],
+        ['duplicate', NOT_QUOTED.duplicate], ['spam', NOT_QUOTED.spam]], value: 'incomplete' }]
+    }, function (v) {
+      return ctx.db.rpc('quotation_not_quote', { p_id: q.id, p_reason: (v && v.why) || v }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return ASK_SAID[d.error] || said(r.error || d.error);
+        ctx.reload(function () {
+          ctx.undo(q.ref + ' not quoted.', function () { reopen(q, ctx, true); }, $('qtMsg'));
+        });
+        return '';
+      }).catch(function (e) { return said(e); });
+    });
+  }
+  function reopen(q, ctx, undo) {
+    ctx.db.rpc('quotation_not_quote', { p_id: q.id, p_reason: null }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { ctx.msg('qtMsg', ASK_SAID[d.error] || said(r.error || d.error), 'err'); return; }
+      ctx.reload(function () { ctx.msg('qtMsg', undo ? 'Undone.' : q.ref + ' reopened.', 'ok'); });
+    }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+  }
+  /* Matches existing client (QUOTE INTAKE, 2026-11-27): the request made a
+     new lead for another brand of a client the team keeps. Add as a new
+     brand bills it through that client's entity (Billing's Remove takes
+     it back); Keep as a new lead has its Undo here. */
+  var MATCH_SAID = { 'no-entity': 'That client has no billing entity yet. Add one in its Billing first.', taken: 'Already chosen. Refresh the page.',
+    denied: 'You do not have permission to change billing entities. Please ask an admin.' };
+  function takeMatch(q, ctx, take) {
+    var name = (q.match && q.match.name) || 'the client';
+    var go = function () {
+      return ctx.db.rpc('quotation_match_take', { p_id: q.id, p_take: take }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return MATCH_SAID[d.error] || said(r.error || d.error);
+        ctx.reload(function () {
+          if (take === 'lead') {
+            ctx.undo('Kept as a new lead.', function () {
+              ctx.db.rpc('quotation_match_take', { p_id: q.id, p_take: null }).then(function (u) {
+                var e = u.error || (u.data && u.data.error);
+                if (e) { ctx.msg('qtMsg', MATCH_SAID[e] || said(e), 'err'); return; }
+                ctx.reload(function () { ctx.msg('qtMsg', 'Undone.', 'ok'); });
+              }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+            }, $('qtMsg'));
+          } else ctx.msg('qtMsg', 'Added as a new brand of ' + name + '.', 'ok');
+        });
+        return '';
+      }).catch(function (e) { return said(e); });
+    };
+    if (take === 'lead') { go().then(function (why) { if (why) ctx.msg('qtMsg', why, 'err'); }); return; }
+    window.ADspaceConfirm.ask({ title: 'Add as a new brand of ' + name + '?', go: 'Add', wait: true,
+      body: q.brand + ' will be billed through ' + name + '\'s primary billing entity. Billing can remove it later.' }, go);
   }
   function set(q, what, ctx, ok) {
     ctx.db.rpc('quotation_set', { p_id: q.id, p_what: what }).then(function (r) {
