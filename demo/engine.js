@@ -14339,7 +14339,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if ('plan' in p) {
           var ps = svc(p.plan);
           if (typeof p.plan !== 'string' || !ps || !ps.spec || ps.spec.role !== 'plan' || ps.rate == null) return { error: 'bad-plan' };
-          if (p.plan !== v.plan) { delete v.mix; delete v.extra; }
+          if (p.plan !== v.plan) {
+
+            var was = svc(v.plan);
+            if (was && was.spec && was.spec.ads && !ps.spec.ads) delete v.budget;
+            delete v.mix; delete v.extra;
+          }
           v.plan = p.plan;
         }
         if ('mix' in p) { if (!/^[0-9]$/.test(String(p.mix))) return { error: 'bad-selection' }; v.mix = String(p.mix); }
