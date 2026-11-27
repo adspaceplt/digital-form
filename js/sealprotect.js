@@ -1,6 +1,5 @@
 /* A sealed copy's protection (2026-11-21), fetched by js/seal.js at the
- * seal alone, never by a page: seal.js reads its own ?v= stamp to fetch it,
- * so a change here bumps seal.js's stamp. */
+ * seal alone, never by a page, under its own stamp (.github/stamp.js). */
 (function () {
   'use strict';
   /* The sealed copy opens with no password and allows printing (high

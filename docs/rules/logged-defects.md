@@ -85,11 +85,18 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
-- 2026-11-27, `taxcodes` (DELETES AT FULL CONTROL's affected run): "each
-  line offers its tax, the client's SST first as Bukku's SV8, never twice"
-  fails at 1280 and 390, the same on `main` (1668f21) as on the branch;
-  Build quote's lines, untouched by that release. Held here until it ships.
 - 2026-11-27, `pdflibhash` (QUOTE REQUEST DELETED's affected run): its
   wait for `ADspaceDocs.lib` times out at 10s, the same on `main` (230ae41)
-  as on the branch; the PDF libraries, untouched by that release. Held
-  here until it ships.
+  as on the branch; the PDF libraries, untouched by that release. Still
+  failing in the full gate of 2026-11-27 on main 7c85e8b. Held here
+  until it ships.
+- 2026-11-27, the day's full gate on main 7c85e8b (tests 1d34edb, 5,365 s,
+  263 suites passed; `taxcodes` passed, its entry removed; `sql` 600 s):
+  - `adsreport`: at 390 the Ad IDs card docks 54px from the right edge,
+    not 16 (`{"left":16,"right":54,"bottom":92}`); likely a stylesheet
+    change of 26 to 27 Nov (#1530, #1538 or #1544), not pinned.
+  - `uxaudit`: the walk times out clicking `#crmLogAll` (the client
+    record's Activity View all), never visible on the seeded client, so
+    the walk stops in Clients and nothing after it is measured; likely
+    #1560 (history kept by client id) or #1525, not pinned.
+  Held here until each ships.
