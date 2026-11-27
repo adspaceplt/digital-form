@@ -300,12 +300,8 @@
     return need(keys, whole).then(fn);
   }
 
-  /* Every scroll a page makes to a block lands its top under the sticky bar:
-     the room is the root's scroll-padding-top (css/portal.css: the bar's
-     height, the top safe area and 12px), read, never typed. With `above`, a
-     block already below the bar stays put. A second pass once late content
-     has laid out, unless the person has scrolled since (2026-11-27: View
-     all left the record's tabs under the console's head on an iPhone). */
+  /* A block's top brought under the sticky bar, the room the root's
+     scroll-padding-top; `above`: only a block not already below it. */
   function headRoom() { return parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0; }
   function underHead(el, above) {
     if (!el || !el.getBoundingClientRect) return;
