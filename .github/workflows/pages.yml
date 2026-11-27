@@ -35,7 +35,10 @@ jobs:
           source: ./
           destination: ./_site
       - name: Write each file's stamp
-        run: node .github/stamp.js _site
+        # The Jekyll action writes _site as root from its container; the runner's user takes it back first.
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" _site
+          node .github/stamp.js _site
       - name: Check the build line
         run: |
           grep -q "\"commit\":\"${GITHUB_SHA}\"" _site/version.json || { echo "version.json does not name ${GITHUB_SHA}"; cat _site/version.json; exit 1; }
