@@ -100,3 +100,26 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
     the walk stops in Clients and nothing after it is measured; likely
     #1560 (history kept by client id) or #1525, not pinned.
   Held here until each ships.
+- 2026-11-27 (night), the day's full gate on main fb3b4e8 (tests 897269e,
+  5,807 s, 277 suites passed, 6 failed). HANDOVER: snapshot fb3b4e8,
+  277 passed / 6 failed, total 5,807 s; G2's fixes for `adsreport`,
+  `uxaudit` and `pdflibhash` are not on main at this snapshot (none
+  merged after #1574):
+  - `adsreport`: "FAIL at 390 the Ad IDs card docks at the foot inside
+    the gutters {"dock":true,"left":16,"right":54,"bottom":92}"; the
+    entry above, not pinned.
+  - `uxaudit`: "locator.click: Timeout 30000ms exceeded … waiting for
+    locator('#crmLogAll')" (resolved, never visible); the entry above,
+    likely #1560 or #1525, not pinned.
+  - `pdflibhash`: "FAIL page.waitForFunction: Timeout 10000ms exceeded.";
+    the entry above, not pinned.
+  - `upgrade`: "FAIL the sheet lists every page in its group, the system
+    pages last, each Available" (heads end `Other pages`; the suite reads
+    `System pages`); #1565 renamed the group.
+  - `overdue`: "FAIL 1280 no id is held twice on the console crmLinks"
+    (and at 390); #1581 (the client's Services tab short links).
+  - `quoteintakesql`: "FAIL app_settings_set is the schema's last
+    definition, from 2026-11-27-ad-spend-figures.sql"; a later migration
+    redefines it, likely #1575 (`2026-11-27-creator-bill-on-completed.sql`)
+    or `2026-11-27-quote-details-asked.sql`, not pinned.
+  Held here until each ships.
