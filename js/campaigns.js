@@ -760,7 +760,7 @@
         back(false); return;
       }
       var moved = window.ADspaceRecords && window.ADspaceRecords.changes ? window.ADspaceRecords.changes(c, fields, CR_LOG) : '';
-      log('creator.updated', fields.name || c.name, moved || '');
+      log('creator.updated', { name: fields.name || c.name, creator: c.id }, moved || '');
       Object.assign(c, fields);
       back(true);
       paintRoster();
@@ -784,7 +784,7 @@
         crMsg(r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
         return;
       }
-      log(on ? 'creator.on' : 'creator.off', c.name, why ? 'Reason: ' + why : '');
+      log(on ? 'creator.on' : 'creator.off', { name: c.name, creator: c.id }, why ? 'Reason: ' + why : '');
       c.active = on;
       c.inactive_reason = why;
       loadRoster(function () {
@@ -815,7 +815,7 @@
   }
   function paneCrActivity(c, host) {
     UI.skeleton(host, 3);
-    db.from('activity_log').select('*').eq('subject', c.name).order('created_at', { ascending: false }).limit(50).then(function (r) {
+    db.from('activity_log').select('*').eq('creator_id', c.id).order('created_at', { ascending: false }).limit(50).then(function (r) {
       if ($('crRecPane') !== host) return;
       if (r.error) { UI.failLine(host, 'The Activity record', r.error.message, function () { paneCrActivity(c, host); }); return; }
       var rows = r.data || [];
@@ -2084,7 +2084,7 @@
       db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
         if (r.error) { crMsg(r.error.message, 'err'); return; }
         c.access_code = (r.data && r.data.code) || '';
-        log('creator.code', c.name, '');
+        log('creator.code', { name: c.name, creator: c.id }, '');
         loadRoster(function () { crMsg('Link reset. Send the new link to ' + c.name + '.', 'ok'); });
       });
     });
@@ -2168,8 +2168,8 @@
           msg('creatorMsg', why, 'err');
           return;
         }
-        if (created) log('creator.added', name, '');
-        else if (fieldsMoved) log('creator.updated', name, '');
+        if (created) log('creator.added', { name: name, creator: id }, '');
+        else if (fieldsMoved) log('creator.updated', { name: name, creator: id }, '');
         shutCreatorSheet();
         /* A new creator opens on their own page (2026-11-10). */
         if (created) { crRec.id = id; crRec.pane = 'overview'; pushUrl(); }
@@ -2227,7 +2227,7 @@
           });
           return;
         }
-        log('creator.removed', c.name, '');
+        log('creator.removed', { name: c.name, creator: c.id }, '');
         if (crRec.id === c.id) { crRec.id = null; setUrl(); crView(); msg('rosterMsgLine', c.name + ' was deleted.', 'ok'); }
         loadRoster();
       });
@@ -2580,10 +2580,15 @@
      changed, a fee corrected — none of it reached the pane, which showed the
      invoice and the lock and nothing else. The campaign is the subject and the
      creator is named in the detail, which is also how it reads in the global
-     record. It is the raw title, because that is the value the pane queries
-     with. */
+     record. The pane reads the campaign's id (`logOf`), never this title. */
   function logSubject() {
     return (state.campaign && state.campaign.title) || '';
+  }
+  /* The line names its campaign by id as well (`activity_log.campaign_id`,
+     2026-11-27), which is what the pane reads: a rename keeps its history. */
+  function logOf() {
+    var c = state.campaign;
+    return c ? { name: c.title || '', campaign: c.id } : '';
   }
 
   $('addCamp').addEventListener('click', function () {
@@ -2664,7 +2669,7 @@
       }
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { shutCampForm(); staleCamp(c, 'campWorkMsg'); return; }
-      log('campaign.edited', title, slots + ' creators');
+      log('campaign.edited', { name: title, campaign: c.id }, slots + ' creators');
       shutCampForm();
       openCampaign(r.data[0]);
     }).catch(function () { msg('campMsg', 'Not saved. Please try again.', 'err'); });
@@ -2687,7 +2692,7 @@
       created_by: who() || null
     }).select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-      log('campaign.created', title, slots + ' creators');
+      log('campaign.created', { name: title, campaign: r.data.id }, slots + ' creators');
       shutCampForm();
       openCampaign(r.data);
       /* A new campaign opens on Creators, where its next step (Add
@@ -3078,7 +3083,7 @@
         if (!(r.data || []).length) { staleCamp(c, 'campWorkMsg'); return; }
         c.state = move.to;
         if (move.reopen) c.selection_closed_at = null;
-        log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
+        log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', { name: c.title, campaign: c.id }, move.to);
         openCampaign(c);
       });
     }
@@ -3493,8 +3498,8 @@
     writeCamp(c, { state: want }).then(function (r) {
       if (r.error || !(r.data || []).length) return;
       c.state = want;
-      if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
-      else log('campaign.stage', c.title, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
+      if (want === 'open') log('campaign.opened', { name: c.title, campaign: c.id }, 'no creators in production');
+      else log('campaign.stage', { name: c.title, campaign: c.id }, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
         (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · all creators booked' : ' · a booking reverted'));
       paintCampState(c);
     });
@@ -3682,7 +3687,7 @@
             var said = R && R.changes ? R.changes(was, patch, Object.keys(patch).map(function (k) {
               return [k, SCHED_WORD[k] || k, /_date$|_due$|_publish$/.test(k) ? niceDate : null];
             })) : '';
-            log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + (said ? ' · ' + said : ''));
+            log('campaign.dates', logOf(), ((o.creators || {}).name || 'A creator') + (said ? ' · ' + said : ''));
             paintOptions();
           }).catch(function () { putBack('Not saved. Please try again.'); });
         });
@@ -3802,15 +3807,14 @@
     box.appendChild(t);
   }
 
-  /* The portal's record for this campaign. `activity_log` carries no campaign
-     id, only the subject it was written with, which is the campaign's name at
-     the time; a rename leaves the older entries behind. */
+  /* The portal's record for this campaign, read by its id
+     (`activity_log.campaign_id`), so a rename keeps every line. */
   function loadCampLog() {
     var box = $('campLogList');
     var c = state.campaign;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    db.from('activity_log').select('*').eq('subject', c.title)
+    db.from('activity_log').select('*').eq('campaign_id', c.id)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
         if (r.error) { UI.failLine(box, 'The Activity record', r.error.message, loadCampLog); return; }
@@ -4389,7 +4393,7 @@
         .eq('id', o.id).select('id').then(function (r) {
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
-          log('campaign.rate', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' +
+          log('campaign.rate', logOf(), ((o.creators || {}).name || 'A creator') + ' · ' +
               money(o.rate) + ' → ' + money(rate) + ' · ' + plats.join(', '));
           cardSay(o, '');
           loadOptions();
@@ -4410,7 +4414,7 @@
     db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
       if (r.error) { cardSay(o, r.error.message, 'err'); return; }
       if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
-      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', logSubject(), name);
+      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', logOf(), name);
       cardSay(o, '');
       loadOptions();
     });
@@ -4428,7 +4432,7 @@
         loadOptions();
         return;
       }
-      log('campaign.unoffered', logSubject(), name + ' · removed');
+      log('campaign.unoffered', logOf(), name + ' · removed');
       loadOptions();
       undoBar(name + ' removed.', function () {
         db.from('campaign_options').insert({
@@ -4439,7 +4443,7 @@
             cardSay(o, 'Not restored. The database refused the request.', 'err');
             return;
           }
-          log('campaign.offered', logSubject(), name + ' · restored');
+          log('campaign.offered', logOf(), name + ' · restored');
           loadOptions();
         }).catch(function (e) { cardSay(o, (e && e.message) || String(e), 'err'); });
       }, $('showAddOption') ? $('showAddOption').closest('.viewhead') : null);
@@ -4747,7 +4751,7 @@
       }
       var added = r.data || [];
       if (added.length) {
-        log('campaign.offered', logSubject(), fresh.filter(function (x) {
+        log('campaign.offered', logOf(), fresh.filter(function (x) {
           return added.some(function (a) { return a.creator_id === x.c.id; });
         }).map(function (x) { return x.c.name; }).join(', '));
       }
@@ -4758,7 +4762,7 @@
           .eq('id', x.o.id).select('id').then(function (u) {
             if (u.error || !(u.data || []).length) return x.c.name;
             was.push({ id: x.o.id, state: x.o.state, drop_reason: x.o.drop_reason || null, rate: x.o.rate, platforms: x.o.platforms });
-            log('campaign.reinstated', logSubject(), x.c.name + ' · offered again');
+            log('campaign.reinstated', logOf(), x.c.name + ' · offered again');
             return null;
           });
       })).then(function (refused) {
@@ -4806,7 +4810,7 @@
     var refused = false;
     go.then(function (r) {
       if (r.error || (r.data || []).length !== ids.length) refused = true;
-      else if (ids.length) log('campaign.unoffered', logSubject(), (names || []).join(', ') + ' · undone');
+      else if (ids.length) log('campaign.unoffered', logOf(), (names || []).join(', ') + ' · undone');
       return Promise.all(was.map(function (w) {
         return db.from('campaign_options').update({ state: w.state, drop_reason: w.drop_reason, rate: w.rate, platforms: w.platforms })
           .eq('id', w.id).select('id');
@@ -4881,7 +4885,7 @@
               : 'Not a profile link: ' + (d.url || ''), 'err');
             return;
           }
-          log('creator.added', name, 'from a campaign');
+          log('creator.added', { name: name, creator: created.id }, 'from a campaign');
           created.client_rate = listRate;
           /* Offered through the one path every tick takes, so the sheet
              shuts and Undo is drawn the same way. */
@@ -5401,7 +5405,7 @@
         }).then(function (w) {
           if (w.error) throw new Error(w.error.message);
           if (!(w.data || []).length) throw new Error('the database refused the request');
-          log('campaign.file_added', logSubject(), (o.creators || {}).name + ' · ' + file.name + ' · uploaded by ' + (who() || 'team'));
+          log('campaign.file_added', logOf(), (o.creators || {}).name + ' · ' + file.name + ' · uploaded by ' + (who() || 'team'));
         });
       });
     }
@@ -5858,7 +5862,7 @@
       tone: 'warn'
     }, function () {
       var done = function () {
-        log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
+        log('campaign.stage', logOf(), name + ' · back to ' + wordFor(to));
         cardSay(o, name + ': ' + wordFor(to) + '.', 'ok');
         loadOptions();
       };
@@ -5891,7 +5895,7 @@
       db.rpc('campaign_proceed', { p_option: o.id }).then(function (r) {
         var d = (r && r.data) || {};
         if (r.error || d.error) { cardSay(o, reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
-        log('campaign.review', logSubject(), name + ' \u00b7 Confirmed internally');
+        log('campaign.review', logOf(), name + ' \u00b7 Confirmed internally');
         cardSay(o, name + ': ' + wordFor('scheduled') + '.', 'ok');
         loadOptions();
       }).catch(function (e) { cardSay(o, reviewSaid((e && e.message) || String(e)), 'err'); });
@@ -5943,7 +5947,7 @@
       db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).select('id').then(function (r) {
         if (r.error) { cardSay(o, r.error.message, 'err'); return; }
         if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
-        log('campaign.unbooked', logSubject(), name);
+        log('campaign.unbooked', logOf(), name);
         cardSay(o, name + ' reverted to options.', 'ok');
         loadOptions();
       });
@@ -5965,7 +5969,7 @@
           if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
-          log('campaign.reinstated', logSubject(), name);
+          log('campaign.reinstated', logOf(), name);
           cardSay(o, name + ' reinstated.', 'ok');
           loadOptions();
         });
@@ -6004,7 +6008,7 @@
     db.rpc('campaign_send_back', { p_option: o.id, p_note: why }).then(function (r) {
       var d = (r && r.data) || {};
       if (r.error || d.error) { m.textContent = reviewSaid(r.error ? r.error.message : d.error); m.className = 'msg err'; return; }
-      log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · changes requested');
+      log('campaign.stage', logOf(), ((o.creators || {}).name || 'A creator') + ' · changes requested');
       loadOptions();
     }).catch(function (e) { m.textContent = reviewSaid((e && e.message) || String(e)); m.className = 'msg err'; });
   }
@@ -6241,7 +6245,7 @@
          nine times the data for the same fact. */
       /* Who checked is the entry's own `actor`; the detail names only the
          creator and what is still owed. */
-      log('campaign.qc', logSubject(),
+      log('campaign.qc', logOf(),
         ((o.creators || {}).name || 'A creator') +
         (out.state === 'waiting' ? ' · Second reviewer requested' : ''));
       /* The run is spent. A booking sent back for changes is checked again
@@ -6272,7 +6276,7 @@
     db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
       if (r.error) { cardSay(o, reviewSaid(r.error.message), 'err'); return; }
       if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
-      log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
+      log('campaign.stage', logOf(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
       if (to !== 'posted') { loadOptions(); return; }
       seedPosts(o, function () { loadOptions(); });
     });
@@ -6904,7 +6908,7 @@
       /* A row the database refused is counted, never applied (audit, 2026-10-03). */
       if (refused) {
         msg('bulkMsg', refused + (refused === 1 ? ' booking' : ' bookings') + ' not saved. The database refused the request.', 'err');
-        if (touched) log('campaign.bulk', state.campaign.title, touched + ' rows');
+        if (touched) log('campaign.bulk', { name: state.campaign.title, campaign: state.campaign.id }, touched + ' rows');
         loadOptions();
         return;
       }
@@ -6912,7 +6916,7 @@
         ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
         : 'All bookings already have these values. Use Apply all to replace them.',
         touched ? 'ok' : 'warn');
-      log('campaign.bulk', state.campaign.title, touched + ' rows');
+      log('campaign.bulk', { name: state.campaign.title, campaign: state.campaign.id }, touched + ' rows');
       loadOptions();
     }
   }
