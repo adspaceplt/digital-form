@@ -39,6 +39,7 @@
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
     'bad-pay': 'Choose the payment terms.',
     'bad-valid': 'Choose how many days the quotation is valid for.',
+    'bad-period': 'Tick or untick Show totals for the whole period, then try again.',
     'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the items could not be read. Refresh the page.',
     'bad-custom': 'Enter each custom item\'s name, quantity and rate, and its months from 1 to 36.',
     'bad-package': 'Enter the package name, its price and at least one Rate Card service, each with a quantity.',
@@ -2810,6 +2811,13 @@
   }
   /* The totals as the quotation reads them, [label, figure, is total, key]
      (ADspaceMoney.quoteRows, one copy, QT-4). */
+  /* The totals as a list; the whole period's note a line under it. */
+  function totDl(tot, cls, noteCls) {
+    var note = tot.filter(function (x) { return x[3] === 'periodNote'; })[0];
+    return '<dl class="' + cls + '">' + tot.filter(function (x) { return x !== note; }).map(function (x) {
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+    }).join('') + '</dl>' + (note ? '<p class="' + noteCls + '">' + esc(note[0]) + '</p>' : '');
+  }
   function totRows(d) {
     var t = d.totals || {}, rows = d.lines || [];
     var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
@@ -2819,7 +2827,15 @@
     /* Monthly excl. SST is left out where it equals the subtotal (2026-11-26). */
     var all = MON.quoteRows(t, rows, sstOn), sub = all.filter(function (x) { return x[0] === 'monthSub'; })[0];
     all = all.filter(function (x) { return !(x[0] === 'monthExcl' && sub && Number(sub[1]) === Number(x[1])); });
-    return all.map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2], x[0]]; });
+    /* The whole period's totals where ticked (PERIOD TOTAL ON A QUOTATION,
+       2026-11-27), as the quotation prints them. */
+    var pt = MON.periodTotals(t, B && B.sel), L = window.ADspaceWords.line, out = [];
+    all.forEach(function (x) {
+      out.push([x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2], x[0]]);
+      if (pt && (x[0] === 'monthly' || x[0] === 'first')) out.push([L.periodTotal(pt.months, sstOn), CUR + ' ' + acct(pt.period), 0, 'period']);
+    });
+    if (pt && pt.total != null) out.push([L.periodAll(sstOn), CUR + ' ' + acct(pt.total), 1, 'periodAll'], [L.periodNote(pt.months), '', 0, 'periodNote']);
+    return out;
   }
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
@@ -2928,9 +2944,7 @@
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
        the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
     var tot = totRows(d);
-    out += '<dl class="qb-tot">' + tot.map(function (x) {
-      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-    }).join('') + '</dl>';
+    out += totDl(tot, 'qb-tot', 'qb-note');
     var notes = [];
     /* Said as the quotation says it (2026-11-27, How ad spend works). */
     if (t.budget > 0) notes.push('The advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is not included in this quotation.');
@@ -3174,9 +3188,7 @@
     }
     box.innerHTML = '<p class="qb-sidehead">Summary</p>' +
       (lines.length ? (byBrand || group('Monthly', month) + group('One-time', once)) + ads +
-        '<dl class="qb-sidetot">' + tot.map(function (x) {
-          return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-        }).join('') + '</dl>' : ads + '<p class="qb-sidenote">No items.</p>') +
+        totDl(tot, 'qb-sidetot', 'qb-sidenote') : ads + '<p class="qb-sidenote">No items.</p>') +
       (n ? '<p class="qb-sidenote">' + n + (n === 1 ? ' add-on rate listed' : ' add-on rates listed') + '</p>' : '');
     sideFit();
   }
