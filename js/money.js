@@ -389,6 +389,19 @@
     return r;
   }
 
+  /* The whole period's totals (PERIOD TOTAL ON A QUOTATION, the user,
+     2026-11-27): where the quotation's selection ticks `period_total` and it
+     holds a monthly line, the monthly fee over the period (each line's own
+     months, term discount and SST in it) and, with one-time fees, that and
+     the one-time incl. SST. The figure is the database's (`commitment`,
+     `quote_totals`), never added up on the page. */
+  function periodTotals(t, sel) {
+    t = t || {};
+    if (!sel || sel.period_total !== true || !t.month || t.commitment == null) return null;
+    var once = t.once ? Number(t.once.incl || 0) : 0;
+    return { months: Number(t.term) || 1, period: cents(Number(t.commitment) - once), total: t.once ? cents(Number(t.commitment)) : null };
+  }
+
   /* A quotation's lines as the client reads them (the user, 2026-11-06,
      option A: "include together as a plan instead breaking down as free"):
      a line the database marks `in_plan` (RM 0, Include in plan ticked)
@@ -520,6 +533,7 @@
     sign: signOf,
     curOf: curOf,
     approx: approx,
+    periodTotals: periodTotals,
     approxSgd: approxSgd,
     market: market,
     load: load,
