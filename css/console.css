@@ -4086,7 +4086,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-taxc .qb-tax { display: block; width: 100%; min-width: 0; margin-block: -6px; }
 @media (pointer: coarse) { .qb-taxc .qb-tax { margin-block: -9px; } }
 .qb-desc-acts .qb-tax { width: auto; margin-left: auto; }
-.qb-desc-acts .qb-tax + .qb-moves { margin-left: 0; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 /* The totals end on the lines' own right edge, inside the rows' padding
    (2026-11-07). */

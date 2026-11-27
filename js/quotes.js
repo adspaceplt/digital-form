@@ -2721,6 +2721,9 @@
         if (!B || seq !== B.seq) return;
         var d = r.data || {};
         hints(d);
+        /* A monthly line added to a one-time quotation: priced again on
+           the term asked (2026-11-27). */
+        if ((d.error || (r.error && r.error.message)) === 'bad-term' && B.monthly === false) { B.monthly = true; discShow(); preview(true); return; }
         if (r.error || d.error) {
           /* Create stays pressable: it names the card's own fault first, else this. */
           B.err = (d.brand != null && B.sent ? brandWord(B.brands[B.sent[d.brand]]) + ': ' : '') + said(r.error || d.error);
