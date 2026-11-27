@@ -140,6 +140,11 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   head too; no page sets its own (the user, 2026-11-21); a
   change to one is checked on the other in the same push (2026-11-14: the
   status bar fixed on the console reached the client pages a release later).
+- Every scroll a page makes to a block lands under the bar:
+  `ADspaceChrome.underHead(el, above)`, its room the root's
+  `scroll-padding-top` (`css/portal.css`: `--head-h`, the top safe area and
+  12px), never an offset typed or measured in a script and never a
+  `scroll-margin-top` of a section's own (`tests/underhead.js`).
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.

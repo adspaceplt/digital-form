@@ -1574,18 +1574,13 @@
     /* A part named by itself, below its tab's first, is brought into view. */
     if (!TABS[key] && parts[0] !== key) {
       var el = document.querySelector('#crmWork .rec-pane[data-pane="' + key + '"]');
-      if (el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+      if (el) requestAnimationFrame(function () { window.ADspaceChrome.underHead(el); });
     } else if (visit) {
       /* A pane opened from low on the page (the rail's View all, a part's
          View all) starts at its top, under the console's head, never above
          the screen where the press left it (2026-11-26, the user: "I have
          to scroll up to view it"). A pane already in view stays put. */
-      requestAnimationFrame(function () {
-        var strip = $('crmTabs'), bar = document.querySelector('.console-head');
-        if (!strip) return;
-        var off = bar ? bar.getBoundingClientRect().bottom : 0, top = strip.getBoundingClientRect().top;
-        if (top < off) window.scrollTo(0, Math.max(0, top + window.pageYOffset - off - 12));
-      });
+      requestAnimationFrame(function () { window.ADspaceChrome.underHead($('crmTabs'), true); });
     }
   }
   var ckFor = null;
@@ -5442,10 +5437,7 @@
          (2026-10-20, CLI-6). */
       if (goActive && (state.client.stage || 'lead') !== 'active') {
         var c = state.client;
-        var toHead = function () {
-          var head = document.querySelector('#sectionClients .rec-id'), bar = document.querySelector('.console-head');
-          if (head) window.scrollTo(0, Math.max(0, head.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.getBoundingClientRect().bottom : 0) - 12));
-        };
+        var toHead = function () { window.ADspaceChrome.underHead(document.querySelector('#sectionClients .rec-id')); };
         if (!String(c.client_code || '').trim()) {
           askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true, after: toHead }); });
         } else moveStage(c, 'active', null, { after: toHead });

@@ -200,8 +200,7 @@
     if (fromList) { history.pushState({ vs: id }, '', '#' + id); pushed = true; }
     else history.replaceState({ vs: id }, '', '#' + id);
     paintList();
-    var top = $('vsContent').getBoundingClientRect().top + window.pageYOffset - 80;
-    if (window.pageYOffset > top) window.scrollTo(0, Math.max(0, top));
+    window.ADspaceChrome.underHead($('vsContent'), true);
   }
   window.addEventListener('popstate', function () {
     if (!feed) return;

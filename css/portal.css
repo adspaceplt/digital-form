@@ -386,6 +386,8 @@
 
 * { box-sizing: border-box; margin: 0; }
 :root { color-scheme: light; }
+/* Every scroll to a block stops under the sticky bar (js/chrome.js underHead). */
+:root { scroll-padding-top: calc(var(--head-h) + env(safe-area-inset-top, 0px) + 12px); }
 html { -webkit-text-size-adjust: 100%; }
 /* iOS paints a translucent blue box over whatever a finger touched, square
    even on a rounded control, and it stayed over the grown search field (the
@@ -4636,8 +4638,6 @@ body.is-canvas { overflow: hidden; }
 .cp-tabs { margin-bottom: 12px; }
 .cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-pane[hidden] { display: none; }
-/* A part named in the address (`?tab=scripts`) is brought into view clear of the bar (2026-11-26). */
-.cp-pane > .cp-card { scroll-margin-top: calc(var(--head-h) + 12px); }
 /* Overview: the summary on the left, who to reach and the company on the
    right, on the record's own proportion; one column once the pane is narrow. */
 .cp-overview { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); gap: 12px 16px; }
@@ -5345,9 +5345,7 @@ body.is-canvas { overflow: hidden; }
   transform-origin: bottom center; animation: popcard-up var(--t-slow) var(--ease);
 }
 .popcard.is-dock::before { display: none; }
-/* Docked, a card runs gutter to gutter whatever width its section gives it
-   at a desk: a section's own width rule in console.css, read after this
-   sheet, held the Ad IDs card 54px off the right edge (2026-11-27). */
+/* Docked: gutter to gutter, whatever a section's desk width. */
 :root .popcard.is-dock { width: auto; max-width: none; }
 @keyframes popcard-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .popcard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

@@ -300,6 +300,26 @@
     return need(keys, whole).then(fn);
   }
 
+  /* Every scroll a page makes to a block lands its top under the sticky bar:
+     the room is the root's scroll-padding-top (css/portal.css: the bar's
+     height, the top safe area and 12px), read, never typed. With `above`, a
+     block already below the bar stays put. A second pass once late content
+     has laid out, unless the person has scrolled since (2026-11-27: View
+     all left the record's tabs under the console's head on an iPhone). */
+  function headRoom() { return parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0; }
+  function underHead(el, above) {
+    if (!el || !el.getBoundingClientRect) return;
+    var room = headRoom(), top = el.getBoundingClientRect().top;
+    if (above && top >= room) return;
+    var y = Math.max(0, top + window.pageYOffset - room);
+    window.scrollTo(0, y);
+    setTimeout(function () {
+      if (!el.isConnected || Math.abs(window.pageYOffset - y) > 1) return;
+      var t = el.getBoundingClientRect().top;
+      if (Math.abs(t - room) > 1) window.scrollTo(0, Math.max(0, t + window.pageYOffset - room));
+    }, 260);
+  }
+
   /* Pages that build their own chrome (the signed-in console) still want the
      mark handled the same way, so the helper is shared rather than copied. */
   window.ADspaceChrome = {
@@ -319,6 +339,7 @@
       if (logo) wireMark(logo, wordmarkId, null);
     },
     actions: function () { return document.getElementById('chromeActions'); },
-    need: need, needHeld: needHeld, needThen: needThen
+    need: need, needHeld: needHeld, needThen: needThen,
+    headRoom: headRoom, underHead: underHead
   };
 })();

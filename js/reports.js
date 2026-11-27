@@ -1139,7 +1139,7 @@
     paintSteps();
     paintStep();
     var nav = st.host.querySelector('.rp-steps');
-    if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start' });
+    window.ADspaceChrome.underHead(nav, true);
   }
   function nextOf(k) {
     var s = stepsOf(st.open);
