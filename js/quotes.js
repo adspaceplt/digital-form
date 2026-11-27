@@ -1533,7 +1533,9 @@
     'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Accounting, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
     withdrawn: 'This quotation has been withdrawn. No further invoices can be created from it.',
-    'bad-request': 'This invoice could not be read. Refresh the page.'
+    'bad-request': 'This invoice could not be read. Refresh the page.',
+    'bad-number': 'Enter the invoice number as it appears in Bukku.', 'not-linked-row': 'This invoice is no longer linked. Refresh the page.',
+    denied: 'You do not have permission to invoice quotations. Please ask an admin.'
   };
   function qiSaid(d) {
     var e = d && (d.error || d);
@@ -1542,11 +1544,15 @@
     if (k === 'no-sku' && d.line) w = d.line + ' has no SKU on the Rate Card. Add its SKU in Services.';
     if (k === 'no-product' && d.sku) w = 'Bukku has no product with SKU ' + d.sku + (d.line ? ' (' + d.line + ')' : '') + '. Add it in Bukku first.';
     if (k === 'invoiced' && d.number) w = 'Invoice ' + d.number + ' has already been created in Bukku.';
+    if (k === 'no-invoice') w = 'Bukku has no invoice ' + (d.number || '') + ' for this client. Check the number, then try again.';
+    if (k === 'taken') w = 'Invoice ' + (d.number || '') + ' is already linked to ' + (d.on || 'another quotation or campaign') + '. Unlink it there first.';
+    if (k === 'nothing' && d.linking) w = 'Nothing is billed in this cycle, so no invoice can be linked to it.';
+    if (!QI_SAID[k] && k !== 'no-invoice' && k !== 'taken' && window.ADspaceBukku && /^(bukku|needs-update|not-set)/.test(k)) w = window.ADspaceBukku.said(d);
     return w;
   }
   function openInvoices(q, ctx, opener) {
     if (!$('qiSheet')) return;
-    QI = { q: q, ctx: ctx };
+    QI = { q: q, ctx: ctx, live: {} };
     $('qiFor').textContent = q.ref + ' · ' + q.brand;
     $('qiBody').innerHTML = '';
     sheetMsg('qiMsg', '');
@@ -1589,7 +1595,7 @@
     var budget = rows.some(function (x) { return x.kind === 'budget'; });
     var h = '<dl class="ovfacts">' +
       '<dt>Starts</dt><dd>' + (d.start ? esc(qiDay(d.start)) : 'Not set') + '</dd>' +
-      '<dt>Months billed</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>' +
+      (d.once ? '' : '<dt>Months billed</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>') +
       (budget && amounts ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
         (work ? ' <button class="linkbtn" data-qi="debtor" type="button">Change</button>' : '') + '</dd>' : '') +
       '</dl>';
@@ -1604,21 +1610,84 @@
       var made = !!x.number;
       /* A cycle created in Bukku reads Paid or Unpaid once finance has
          approved it there (the nightly copy, `bukku_docs`); until then it
-         is still a draft. */
+         is still a draft. One just linked reads as Bukku answered the link
+         until the nightly copy holds it. */
+      var live = made && x.paid == null ? me.live[x.cycle + '|' + x.kind + '|' + x.number] : null;
+      var paid = x.paid != null ? x.paid : live === 'paid' ? true : live === 'issued' || live === 'overdue' ? false : null;
       var st = !made ? (x.creating ? '<span class="chip-state is-warn">Creating</span>' : '<span class="chip-state is-off">Not created</span>')
-        : x.paid === true ? '<span class="chip-state is-ok">Paid</span>'
-        : x.paid === false ? '<span class="chip-state is-warn">Unpaid</span>'
+        : paid === true ? '<span class="chip-state is-ok">Paid</span>'
+        : paid === false ? '<span class="chip-state is-warn">Unpaid</span>'
         : '<span class="chip-state is-off">Draft</span>';
+      /* Create in Bukku, or Link existing invoice where a colleague made it
+         there by hand (2026-11-27); a cycle holding an invoice lets go of it
+         from its ⋯ (Unlink). */
+      var acts = !work ? '' : made
+        ? '<span class="team-act"><button class="kmenu-btn" data-qi="menu" type="button" aria-label="More actions, ' + esc(x.number) + '" aria-expanded="false">' + DOTS +
+          '</button><div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([[], [], [], [], [{ a: 'unlink', label: 'Unlink' }]], 'data-qi') + '</div></span>'
+        : x.creating ? ''
+        : (d.start ? '<button class="btn btn-sm" data-qi="make" data-gate="bukku" type="button">Create in Bukku</button>' : '') +
+          '<button class="btn btn-sm" data-qi="link" data-gate="bukku" type="button">Link existing invoice</button>';
       var when = x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set';
-      return '<div class="qi-row" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '">' +
-        '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : 'Month ' + x.cycle) + '</b>' +
+      return '<div class="qi-row' + (!made && work && !x.creating ? ' has-acts2' : '') + '" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '"' + (made ? ' data-number="' + esc(x.number) + '"' : '') + '>' +
+        '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : d.once ? 'One-time' : 'Month ' + x.cycle) + '</b>' +
           '<small>' + when + '</small>' + (made ? '<small class="qi-no">' + esc(x.number) + '</small>' : '') + '</span>' +
         (amounts ? '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' : '') +
         '<span class="qi-state">' + st + '</span>' +
-        '<span class="qi-act">' + (!made && work && d.start ? '<button class="btn btn-sm" data-qi="make" type="button">Create in Bukku</button>' : '') + '</span>' +
+        '<span class="qi-act">' + acts + '</span>' +
         '</div>';
     }).join('') + '</div>';
     $('qiBody').innerHTML = h;
+    if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan($('qiBody'));
+  }
+  function qiKey(row) { return { quotation: QI.q.id, cycle: Number(row.getAttribute('data-cycle')), kind: row.getAttribute('data-kind') }; }
+  /* An invoice a colleague made in Bukku by hand, linked by its number: it
+     must be on the contact the cycle bills and on no other cycle,
+     quotation or campaign (bukku-sync `invoicelink`). */
+  function qiLink(btn, number, then) {
+    if (!QI) return;
+    var me = QI, row = btn && btn.closest('.qi-row'), key = row ? qiKey(row) : then.key;
+    var go = function (num) {
+      return me.ctx.db.functions.invoke('bukku-sync', { body: Object.assign({ action: 'invoicelink', number: num }, key) }).then(function (r) {
+        var d = r.data || {};
+        if (r.error && !r.data) return said(r.error);
+        if (d.error) return qiSaid(Object.assign({ linking: true }, d));
+        if (QI !== me) return '';
+        me.live[key.cycle + '|' + key.kind + '|' + d.number] = d.state;
+        sheetMsg('qiMsg', then ? 'Linked to invoice ' + d.number + ' again.' : 'Linked to invoice ' + d.number + '.', 'ok');
+        loadInvoices();
+        return '';
+      }).catch(function (e) { return said(e); });
+    };
+    if (number) return go(number);
+    window.ADspaceConfirm.ask({ title: 'Link existing invoice', go: 'Link', wait: true, opener: btn,
+      field: { name: 'number', label: 'Invoice number', value: '', maxlength: 40, placeholder: 'AINV000123' } }, function (v) {
+      var num = String((v && v.number) || v || '').trim().toUpperCase();
+      if (!num) return 'Enter the invoice number.';
+      return go(num);
+    });
+  }
+  /* The cycle lets go of its invoice; nothing changes in Bukku. Undo links
+     the same number again, checked in Bukku as before. */
+  function qiUnlink(btn) {
+    if (!QI) return;
+    var me = QI, row = btn.closest('.qi-row'), key = qiKey(row), no = row.getAttribute('data-number') || '';
+    window.ADspaceConfirm.ask({ title: 'Unlink invoice?', go: 'Unlink', tone: 'warn', wait: true, opener: row.querySelector('.kmenu-btn'),
+      body: (row.querySelector('.qi-what b') || {}).textContent + ' will no longer be linked to invoice ' + no + '. Nothing changes in Bukku.'
+    }, function () {
+      return me.ctx.db.rpc('quotation_invoice_unlink', { p_id: key.quotation, p_cycle: key.cycle, p_kind: key.kind }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return said(r.error);
+        if (d.error) return d.error === 'not-linked' ? QI_SAID['not-linked-row'] : qiSaid(d);
+        if (QI !== me) return '';
+        sheetMsg('qiMsg', '');
+        loadInvoices();
+        window.ADspaceAdmin.undoHere('Invoice ' + (d.number || no) + ' unlinked.', function () {
+          var m = qiLink(null, d.number || no, { key: key });
+          if (m && m.then) m.then(function (w) { if (w) sheetMsg('qiMsg', w, 'err'); });
+        }, $('qiMsg'));
+        return '';
+      }).catch(function (e) { return said(e); });
+    });
   }
   function qiMake(btn) {
     if (!QI) return;
@@ -1696,7 +1765,20 @@
       $('qiBody').addEventListener('click', function (e) {
         var b = e.target.closest('[data-qi]');
         if (!b) return;
-        if (b.getAttribute('data-qi') === 'make') qiMake(b);
+        var a = b.getAttribute('data-qi');
+        if (a === 'menu') {
+          var menu = b.parentNode.querySelector('[data-menu]'), open = menu.hidden;
+          Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+          menu.hidden = !open;
+          b.setAttribute('aria-expanded', String(open));
+          if (open) window.ADspaceMenu.place(b, menu);
+          return;
+        }
+        var shut = b.closest('[data-menu]');
+        if (shut) { shut.hidden = true; var mb = shut.parentNode.querySelector('.kmenu-btn'); if (mb) mb.setAttribute('aria-expanded', 'false'); }
+        if (a === 'link') qiLink(b);
+        else if (a === 'unlink') qiUnlink(b);
+        else if (b.getAttribute('data-qi') === 'make') qiMake(b);
         else if (b.getAttribute('data-qi') === 'debtor') qiDebtor(b);
         else if (b.getAttribute('data-qi') === 'start') qiStart();
       });

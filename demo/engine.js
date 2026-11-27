@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at ref',
+    activity_log: 'id actor action subject detail created_at ref client_id',
     agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
@@ -649,6 +649,7 @@
     campaign_invoice_take: 'p_campaign p_bukku p_number p_linked', campaign_invoice_unlink: 'p_campaign', campaign_invoice_read: 'p_campaign',
     client_ad_debtor_set: 'p_client p_contact p_code p_name',
     quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
+    quotation_invoice_link_prep: 'p_id p_cycle p_kind', quotation_invoice_link: 'p_id p_cycle p_kind p_bukku p_number p_amount', quotation_invoice_unlink: 'p_id p_cycle p_kind',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -900,7 +901,7 @@
     var at = new Date().toISOString(), patch = { stage: 'proposal' };
     stageClock('clients', c, patch);
     Object.assign(c, patch, { updated_at: at });
-    (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name,
+    (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name, client_id: c.id,
       detail: 'Proposal sent · ' + detail, created_at: at });
   }
   function persist() {
@@ -982,7 +983,7 @@
       city: window.__city || null, country: window.__country === null ? null : (window.__country || 'MY'),
       session: ('000000' + h.toString(16).toUpperCase()).slice(-6) };
     Object.keys(meta).forEach(function (x) { if (meta[x] == null || meta[x] === '') delete meta[x]; });
-    DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: action, subject: cl ? cl.name : q.brand,
+    DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: action, subject: cl ? cl.name : q.brand, client_id: cl ? cl.id : null,
       detail: detail, meta: meta, created_at: new Date().toISOString() });
   }
 
@@ -1030,7 +1031,7 @@
         Object.assign(c, patch);
         var d = on.split('-');
         DB.activity_log = DB.activity_log || [];
-        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name,
+        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name, client_id: c.id,
           detail: (to === 'paused' ? 'Paused' : 'Past') + ' from ' + Number(d[2]) + ' ' + SHORT_MON_STUB[Number(d[1]) - 1] + ' ' + d[0] +
             ', as scheduled · ' + (STAGE_NEXT_WORD[why] || 'Other') + (note ? ': ' + note : ''),
           created_at: new Date().toISOString() });
@@ -1954,7 +1955,7 @@
                   x.owner = rnNew;
                   if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
-                    subject: x.name || x.title, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
+                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
               });
             }
@@ -2292,9 +2293,9 @@ function cardSlugFree(name, self, email) {
   var RESERVED = ['superadmin', 'admin', 'administrator', 'team member', 'marketing',
                   'sales', 'account', 'user', 'root', 'owner', 'staff', 'system',
                   'support', 'test'];
-  function logAct(action, subject, detail) {
+  function logAct(action, subject, detail, clientId) {
     DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: action,
-      subject: subject || '', detail: detail || '', created_at: new Date().toISOString() });
+      subject: subject || '', detail: detail || '', created_at: new Date().toISOString(), client_id: clientId || null });
   }
   function regMay(family, level) {
 
@@ -2976,7 +2977,7 @@ function cardSlugFree(name, self, email) {
       DB.client_document_services.push({ document_id: doc.id, service_id: id, created_at: new Date().toISOString() });
     });
     if (prior) prior.superseded_by = doc.id;
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name, client_id: cl.id,
       detail: num + ' · ' + ids.length + ' line' + (ids.length === 1 ? '' : 's'), created_at: new Date().toISOString() });
     if (doc.kind === 'offer') proposalSent(cl.id, num + ' issued');
     persist();
@@ -3060,7 +3061,7 @@ function cardSlugFree(name, self, email) {
       if (l) l.state = 'quoted';
     });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name, client_id: cl.id,
       detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
@@ -3097,7 +3098,7 @@ function cardSlugFree(name, self, email) {
       .filter(function (m) { return m.document_id !== d.id; });
     DB.client_documents = DB.client_documents.filter(function (x) { return x.id !== d.id; });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name, client_id: cl.id,
       detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
@@ -3114,7 +3115,7 @@ function cardSlugFree(name, self, email) {
     var was = l.state;
     l.state = a.p_state;
     var cl = DB.clients.filter(function (c) { return c.id === l.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'service.override', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'service.override', subject: cl.name, client_id: cl.id,
       detail: l.label + ' · ' + was + ' to ' + a.p_state + ' · ' + String(a.p_reason).trim(),
       created_at: new Date().toISOString() });
     persist();
@@ -3853,11 +3854,11 @@ function cardSlugFree(name, self, email) {
       if (k === 'entity') {
         (DB.client_entities || []).filter(function (x) { return x.entity_id === id; }).forEach(function (x) {
           var fc = DB.clients.filter(function (c) { return c.id === x.client_id; })[0];
-          if (fc) DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: fc.name, detail: (e.legal_name || 'Billing entity') + ' · ' + detail, created_at: now });
+          if (fc) DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: fc.name, client_id: fc.id, detail: (e.legal_name || 'Billing entity') + ' · ' + detail, created_at: now });
         });
       } else {
         var cc = DB.clients.filter(function (c) { return c.id === id; })[0];
-        DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: cc ? cc.name : 'Bukku', detail: detail, created_at: now });
+        DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: cc ? cc.name : 'Bukku', client_id: cc ? cc.id : null, detail: detail, created_at: now });
       }
     }
     persist();
@@ -4085,7 +4086,7 @@ function cardSlugFree(name, self, email) {
     e.status = status; e.provider_id = provider; e.error = error; e.sent_at = status === 'sent' ? new Date().toISOString() : null;
     var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
     var co = e.client_id ? DB.clients.filter(function (x) { return x.id === e.client_id; })[0] : null;
-    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name,
+    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name, client_id: co ? co.id : null,
       detail: (e.purpose === 'invoice' ? 'Invoice ' : 'Overdue reminder ') + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed (not confirmed) to ' : 'not emailed to ') +
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }
@@ -7340,7 +7341,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
            (vc.vic_note || null) !== vnote ? 'VIC note: ' + (vc.vic_note || 'not set') + ' → ' + (vnote || 'not set') : ''].filter(Boolean).join(' · ');
       vc.vic_by = von ? (vc.vic_at ? vc.vic_by : vm.id) : null;
       vc.vic_at = vat; vc.vic_note = vnote;
-      logAct('client.edited', vc.name, vdet);
+      logAct('client.edited', vc.name, vdet, vc.id);
       persist();
       return { ok: true, since: vc.vic_at, by_name: vname(vc.vic_by), note: vc.vic_note };
     }
@@ -7357,7 +7358,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (pkKept === pkOn && (pkKept || !pkc.portal_kept_at)) return { ok: true, on: pkKept, at: pkc.portal_kept_at || null, by_name: pkName(pkc.portal_kept_by) };
       pkc.portal_kept_at = pkOn ? new Date().toISOString() : null;
       pkc.portal_kept_by = pkOn ? pkm.id : null;
-      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off');
+      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off', pkc.id);
       persist();
       return { ok: true, on: pkOn, at: pkc.portal_kept_at, by_name: pkOn ? pkm.name : null };
     }
@@ -17053,6 +17054,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         var idb = DB.client_ad_debtors.filter(function (x) { return x.client_id === iq.client_id; })[0];
         var iout = { ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows, billing: ibill };
+
+        if (!(iq.lines || []).some(function (e) { return e.basis === 'month'; }) &&
+            !((iq.totals || {}).ads || []).some(function (e) { return (e.freq || 'monthly') === 'monthly' && Number(e.budget != null ? e.budget : e.amount || 0) > 0; })) iout.once = true;
         if (ibill && idb) iout.debtor = { contact_id: idb.contact_id, code: idb.code, name: idb.name };
         if (ibill && DB.bukku_settings.budget_account_code) iout.budget_account = DB.bukku_settings.budget_account_code;
         return bkOk(JSON.parse(JSON.stringify(iout)));
@@ -17095,6 +17099,44 @@ function opsCodeRange(cid, period, ty, src, seq) {
             (args.p_kind === 'budget' ? 'Advertising budget invoice ' : 'Invoice ') + dr.number + ' created in Bukku as a draft · Month ' + dr.cycle, created_at: new Date().toISOString() });
         }
         return bkOk();
+      }
+
+      if (name === 'quotation_invoice_link_prep' || name === 'quotation_invoice_link' || name === 'quotation_invoice_unlink') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var lq = qiQ(args.p_id), lk = args.p_kind, lc = Number(args.p_cycle);
+        if (!/^(service|budget)$/.test(String(lk)) || !(lc >= 1 && lc <= 36)) return bkNo('bad-request');
+        if (!lq || !scopeSeen(lq.client_id, 'work')) return bkNo('not-found');
+        var lr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === lq.id && x.cycle === lc && x.kind === lk; })[0];
+        var lTail = qiCycles(lq) > 1 ? ' · Month ' + lc : '';
+        var lWord = lk === 'budget' ? 'Advertising budget invoice ' : 'Invoice ';
+        if (name === 'quotation_invoice_unlink') {
+          if (!lr || !lr.number) return bkNo('not-linked');
+          var lWas = { number: lr.number, bukku: lr.bukku_id || null };
+          lr.number = null; lr.bukku_id = null; lr.amount = null; lr.made_at = null;
+          logAct('client.billing', lq.brand, lq.ref + ' · ' + lWord + lWas.number + ' unlinked' + lTail);
+          return bkOk(lWas);
+        }
+        if (!lq.reviewed_at) return bkNo('not-reviewed');
+        if (lq.removed_at) return bkNo('removed');
+        if (lc > qiCycles(lq) || !qiLines(lq, lc, lk).length) return bkNo('nothing');
+        if (lr && lr.number) return bkNo('invoiced', { number: lr.number });
+        if (lr && lr.claimed_at && Date.now() - Date.parse(lr.claimed_at) < 600000) return bkNo('creating');
+        if (name === 'quotation_invoice_link_prep') {
+          var ldb = lk === 'budget' ? DB.client_ad_debtors.filter(function (x) { return x.client_id === lq.client_id; })[0] : null;
+          var llk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'client' && l.record_id === lq.client_id; })[0];
+          var lcon = ldb ? ldb.contact_id : llk ? llk.contact_id : null;
+          return lcon ? bkOk({ contact_id: lcon }) : bkNo('not-linked');
+        }
+        var lNum = String(args.p_number || '').trim().slice(0, 60);
+        if (!lNum || !(Number(args.p_bukku) > 0)) return bkNo('bad-request');
+        var lOn = DB.quotation_invoices.filter(function (x) { return Number(x.bukku_id) === Number(args.p_bukku) || String(x.number || '').toUpperCase() === lNum.toUpperCase(); })[0];
+        if (lOn) return bkNo('taken', { number: lNum, on: (qiQ(lOn.quotation_id) || {}).ref });
+        var lCamp = (DB.campaigns || []).filter(function (c) { return Number(c.bukku_invoice_id) === Number(args.p_bukku) || String(c.invoice_no || '').toUpperCase() === lNum.toUpperCase(); })[0];
+        if (lCamp) return bkNo('taken', { number: lNum, on: lCamp.campaign_code || lCamp.title });
+        if (!lr) { lr = { quotation_id: lq.id, cycle: lc, kind: lk }; DB.quotation_invoices.push(lr); }
+        lr.number = lNum; lr.bukku_id = Number(args.p_bukku); lr.amount = args.p_amount; lr.made_at = new Date().toISOString(); lr.claimed_at = null;
+        logAct('client.billing', lq.brand, lq.ref + ' · ' + lWord + lNum + ' linked from Bukku' + lTail);
+        return bkOk({ number: lNum });
       }
       if (name === 'client_ad_debtor_set') {
         if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
@@ -20950,6 +20992,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
               bci.push(made);
               return rpc('campaign_invoice_take', { p_campaign: bkb.campaign, p_bukku: made.id, p_number: made.number, p_linked: false }).then(function () {
                 return bkR(Object.assign(bciOf(made), { made: made.number }));
+              });
+            });
+          }
+
+          if (bkb.action === 'invoicelink') {
+            var bql = window.__bukkuCampInvoices = window.__bukkuCampInvoices || [];
+            var qlNum = String(bkb.number || '').trim().toUpperCase();
+            if (!/^[A-Z0-9._\/-]{3,40}$/.test(qlNum)) return bkR({ error: 'bad-number' });
+            return rpc('quotation_invoice_link_prep', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind }).then(function (r) {
+              var p = r.data || {};
+              if (p.error) return bkR({ error: p.error, number: p.number });
+              if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
+              var hit = bql.filter(function (x) { return x.number.toUpperCase() === qlNum && x.contact_id === p.contact_id && x.status !== 'void'; })[0];
+              if (!hit) return bkR({ error: 'no-invoice', number: qlNum });
+              return rpc('quotation_invoice_link', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind, p_bukku: hit.id, p_number: hit.number, p_amount: Number(hit.amount) }).then(function (t) {
+                if (t.data && t.data.error) return bkR({ error: t.data.error, number: t.data.number, on: t.data.on });
+                return bkR({ ok: true, linked: true, number: hit.number, bukku: hit.id, amount: Number(hit.amount), currency: hit.currency_code || 'MYR',
+                  state: hit.status === 'draft' ? 'draft' : Number(hit.balance) <= 0 ? 'paid' : 'issued' });
               });
             });
           }

@@ -166082,6 +166082,351 @@ revoke all on function public.quote_extras(jsonb) from public, anon, authenticat
 -- END OF PERIOD TOTAL ON A QUOTATION -----------------------------------------
 
 -- ===========================================================================
+-- A CLIENT'S HISTORY KEPT BY ITS ID (2026-11-27)
+-- ===========================================================================
+-- WHY: `activity_log` held no client id, and a client's Record of changes
+-- read its lines by subject, the name the line was written with; a rename
+-- left the earlier lines behind (Bizgrowth Business Management, renamed
+-- twice on 2026-11-27, showed 1 of its 24 lines). A record is traced by its
+-- id, never by its name.
+-- WHAT IT CHANGES
+--   * `activity_log.client_id` (uuid, nullable, on delete set null),
+--     indexed.
+--   * `activity_client_note()`: after a write to a client's own rows
+--     (`clients` and the tables keyed on one client), the transaction
+--     remembers that client's id (`adspace.log_client`) and gives it to
+--     the client lines (`activity_about_client`) this transaction already
+--     filed without one.
+--   * `activity_log_client()` (before insert): a client line filed without a
+--     client id takes the one the transaction remembers. A line given one
+--     (the console names the client it acts on) keeps it. Never resolved
+--     from a name; a client no longer held is never named.
+--   * Backfill: a line takes the client whose name it was written with,
+--     the client's name history read from its own `client.edited` lines
+--     (`Brand name: A → B`), its current and legal names; a name more than
+--     one client has held is left unfilled.
+-- ORDER: this file first (the column must stand before the pages send it),
+-- then the pages. An open tab served before reads by name as it did.
+-- ROLLBACK: drop trigger activity_log_client on public.activity_log; drop
+-- each `<table>_activity_client` trigger; drop function
+-- public.activity_log_client(), public.activity_client_note(),
+-- public.activity_about_client(text); the pages
+-- read by id, so the column stays (dropping it breaks the console).
+-- Safe to run twice.
+
+-- ACTIVITY CLIENT ID ----------------------------------------------------------
+
+alter table public.activity_log add column if not exists client_id uuid
+  references public.clients(id) on delete set null;
+create index if not exists activity_log_client_idx on public.activity_log (client_id, created_at desc)
+  where client_id is not null;
+
+/* The lines a client's own record files: its section's, and a document's.
+   A campaign's, a task's or a colleague's line in the same transaction
+   stays its own. */
+create or replace function public.activity_about_client(p_action text)
+returns boolean
+language sql stable set search_path = public as $$
+  select p_action like 'client.%' or p_action like 'contact.%' or p_action like 'quotation.%'
+      or p_action like 'document.%' or p_action in ('link.reset', 'service.override')
+      or public.activity_section(p_action) = 'clients'
+$$;
+revoke all on function public.activity_about_client(text) from public, anon, authenticated;
+
+create or replace function public.activity_client_note()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  j jsonb := to_jsonb(case when tg_op = 'DELETE' then old else new end);
+  v uuid;
+begin
+  v := case when tg_table_name = 'clients' then (j ->> 'id')::uuid else (j ->> 'client_id')::uuid end;
+  if v is null or not exists (select 1 from public.clients c where c.id = v) then return null; end if;
+  if coalesce(current_setting('adspace.log_client', true), '') <> v::text then
+    perform set_config('adspace.log_client', v::text, true);
+    update public.activity_log a set client_id = v
+     where a.client_id is null and a.created_at = now() and public.activity_about_client(a.action);
+  end if;
+  return null;
+end $$;
+revoke all on function public.activity_client_note() from public, anon, authenticated;
+
+create or replace function public.activity_log_client()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v text := nullif(current_setting('adspace.log_client', true), '');
+begin
+  if new.client_id is null and v is not null and public.activity_about_client(new.action) then
+    if exists (select 1 from public.clients c where c.id = v::uuid) then new.client_id := v::uuid; end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.activity_log_client() from public, anon, authenticated;
+
+drop trigger if exists activity_log_client on public.activity_log;
+create trigger activity_log_client before insert on public.activity_log
+  for each row execute function public.activity_log_client();
+
+do $$
+declare t text;
+begin
+  foreach t in array array['clients', 'client_brands', 'client_entities', 'client_contacts', 'client_checklists',
+                           'client_detail_forms', 'client_ad_debtors', 'client_services', 'client_touches',
+                           'client_documents', 'client_emails', 'client_requests', 'quotations',
+                           'quotation_drafts', 'brand_analyses', 'feedback_requests', 'feedback_responses',
+                           'invoice_emails', 'meta_links', 'documents'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('drop trigger if exists %I on public.%I', t || '_activity_client', t);
+      execute format('create trigger %I after insert or update or delete on public.%I for each row execute function public.activity_client_note()',
+                     t || '_activity_client', t);
+    end if;
+  end loop;
+end $$;
+
+-- Backfill: the names each client has held, from its own rename lines.
+with recursive hist(client_id, name) as (
+  select c.id, lower(btrim(c.name)) from public.clients c where nullif(btrim(c.name), '') is not null
+  union
+  select c.id, lower(btrim(c.legal_name)) from public.clients c where nullif(btrim(c.legal_name), '') is not null
+  union
+  select h.client_id, lower(btrim(m[1]))
+    from hist h
+    join public.activity_log a on a.action = 'client.edited' and lower(btrim(a.subject)) = h.name
+    cross join lateral regexp_matches(a.detail, 'Brand name: ([^;→]+) → ([^;]+)', 'g') m
+   where lower(btrim(m[2])) = h.name and nullif(btrim(m[1]), '') is not null and lower(btrim(m[1])) <> 'not set'
+),
+one as (
+  select name, min(client_id::text)::uuid client_id from hist group by name having count(distinct client_id) = 1
+)
+update public.activity_log a set client_id = o.client_id
+  from one o
+ where a.client_id is null and lower(btrim(a.subject)) = o.name;
+
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- QUOTATION INVOICE LINKED FROM BUKKU (2026-11-27)
+-- ===========================================================================
+-- WHY: a signed quotation's Invoices sheet could only create a cycle's
+-- invoice in Bukku; one a colleague had already made there by hand
+-- (ADP/QT2611-B02, RM 1,299.00) stood Not created with no way to name it.
+-- As a campaign's invoice does (CAMPAIGN INVOICE FROM BUKKU), a cycle now
+-- takes an existing invoice by its number.
+--
+-- WHAT IT CHANGES
+--   * `quotation_invoice_link_prep(p_id, p_cycle, p_kind)`: at Clients:
+--     Billing Work, the client in scope, the Bukku contact the cycle bills
+--     (the advertising budget's chosen contact, else the billing entity's,
+--     else the client's own, else its company's), as Create in Bukku reads
+--     it; refuses `invoiced`, `creating`, `removed`, `nothing`, `not-linked`.
+--   * `quotation_invoice_link(p_id, p_cycle, p_kind, p_bukku, p_number,
+--     p_amount)`: files the invoice Bukku answered on that contact to the
+--     cycle and kind (filed `client.billing`), refusing `invoiced`,
+--     `creating`, and `taken` where the invoice is already on another
+--     cycle, quotation or campaign. A linked cycle holds a number, so
+--     `quotation_invoice_prep` refuses Create in Bukku for it (`invoiced`).
+--   * `quotation_invoice_unlink(p_id, p_cycle, p_kind)`: the cycle let go
+--     of its invoice, nothing changed in Bukku, filed; answers the number
+--     for Undo (linked again by its number).
+--   * `quotation_invoices_of(p_id)`: answers `once` where the quotation
+--     bills nothing monthly (its row reads One-time).
+--
+-- ORDER: this file, then bukku-sync (`invoicelink`), then the pages. An old
+-- tab meets no new act; a page before bukku-sync meets `bad-request` on
+-- Link existing invoice. Safe to run twice.
+-- ROLLBACK: drop the three new functions; run
+-- `2026-11-22-quotation-invoice-paid.sql` again for `quotation_invoices_of`.
+-- ===========================================================================
+
+create or replace function public.quotation_invoices_of(p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  v_start date;
+  v_n int;
+  v_rows jsonb := '[]'::jsonb;
+  i int; k text; v_lines jsonb; v_sum numeric; r public.quotation_invoices;
+  v_day date;
+  v_bill boolean;
+  v_doc public.bukku_docs;
+  v_once boolean;
+begin
+  if (public.ops_me()).id is null
+     or not (public.allowed('clients.billing', 'view') or public.allowed('clients.quotes', 'view')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  v_bill := public.allowed('clients.billing', 'view');
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
+  v_start := public.quotation_start(q.id);
+  v_n := public.quotation_cycles(q.id);
+  for i in 1 .. v_n loop
+    v_day := case when v_start is not null then (v_start + make_interval(months => i - 1))::date end;
+    foreach k in array array['service', 'budget'] loop
+      v_lines := public.quotation_cycle_lines(q.id, i, k);
+      if jsonb_array_length(v_lines) = 0 then continue; end if;
+      select coalesce(sum(round((x->>'qty')::numeric * (x->>'unit')::numeric, 2)), 0) into v_sum from jsonb_array_elements(v_lines) x;
+      select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = i and x.kind = k;
+      v_doc := null;
+      if r.bukku_id is not null then
+        select * into v_doc from public.bukku_docs d where d.kind = 'invoice' and d.doc_id = r.bukku_id and not d.gone;
+      end if;
+      v_rows := v_rows || jsonb_strip_nulls(jsonb_build_object('cycle', i, 'kind', k, 'date', v_day,
+        'until', case when v_day is not null then ((v_start + make_interval(months => i))::date - 1) end,
+        'amount', case when v_bill then v_sum end, 'number', r.number, 'bukku_id', r.bukku_id, 'made_at', r.made_at,
+        'creating', r.claimed_at is not null and r.claimed_at > now() - interval '10 minutes' and r.number is null,
+        'paid', case when v_doc.doc_id is not null then v_doc.balance <= 0 end,
+        'paid_on', case when v_doc.doc_id is not null and v_doc.balance <= 0 then v_doc.paid_on end));
+    end loop;
+  end loop;
+  -- One-time only: no monthly line and no monthly advertising budget.
+  v_once := not exists (select 1 from jsonb_array_elements(coalesce(q.lines, '[]'::jsonb)) e where e->>'basis' = 'month')
+        and not exists (select 1 from jsonb_array_elements(coalesce(q.totals->'ads', '[]'::jsonb)) e
+                         where coalesce(e->>'freq', 'monthly') = 'monthly' and coalesce((e->>'budget')::numeric, (e->>'amount')::numeric, 0) > 0);
+  return jsonb_strip_nulls(jsonb_build_object('ok', true, 'ref', q.ref, 'start', v_start, 'cycles', v_n, 'once', v_once,
+    'currency', coalesce(q.totals->>'currency', 'MYR'), 'rows', v_rows, 'billing', v_bill,
+    'debtor', case when v_bill then (select jsonb_build_object('contact_id', d.contact_id, 'code', d.code, 'name', d.name) from public.client_ad_debtors d where d.client_id = q.client_id) end,
+    'budget_account', case when v_bill then (select b.budget_account_code from public.bukku_settings b where b.id = 1) end));
+end $$;
+revoke all on function public.quotation_invoices_of(uuid) from public, anon;
+grant execute on function public.quotation_invoices_of(uuid) to authenticated;
+
+/* The Bukku contact one cycle bills, as quotation_invoice_prep reads it. */
+create or replace function public.quotation_invoice_contact(p_id uuid, p_kind text)
+returns bigint language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  v_contact bigint; v_ent uuid;
+begin
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null then return null; end if;
+  if p_kind = 'budget' then
+    select d.contact_id into v_contact from public.client_ad_debtors d where d.client_id = q.client_id;
+  end if;
+  if v_contact is null then
+    v_ent := nullif(q.totals->'bill_to'->>'entity_id', '')::uuid;
+    if v_ent is not null then
+      select l.contact_id into v_contact from public.bukku_links l where l.kind = 'entity' and l.record_id = v_ent;
+    end if;
+  end if;
+  if v_contact is null then
+    select l.contact_id into v_contact from public.bukku_links l where l.kind = 'client' and l.record_id = q.client_id;
+  end if;
+  if v_contact is null then
+    v_contact := (public.bukku_shared('client', q.client_id)->>'contact_id')::bigint;
+  end if;
+  return v_contact;
+end $$;
+revoke all on function public.quotation_invoice_contact(uuid, text) from public, anon, authenticated;
+
+create or replace function public.quotation_invoice_link_prep(p_id uuid, p_cycle int, p_kind text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q public.quotations;
+  r public.quotation_invoices;
+  v_contact bigint;
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('service', 'budget') or p_cycle is null or p_cycle < 1 or p_cycle > 36 then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
+  if q.removed_at is not null then return jsonb_build_object('error', 'removed'); end if;
+  if p_cycle > public.quotation_cycles(q.id)
+     or jsonb_array_length(public.quotation_cycle_lines(q.id, p_cycle, p_kind)) = 0 then
+    return jsonb_build_object('error', 'nothing');
+  end if;
+  select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = p_cycle and x.kind = p_kind;
+  if r.number is not null then return jsonb_build_object('error', 'invoiced', 'number', r.number); end if;
+  if r.claimed_at is not null and r.claimed_at > now() - interval '10 minutes' then return jsonb_build_object('error', 'creating'); end if;
+  v_contact := public.quotation_invoice_contact(q.id, p_kind);
+  if v_contact is null then return jsonb_build_object('error', 'not-linked'); end if;
+  return jsonb_build_object('ok', true, 'contact_id', v_contact);
+end $$;
+revoke all on function public.quotation_invoice_link_prep(uuid, integer, text) from public, anon;
+grant execute on function public.quotation_invoice_link_prep(uuid, integer, text) to authenticated;
+
+create or replace function public.quotation_invoice_link(p_id uuid, p_cycle int, p_kind text, p_bukku bigint, p_number text, p_amount numeric)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q public.quotations;
+  r public.quotation_invoices;
+  v_num text := nullif(left(btrim(coalesce(p_number, '')), 60), '');
+  v_on text;
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('service', 'budget') or p_cycle is null or p_cycle < 1 or p_cycle > 36
+     or v_num is null or coalesce(p_bukku, 0) <= 0 then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
+  if q.removed_at is not null then return jsonb_build_object('error', 'removed'); end if;
+  if p_cycle > public.quotation_cycles(q.id)
+     or jsonb_array_length(public.quotation_cycle_lines(q.id, p_cycle, p_kind)) = 0 then
+    return jsonb_build_object('error', 'nothing');
+  end if;
+  select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = p_cycle and x.kind = p_kind for update;
+  if r.number is not null then return jsonb_build_object('error', 'invoiced', 'number', r.number); end if;
+  if r.claimed_at is not null and r.claimed_at > now() - interval '10 minutes' then return jsonb_build_object('error', 'creating'); end if;
+  -- One Bukku invoice is one cycle's, or one campaign's.
+  select x2.ref into v_on from public.quotation_invoices i join public.quotations x2 on x2.id = i.quotation_id
+   where (i.bukku_id = p_bukku or upper(i.number) = upper(v_num)) limit 1;
+  if v_on is null then
+    select coalesce(nullif(c.campaign_code, ''), c.title) into v_on from public.campaigns c
+     where c.bukku_invoice_id = p_bukku or upper(coalesce(c.invoice_no, '')) = upper(v_num) limit 1;
+  end if;
+  if v_on is not null then return jsonb_build_object('error', 'taken', 'number', v_num, 'on', v_on); end if;
+  insert into public.quotation_invoices (quotation_id, cycle, kind, bukku_id, number, amount, currency, made_at, made_by)
+  values (q.id, p_cycle, p_kind, p_bukku, v_num, p_amount, case when q.totals->>'currency' = 'SGD' then 'SGD' else 'MYR' end, now(), me.id)
+  on conflict (quotation_id, cycle, kind) do update
+     set bukku_id = excluded.bukku_id, number = excluded.number, amount = excluded.amount, currency = excluded.currency,
+         made_at = now(), made_by = me.id, claimed_at = null, claimed_by = null;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.billing', q.brand, q.ref || ' · ' ||
+          case when p_kind = 'budget' then 'Advertising budget invoice ' else 'Invoice ' end ||
+          v_num || ' linked from Bukku' ||
+          case when public.quotation_cycles(q.id) > 1 then ' · Month ' || p_cycle else '' end);
+  return jsonb_build_object('ok', true, 'number', v_num);
+end $$;
+revoke all on function public.quotation_invoice_link(uuid, integer, text, bigint, text, numeric) from public, anon;
+grant execute on function public.quotation_invoice_link(uuid, integer, text, bigint, text, numeric) to authenticated;
+
+create or replace function public.quotation_invoice_unlink(p_id uuid, p_cycle int, p_kind text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q public.quotations;
+  r public.quotation_invoices;
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = p_cycle and x.kind = p_kind for update;
+  if r.number is null then return jsonb_build_object('error', 'not-linked'); end if;
+  update public.quotation_invoices x set bukku_id = null, number = null, amount = null, currency = null, made_at = null, made_by = null
+   where x.quotation_id = q.id and x.cycle = p_cycle and x.kind = p_kind;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.billing', q.brand, q.ref || ' · ' ||
+          case when p_kind = 'budget' then 'Advertising budget invoice ' else 'Invoice ' end ||
+          r.number || ' unlinked' ||
+          case when public.quotation_cycles(q.id) > 1 then ' · Month ' || p_cycle else '' end);
+  return jsonb_build_object('ok', true, 'number', r.number, 'bukku', r.bukku_id);
+end $$;
+revoke all on function public.quotation_invoice_unlink(uuid, integer, text) from public, anon;
+grant execute on function public.quotation_invoice_unlink(uuid, integer, text) to authenticated;
+
+-- END OF QUOTATION INVOICE LINKED FROM BUKKU ---------------------------------
+
+-- ===========================================================================
 -- QUOTATION BRAND AND COMPANY PICK (2026-11-27)
 -- ===========================================================================
 -- WHY: ADP/QT2611-B02 kept the prospect's typed brand ("BIZGROWTH") after
