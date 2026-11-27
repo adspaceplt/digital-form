@@ -80,9 +80,7 @@
     elClose = el('button', 'iconbtn');
     elClose.type = 'button';
     elClose.setAttribute('aria-label', 'Close');
-    elClose.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-      + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-      + '<path d="M6 6l12 12M18 6 6 18"/></svg>';
+    elClose.innerHTML = window.ADspaceIcons.glyph('x');
     head.appendChild(elTitle);
     head.appendChild(elClose);
 
@@ -548,9 +546,7 @@
      wrote is kept (a caption or a script saved, a report submitted), never
      for words typed by hand. The tick is the declaration; the page files it
      under the record. One copy of the words, one glyph for every AI act. */
-  var AI_GLYPH = '<svg class="ai-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
-    'stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 4.4L17 10l-4.4 1.6L11 16l-1.6-4.4L5 10l4.4-1.6z"/>' +
-    '<path d="M18 14.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>';
+  var AI_GLYPH = window.ADspaceIcons.glyph('sparkle', 'ai-mark');
   var AI_TICK = 'I have read and checked it, and I take responsibility for its accuracy.';
   function aiLine(what) {
     return 'This ' + what + ' was written with AI. Read it in full and check every fact, figure, name, price and claim. ' +

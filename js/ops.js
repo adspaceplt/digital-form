@@ -25,8 +25,7 @@
   var GRP = window.ADspaceGroup;
   var bridge = window.ADspaceAdmin || {};
   /* The chevron a way somewhere ends on (the console Overview's own mark). */
-  var CHEV_S = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV_S = window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
   if (!API || !API.configured || !db || !UI || !GRP) return;
 
   function $(id) { return document.getElementById(id); }
@@ -2296,7 +2295,7 @@
     var x = extrasOf(t);
     if (!x || x.rem < 1) return '';
     return '<span class="trem" role="img" aria-label="' + x.rem + (x.rem === 1 ? ' remark' : ' remarks') + '">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 5.4 15.3A8 8 0 1 1 8.6 18.6z"/></svg>' + x.rem + '</span>';
+      window.ADspaceIcons.glyph('chat') + x.rem + '</span>';
   }
   function fmtTag(t) { var f = formatShort(t); return f ? '<span class="chip tfmt">' + esc(f) + '</span>' : ''; }
 
@@ -2320,10 +2319,7 @@
            with the select below it, which every card carries. */
         (mayMove(t) && !isFinished(t)
           ? '<span class="bcard-grip" aria-hidden="true" title="Drag to move stage">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/>' +
-            '<circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/>' +
-            '<circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/>' +
-            '<circle cx="15" cy="18" r="1.6"/></svg></span>'
+            window.ADspaceIcons.glyph('grip') + '</span>'
           : '') + '</div>' +
       '<div class="bcard-top">' + (t.client_id && A && A.clientMark ? A.clientMark(t.clients || {}, t.client_id) : '') +
         (client ? '<span class="bcard-client">' + esc(client) + '</span>' : '') +
@@ -2514,13 +2510,10 @@
     /* The short month draws under 360px, where "September 2026" with its two
        arrows and Today ran past the gutter; the day labels already say Sept. */
     var short = monthWord(m);
-    var chev = function (path) {
-      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
-    };
     var html = '<div class="calbar">' +
-      '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
+      '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + window.ADspaceIcons.glyph('chevleft') + '</button>' +
       '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
-      '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
+      '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + window.ADspaceIcons.glyph('chevron') + '</button>' +
       '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Post</span>' +
         '<span class="cal-key-meet">Meeting</span><span class="cal-key-rep">Report</span><span class="cal-key-month">Month</span></span>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
@@ -2752,16 +2745,12 @@
        and never the green of work that was done. */
     var cancelled = Boolean(t.cancelled_at);
     var done = cancelled ? 0 : fin ? n : Math.max(0, at);
-    var r = 7, len = 2 * Math.PI * r, off = len * (1 - (n ? done / n : 0));
     var said = cancelled ? 'Cancelled' : fin ? 'Finished' : n && at > -1 ? 'Step ' + (at + 1) + ' of ' + n : stageLabel(t);
     /* Finished is the filled green tick, never a full ring. */
     if (fin && !cancelled) {
-      return '<svg class="ring-done tring" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
-        '<circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
+      return window.ADspaceIcons.ring(1, 1, 'tring', 'role="img" aria-label="' + esc(said) + '"');
     }
-    return '<svg class="ring tring" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
-      '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
-      '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>';
+    return window.ADspaceIcons.ring(done, n, 'tring', 'role="img" aria-label="' + esc(said) + '"');
   }
   /* The due cell's words: the date and how far off it is, with what the date
      is for where it is not the final due (a publish date, a review date). */
@@ -3118,7 +3107,7 @@
     if (!items) return '';
     return '<span class="kmenu-wrap">' +
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(t.title) + '">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
+        window.ADspaceIcons.glyph('more') + '</button>' +
       '<span class="kmenu" hidden role="menu">' + items + '</span></span>';
   }
   function wireRowMenu(el, t, done) {
@@ -3585,8 +3574,8 @@
     $('dwDescEdit').hidden = !work || fin;
     /* The card's quiet action carries its glyph like the others do. */
     $('dwDescEdit').innerHTML = (desc
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add');
+      ? window.ADspaceIcons.glyph('pen') + 'Edit'
+      : window.ADspaceIcons.glyph('plus') + 'Add');
     $('dwDescSec').hidden = !desc && (!work || fin);
 
     // Checklist
@@ -3798,7 +3787,7 @@
         line.textContent = 'Not started · ' + spanDates(sp);
         if (!may('reports', 'work') || isFinished(t)) { act.innerHTML = ''; return; }
         act.innerHTML = '<button class="btn btn-sm" type="button" id="dwReportStart">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Start report</button>';
+          window.ADspaceIcons.glyph('plus') + 'Start report</button>';
         var b = $('dwReportStart');
         b.addEventListener('click', function () {
           b.disabled = true;
@@ -3837,7 +3826,7 @@
   function itemMenu(label, items) {
     return '<span class="kmenu-wrap">' +
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(label) + '">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
+        window.ADspaceIcons.glyph('more') + '</button>' +
       '<span class="kmenu" hidden role="menu">' + items.map(function (x) {
         return window.ADspaceMenu.item(x[0], x[1], '', 'data-i');
       }).join('') + '</span></span>';
@@ -4410,7 +4399,7 @@
   }
   /* A finished task is rated on the card that says it is finished: one to
      five, changeable, each rating a line in its history. */
-  var STAR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
+  var STAR = window.ADspaceIcons.glyph('star');
   function paintRate(b, t, n) {
     if (!b.rate) return;
     var show = Boolean(n.rate) && Boolean(t.completed_at);
@@ -4755,7 +4744,7 @@
       sheet('tplSheet', true);
     });
   }
-  var TPL_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var TPL_DOTS = window.ADspaceIcons.glyph('more');
   function varsOf(id) { return tplVars.filter(function (v) { return v.template_id === id; }); }
   function paintTplList() {
     var words = {};
@@ -5951,7 +5940,7 @@
   }
 
   // ---- The rail ------------------------------------------------------------
-  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PEN_SVG = window.ADspaceIcons.glyph('pen');
   function frow(label, value, extra) {
     return '<div><dt>' + esc(label) + '</dt><dd>' + value + (extra || '') + '</dd></div>';
   }
@@ -6932,11 +6921,11 @@
      out (the user, 2026-10-06): Draft due (ready for AQC review), Due date
      (to the client) and Post date. With more than one piece the brief
      leaves, and Create names the count. */
-  var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var X_MARK = window.ADspaceIcons.glyph('x');
   /* An add carries its plus wherever it is drawn (the bar's New task, a
      month's Add task). */
-  var PLUS_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var PLUS_MARK = window.ADspaceIcons.glyph('plus');
+  var PEN_MARK = window.ADspaceIcons.glyph('pen');
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
     var ty = row.querySelector('.piece-type select');
@@ -7698,7 +7687,7 @@
             return '<option value="' + esc(c.id) + '"' + (c.id === pick.id ? ' selected' : '') + '>' + esc(clientName(c)) +
               (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
           }).join('') + '</select></span>' +
-        '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
+        '<span class="cmdbar-find">' + window.ADspaceIcons.glyph('search') +
           '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
         '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
           '<option value="open">Open</option><option value="active">In progress</option>' +
@@ -7712,7 +7701,7 @@
           (canWork
             ? '<span class="cw-eng"><button class="btn btn-sm" id="cwEng" type="button" hidden>New month</button></span>' +
               '<button class="btn btn-sm btn-primary" id="cwNew" type="button">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add task</button>'
+                window.ADspaceIcons.glyph('plus') + 'Add task</button>'
             : '') +
           '</span></span>' +
       '</div>' +

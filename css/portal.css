@@ -4976,11 +4976,8 @@ body > .shell { width: 100%; }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* What differs from the section, said while its parts are shut. */
 .permsec-diff { grid-area: diff; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
-.is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name tog" "seg seg" "desc desc" "diff diff" "parts parts"; row-gap: 8px; }
-/* Four levels across a phone's panel: four pixels each side keep every
-   level whole (Team audit, 2026-10-03); narrower still, the segment's own
-   measure wraps it into two columns. */
-.is-narrow .permsec .seg-opt { padding: 0 4px; }
+/* A phone: the name, then its segment at the right edge, Advanced under. */
+.is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "seg seg" "desc tog" "diff diff" "parts parts"; row-gap: 8px; }
 /* The fold names how many differ; it clears the control floor with the
    negative block margin the ⋯ uses, so its line keeps the words' height. */
 /* Advanced: a quiet small button with the shared chevron (2026-11-26, the
@@ -8089,8 +8086,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    right bell, sign out, 中文 (the user, 2026-09-28): the same height, the
    same corner, the same tonal ground. A circle, a bare glyph and a bordered
    box side by side read as three kinds of thing.
-   On a phone the name the page is for takes two lines, its label over it,
-   because one line left it "Signed in as k…".
+   On a phone the name takes two lines, its label over it; under 400, the
+   name alone.
    ========================================================================= */
 .topbar .chrome-actions { gap: 8px; }
 .topbar .chrome-actions > .pill,
@@ -8115,6 +8112,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .topbar #portalOut > #portalOutWord { display: none; }
   .topbar .brand-for { display: grid; line-height: 1.25; }
   .topbar .brand-for b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 400px) {
+  .topbar .brand-for { grid-template-columns: minmax(0, 1fr); }
+  .topbar .brand-for-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 
 /* =========================================================================
@@ -8901,6 +8902,7 @@ body.is-maint { overflow: hidden; }
 @media (max-width: 640px) {
   .console .annbar { margin: 12px 16px 0; }
   .topbar + .annbar, .demobar + .annbar { padding-left: 16px; padding-right: 4px; }
+  .topbar + .annbar.demobar { padding-right: 16px; }
 }
 /* The console's list: a section an audience, every announcement a row, those
    live or set for later first; a stopped or ended one's words are faded, its
@@ -10339,7 +10341,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (hover: hover) { .queue .qrow:not(.is-on):hover { background: var(--sunk); } }
 
 .cx-journey.has-discs { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; margin: 16px 0 4px; }
-.cx-journey.has-discs li { position: relative; justify-items: center; align-content: start; grid-auto-rows: min-content; text-align: center; gap: 4px; }
+.cx-journey.has-discs li { position: relative; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; grid-auto-rows: min-content; text-align: center; gap: 4px; }
 .cx-journey.has-discs li::before { position: absolute; top: 17px; left: calc(-50% + 22px); right: calc(50% + 22px); height: 2px; border-radius: 0; }
 .cx-journey.has-discs li:first-child::before { content: none; }
 .cx-journey.has-discs li.is-done::before, .cx-journey.has-discs li.is-now::before { background: var(--ok-solid); }

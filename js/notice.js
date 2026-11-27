@@ -13,9 +13,9 @@
  */
 (function () {
   var API = window.ADspaceAPI;
-  var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var X = window.ADspaceIcons.glyph('x');
+  var DOTS = window.ADspaceIcons.glyph('more');
+  var PLUS = window.ADspaceIcons.glyph('plus');
   var TITLE_MAX = 120, BODY_MAX = 1000;
 
   function db() { return API && API.client; }

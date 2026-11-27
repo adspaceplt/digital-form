@@ -136,15 +136,29 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   fourth copy, `tests/pwapdf.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
-- `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
-  `journey(words, at)`) is the client pages' one icon set, the leaving mark
-  (`out`, the drawing `js/acts.js` holds) and the chevron among them (outline glyphs at
-  15px, stroke 1.8, in ink; never filled or coloured; a name it does not hold
-  draws nothing) and the booking's one step track (`.cx-journey`), drawn
+- `js/icons.js` is the one glyph set of every page, console and client
+  alike (the user, 2026-11-26), and its drawing the standard: 24 grid,
+  stroke 1.8, round ends, outline in ink, never filled or coloured; a new
+  glyph is drawn the same way, never copied from elsewhere. One thing, one
+  glyph, everywhere: a section, a record or a part of one is asked for by
+  its meaning (`MEANS`: `scripts`, `review`, `campaigns`, `meetings`,
+  `invoices`, `edit`, `send` …), so the rail, tab bar, search, bell and
+  records draw what the client portal, /quote/ and the creator pages draw.
+  A script asks `ADspaceIcons.glyph(name, cls, attrs)` where its place
+  sizes the glyph (the console) or `svg(name, cls)` for the 15px `.ic`;
+  a page's markup writes `<svg data-ic="name"></svg>` and the set draws it
+  on load; a ring of progress, a signature and a plotted line are
+  `ring()` / `drawing()`; `js/acts.js` names its acts' glyphs from the set.
+  No script writes an `<svg>` but the set, `chart.js`, `frames.js` and
+  `mockups.js`; a name it does not hold draws nothing (`tests/glyphs.js`).
+  `platform(key)`, `journey(words, at)`: the platform glyphs and the booking's one step track (`.cx-journey`), drawn
   alike on the selection page and the creator's page, its words `W.journey`
   in `js/words.js` (Booked, Shoot visit or Delivery, Draft due, Client
   review, Post date, Results; never a bare verb or a word that could read
-  as one, the user, 2026-10-15), each breaking at its space, never cut.
+  as one, the user, 2026-10-15), each breaking at its space, never cut;
+  with discs, each step's column is its part's width, so a name wider than
+  its part never moves its disc off the centre its lines are placed from
+  (`demo` measures every line clear of both discs).
   `mark(key)` is a platform's own mark beside the platform's name where a
   prospect chooses platforms (/quote/): single colour in ink, never a brand
   colour fill, the cut-outs in the card's ground (`.ic-cut`), Meta drawn as

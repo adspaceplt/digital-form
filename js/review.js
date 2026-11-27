@@ -374,20 +374,19 @@
              Request changes as a suggestion the team accepts. */
           '<div class="copyacts">' +
           ((post.caption || post.caption_zh)
-            ? '<button class="btn btn-sm copy-pen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg><span>Edit text</span></button>' : '') +
+            ? '<button class="btn btn-sm copy-pen" type="button">' + window.ADspaceIcons.glyph('pen') + '<span>Edit text</span></button>' : '') +
           /* The portal's small tonal button with the copy mark: it was
              the one outlined button left, and read "a little huge" at a
              full control's height (the user, 2026-09-30). */
           '<button class="btn btn-sm copy-btn" type="button">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>' +
+            window.ADspaceIcons.glyph('copy') +
             '<span>Copy text</span></button>' +
           '</div>' +
         '</div>' +
         html +
         '<button class="linkbtn copy-more" type="button" aria-expanded="false" hidden>' +
           '<span class="copy-more-word">Show full caption</span>' +
-          '<svg class="ovgo-chev copy-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
+          window.ADspaceIcons.glyph('chevdown', 'ovgo-chev copy-more-chev') +
         '</button>';
 
       // Long captions are clamped so cards in a row finish at the same height.
@@ -1051,7 +1050,7 @@
       head.className = 'batch-head';
       head.hidden = !several;
       head.innerHTML =
-        '<svg class="fold-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
+        window.ADspaceIcons.glyph('chevdown', 'fold-caret') +
         '<span class="batch-title">' + escapeHtml(setName(batch)) + '</span>' +
         '<span class="batch-date">' + escapeHtml(postsWord(batch.posts.length)) + '</span>' +
         '<span class="batch-progress"></span>';
@@ -1340,7 +1339,7 @@
     if (document.getElementById('rvPortalBack') || !head) return;
     var a = document.createElement('a');
     a.id = 'rvPortalBack'; a.className = 'backlink'; a.href = '/client/?tab=review';
-    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' + escapeHtml(window.ADspaceWords.en.back || 'Back');
+    a.innerHTML = window.ADspaceIcons.glyph('chevleft') + escapeHtml(window.ADspaceWords.en.back || 'Back');
     var main = document.querySelector('main');
     if (main) main.insertBefore(a, main.firstChild);
   }

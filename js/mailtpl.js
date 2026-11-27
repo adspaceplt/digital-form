@@ -200,9 +200,9 @@
 
   /* ---- The list ---------------------------------------------------------- */
   function msg(text, tone) { var m = $('mtMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (tone ? ' ' + tone : ''); } }
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var DOTS = window.ADspaceIcons.glyph('more');
 
   function paint() {
     var box = $('mtList');

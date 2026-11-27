@@ -189,11 +189,8 @@
   function setup(opts) { cfg = opts; return heal(); }
 
   /* ---- The bar's bell, on the client pages -------------------------------- */
-  var BELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
-  var BELL_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>' +
-    '<path d="M3 8.5a8 8 0 0 1 2.2-4"/><path d="M21 8.5a8 8 0 0 0-2.2-4"/></svg>';
+  var BELL = window.ADspaceIcons.glyph('bell');
+  var BELL_ON = window.ADspaceIcons.glyph('bellring');
 
   var ui = null;           // { btn, pop, line, go, msg, words() }
   var isOn = false, reason = '';
@@ -244,7 +241,7 @@
       pop.setAttribute('role', 'dialog');
       pop.setAttribute('aria-labelledby', 'pushPopTitle');
       pop.innerHTML = '<div class="popcard-head"><p class="pushpop-title" id="pushPopTitle"></p>' +
-        '<button class="iconbtn popcard-x" id="pushX" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+        '<button class="iconbtn popcard-x" id="pushX" type="button">' + window.ADspaceIcons.glyph('x') + '</button></div>' +
         '<p class="pushpop-line" id="pushPopLine"></p>' +
         '<div class="pushpop-acts"><button class="btn btn-sm" id="pushGo" type="button"></button></div>' +
         '<p class="msg err" id="pushMsg" role="status" hidden></p>';

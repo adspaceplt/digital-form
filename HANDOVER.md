@@ -1,20 +1,18 @@
-# Handover (26 Nov 2026, 13:20 UTC)
+# Handover (27 Nov 2026, 00:40 UTC)
 
 The single source of truth for work in flight. A fresh session reads this file,
 then CLAUDE.md (§3 **Token economy** is binding), then the PR or branch of the
 item it takes. The previous coordinator session ended here; nothing lives in it.
 
-## Running now (coordinator session_01RVzkaP4WzcjZDWEysZw37c; at most four sessions)
+## Running now (coordinator session_01RVzkaPPW14NcAA63Kz5Sf2; at most four sessions)
 
 | Session | Work | When done |
 |---|---|---|
-| C `session_01RVzkaLum5dPvcA9b8Pkfzv` | F8: quotation drafts (`ADP/QT{YYMM}-DRAFT`, Confirm quotation assigns the serial; website requests `ADP/REQ{YYMM}-{AAA}`; revisions `-R1`). Its worker dropped at 13:27; told at 14:20 to merge main, re-run affected and merge | Merges itself |
-| F `session_01RVzkaPPWFkP4TvAS61BgEd` | #1496 and #1500 merged. Left: Numbering (one part in Settings), once F8 is on main | Message F when F8 merges |
-| H `session_01RVzkaMzHTsWjccfqE6Hemb` | The surface comparison Artifact (6 screens × v3, cards, shaded, 1280 and 390); no repo change | Sends the link to the coordinator |
+| O `session_01RVzkaPZsbDxdJeDU96S2pn` | Content Review top redesign, branch `claude/review-top` (both repos), migration `2026-11-27-review-feed-content-month.sql` (pages first). Tests pass; screenshots with the user | On the user's OK: send_message O "go" (it merges, applies the migration, reports the build); then archive |
 
 G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: `bukku-sync` from main 8803a982 (index.ts 140 KB, too large for one connector call) is being deployed by session `session_01RVzkaQdpVPqkzAb7ChdveC` through the Management API; `SUPABASE_ACCESS_TOKEN` is now set in the environment for later deploys. PDF item 13 (the Rate Card discount sign, as G proposed in #1499/#1501's handover) is approved by the user ("2 ok"): build it, with its suite edit, on the next documents/PDF train.
 
-## Queue (in order, as release trains; coordinator session_01RVzkaP4WzcjZDWEysZw37c)
+## Queue (in order, as release trains)
 
 1. **Build quote and TERMS fit**: merged, #1497.
 2. **Surface tokens and `data-layout`**: merged, #1502 (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
@@ -26,15 +24,15 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
    - Client feedback → Performance and the Dashboard: a client's ratings feed the account manager's month and the client's standing.
    - Short Links → client record: a link belongs to a client or campaign, and its clicks show on that record.
    On hold ("1 2 6 8 on hold until further notice"; STANDARD.md §24): the closed loop from quotation to report, quotation → Bukku invoices, Outstation → My Work and claims, Meta reports → Analytics.
-6. **One glyph set**: `js/icons.js` the one icon set for the console and every page; the ~289 inline SVGs in ~40 scripts replaced by named glyphs; `acts.js` and the section marks read from it; a suite (`tests/glyphs.js`, in `affected.json`) fails a new inline `<svg>` in `js/` outside `icons.js`. Check the weight budget.
+6. **One glyph set**: merged, #1517 (N), 261127.67f8; tests #308.
 7. **Automatic `?v=` stamps** from the commit at the Pages build; `admin/sw.js` never caches an unstamped file.
 8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
-9. **Full gate on main** in its own session (`bash tests/snap.sh all`, 2-hour limit).
+9. **Full gate on main**: run 27 Nov on 7158470 (P, #1519); its findings shipped as #1520 and #1521 (Q). Next full gate after the next day's merges.
+10. J's other 17 review findings (J's handover on #1507).
 
 ## Logged defects (fail on main, not yet fixed)
 
-`pdfreal`: three letters' head and foot checks fail on main 8e9224f (`docs/rules/logged-defects.md`).
-`hiringiv`, `hiringheld` and `waapprove` fail from #1479's relabelled Settings sheets (`docs/rules/logged-defects.md`). F's Settings release is the natural place to fix them.
+`docs/rules/logged-defects.md`: load flakes in demo, crm, hiringsql, quotes, outstationsql; sql's UTC-day check and its wa_compose_prepare band check.
 
 ## Done today (builds as the rail shows them)
 
@@ -68,6 +66,13 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1507 Client pages train (J): six portal tabs, creator pages in sections, v3 plain white on every client page | 261126.f307 |
 | #1508 Interview missed (K): Did not attend (Offer a new time, Close application), Interview completed; migration live, hiring-mail v22 | 261126.2c18 |
 | #1511 One request reference (L): ADP/REQ{YYMM}-{AAA} on details, supplier, careers, client portal requests and feedback, unique across kinds; migration live, no edge function; tests #304 | 261127.a163 |
+| #1513 Hotfix (M): a leaver's health data kept its six months (inactive stamp on every update; migration live); Build quote keeps its key on a settings re-read; tests #305 | 261127.c7a6 |
+| #1514 Team › Groups (M): each section's levels as wide as its own, no empty slots; tests #306 | 261127.5f23 |
+| #1515 Step track (M): every line clear of its discs; the bar's name alone under 400px; Exit demo's gutter; tests #307 (weight +0.1 KB on three client pages) | 261127.39bd |
+| #1519 Full gate findings logged (P) | 261127.f805 |
+| #1520 Trip card controls at full height; stale suites corrected (Q); tests #309 | 261127.b06a |
+| #1521 pdfreal reads the printed verify address (Q); tests #310 | 261127.fd37 |
+| #1517 One glyph set (N): every page draws from `js/icons.js`, one meaning one glyph (`MEANS`), WhatsApp's own mark on wa.me links; `tests/glyphs.js`; weight budgets raised with reason | 261127.67f8 |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
@@ -79,4 +84,7 @@ Also done:
 Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
 1. go.adspace.me's DNS stays for now; its removal is a future update.
-2. Approve the expectations changed in #1497 (TERMS placement, View quote at a desk) and F's #1496 and #1500 (with the console weight budget +1.1 KB and the SKBBK line).
+2. Approve the expectations changed in #1496, #1497, #1500, #1504, #1506, #1508, #1511 (quoteconfirmsql), #1514, #1515, #1517, #1520 (weight budgets +0.1–3.9 KB a client page, namecard +10.6 KB) and the SKBBK line.
+3. OK to merge O (Content Review +1.4 KB, 404 +0.1 KB; English only, or 中文 too).
+4. Meetings glyph = calendar (same as dates): keep?
+5. A read-only white-label readiness audit: queue it?

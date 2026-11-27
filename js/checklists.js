@@ -32,7 +32,7 @@
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.', 'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   var AI = function () { return (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || ''; };
-  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var TICK = window.ADspaceIcons.glyph('chevron');
   function said(e) {
     if (!e) return '';
     var m = String(e.message || e);
@@ -128,8 +128,8 @@
   /* Read first (the user, 2026-10-15: "the checklist is coming back in the
      wrong design"): a tick is pressed where it is read, every other answer
      reads as a fact, and the section's Edit opens its fields in a sheet. */
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
-  var XMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var XMARK = window.ADspaceIcons.glyph('x');
   function tickHtml(d, s, it, can) {
     var key = s.key + '.' + it.key, a = d.answers[key] || {}, hint = (d.hints || {})[key];
     var done = a.state === 'done', na = a.state === 'na';
@@ -192,12 +192,12 @@
   function paint() {
     var d = V.data, c = count(d), st = stateOf(d), na = d.sections_na || [];
     var cl = V.ctx.client, can = editable(d);
-    var html = '<button class="backlink ck-back" type="button" data-a="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>All checklists</button>' +
+    var html = '<button class="backlink ck-back" type="button" data-a="back">' + window.ADspaceIcons.glyph('back') + 'All checklists</button>' +
       '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Version ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
       '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
       (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" data-gate="ai:checklist" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
       '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>' +
+        window.ADspaceIcons.glyph('out') + '</button>' +
       '<button class="btn btn-sm" type="button" data-a="pdf">Download</button></div>' +
       '<dl class="ovfacts ck-facts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
         '<div><dt>Project Manager</dt><dd>' + (cl.owner ? esc(cl.owner) : '<span class="muted">Not set</span>') + '</dd></div>' +
@@ -374,7 +374,7 @@
     return '<div class="ck-table" style="--ck-cols:' + cols.length + '"><div class="ck-tr ck-th">' +
       cols.map(function (c) { return '<span>' + esc(c[1]) + '</span>'; }).join('') + '<span></span></div>' +
       rows.map(function (r, i) { return edRow(cols, r, i); }).join('') + '</div>' +
-      '<button class="btn btn-sm ck-addrow" type="button" data-a="addrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add row</button>';
+      '<button class="btn btn-sm ck-addrow" type="button" data-a="addrow">' + window.ADspaceIcons.glyph('plus') + 'Add row</button>';
   }
   function edRow(cols, r, i) {
     return '<div class="ck-tr" data-row="' + i + '">' + cols.map(function (c) {
@@ -603,7 +603,7 @@
       box.className = 'sheet'; box.id = 'ckAiSheet'; box.hidden = true;
       box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ckAiTitle" tabindex="-1" data-narrow="560">' +
         '<div class="sheet-head"><h3 id="ckAiTitle">Written by AI</h3><button class="iconbtn" type="button" data-a="x" aria-label="Close">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+        window.ADspaceIcons.glyph('x') + '</button></div>' +
         '<div class="sheet-body" data-m="body"></div>' +
         '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="apply">Apply</button><button class="btn-quiet" type="button" data-a="cancel">Cancel</button></div></div>';
       document.body.appendChild(box);

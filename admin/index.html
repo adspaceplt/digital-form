@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126rvt">
-<link rel="stylesheet" href="/css/console.css?v=20261126cpt">
+<link rel="stylesheet" href="/css/portal.css?v=20261127rv">
+<link rel="stylesheet" href="/css/console.css?v=20261127">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -130,38 +130,38 @@
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261126ge"></script>
+<script src="/js/icons.js?v=20261126gm"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
 <script src="/js/captcha.js?v=20261122zzs"></script>
-<script src="/js/words.js?v=20261126rvu"></script>
+<script src="/js/words.js?v=20261127rv"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
-<script src="/js/icons.js?v=20261126rqb"></script>
 <script src="/js/copy.js?v=20261117zzzf"></script>
-<script src="/js/acts.js?v=20261126lo"></script>
+<script src="/js/acts.js?v=20261126gl"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
-<script src="/js/ask.js?v=20261117zzzf"></script>
-<script src="/js/confirm.js?v=20261126st"></script>
+<script src="/js/ask.js?v=20261126gl"></script>
+<script src="/js/confirm.js?v=20261126gl"></script>
 <script src="/js/sheet.js?v=20261125ar"></script>
-<script src="/js/refresh.js?v=20261117zzzf"></script>
-<script src="/js/form.js?v=20261122zzzc"></script>
+<script src="/js/refresh.js?v=20261126gl"></script>
+<script src="/js/form.js?v=20261126gl"></script>
 <script src="/js/otp.js?v=20261122zzr"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
-<script src="/js/group.js?v=20261126y"></script>
+<script src="/js/group.js?v=20261126gl"></script>
 <script src="/js/menu.js?v=20261126lo"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
-<script src="/js/cmdbar.js?v=20261126y"></script>
+<script src="/js/cmdbar.js?v=20261126gl"></script>
 <script src="/js/records.js?v=20261126gd"></script>
 <script src="/js/chart.js?v=20261125fh"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/trace.js?v=20261124"></script>
 <script src="/js/api.js?v=20261126rfd"></script>
-<script src="/js/delreq.js?v=20261124s"></script>
-<script src="/js/maintenance.js?v=20261126rqb"></script>
-<script src="/js/announce.js?v=20261126rfd"></script>
-<script src="/js/notice.js?v=20261122zzzu"></script>
-<script src="/js/whatsapp.js?v=20261126zm"></script>
-<script src="/js/mailtpl.js?v=20261126zm"></script>
+<script src="/js/delreq.js?v=20261126gl"></script>
+<script src="/js/maintenance.js?v=20261126gm"></script>
+<script src="/js/announce.js?v=20261126gl"></script>
+<script src="/js/notice.js?v=20261126gl"></script>
+<script src="/js/whatsapp.js?v=20261126gl"></script>
+<script src="/js/mailtpl.js?v=20261126gl"></script>
 <script src="/js/docmail.js?v=20261126rfd"></script>
-<script src="/js/push.js?v=20261117zzzf"></script>
+<script src="/js/push.js?v=20261126gl"></script>
 <script src="/js/money.js?v=20261126rfc"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
 <script src="/js/mockups.js?v=20261117zzzf"></script>
@@ -170,7 +170,7 @@
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20261122zzzs" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20261126gl" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -304,63 +304,63 @@
            summary of them rather than one of them. -->
       <div class="navgroup">
         <button class="navitem" data-section="overview" type="button" hidden>
-          <svg class="sec sec-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Dashboard</span>
+          <svg class="sec sec-home" aria-hidden="true" data-ic="overview"></svg><span>Dashboard</span>
         </button>
         <!-- Analytics (2026-10-25): trends and what to expect next, an
              admin's tool (granted part team.analytics). -->
         <button class="navitem" data-section="analytics" type="button" hidden>
-          <svg class="sec sec-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="m4 15 5-5 4 3 7-7"/><path d="M15 6h5v5"/></svg><span>Analytics</span>
+          <svg class="sec sec-home" aria-hidden="true" data-ic="analytics"></svg><span>Analytics</span>
         </button>
       </div>
       <div class="navgroup">
         <span class="sidebar-label">Work</span>
         <button class="navitem" data-section="work" type="button" hidden>
-          <svg class="sec sec-work" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/><path d="m9.5 13 1.8 1.8 3.4-3.6"/></svg><span>My Work</span>
+          <svg class="sec sec-work" aria-hidden="true" data-ic="work"></svg><span>My Work</span>
         </button>
         <button class="navitem" data-section="review" type="button">
-          <svg class="sec sec-review" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
+          <svg class="sec sec-review" aria-hidden="true" data-ic="review"></svg><span>Content Review</span>
         </button>
         <button class="navitem" data-section="scripts" type="button" hidden>
-          <svg class="sec sec-scripts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.8"/><path d="M3 9 19.5 4.6a1 1 0 0 1 1.2.7l.5 1.9"/><path d="m8 7.7 2.4 1.3M13.4 6.3l2.4 1.3"/><path d="M7 14h10M7 17.5h6"/></svg><span>Video Scripts</span>
+          <svg class="sec sec-scripts" aria-hidden="true" data-ic="scripts"></svg><span>Video Scripts</span>
         </button>
         <!-- Every client's reports in one place, and where a new one is
              started: the report type, the client, the month. -->
         <button class="navitem" data-section="reports" type="button" hidden>
-          <svg class="sec sec-reports" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
+          <svg class="sec sec-reports" aria-hidden="true" data-ic="reports"></svg><span>Reports</span>
         </button>
         <!-- Messages (WhatsApp 2026-10-10, js/whatsapp.js; Messages from
              2026-11-04): every WhatsApp message and every email the portal
              sent, each with its delivery status, and the composer. Last in
              Work (the user, 2026-10-10). The key stays `whatsapp`. -->
         <button class="navitem" data-section="whatsapp" type="button" hidden>
-          <svg class="sec sec-messages" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>Messages</span>
+          <svg class="sec sec-messages" aria-hidden="true" data-ic="messages"></svg><span>Messages</span>
         </button>
       </div>
       <div class="navgroup">
         <span class="sidebar-label">Partners</span>
         <button class="navitem" data-section="clients" type="button">
-          <svg class="sec sec-clients" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+          <svg class="sec sec-clients" aria-hidden="true" data-ic="clients"></svg><span>Clients</span>
         </button>
         <button class="navitem" data-section="campaigns" type="button">
-          <svg class="sec sec-campaigns" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creators</span>
+          <svg class="sec sec-campaigns" aria-hidden="true" data-ic="campaigns"></svg><span>Creators</span>
         </button>
         <button class="navitem" data-section="suppliers" type="button" hidden>
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 4l9 5.5"/><path d="M5 9v10h14V9"/><path d="M9.5 19v-5h5v5"/></svg><span>Suppliers</span>
+          <svg class="sec sec-int" aria-hidden="true" data-ic="suppliers"></svg><span>Suppliers</span>
         </button>
       </div>
       <div class="navgroup">
         <span class="sidebar-label">Company</span>
         <button class="navitem" data-section="register" type="button" hidden>
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
+          <svg class="sec sec-int" aria-hidden="true" data-ic="register"></svg><span>Documents</span>
         </button>
         <button class="navitem" data-section="services" type="button">
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
+          <svg class="sec sec-int" aria-hidden="true" data-ic="services"></svg><span>Services</span>
         </button>
         <button class="navitem" data-section="links" type="button">
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
+          <svg class="sec sec-int" aria-hidden="true" data-ic="links"></svg><span>Short Links</span>
         </button>
         <button class="navitem" data-section="team" type="button" hidden>
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
+          <svg class="sec sec-int" aria-hidden="true" data-ic="team"></svg><span>Team</span>
         </button>
       </div>
     </nav>
@@ -384,23 +384,23 @@
          bar. -->
     <div class="sidebar-foot">
       <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" title="Arrange sections" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg>
+        <svg aria-hidden="true" data-ic="arrange"></svg>
       </button>
       <!-- The Handbook (2026-11-11): read on arrival and kept at hand, a mark
            beside Settings', never a section of the rail. -->
       <button class="railrow railfoot" id="handbookOpen" type="button" aria-label="Handbook" title="Handbook" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg>
+        <svg aria-hidden="true" data-ic="book"></svg>
       </button>
       <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        <svg aria-hidden="true" data-ic="settings"></svg>
       </button>
       <!-- Delete requests (2026-11-17): an admin's alone, its red dot while
            any waits. -->
       <button class="railrow railfoot" id="delReqOpen" type="button" aria-label="Delete requests" title="Delete requests" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span class="railfoot-dot" hidden><span class="sr"></span></span>
+        <svg aria-hidden="true" data-ic="trash"></svg><span class="railfoot-dot" hidden><span class="sr"></span></span>
       </button>
       <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
+        <svg aria-hidden="true" data-ic="activity"></svg>
       </button>
       <!-- The build this console is running, from /version.json; a press
            refreshes the app (the user, 2026-10-12), in place of the account
@@ -419,7 +419,7 @@
   <div class="console-main">
     <header class="console-head">
       <button class="navtoggle" id="navToggle" type="button" aria-label="Sections">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg aria-hidden="true" data-ic="menu"></svg>
       </button>
       <!-- The section's name is the control that explains the section: the
            `?` used to sit in the command bar with the list's own controls,
@@ -431,7 +431,7 @@
       <div class="console-headline">
         <button class="console-title" id="sectionTitle" type="button" aria-expanded="false" aria-label="Clients, about this section">
           <span class="console-title-word">Clients</span>
-          <svg class="console-title-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg>
+          <svg class="console-title-info" aria-hidden="true" data-ic="info"></svg>
         </button>
         <p class="console-sub"><span class="console-crumb" id="sectionCrumb" hidden></span><span class="console-counts" id="sectionCounts" aria-live="polite"></span></p>
       </div>
@@ -441,8 +441,8 @@
            now, like every other surface in this console. -->
       <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-labelledby="sectionAboutName">
         <div class="popcard-head aboutpop-head">
-          <span class="aboutpop-name"><svg class="aboutpop-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg><span id="sectionAboutName">Clients</span></span>
-          <button class="iconbtn popcard-x" id="sectionAboutHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <span class="aboutpop-name"><svg class="aboutpop-mark" aria-hidden="true" data-ic="info"></svg><span id="sectionAboutName">Clients</span></span>
+          <button class="iconbtn popcard-x" id="sectionAboutHide" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <p class="aboutpop-text" id="sectionAboutText"></p>
         <button class="btn btn-sm aboutpop-guide" id="sectionGuide" type="button" hidden>Show me around</button>
@@ -451,8 +451,8 @@
            from any VIC tag (js/admin.js, `vicTag`). -->
       <div class="kmenu vicpop" id="vicPop" hidden role="dialog" aria-labelledby="vicPopName">
         <div class="popcard-head">
-          <span class="vicpop-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg><span id="vicPopName">Very Important Client (VIC)</span></span>
-          <button class="iconbtn popcard-x" id="vicPopHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <span class="vicpop-name"><svg aria-hidden="true" data-ic="crown"></svg><span id="vicPopName">Very Important Client (VIC)</span></span>
+          <button class="iconbtn popcard-x" id="vicPopHide" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <p>Please give this client's requests and work prompt, priority attention.</p>
         <p>Issues on VIC work count double in performance reviews.</p>
@@ -464,7 +464,7 @@
       <div class="kmenu gatewhy" id="gateWhy" hidden role="dialog" aria-labelledby="gateWhyName">
         <div class="popcard-head">
           <span class="gatewhy-name" id="gateWhyName">Email</span>
-          <button class="iconbtn popcard-x" id="gateWhyHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn popcard-x" id="gateWhyHide" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <p id="gateWhyLine"></p>
       </div>
@@ -472,13 +472,13 @@
       <!-- ===== The Assistant (js/agent.js): ask in words; every change waits
            on Confirm. ⌘ J opens it too. Drawn once the script runs. -->
       <button class="headlink headask" id="agentOpen" type="button" data-gate="ai:agent" hidden aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Meta+J Control+J" aria-label="Ask the Assistant" title="Ask the Assistant (⌘ J)">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg><span class="headlink-word">Ask</span>
+        <svg aria-hidden="true" data-ic="sparkle"></svg><span class="headlink-word">Ask</span>
       </button>
       <!-- ===== Console search (js/search.js) =====
            One search across the sections this person may read. ⌘ K
            and "/" open it too. Drawn once the team row has answered. -->
       <button class="headlink headsearch" id="searchOpen" type="button" hidden aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Meta+K Control+K /" aria-label="Search" title="Search (⌘ K)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg><span class="headlink-word">Search</span>
+        <svg aria-hidden="true" data-ic="search"></svg><span class="headlink-word">Search</span>
       </button>
       <!-- ===== end console search ===== -->
 
@@ -492,7 +492,7 @@
            the count is the unread rows and nothing else. -->
       <div class="notif" id="notifWrap" hidden>
         <button class="notif-btn" id="notifBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+          <svg aria-hidden="true" data-ic="bell"></svg>
           <span class="notif-count" id="notifCount" hidden></span>
         </button>
         <div class="kmenu notif-menu" id="notifMenu" hidden>
@@ -515,17 +515,17 @@
                carries a close mark. -->
           <div class="acct-who">
             <span class="acct-who-text"><b id="acctWhoName" hidden></b><span id="whoami"></span></span>
-            <button class="iconbtn acct-x" id="acctClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn acct-x" id="acctClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <!-- A person's own HR records (reviews, recognitions, letters) are
                theirs, so they sit with who you are rather than
                among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My records
+            <svg aria-hidden="true" data-ic="perf"></svg>My records
           </button>
           <!-- The person's own card to hand a client (js/namecard.js). -->
           <button class="kmenu-item" id="myCard" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/></svg>My namecard
+            <svg aria-hidden="true" data-ic="card"></svg>My namecard
           </button>
           <!-- This device: its theme, passkeys, notifications and a fresh copy. -->
           <hr class="acct-sep">
@@ -533,7 +533,7 @@
                "enhance the light or dark mode"): Auto follows the device, Light
                and Dark are kept in this browser. -->
           <div class="kmenu-item acct-theme">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none"/></svg>
+            <svg aria-hidden="true" data-ic="theme"></svg>
             <label class="acct-theme-word" id="themePickLabel" for="themePick">Theme</label>
             <select class="select select-sm" id="themePick" data-seg data-seg-value data-nofind>
               <option value="auto">Auto</option>
@@ -544,13 +544,13 @@
           <!-- A person's own way in, so it sits with who they are. Hidden
                where this browser cannot use a passkey. -->
           <button class="kmenu-item" id="acctPasskeys" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Passkeys
+            <svg aria-hidden="true" data-ic="key"></svg>Passkeys
           </button>
           <!-- Notifications on this device: the bell's own notifications, on the
                phone (js/push.js). A switch, its state at the row's right edge;
                hidden where this browser has no push. The answer is said under it. -->
           <button class="kmenu-item" id="acctPush" type="button" role="switch" aria-checked="false" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="acct-push-word">Notifications</span><span class="acct-val" id="acctPushWord">Off</span>
+            <svg aria-hidden="true" data-ic="bell"></svg><span class="acct-push-word">Notifications</span><span class="acct-val" id="acctPushWord">Off</span>
           </button>
           <p class="msg acct-msg" id="acctPushMsg" role="status" hidden></p>
           <!-- Upgrade mode, Announcements, Notices and WhatsApp's templates are
@@ -558,7 +558,7 @@
                person's own. -->
           <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
+            <svg aria-hidden="true" data-ic="signout"></svg>Sign out
           </button>
         </div>
       </div>
@@ -572,7 +572,7 @@
         <div class="sheet-head">
           <h3 id="mycTitle">My namecard</h3>
           <button class="iconbtn" id="mycClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </div>
         <div class="sheet-body">
@@ -581,10 +581,10 @@
             <span class="ncsheet-url" id="mycUrl"></span>
             <div class="ncsheet-acts">
               <button class="btn btn-sm" id="mycCopy" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>Copy link
+                <svg aria-hidden="true" data-ic="copy"></svg>Copy link
               </button>
               <a class="btn btn-sm" id="mycOpen" target="_blank" rel="noopener">Open
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+                <svg aria-hidden="true" data-ic="out"></svg>
               </a>
             </div>
           </div>
@@ -629,10 +629,10 @@
       <div class="sheet-card searchcard" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
         <div class="sheet-head">
           <h3 id="searchTitle">Search</h3>
-          <button class="iconbtn" id="searchClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="searchClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="searchfield">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input" id="searchQ" type="text" inputmode="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchList" aria-labelledby="searchTitle">
         </div>
         <div class="sheet-body searchbody">
@@ -649,11 +649,11 @@
     <div class="sheet sheet-side agentsheet" id="agentSheet" hidden>
       <div class="sheet-card agentcard" role="dialog" aria-modal="true" aria-labelledby="agentTitle" tabindex="-1">
         <div class="ag-head">
-          <svg class="spark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>
+          <svg class="spark" aria-hidden="true" data-ic="sparkle"></svg>
           <h3 id="agentTitle">Assistant</h3>
           <button class="btn btn-sm" id="agentSched" type="button" aria-expanded="false" aria-controls="agentSchedBox" hidden>Scheduled <span class="tab-n" id="agentSchedN" hidden></span></button>
           <button class="btn btn-quiet btn-sm" id="agentClear" type="button">Clear</button>
-          <button class="iconbtn" id="agentClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="agentClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <section class="ag-sched" id="agentSchedBox" aria-label="Scheduled" hidden><ul class="ag-slist"></ul></section>
         <div class="ag-log" id="agentLog" role="log" aria-live="polite" aria-label="Conversation">
@@ -695,7 +695,7 @@
           <div class="ag-ask">
             <label class="sr" for="agentQ">Ask the Assistant</label>
             <textarea class="ag-q" id="agentQ" rows="1" data-oneline data-nodraft placeholder="Ask about clients, tasks or reports" enterkeyhint="send"></textarea>
-            <button class="ag-send" id="agentSend" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+            <button class="ag-send" id="agentSend" type="submit" aria-label="Send"><svg aria-hidden="true" data-ic="arrowup"></svg></button>
           </div>
           <small class="ag-left" id="agentLeft" hidden></small>
         </form>
@@ -762,7 +762,7 @@
              list is in one place. -->
         <div class="cmdbar" id="crmBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="crmSearch" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
           </span>
           <select class="select select-sm" id="crmStage" aria-label="Filter by stage">
@@ -786,7 +786,7 @@
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage" data-rare data-g="2">Select clients</button>
               <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
-              <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+              <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg aria-hidden="true" data-ic="plus"></svg>Add lead</button>
             </span>
           </span>
         </div>
@@ -795,7 +795,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmAddTitle">
           <div class="sheet-head">
             <h3 id="crmFormTitle">Add lead</h3>
-            <button class="iconbtn" id="crmAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmAddClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <!-- Who they are, who asked, what they asked for; the facts a lead
@@ -897,7 +897,7 @@
       <section id="odView" hidden>
         <div class="cmdbar" id="odBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="odFind" type="search" placeholder="Client or invoice" aria-label="Search overdue invoices" autocomplete="off">
           </span>
           <span class="cmdbar-end">
@@ -925,7 +925,7 @@
       <section id="pynView" hidden>
         <div class="cmdbar" id="pynBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="pynFind" type="search" placeholder="Client or company" aria-label="Search payers" autocomplete="off">
           </span>
           <select class="select select-sm" id="pynCur" aria-label="Currency" data-default="MYR" hidden><option value="MYR">MYR</option></select>
@@ -946,7 +946,7 @@
         <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="odSheetTitle">
           <div class="sheet-head">
             <h3 id="odSheetTitle">Send reminders</h3>
-            <button class="iconbtn" id="odSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="odSheetClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body inv-rv" data-narrow="640">
             <div class="inv-rv-list" id="odRvList" role="group" aria-label="Clients"></div>
@@ -967,7 +967,7 @@
            then the work. The work comes last because none of it can exist
            until the rest is settled. -->
       <div id="crmWork" data-swipe="crmTabs" hidden>
-        <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <button class="backlink" id="crmBack" type="button"><svg aria-hidden="true" data-ic="back"></svg>Back</button>
 
         <!-- Identity, status and the control that changes it, at the top and
              on every pane: what record am I in and where does it stand.
@@ -1001,11 +1001,11 @@
             <div class="rec-ctl">
               <!-- A call or a visit logged from wherever the record is open
                    (2026-10-11); the glyph alone on a narrow pane. -->
-              <button class="btn btn-sm crm-logcall" id="crmLogCall" data-need="clients.calls:work" type="button" aria-label="Log call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span class="crm-logcall-word">Log call</span></button>
+              <button class="btn btn-sm crm-logcall" id="crmLogCall" data-need="clients.calls:work" type="button" aria-label="Log call"><svg aria-hidden="true" data-ic="phone"></svg><span class="crm-logcall-word">Log call</span></button>
               <select class="select state-select" id="crmClientStage" aria-label="Stage"></select><span class="chip-state" id="crmClientStageRead" hidden></span>
               <div class="kmenu-wrap" id="crmClientMenuWrap">
                 <button class="kmenu-btn" id="crmClientMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  <svg aria-hidden="true" data-ic="more"></svg>
                 </button>
                 <div class="kmenu" id="crmClientMenu" hidden role="menu">
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-g="2" data-a="edit">Edit</button>
@@ -1098,13 +1098,13 @@
         <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Contacts</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add contact</button>
         </div>
               <div class="sheet" id="crmContactBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmContactTitle">
           <div class="sheet-head">
             <h3 id="crmContactTitle">Add contact</h3>
-            <button class="iconbtn" id="crmContactClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmContactClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <section class="fsec">
@@ -1164,7 +1164,7 @@
         <section class="rec-part">
         <div class="viewhead" id="crmEmailsHead" hidden>
           <span class="headmark"><h2>Emails</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmNewEmail" type="button" data-gate="email" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
+          <button class="btn btn-quiet btn-sm" id="crmNewEmail" type="button" data-gate="email" hidden><svg aria-hidden="true" data-ic="plus"></svg>New email</button>
         </div>
         <div id="crmEmails" hidden></div>
         </section>
@@ -1180,7 +1180,7 @@
           <div class="viewhead pane-form-head">
             <span class="headmark"><h2>Billing details</h2></span>
             <span class="muted" id="crmBillSummary"></span>
-            <button class="btn btn-sm" id="crmBillEdit" data-need="clients.billing:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
+            <button class="btn btn-sm" id="crmBillEdit" data-need="clients.billing:work" type="button"><svg aria-hidden="true" data-ic="pen"></svg>Edit</button>
           </div>
           <!-- The client's details form (2026-10-14): a link the client fills
                in, the answers waiting here (js/crm.js, js/details.js). It
@@ -1200,7 +1200,7 @@
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmBillTitle">
             <div class="sheet-head">
               <h3 id="crmBillTitle">Billing details</h3>
-              <button class="iconbtn" id="crmBillClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="crmBillClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body" id="crmBillBody">
               <div class="billask" id="crmBillAsk" hidden></div>
@@ -1264,7 +1264,7 @@
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="entAddTitle">
             <div class="sheet-head">
               <h3 id="entAddTitle">Add entity</h3>
-              <button class="iconbtn" id="entAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="entAddClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body">
               <label class="field-label" for="entAddFind">Company</label>
@@ -1293,7 +1293,7 @@
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmBrandTitle">
             <div class="sheet-head">
               <h3 id="crmBrandTitle">Brand profile</h3>
-              <button class="iconbtn" id="crmBrandClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="crmBrandClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body" id="crmBrandBody">
               <!-- Brand profile's three fields need no sections (unslop 2):
@@ -1314,7 +1314,7 @@
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
                       <textarea class="input" id="crmLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-                      <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                      <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg aria-hidden="true" data-ic="upload"></svg>Upload</button>
                       <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
                 </div>
@@ -1370,7 +1370,7 @@
                   <div><label class="field-label" for="crmWlUp" id="crmWlLabel">Wide logo</label>
                     <div class="widelogo" id="crmWlPreview" hidden></div>
                     <div class="wl-acts">
-                      <button class="btn btn-sm" id="crmWlUp" type="button" aria-required="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                      <button class="btn btn-sm" id="crmWlUp" type="button" aria-required="true"><svg aria-hidden="true" data-ic="upload"></svg>Upload</button>
                       <button class="btn btn-sm btn-quiet" id="crmWlOff" type="button">Remove</button>
                       <input id="crmWlFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden data-nodraft>
                     </div></div>
@@ -1393,7 +1393,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmServiceTitle">
           <div class="sheet-head">
             <h3 id="crmServiceTitle">New service line</h3>
-            <button class="iconbtn" id="crmServiceClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmServiceClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <!-- What it is and where it stands, then the price and term, then
@@ -1482,7 +1482,7 @@
         <section class="rec-part" data-need="clients.services:view">
         <div class="viewhead qt-head svc-linehead">
           <span class="headmark"><h2>Service lines</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddService" data-need="clients.services:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add service</button>
         </div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
@@ -1492,7 +1492,7 @@
         <div id="crmRequests" class="rec-part" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Requests</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add request</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add request</button>
         </div>
               <!-- A request the client made on a call or in a chat, recorded
                    by a colleague (2026-10-31). -->
@@ -1500,7 +1500,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReqAddTitle">
           <div class="sheet-head">
             <h3 id="crmReqAddTitle">Add request</h3>
-            <button class="iconbtn" id="crmReqAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmReqAddClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <div class="row">
@@ -1536,7 +1536,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReplyTitle">
           <div class="sheet-head">
             <h3 id="crmReplyTitle">Reply</h3>
-            <button class="iconbtn" id="crmReplyClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmReplyClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <div class="row">
@@ -1564,7 +1564,7 @@
         <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+          <button class="btn btn-quiet btn-sm" id="crmIssueDoc" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Issue document</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
@@ -1584,7 +1584,7 @@
             <div class="sheet-head">
               <h3 id="voidTitle">Void</h3>
               <button class="iconbtn" id="voidClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg aria-hidden="true" data-ic="x"></svg>
               </button>
             </div>
             <div class="sheet-body">
@@ -1609,7 +1609,7 @@
           <div class="sheet-card formsheet qb-card has-side" role="dialog" aria-modal="true" aria-labelledby="qbTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qbTitle">Build quote</h3><p class="qb-for" id="qbFor"></p></div>
-              <button class="iconbtn" id="qbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="qbClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body">
               <aside class="qb-side" id="qbSide" aria-label="Summary"></aside>
@@ -1659,8 +1659,8 @@
                     </div></div>
                 <div class="row fgrid qb-pc">
                 <div id="qbExtras"><span class="field-label">Additional content pieces per month</span>
-                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic (Static)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Graphic (Static) <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
-                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel (up to 60s)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel (up to 60s) <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
+                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer graphic (static)"><svg aria-hidden="true" data-ic="minus"></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic (Static)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more graphic (static)"><svg aria-hidden="true" data-ic="plus"></svg></button><span class="qb-stepname">Graphic (Static) <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
+                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer reel, up to 60 seconds"><svg aria-hidden="true" data-ic="minus"></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel (up to 60s)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more reel, up to 60 seconds"><svg aria-hidden="true" data-ic="plus"></svg></button><span class="qb-stepname">Reel (up to 60s) <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
                 </div>
                 <div id="qbLangCol"><span class="field-label" id="qbLangsLabel">Choose languages</span>
                   <div class="tickstack" id="qbLangs" role="group" aria-labelledby="qbLangsLabel">
@@ -1801,7 +1801,7 @@
           <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgCheckTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qsgCheckTitle">Check and submit</h3><p class="qb-for" id="qsgCheckFor"></p></div>
-              <button class="iconbtn" id="qsgCheckClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="qsgCheckClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body">
               <p class="msg warn qsg-back" id="qsgCheckBack" hidden></p>
@@ -1824,7 +1824,7 @@
           <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgReviewTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qsgReviewTitle">Review</h3><p class="qb-for" id="qsgReviewFor"></p></div>
-              <button class="iconbtn" id="qsgReviewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="qsgReviewClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body">
               <div id="qsgReviewBy"></div>
@@ -1845,7 +1845,7 @@
           <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qiTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qiTitle">Invoices</h3><p class="qb-for" id="qiFor"></p></div>
-              <button class="iconbtn" id="qiClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="qiClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body"><div class="msg" id="qiMsg" role="status"></div><div id="qiBody"></div></div>
           </div>
@@ -1854,7 +1854,7 @@
           <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgPaperTitle">
             <div class="sheet-head">
               <div class="qb-headtext"><h3 id="qsgPaperTitle">Mark signed</h3><p class="qb-for" id="qsgPaperFor"></p></div>
-              <button class="iconbtn" id="qsgPaperClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="qsgPaperClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body">
               <section class="fsec">
@@ -1901,13 +1901,13 @@
         <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-quiet btn-sm" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log call</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Log call</button>
         </div>
               <div class="sheet" id="crmTouchBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmTouchTitle">
           <div class="sheet-head">
             <h3 id="crmTouchTitle">Log call</h3>
-            <button class="iconbtn" id="crmTouchClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="crmTouchClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <!-- What happened, then what comes next: two sections, the dates on
@@ -2023,15 +2023,15 @@
                the database refuses Active until these are filled; the block
                opens Billing, where they are. -->
           <button class="railgate" id="crmGate" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16v.5"/></svg>
+            <svg aria-hidden="true" data-ic="alert"></svg>
             <b>Billing details missing</b>
             <span id="crmGateText"></span>
-            <svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            <svg class="ovgo-chev" aria-hidden="true" data-ic="chevron"></svg>
           </button>
           <!-- A social account its platform has restricted (2026-10-10): red,
                because posting waits on it; Clear is the way back. -->
           <div class="railgate is-restricted" id="crmRestrict" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+            <svg aria-hidden="true" data-ic="block"></svg>
             <b id="crmRestrictWord"></b>
             <span id="crmRestrictText"></span>
             <button class="btn btn-sm railgate-act" id="crmRestrictClear" type="button">Clear</button>
@@ -2068,7 +2068,7 @@
                whole record is one tab away; this is the excerpt. -->
           <div class="railblock rail-after" id="crmRailLogBlock" hidden>
             <div class="railhead"><h3 class="railtitle">Recent activity</h3>
-              <button class="btn btn-quiet btn-sm ovgo" type="button" id="crmLogAll" data-go="activity">View all<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+              <button class="btn btn-quiet btn-sm ovgo" type="button" id="crmLogAll" data-go="activity">View all<svg class="ovgo-chev" aria-hidden="true" data-ic="chevron"></svg></button></div>
             <div id="crmRailLog"></div>
           </div>
           </aside>
@@ -2088,7 +2088,7 @@
          their deliverables; it does not create them. -->
     <div class="cmdbar">
       <span class="cmdbar-find">
-        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <svg aria-hidden="true" data-ic="search"></svg>
         <input class="input input-sm" id="crFind" type="search" placeholder="Search clients" aria-label="Search clients">
       </span>
       <span class="cmdbar-end">
@@ -2096,7 +2096,7 @@
           <span class="cmdbar-count" id="crCount"></span>
         </span>
         <span class="cmdbar-acts">
-          <button class="btn btn-sm btn-primary" id="crEnable" type="button" data-need="review.settings:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Enable client</button>
+          <button class="btn btn-sm btn-primary" id="crEnable" type="button" data-need="review.settings:work" hidden><svg aria-hidden="true" data-ic="plus"></svg>Enable client</button>
         </span>
       </span>
     </div>
@@ -2106,7 +2106,7 @@
 
   <!-- ============ One client ============ -->
   <section id="workspace" hidden>
-    <button class="backlink" id="backToClients" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+    <button class="backlink" id="backToClients" type="button"><svg aria-hidden="true" data-ic="back"></svg>Back</button>
 
     <!-- The client as a record, the shape Clients and Campaigns take: the mark,
          the name and its handles, and one ⋯ for what acts on the whole
@@ -2121,7 +2121,7 @@
         <div class="rec-ctl">
           <span class="chip" id="wsLock" hidden>Access code</span>
           <div class="kmenu-wrap" id="wsMenuWrap">
-            <button class="kmenu-btn" id="wsMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            <button class="kmenu-btn" id="wsMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg aria-hidden="true" data-ic="more"></svg></button>
             <div class="kmenu" id="wsMenu" hidden role="menu">
               <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Set access code</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-g="5" data-need="review.settings:work">Reset link</button>
@@ -2136,8 +2136,8 @@
       <div class="rec-linktools cr-linktools" data-page-link="review">
         <div class="linkbox">
           <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
-          <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-          <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          <button class="btn btn-icon" id="copyLink" type="button"><svg aria-hidden="true" data-ic="copy"></svg><span>Copy link</span></button>
+          <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview <svg aria-hidden="true" data-ic="out"></svg></a>
         </div>
         <div class="linklock" id="wsLinkLock" role="status" hidden></div>
       </div>
@@ -2148,7 +2148,7 @@
     <div class="cr-main">
     <div class="viewhead">
       <span class="headmark"><h2>Content sets</h2></span>
-      <button class="btn btn-primary" id="addBatch" data-need="review.sets:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
+      <button class="btn btn-primary" id="addBatch" data-need="review.sets:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>New content set</button>
     </div>
     <div class="cr-setgroups" id="batchCards"></div>
     <div class="msg" id="setsMsg"></div>
@@ -2169,14 +2169,14 @@
           <div class="rec-who">
             <div class="rec-name">
               <h2 id="setTitle"></h2>
-              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set" data-need="review.sets:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set" data-need="review.sets:work"><svg aria-hidden="true" data-ic="pen"></svg></button>
             </div>
             <p class="rec-id-meta" id="setNote"></p>
           </div>
           <div class="rec-ctl">
             <span class="chip" id="setState"></span>
               <div class="kmenu-wrap" id="setMenuWrap">
-                <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+                <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg aria-hidden="true" data-ic="more"></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
                   <button class="kmenu-item" id="selectPosts" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
                   <button class="kmenu-item" id="arrangePosts" data-g="2" data-need="review.sets:work" type="button" role="menuitem" hidden>Arrange posts</button>
@@ -2193,7 +2193,7 @@
                  aria-hidden="true"></svg>
             <span id="publishLabel">Publish</span>
           </button>
-          <button class="btn btn-icon" id="copySetLink" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+          <button class="btn btn-icon" id="copySetLink" type="button" hidden><svg aria-hidden="true" data-ic="copy"></svg><span>Copy link</span></button>
         </div>
         <div class="msg" id="setMsg"></div>
       </section>
@@ -2254,7 +2254,7 @@
     <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="pairTitle" tabindex="-1">
       <div class="sheet-head">
         <h3 id="pairTitle">Pair covers</h3>
-        <button class="iconbtn" id="pairClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <button class="iconbtn" id="pairClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
       </div>
       <div class="sheet-body">
         <div class="pairlist" id="pairList"></div>
@@ -2271,7 +2271,7 @@
     <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="assetTitle" tabindex="-1">
       <div class="sheet-head">
         <h3 id="assetTitle">Add assets</h3>
-        <button class="iconbtn" id="assetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <button class="iconbtn" id="assetClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
       </div>
       <div class="sheet-body">
       <!-- Step 1: where content comes in -->
@@ -2315,7 +2315,7 @@
       <!-- Step 2: picked, still on this device, until Add to set uploads them -->
       <section class="panel zone-draft" id="draftZone" hidden>
         <div class="zone-head">
-          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+          <svg class="zone-mark" aria-hidden="true" data-ic="clock"></svg>
           <div>
             <b>Pending assets</b>
           </div>
@@ -2355,7 +2355,7 @@
     <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crSettingsTitle" tabindex="-1">
       <div class="sheet-head">
         <h3 id="crSettingsTitle">Access code</h3>
-        <button class="iconbtn" id="crSettingsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <button class="iconbtn" id="crSettingsClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
       </div>
       <div class="sheet-body" id="advancedBody">
         <div class="row">
@@ -2390,7 +2390,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="campFormTitle" tabindex="-1">
           <div class="sheet-head">
             <h3 id="campFormTitle">New campaign</h3>
-            <button class="iconbtn" id="campFormClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="campFormClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
           <!-- Whose campaign it is, then what is being pushed: two sections on
@@ -2458,7 +2458,7 @@
         <nav class="tabrow camptabs" id="campStages" role="tablist" aria-label="Campaign stages" hidden></nav>
         <div class="cmdbar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="campFind" type="search" placeholder="Search campaign or client" aria-label="Search campaigns">
           </span>
           <span class="cmdbar-end">
@@ -2466,7 +2466,7 @@
               <span class="cmdbar-count" id="campCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+              <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>New campaign</button>
             </span>
           </span>
         </div>
@@ -2476,7 +2476,7 @@
 
       <!-- ---- One campaign ---- -->
       <div id="campWork" data-swipe="campTabs" hidden>
-        <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <button class="backlink" id="campBack" type="button"><svg aria-hidden="true" data-ic="back"></svg>Back</button>
 
         <!-- Identity and the one line that says what this campaign is waiting
              on us for, on every pane. A campaign that needs somebody is a
@@ -2507,7 +2507,7 @@
               <span class="chip" id="campState"></span>
               <div class="kmenu-wrap" id="campMenuWrap" data-need="campaigns.campaigns:work">
                 <button class="kmenu-btn" id="campMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  <svg aria-hidden="true" data-ic="more"></svg>
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
                   <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-g="2" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
@@ -2523,9 +2523,9 @@
           <div class="linkbox">
             <input class="input readfield" id="campLink" readonly aria-label="Client link">
             <span class="tone" id="campLinkState"></span>
-            <button class="btn btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+            <button class="btn btn-icon" id="campCopy" type="button"><svg aria-hidden="true" data-ic="copy"></svg><span>Copy link</span></button>
             <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+              <svg aria-hidden="true" data-ic="out"></svg>
             </a>
           </div>
           <div class="linklock" id="campLinkLock" role="status" hidden></div>
@@ -2577,8 +2577,8 @@
              the sections inside it are the moments. -->
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn btn-quiet btn-sm" id="bulkToggle" data-need="campaigns.campaigns:work" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
-          <button class="btn btn-quiet btn-sm" id="showAddOption" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
+          <button class="btn btn-quiet btn-sm" id="bulkToggle" data-need="campaigns.campaigns:work" type="button" hidden><svg aria-hidden="true" data-ic="calendar"></svg>Bulk dates</button>
+          <button class="btn btn-quiet btn-sm" id="showAddOption" data-need="campaigns.campaigns:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add creators</button>
         </div>
 
         <div class="panel" id="bulkBox" hidden>
@@ -2607,7 +2607,7 @@
           <div class="sheet-card formsheet ac-sheet" role="dialog" aria-modal="true" aria-labelledby="optionTitle" tabindex="-1" data-narrow="560">
             <div class="sheet-head">
               <h3 id="optionTitle">Add creators</h3>
-              <button class="iconbtn" id="optionCancel" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="optionCancel" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="cmdbar-views kindseg ac-tabs" id="optionTabs" role="group" aria-label="Add from">
               <button class="acttab is-on" id="optionTabList" type="button" aria-pressed="true">Creators List</button>
@@ -2634,7 +2634,7 @@
                 </div>
                 <label class="field-label" style="margin-top:16px">Profile links</label>
                 <div id="ncProfRows"></div>
-                <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+                <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add link</button>
                 <label class="field-label" style="margin-top:16px">Choose platforms</label>
                 <div id="ncPlatforms"></div>
                 <div class="msg" id="ncDupe"></div>
@@ -2665,7 +2665,7 @@
         <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Schedule</h2></span>
-          <button class="btn btn-quiet btn-sm" id="schedBulk" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+          <button class="btn btn-quiet btn-sm" id="schedBulk" data-need="campaigns.campaigns:work" type="button"><svg aria-hidden="true" data-ic="calendar"></svg>Bulk dates</button>
         </div>
         <!-- Every booked creator's shoot and publish date in one table, which
              is the question a producer asks before any other. The dates are
@@ -2702,8 +2702,8 @@
              leaves again if the confirmation is reverted. -->
         <section class="panel panel-collapse" id="invoicePanel" hidden>
           <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
-            <svg class="disclosure-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+            <svg class="disclosure-caret" aria-hidden="true" data-ic="chevron"></svg>
+            <svg class="disclosure-mark" aria-hidden="true" data-ic="doc"></svg>
             <span>Invoice</span>
             <span class="muted" id="invoiceSummary">Not issued</span>
           </button>
@@ -2764,7 +2764,7 @@
       <div id="payView" hidden>
         <div class="cmdbar" id="cpqBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="cpqFind" type="search" placeholder="Search creator, Job reference or bill" aria-label="Search payments" autocomplete="off">
           </span>
           <select class="select select-sm" id="cpqClient" aria-label="Filter by client" data-default="all"><option value="all">All clients</option></select>
@@ -2791,7 +2791,7 @@
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="cpqSheetTitle" tabindex="-1">
             <div class="sheet-head">
               <div class="cpq-sheet-t"><h3 id="cpqSheetTitle">Payment details</h3><p class="muted cpq-sheet-sub" id="cpqSheetSub"></p></div>
-              <button class="iconbtn" id="cpqSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button class="iconbtn" id="cpqSheetClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
             </div>
             <div class="sheet-body" id="cpqSheetBody"></div>
             <div class="sheet-foot">
@@ -2821,7 +2821,7 @@
             <div class="sheet-head">
               <h3 id="creatorFormTitle">New creator</h3>
               <button class="iconbtn" id="creatorSheetClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg aria-hidden="true" data-ic="x"></svg>
               </button>
             </div>
             <div class="sheet-body">
@@ -2845,7 +2845,7 @@
           <section class="fsec">
             <h4 class="fsec-h">Profile links <small>Full profile URL, one per platform</small></h4>
             <div id="profRows"></div>
-            <button class="btn btn-quiet btn-sm fsec-add" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+            <button class="btn btn-quiet btn-sm fsec-add" id="addProfRow" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add link</button>
           </section>
 
           <details class="fmore crf-full" id="crMore">
@@ -2867,7 +2867,7 @@
 
         <div class="cmdbar" id="rosterBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="rosterSearch" type="search" placeholder="Search name or handle" aria-label="Search creators" autocomplete="off">
           </span>
           <select class="select select-sm" id="rosterPlatform" aria-label="Filter by platform">
@@ -2890,7 +2890,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
-              <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
+              <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add creator</button>
             </span>
           </span>
         </div>
@@ -2942,7 +2942,7 @@
             <button class="acttab btn-sm" data-view="outstation" type="button" aria-pressed="false">Outstation</button>
           </span>
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="workFind" type="search" placeholder="Search task or client" aria-label="Search tasks" autocomplete="off">
           </span>
           <!-- Whose work is a view, not a filter. Assigned and created are
@@ -3003,14 +3003,14 @@
                    (2026-10-29). -->
               <span class="kmenu-wrap work-more" id="workMoreWrap" hidden>
                 <button class="kmenu-btn btn-sm work-more-btn" id="workMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  <svg aria-hidden="true" data-ic="more"></svg>
                 </button>
                 <div class="kmenu" id="workMore" hidden role="menu">
                   <button class="kmenu-item" data-g="2" data-a="newmonth" type="button" role="menuitem" data-need="ops:work" hidden>New month</button>
                   <button class="kmenu-item" data-g="2" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                 </div>
               </span>
-              <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
+              <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg><span class="btn-word">Add task</span></button>
             </span>
           </span>
         </div>
@@ -3048,7 +3048,7 @@
           <div class="sheet-head">
             <h3 id="dueTitle">Due date</h3>
             <button class="iconbtn" id="dueClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3086,7 +3086,7 @@
           <div class="sheet-head">
             <h3 id="dupTitle">Duplicate</h3>
             <button class="iconbtn" id="dupClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3128,7 +3128,7 @@
           <div class="sheet-head">
             <h3 id="recTitle">Repeat</h3>
             <button class="iconbtn" id="recClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3204,7 +3204,7 @@
           <div class="sheet-head">
             <h3 id="taskSheetTitle">Add task</h3>
             <button class="iconbtn" id="taskSheetClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3254,7 +3254,7 @@
                    offered in its place. -->
               <div class="ntnomonth" id="ntNoMonth" hidden>
                 <span id="ntNoMonthWords"></span>
-                <button class="btn btn-sm" id="ntOpenMonths" type="button">Open Months<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+                <button class="btn btn-sm" id="ntOpenMonths" type="button">Open Months<svg aria-hidden="true" data-ic="chevron"></svg></button>
               </div>
             </section>
             <!-- The posts are one shaded group, Add another inside it. The
@@ -3273,7 +3273,7 @@
                     <div class="piece-head">
                       <b class="piece-name">Post 1</b>
                       <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <svg aria-hidden="true" data-ic="x"></svg>
                       </button>
                     </div>
                     <div class="field piece-desc">
@@ -3349,7 +3349,7 @@
                   </div>
                 </div>
                 <div class="pieces-foot">
-                  <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another</button>
+                  <button class="btn btn-sm" id="ntAddPiece" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add another</button>
                 </div>
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
@@ -3370,7 +3370,7 @@
           <div class="sheet-head">
             <h3 id="engTitle">Month</h3>
             <button class="iconbtn" id="engClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3434,7 +3434,7 @@
           <div class="sheet-head">
             <h3 id="meetTitle">Content meeting</h3>
             <button class="iconbtn" id="meetClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3530,7 +3530,7 @@
           <div class="sheet-head">
             <h3 id="qkHead">Add task</h3>
             <button class="iconbtn" id="qkClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <form class="sheet-body" id="qkForm" autocomplete="off">
@@ -3615,7 +3615,7 @@
                 <span class="chip" id="dwStatus"></span>
                 <span class="kmenu-wrap" id="dwMenuWrap">
                   <button class="kmenu-btn" id="dwMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                    <svg aria-hidden="true" data-ic="more"></svg>
                   </button>
                   <!-- The rare acts, Delete last; every stage move is the
                        stage select beside this. -->
@@ -3631,17 +3631,17 @@
                   </div>
                 </span>
                 <button class="iconbtn" id="dwClose" type="button" aria-label="Close">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  <svg aria-hidden="true" data-ic="x"></svg>
                 </button>
               </span>
             </div>
             <div class="qhead-name">
               <h2 class="qhead-title" id="dwTitle"></h2>
               <button class="rec-pen" id="dwTitleEdit" type="button" aria-label="Edit name" hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                <svg aria-hidden="true" data-ic="pen"></svg>
               </button>
               <button class="rec-pen" id="dwCopyTitle" type="button" aria-label="Copy title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+                <svg aria-hidden="true" data-ic="copy"></svg>
               </button>
             </div>
             <p class="qhead-ctx" id="dwCtx"></p>
@@ -3702,7 +3702,7 @@
             <section class="qcard" id="dwCheckSec">
               <div class="qcard-head">
                 <h3 class="qcard-title">Checklist <span class="qcard-count" id="dwCheckCount"></span></h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwCheckOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add item</button>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCheckOpen" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add item</button>
               </div>
               <div id="dwChecks"></div>
               <form class="qform" id="dwCheckForm" autocomplete="off" hidden>
@@ -3717,7 +3717,7 @@
             <section class="qcard" id="dwCommentSec">
               <div class="qcard-head">
                 <h3 class="qcard-title">Remarks</h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add remark</button>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add remark</button>
               </div>
               <div id="dwComments"></div>
               <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
@@ -3753,7 +3753,7 @@
             <section class="qcard" id="dwLinkSec">
               <div class="qcard-head">
                 <h3 class="qcard-title">Files and links</h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwLinkOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwLinkOpen" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add link</button>
               </div>
               <div id="dwLinks"></div>
               <form class="qform" id="dwLinkForm" autocomplete="off" hidden>
@@ -3820,7 +3820,7 @@
           <div class="sheet-head">
             <h3 id="stepTitle">Move</h3>
             <button class="iconbtn" id="stepClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3888,7 +3888,7 @@
           <div class="sheet-head">
             <h3 id="tplHead">Task templates</h3>
             <button class="iconbtn" id="tplClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <!-- A template is a family: one checklist, and the formats it serves
@@ -3915,7 +3915,7 @@
           <div class="sheet-head">
             <h3 id="teHead">Template</h3>
             <button class="iconbtn" id="teClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -3968,7 +3968,7 @@
           <div class="sheet-head">
             <h3 id="giveTitle">Reassign</h3>
             <button class="iconbtn" id="giveClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -4003,7 +4003,7 @@
       <div id="regDocsPane">
       <div class="cmdbar">
         <span class="cmdbar-find">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input input-sm" id="regFind" type="search" placeholder="Search reference or name" aria-label="Search documents" autocomplete="off">
         </span>
         <select class="select select-sm" id="regSort" aria-label="Sort" data-view>
@@ -4016,8 +4016,8 @@
             <span class="cmdbar-count" id="regCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm" id="regAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
-            <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+            <button class="btn btn-sm" id="regAdd" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Add existing document</button>
+            <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Issue document</button>
           </span>
         </span>
       </div>
@@ -4041,14 +4041,14 @@
         </span></div>
         <div class="cmdbar" id="supBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="supFind" type="search" placeholder="Search name or Supplier ID" aria-label="Search suppliers" autocomplete="off">
           </span>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
             <span class="cmdbar-acts">
               <button class="iconbtn btn-sm figs-eye" type="button" aria-pressed="false" aria-label="Hide figures" title="Hide figures"></button>
-              <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
+              <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg aria-hidden="true" data-ic="plus"></svg>New supplier</button>
             </span>
           </span>
         </div>
@@ -4059,7 +4059,7 @@
         <section id="spyView" hidden>
           <div class="cmdbar" id="spyBar">
             <span class="cmdbar-find">
-              <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <svg aria-hidden="true" data-ic="search"></svg>
               <input class="input input-sm" id="spyFind" type="search" placeholder="Search supplier or bill" aria-label="Search bills" autocomplete="off">
             </span>
             <select class="select select-sm" id="spySup" aria-label="Filter by supplier" data-default="all"><option value="all">All suppliers</option></select>
@@ -4090,7 +4090,7 @@
           <button class="tab" id="teamTabHiring" data-tab="hiring" type="button" role="tab" hidden>Hiring</button>
           <button class="tab" id="teamTabGroups" data-tab="groups" type="button" role="tab">Groups</button>
           <button class="tab" id="teamTabPerf" data-tab="performance" type="button" role="tab">Performance</button>
-          <button class="tab tab-health" id="teamTabHealth" data-tab="health" type="button" role="tab" hidden><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
+          <button class="tab tab-health" id="teamTabHealth" data-tab="health" type="button" role="tab" hidden><svg class="health-mark" aria-hidden="true" data-ic="pulse"></svg>Health</button>
         </div>
         <!-- The lock's state, at the row's right end and outside the strip, so
              it never reads as a third tab (the user, 2026-09-27): shut while
@@ -4110,7 +4110,7 @@
            are a tab of their own (Groups), because they are a second thing. -->
       <div class="cmdbar">
         <span class="cmdbar-find">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input input-sm" id="teamFind" type="search" placeholder="Search name or sign-in email" aria-label="Search members">
         </span>
         <span class="cmdbar-end">
@@ -4120,14 +4120,14 @@
           <span class="cmdbar-acts">
             <span class="kmenu-wrap work-more" id="teamMoreWrap" data-need="team:manage" hidden>
               <button class="kmenu-btn btn-sm work-more-btn" id="teamMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                <svg aria-hidden="true" data-ic="more"></svg>
               </button>
               <div class="kmenu" id="teamMore" hidden role="menu">
                 <button class="kmenu-item" data-g="1" data-a="autocount" type="button" role="menuitem" hidden>Download for AutoCount</button>
                 <button class="kmenu-item" data-g="5" data-a="expiry" type="button" role="menuitem">Set access expiry</button>
               </div>
             </span>
-            <button class="btn btn-sm btn-primary" id="teamAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+            <button class="btn btn-sm btn-primary" id="teamAdd" data-need="team:manage" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add member</button>
           </span>
         </span>
       </div>
@@ -4140,7 +4140,7 @@
           <div class="sheet-head">
             <h3 id="tmTitle">Add member</h3>
             <button class="iconbtn" id="tmClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -4217,13 +4217,13 @@
       <div id="teamHiringPane" hidden>
         <div class="cmdbar" id="hirBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="hirFind" type="search" placeholder="Search name or position" aria-label="Search candidates" autocomplete="off">
           </span>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="hirCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add candidate</button>
+              <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Add candidate</button>
             </span>
           </span>
         </div>
@@ -4242,7 +4242,7 @@
           <span class="cmdbar-acts">
             <!-- The primary at the bar's right edge (2026-10-20, TEAM-10). -->
             <button class="btn btn-sm" id="groupCompare" type="button" data-rare data-g="1">Compare groups</button>
-            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add group</button>
           </span>
         </span>
       </div>
@@ -4251,7 +4251,7 @@
           <div class="sheet-head">
             <h3 id="grTitle">New group</h3>
             <button class="iconbtn" id="grClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body" data-narrow="540">
@@ -4294,7 +4294,7 @@
           <div class="sheet-head">
             <h3 id="grCmpTitle">Compare groups</h3>
             <button class="iconbtn" id="grCmpClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body" data-narrow="540">
@@ -4340,7 +4340,7 @@
           <div id="perfMonths">
           <div class="cmdbar">
             <span class="cmdbar-find">
-              <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <svg aria-hidden="true" data-ic="search"></svg>
               <input class="input input-sm" id="perfFind" type="search" placeholder="Search name" aria-label="Search team members">
             </span>
             <select class="select select-sm" id="perfMonth" aria-label="Month" data-nofilter></select>
@@ -4372,7 +4372,7 @@
                 <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwQCount"></span></span>
                 <span class="cmdbar-acts">
                   <button class="btn btn-sm" id="rwQReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
-                  <button class="btn btn-sm btn-primary" id="rwQConfirm" type="button" data-need="team.performance:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Confirm quarter</button>
+                  <button class="btn btn-sm btn-primary" id="rwQConfirm" type="button" data-need="team.performance:work" hidden><svg aria-hidden="true" data-ic="check"></svg>Confirm quarter</button>
                 </span>
               </span>
             </div>
@@ -4386,7 +4386,7 @@
                 <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwPCount"></span></span>
                 <span class="cmdbar-acts">
                   <button class="btn btn-sm" id="rwPReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
-                  <button class="btn btn-sm btn-primary" id="rwPConfirm" type="button" data-need="team.performance:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Confirm period</button>
+                  <button class="btn btn-sm btn-primary" id="rwPConfirm" type="button" data-need="team.performance:work" hidden><svg aria-hidden="true" data-ic="check"></svg>Confirm period</button>
                 </span>
               </span>
             </div>
@@ -4396,7 +4396,7 @@
           <div id="perfCommission" hidden>
             <div class="cmdbar">
               <span class="cmdbar-find">
-                <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                <svg aria-hidden="true" data-ic="search"></svg>
                 <input class="input input-sm" id="rwCFind" type="search" placeholder="Search name or client" aria-label="Search commission">
               </span>
               <span class="cmdbar-end">
@@ -4420,7 +4420,7 @@
           <div class="sheet-head">
             <h3 id="prTitle">Review list</h3>
             <button class="iconbtn" id="prClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -4438,7 +4438,7 @@
           <div class="sheet-head">
             <h3 id="ppTitle">Review profile</h3>
             <button class="iconbtn" id="ppClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <svg aria-hidden="true" data-ic="x"></svg>
             </button>
           </div>
           <div class="sheet-body">
@@ -4447,7 +4447,7 @@
                  how they are reviewed. -->
             <dl class="ovfacts" id="ppFacts"></dl>
             <button class="btn btn-quiet btn-sm pp-edit" id="ppEditTeam" type="button" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Edit on Members</button>
+              <svg aria-hidden="true" data-ic="pen"></svg>Edit on Members</button>
             <div class="row">
               <div>
                 <label class="tickline"><input type="checkbox" id="ppAds"> <span>Runs client ads (budget pacing counts)</span></label>
@@ -4472,7 +4472,7 @@
         <div class="sheet-head">
           <h3 id="rwDTitle">Department scores</h3>
           <button class="iconbtn" id="rwDClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </div>
         <div class="sheet-body">
@@ -4500,7 +4500,7 @@
         <div class="sheet-head">
           <h3 id="rwFTitle">Company figures</h3>
           <button class="iconbtn" id="rwFClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </div>
         <div class="sheet-body">
@@ -4527,7 +4527,7 @@
         <div class="sheet-head">
           <h3 id="rwSTitle">Performance settings</h3>
           <button class="iconbtn" id="rwSClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </div>
         <div class="sheet-body">
@@ -4558,7 +4558,7 @@
         <div class="sheet-head">
           <h3 id="rwMTitle">Add entry</h3>
           <button class="iconbtn" id="rwMClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </div>
         <div class="sheet-body">
@@ -4613,13 +4613,13 @@
            lasts a minute (js/handbook.js). -->
       <div class="cmdbar">
         <span class="cmdbar-find">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input input-sm" id="hbFind" type="search" placeholder="Search files" aria-label="Search the Handbook" autocomplete="off">
         </span>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet"><span class="cmdbar-count" id="hbCount"></span></span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-primary" id="hbAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add file</button>
+            <button class="btn btn-sm btn-primary" id="hbAdd" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Add file</button>
           </span>
         </span>
       </div>
@@ -4632,7 +4632,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbSheetTitle">
         <div class="sheet-head">
           <h3 id="hbSheetTitle">Add file</h3>
-          <button class="iconbtn" id="hbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="hbClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <section class="fsec">
@@ -4674,7 +4674,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbVerTitle">
         <div class="sheet-head">
           <h3 id="hbVerTitle">New version</h3>
-          <button class="iconbtn" id="hbVerClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="hbVerClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="row"><div><label class="field-label" for="hbVerFile">File</label>
@@ -4694,7 +4694,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbHistTitle">
         <div class="sheet-head">
           <h3 id="hbHistTitle">Versions</h3>
-          <button class="iconbtn" id="hbHistClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="hbHistClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" id="hbHistList"></div>
       </div>
@@ -4715,7 +4715,7 @@
       <div id="waMessagesPane">
         <div class="cmdbar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="waFind" type="search" placeholder="Search name, client or number" aria-label="Search messages" autocomplete="off">
           </span>
           <select class="select select-sm" id="waMonth" aria-label="Month" data-nofilter></select>
@@ -4724,7 +4724,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="waCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="waNew" type="button" data-gate="whatsapp" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New message</span></button>
+              <button class="btn btn-sm btn-primary" id="waNew" type="button" data-gate="whatsapp" data-need="whatsapp:work" hidden><svg aria-hidden="true" data-ic="plus"></svg><span class="btn-word">New message</span></button>
             </span>
           </span>
         </div>
@@ -4738,7 +4738,7 @@
       <div id="emlPane" hidden>
         <div class="cmdbar" id="emlBar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="emlFind" type="search" placeholder="Search name, client, email or reference" aria-label="Search emails" autocomplete="off">
           </span>
           <select class="select select-sm" id="emlMonth" aria-label="Month" data-nofilter></select>
@@ -4747,7 +4747,7 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="emlCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-gate="email" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New email</span></button>
+              <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-gate="email" data-need="whatsapp:work" hidden><svg aria-hidden="true" data-ic="plus"></svg><span class="btn-word">New email</span></button>
             </span>
           </span>
         </div>
@@ -4761,7 +4761,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="nemTitle" data-narrow="560">
         <div class="sheet-head">
           <h3 id="nemTitle">New email</h3>
-          <button class="iconbtn" id="nemClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="nemClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <section class="fsec">
@@ -4795,7 +4795,7 @@
               <div class="dm-attach nem-attach" role="group" aria-labelledby="nemFileLabel">
                 <span id="nemFileName">None</span>
                 <span class="nem-file-acts">
-                  <button class="btn btn-sm" id="nemFilePick" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Attach file</button>
+                  <button class="btn btn-sm" id="nemFilePick" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Attach file</button>
                   <button class="btn btn-sm btn-quiet" id="nemFileOff" type="button" hidden>Remove</button>
                 </span>
                 <input id="nemFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv" hidden data-nodraft>
@@ -4816,7 +4816,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="mtTitle">
         <div class="sheet-head">
           <h3 id="mtTitle">Email templates</h3>
-          <button class="iconbtn" id="mtClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="mtClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="msg" id="mtMsg" role="status"></div>
@@ -4831,7 +4831,7 @@
       <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="mtEdTitle">
         <div class="sheet-head">
           <h3 id="mtEdTitle">Template</h3>
-          <button class="iconbtn" id="mtEdClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="mtEdClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body mt-ed" data-narrow="720">
           <div class="mt-ed-form" id="mtEdForm"></div>
@@ -4853,7 +4853,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="emlSheetHead">
         <div class="sheet-head">
           <h3 id="emlSheetHead">Email</h3>
-          <button class="iconbtn" id="emlSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="emlSheetClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" id="emlSheetBody" data-narrow="560"></div>
       </div>
@@ -4866,7 +4866,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="sealTitle">
         <div class="sheet-head">
           <div class="qb-headtext"><h3 id="sealTitle">Record of this Document</h3><p class="qb-for" id="sealFor"></p></div>
-          <button class="iconbtn" id="sealClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="sealClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" data-narrow="560"><div id="sealBody"></div><div class="msg" id="sealMsg" role="alert"></div></div>
       </div>
@@ -4879,7 +4879,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwListTitle">
         <div class="sheet-head">
           <h3 id="rcwListTitle">Rate Card wording</h3>
-          <button class="iconbtn" id="rcwListClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="rcwListClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="msg" id="rcwListMsg" role="status"></div>
@@ -4894,7 +4894,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwTitle">
         <div class="sheet-head">
           <h3 id="rcwTitle">Wording</h3>
-          <button class="iconbtn" id="rcwClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="rcwClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="rcw-head" id="rcwHead" hidden></div>
@@ -4914,7 +4914,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="waTplHead">
         <div class="sheet-head">
           <h3 id="waTplHead">WhatsApp templates</h3>
-          <button class="iconbtn" id="waTplClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="waTplClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="msg" id="waTplMsg" role="status"></div>
@@ -4931,7 +4931,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="waComposeTitle" data-narrow="560">
         <div class="sheet-head">
           <h3 id="waComposeTitle">New message</h3>
-          <button class="iconbtn" id="waComposeClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="waComposeClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <section class="fsec">
@@ -4972,13 +4972,13 @@
       <div id="vsListView">
         <div class="cmdbar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="vsFind" type="search" placeholder="Search scripts" aria-label="Search Video Scripts" autocomplete="off">
           </span>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="vsCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="vsNew" type="button" data-need="scripts:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New script</button>
+              <button class="btn btn-sm btn-primary" id="vsNew" type="button" data-need="scripts:work" hidden><svg aria-hidden="true" data-ic="plus"></svg>New script</button>
             </span>
           </span>
         </div>
@@ -4987,7 +4987,7 @@
       </div>
 
       <div id="vsRecord" hidden>
-        <button class="backlink" id="vsBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <button class="backlink" id="vsBack" type="button"><svg aria-hidden="true" data-ic="back"></svg>Back</button>
         <!-- A client's content month (the user, 2026-10-09: one link for the
              client, not one a video): the client and the month, Preview PDF
              and the ⋯, then the client's link, Copy link and Preview once for
@@ -5004,8 +5004,8 @@
           <div class="rec-linktools" id="vsLinkTools" data-page-link="script" hidden>
             <div class="linkbox" id="vsLinkBox">
               <input class="input readfield" id="vsLink" readonly aria-label="Client link">
-              <button class="btn btn-icon" id="vsCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-              <a class="btn btn-icon" id="vsOpen" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+              <button class="btn btn-icon" id="vsCopy" type="button"><svg aria-hidden="true" data-ic="copy"></svg><span>Copy link</span></button>
+              <a class="btn btn-icon" id="vsOpen" target="_blank" rel="noopener">Preview <svg aria-hidden="true" data-ic="out"></svg></a>
             </div>
           </div>
           <div class="msg" id="vsRecMsg"></div>
@@ -5015,7 +5015,7 @@
              of its own; Add script in the card's head. -->
         <section class="panel vs-monthlist" id="vsMonthList" hidden>
           <div class="vs-monthhead"><h3>Scripts</h3>
-            <button class="btn btn-sm" id="vsNextVideo" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add script</button></div>
+            <button class="btn btn-sm" id="vsNextVideo" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Add script</button></div>
           <div id="vsMonthRows"></div>
         </section>
         <!-- One script: Previous, where it stands in the month and Next, then
@@ -5149,7 +5149,7 @@
             <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
               <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
             <div id="vsScenes"></div>
-            <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add scene</button></div></div>
+            <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add scene</button></div></div>
             <div class="row" id="vsVoRow" hidden><div><label class="field-label" for="vsVo">Script (read here)</label>
               <textarea class="input" id="vsVo" rows="4" maxlength="4000"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsNotes">Notes</label>
@@ -5170,7 +5170,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsNewTitle">
         <div class="sheet-head">
           <h3 id="vsNewTitle">New script</h3>
-          <button class="iconbtn" id="vsNewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="vsNewClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="row"><div><label class="field-label" for="vsNewClient">Client</label>
@@ -5198,7 +5198,7 @@
       <div class="sheet-card formsheet vs-playcard" role="dialog" aria-modal="true" aria-labelledby="vsPlayTitle">
         <div class="sheet-head">
           <h3 id="vsPlayTitle">Play</h3>
-          <button class="iconbtn" id="vsPlayClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="vsPlayClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body vs-play">
           <div class="vs-playstage"><canvas id="vsPlayCanvas" width="720" height="1280" role="img" aria-label="Scenes in order"></canvas></div>
@@ -5218,7 +5218,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsPromptTitle">
         <div class="sheet-head">
           <h3 id="vsPromptTitle">Copy prompts</h3>
-          <button class="iconbtn" id="vsPromptClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="vsPromptClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="vs-prompt-bar">
@@ -5263,7 +5263,7 @@
           <button class="acttab btn-sm" data-mv="recognition" type="button" aria-pressed="false">Recognition</button>
           <button class="acttab btn-sm" data-mv="letters" type="button" aria-pressed="false">Letters</button>
           <button class="acttab btn-sm" data-mv="personnel" type="button" aria-pressed="false">Personnel</button>
-          <button class="acttab btn-sm acttab-health" data-mv="health" type="button" aria-pressed="false"><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
+          <button class="acttab btn-sm acttab-health" data-mv="health" type="button" aria-pressed="false"><svg class="health-mark" aria-hidden="true" data-ic="pulse"></svg>Health</button>
         </span></div>
         <div id="mineReviews" data-trace>
           <!-- Rate yourself (js/perf.js, 2026-10-07): a month that has ended,
@@ -5282,7 +5282,7 @@
             <span class="cmdbar-end">
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="mineRecCount"></span></span>
               <span class="cmdbar-acts">
-                <button class="btn btn-sm btn-primary" id="mineRecAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Recognise</button>
+                <button class="btn btn-sm btn-primary" id="mineRecAdd" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Recognise</button>
               </span>
             </span>
           </div>
@@ -5316,7 +5316,7 @@
       <div class="sheet-card formsheet prs-sheet" role="dialog" aria-modal="true" aria-labelledby="prsSheetTitle" tabindex="-1" data-trace>
         <div class="sheet-head">
           <h3 id="prsSheetTitle">Employee record</h3>
-          <button class="iconbtn" id="prsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="prsClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" data-narrow="560"><div id="prsBody"></div><div class="msg" id="prsSheetMsg"></div></div>
         <div class="sheet-foot">
@@ -5331,7 +5331,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rgnSheetTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="rgnSheetTitle">Recognise</h3>
-          <button class="iconbtn" id="rgnClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="rgnClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="row"><div class="field">
@@ -5366,7 +5366,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="healthSheetTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="healthSheetTitle">Check-in</h3>
-          <button class="iconbtn" id="hcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="hcClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <p class="hc-steps" id="hcSteps" aria-live="polite" hidden></p>
@@ -5416,7 +5416,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="talkSheetTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="talkSheetTitle">Ask for a talk</h3>
-          <button class="iconbtn" id="talkClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="talkClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <div class="row"><div class="field">
@@ -5441,7 +5441,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hpTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="hpTitle">Check-ins</h3>
-          <button class="iconbtn" id="hpClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="hpClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" id="hpBody"></div>
       </div>
@@ -5454,7 +5454,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="selfSheetTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="selfSheetTitle">Rate yourself</h3>
-          <button class="iconbtn" id="selfClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="selfClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <!-- Each category a letter and its step (js/perf.js, the letter
@@ -5490,7 +5490,7 @@
               <span class="chip" id="pvStatus"></span>
               <span class="kmenu-wrap" id="pvMenuWrap" hidden>
                 <button class="kmenu-btn" id="pvMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  <svg aria-hidden="true" data-ic="more"></svg>
                 </button>
                 <div class="kmenu" id="pvMenu" hidden role="menu">
                   <button class="kmenu-item" data-g="1" data-a="print" type="button" role="menuitem">Download PDF</button>
@@ -5500,7 +5500,7 @@
                 </div>
               </span>
               <button class="iconbtn" id="pvClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg aria-hidden="true" data-ic="x"></svg>
               </button>
             </span>
           </div>
@@ -5524,7 +5524,7 @@
       <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate Card views" hidden></nav>
       <div class="cmdbar">
         <span class="cmdbar-find">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input input-sm" id="svcFind" type="search" placeholder="Search the Rate Card" aria-label="Search the Rate Card">
         </span>
         <div class="svc-live" id="svcLive" hidden></div>
@@ -5534,7 +5534,7 @@
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm" id="svcCardPdf" type="button" hidden>Download</button>
-            <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+            <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg aria-hidden="true" data-ic="plus"></svg>Add service</button>
           </span>
         </span>
       </div>
@@ -5542,7 +5542,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="svcTitle">
           <div class="sheet-head">
             <h3 id="svcTitle">Add service</h3>
-            <button class="iconbtn" id="svcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="svcClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
         <section class="fsec">
@@ -5674,7 +5674,7 @@
         <nav class="tabrow rhtabs" id="rhTabs" role="tablist" aria-label="Report stages" hidden></nav>
         <div class="cmdbar">
           <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <svg aria-hidden="true" data-ic="search"></svg>
             <input class="input input-sm" id="rhFind" type="search" placeholder="Search client or month" aria-label="Search reports" autocomplete="off">
           </span>
           <select class="select select-sm" id="rhKind" aria-label="Report type"></select>
@@ -5689,13 +5689,13 @@
             <span class="cmdbar-acts">
               <span class="kmenu-wrap work-more" id="rhMoreWrap" hidden>
                 <button class="kmenu-btn btn-sm work-more-btn" id="rhMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  <svg aria-hidden="true" data-ic="more"></svg>
                 </button>
                 <div class="kmenu" id="rhMore" hidden role="menu">
                   <button class="kmenu-item" data-g="2" data-a="select" type="button" role="menuitem">Select reports</button>
                 </div>
               </span>
-              <button class="btn btn-sm btn-primary" id="rhNew" type="button" data-need="reports:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New report</span></button>
+              <button class="btn btn-sm btn-primary" id="rhNew" type="button" data-need="reports:work"><svg aria-hidden="true" data-ic="plus"></svg><span class="btn-word">New report</span></button>
             </span>
           </span>
         </div>
@@ -5704,7 +5704,7 @@
         <div class="bulkbar" id="rhBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="rhBulkAll"> <span id="rhBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="rhBulkPdf" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
+            <button class="btn btn-sm" id="rhBulkPdf" type="button" hidden><svg aria-hidden="true" data-ic="file"></svg>Download</button>
             <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" hidden>Mark as sent</button>
             <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" hidden>Publish</button>
           </span>
@@ -5729,7 +5729,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="linkFormTitle">
           <div class="sheet-head">
             <h3 id="linkFormTitle">Add link</h3>
-            <button class="iconbtn" id="linkClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="linkClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
         <!-- Two short fields on one split, the address under them full width,
@@ -5773,7 +5773,7 @@
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="importTitle">
           <div class="sheet-head">
             <h3 id="importTitle">Bulk import</h3>
-            <button class="iconbtn" id="importClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button class="iconbtn" id="importClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
           </div>
           <div class="sheet-body">
             <div class="row">
@@ -5798,7 +5798,7 @@ raya-2026        https://example.com/raya"></textarea>
            changes the list is in one place and none of it is a screen away. -->
       <div class="cmdbar">
         <span class="cmdbar-find">
-          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <svg aria-hidden="true" data-ic="search"></svg>
           <input class="input input-sm" id="linkSearch" type="search" placeholder="Search short link, destination or label" aria-label="Search links">
         </span>
         <span class="cmdbar-end">
@@ -5807,7 +5807,7 @@ raya-2026        https://example.com/raya"></textarea>
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm" id="showImport" data-need="links:work" data-rare data-g="2" type="button">Bulk import</button>
-            <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+            <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg aria-hidden="true" data-ic="plus"></svg>Add link</button>
           </span>
         </span>
       </div>
@@ -5827,7 +5827,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="lockHeading">Confirm creators</h3>
       <button class="iconbtn" id="lockClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -5860,7 +5860,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="portalHeading">Portal access</h3>
       <button class="iconbtn" id="portalClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -5883,7 +5883,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="qrHeading">QR codes</h3>
       <button class="iconbtn" id="qrSheetClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -5904,7 +5904,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="activityHeading">Activity record</h3>
       <button class="iconbtn" id="activityClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <!-- One Section select in place of a strip of fourteen tabs (the user's
@@ -5929,7 +5929,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="qcTitle">Quality check</h3>
       <button class="iconbtn" id="qcClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <!-- The list is inside the sheet's own scrolling body. Left as a direct
@@ -5973,7 +5973,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="docTitle">Issue document</h3>
       <button class="iconbtn" id="docClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6141,7 +6141,7 @@ raya-2026        https://example.com/raya"></textarea>
       <!-- Preview reads the letter as it stands; it is no commit, so it sits
            under the letter's fields, never in the foot (DOC-6, 2026-10-22). -->
       <div class="doc-preview-row">
-        <button class="btn btn-sm btn-icon" id="docPreview" type="button">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+        <button class="btn btn-sm btn-icon" id="docPreview" type="button">Preview <svg aria-hidden="true" data-ic="out"></svg></button>
       </div>
     </div>
     <div class="sheet-foot">
@@ -6162,7 +6162,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="holHead">Public holidays</h3>
       <button class="iconbtn" id="holClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6182,7 +6182,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="useHead">Storage and plan</h3>
       <button class="iconbtn" id="useClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body"><div id="useBody"></div></div>
@@ -6196,7 +6196,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="depHead">Departments</h3>
       <button class="iconbtn" id="depClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6218,7 +6218,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="hscHead">Interview scorecards</h3>
       <button class="iconbtn" id="hscClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6242,7 +6242,7 @@ raya-2026        https://example.com/raya"></textarea>
         <h2 class="qhead-title" id="hivTitle">Interview sheet</h2>
         <span class="qhead-end">
           <button class="iconbtn" id="hivClose" type="button" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg aria-hidden="true" data-ic="x"></svg>
           </button>
         </span>
       </div>
@@ -6264,7 +6264,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="wkHead">Welcome Kit</h3>
       <button class="iconbtn" id="wkClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6284,7 +6284,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="indHead">Industries</h3>
       <button class="iconbtn" id="indClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6303,7 +6303,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="pgHead">Page availability</h3>
       <button class="iconbtn" id="pgClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6323,7 +6323,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="taxHead">Tax codes</h3>
       <button class="iconbtn" id="taxClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6350,7 +6350,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="dtHead">Document types</h3>
       <button class="iconbtn" id="dtClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6369,7 +6369,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="dtEditHead">Document type</h3>
       <button class="iconbtn" id="dtEditClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6444,7 +6444,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="hirSheetTitle">Add candidate</h3>
       <button class="iconbtn" id="hirSheetClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6505,7 +6505,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="supEditTitle">Edit supplier</h3>
       <button class="iconbtn" id="supEditClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6594,7 +6594,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="supMailTitle">Send email</h3>
       <button class="iconbtn" id="supMailClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6640,7 +6640,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="dmTitle">Send by email</h3>
       <button class="iconbtn" id="dmClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6682,7 +6682,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="regAddTitle">Add existing document</h3>
       <button class="iconbtn" id="regAddClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6753,7 +6753,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="rvoidTitle">Void</h3>
       <button class="iconbtn" id="rvoidClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6777,7 +6777,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-head">
       <h3 id="pkTitle">Passkeys</h3>
       <button class="iconbtn" id="pkShut" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg aria-hidden="true" data-ic="x"></svg>
       </button>
     </div>
     <div class="sheet-body">
@@ -6799,49 +6799,49 @@ raya-2026        https://example.com/raya"></textarea>
      are bumped with every other. -->
 <script type="application/json" id="lazyScripts">
 {
-  "documents": {"src": "/js/documents.js?v=20261126ga"},
+  "documents": {"src": "/js/documents.js?v=20261126gl"},
   "letters": {"src": "/js/letters.js?v=20261126rfe", "first": ["documents"], "uses": ["documents"]},
   "smreport": {"src": "/js/smreport.js?v=20261126w", "uses": ["documents"]},
-  "reports": {"src": "/js/reports.js?v=20261126st", "uses": ["documents", "smreport"]},
-  "register": {"src": "/js/register.js?v=20261126fh", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
-  "suppliers": {"src": "/js/suppliers.js?v=20261126rqb", "uses": ["letters", "register", "bukku"]},
-  "hiring": {"src": "/js/hiring.js?v=20261126rqb", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
-  "bukku": {"src": "/js/bukku.js?v=20261126su"},
-  "invoices": {"src": "/js/invoices.js?v=20261126gd", "uses": ["payments", "crm"]},
+  "reports": {"src": "/js/reports.js?v=20261126gl", "uses": ["documents", "smreport"]},
+  "register": {"src": "/js/register.js?v=20261126gl", "first": ["documents", "letters"], "uses": ["documents", "letters", "quotes", "seal", "crm"]},
+  "suppliers": {"src": "/js/suppliers.js?v=20261126gm", "uses": ["letters", "register", "bukku"]},
+  "hiring": {"src": "/js/hiring.js?v=20261126gm", "uses": ["documents", "seal", "hrdocs", "hrforms", "team"]},
+  "bukku": {"src": "/js/bukku.js?v=20261126gl"},
+  "invoices": {"src": "/js/invoices.js?v=20261126gl", "uses": ["payments", "crm"]},
   "payments": {"src": "/js/payments.js?v=20261122zzzzzb", "uses": ["invoices", "sales"]},
-  "engage": {"src": "/js/engage.js?v=20261126rfc", "uses": ["smreport", "reports"]},
-  "quotes": {"src": "/js/quotes.js?v=20261127", "uses": ["documents", "bukku", "quotepdf", "seal"]},
+  "engage": {"src": "/js/engage.js?v=20261126gl", "uses": ["smreport", "reports"]},
+  "quotes": {"src": "/js/quotes.js?v=20261126gm", "uses": ["documents", "bukku", "quotepdf", "seal"]},
   "quotepdf": {"src": "/js/quotepdf.js?v=20261126ga", "uses": ["documents", "seal"]},
-  "seal": {"src": "/js/seal.js?v=20261125ph", "uses": ["documents"]},
+  "seal": {"src": "/js/seal.js?v=20261126gl", "uses": ["documents"]},
   "hrdocs": {"src": "/js/hrdocs.js?v=20261124v", "uses": ["documents", "seal"]},
   "hrforms": {"src": "/js/hrforms.js?v=20261120zzzp", "uses": ["documents"]},
-  "checklists": {"src": "/js/checklists.js?v=20261122a", "uses": ["documents"]},
-  "crm": {"src": "/js/crm.js?v=20261126rqb", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
+  "checklists": {"src": "/js/checklists.js?v=20261126gl", "uses": ["documents"]},
+  "crm": {"src": "/js/crm.js?v=20261126gm", "first": ["documents", "engage"], "uses": ["documents", "register", "bukku", "invoices", "payments", "engage", "quotes", "checklists", "sales", "ratecardpdf"]},
   "sales": {"src": "/js/sales.js?v=20261125ot"},
-  "team": {"src": "/js/team.js?v=20261126lp", "uses": ["register", "onboard", "perf", "health", "personnel"]},
-  "namecard": {"src": "/js/namecard.js?v=20261117zzzf"},
-  "onboard": {"src": "/js/onboard.js?v=20261120zzzzzg", "uses": ["bukku", "hrforms"]},
-  "handbook": {"src": "/js/handbook.js?v=20261121zt", "uses": ["onboard"]},
+  "team": {"src": "/js/team.js?v=20261126gl", "uses": ["register", "onboard", "perf", "health", "personnel"]},
+  "namecard": {"src": "/js/namecard.js?v=20261126gl"},
+  "onboard": {"src": "/js/onboard.js?v=20261126gl", "uses": ["bukku", "hrforms"]},
+  "handbook": {"src": "/js/handbook.js?v=20261126gl", "uses": ["onboard"]},
   "frames": {"src": "/js/frames.js?v=20261117zzzf"},
   "animatic": {"src": "/js/animatic.js?v=20261117zzzf"},
-  "scripts": {"src": "/js/scripts.js?v=20261126y", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
+  "scripts": {"src": "/js/scripts.js?v=20261126gl", "uses": ["documents", "frames", "animatic", "scriptpdf"]},
   "scriptpdf": {"src": "/js/scriptpdf.js?v=20261124dh", "uses": ["documents"]},
   "ratecardpdf": {"src": "/js/ratecardpdf.js?v=20261126ga", "uses": ["documents"]},
-  "campaigns": {"src": "/js/campaigns.js?v=20261126cid", "uses": ["bukku"]},
-  "perf": {"src": "/js/perf.js?v=20261126gd", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
-  "health": {"src": "/js/health.js?v=20261123f", "uses": ["perf"]},
+  "campaigns": {"src": "/js/campaigns.js?v=20261126gl", "uses": ["bukku"]},
+  "perf": {"src": "/js/perf.js?v=20261126gl", "uses": ["documents", "letters", "hiring", "seal", "team", "health", "personnel"]},
+  "health": {"src": "/js/health.js?v=20261126gl", "uses": ["perf"]},
   "xlsx": {"src": "/js/xlsx.js?v=20261117zzzf"},
-  "personnel": {"src": "/js/personnel.js?v=20261126su", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
-  "analytics": {"src": "/js/analytics.js?v=20261125fh", "uses": ["documents", "crm", "sales"]},
-  "outstation": {"src": "/js/outstation.js?v=20261126rfc"},
-  "settings": {"src": "/js/settings.js?v=20261126rqb", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
+  "personnel": {"src": "/js/personnel.js?v=20261126gl", "uses": ["documents", "hrforms", "perf", "xlsx", "settings"]},
+  "analytics": {"src": "/js/analytics.js?v=20261126gl", "uses": ["documents", "crm", "sales"]},
+  "outstation": {"src": "/js/outstation.js?v=20261126gl"},
+  "settings": {"src": "/js/settings.js?v=20261126gm", "uses": ["reports", "register", "hiring", "bukku", "crm", "onboard", "perf", "personnel"]}
 }
 </script>
-<script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261126gd"></script>
-<script src="/js/ops.js?v=20261126nb"></script>
-<script src="/js/search.js?v=20261126rqb"></script>
-<script src="/js/agent.js?v=20261126rfd"></script>
-<script src="/js/overview.js?v=20261126gd"></script>
+<script src="/js/passkey.js?v=20261126gl"></script>
+<script src="/js/admin.js?v=20261126gl"></script>
+<script src="/js/ops.js?v=20261126gl"></script>
+<script src="/js/search.js?v=20261126gm"></script>
+<script src="/js/agent.js?v=20261126gl"></script>
+<script src="/js/overview.js?v=20261126gl"></script>
 </body>
 </html>

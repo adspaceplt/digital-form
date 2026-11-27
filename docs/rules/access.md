@@ -263,10 +263,10 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
     the one reader of `reports_to`), a hairline between each; headings
     15/600, a section's name 14/500.
   - Section access: one row a section in the rail's order (`CHUNKS`), the
-    name, its segment at the right edge on four fixed 76px tracks, a level
-    a column (a section offering fewer leaves its track empty, so a level
-    stands in one column down the panel; Full control's words need 76),
-    the line for its level (`DESC`), and Advanced (n), a `.btn-quiet
+    name, its segment at the right edge holding that section's levels
+    alone, each as wide as its words (never fixed tracks with empty slots;
+    on a phone under the name, still at the right edge), the line for its
+    level (`DESC`), and Advanced (n) under the segment, a `.btn-quiet
     .btn-sm` with the act table's chevron turned down while open
     (`advItems`): the section's own parts, the
     admin tools that act on it as switches, each with its line naming the

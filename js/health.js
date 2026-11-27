@@ -24,7 +24,7 @@
   if (!API || !API.configured || !db) return;
 
   var $ = function (id) { return document.getElementById(id); };
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   var UI = window.ADspaceState;
   function esc(s) { return window.ADspaceWords.esc(s); }
   function msg(id, text, kind) {
@@ -47,12 +47,10 @@
   var WORK = ['Overwhelming', 'Heavy', 'Busy', 'Manageable', 'Comfortable'];
   var FEEL = ['Calm', 'Content', 'Motivated', 'Confident', 'Grateful', 'Hopeful', 'Tired', 'Stressed', 'Anxious', 'Frustrated', 'Overwhelmed', 'Sad'];
   var INFL = ['Workload', 'Clients', 'Colleagues', 'Family', 'Friends', 'Health', 'Sleep', 'Finances'];
-  var HEART = '<svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/>' +
-    '<path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var HEART = window.ADspaceIcons.glyph('pulse', 'health-mark');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var CHEV = window.ADspaceIcons.glyph('chevron');
 
   var SAID = {
     'no-consent': 'Agree to the check-ins first.',

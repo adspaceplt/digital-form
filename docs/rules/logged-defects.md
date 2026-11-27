@@ -44,27 +44,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
-- 2026-11-26, `hiringiv` (the five list fixes, which touch neither
-  Settings nor Hiring's settings): "its Edit opens the figures, the reply
-  time among them" fails at 1280 and 390, and failed the same on the
-  branch's base (c881fdb, main with #1479, Settings sheets on one line):
-  the Time limits sheet no longer reads its three figures' words as the
-  suite asks. Held here until it ships.
-- 2026-11-26, `hiringheld` (the unslop pass, which touches no Settings
-  sheet): "its Edit asks the decision time" fails at 1280 and 390, as
-  `hiringiv` does, from #1479's relabelled Settings sheets.
-  Held here until it ships.
-- 2026-11-26, `weight` (review fixes S4, whose always-loaded scripts are
-  108 bytes smaller than main's by gzip): the console reads 1328.8 to
-  1328.9 KB against its 1328.8 KB budget on main 2800345 itself; the
-  hiring Settings sheets (`hiringheld`, `hiringiv`: no decision or reply
-  time field under its old label) fail the same on main, likely from
-  #1479's relabelled sheets. Held here until they ship.
-- 2026-11-26, `pdfreal` (the Build quote and TERMS fit train, which
-  touches no letter): the Letter of Offer and the client letter (sign,
-  nosign) fail "its head and foot at the template's places on every
-  page" (the foot's reference at 6pt, 794.5 down); the same three fail
-  on main 8e9224f. Held here until it ships.
 - 2026-11-27 (05:50 MYT), `sql` (the interview missed release, which
   touches neither `quote_wa_allowed` nor its migration): "the day's
   Quotation ready messages to website quotations are held to the setting"

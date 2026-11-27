@@ -10,20 +10,6 @@
    `DESIGN.md` §5 holds and `tests/uxaudit.js` reads it. */
 (function () {
   'use strict';
-  var P = {
-    plus: '<path d="M12 5v14M5 12h14"/>',
-    pen: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
-    send: '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.8 18-3.7-7.5L3 9.8z"/>',
-    hide: '<path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/>' +
-      '<path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
-    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/>',
-    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
-    letter: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
-    out: '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
-    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
-    go: '<path d="m9 6 6 6-6 6"/>',
-    key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/>'
-  };
   /* [the words, the mark, after the words, never a commit]. The fourth
      marks an act that is never a form's own commit, so it keeps its mark
      inside a form or beside a field: a way out (Preview, Download, Copy)
@@ -53,11 +39,13 @@
        Reports draws it (2026-11-19). */
     [/^View$/, 'go', true]
   ];
+  /* An act's name in the table and the set's glyph that draws it. */
+  var ACT_GLYPH = { send: 'plane', hide: 'eyeoff', letter: 'doc', go: 'chevron' };
   var HARD = '.sheet-foot, .askcard, .undobar, .cover';
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-act="' +
-      name + '">' + P[name] + '</svg>';
+    /* The act's mark from the one set (js/icons.js); `data-act` names it. */
+    return window.ADspaceIcons.glyph(ACT_GLYPH[name] || name, '', 'data-act="' + name + '"');
   }
   function actOf(words) {
     for (var i = 0; i < ACTS.length; i++) if (ACTS[i][0].test(words)) return ACTS[i];

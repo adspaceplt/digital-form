@@ -39,7 +39,7 @@
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed', held: 'Interview completed',
     cancelled: 'Interview cancelled', pending: 'Interview time pending confirmation', missed: 'Interview missed',
     offer: 'Application in progress', pool: 'Talent pool', closed: 'Application closed', hired: 'Offer accepted' };
-  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  var MARK = '<span class="qs-mark" aria-hidden="true">' + window.ADspaceIcons.glyph('check', '', 'width="12" height="12"') + '</span>';
   /* A time the candidate waits on, in the portal's form (2026-11-20,
      `ADspaceClock.due`): 21 Nov 2026 (Saturday), 10:00am, the date held
      whole so a line breaks after its comma, never inside it. A time gone by
@@ -86,7 +86,7 @@
   function change() {
     var I = window.ADspaceIcons, chat = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace';
     return '<div class="cr-change"><p class="cr-next">To change the time, please contact ADspace on WhatsApp.</p>' +
-      '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') +
+      '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + (I ? I.svg('whatsapp') : '') +
       esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>';
   }
   function interview(i) {
@@ -293,7 +293,7 @@
       '<div class="field"><label class="field-label" for="crIdNo">NRIC or Passport Number</label><input class="input" id="crIdNo" maxlength="20" placeholder="900101-01-1234"></div>' +
       '<div class="field"><div class="qs-sig-head"><span class="field-label">Signature</span><span class="qs-sig-acts"><button class="btn btn-quiet btn-sm" type="button" data-docx="clear" hidden>Clear</button></span></div>' +
         '<div class="qs-pad" id="crPad" role="img" aria-label="Signature box"><span class="qs-pad-line" aria-hidden="true"></span><span class="qs-pad-hint">Sign here</span>' +
-        '<svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg></div></div>' +
+        window.ADspaceIcons.drawing('0 0 300 100', '<path d=""/>', 'preserveAspectRatio="none" aria-hidden="true"') + '</div></div>' +
       tick('crAgree', window.ADspaceHrDocs.declare) +
       '<p class="msg" id="crDocMsg"></p>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" data-docx="sign">Sign contract</button></div></div>';
@@ -445,7 +445,7 @@
       cards: [
         I.summary('Your application', [{ rows: [['Position', d.position], ['Received on', day(d.received_at)]] }]),
         I.card('Contact ADspace', '<div class="rcv-acts">' + mail +
-          '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + I.svg('chat') +
+          '<a class="btn btn-sm cr-chat" id="crChat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + I.svg('whatsapp') +
           esc(W.chatWhatsApp || 'Chat on WhatsApp') + '</a></div>')
       ]
     });

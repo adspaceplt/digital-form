@@ -31,6 +31,9 @@
  *   langToggle, qrBtn, chromeActions, topbar
  */
 (function () {
+  /* The one set's glyph where the page holds it (js/icons.js); the front
+     door and the 404 hold none, and draw their words alone. */
+  function icGlyph(n, c, a) { return window.ADspaceIcons ? (window.ADspaceIcons).glyph(n, c, a) : ''; }
   var tag = document.currentScript;
   if (!tag) return;
 
@@ -85,10 +88,7 @@
   var BUILTIN = {
     lang: '<button class="langtoggle" id="langToggle" type="button">中文</button>',
     qr: '<button class="pill" id="qrBtn" type="button" hidden>' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' +
-        '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
-        '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
-        '<path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>View on phone</button>',
+        icGlyph('qr') + 'View on phone</button>',
     /* Notifications on this device. Hidden until js/push.js knows the page
        follows something and the browser can deliver; it names itself then. */
     push: '<button class="iconbtn pushbtn" id="pushBtn" type="button" hidden></button>'
@@ -222,13 +222,16 @@
     var paint = function () {
       bar.innerHTML = '<p class="tzbar-text">' + esc(tzWords(zh(), gmt, zone)) + '</p>' +
         '<button class="iconbtn tzbar-x" type="button" aria-label="' + (zh() ? '关闭' : 'Close') + '">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
+        icGlyph('x') + '</button>';
       bar.querySelector('.tzbar-x').addEventListener('click', function () {
         try { sessionStorage.setItem(TZ_HIDE, '1'); } catch (e) { /* closes for now only */ }
         if (bar.parentNode) bar.parentNode.removeChild(bar);
       });
     };
     paint();
+    /* A page holding no glyph set (the front door) has its close drawn once
+       the set is fetched (js/maintenance.js). */
+    if (!(window.ADspaceIcons) && window.ADspaceMaintenance && window.ADspaceMaintenance.icons) window.ADspaceMaintenance.icons(paint);
     if (window.MutationObserver) new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
     var up = document.getElementById('upgradeBar'), top = document.getElementById('topbar');
     if (up && up.parentNode) up.parentNode.insertBefore(bar, up);

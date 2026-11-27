@@ -28,9 +28,9 @@
   var bridge = window.ADspaceAdmin || {};
   function esc(s) { return window.ADspaceWords.esc(s); }
   var UI = window.ADspaceState;
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var DOTS = window.ADspaceIcons.glyph('more');
   var DM_ASK = 'Please check with your direct manager.';
 
   function msg(id, text, kind) { var m = typeof id === 'string' ? $(id) : id; if (!m) return; m.textContent = text || ''; m.className = 'msg' + (kind && text ? ' ' + kind : ''); }

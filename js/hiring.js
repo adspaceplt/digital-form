@@ -77,12 +77,12 @@
   function rpc(fn, args) {
     return db.rpc(fn, args).then(function (r) { return r; }).catch(function (e) { return { error: e }; });
   }
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
-  var COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>';
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
-  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
+  var CHEV = window.ADspaceIcons.glyph('chevron');
+  var BACK = window.ADspaceIcons.glyph('back');
+  var COPY = window.ADspaceIcons.glyph('copy');
+  var OUT = window.ADspaceIcons.glyph('out');
+  var FILE = window.ADspaceIcons.glyph('doc');
 
   var state = { rows: null, admin: false, find: '', open: null, rec: null, pane: 'overview', wired: false, editing: null, deleting: false, team: null };
   var PANES = [['overview', 'Overview'], ['interview', 'Interview'], ['scores', 'Scores'], ['offer', 'Offer'], ['people', 'People'], ['activity', 'Activity']];
@@ -281,7 +281,7 @@
       (role === 'admin' ? (removed ? '<button class="kmenu-item" data-g="5" type="button" data-h="restore" role="menuitem">Restore</button>' +
           '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="delete" role="menuitem">Delete</button>'
         : '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="remove" role="menuitem">Remove</button>') : '');
-    var cv = c.cv_path ? '<button class="linkbtn" type="button" data-h="cvfile">' + esc(c.cv_name || 'CV') + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button>'
+    var cv = c.cv_path ? '<button class="linkbtn" type="button" data-h="cvfile">' + esc(c.cv_name || 'CV') + window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button>'
       : c.cv_url ? '<a class="plink" href="' + esc(window.ADspaceWords.absUrl(c.cv_url) || '#') + '" target="_blank" rel="noopener">' + FILE + '<span>Open CV</span></a>' : '';
     var url = c.link_key ? linkOf(c.link_key) : '';
     var ended = c.link_ends && Date.parse(c.link_ends) <= Date.now();
@@ -775,7 +775,7 @@
     if (h.made && h.member) {
       var m = h.member;
       return '<section class="readgroup hir-hire"><div class="readgroup-head"><h4 class="fsec-h">Colleague</h4>' +
-        '<button class="btn btn-sm" type="button" data-h="openmember">Open record' + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button></div>' +
+        '<button class="btn btn-sm" type="button" data-h="openmember">Open record' + window.ADspaceIcons.glyph('chevron', 'ovgo-chev') + '</button></div>' +
         '<dl class="ovfacts">' + fact('Name', esc(m.name)) + fact('Employee ID', esc(m.staff_code || '')) + fact('Company email', esc(m.email || '')) +
         fact('First day', esc(day(m.first_day))) + fact('Welcome Kit', esc(m.welcomed_at ? 'Acknowledged ' + day(m.welcomed_at) : 'Not acknowledged')) + '</dl></section>';
     }
@@ -1909,7 +1909,7 @@
   }
 
   /* ---- Interview scorecards (Settings, Hiring; step C) -------------- */
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
   var hsc = { rows: null, wired: false };
   function hscMsg(t, k) { msg('hscMsg', t, k); }
   function hscRead() {

@@ -62,8 +62,7 @@
              word: LONG[mo] + ' ' + key.slice(0, 4), short: MON[mo], key: key };
   }
   function isoDay(d) { return CK.day(d); }
-  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'ovgo-chev');
 
   /* A read that answers `{ error }` from a function after the page's own
      check passed is a refusal, and a refusal is never drawn as nothing. */
@@ -926,7 +925,7 @@
   var SOLD = { won: true, newLeads: true, lost: true };
   /* A client in a card's table: its name over its Client ID, opening its record. */
   /* The chevron of every Show N more on the Dashboard. */
-  var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  var DOWN = window.ADspaceIcons.glyph('chevdown', 'ovw-more-chev');
   function clientButton(c, tab) {
     return '<button type="button" class="linkbtn ovw-client" data-go="' + esc(clientUrl(c, tab)) + '">' +
       '<span>' + esc(c.name || 'Untitled client') + '</span>' + (c.client_code ? '<small>' + esc(c.client_code) + '</small>' : '') + '</button>';
@@ -1809,14 +1808,13 @@
     var w = t.checks ? t.checks.done / t.checks.of : null;
     var tone = t.late ? 'late' : (w == null ? used >= 0.8 : used - w > 0.2) ? 'wait' : 'ok';
     var say = 'Time used ' + Math.round(used * 100) + '%. ' + (t.checks ? 'Checklist ' + t.checks.done + ' of ' + t.checks.of + ' done.' : 'No checklist.');
-    return '<span class="ovw-ring is-' + tone + '" role="img" aria-label="' + esc(say) + '" title="' + esc(say) + '"><svg viewBox="0 0 36 36" aria-hidden="true">' +
-      '<circle class="r-track" cx="18" cy="18" r="15.5"/>' +
+    return '<span class="ovw-ring is-' + tone + '" role="img" aria-label="' + esc(say) + '" title="' + esc(say) + '">' + window.ADspaceIcons.drawing('0 0 36 36', '<circle class="r-track" cx="18" cy="18" r="15.5"/>' +
       '<circle class="r-time" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="' + (used * 100).toFixed(1) + ' 100"/>' +
       (w == null ? '' : w >= 1
         ? '<path class="r-done" d="M12.5 18.5l3.6 3.6 7.4-7.6" transform="rotate(90 18 18)"/>'
         : '<circle class="r-in" cx="18" cy="18" r="9"/>' +
-          (w > 0 ? '<circle class="r-work" cx="18" cy="18" r="9" pathLength="100" stroke-dasharray="' + (w * 100).toFixed(1) + ' 100"/>' : '')) +
-      '</svg></span>';
+          (w > 0 ? '<circle class="r-work" cx="18" cy="18" r="9" pathLength="100" stroke-dasharray="' + (w * 100).toFixed(1) + ' 100"/>' : ''))) +
+      '</span>';
   }
 
   /* Delivery against the due date: its words and figures, one copy for
@@ -1930,13 +1928,13 @@
               var say = x.label + ': ' + x.n + ' open' + (x.soon ? ', ' + x.soon + ' due within 2 days' : '') + (x.late ? ', ' + x.late + ' late' : '') +
                 (names.length ? '. Assigned to ' + names.join(', ') : '');
               var off = 0, gap = parts.length > 1 ? 1.5 : 0;
-              var ring = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="r-track" cx="32" cy="32" r="27"/>' + parts.map(function (p) {
+              var ring = window.ADspaceIcons.drawing('0 0 64 64', '<circle class="r-track" cx="32" cy="32" r="27"/>' + parts.map(function (p) {
                 var len = p[1] / x.n * 100, c = '<circle class="r-part is-' + p[0] + '" cx="32" cy="32" r="27" pathLength="100" stroke-dasharray="' +
                   Math.max(0.5, len - gap).toFixed(1) + ' 100" stroke-dashoffset="' + (-off).toFixed(1) + '"/>';
                 off += len;
                 return c;
               }).join('') + '<text x="32" y="32" dominant-baseline="central" text-anchor="middle">' + x.n + '</text>' +
-                '<text class="figs-dots" x="32" y="32" dominant-baseline="central" text-anchor="middle">\u2022\u2022\u2022\u2022</text></svg>';
+                '<text class="figs-dots" x="32" y="32" dominant-baseline="central" text-anchor="middle">\u2022\u2022\u2022\u2022</text>');
               var discs = names.slice(0, 3).map(function (nm) { return A && A.avatar ? A.avatar(nm) : ''; }).join('') +
                 (names.length > 3 ? '<span class="ovw-stage-more">+' + (names.length - 3) + '</span>' : '');
               /* Its name carries the figures, so while they are hidden it is

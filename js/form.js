@@ -936,8 +936,8 @@
     findBox.setAttribute('aria-labelledby', 'pickerTitle');
     findBox.innerHTML =
       '<div class="picker-head"><h3 id="pickerTitle"></h3>' +
-        '<button class="iconbtn" type="button" id="pickerClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
-      '<div class="picker-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>' +
+        '<button class="iconbtn" type="button" id="pickerClose" aria-label="Close">' + window.ADspaceIcons.glyph('x') + '</button></div>' +
+      '<div class="picker-field">' + window.ADspaceIcons.glyph('search') +
         '<input class="input" id="pickerQ" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" data-nodraft ' +
         'role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="pickerList" aria-labelledby="pickerTitle" placeholder="Name or code"></div>' +
       '<ul class="picker-list" id="pickerList" role="listbox" aria-labelledby="pickerTitle"></ul>';
@@ -1015,7 +1015,7 @@
       html += '<li class="picker-opt' + (r.on ? ' is-on' : '') + (r.off ? ' is-off' : '') + '" role="option" id="pickerOpt' + i + '" data-i="' + i + '"' +
         ' aria-selected="' + (r.on ? 'true' : 'false') + '"' + (r.off ? ' aria-disabled="true"' : '') + '>' +
         '<span>' + escHtml(r.text) + '</span>' +
-        (r.on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>' : '') + '</li>';
+        (r.on ? window.ADspaceIcons.glyph('check') : '') + '</li>';
     });
     list.innerHTML = html || '<li class="picker-none" role="presentation">No matches.</li>';
     var first = -1, onAt = -1;

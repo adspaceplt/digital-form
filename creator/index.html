@@ -17,29 +17,30 @@
      it: the page is installed at its own address, the link that proves it. -->
 <link rel="manifest" href="/creator/manifest.webmanifest">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261126rvt">
+<link rel="stylesheet" href="/css/portal.css?v=20261127rv">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
 <script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/(client|verify)\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&!/^(?!DEMO0)./.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261126rvt"><\/script><script src="/demo/engine.js?v=20261126rvt"><\/script>');}}catch(e){}</script>
 <script src="/js/config.js?v=20261126ge"></script>
+<script src="/js/icons.js?v=20261126gm"></script>
 <script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261126rvu"></script>
+<script src="/js/words.js?v=20261127rv"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/grow.js?v=20261117zzzf"></script>
 <script src="/js/state.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261126rfd"></script>
-<script src="/js/maintenance.js?v=20261126rqb"></script>
-<script src="/js/announce.js?v=20261126rfd"></script>
+<script src="/js/maintenance.js?v=20261126gm"></script>
+<script src="/js/announce.js?v=20261126gl"></script>
 <script src="/js/menu.js?v=20261126lo"></script>
 <script src="/js/guide.js?v=20261117zzzf"></script>
-<script src="/js/push.js?v=20261117zzzf"></script>
+<script src="/js/push.js?v=20261126gl"></script>
 <script src="/js/sheet.js?v=20261125ar"></script>
-<script src="/js/form.js?v=20261122zzzc"></script>
+<script src="/js/form.js?v=20261126gl"></script>
 </head>
 <body>
 
-<script src="/js/chrome.js?v=20261122zzzs" data-kicker="Creator Portal" data-for data-actions="push lang"></script>
+<script src="/js/chrome.js?v=20261126gl" data-kicker="Creator Portal" data-for data-actions="push lang"></script>
 
 <main class="shell">
   <div class="pageload" role="status" aria-label="Loading"><span class="pageload-spin" aria-hidden="true"></span></div>
@@ -96,7 +97,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="linksTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="linksTitle">Profile links</h3>
-          <button class="iconbtn" id="linksClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="linksClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body">
           <section class="fsec" id="linksFields"></section>
@@ -113,7 +114,7 @@
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="paySheetTitle" tabindex="-1">
         <div class="sheet-head">
           <h3 id="paySheetTitle">Payment details</h3>
-          <button class="iconbtn" id="payClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button class="iconbtn" id="payClose" type="button" aria-label="Close"><svg aria-hidden="true" data-ic="x"></svg></button>
         </div>
         <div class="sheet-body" id="payFields"></div>
         <div class="sheet-foot">
@@ -147,7 +148,7 @@
          approval. The ID and account numbers are shown as their last four. -->
     <section class="panel crpay" id="payBox" hidden>
       <div class="rec-id rec-id-solo">
-        <span class="cx-tile is-sm crpay-tile" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 11h-4a2 2 0 0 0 0 4h4z"/><path d="M3 7h16a2 2 0 0 1 2 2v2"/></svg></span>
+        <span class="cx-tile is-sm crpay-tile" aria-hidden="true"><svg class="ic" data-ic="wallet"></svg></span>
         <div class="rec-who">
           <h2 class="crpay-title" id="payTitle">Payment details</h2>
           <p class="rec-id-meta" id="payLine"></p>
@@ -171,7 +172,7 @@
       <div class="rec-id rec-id-solo">
         <div class="rec-who"><h2 class="crpay-title" id="profTitle">Profile links</h2></div>
         <div class="rec-ctl">
-          <button class="btn btn-sm" id="linksEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg><span id="linksEditWord">Edit links</span></button>
+          <button class="btn btn-sm" id="linksEdit" type="button"><svg aria-hidden="true" data-ic="pen"></svg><span id="linksEditWord">Edit links</span></button>
         </div>
       </div>
       <div class="crlinks" id="crLinks"></div>
@@ -188,8 +189,7 @@
 </main>
 
 <script src="/js/media.js?v=20261117zzzf"></script>
-<script src="/js/icons.js?v=20261126rqb"></script>
 <script src="/js/otp.js?v=20261122zzr"></script>
-<script src="/js/creator.js?v=20261126cpt"></script>
+<script src="/js/creator.js?v=20261126gl"></script>
 </body>
 </html>

@@ -32,10 +32,10 @@
   function me() { return bridge.me ? bridge.me() : null; }
   function esc(s) { return window.ADspaceWords.esc(s); }
   var UI = window.ADspaceState;
-  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-  var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
+  var PEN = window.ADspaceIcons.glyph('pen');
+  var PLUS = window.ADspaceIcons.glyph('plus');
+  var LOCK = window.ADspaceIcons.glyph('lock');
+  var FILE = window.ADspaceIcons.glyph('file');
 
   /* The form's fields, one list with the database's `personnel_fields()`
      (tests/personnel.js holds the two equal): section, key, label, kind,
@@ -364,7 +364,7 @@
           (can ? '<label class="btn btn-sm prs-pick">' + (f ? 'Replace' : PLUS + 'Add') +
             '<input type="file" accept="' + (k[0] === 'photo' ? 'image/jpeg,image/png' : 'image/jpeg,image/png,application/pdf') + '" data-f="pick" hidden></label>' : '') +
           (f && can ? '<span class="team-act"><button class="kmenu-btn" type="button" data-f="menu" aria-label="More actions for ' + esc(k[1]) + '" aria-expanded="false">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+            window.ADspaceIcons.glyph('more') + '</button>' +
             '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-f="remove">Delete</button></div></span>' : '') +
         '</span></div>';
     }).join('') + '</div><div class="msg" data-fmsg></div>');

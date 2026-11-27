@@ -48,15 +48,12 @@
   var sheet, card, body, head, title, doneBtn, clearBtn, closeBtn;
   var pop, popBody, popClear;
 
-  function svg(path) {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg>';
-  }
-  var GLYPH_FILTERS = svg('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>');
-  var GLYPH_PLUS = svg('<path d="M12 5v14M5 12h14"/>');
-  var GLYPH_SEARCH = svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>');
-  var GLYPH_X = svg('<path d="M6 6l12 12M18 6 6 18"/>');
+  var GLYPH_FILTERS = window.ADspaceIcons.glyph('sliders');
+  var GLYPH_PLUS = window.ADspaceIcons.glyph('plus');
+  var GLYPH_SEARCH = window.ADspaceIcons.glyph('search');
+  var GLYPH_X = window.ADspaceIcons.glyph('x');
   /* The row ⋯'s own three dots across, so every ⋯ is one glyph (TEAM-7, 2026-10-14). */
-  var GLYPH_MORE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  var GLYPH_MORE = window.ADspaceIcons.glyph('more');
 
   function selectsOf(bar) {
     return Array.prototype.filter.call(bar.children, function (el) { return el.tagName === 'SELECT'; });
@@ -114,13 +111,13 @@
      user, 2026-11-12: a list read behind a forgotten filter). Clear filters
      stays the card's and the empty list's alone, never said twice. A view (Group by, Whose work) is never a
      chip: it is a way of reading the list, not a narrowing of it. */
-  var CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+  var CLOSE = window.ADspaceIcons.glyph('x');
   /* v3 (the user, 2026-11-12, "proceed next"): at a desk every filter is
      a pill on that row whatever its value (Stage: All stages ▾), a press
      opening its choices as a menu under it; one set off its default reads
      its value in ink. On a phone the row keeps only the filters set, a
      press putting that one back, as the Filters sheet holds the rest. */
-  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevdown');
   function pillable(sel) { return !sel.hidden && !sel.hasAttribute('data-nofilter') && !sel.hasAttribute('data-view') && sel.options.length > 1; }
   function paintChips(rec) {
     if (!rec.chips) return;
@@ -262,7 +259,7 @@
         '<div class="sheet-head"><h3 id="cmdSheetTitle">Filters</h3>' +
           '<span class="cmdsheet-quiet" id="cmdSheetQuiet"></span>' +
           '<button class="iconbtn" id="cmdSheetClose" type="button" aria-label="Close">' +
-            svg('<path d="M6 6l12 12M18 6 6 18"/>') + '</button></div>' +
+            GLYPH_X + '</button></div>' +
         '<div class="sheet-body cmdsheet-body" id="cmdSheetBody"></div>' +
         '<div class="sheet-foot"><button class="btn btn-primary" id="cmdSheetDone" type="button">Done</button>' +
           '<button class="btn btn-quiet" id="cmdSheetClear" type="button">Clear</button></div>' +

@@ -366,7 +366,7 @@
      Analytics review): Act now, then This week, then Monthly review and
      Reference as folds, shut until opened and kept so in this browser. A
      band with nothing drawn in it leaves. */
-  var CHEV = '<svg class="anl-fold-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var CHEV = window.ADspaceIcons.glyph('chevron', 'anl-fold-chev');
   function foldKey(k) { return 'adspace-anl-fold:' + tab + ':' + k; }
   function bands(page) {
     var band = function (k, title) {
@@ -812,7 +812,7 @@
      the actions, kept as the next version. One card above each tab, the
      latest version read first; Versions, Download and Delete in its ⋯. */
   var AI = window.ADspaceConfirm && window.ADspaceConfirm.ai;
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
+  var DOTS = window.ADspaceIcons.glyph('more');
   var HEALTH = { good: ['ok', 'Good'], mixed: ['wait', 'Mixed'], poor: ['late', 'Poor'] };
   var SEVERITY = { high: ['late', 'High risk'], medium: ['wait', 'Medium risk'], low: ['off', 'Low risk'] };
   var CREDIBLE = { credible: 'Credible', partly: 'Partly credible', not_credible: 'Not credible', not_drawn: 'Not shown' };
@@ -914,7 +914,7 @@
     return '<p class="anl-ai-health"><b>Health</b>' + dot(hl) + '</p>' +
       '<p class="anl-ai-headline">' + esc(a.headline) + '</p><p class="anl-ai-summary">' + esc(a.summary) + '</p>' +
       '<details class="anl-ai-more"><summary><span>Risks, what is working and actions</span>' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>' +
+        window.ADspaceIcons.glyph('chevdown') + '</summary>' +
       list('Risks', a.risks, function (x) {
         return '<div class="anl-ai-row anl-ai-risk"><p><b>' + esc(x.title) + '</b></p>' + dot(SEVERITY[x.severity] || SEVERITY.medium) + '<p>' + esc(x.detail) + '</p></div>';
       }) +
