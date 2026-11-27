@@ -89,3 +89,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   line offers its tax, the client's SST first as Bukku's SV8, never twice"
   fails at 1280 and 390, the same on `main` (1668f21) as on the branch;
   Build quote's lines, untouched by that release. Held here until it ships.
+- 2026-11-27, `pdflibhash` (QUOTE REQUEST DELETED's affected run): its
+  wait for `ADspaceDocs.lib` times out at 10s, the same on `main` (230ae41)
+  as on the branch; the PDF libraries, untouched by that release. Held
+  here until it ships.

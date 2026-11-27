@@ -15247,7 +15247,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qdq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
         var qdc = qdq && DB.clients.filter(function (c) { return c.id === qdq.client_id; })[0];
         if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, qdc.owner_id, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
-        if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
+
+        if (!qdq.removed_at && !(qdq.source === 'website' && !qdq.released_at)) return qtOk({ error: 'not-removed' });
         if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
 
         if (qdq.sent_out_at || qdq.signed_at) return qtOk({ error: 'sent' });
@@ -15327,6 +15328,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ext = { layout: 2, pay_days: Number(pay) };
         if (sel.title && sel.title.trim()) ext.title = sel.title.trim();
         if (sel.valid != null && sel.valid !== '') ext.valid_days = Number(sel.valid);
+
+        if (sel.period_total != null && typeof sel.period_total !== 'boolean') return { error: 'bad-period' };
+        if (sel.period_total === true) ext.period_total = true;
         return Object.assign(ext, { ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms });
       };
       if (name === 'quotation_create') {

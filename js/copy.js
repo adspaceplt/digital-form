@@ -116,5 +116,24 @@
     return after();
   }
 
-  window.ADspaceCopy = { to: copy, later: later };
+  /* A reference somebody comes to copy is the control itself (the
+     Register's serial, a quotation's reference; 2026-11-27): one press
+     copies it and says Copied as every copy does, and the press stays
+     with it, never opening the row it sits on (taken in the capture
+     phase). One markup, one listener, for every screen. */
+  function attr(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
+  }
+  function ref(text) {
+    var t = attr(text);
+    return '<button class="serial-copy" type="button" data-a="copy" data-copyref="' + t + '" aria-label="Copy ' + t + '" title="' + t + '"><span>' + t + '</span></button>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('[data-copyref]') : null;
+    if (!b) return;
+    e.stopPropagation();
+    copy(b, b.getAttribute('data-copyref'));
+  }, true);
+
+  window.ADspaceCopy = { to: copy, later: later, ref: ref };
 })();
