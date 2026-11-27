@@ -102,6 +102,9 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   `schema.sql` ends with `select public.functions_tidy();`, and so does every
   migration that adds or replaces a function. A new function a public page
   calls is granted to anon and joins `open_to_anon` in the same push.
+  The hygiene file runs before that function's migration: the migration's
+  own closing `functions_tidy()` closes to anon whatever the list does not
+  yet name (2026-11-27, `link_hit`, re-granted live).
 - A catalogue change (for example a rate card revision) ships as a migration
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or

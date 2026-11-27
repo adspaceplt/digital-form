@@ -167724,8 +167724,9 @@ grant execute on function public.quote_preflight(jsonb, jsonb, text) to anon, au
 --     the link's counts past three years let go.
 --   * 2026-10-07-function-hygiene.sql: `link_hit` joins `open_to_anon`.
 --
--- ORDER: this file, then 2026-10-07-function-hygiene.sql again (connector),
--- then the pages, then the Worker (`workers/links`, deployed by hand or the
+-- ORDER: 2026-10-07-function-hygiene.sql first (its list takes `link_hit`,
+-- so the tidy at this file's end keeps the anon grant), then this file
+-- (connector), then the pages, then the Worker (`workers/links`, deployed by hand or the
 -- coordinator's Cloudflare connector). Until the Worker is deployed nothing
 -- is counted and the pages read no clicks; an old page never sends an
 -- owner. Safe to run twice.
