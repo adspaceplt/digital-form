@@ -73,6 +73,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1520 Trip card controls at full height; stale suites corrected (Q); tests #309 | 261127.b06a |
 | #1521 pdfreal reads the printed verify address (Q); tests #310 | 261127.fd37 |
 | #1517 One glyph set (N): every page draws from `js/icons.js`, one meaning one glyph (`MEANS`), WhatsApp's own mark on wa.me links; `tests/glyphs.js`; weight budgets raised with reason | 261127.67f8 |
+| #1523 Content Review top (O): one sentence in the head, counts in the strip alone, the set line with Filter, a video's own safe area switch; migration `2026-11-27-review-feed-content-month.sql`; tests #311 | see the coordinator's report |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
