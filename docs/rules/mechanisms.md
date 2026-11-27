@@ -25,7 +25,8 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   - RM, or S$ for a Singapore client billed in S$ (`curOf(c)`: a payload's
     `bill_market`, else `market` SG with `bill_sgd`; the market alone never
     picks the currency); a Singapore client billed in RM reads its total's
-    S$ beside it (`approx(n, c, at)`, ` (approximately S$ 952.38)` at `fx_sgd`).
+    S$ beside it (`approx(n, c, at, fx, zh)`, ` (approximately S$ 952.38)`,
+    in Chinese `（约 S$ 952.38）`, at a record's `fx`, else `fx_sgd` on `at`).
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
     applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
     campaign's booked creators the client's last confirmation (`kind`
@@ -135,7 +136,9 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   and documents, an HR document's sealed copy; 2026-11-19: Documents held a
   fourth copy, `tests/pwapdf.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
-  an off-screen textarea.
+  an off-screen textarea. Words the server makes at the press are copied by
+  `later(btn, promise)`, the write begun inside the press (a ClipboardItem
+  holding the promise), never after the answer alone (Safari refuses it).
 - `js/icons.js` is the one glyph set of every page, console and client
   alike (the user, 2026-11-26), and its drawing the standard: 24 grid,
   stroke 1.8, round ends, outline in ink, never filled or coloured; a new

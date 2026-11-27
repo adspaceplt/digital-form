@@ -137,6 +137,11 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   refused `no-fx` while unset (Build quote says so; a website lead is
   billed in RM, so quoted in RM, until Billing sets S$); Build quote, the row, the PDF and the
   website read S$, and a Letter of Offer takes the S$ lines as they stand.
+  A Singapore client billed in RM reads every total of its quotation link
+  (the totals, Change selection, the signing step's figures) and the PDF
+  downloaded from it with its S$ under it (`.qs-near`, `ADspaceMoney.approx`),
+  at `quote_website_read`'s `fx_sgd`, the rate on the day of issue (null
+  when billed in S$, Malaysian, unsent or held; the user, 2026-11-27).
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
   `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines
@@ -618,10 +623,13 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   anon; `bad-answer`, `expired`, `not-proceeding`; `proceed_at`,
   `proceed_due` the moment plus `quote_reply_days` working days, 2, Tax
   and terms), Request received with the day the team will be in touch.
-  Once a colleague takes the lead the page names them (Your
+  Every quotation surface (the sent link, Request received, Complete your
+  details, the billing details form) names the client's Sales by alone
+  (`client_rep(p_client, 'sales')`, CLIENT REPRESENTATIVE, 2026-11-27; Your
   representative: name, position, Chat on their WhatsApp only where their
-  namecard shows the mobile, else the office's); until then every step
-  offers the office's Chat on WhatsApp (2026-10-27, QTE-2). The link shows the latest
+  namecard shows the mobile, else the office's); never the Person in charge
+  standing in. Unassigned, inactive, removed or a system account, no person
+  is named and every step offers the office's Chat on WhatsApp. The link shows the latest
   revision (`quotations.replaces`, `quote_shown`: Revised on {d}. It
   replaces {ref}.). The link follows the prospect to the client portal
   (`2026-10-26-quotation-to-client-portal.sql`): `quote_website_read`
@@ -656,6 +664,60 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   contact (`quotation_set`, a website quotation's alone; no reminder
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
+- The intake (QUOTE INTAKE, `2026-11-27-quote-intake.sql`; the user,
+  2026-11-27, Queue 12): Your details stands at 760px at a desk, fields
+  two a row (`.qs-duo`), one column under 640px, in sections: Contact
+  person (salutation, name, work email, WhatsApp), Business registration
+  (Registering as, a segment of Company · Sole / Partnership, 公司 · 独资 /
+  合伙, no Individual; Business Registration No. (BRN), 12 digits from a
+  year, required for both, a company's entity code 01, 02 or 04, Sole /
+  Partnership 03, refused `brn-kind` naming the other; Registered name, in
+  capitals), Brand (brand name; Industry, required, Settings' list; Website,
+  else the No website tick and a social media account on its platform: one
+  of the two), Commencement (Planned commencement with On a specific date,
+  as before), Comments (optional, 1,000; the lead's Enquiry); Source is
+  Website by itself. `quote_intake_check` is the one check, the request's
+  and details sent later alike; the page holds the same rules. Who it is
+  is worked out after Submit and never said on the page (the thank-you is
+  the same): the BRN first (an entity's number), then a contact holding
+  both the email and the number; the same brand (`quote_brand_key`) is that
+  record, another brand a new lead whose quotation keeps `match` and reads
+  Matches existing client · {name} on its row, its ⋯ Add as a new brand of
+  {name} (`client_entity_add` on the client's entity, Billing at Work;
+  Billing's Remove takes it back) or Keep as a new lead (its Undo). A
+  registration typed for a record kept, or a number any entity holds, is
+  held for Billing's Use details (`quote_reg_hold`: a submitted
+  `client_detail_forms` row naming the quotation, `quotation_id`, which the
+  link's billing step never reads), never written over Billing; a new lead's
+  Billing takes it.
+- Details asked (QUOTE DETAILS ASKED, `2026-11-27-quote-details-asked.sql`):
+  a website request unsent is asked for what it lacks from its ⋯ (Ask for
+  details, Ask again once asked; `quotation_details_ask`, Clients: Quotations
+  at Work): the question ticks what the request lacks (Business Registration
+  No. and registered name, Industry, Website or social media account,
+  Planned commencement) and a Note, Send email the primary
+  (`supplier-mail` `quoteAsk`, `quote_details_mail_begin`, the Details
+  needed template in the prospect's language, Settings, Messages, Client
+  email templates, Quotation requests; filed as a client email, kind
+  `details`) and Copy for WhatsApp beside it (the same words and the link,
+  sent by hand). The row reads Waiting for details · Reply by {day}
+  (`quote_details_days` working days, Settings, Business, Quotation
+  portal), red once passed, Not quoted · No response once
+  `quote_details_close_days` more pass (worked out on every load by
+  `quote_details_state`, never written), Details received · Send by {day}
+  once answered (the reply days again, the leads team told,
+  `quote.details`). The prospect's own link opens Complete your details:
+  the fields ticked alone, prefilled with what was typed, the note as a
+  card, Submit (`quote_details_submit`, anon, once an ask); the received
+  page's track gains Details received. The details step closes once the
+  quotation is sent, set aside or past the close days. Details sent are
+  kept on the request (`details`, merged into `contact`); the lead the
+  request made takes each where it holds none, any other record holds the
+  registration for Use details alone. A website request is never
+  Cancelled: Not quoted with its reason (Incomplete details, Not a fit,
+  Duplicate, Spam; `quotation_not_quote`), the link reading This quotation
+  request has been closed, Undo where it happened and Reopen in its ⋯ (a
+  request closed for no response too, its ask set aside).
 - What changed before Submit (QUOTATION PREFLIGHT, `2026-11-25-quotation-preflight.sql`;
   the user, 2026-11-25: "like a concert ticket checkout"): `/quote/` asks
   `quote_preflight` (anon, 240 an address an hour, `limit`; never a price)

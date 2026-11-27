@@ -103,7 +103,7 @@
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved', toReviewWord: 'To review',
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
       scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
-      viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
+      viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager', contactUs: 'Contact ADspace',
       lines: function (n) { return n === 1 ? '1 service' : n + ' services'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp',
       invoices: 'Invoices', invoice: 'Invoice', dueOn: function (d) { return 'Due ' + d; }, balanceOf: function (v) { return 'Balance ' + v; },
       invState: { paid: 'Paid', outstanding: 'Outstanding', overdue: 'Overdue' }, downloadPdf: 'Download PDF'
@@ -153,7 +153,7 @@
       toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准', toReviewWord: '待审阅',
       noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
       scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
-      viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
+      viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理', contactUs: '联系 ADspace',
       lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp',
       invoices: '发票', invoice: '发票', dueOn: function (d) { return '到期日：' + d; }, balanceOf: function (v) { return '余额：' + v; },
       invState: { paid: '已付款', outstanding: '未付款', overdue: '已逾期' }, downloadPdf: '下载PDF'
@@ -1240,7 +1240,7 @@
     ['ovHead:company', 'ctHead:contacts', 'invHead:invoices', 'svcHead:services', 'ovSvcHead:services', 'rqHead:requests',
      'docHead:letters', 'meetHead:meetings', 'repHead:reports', 'engHead:engagements',
      'payHead:payment', 'accHead:account', 'ovMeetHead:nextMeeting', 'ovRepHead:latestReport',
-     'ovMgrHead:yourManager', 'ovFbHead:rateTitle'].forEach(function (p) {
+     'ovFbHead:rateTitle'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
     /* An Overview card's way to its tab: the console Overview's own control. */
@@ -1301,10 +1301,14 @@
        managers' shared address and the company's WhatsApp. */
     var mgr = $('ovMgr');
     if (mgr) {
-      mgr.hidden = !c.owner;
-      $('ovMgrBox').innerHTML = c.owner ? '<div class="cp-who"><span class="cx-tile is-round">' + glyph('user') + '</span><span class="cp-led-words"><b class="cp-person">' + esc(c.owner) + '</b><small>' + esc(w.manager) + '</small></span></div><div class="cp-reach">' +
+      /* The Person in charge alone, never a stand-in (CLIENT REPRESENTATIVE,
+         2026-11-27): with nobody assigned, the company and its two ways to
+         reach the team, under Contact ADspace. */
+      mgr.hidden = false;
+      $('ovMgrHead').textContent = c.owner ? w.yourManager : w.contactUs;
+      $('ovMgrBox').innerHTML = (c.owner ? '<div class="cp-who"><span class="cx-tile is-round">' + glyph('user') + '</span><span class="cp-led-words"><b class="cp-person">' + esc(c.owner) + '</b><small>' + esc(w.manager) + '</small></span></div>' : '') + '<div class="cp-reach">' +
         (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + glyph('whatsapp') + esc(w.whatsapp) + '</a>' : '') +
-        (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + glyph('mail') + esc(w.email) + '</a>' : '') + '</div>' : '';
+        (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + glyph('mail') + esc(w.email) + '</a>' : '') + '</div>';
     }
     /* The registered name, the account manager and the status are on the
        identity line above, so the rail carries what is left rather than

@@ -18,14 +18,21 @@
 --   * `app_settings_read` answers both to anyone outside the team beside
 --     SST, the term percentages and the S$ rate: /quote/ and the
 --     quotation PDF print them, each as it stood on the quotation's day.
+--   * `quote_website_read` (restated from CLIENT REPRESENTATIVE) carries
+--     `fx_sgd`, the S$ rate on the quotation's day of issue, for a
+--     Singapore client billed in RM (the user, 2026-11-27): the sent link,
+--     its Change selection and its PDF read each total with
+--     "(approximately S$ …)". Billed in S$, a Malaysian client, a
+--     quotation not yet sent or a held one: null.
 --
--- ORDER: this file, then the pages (a page before it reads the seed's
+-- ORDER: after QUOTE INTAKE and CLIENT REPRESENTATIVE (it restates
+-- their `app_settings_set` and `quote_website_read`); this file, then the pages (a page before it reads the seed's
 -- figures from js/money.js, the same 80 and 20). An old tab keeps the old
 -- sentence until refreshed. Safe to run twice. `app_settings_set` holds a
 -- delete (a planned change withdrawn), unchanged.
--- ROLLBACK: run OUTSTATION CHECK-OUT AT THE OFFICE, THE SQL EDITOR PART's
--- `app_settings_set` and CLIENT PAGES READ THE S$ RATE's
--- `app_settings_read` again; the two rows may stay.
+-- ROLLBACK: run QUOTE DETAILS ASKED's `app_settings_set`, CLIENT PAGES
+-- READ THE S$ RATE's `app_settings_read` and CLIENT REPRESENTATIVE's
+-- `quote_website_read` again; the two rows may stay.
 -- ===========================================================================
 
 -- AD SPEND FIGURES -----------------------------------------------------------
@@ -50,7 +57,7 @@ declare
     'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
     'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
     'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
-    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_details_days', 'quote_details_close_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links',
     'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days', 'hiring_pool_months', 'hiring_keep_months', 'feedback_quiet_months', 'plan_db_mb', 'plan_db_alert_pct',
     'timely_pct', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'hiring_decision_days', 'verify_code_from',
     'work_start', 'work_end', 'work_lunch_min', 'work_weekend',
@@ -104,6 +111,8 @@ begin
        or (v_k = 'hiring_decision_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
        or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
        or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_details_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_details_close_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
        or (v_k in ('creator_pay_days_myr', 'creator_pay_days_other') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
        or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
        or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
@@ -169,6 +178,7 @@ begin
         when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
         when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'feedback_quiet_months' then 'Feedback last requested within' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
         when 'quote_reply_days' then 'Contact within'
+        when 'quote_details_days' then 'Details reply within' when 'quote_details_close_days' then 'Close after Reply by'
         when 'plan_db_mb' then 'Database plan' when 'plan_db_alert_pct' then 'Database alert'
         when 'timely_pct' then 'On time or early target' when 'timely_late_days' then 'Average lateness target'
         when 'stage_back_days' then 'Past dates on stage moves'
@@ -198,15 +208,15 @@ begin
         when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
         when 'analytics_from' then 'Analytics counts from'
         when 'verify_code_from' then 'Document IDs printed from'
+        when 'ad_prepay_pct' then 'Next month''s budget requested at' when 'ad_credit_fee_pct' then 'Agency Credit Term Fee'
         when 'work_start' then 'Working hours start' when 'work_end' then 'Working hours end'
         when 'work_lunch_min' then 'Lunch' when 'work_weekend' then 'Saturday and Sunday'
         when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
-        when 'ad_prepay_pct' then 'Next month''s budget requested at' when 'ad_credit_fee_pct' then 'Agency Credit Term Fee'
         else 'Report due' end;
       v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
       v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours', 'health_cap_default', 'health_task_hours') or v_k like 'priority_%_hours' then ' hours'
-        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days') then ' days'
-        when v_k in ('quote_reply_days', 'creator_pay_days_myr', 'creator_pay_days_other', 'hiring_decision_days') then ' working days'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'quote_details_close_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days', 'timely_late_days', 'stage_back_days', 'hiring_reply_days', 'session_idle_days', 'health_remind_days') then ' days'
+        when v_k in ('quote_reply_days', 'quote_details_days', 'creator_pay_days_myr', 'creator_pay_days_other', 'hiring_decision_days') then ' working days'
         when v_k = 'quote_wa_day' then ' per day'
         when v_k = 'plan_db_mb' then ' MB'
         when v_k = 'work_lunch_min' then ' minutes'
@@ -243,6 +253,7 @@ begin
   end loop;
   return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
 end $$;
+
 revoke all on function public.app_settings_set(date, jsonb) from public, anon;
 grant execute on function public.app_settings_set(date, jsonb) to authenticated;
 
@@ -262,5 +273,170 @@ begin
                 '[]'::jsonb));
 end $$;
 grant execute on function public.app_settings_read() to anon, authenticated;
+
+create or replace function public.quote_website_read(p_key text)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  w  public.quotations;
+  q  public.quotations;
+  c  public.clients;
+  m  public.team_members;
+  pm public.team_members;
+  pc public.client_contacts;
+  d  public.client_documents;
+  f  public.client_detail_forms;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_stage text;
+  v_portal boolean := false;
+  v_billed boolean;
+  v_own boolean;
+  v_unsent boolean;
+  v_held boolean;
+  v_ds   text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  -- Any quotation with a link: a website quotation, or a team's once
+  -- `quotation_link` made one (QUOTATION SIGNING).
+  select * into w from public.quotations x
+   where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  -- Details asked of the prospect (QUOTE DETAILS ASKED, 2026-11-27).
+  v_ds := public.quote_details_state(q);
+  -- A website quotation the team has not sent holds back its price at every
+  -- stage, Not proceeding included (audit 2026-10-30).
+  v_unsent := q.source = 'website' and q.released_at is null;
+  select * into c from public.clients x where x.id = w.client_id;
+  -- The representative a quotation names: the client's Sales by alone, never
+  -- a stand-in (CLIENT REPRESENTATIVE, 2026-11-27).
+  select * into m from public.team_members x where x.id = public.client_rep(c.id, 'sales');
+  -- Prepared by: the colleague who made the revision shown; a website
+  -- quotation's, the person in charge.
+  select * into pm from public.team_members x where x.id = public.quote_sign_member(q.made_by);
+  if pm.id is null and q.source = 'website' then pm := m; end if;
+  -- The letter that stands on the quotation's lines, the latest first.
+  select dd.* into d from public.client_documents dd
+   where dd.kind = 'offer' and dd.voided_at is null and dd.superseded_by is null
+     and exists (select 1 from public.client_document_services ds
+                   join public.client_services s on s.id = ds.service_id
+                  where ds.document_id = dd.id and s.quotation_id = q.id)
+   order by dd.created_at desc limit 1;
+  -- The client's details form is offered only on the website quotation
+  -- that made the lead: a later website quotation that matched an existing
+  -- lead's email and number never opens that lead's form (2026-10-26, audit).
+  v_own := w.source = 'website' and c.created_at >= w.issued_at - interval '1 minute'
+           and not exists (select 1 from public.quotations o
+                            where o.client_id = c.id and o.issued_at < w.issued_at and o.id <> w.id);
+  -- A website quotation that found a client the team already serves
+  -- (WEBSITE QUOTATION FINDS ITS CLIENT, 2026-11-25) says nothing of that
+  -- client while the team has not sent it: no representative, no
+  -- preparer, the market read from the number typed.
+  v_held := v_unsent and not v_own and coalesce(c.stage, '') not in ('lead', 'contacted', 'proposal');
+  if v_held then m := null; pm := null; end if;
+  v_billed := coalesce(btrim(c.legal_name), '') <> '' and coalesce(btrim(c.company_no), '') <> ''
+              and coalesce(btrim(c.billing_address), '') <> '';
+
+  if d.id is not null then
+    if d.verified_at is not null and c.stage = 'active' then
+      v_stage := 'welcome';
+      select exists (select 1 from public.client_contacts k
+                      where k.client_id = c.id and k.archived_at is null and k.portal_access
+                        and lower(btrim(k.email)) = lower(btrim(coalesce(w.contact->>'email', '')))) into v_portal;
+    elsif d.signed_at is not null then v_stage := 'signed';
+    else v_stage := 'letter';
+    end if;
+  elsif w.status = 'not_proceeding' or q.status = 'not_proceeding' then
+    v_stage := 'closed';
+  elsif q.source = 'website' and q.released_at is null and v_ds = 'closed' then
+    -- Not answered past the close days: closed as Not quoted, worked out.
+    v_stage := 'closed';
+  elsif q.source = 'website' and q.released_at is null and v_ds in ('asked', 'late') then
+    -- The team asked for details: the link opens the fields asked alone.
+    v_stage := 'details';
+  elsif q.source = 'website' and q.released_at is null then
+    -- Being reviewed: nothing priced leaves the database (2026-10-29).
+    v_stage := 'review';
+  elsif q.signed_at is not null then
+    -- Signed on the link or on paper: accepted, then welcome once reviewed
+    -- and Active (QUOTATION SIGNING).
+    if q.reviewed_at is not null and c.stage = 'active' then
+      v_stage := 'welcome';
+      select exists (select 1 from public.client_contacts k
+                      where k.client_id = c.id and k.archived_at is null and k.portal_access
+                        and lower(btrim(k.email)) = lower(btrim(coalesce(q.signed->'contact'->>'email', w.contact->>'email', '')))) into v_portal;
+    else v_stage := 'accepted';
+    end if;
+  elsif q.valid_until < v_today then
+    v_stage := 'expired';
+  elsif not v_billed and v_own then
+    select * into f from public.client_detail_forms x
+     where x.client_id = c.id and x.voided_at is null
+     order by x.created_at desc limit 1;
+    if f.id is not null and f.submitted_at is not null and f.used_at is null then v_stage := 'billing_sent';
+    elsif f.id is not null and f.submitted_at is null and f.expires_at > now() then v_stage := 'billing';
+    end if;
+  elsif v_billed and w.proceed_at is not null and w.source = 'website' then
+    v_stage := 'billing_sent';
+  end if;
+  if v_stage is null then
+    v_stage := case when w.proceed_at is not null then 'ready' else 'quote' end;
+  end if;
+  -- The record's details prefill only its own link: a website quotation
+  -- that matched an existing lead never reads that lead's billing or
+  -- primary contact, and a closed or expired link prefills nothing
+  -- (audit 2026-11-04).
+  if q.signed_at is null and (w.source <> 'website' or v_own) then
+    select * into pc from public.client_contacts x
+     where x.client_id = c.id and x.archived_at is null and x.is_primary
+     order by x.created_at limit 1;
+  end if;
+
+  return jsonb_build_object(
+    'ref', q.ref, 'first_ref', w.ref, 'revised', q.id <> w.id,
+    'brand', coalesce(w.contact->>'brand', w.brand), 'version', case when q.source <> 'website' or q.released_at is not null then q.version end,
+    'issued_at', q.issued_at,
+    'valid_until', case when not v_unsent then q.valid_until end,
+    'lines', case when not v_unsent then q.lines end,
+    'totals', case when not v_unsent then q.totals end,
+    'reply_due', case when v_stage = 'review' then q.reply_due end,
+    'details_at', case when v_stage = 'review' then q.details_at end,
+    'ask', case when v_stage = 'details' then jsonb_build_object(
+      'fields', q.details_ask->'fields', 'note', q.details_ask->>'note', 'due', q.details_due,
+      'known', public.quote_details_known(q.contact, array(select jsonb_array_elements_text(q.details_ask->'fields')))) end,
+    'selection', w.selection, 'attention', coalesce(w.contact->>'name', pc.name),
+    'stage', v_stage,
+    'status', case when d.id is not null then 'offer' else q.status end,
+    'details_key', case when v_stage = 'billing' then f.access_key end,
+    'portal', v_portal,
+    'proceed_at', w.proceed_at, 'proceed_due', w.proceed_due,
+    'rep', case when m.id is null then null else jsonb_build_object('name', m.name, 'title', nullif(btrim(coalesce(m.designation, '')), ''),
+             'whatsapp', case when coalesce(m.card_on, true) and coalesce(m.card_mobile, true) then nullif(public.wa_number(m.mobile), '') end) end,
+    'market', case when v_held then case when w.contact->>'whatsapp' like '+65%' then 'SG' else 'MY' end
+                   when c.market = 'SG' then 'SG' else 'MY' end,
+    'today', v_today,
+    -- A Singapore client billed in RM: the S$ rate on its day of issue, so
+    -- each total reads its S$ beside it (AD SPEND FIGURES, 2026-11-27).
+    'fx_sgd', case when not v_unsent and not v_held and c.market = 'SG' and coalesce(q.totals->>'currency', '') <> 'SGD'
+                   then nullif(public.app_setting('fx_sgd', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date), 0) end,
+    'signed', case when q.signed_at is not null then jsonb_build_object('at', q.signed_at, 'via', q.signed->>'via',
+                'signer', q.signed->'signer', 'signature', q.signed->'signature', 'company', q.signed->'company',
+                'contact', q.signed->'contact', 'record', case when q.signed->>'via' = 'online' then q.signed->'record' end) end,
+    'prepared', case when pm.id is not null then jsonb_build_object('name', pm.name, 'title', nullif(btrim(coalesce(pm.designation, '')), ''))
+                     when not v_held and nullif(btrim(coalesce(q.made_by, '')), '') is not null then jsonb_build_object('name', q.made_by, 'title', null) end,
+    'reviewed', case when q.reviewed_at is not null then jsonb_build_object('name', q.reviewed_by, 'title', q.reviewed_role, 'at', q.reviewed_at) end,
+    'prefill', case when q.signed_at is null and not v_unsent and v_stage not in ('closed', 'expired') then jsonb_build_object(
+      'company', case when w.source <> 'website' or v_own then
+                   jsonb_build_object('legal_name', coalesce(c.legal_name, ''), 'company_no', coalesce(c.company_no, ''),
+                                      'billing_address', coalesce(c.billing_address, ''), 'sst_no', coalesce(c.sst_no, ''), 'tin', coalesce(c.tin, ''))
+                 else jsonb_build_object('legal_name', '', 'company_no', '', 'billing_address', '', 'sst_no', '', 'tin', '') end,
+      'contact', case when pc.id is not null then jsonb_build_object('salutation', coalesce(pc.salutation, ''), 'name', coalesce(pc.name, ''),
+                                                                    'phone', coalesce(nullif(btrim(pc.phone), ''), case when btrim(coalesce(pc.whatsapp, '')) !~ '^@' then btrim(pc.whatsapp) end, ''),
+                                                                     'email', coalesce(pc.email, ''))
+                      else jsonb_build_object('salutation', coalesce(w.contact->>'salutation', ''), 'name', coalesce(w.contact->>'name', ''),
+                                              'phone', coalesce(w.contact->>'whatsapp', ''), 'email', coalesce(w.contact->>'email', '')) end) end);
+end $$;
+revoke all on function public.quote_website_read(text) from public;
+grant execute on function public.quote_website_read(text) to anon, authenticated;
 
 -- END OF AD SPEND FIGURES ----------------------------------------------------
