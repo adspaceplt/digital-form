@@ -140,7 +140,6 @@
       chgNone: 'Change a choice to see the revised price.', chgPendT: 'Changes requested',
       chgPend: 'Your changes were requested on {d}. ADspace will send the revised quotation by {r}.', chgWithdraw: 'Withdraw request',
       perMonth: '{a} per month', plusMonth: '+{a} per month', incl: 'Included', each: '{a} each', eachMonth: '{a} each per month',
-      termOff: 'A {n}-month commitment reduces every monthly charge by {p}%.',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
@@ -290,7 +289,6 @@
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
       chgPend: '您已于{d}提交修改请求，ADspace 将于{r}前发送修订后的报价。', chgWithdraw: '撤回请求',
       perMonth: '每月 {a}', plusMonth: '每月另加 {a}', incl: '已包含', each: '每项 {a}', eachMonth: '每项每月 {a}',
-      termOff: '签订{n}个月合约，每月费用减免{p}%。',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
@@ -1209,9 +1207,8 @@
     h += '<div class="qs-xbox" id="qsChFilesBox">' + chFilesHtml() + '</div>';
     var terms = (card.terms || []).map(function (x) { return Number(x.months); });
     if (terms.length) {
-      var off = (card.terms || []).filter(function (x) { return Number(x.pct) < 0; }).map(function (x) { return f(w.termOff, { n: x.months, p: n0(-Number(x.pct)) }); });
-      h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true) +
-        (off.length ? '<p class="qs-note">' + noteH(off.join(lang === 'zh' ? '' : ' ')) + '</p>' : ''));
+      // No discount sentence under the term: the totals carry it (the user, 2026-11-27).
+      h += sec(w.term, seg('qsChTerm', w.term, terms.map(function (m) { return [m, f(w.months, { n: m })]; }), CH.sel.term, true));
     }
     return h;
   }

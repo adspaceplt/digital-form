@@ -260,6 +260,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   asked only where its budget stands beside no plan with ads (`adopt`); a
   sent link's change from a plan with ads to one without takes the
   quotation's budget out (`quote_change_sel`; hotfix 2026-11-27).
+- A quote link's Change selection draws no discount sentence under the
+  commitment; the totals carry the term discount (the user, 2026-11-27).
 - Several brands on one quotation (`2026-11-24-quotation-brands.sql`; the
   user, 2026-11-24: "1x plan F and 1x plan B for another brand under same
   client entity"): `p_sel.brands` (1 to 10, each a `name` with its own plan,
