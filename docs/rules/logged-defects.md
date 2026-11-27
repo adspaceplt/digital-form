@@ -61,3 +61,11 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   under another group), so the walk stops at Settings and Public holidays'
   `holYearStrip` is measured at no width; and `csStrip`, a strip #1523
   added, is not named in `STRIP_NAMES`. Held here until it ships.
+- 2026-11-27, `quotesite` (the ad budget hotfix): a /quote/ start date
+  before today is refused twice, `js/form.js`'s date note ("Choose a date
+  from …") under the field and `#qsStartOnMsg` ("Choose a preferred start
+  date from today onwards.") under that, one fault said twice. Held here
+  until it ships.
+- 2026-11-27, `copyscan` (the same release): a word-table line holding a
+  semicolon (`fullBrand` in `js/quote.js`) is not listed, so the copy
+  review never reads it. Held here until it ships.

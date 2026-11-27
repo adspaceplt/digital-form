@@ -11,13 +11,17 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   ends. `{name}` is the account manager: the client's Person in charge when
   the request was sent, stored on the request; a client with none is not
   asked about one. No page types a question, a scale or a band.
-- A request exists only when a colleague sends one (Clients at Work, the
-  client active or paused and in scope), by email to the client's primary
-  contact alone; never on a schedule, never by itself, never on WhatsApp
-  (the user, 2026-11-24). A new request of the same form closes the open one
-  (`replaced`); another form stands beside it.
+- A request exists only when a colleague makes one (Clients at Work, the
+  client active or paused and in scope): emailed to the client's primary
+  contact, or copied for the client's WhatsApp group and pasted by hand
+  (the user, 2026-11-27, widening 2026-11-24's email alone); never on a
+  schedule, never by itself, never sent by the portal on WhatsApp. Its
+  `channel` (email, whatsapp) says how it went, on the record's row and in
+  the Activity record. A new request of the same form closes the open one
+  (`replaced`), whichever way either went; another form stands beside it.
+  Sending and Sent recently hold across both ways.
 - Request feedback is the Feedback part's head act, and the client record's
-  ⋯ on every other tab (Clients at Work, Send email
+  ⋯ on every other tab (Clients at Work, Send email or Send WhatsApp
   for this colleague, a client never a lead): it asks the form (a segment),
   then `supplier-mail` `{ feedback: true }` makes the request
   (`feedback_mail_begin`, refused `send-off` or `email-off` before anything
@@ -26,11 +30,18 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   withdraws the request. One still going out is refused `sending`, and one
   of the same form within the repeat hours (`wa_repeat_hours`) asks first
   as Sent recently (when, by whom, to whom), sent on Send again
-  (`again`, `p_again`; RETENTION AND JOBS HELD, 2026-11-25). The WhatsApp feedback template is no longer offered
-  from the record.
+  (`again`, `p_again`; RETENTION AND JOBS HELD, 2026-11-25). Copy for WhatsApp stands beside Send in the same
+  sheet (where this colleague may send WhatsApp by hand, `send_ok('whatsapp')`;
+  alone as the primary where they may not email): `feedback_wa_copy` makes
+  the request (a primary contact needed, not their email: `no-primary`),
+  answers the form's Email template in the contact's language as plain text
+  with its button's words and the link under it, and the page copies it at
+  the press (`ADspaceCopy.later`); a copy that failed asks Copy again,
+  replacing the request it made. A copied request closes as an emailed one
+  does. The WhatsApp feedback template is not offered from the record.
 - Its words are Clients' Email templates, Feedback (`feedback_email_templates`,
   2026-11-24): each form in English and 中文, a subject, a message and a
-  button, its fields {contact name}, {client name} and {link}
+  button (Copy for WhatsApp takes the message and the button's words), its fields {contact name}, {client name} and {link}
   (`template_fields('feedback')`), seeded with the words the function wrote;
   `feedback_email_template_save` at `team.settings` (`bad-subject`,
   `bad-body`, `bad-button`, `unknown-field`), filed `team.changed` under

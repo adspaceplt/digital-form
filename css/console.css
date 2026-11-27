@@ -8943,6 +8943,11 @@ svg.sec {
 .console .rec-part > .msg:empty { display: none; }
 .console .rec-part > .msg { margin: 0; padding: 0 15px 8px; }
 .console .rec-part .crm-table { background: none; border: 0; border-radius: 0; box-shadow: none; outline: 0; margin: 0; }
+/* A part's last row meets the card's rounded foot 5px in: its corners are
+   concentric (the card's less the inset), so a shaded ground (a row just
+   saved, a hover) follows the card's curve, never crossing its edge (the
+   user, 2026-11-27: a saved quotation's ground ran past the card's corner). */
+.console .rec-part :is(.crm-table, .softpanel) > :last-child { border-end-start-radius: calc(var(--section-radius) - 5px); border-end-end-radius: calc(var(--section-radius) - 5px); }
 .console .rec-part .empty, #crmWork .rec-part .empty, #campWork .rec-part .empty { background: none; border: 0; margin: 0; padding: 2px 15px 14px; }
 .console .rec-part .crm-removed-toggle { margin: 12px 15px; }
 .console .rec-pane:has(> .rec-part) { display: flex; flex-direction: column; gap: 16px; }

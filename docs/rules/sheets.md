@@ -68,8 +68,11 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     sheet (it answers its own Enter) or with the finder open, never a red
     button. A sheet opened by `js/ops.js` holds its card, never its close
     mark (Enter there had shut the step sheet).
-- `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
-  is every question with a consequence. **No `window.confirm`, `prompt` or
+- `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, gate, alt, field|fields, match, cancel:false}, onYes)`)
+  is every question with a consequence. `alt` ({label, run, gate}) is a
+  second, tonal answer beside the primary, its fields checked the same and
+  answered as `wait`; the act is called inside the press. `gate` is the
+  answer's `data-gate`. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
   - A field marked `half` sits beside the next one (a date and its time),
     `third` three across (a named section of three figures, `.is-third`);
