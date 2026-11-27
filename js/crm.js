@@ -1302,6 +1302,7 @@
        refresh restores its own place (`restoring`). */
     if (!same && !restoring) window.scrollTo(0, 0);
     state.fbOvFor = null; state.fbOv = null;
+    state.links = null;
     state.client = c;
     /* The list was read once; Content Review's settings edit the same
        handles and logo, so a record opened from the list is read again and
@@ -1475,7 +1476,7 @@
      open it on their part). */
   /* In the order a client is won (2026-11-25, the user): Overview,
      Interactions, Brand, Services, Account, Engagements. */
-  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], brand: ['brand'], services: ['services', 'documents'],
+  var TABS = { overview: ['overview'], interactions: ['calls', 'feedback'], brand: ['brand'], services: ['services', 'documents', 'links'],
     account: ['contacts', 'billing'], engagements: ['engagements', 'checklists'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
@@ -1509,6 +1510,9 @@
     if (k === 'activity') return maySeeActivity();
     /* Feedback is asked of a client, never a lead (CLIENT FEEDBACK, 2026-11-24). */
     if (k === 'feedback') return !!state.client && bandKey(state.client.stage) !== 'clients.leads' && mayPart('clients', 'view');
+    /* A client's short links (SHORT LINK CLICKS, 2026-11-27): read at Short
+       Links View, drawn once the client holds one. */
+    if (k === 'links') return !!state.client && mayPart('links', 'view') && !!(state.links && state.links.length);
     if (k === 'engagements') {
       var c = state.client, ENG = window.ADspaceEngage;
       return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
@@ -1555,6 +1559,7 @@
     if (parts.indexOf('calls') > -1 && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
     if (parts.indexOf('feedback') > -1) loadFeedback();
+    if (group === 'services' && (visit || !state.links)) loadLinks();
     paintFbAct();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
@@ -3068,6 +3073,53 @@
       else ['data-gate', 'data-gate-off', 'aria-disabled', 'aria-description'].forEach(function (x) { b.removeAttribute(x); });
     });
   }
+  /* SHORT LINK CLICKS (2026-11-27): the client's links and its campaigns',
+     each with its visits in the last 30 days (Malaysia's days, today
+     included). Read on a visit to Services; the part is drawn only where
+     there is one, so a client without links keeps its two parts. */
+  function loadLinks() {
+    var c = state.client;
+    if (!c || !mayPart('links', 'view')) return;
+    var forId = c.id;
+    var from = window.ADspaceClock.addDays(window.ADspaceClock.today(), -29);
+    db.from('links').select('slug, target_url, title, active, campaign_id, campaigns(title)').eq('client_id', c.id).order('slug').then(function (r) {
+      if (!state.client || state.client.id !== forId) return;
+      if (r.error) throw r.error;
+      var rows = r.data || [];
+      if (!rows.length) return [rows, []];
+      return db.from('link_clicks').select('slug, n').in('slug', rows.map(function (l) { return l.slug; })).gte('day', from)
+        .then(function (k) { if (k.error) throw k.error; return [rows, k.data || []]; });
+    }).then(function (both) {
+      if (!both || !state.client || state.client.id !== forId) return;
+      var sums = {};
+      both[1].forEach(function (k) { sums[k.slug] = (sums[k.slug] || 0) + Number(k.n || 0); });
+      var had = !!(state.links && state.links.length);
+      state.links = both[0].map(function (l) { return Object.assign({ clicks: sums[l.slug] || 0 }, l); });
+      if (had !== !!state.links.length) showPane(pane, false);
+      paintLinks();
+    }).catch(function (e) {
+      if (!state.client || state.client.id !== forId) return;
+      state.links = state.links && state.links.length ? state.links : [{ failed: true }];
+      showPane(pane, false);
+      var box = $('crmLinks');
+      if (box) ADspaceState.failLine(box, 'Short links', e && e.message, loadLinks);
+    });
+  }
+  function paintLinks() {
+    var box = $('crmLinks'), rows = (state.links || []).filter(function (l) { return !l.failed; });
+    var n = $('crmLinkN');
+    if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
+    if (!box || !rows.length) return;
+    var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+    box.innerHTML = '<div class="crm-table lkc-table"><div class="lkc-row crm-head prow"><span class="pr-main">Short link</span>' +
+      '<span class="pr-end">Visits in 30 days</span></div>' + rows.map(function (l) {
+        return '<div class="lkc-row prow' + (l.active === false ? ' is-off' : '') + '">' +
+          '<span class="pr-main"><b>' + esc(host + '/' + l.slug) + (l.active === false ? ' <span class="tone is-off">Paused</span>' : '') + '</b>' +
+            '<small>' + esc([l.title || l.target_url || '', l.campaigns && l.campaigns.title].filter(Boolean).join(' \u00b7 ')) + '</small></span>' +
+          '<span class="pr-end">' + esc(String(l.clicks)) + '</span></div>';
+      }).join('') + '</div>';
+  }
+
   function loadFeedback() {
     var c = state.client, box = $('crmFbBox');
     if (!c || !box) return;
