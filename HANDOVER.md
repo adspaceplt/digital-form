@@ -99,6 +99,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | Build quote on a phone: tax back on the Qty row | 261127.2820 |
 | Deletes at Full control (access fix, "go all 13"): 13 admin tools' deletes ask Full control and join `delete_kinds`, Edit files Request delete; a request against a granted part asks `ops_granted`; guard in `tests/sql.js`; migration `2026-11-27-deletes-at-full-control.sql` live | see the coordinator's report |
 | Hotfix: a quotation is valid for its own Valid for, website requests included, from the day it is published; the PDF's TERMS states the same days (migration `2026-11-27-quote-valid-own-days.sql`, applied and read back). ADP/QT2611-B02 (REQ2611-SBD) was published at 08:58, before it, and still reads valid until 27 Dec: correcting it to 11 Dec waits on the coordinator | (this PR) |
+| Email templates: each two-language email (Service rating, Performance review, Ask for details) is one row with an English · 中文 strip in its editor; a missing 中文 reads 中文 not written; no database change | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
