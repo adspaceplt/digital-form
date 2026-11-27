@@ -178,14 +178,11 @@ is empty and only shrinks (`--write` refuses to add).
   `app_settings` / `perf_settings`, shared words to `js/words.js`, a colour or
   size to a token, an id or endpoint to `js/config.js`, a secret to Supabase
   only. The report names what became configurable.
-- Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
-  further pushes the same day). Bump it with one `sed` over every HTML file that
-  carries one, never inside `.claude/` (agents' worktrees live there).
-  `js/icons.js`'s stamp is also `ICONS` in `js/maintenance.js`, which fetches
-  it where a notice wants a glyph on a page holding no icon set.
-  A merge's stamp conflict is resolved line by line, never by taking one
-  side's whole file: the branch's own markup changes are kept.
-  A restamp or a merge's resolution keeps every script tag a page holds:
+- Every script, stylesheet or picture address that is stamped is written
+  `?v=dev` and nothing else: the Pages build (`.github/workflows/pages.yml`)
+  writes each as its file's content stamp (`.github/stamp.js`), and stops on
+  a stamp naming no file. Never type a stamp (`tests/stamp.js`).
+  A merge's resolution keeps every script tag a page holds:
   `tests/pagescripts.js` fails a page missing a script its own scripts call.
   A page holds no script nothing on it calls: a client page's weight is
   every visitor's.
@@ -203,7 +200,8 @@ is empty and only shrinks (`--write` refuses to add).
 - A new state (a second row, a file, an error) is seeded in the walk, because a
   pane that walks empty is a pane nobody has measured.
 - The deploy is confirmed from the GitHub Pages workflow run for the merge
-  commit (`pages build and deployment`, success). A deploy GitHub cancelled on its
+  commit (`Deploy the site`, success; `pages build and deployment` until
+  Settings › Pages › Source reads GitHub Actions). A deploy GitHub cancelled on its
   timeout is never re-run (the re-run reuses the cancelled deployment): the
   next commit on main deploys the site whole. `curl` to the site returns
   403 from the sandbox and proves nothing.
