@@ -21,7 +21,7 @@
      tagline at another width under the wordmark. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261127qj">
+<link rel="stylesheet" href="/css/portal.css?v=20261127py">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
@@ -29,8 +29,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261126ge"></script>
 <script src="/js/icons.js?v=20261127a"></script>
-<script src="/js/demo.js?v=20261121qse"></script>
-<script src="/js/words.js?v=20261127cl"></script>
+<!-- js/demo.js only while a demo is kept in this browser (its sample data, or an expired one to let go). -->
+<script>try{if(window.ADSPACE_DEMO||localStorage.getItem('adspace-demo'))document.write('<script src="/js/demo.js?v=20261121qse"><\/script>');}catch(e){}</script>
+<script src="/js/words.js?v=20261127cm"></script>
 <script src="/js/clock.js?v=20261125ct"></script>
 <script src="/js/api.js?v=20261126rfd"></script>
 <script src="/js/maintenance.js?v=20261127a"></script>
@@ -65,7 +66,7 @@
 <!-- A namecard not found takes every page's bar and foot (the cover
      family, 2026-11-22); the card itself stands alone, so the chrome is
      drawn only with the notice (js/card.js clones this in). -->
-<template id="ncChrome"><script src="/js/chrome.js?v=20261126gl" data-kicker="eNamecard"></script></template>
+<template id="ncChrome"><script src="/js/chrome.js?v=20261127py" data-kicker="eNamecard"></script></template>
 <script src="/js/card.js?v=20261122zzq"></script>
 </body>
 </html>

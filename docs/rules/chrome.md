@@ -47,6 +47,11 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   every section (a ⋯ shut on a press elsewhere) is its own, never a listed
   script's (2026-11-22: Content Review read `laman-citra` as an id
   and Analytics left the rail, crm.js and analytics.js not yet fetched).
+- The on-demand loader is `js/chrome.js`'s, one copy (`ADspaceChrome.need`, `needHeld`, `needThen`; admin's
+  wrappers call it): a client page lists a script it uses only at a press (the PDF scripts) in its own
+  `#lazyScripts`, warmed where the Download is drawn so the press opens its tab at once (iOS), awaited at
+  the press only as a fallback; `js/demo.js` is written only while a demo is held (`ADSPACE_DEMO` or
+  `localStorage` `adspace-demo`); a rule only the console meets lives in `css/console.css` (2026-11-27).
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied; a
