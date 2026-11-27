@@ -422,7 +422,7 @@
     var el = name !== g && partShown(name) ? partEl(name) : null;
     if (el) {
       var first = Array.prototype.filter.call(el.parentNode.children, function (x) { return x.classList.contains('cp-card') && !x.hidden; })[0];
-      if (first !== el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+      if (first !== el) requestAnimationFrame(function () { window.ADspaceChrome.underHead(el); });
     }
     var url = new URL(location.href);
     if (name === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', name);
@@ -462,7 +462,7 @@
     wantPane = null;
     showPane(go.getAttribute('data-go'), true);
     var strip = $('cpTabs');
-    if (strip && strip.getBoundingClientRect().top < 0) strip.scrollIntoView({ block: 'start' });
+    window.ADspaceChrome.underHead(strip, true);
   });
   window.addEventListener('popstate', function () { if (feed) showPane(paneFromUrl(), false); });
 

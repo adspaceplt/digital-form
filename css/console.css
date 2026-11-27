@@ -7144,10 +7144,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* At a desk a row holding them keeps its reference whole: the buttons take
    the line under the figure and state, ending at the ⋯'s edge, since three
    on the first line left the reference a word a line. */
-/* A part brought into view by its address (tab=billing) stops under the
-   sticky bar, never behind it (2026-10-31, the day's gate: Billing's heading
-   sat under the console's head). */
-.console .rec-pane { scroll-margin-top: calc(var(--head-h) + 12px); }
 .rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
 /* The buttons' line spans every track, so the auto track is held at nought
    on such a row: sized by that row's own buttons it widened by one more
@@ -8850,7 +8846,6 @@ svg.sec {
 .console-count b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .console-count.is-late, .console-count.is-late b { color: var(--err); }
 @media (min-width: 861px) {
-  :root:not(.has-tabbar) { scroll-padding-top: calc(var(--head-h) + 12px); }
   /* The sign-in page and every cover stay white (the user, 2026-11-13:
      "fully white would be ok"); the grey frame is the signed-in console's. */
   :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--ground); }
@@ -9021,7 +9016,7 @@ svg.sec {
 .ovw-kpi.is-link { cursor: pointer; }
 @media (hover: hover) { .ovw-kpi.is-link:hover { background: var(--sunk); } }
 .ovw-kpi.is-link:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
-.ovw-card { scroll-margin-top: calc(var(--head-h) + 24px); }
+.ovw-card { scroll-margin-top: 12px; }
 .ovw-cardhead h3:focus { outline: 0; }
 .ovw-tbl .ovw-tbl-group th { padding-top: 16px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .ovw-tbl tbody:first-of-type .ovw-tbl-group th { padding-top: 4px; }

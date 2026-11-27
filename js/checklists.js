@@ -96,13 +96,7 @@
 
   /* The opened checklist's head is brought under the sticky head, never left
      below the fold under the record's head and tabs (2026-10-20, CLI-7). */
-  function bringIntoView(el) {
-    if (!el) return;
-    var bar = document.querySelector('.console-head');
-    var room = (bar ? bar.getBoundingClientRect().bottom : 0) + 12;
-    var top = el.getBoundingClientRect().top + window.pageYOffset - room;
-    window.scrollTo(0, Math.max(0, top));
-  }
+  function bringIntoView(el) { window.ADspaceChrome.underHead(el); }
 
   function open(host, ctx, kind) {
     host.innerHTML = '<div class="skel skel-row"></div>';

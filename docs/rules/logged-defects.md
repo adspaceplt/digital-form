@@ -54,13 +54,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   function): "the schema's last wa_compose_prepare is this one, refusing
   feedback to a lead…" fails since F8 (#1504) redefined
   `wa_compose_prepare` after that band. Held here until it ships.
-- 2026-11-27, `uxaudit` (found walking main 631aaf2 for the page weight
-  release, which touches neither Settings nor Content Review): the walk
-  clicks `#setList [data-a="holidays"]` after choosing the Portal group,
-  and the button is never visible there (Public holidays is now listed
-  under another group), so the walk stops at Settings and Public holidays'
-  `holYearStrip` is measured at no width; and `csStrip`, a strip #1523
-  added, is not named in `STRIP_NAMES`. Held here until it ships.
 - 2026-11-27, `quotesite` (the ad budget hotfix): a /quote/ start date
   before today is refused twice, `js/form.js`'s date note ("Choose a date
   from …") under the field and `#qsStartOnMsg` ("Choose a preferred start
@@ -85,20 +78,16 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
-- 2026-11-27, `pdflibhash` (QUOTE REQUEST DELETED's affected run): its
-  wait for `ADspaceDocs.lib` times out at 10s, the same on `main` (230ae41)
-  as on the branch; the PDF libraries, untouched by that release. Still
-  failing in the full gate of 2026-11-27 on main 7c85e8b. Held here
-  until it ships.
-- 2026-11-27, the day's full gate on main 7c85e8b (tests 1d34edb, 5,365 s,
-  263 suites passed; `taxcodes` passed, its entry removed; `sql` 600 s):
-  - `adsreport`: at 390 the Ad IDs card docks 54px from the right edge,
-    not 16 (`{"left":16,"right":54,"bottom":92}`); likely a stylesheet
-    change of 26 to 27 Nov (#1530, #1538 or #1544), not pinned.
-  - `uxaudit`: the walk times out clicking `#crmLogAll` (the client
-    record's Activity View all), never visible on the seeded client, so
-    the walk stops in Clients and nothing after it is measured; likely
-    #1560 (history kept by client id) or #1525, not pinned.
+- 2026-11-27, found by the gate fixes release (aa07bb1), the same on
+  `main` 11d7466:
+  - `quotesite`: the Option 1 or Option 2 comparison reads #1567's words
+    (Paid to Meta, charged to your credit card; Payment timing) the suite
+    does not yet ask for.
+  - `quotes`: the quotation PDF's TERMS check fails on #1572's terms at
+    1280 and 390.
+  - `weight`: the console is 3.6 KB over its budget of 1332.6 KB on main
+    (this release takes about 0.2 KB off).
+  - `sql`: timed out at 900 s while 67 suites ran.
   Held here until each ships.
 - 2026-11-27 (night), the day's full gate on main fb3b4e8 (tests 897269e,
   5,807 s, 277 suites passed, 6 failed). HANDOVER: snapshot fb3b4e8,

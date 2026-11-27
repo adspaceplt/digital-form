@@ -1582,7 +1582,7 @@
     /* A card in a shut fold (Monthly review) opens it first. */
     var fold = c.closest('details');
     if (fold && !fold.open) fold.open = true;
-    c.scrollIntoView({ block: 'start' });
+    window.ADspaceChrome.underHead(c);
     var h = c.querySelector('.ovw-cardhead h3');
     if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
   }

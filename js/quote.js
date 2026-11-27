@@ -1587,7 +1587,7 @@
       var d = (r && r.data) || {};
       if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || chNotSent()); return; }
       CH = null; CHP = {};
-      read(qKey(), function () { var s2 = $('qsSide'); if (s2) s2.scrollIntoView({ block: 'start' }); });
+      read(qKey(), function () { window.ADspaceChrome.underHead($('qsSide')); });
     }).catch(function () { btn.disabled = false; say('qsSideMsg', chNotSent()); });
   }
   function chWithdraw(btn) {
@@ -1776,7 +1776,7 @@
     decorate();
     var h = $('sgHead') || $('qsSide');
     var top = $('qsSide').getBoundingClientRect().top;
-    if (top < 72 || top > window.innerHeight * 0.6) window.scrollTo(0, Math.max(0, window.scrollY + top - 80));
+    if (top < window.ADspaceChrome.headRoom() || top > window.innerHeight * 0.6) window.ADspaceChrome.underHead($('qsSide'));
     if (h.focus) h.focus({ preventScroll: true });
   }
   var SG_SAY = { 'bad-legal_name': [1, 'sgLegal', 'legal'], 'bad-company_no': [1, 'sgReg', 'reg'], 'bad-company_no_old': [1, 'sgRegOld', 'regOld'],
@@ -1791,7 +1791,7 @@
   function signGone(code) { return ['not-found', 'closed', 'unsent', 'signed', 'expired'].indexOf(code) >= 0; }
   function signRefused(code, d) {
     var w = t().sg.say;
-    if (signGone(code)) { SG = null; read(qKey(), function () { $('qsSide') && $('qsSide').scrollIntoView({ block: 'start' }); }); return; }
+    if (signGone(code)) { SG = null; read(qKey(), function () { window.ADspaceChrome.underHead($('qsSide')); }); return; }
     var at = SG_SAY[code];
     if (at) {
       if (SG.step !== at[0]) signShow(at[0]);
@@ -1845,7 +1845,7 @@
       var d = (r && r.data) || {};
       if (r.error || d.error || !d.ok) { btn.disabled = false; btn.textContent = t().sg.finish; signRefused(d.error || 'any', d); return; }
       SG = null;
-      read(qKey(), function () { var s = $('qsSide'); if (s) { s.scrollIntoView({ block: 'start' }); s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } });
+      read(qKey(), function () { var s = $('qsSide'); if (s) { window.ADspaceChrome.underHead(s); s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } });
     }).catch(function () { btn.disabled = false; btn.textContent = t().sg.finish; say('qsSideMsg', t().err.any); });
   }
   // The six boxes: one a digit, typing or pasting moving along, Backspace moving back.
