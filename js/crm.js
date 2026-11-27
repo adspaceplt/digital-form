@@ -1296,7 +1296,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.touches = []; state.monthMeets = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
+    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.touches = []; state.touchesGone = []; state.touchesRead = null; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -5981,22 +5981,20 @@
   var showRemovedTouches = false;
 
   /* A client's content meetings (2026-11-27, the user): each month's
-     meeting set in My Work is listed among the hand-logged entries, read on
-     every load and never written into client_touches, so a meeting moved,
-     cleared or deleted in My Work follows here. Read under the month's own
-     policy (`ops_may_see_engagement`): a month the reader may not see lists
-     no meeting. A cancelled month's meeting is not held. */
-  function readMonthMeets() {
-    return db.from('ops_engagements')
-      .select('id, period, status, meeting_at, meeting_minutes, meeting_channel, meeting_link, meeting_owner_id')
-      .eq('client_id', state.client.id).not('meeting_at', 'is', null)
-      .order('meeting_at', { ascending: false });
+     meeting set in My Work is listed among the hand-logged entries, taken
+     from the months the record reads once for Engagements (js/engage.js
+     `meetings`, under the month's own policy) and never written into
+     client_touches, so a meeting moved, cleared or whose month is cancelled
+     follows on the next read. A reader not given the months lists none. */
+  function monthMeets() {
+    var ENG = window.ADspaceEngage, m = ENG && state.client && ENG.meetings ? ENG.meetings(state.client.id) : null;
+    return m || { list: [] };
   }
   /* The entries and the months' meetings in one order, the latest day
      first; on one day a month's meeting leads, the entries keep theirs. */
   function callsInOrder() {
     var day = function (d) { return String(d || '').length > 10 ? ADspaceClock.day(d) : String(d || ''); };
-    var rows = (state.monthMeets || []).map(function (e, i) { return { day: day(e.meeting_at), i: i, e: e }; })
+    var rows = monthMeets().list.map(function (e, i) { return { day: day(e.meeting_at), i: i, e: e }; })
       .concat((state.touches || []).map(function (t, i) { return { day: day(t.happened_at), i: 1000 + i, t: t }; }));
     return rows.sort(function (a, b) { return a.day < b.day ? 1 : a.day > b.day ? -1 : a.i - b.i; });
   }
@@ -6005,37 +6003,44 @@
     var box = $('crmTouches');
     if (!box.querySelector('.touch')) skeleton(box, 3);
     var id = state.client.id;
-    Promise.all([
-      db.from('client_touches').select('*').eq('client_id', id)
-        .order('happened_at', { ascending: false }).order('created_at', { ascending: false }),
-      readMonthMeets()
-    ]).then(function (rs) {
+    db.from('client_touches').select('*').eq('client_id', id)
+      .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
+      .then(function (r) {
         if (!state.client || state.client.id !== id) return;
-        var r = rs[0], m = rs[1], bad = r.error || m.error;
-        if (bad) { failLine(box, 'Calls and visits', bad.message, loadTouches); ovFailed('calls', true); return; }
+        if (r.error) { state.touchesRead = null; failLine(box, 'Calls and visits', r.error.message, loadTouches); ovFailed('calls', true); return; }
         ovFailed('calls', false);
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
-        state.monthMeets = (m.data || []).filter(function (e) { return e.status !== 'cancelled'; });
-        partN('crmTouches', state.touches.length + state.monthMeets.length);
-        paintSummary();
-        var gone = all.filter(function (t) { return t.archived_at; });
-        box.innerHTML = '';
-        var rows = callsInOrder();
-        if (!rows.length) {
-          box.innerHTML = '<div class="empty">No entries.</div>';
-        }
-        rows.forEach(function (x) { box.appendChild(x.e ? monthMeetRow(x.e) : touchRow(x.t, false)); });
-        if (gone.length) {
-          var t = document.createElement('button');
-          t.type = 'button'; t.className = 'btn btn-quiet btn-sm crm-removed-toggle';
-          t.textContent = (showRemovedTouches ? 'Hide ' : 'Show ') + gone.length +
-            ' removed ' + (gone.length === 1 ? 'entry' : 'entries');
-          t.addEventListener('click', function () { showRemovedTouches = !showRemovedTouches; loadTouches(); });
-          box.appendChild(t);
-          if (showRemovedTouches) gone.forEach(function (tc) { box.appendChild(touchRow(tc, true)); });
-        }
-      }).catch(function (e) { failLine(box, 'Calls and visits', (e && e.message) || String(e), loadTouches); ovFailed('calls', true); });
+        state.touchesGone = all.filter(function (t) { return t.archived_at; });
+        state.touchesRead = id;
+        drawCalls();
+      });
+  }
+  /* The list from what is held: the entries as last read, the months'
+     meetings as last read for Engagements; drawn again when either answers. */
+  function drawCalls() {
+    var box = $('crmTouches');
+    if (!box || !state.client || state.touchesRead !== state.client.id) return;
+    var mm = monthMeets();
+    partN('crmTouches', state.touches.length + mm.list.length);
+    paintSummary();
+    var gone = state.touchesGone || [];
+    box.innerHTML = '';
+    var rows = callsInOrder();
+    if (!rows.length && !mm.failed) {
+      box.innerHTML = '<div class="empty">No entries.</div>';
+    }
+    if (mm.failed) box.insertAdjacentHTML('beforeend', '<p class="msg">Content meetings could not load.</p>');
+    rows.forEach(function (x) { box.appendChild(x.e ? monthMeetRow(x.e) : touchRow(x.t, false)); });
+    if (gone.length) {
+      var t = document.createElement('button');
+      t.type = 'button'; t.className = 'btn btn-quiet btn-sm crm-removed-toggle';
+      t.textContent = (showRemovedTouches ? 'Hide ' : 'Show ') + gone.length +
+        ' removed ' + (gone.length === 1 ? 'entry' : 'entries');
+      t.addEventListener('click', function () { showRemovedTouches = !showRemovedTouches; drawCalls(); });
+      box.appendChild(t);
+      if (showRemovedTouches) gone.forEach(function (tc) { box.appendChild(touchRow(tc, true)); });
+    }
   }
 
   /* A month's meeting as a row of the list: its day, Meeting, the month it
@@ -6380,6 +6385,8 @@
     }
     paintEngageActions(c);
     ENG.paint($('crmWorkList'), c, $('crmEngageMsg'));
+    /* The months answered: their meetings join Calls and visits. */
+    drawCalls();
   }
 
   function paintEngageActions(c) {
