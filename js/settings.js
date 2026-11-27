@@ -440,7 +440,11 @@
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes'), open: openTax },
       /* Named by its word, as every row is (the Settings review, 2026-11-26). */
       biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku'),
-        open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } }]]]);
+        open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } },
+      /* A creator's draft bill made when a booking is marked Completed (2026-11-27). */
+      biz && { id: 'billdone', name: 'Bill creators on Completed', kind: 'switch', on: num('creator_bill_on_completed') === 1,
+        meta: num('creator_bill_on_completed') === 1 ? 'On · Draft bill in Bukku' : 'Off',
+        open: function (btn) { flipOwn(btn, 'billdone', 'creator_bill_auto_set', 'Bill creators on Completed'); } }]]]);
     add('ai', 'AI', 'ai', [['', [
       may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse'),
         open: function (btn) { if (W.ADspaceReports && W.ADspaceReports.aiUsage) W.ADspaceReports.aiUsage(btn); } },
