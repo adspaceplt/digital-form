@@ -282,14 +282,16 @@
     wearToolbar();
     paintTheme();
   }
-  /* The browser's toolbar takes the colour of the bar under it: the
-     console's --chrome-solid once signed in, the page's own --card on a
-     plain page (the sign-in, a cover, the whole-screen Upgrade), read from
-     the tokens so the theme decides the value (2026-11-25). */
+  /* The browser's toolbar takes the colour of the ground under it: signed
+     in, the frame the confidentiality line and the rail sit on (--frame) in
+     light, the console's --chrome-solid in dark (2026-11-27, the user); the
+     page's own --card on a plain page (the sign-in, a cover, the
+     whole-screen Upgrade), read from the tokens so the theme decides the
+     value (2026-11-25). The head script in admin/index.html says the same. */
   function wearToolbar() {
     var b = document.body, root = document.documentElement;
     var plain = b ? b.classList.contains('is-plain') || b.classList.contains('is-maint') : root.getAttribute('data-boot') === 'out';
-    var tint = getComputedStyle(root).getPropertyValue(plain ? '--card' : '--chrome-solid').trim();
+    var tint = getComputedStyle(root).getPropertyValue(plain ? '--card' : root.getAttribute('data-theme') === 'dark' ? '--chrome-solid' : '--frame').trim();
     if (!tint) return;
     Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
       m.removeAttribute('media');
