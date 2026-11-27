@@ -1568,7 +1568,7 @@
         : (d.start ? '<button class="btn btn-sm" data-qi="make" data-gate="bukku" type="button">Create in Bukku</button>' : '') +
           '<button class="btn btn-sm" data-qi="link" data-gate="bukku" type="button">Link existing invoice</button>';
       var when = x.date ? wholeDays(esc(qiDay(x.date) + ' to ' + qiDay(x.until))) : 'Start date not set';
-      return '<div class="qi-row" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '"' + (made ? ' data-number="' + esc(x.number) + '"' : '') + '>' +
+      return '<div class="qi-row' + (!made && work && !x.creating ? ' has-acts2' : '') + '" data-cycle="' + x.cycle + '" data-kind="' + esc(x.kind) + '"' + (made ? ' data-number="' + esc(x.number) + '"' : '') + '>' +
         '<span class="qi-what"><b>' + (x.kind === 'budget' ? 'Advertising budget' : d.once ? 'One-time' : 'Month ' + x.cycle) + '</b>' +
           '<small>' + when + '</small>' + (made ? '<small class="qi-no">' + esc(x.number) + '</small>' : '') + '</span>' +
         (amounts ? '<span class="qi-amt">' + esc(money(x.amount)) + '</span>' : '') +
