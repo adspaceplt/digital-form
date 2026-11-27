@@ -332,6 +332,19 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   it. Invoices is offered at Clients: Quotations View as well as Billing
   View: `quotation_invoices_of` answers the amounts, the budget's contact
   and its account at Billing View alone (`billing`), `denied` below both.
+  Link existing invoice (`2026-11-27-quotation-invoice-link.sql`): an
+  unmade row beside Create in Bukku (Billing Work, `data-gate="bukku"`)
+  takes an invoice made in Bukku by hand by its number: `bukku-sync`
+  `invoicelink` asks `quotation_invoice_link_prep` for the contact the cycle
+  bills (as Create reads it), finds the number on that contact alone, never
+  void (`no-invoice`), and `quotation_invoice_link` files it at Bukku's
+  amount, refusing `taken` (with `on`) where another cycle, quotation or
+  campaign holds it; a linked row holds a number, so Create is refused
+  (`invoiced`) in the function as on the page. Unlink is the row's ⋯
+  (`quotation_invoice_unlink`, nothing changed in Bukku), Undo in place
+  linking the number again. A just-linked row reads Bukku's answer until the
+  nightly copy holds it. A quotation billing nothing monthly answers `once`:
+  its row reads One-time and Months billed is hidden.
 - A bill or invoice made stands in Bukku whatever is read after it
   (2026-11-24, the review): Create bill files the bill made even where the
   read of the bills back fails (`list-not-read`, the page saying Read from
