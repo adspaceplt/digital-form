@@ -12,7 +12,7 @@
 -- after it before the request closes are settings.
 --
 -- WHAT CHANGED
---   * `quotations`: `details_ask` (fields, note), `details_asked_at`,
+--   * `quotations` (each read by the Services pane, granted): `details_ask` (fields, note), `details_asked_at`,
 --     `details_asked_by`, `details_due`, `details_at`, `details` (what was
 --     sent), `not_quoted` (incomplete, fit, duplicate, spam), `match` and
 --     `match_taken` (QUOTE INTAKE writes them).
@@ -62,6 +62,9 @@ alter table public.quotations add column if not exists details          jsonb;
 alter table public.quotations add column if not exists not_quoted       text;
 alter table public.quotations add column if not exists match            jsonb;
 alter table public.quotations add column if not exists match_taken      text;
+-- The Services pane reads them, column by column (2026-11-06).
+grant select (details_ask, details_asked_at, details_asked_by, details_due, details_at, details, not_quoted, match, match_taken)
+  on table public.quotations to authenticated;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'quotations_not_quoted_check') then
     alter table public.quotations add constraint quotations_not_quoted_check
