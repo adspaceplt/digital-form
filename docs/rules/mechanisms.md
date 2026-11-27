@@ -25,7 +25,8 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
   - RM, or S$ for a Singapore client billed in S$ (`curOf(c)`: a payload's
     `bill_market`, else `market` SG with `bill_sgd`; the market alone never
     picks the currency); a Singapore client billed in RM reads its total's
-    S$ beside it (`approx(n, c, at)`, ` (approximately S$ 952.38)` at `fx_sgd`).
+    S$ beside it (`approx(n, c, at, fx, zh)`, ` (approximately S$ 952.38)`,
+    in Chinese `（约 S$ 952.38）`, at a record's `fx`, else `fx_sgd` on `at`).
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
     applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
     campaign's booked creators the client's last confirmation (`kind`

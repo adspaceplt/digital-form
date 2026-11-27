@@ -50,6 +50,23 @@
     return String(n);
   }
   function both(n) { return inWords(n) + ' (' + n + ')'; }
+  /* HOW AD SPEND WORKS (2026-11-27, the user): where the advertising
+     budget is not in the quotation, the PDF says so and names the two ways
+     it is paid, with Settings' figures as they stood on the quotation's day
+     (`ad_prepay_pct`, `ad_credit_fee_pct`; js/money.js), so a copy redrawn
+     later reads as issued. `formal`: TERMS in a contract's register. */
+  function pctOf(v) { return String(Math.round(Number(v) * 100) / 100) + '%'; }
+  function adWays(q, formal) {
+    var M = window.ADspaceMoney, at = q.issued_at || undefined;
+    var pct = pctOf(M && M.setting ? M.setting('ad_prepay_pct', at) : 80), fee = pctOf(M && M.setting ? M.setting('ad_credit_fee_pct', at) : 20);
+    return formal
+      ? 'The Advertising Budget is paid either by the Client\'s own credit card through the Client\'s own ad account, or in advance to ' + agency() +
+        ' each month before the ads run. Each following month is requested when about ' + pct + ' of the current budget is spent. Where it is ' +
+        'instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of ' + fee + ' of the Advertising Budget applies.'
+      : 'It is paid by the client\'s own credit card through the client\'s own ad account, or prepaid to ' + agency() + ' each month before the ads run. ' +
+        'Each following month is requested when about ' + pct + ' of the current budget is spent. Where the advertising budget is invoiced on this quotation\'s payment terms instead, an Agency Credit Term Fee of ' +
+        fee + ' of the advertising budget applies.';
+  }
   function longDay(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
     return m ? Number(m[3]) + ' ' + MONTHS[Number(m[2]) - 1] + ' ' + m[1] : '';
@@ -84,7 +101,9 @@
        blob carries both (`seal.sha`, `seal.pagesSha`). */
     var seal = opts.seal || null, S = window.ADspaceSeal, got, info, signedN;
     if (seal && !S) return Promise.reject(new Error(window.ADspaceWords.line.pdfLib));
-    return docs.lib().then(function (PDF) {
+    /* Settings' figures read before the draw (the ad spend line's). */
+    var M = window.ADspaceMoney, figures = M && M.load ? M.load() : null;
+    return Promise.resolve(figures).catch(function () {}).then(function () { return docs.lib(); }).then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
@@ -355,7 +374,7 @@
     var MONY = window.ADspaceMoney, agreed = [], termsOnFees = false;
     /* A figure in bold, with its S$ beside it where billed in RM. */
     var nearOf = function (label, v, many) {
-      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at), opts.fx) : '';
       var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
       if (near) { y -= 13; right(many ? label + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
     };
@@ -555,11 +574,11 @@
         t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each service' : 'over the minimum term') +
           ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
       ]);
-      grp('Advertising budget', [ads.length
-        ? 'The Advertising Budget shall be paid to the advertising platforms on the Client\'s behalf before the ' +
-          'services commence. It includes any SST and withholding tax applicable to the advertising platforms\' charges.'
+      grp('Advertising budget', ads.length
+        ? ['The Advertising Budget shall be paid to the advertising platforms on the Client\'s behalf before the ' +
+          'services commence. It includes any SST and withholding tax applicable to the advertising platforms\' charges.']
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
-          ? 'Any Advertising Budget is not included in the fees in this Quotation and shall be invoiced separately.' : '']);
+          ? ['The Advertising Budget is not included in this Quotation.', adWays(q, true)] : []);
       /* Files and further filming (2026-11-12, the user's own sentence). */
       grp('Exclusions', [addons.length ? window.ADspaceWords.line.addonTerm : 'Additional footage, working files and raw files are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
@@ -635,7 +654,7 @@
     var bold = tot.filter(function (r) { return r[2]; });
     bold.forEach(function (b) {
       var v = Number(String(b[1]).replace(/[^0-9.\-]/g, ''));
-      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at), opts.fx) : '';
       var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
       if (near) { y -= 13; right(bold.length > 1 ? b[0] + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
     });
@@ -649,7 +668,7 @@
     if (sstOn) holds.push(/\d/.test(taxed.word) ? taxed.word.replace(/^SST /, 'SST at ') : 'SST');
     if (t.month && holds.length) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' includes ' + holds.join(' and ') + '.');
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
-      notes.push('The advertising budget is not included in the service fee and is billed separately.');
+      notes.push(window.ADspaceWords.line.adNotIncluded + ' ' + adWays(q, false));
     }
     if ((t.on_request || []).length) {
       notes.push('The following are quoted on request: ' + t.on_request.map(function (x) {
