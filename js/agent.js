@@ -916,7 +916,7 @@
           var again = madeOnce(r);
           var id = row.id, c = a._client;
           if (!again) after(function () {
-            if (bridge.log) bridge.log('client.touch', c.name, (KIND[a.kind] || a.kind) + (a.next_action ? ' · next: ' + a.next_action : ''));
+            if (bridge.log) bridge.log('client.touch', c, (KIND[a.kind] || a.kind) + (a.next_action ? ' · next: ' + a.next_action : ''));
             file('assistant.call', c.name, (KIND[a.kind] || a.kind) + ' logged');
           });
           /* The first call or visit is what makes a lead contacted, as the
@@ -930,7 +930,7 @@
                 if (!(q.data || []).length || !bridge.log) return;
                 return fetched(['crm']).then(function () {
                   var CRM = window.ADspaceCRM;
-                  bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
+                  bridge.log('client.stage', c, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
                 });
               });
             })
@@ -940,7 +940,7 @@
               undo: function () {
                 return db.from('client_touches').update({ archived_at: new Date().toISOString() }).eq('id', id).select('id').then(function (q) {
                   if (q.error || !(q.data || []).length) throw new Error('Not undone. The database refused the request.');
-                  if (bridge.log) bridge.log('client.touch_removed', c.name, KIND[a.kind] || a.kind);
+                  if (bridge.log) bridge.log('client.touch_removed', c, KIND[a.kind] || a.kind);
                 });
               } };
           });
