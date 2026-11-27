@@ -6030,7 +6030,10 @@
     if (!rows.length && !mm.failed) {
       box.innerHTML = '<div class="empty">No entries.</div>';
     }
-    if (mm.failed) box.insertAdjacentHTML('beforeend', '<p class="msg">Content meetings could not load.</p>');
+    if (mm.failed) {
+      box.insertAdjacentHTML('beforeend', '<p class="msg">Could not load the content meetings. <button class="linkbtn" type="button" data-a="meetsretry">Try again</button></p>');
+      box.querySelector('[data-a="meetsretry"]').addEventListener('click', function () { loadEngage(true); });
+    }
     rows.forEach(function (x) { box.appendChild(x.e ? monthMeetRow(x.e) : touchRow(x.t, false)); });
     if (gone.length) {
       var t = document.createElement('button');
