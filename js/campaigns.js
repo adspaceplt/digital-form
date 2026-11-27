@@ -5962,7 +5962,7 @@
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
           /* Every slot already booked (`campaign_options_slots_hold`, audit 2026-11-15). */
-          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
+          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'All creators are booked. Increase Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);
