@@ -29,6 +29,7 @@
     empty: 'Choose a plan, a package, an advertising budget or an item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Enter whole numbers for additional content pieces.',
     'bad-once': 'Enter whole numbers for one-time items.', 'not-found': 'This quotation no longer exists.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.',
+    'draft-expired': 'This quotation has expired. Edit it to set a new Valid until date, then confirm it.',
     'not-confirmed': 'This quotation is still a draft. Confirm it first.', website: 'This quotation came from a website request. Use Send quotation to confirm it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimal places, and 1 to 36 months.',
     'bad-brands': 'Enter each brand\'s name.',
