@@ -1301,6 +1301,7 @@
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
     if (!same && !restoring) window.scrollTo(0, 0);
+    state.fbOvFor = null; state.fbOv = null;
     state.client = c;
     /* The list was read once; Content Review's settings edit the same
        handles and logo, so a record opened from the list is read again and
@@ -1785,7 +1786,7 @@
     /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
        the services and the letters; a section the reader may not open is
        not drawn, and one whose read was refused says so, never empty. */
-    var secs = [ovQuotes(), ovTouches(), ovServices(c), ovDocuments(c), ovContact(c)].join('');
+    var secs = [ovQuotes(), ovTouches(), ovFeedback(c), ovServices(c), ovDocuments(c), ovContact(c)].join('');
     box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
@@ -1845,6 +1846,44 @@
   /* Nothing there is a line, not a dashed box and not a sentence explaining
      what the section would have held. */
   function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
+
+  /* The client's last rating (the linked sections, 2026-11-27): the lead
+     score's band of the newest answer and its day, and when the client was
+     last asked, Not asked in {n} months past the Business setting. Read with
+     the record from the Feedback part's own function, once a client. */
+  var FB_BAND = { high: 'High', mid: 'Mid', low: 'Low' };
+  function ovFeedback(c) {
+    if (!partOk('feedback')) return '';
+    if (state.fbOvFor !== c.id) {
+      state.fbOvFor = c.id; state.fbOv = null;
+      db.rpc('feedback_client', { p_client: c.id }).then(function (r) {
+        if (!state.client || state.client.id !== c.id) return;
+        if (r.error || (r.data || {}).error) throw r.error || new Error((r.data || {}).error);
+        state.fbOv = r.data.requests || [];
+        ovFailed('feedback', false);
+        paintSummary();
+      }).catch(function () { if (state.client && state.client.id === c.id) ovFailed('feedback', true); });
+      return '';
+    }
+    var rows = state.fbOv;
+    if (!rows) return '';
+    if (!rows.length) return ovSection('Client feedback', 'feedback', 'View all', ovNone('No feedback requested.'));
+    var by = function (k) { return function (a, b) { return String(b[k] || '') < String(a[k] || '') ? -1 : 1; }; };
+    var asked = rows.slice().sort(by('created_at'))[0];
+    var answered = rows.filter(function (r) { return r.response; }).map(function (r) { return Object.assign({ kind: r.kind }, r.response); })
+      .sort(by('submitted_at'))[0];
+    var months = Number(window.ADspaceMoney.setting('feedback_quiet_months')) || 0;
+    /* Whole months since the client was last asked, Malaysia's days. */
+    var a0 = window.ADspaceClock.day(asked.created_at).split('-').map(Number);
+    var t0 = String(window.ADspaceClock.today()).split('-').map(Number);
+    var since = (t0[0] - a0[0]) * 12 + t0[1] - a0[1] - (t0[2] < a0[2] ? 1 : 0);
+    var pairs = [];
+    pairs.push(['Last rating', answered
+      ? '<span' + (answered.band === 'low' ? ' class="is-late"' : '') + '>' + esc([FB_BAND[answered.band], FB_KIND[answered.kind], niceDate(answered.submitted_at)].filter(Boolean).join(' · ')) + '</span>'
+      : '<span class="mute">Not answered</span>']);
+    pairs.push(['Last asked', esc(niceDate(asked.created_at)) + (months && since >= months ? ' <span class="is-late">· Not asked in ' + esc(String(since)) + ' months</span>' : '')]);
+    return ovSection('Client feedback', 'feedback', 'View all', ovRows(pairs));
+  }
 
   function ovRows(pairs) {
     return '<dl class="ovfacts">' + pairs.map(function (p) {

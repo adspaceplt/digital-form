@@ -1099,6 +1099,15 @@
      score. */
   function opsHint(k, ops) {
     var f = ops && ops[k], n, ok, words;
+    /* Client satisfaction from the month's answers (FEEDBACK SATISFACTION
+       RATE, 2026-11-27): the account manager question, as a percentage. */
+    if (f && k === 'satisfaction') {
+      n = Number(f.answers) || 0;
+      if (!n || f.rate == null) return '';
+      words = 'Client feedback: ' + num(f.rate) + '% from ' + n + (n === 1 ? ' answer' : ' answers');
+      return '<button class="linkbtn perf-use" type="button" data-rate="satisfaction" data-v="' + esc(String(f.rate)) + '"' +
+        ' aria-label="' + esc(words + '. Use as the rate.') + '">' + esc(words) + '</button>';
+    }
     if (!f || (k !== 'posting' && k !== 'timeline')) return '';
     n = Number(k === 'posting' ? f.due : f.reached) || 0;
     ok = Number(k === 'posting' ? f.on_time : f.met) || 0;
