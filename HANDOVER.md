@@ -88,6 +88,9 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1529 Ad-spend explainer and approximate S$ (Z): How ad spend works as Option 1 or Option 2 with a comparison, 80/20 settings; a Singapore client billed in RM sees each quotation total's S$; migration live; tests #318 | 261127.e9a3 |
 | #1538 Confidentiality line at the top of the console, signed in and on its sign-in page; English only; at a desk centred over the sheet with the rail beside it | 261127.5c9b |
 | #1541 A colleague's Save on a website request keeps its brand and its edits (migration `2026-11-27-colleague-save-website-request.sql`, applied and read back); tests #319 | 261127.9bc8 |
+| #1536 Build quote: one-time reads One-time, tax a column (hotfix) | 261127.f21a |
+| #1540 Build quote: a line's figures on its name's first line | 261127.daa5 |
+| Build quote on a phone: tax back on the Qty row | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
