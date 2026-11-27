@@ -859,6 +859,20 @@
      (2026-10-15). */
   function qc() { return Q && Q.totals && Q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
   function qb(n) { var fx = Q && Q.totals && Number(Q.totals.fx); return fx ? Math.round(Number(n) / fx) : Number(n); }
+  /* A Singapore client billed in RM reads each total with the S$ it comes
+     to (2026-11-27), at the rate the read carries (the quotation's, else
+     the setting on its day of issue); billed in S$, or in Malaysia,
+     nothing. ADspaceMoney.approx is the one copy. */
+  function qCli() { return Q ? { market: Q.market, bill_market: qc() === 'S$' ? 'SG' : 'MY' } : null; }
+  function qDay() { return Q && Q.issued_at ? (window.ADspaceClock ? window.ADspaceClock.day(Q.issued_at) : String(Q.issued_at).slice(0, 10)) : undefined; }
+  function near(v) { return Q ? window.ADspaceMoney.approx(v, qCli(), qDay(), Q.fx_sgd, lang === 'zh') : ''; }
+  /* The totals as a list: label, figure, a total in bold with its S$ under it. */
+  function totHtml(rows, cls) {
+    return rows.length ? '<dl class="qs-tot' + (cls ? ' ' + cls : '') + '">' + rows.map(function (x) {
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) +
+        (x[3] ? '<small class="qs-near">' + esc(x[3].trim()) + '</small>' : '') + '</dd></div>';
+    }).join('') + '</dl>' : '';
+  }
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */
@@ -890,9 +904,9 @@
          the PDF's words: a row whose lines run different months names
          none (2026-11-24) */
       var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
-      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
+      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1, near(x[1])] : [label, n2(x[1])];
     });
-    if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
+    if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1, near(tt.ads_total)]);
     return r;
   }
   /* Where the prospect stands, one word from the database (2026-10-26):
@@ -963,7 +977,7 @@
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
-      '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      totHtml(totalsRows(tt)) +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +
@@ -1307,7 +1321,7 @@
     }).join('');
     return '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(w.line) + '</span><span class="qs-num qs-q">' + esc(w.qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(w.rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(w.sub, { c: qc() })) + '</span></div>' + rows + '</div>' +
-      '<dl class="qs-tot">' + chTotals(tt, P.lines).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
+      totHtml(chTotals(tt, P.lines));
   }
   /* The shared refused-send line (`js/words.js`), in the page's language. */
   function chNotSent() { var A = window.ADspaceWords; var w = A && A.of ? A.of({ en: {}, zh: {} })[lang === 'zh' ? 'zh' : 'en'] : null; return (w && w.notSentAdspace) || t().err.any; }
@@ -1316,7 +1330,7 @@
     var w = t(), changed = chChanged(), tt = CH.P && CH.P.totals;
     /* The totals the changes come to, beside the acts (the page's title is not said again). */
     var tot = tt ? chTotals(tt, CH.P.lines).filter(function (x) { return x[2]; }) : [];
-    return (tot.length ? '<dl class="qs-tot">' + tot.map(function (x) { return '<div class="is-total"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
+    return totHtml(tot) +
       (changed ? '' : '<p>' + esc(w.chgNone) + '</p>') +
       (CH.pf && CH.pf.length && CH.pfKey === chKey(chSel()) ? '<ul class="qs-pflist">' + CH.pf.map(function (k) { return '<li><span class="qs-pftext">' + esc(w.pf[k]) + '</span></li>'; }).join('') + '</ul>' : '') +
       '<div class="qs-sfoot is-stack"><button class="btn" type="button" data-a="chcancel">' + esc(w.chgCancel) + '</button>' +
@@ -1441,11 +1455,11 @@
     var tt = q.totals || {}, w = t(), out = [], first = true;
     totalsRows(tt).forEach(function (x) {
       if (!x[2]) return;
-      out.push([x[0], x[1], 1]);
+      out.push([x[0], x[1], 1, x[3]]);
       if (first && tt.month) out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
       first = false;
     });
-    if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment)]);
+    if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment), 0, near(tt.commitment)]);
     return out;
   }
   function signHtml(q) {
@@ -1475,7 +1489,7 @@
           '<span class="qs-pad-hint" aria-hidden="true"' + (SG.path ? ' hidden' : '') + '>' + esc(s.padHint) + '</span>' +
           window.ADspaceIcons.drawing('0 0 300 100', '<path d="' + esc(SG.path) + '"/>', 'preserveAspectRatio="none" aria-hidden="true"') + '</div>';
       return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
-        '<dl class="qs-tot qs-agreed">' + agreedRows(q).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+        totHtml(agreedRows(q), 'qs-agreed') +
         '<div class="qs-pair">' + sgField('sgSigner', s.signer, true, sgInput('sgSigner', SG.signer.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
           sgField('sgDesig', s.desig, true, sgInput('sgDesig', SG.signer.designation, ' autocomplete="organization-title" aria-required="true"')) + '</div>' +
         '<div class="field"><div class="qs-sig-head"><span class="field-label is-req" id="sgSigL">' + esc(s.sig) + '</span><span class="qs-sig-acts">' +
@@ -2031,12 +2045,16 @@
     /* Who prepared and reviewed it, and once accepted who signed for the
        company with the signing record (2026-10-31). */
     var sg = Q.signed, C = window.ADspaceClock;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market }, key: qKey(),
+    /* No rate in the read (a page before its migration): the figures read
+       first, so the PDF's S$ is the setting on its day of issue. */
+    (Q.fx_sgd != null || !MON.load ? Promise.resolve() : MON.load()).then(function () {
+    return window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: qCli(), fx: Q.fx_sgd, key: qKey(),
       preparedBy: Q.prepared ? { name: Q.prepared.name, designation: Q.prepared.title || '' } : null,
       reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
       signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
         via: sg.via, company: sg.company } : null,
-      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null }).then(function (blob) {
+      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null });
+    }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {}

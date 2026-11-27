@@ -9962,6 +9962,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-tot dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .qs-tot > .is-total { border-top: 1px solid var(--line); font-weight: 600; }
 .qs-tot > .is-total dt { color: var(--ink); }
+/* A total's S$ where billed in RM, under its figure (2026-11-27). */
+.qs-tot .qs-near { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
 .qs-acts { display: flex; gap: 8px; }
 /* A quotation's Add-on Rates (2026-11-25): read only, two columns at a
    desk, a group's name over its rates; never a total. */

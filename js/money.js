@@ -319,9 +319,10 @@
     if (!(r > 0) || !isFinite(v)) return null;
     return cents(v / r);
   }
-  function approx(n, c, at, fx) {
+  /* In Chinese the same aside reads （约 S$ 952.38） (2026-11-27). */
+  function approx(n, c, at, fx, zh) {
     var v = approxSgd(n, c, at, fx);
-    return v == null ? '' : ' (approximately ' + money2(v, 'SG') + ')';
+    return v == null ? '' : zh ? '（约 ' + money2(v, 'SG') + '）' : ' (approximately ' + money2(v, 'SG') + ')';
   }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.

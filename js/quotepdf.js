@@ -374,7 +374,7 @@
     var MONY = window.ADspaceMoney, agreed = [], termsOnFees = false;
     /* A figure in bold, with its S$ beside it where billed in RM. */
     var nearOf = function (label, v, many) {
-      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at), opts.fx) : '';
       var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
       if (near) { y -= 13; right(many ? label + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
     };
@@ -654,7 +654,7 @@
     var bold = tot.filter(function (r) { return r[2]; });
     bold.forEach(function (b) {
       var v = Number(String(b[1]).replace(/[^0-9.\-]/g, ''));
-      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at), opts.fx) : '';
       var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
       if (near) { y -= 13; right(bold.length > 1 ? b[0] + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
     });
