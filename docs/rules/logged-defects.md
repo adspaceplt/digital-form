@@ -78,3 +78,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   its Settings row counts its templates" read an empty count once (its
   5-second wait for the row's line) and passes alone on the same commit.
   Held here until its wait is fixed at the cause.
+- 2026-11-27, `taxcodes` (DELETES AT FULL CONTROL's affected run): "each
+  line offers its tax, the client's SST first as Bukku's SV8, never twice"
+  fails at 1280 and 390, the same on `main` (1668f21) as on the branch;
+  Build quote's lines, untouched by that release. Held here until it ships.

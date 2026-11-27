@@ -335,13 +335,13 @@ revoke all on function public.team_notice_delete(uuid) from public, anon;
 grant execute on function public.team_notice_delete(uuid) to authenticated;
 
 insert into public.delete_kinds (kind, section, id_arg, word, label_table, label_key, label_col) values
-  ('rpc:analytics_read_delete',   'team.analytics',         'p_id',   'Analysis',            'analytics_reads',    'id',   'period'),
+  ('rpc:analytics_read_delete',   'team.analytics',         'p_id',   'AI analysis',         'analytics_reads',    'id',   'period'),
   ('rpc:announcement_delete',     'team.announce',          'p_id',   'Announcement',        'announcements',      'id',   'body_en'),
   ('rpc:campaign_file_delete',    'campaigns.files_delete', 'p_file', 'Approved file',       null,                 null,   null),
   ('rpc:department_delete',       'team.settings',          'p_key',  'Department',          'departments',        'key',  'name'),
   ('rpc:industry_delete',         'team.settings',          'p_name', 'Industry',            'industries',         'name', 'name'),
   ('rpc:public_holiday_delete',   'team.settings',          'p_day',  'Public holiday',      'public_holidays',    'day',  'name'),
-  ('rpc:tax_codes_delete',        'team.settings',          'p_codes','Tax codes',           null,                 null,   null),
+  ('rpc:tax_codes_delete',        'team.settings',          'p_codes','Tax code',            null,                 null,   null),
   ('rpc:doc_type_delete',         'register.types',         'p_id',   'Document type',       'doc_types',          'id',   'name'),
   ('rpc:handbook_delete',         'team.handbook',          'p_id',   'Handbook file',       'handbook_docs',      'id',   'title'),
   ('rpc:hiring_delete',           'team.hiring',            'p_id',   'Candidate',           'hiring_candidates',  'id',   'name'),
@@ -396,7 +396,7 @@ begin
       if v_codes is null or array_length(v_codes, 1) > 100 then return jsonb_build_object('error', 'bad-request'); end if;
       select count(*) into v_seen from public.tax_codes t where t.code = any(v_codes);
       if v_seen <> array_length(v_codes, 1) then return jsonb_build_object('error', 'not-found'); end if;
-      v_label := v_seen::text || ' ' || lower(k.word) || ' · ' || array_to_string(v_codes[1:3], ', ')
+      v_label := v_seen::text || ' ' || lower(k.word) || case when v_seen = 1 then '' else 's' end || ' · ' || array_to_string(v_codes[1:3], ', ')
         || case when v_seen > 3 then ' and ' || (v_seen - 3)::text || ' more' else '' end;
     else
     /* A list (several tasks): every one held, each in the requester's
