@@ -87,8 +87,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
 - A link belongs to a client or a campaign, a campaign's to its client too
   (SHORT LINK CLICKS, `2026-11-27-short-link-clicks.sql`; `links.client_id`,
   `links.campaign_id`, trigger `links_owner`; the sheet's Client or campaign,
-  the clients and campaigns the colleague may read, one they may not kept
-  as set). The Worker counts a person's visit after its 302 (`link_hit`,
+  the clients and campaigns the colleague may read, one they may not
+  offered as Unchanged). The Worker counts a person's visit after its 302 (`link_hit`,
   anon, `ctx.waitUntil`; a GET to a live link, under its live QR code or
   ''; never a HEAD, a paused, revoked or unknown link, or a portal address;
   a failed count is dropped) into `link_clicks` (slug, code, Malaysia's day,

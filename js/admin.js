@@ -8739,7 +8739,7 @@
     sel.value = '';
     var keep = function () {
       if (want && !sel.querySelector('option[value="' + want + '"]')) {
-        var o = document.createElement('option'); o.value = want; o.textContent = 'Kept as set'; o.setAttribute('data-kept', '');
+        var o = document.createElement('option'); o.value = want; o.textContent = 'Unchanged'; o.setAttribute('data-kept', '');
         sel.appendChild(o);
       }
       sel.value = want || '';
@@ -8882,7 +8882,7 @@
       client_id: owner[0] === 'client' ? owner[1] : null,
       campaign_id: owner[0] === 'campaign' ? owner[1] : null
     };
-    /* "Kept as set": an owner this colleague may not read stays as it was. */
+    /* Unchanged: an owner this colleague may not read stays as it was. */
     var was0 = links.filter(function (l) { return l.slug === editingSlug; })[0];
     if (was0 && $('newLinkOwner') && $('newLinkOwner').selectedOptions[0] && $('newLinkOwner').selectedOptions[0].hasAttribute('data-kept')) {
       body.client_id = was0.client_id || null; body.campaign_id = was0.campaign_id || null;

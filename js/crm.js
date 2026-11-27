@@ -1559,7 +1559,7 @@
     if (parts.indexOf('calls') > -1 && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
     if (parts.indexOf('feedback') > -1) loadFeedback();
-    if (group === 'services' && (visit || !state.links)) loadLinks();
+    if (group === 'services' && (visit || !state.links)) loadShortLinks();
     paintFbAct();
     /* The billing entities are read again on a visit: one may have been
        added from another client it bills (2026-10-29). */
@@ -3077,7 +3077,7 @@
      each with its visits in the last 30 days (Malaysia's days, today
      included). Read on a visit to Services; the part is drawn only where
      there is one, so a client without links keeps its two parts. */
-  function loadLinks() {
+  function loadShortLinks() {
     var c = state.client;
     if (!c || !mayPart('links', 'view')) return;
     var forId = c.id;
@@ -3096,16 +3096,16 @@
       var had = !!(state.links && state.links.length);
       state.links = both[0].map(function (l) { return Object.assign({ clicks: sums[l.slug] || 0 }, l); });
       if (had !== !!state.links.length) showPane(pane, false);
-      paintLinks();
+      paintShortLinks();
     }).catch(function (e) {
       if (!state.client || state.client.id !== forId) return;
       state.links = state.links && state.links.length ? state.links : [{ failed: true }];
       showPane(pane, false);
       var box = $('crmLinks');
-      if (box) ADspaceState.failLine(box, 'Short links', e && e.message, loadLinks);
+      if (box) ADspaceState.failLine(box, 'Short links', e && e.message, loadShortLinks);
     });
   }
-  function paintLinks() {
+  function paintShortLinks() {
     var box = $('crmLinks'), rows = (state.links || []).filter(function (l) { return !l.failed; });
     var n = $('crmLinkN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
