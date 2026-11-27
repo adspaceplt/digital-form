@@ -9702,6 +9702,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    showing a value moves nothing. */
 .prs-secret dd { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .prs-secret-v { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+/* A hidden number in the edit sheet: masked until Show (review J3). */
+.prs-secret-edit { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.prs-secret-edit > .input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
 .prs-eye { align-self: center; margin-block: calc((1.55em - var(--ctl-h)) / 2); }
 @media (pointer: coarse) { .prs-eye { margin-block: calc((1.55em - var(--tap)) / 2); } }
 .prs-files { display: grid; }
