@@ -98,7 +98,8 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1550 Period total on a quotation, release 1: Build quote's Show totals for the whole period (off by default) and the PDF's Total for {n} months incl. SST and Total incl. SST, from the database's term total; no migration; tests b3cbb80 | 261127.f663 |
 | Build quote on a phone: tax back on the Qty row | 261127.2820 |
 | Deletes at Full control (access fix, "go all 13"): 13 admin tools' deletes ask Full control and join `delete_kinds`, Edit files Request delete; a request against a granted part asks `ops_granted`; guard in `tests/sql.js`; migration `2026-11-27-deletes-at-full-control.sql` live | see the coordinator's report |
-| Hotfix: a quotation is valid for its own Valid for, website requests included, from the day it is published; the PDF's TERMS states the same days (migration `2026-11-27-quote-valid-own-days.sql`, applied and read back). ADP/QT2611-B02 (REQ2611-SBD) was published at 08:58, before it, and still reads valid until 27 Dec: correcting it to 11 Dec waits on the coordinator | (this PR) |
+| Hotfix: a quotation is valid for its own Valid for, website requests included, from the day it is published; the PDF's TERMS states the same days (migration `2026-11-27-quote-valid-own-days.sql`, applied and read back). ADP/QT2611-B02 (REQ2611-SBD) was published at 08:58, before it, and still reads valid until 27 Dec: correcting it to 11 Dec waits on the coordinator | 261127.e415 |
+| A website request's ⋯ in three groups (Download PDF, Show quotation link, Ask for details · Edit, Cancel quote · Delete), Delete under the delete rule (migration `2026-11-27-quote-request-deleted.sql`, applied and read back); every quotation reference pressed to copy (`ADspaceCopy.ref`, the Register's too); Preview keeps its leaving mark in a sheet's foot | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
