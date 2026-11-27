@@ -39,6 +39,12 @@
  *                          request and its words (the primary contact's
  *                          language), the link /feedback/?k= on PORTAL_URL is
  *                          the email's one button; from the clients' sender.
+ *   POST { quoteAsk: true, quotation }
+ *                          the details a website request lacks, asked of the
+ *                          prospect (2026-11-27, QUOTE DETAILS ASKED):
+ *                          `quote_details_mail_begin` files a client email in
+ *                          the prospect's language, its one button their own
+ *                          /quote/?q= link; `client_email_done` closes it.
  *   POST { manual: true, audience, client, supplier, template, to, ccs,
  *          subject, body, key, file }
  *                          a New email from Messages, Email (2026-11-04,
@@ -143,6 +149,7 @@ Deno.serve(async (req) => {
   if (body.manual === true) return manualMail(req, body, origin, uuid);
   if (body.client === true) return clientMail(req, body, origin, uuid);
   if (body.feedback === true) return feedbackMail(req, body, origin, uuid);
+  if (body.quoteAsk === true) return quoteAskMail(req, body, origin, uuid);
   const supplier = String(body.supplier || ''), purpose = String(body.purpose || '');
   const document = body.document ? String(body.document) : null;
   if (!uuid.test(supplier) || (document && !uuid.test(document)) || !['approved', 'document'].includes(purpose)) {
@@ -330,6 +337,36 @@ async function feedbackMail(req: Request, body: Record<string, any>, origin: str
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('feedback_mail_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: feedback email not closed', done.error.message);
+  if (status !== 'sent') console.error('supplier-mail:', status, error);
+  return json(status === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name }
+    : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}
+
+/* The details a website request lacks, asked of the prospect (2026-11-27):
+   the request is asked by `quotation_details_ask` first; this sends the
+   email the database files and words, its one button the prospect's own
+   link, then closes it as a client email. */
+async function quoteAskMail(req: Request, body: Record<string, any>, origin: string | null, uuid: RegExp): Promise<Response> {
+  const id = String(body.quotation || '');
+  if (!uuid.test(id)) return json({ error: 'bad-request' }, 400, origin);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  const begun = await db.rpc('quote_details_mail_begin', { p_id: id });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = (begun.data || {}) as Record<string, any>;
+  if (b.error) return json(b, 200, origin);
+  const url = PORTAL() + '/quote/?q=' + encodeURIComponent(String(b.key || ''));
+  const heading = String(b.subject || '').replace(/\s*[·|-]\s*ADspace\s*$/i, '').trim();
+  const html = layout({ heading, body: String(b.body || ''), block: button({ label: String(b.button || ''), url }),
+    preheader: String(b.subject || '') });
+  const who = await sender('clients');
+  const msg: Record<string, unknown> = {
+    from: who.from, to: [String(b.to_email || '')], reply_to: who.reply_to,
+    subject: String(b.subject || ''), html, text: String(b.body || '') + '\n\n' + url
+  };
+  const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
+  const done = await db.rpc('client_email_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
+  if (done.error) console.error('supplier-mail: details email not closed', done.error.message);
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name }
     : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
