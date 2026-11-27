@@ -1,7 +1,7 @@
 /* Email templates (2026-11-10; the overnight Settings review): every email
  * wording the portal sends, one editor for all of them, opened from one
  * place: Settings, Messages, Email templates, a row a family (Client,
- * Supplier, Creator and Candidate email templates, Sign-in and codes; the
+ * Supplier, Creator and Candidate email templates, Sign-in email templates; the
  * user, 2026-11-25: "Sorry inside Messages"), each opening that family's
  * templates alone. #1419 had put them in each section's ⋯, a misread of
  * the ask.
@@ -73,7 +73,7 @@
   var L_NOT = { en: 'English not written', zh: '中文 not written' };
   /* Each family's name: its Settings row and the sheet's title, one copy. */
   var REC_WORD = { clients: 'Client email templates', suppliers: 'Supplier email templates', creators: 'Creator email templates',
-    candidates: 'Candidate email templates', codes: 'Sign-in and codes' };
+    candidates: 'Candidate email templates', codes: 'Sign-in email templates' };
   var RECS = ['clients', 'suppliers', 'creators', 'candidates', 'codes'];
 
   /* One read of a list; a refusal or a missing function is null, so a
