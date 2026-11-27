@@ -87,5 +87,34 @@
     }
   }
 
-  window.ADspaceCopy = { to: copy };
+  /* Words the server makes at the press (FEEDBACK COPIED FOR WHATSAPP,
+     2026-11-27): the write is begun inside the press, a ClipboardItem
+     holding the promise; `text` resolves to the words or null. Answers a
+     promise of whether anything was copied. */
+  function later(btn, text, word) {
+    var said = function () { say(btn, word || 'Copied'); return true; };
+    var plain = function (t) {
+      if (t == null) return false;
+      return new Promise(function (res) {
+        var fell = function () { res(legacy(t) ? said() : false); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { res(said()); }).catch(fell);
+        else fell();
+      });
+    };
+    var after = function () { return Promise.resolve(text).then(plain).catch(function () { return false; }); };
+    var cb = navigator.clipboard;
+    if (cb && cb.write && typeof window.ClipboardItem === 'function') {
+      var blob = Promise.resolve(text).then(function (t) {
+        if (t == null) throw new Error('nothing');
+        return new Blob([t], { type: 'text/plain' });
+      });
+      blob.catch(function () {});
+      var item;
+      try { item = new window.ClipboardItem({ 'text/plain': blob }); } catch (e) { return after(); }
+      return cb.write([item]).then(said).catch(after);
+    }
+    return after();
+  }
+
+  window.ADspaceCopy = { to: copy, later: later };
 })();

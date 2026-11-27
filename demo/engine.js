@@ -280,7 +280,7 @@
     client_details_state: 'p_client',
     client_details_read: 'p_key',
     request_ref_find: 'p_q',
-    feedback_request: 'p_client p_kind p_again', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind p_again', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
+    feedback_request: 'p_client p_kind p_again p_channel', feedback_wa_copy: 'p_client p_kind p_again', feedback_withdraw: 'p_id', feedback_mail_begin: 'p_client p_kind p_again', feedback_mail_done: 'p_id p_status p_provider p_error', feedback_read: 'p_key', feedback_submit: 'p_key p_answers',
     portal_feedback: 'p_client', feedback_client: 'p_client', feedback_followup: 'p_response p_task', feedback_figures: 'p_from p_to',
     client_checklist: 'p_client p_kind',
     client_checklist_set: 'p_client p_kind p_item p_state p_note p_value',
@@ -12994,7 +12994,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var s = DB.feedback_responses.filter(function (x) { return x.request_id === r.id; })[0];
             var t = s && s.followup_task_id && (DB.ops_tasks || []).filter(function (x) { return x.id === s.followup_task_id; })[0];
             return { id: r.id, kind: r.kind, created_at: r.created_at, sent_by: r.sent_by_name, to_name: r.sent_to_name, to_email: r.sent_to_email,
-              manager: r.manager_name, opened_at: r.opened_at || null, answered_at: r.answered_at || null, closed_at: r.closed_at || null,
+              manager: r.manager_name, channel: r.channel || 'email', opened_at: r.opened_at || null, answered_at: r.answered_at || null, closed_at: r.closed_at || null,
               closed_reason: r.closed_reason || null,
               response: s ? { id: s.id, score: s.score, band: s.band, submitted_at: s.submitted_at, by: s.contact_name, request_ref: s.request_ref || null, max: fbLead(s.kind).max,
                 manager_score: fbSees(s.manager_id) ? s.manager_score : null, answers: fbAnswers(s, r.manager_name, fbSees(s.manager_id)),
@@ -13045,11 +13045,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsAllowed('clients', 'work')) return fbNo('denied');
       if (name === 'feedback_request') {
         if (['quick', 'review'].indexOf(args.p_kind) < 0) return fbNo('bad-kind');
+        var fbCh = args.p_channel == null ? 'email' : args.p_channel;
+        if (['email', 'whatsapp'].indexOf(fbCh) < 0) return fbNo('bad-channel');
         var rc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
         if (!rc || !scopeSeen(rc.id, 'work')) return fbNo('not-found');
         if (['lead', 'contacted', 'proposal', 'past'].indexOf(rc.stage) >= 0) return fbNo('not-active');
-        var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && String(k.email || '').trim(); })[0];
-        if (!rk2) return fbNo('no-contact');
+        var rk2 = (DB.client_contacts || []).filter(function (k) { return k.client_id === rc.id && k.is_primary && !k.archived_at && (fbCh === 'whatsapp' || String(k.email || '').trim()); })[0];
+        if (!rk2) return fbNo(fbCh === 'whatsapp' ? 'no-primary' : 'no-contact');
 
         if (DB.feedback_requests.some(function (r) { return r.client_id === rc.id && r.kind === args.p_kind && r.mail_status === 'sending' &&
             Date.now() - Date.parse(r.created_at) < 600e3; })) return fbNo('sending');
@@ -13058,17 +13060,39 @@ function opsCodeRange(cid, period, ty, src, seq) {
             ['failed', 'sending'].indexOf(r.mail_status || 'sent') < 0 && r.closed_reason !== 'withdrawn' &&
             Date.now() - Date.parse(r.created_at) < Number(fbH) * 3600e3; })
           .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
-        if (fbRec && !args.p_again) return Promise.resolve({ data: { error: 'recent', recent: { at: fbRec.created_at, by: fbRec.sent_by_name, to: fbRec.sent_to_name } }, error: null });
+        if (fbRec && !args.p_again) return Promise.resolve({ data: { error: 'recent', recent: { at: fbRec.created_at, by: fbRec.sent_by_name, to: fbRec.sent_to_name, channel: fbRec.channel || 'email' } }, error: null });
         var rm = DB.team_members.filter(function (m) { return m.active && String(m.name || '').trim().toLowerCase() === String(rc.owner || '').trim().toLowerCase(); })[0];
         DB.feedback_requests.forEach(function (r) { if (r.client_id === rc.id && r.kind === args.p_kind && !r.closed_at) { r.closed_at = fbNow; r.closed_reason = 'replaced'; } });
         var key = ''; while (key.length < 16) key += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
         var nr = { id: nid('fq'), client_id: rc.id, kind: args.p_kind, access_key: key, sent_by: fme.id, sent_by_name: fme.name, contact_id: rk2.id,
-          sent_to_name: rk2.name, sent_to_email: String(rk2.email).trim().toLowerCase(), manager_id: rm ? rm.id : null,
+          sent_to_name: rk2.name, sent_to_email: String(rk2.email || '').trim().toLowerCase() || null, channel: fbCh, manager_id: rm ? rm.id : null,
           manager_name: rm ? rm.name : (String(rc.owner || '').trim() || null), created_at: fbNow, opened_at: null, answered_at: null, closed_at: null, closed_reason: null };
         DB.feedback_requests.push(nr);
-        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: rc.name, detail: fbKword(nr.kind) + ' requested from ' + rk2.name, created_at: fbNow });
+        DB.activity_log.unshift({ id: nid('al'), actor: fme.name, action: 'client.edited', subject: rc.name, detail: fbKword(nr.kind) + ' requested from ' + rk2.name + (fbCh === 'whatsapp' ? ', copied for WhatsApp' : ''), created_at: fbNow });
         return fbOk({ id: nr.id, key: nr.access_key, kind: nr.kind, to_name: nr.sent_to_name, to_email: nr.sent_to_email, lang: rk2.lang || 'en',
-          manager: nr.manager_name, created_at: nr.created_at });
+          manager: nr.manager_name, created_at: nr.created_at, channel: fbCh });
+      }
+
+      if (name === 'feedback_wa_copy') {
+        if (typeof sendOk === 'function' && !sendOk('whatsapp')) return fbNo('send-off');
+        if (/^(quick|review)$/.test(args.p_kind) && fbTpls().filter(function (x) { return x.kind === args.p_kind; }).length < 2) return fbNo('not-found');
+        return rpc('feedback_request', { p_client: args.p_client, p_kind: args.p_kind, p_again: args.p_again === true, p_channel: 'whatsapp' }).then(function (rr) {
+          var r = rr.data || {};
+          if (r.error) return { data: r, error: null };
+          var q = DB.feedback_requests.filter(function (x) { return x.id === r.id; })[0];
+          var k = (DB.client_contacts || []).filter(function (x) { return x.id === q.contact_id; })[0] || {};
+          var cl = DB.clients.filter(function (c) { return c.id === q.client_id; })[0] || {};
+          var who = String((k.salutation ? k.salutation + ' ' : '') + (k.name || '')).trim(), zh = k.lang === 'zh';
+          var url = 'https://digital.adspace.me/feedback/?k=' + r.key;
+          var ft = fbTpls().filter(function (x) { return x.kind === q.kind && x.lang === (zh ? 'zh' : 'en'); })[0];
+          var fill = function (t) {
+            return String(t).replace(/\{\s*contact name\s*\}/gi, who).replace(/\{\s*client name\s*\}/gi, cl.name || '').replace(/\{\s*link\s*\}/gi, url);
+          };
+          var text = fill(ft.body);
+          if (text.indexOf(url) < 0) text = text.trim() + '\n\n' + fill(ft.button).trim() + (zh ? '\uff1a' : ': ') + url;
+          persist();
+          return { data: Object.assign({}, r, { text: text, lang: zh ? 'zh' : 'en' }), error: null };
+        });
       }
       if (name === 'feedback_mail_done') {
         if (['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return fbNo('bad-status');
@@ -14339,12 +14363,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if ('plan' in p) {
           var ps = svc(p.plan);
           if (typeof p.plan !== 'string' || !ps || !ps.spec || ps.spec.role !== 'plan' || ps.rate == null) return { error: 'bad-plan' };
-          if (p.plan !== v.plan) {
-
-            var was = svc(v.plan);
-            if (was && was.spec && was.spec.ads && !ps.spec.ads) delete v.budget;
-            delete v.mix; delete v.extra;
-          }
+          if (p.plan !== v.plan) { delete v.mix; delete v.extra; }
           v.plan = p.plan;
         }
         if ('mix' in p) { if (!/^[0-9]$/.test(String(p.mix))) return { error: 'bad-selection' }; v.mix = String(p.mix); }
