@@ -1485,7 +1485,7 @@
     if (k === 'no-product' && d.sku) w = 'Bukku has no product with SKU ' + d.sku + (d.line ? ' (' + d.line + ')' : '') + '. Add it in Bukku first.';
     if (k === 'invoiced' && d.number) w = 'Invoice ' + d.number + ' has already been created in Bukku.';
     if (k === 'no-invoice') w = 'Bukku has no invoice ' + (d.number || '') + ' for this client. Check the number, then try again.';
-    if (k === 'taken') w = 'Invoice ' + (d.number || '') + ' is already linked to ' + (d.on || 'another invoice row') + '. Unlink it there first.';
+    if (k === 'taken') w = 'Invoice ' + (d.number || '') + ' is already linked to ' + (d.on || 'another quotation or campaign') + '. Unlink it there first.';
     if (k === 'nothing' && d.linking) w = 'Nothing is billed in this cycle, so no invoice can be linked to it.';
     if (!QI_SAID[k] && k !== 'no-invoice' && k !== 'taken' && window.ADspaceBukku && /^(bukku|needs-update|not-set)/.test(k)) w = window.ADspaceBukku.said(d);
     return w;
@@ -1612,7 +1612,7 @@
     if (!QI) return;
     var me = QI, row = btn.closest('.qi-row'), key = qiKey(row), no = row.getAttribute('data-number') || '';
     window.ADspaceConfirm.ask({ title: 'Unlink invoice?', go: 'Unlink', tone: 'warn', wait: true, opener: row.querySelector('.kmenu-btn'),
-      body: 'This row will no longer be linked to invoice ' + no + '. Nothing changes in Bukku.'
+      body: (row.querySelector('.qi-what b') || {}).textContent + ' will no longer be linked to invoice ' + no + '. Nothing changes in Bukku.'
     }, function () {
       return me.ctx.db.rpc('quotation_invoice_unlink', { p_id: key.quotation, p_cycle: key.cycle, p_kind: key.kind }).then(function (r) {
         var d = r.data || {};
