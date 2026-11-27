@@ -1148,19 +1148,19 @@
   /* What was signed, read first: the company (each value its pen while it is
      checked), the billing contact, the signing itself. `fix` holds the
      corrections not yet submitted. */
-  function signedHtml(q, fix, edit) {
+  function signedHtml(q, fix, edit, held) {
     var s = q.signed || {}, co = s.company || {}, ct = s.contact || {}, sg = s.signer || {}, rec = s.record || {};
     var was = {};
     (s.corrections || []).forEach(function (c) { if (!(c.field in was)) was[c.field] = c.from; });
     var rows = CO.map(function (f) {
       var k = f[0], v = fix && k in fix ? fix[k] : (co[k] || '');
-      if (!edit && !v && !(k in was)) return '';
+      if ((!edit || held === true) && !v && !(k in was)) return '';
       var note = '';
       if (fix && k in fix) note = '<small class="qsg-was">Signed as ' + esc(co[k] || 'Not set') + '</small>';
       else if (k in was) note = '<small class="qsg-was">Signed as ' + esc(was[k] || 'Not set') + '</small>';
       return '<div><dt>' + esc(f[1]) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + (k === 'billing_address' ? ' is-pre' : '') + '">' +
         '<span class="mval" data-k="' + k + '">' + esc(v || 'Not set') + '</span>' +
-        (edit ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(f[1].toLowerCase()) + '">' + PEN_SVG + '</button>' : '') +
+        (edit && held === false ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(f[1].toLowerCase()) + '">' + PEN_SVG + '</button>' : '') +
         note + '</dd></div>';
     }).join('');
     var sig = '';
@@ -1173,13 +1173,14 @@
       : fact('Signed', 'On the quotation link') +
         /* The code proves only the address it went to: one outside Contacts
            is said, so the reviewer checks who signed (audit 2026-11-04). */
-        (rec.email ? fact('Code sent to', esc(rec.email) + (rec.in_contacts === false ? '<small class="qsg-was"><span class="chip-state is-warn">Not in Contacts</span></small>' : '')) : '') +
+        (rec.email ? fact('Code sent to', window.ADspaceWords.addr(rec.email) + (rec.in_contacts === false ? '<small class="qsg-was"><span class="chip-state is-warn">Not in Contacts</span></small>' : '')) : '') +
         (rec.ip ? fact('Signed from', esc(rec.ip + (rec.country ? ' · ' + rec.country : ''))) : '') +
         (rec.fingerprint ? fact('Fingerprint', '<span class="mono">' + esc(rec.fingerprint) + '</span>') : '');
-    return '<section class="fsec"><h4 class="fsec-h">Company</h4><dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +
+    return '<section class="fsec"><h4 class="fsec-h">Company' + (edit && held === true ? '<small class="qsg-held">Kept in Bukku.</small>' : '') + '</h4>' +
+      '<dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +
       '<section class="fsec"><h4 class="fsec-h">Billing contact</h4><dl class="ovfacts qsg-facts">' +
         fact('Name', esc(window.ADspaceWords.person ? window.ADspaceWords.person(ct.salutation, ct.name) : ct.name || '')) +
-        (ct.phone ? fact('Phone', esc(window.ADspaceAPI.phoneWord(ct.phone))) : '') + (ct.email ? fact('Email', esc(ct.email)) : '') + '</dl></section>' +
+        (ct.phone ? fact('Phone', esc(window.ADspaceAPI.phoneWord(ct.phone))) : '') + (ct.email ? fact('Email', window.ADspaceWords.addr(ct.email)) : '') + '</dl></section>' +
       '<section class="fsec"><h4 class="fsec-h">Signature</h4><dl class="ovfacts qsg-facts">' +
         fact('Signed by', esc(sg.name || '') + (sg.designation ? '<small>' + esc(sg.designation) + '</small>' : ''), 'qsg-who') +
         fact('Date', esc(s.via === 'paper' ? window.ADspaceClock.date(q.signed_at) : when(q.signed_at))) +
@@ -1218,7 +1219,11 @@
   var CK = null;
   function openCheck(q, ctx, opener) {
     if (!$('qsgCheckSheet') || !q.signed) return;
-    CK = { q: q, ctx: ctx, fix: {} };
+    /* A client whose billing Bukku holds keeps the company as signed: the
+       approval leaves its Billing alone (`quotation_review` `held`), so the
+       check offers no correction to it; asked of the database, as the
+       approval reads it, and drawn without pens until it answers. */
+    CK = { q: q, ctx: ctx, fix: {}, held: null };
     $('qsgCheckFor').textContent = q.ref + ' · ' + q.brand;
     var back = $('qsgCheckBack');
     back.hidden = !q.returned_at;
@@ -1231,6 +1236,15 @@
     $('qsgSubmit').disabled = true;
     window.ADspaceSheet.show($('qsgCheckSheet'), { opener: opener || null, onClose: function () { CK = null; } });
     requestAnimationFrame(function () { fitSig($('qsgCheckFacts')); });
+    ctx.db.rpc('bukku_link_get', { p_kind: 'client', p_id: q.client_id }).then(function (r) {
+      var d = r.data || {};
+      return Boolean(!r.error && d.held && !d.via);
+    }).catch(function () { return false; }).then(function (held) {
+      if (!CK || CK.q !== q) return;
+      CK.held = held;
+      if (held) CK.fix = {};
+      paintCheck();
+    });
     ctx.db.rpc('quotation_reviewers', { p_id: q.id }).then(function (r) {
       if (!CK || CK.q !== q) return;
       var d = r.data || {};
@@ -1246,7 +1260,7 @@
   }
   function paintCheck() {
     var host = $('qsgCheckFacts'), q = CK.q;
-    host.innerHTML = signedHtml(q, CK.fix, true);
+    host.innerHTML = signedHtml(q, CK.fix, true, CK.held);
     fitSig(host);
     Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
       var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
@@ -1273,7 +1287,7 @@
     var sel = $('qsgReviewer'), q = CK.q, ctx = CK.ctx, go = $('qsgSubmit');
     if (!sel.value) { sheetMsg('qsgCheckMsg', 'Choose a reviewer.', 'err'); sel.focus(); return; }
     var who = sel.options[sel.selectedIndex].textContent.replace(/^[A-Z0-9]+ · /, '');
-    var fix = Object.keys(CK.fix).length ? CK.fix : null;
+    var fix = !CK.held && Object.keys(CK.fix).length ? CK.fix : null;
     go.disabled = true;
     /* The agency's name and Service Terms address as the quotation was
        signed under, kept once for its sealed copy (2026-11-24); a refusal

@@ -5800,8 +5800,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     if (!ct.email) { msg('ctMsg', 'An email is required.', 'err'); openContact(ct); return; }
     portalFor = ct;
-    $('portalFacts').innerHTML = [['Person', ct.name], ['Sign-in email', ct.email]]
-      .map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
+    $('portalFacts').innerHTML = [['Person', esc(ct.name)], ['Sign-in email', window.ADspaceWords.addr(ct.email)]]
+      .map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
     // Off by default: access is the decision, an email is a separate one, and
     // the client can sign in without ever receiving one.
     $('portalInvite').checked = Boolean(invite);

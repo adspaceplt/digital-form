@@ -3103,7 +3103,14 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); margin-bottom: 3px;
 }
-.facts dd { font-size: 14px; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
+/* Two facts (a person and an address): the first as wide as its words, up
+   to half, the value taking the rest; four phantom 150px tracks once left an
+   address broken mid-word in a 732px sheet (2026-11-27). A section's own
+   columns, at a higher specificity, stand. */
+.facts:where(:has(> :nth-child(2):last-child)) { grid-template-columns: fit-content(50%) minmax(0, 1fr); }
+/* A value wraps only where a word cannot fit its column, an address after
+   its @ or a dot (`ADspaceWords.addr`); never at any letter. */
+.facts dd { font-size: 14px; color: var(--ink); margin: 0; overflow-wrap: break-word; }
 
 /* ---------- Money ----------
    Subtotal, tax, total, the way an invoice lays them out, because that is
@@ -4711,7 +4718,7 @@ body.is-canvas { overflow: hidden; }
 .ovfacts { display: grid; gap: 8px; margin: 0; }
 .ovfacts > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 0 16px; align-items: baseline; }
 .ovfacts dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
-.ovfacts dd { margin: 0; font-size: 13.5px; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.ovfacts dd { margin: 0; font-size: 13.5px; color: var(--ink); min-width: 0; overflow-wrap: break-word; }
 .ovfacts dd.is-missing { color: var(--warn); font-weight: 500; }
 .ovfacts dd.is-empty { color: var(--ink-mute); }
 /* ---------- My Work, phase 3: three views of one set of rows ----------
