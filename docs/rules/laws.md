@@ -300,7 +300,8 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
       internally / Revert confirmation, Mark as not sent).
    5. Lifecycle: Set inactive / Set active, Archive / Restore, Pause /
       Resume, Cancel, Unpublish, Withdraw, Revert to …, Reopen,
-      Stop, Cancel month, Reset link, Close link, Enable access / Revoke access.
+      Stop, Cancel month, Reset link, Close link, Enable access / Revoke access
+      (a contact), Allow portal sign-in / Stop portal sign-in (a Past client).
    6. Remove and destroy: Remove, Void, then Delete last.
 4. Separators (`hr.kmenu-sep`, `role="separator"`): always before group 6
    when anything precedes it; between the other groups once the menu

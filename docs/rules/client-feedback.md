@@ -12,7 +12,9 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   the request was sent, stored on the request; a client with none is not
   asked about one. No page types a question, a scale or a band.
 - A request exists only when a colleague makes one (Clients at Work, the
-  client active or paused and in scope): emailed to the client's primary
+  client Active, Paused or Past and in scope, never a lead; 2026-11-27,
+  the user: "what if clients ended and the following month i wanna get
+  feedback"): emailed to the client's primary
   contact, or copied for the client's WhatsApp group and pasted by hand
   (the user, 2026-11-27, widening 2026-11-24's email alone); never on a
   schedule, never by itself, never sent by the portal on WhatsApp. Its
@@ -22,7 +24,9 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   Sending and Sent recently hold across both ways.
 - Request feedback is the Feedback part's head act, and the client record's
   ⋯ on every other tab (Clients at Work, Send email or Send WhatsApp
-  for this colleague, a client never a lead): it asks the form (a segment),
+  for this colleague, a client never a lead; drawn only where one way can
+  be made: an email needs the primary contact's address, a copy a primary
+  contact): it asks the form (a segment),
   then `supplier-mail` `{ feedback: true }` makes the request
   (`feedback_mail_begin`, refused `send-off` or `email-off` before anything
   is made), emails its words in the primary contact's language with the link
@@ -60,6 +64,8 @@ mockups as version 3, "go feedback"). One place per fact, as CLAUDE.md §0.
   2026-11-25): Feedback submitted, Review by your account manager, Your
   feedback read back (`ADspaceFeedback.read`, a score as 9 of 10), Follow
   ADspace (the social links and Visit website).
+- A link stays open when its client moves to Past, whatever the client's
+  portal access (`portal_client_open` is not asked; `tests/feedbackpastsql.js`).
 - One answer a request, whoever answers first (the link or a signed-in
   contact); the request then reads Already submitted to everyone. The link
   (`/feedback/?k=`, 16 characters) answers that one request alone and names

@@ -107,8 +107,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   move: `portal_kept_at` at or after `stage_since`), asked by
   `portal_clients()` and so by every portal function, by media-pass as the
   caller and by portal-login (`portal_login_name`); a contact of a shut
-  client reads Access denied, answered exactly as a stranger. Enable access
-  and Revoke access in a Past client's ⋯ (lifecycle, Clients: Contacts at
+  client reads Access denied, answered exactly as a stranger. Allow portal
+  sign-in and Stop portal sign-in in a Past client's ⋯ (lifecycle, Clients: Contacts at
   Work) go through `client_portal_access_set` alone, filed `client.edited`
   (Client portal: off → on); a move back to Active opens it by itself and a
   later move to Past shuts it again, nothing written by the move

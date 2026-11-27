@@ -254,7 +254,7 @@
     /^(Edit|Edit .+|Rename|Duplicate|New version|Take|Take lead|Offer to team|Withdraw offer|Reassign|Change interview time|Change reviewer|Assign reviewer|Transfer client|White label|Change month|Pair with video|Select|Select .+|Arrange posts|Make primary|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Set access code|Use billing details|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat|Reissue|Replace|Add tasks|Import from .+|Add pictures from Meta|Move to .+|Review profile|Bulk import|Link task)$/,
     /^(Send on WhatsApp|Resend on WhatsApp|Send link on WhatsApp|Request feedback|Reply|Introduce representative|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email|Send by email)$/,
     /^(Mark (?!withdrawn$).+|Do not contact|Allow contact|Remove VIC|Verify signed letter|Confirm internally|Add changes|Confirm for client|Revert confirmation|Clear ad error)$/,
-    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Cancel|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Request again|Mark withdrawn|Revoke access|Enable access|Extend access|End access|Set access expiry|Withdraw confirmation|Unlink|Unlink task)$/,
+    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Cancel|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Request again|Mark withdrawn|Revoke access|Enable access|Allow portal sign-in|Stop portal sign-in|Extend access|End access|Set access expiry|Withdraw confirmation|Unlink|Unlink task)$/,
     /^(Remove|Remove from .+|Void|Delete|Request delete)$/
   ];
   function groupOf(label) {
