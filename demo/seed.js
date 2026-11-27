@@ -17,6 +17,8 @@
   function dayOf(iso) { return myt(Date.parse(iso)).toISOString().slice(0, 10); }
   var T = myt(NOW), TY = T.getUTCFullYear(), TM = T.getUTCMonth();
   function period(back) { var d = new Date(Date.UTC(TY, TM - back, 1)); return d.toISOString().slice(0, 7); }
+  /* A new set is called by its month, as the console names it. */
+  function monthName(back) { var d = new Date(Date.UTC(TY, TM - back, 1)); return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
   function monthStart(back) { return Date.UTC(TY, TM - back, 1) - 8 * 36e5; }
   function lastDay(p) { var y = +p.slice(0, 4), m = +p.slice(5, 7); return p + '-' + String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0'); }
   function at(ms) { return new Date(Math.min(ms, NOW - 36e5)).toISOString(); }
@@ -284,7 +286,7 @@
     ['ph-fb-1.svg', 'facebook', 'feed', 1200, 1200], ['ph-tiktok-1.svg', 'tiktok', 'reel', 1080, 1920], ['ph-xhs-1.svg', 'xhs', 'feed', 1080, 1440]];
   ACTIVE.forEach(function (c, ci) {
     var bid = 'db' + c.id;
-    DB.batches.push({ id: bid, client_id: c.id, title: 'This month\'s posts', published: ci % 6 !== 5, period: period(0),
+    DB.batches.push({ id: bid, client_id: c.id, title: monthName(0), published: ci % 6 !== 5, period: period(0),
       created_at: ago(8), published_at: ci % 6 !== 5 ? ago(7) : null, note: null });
     PH.forEach(function (ph, pi) {
       var id = bid + 'p' + pi;

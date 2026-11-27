@@ -12696,7 +12696,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         client: { name: rc.name, logo_url: rc.logo_url || null, handles: { instagram: rc.handle_ig || null } },
         lang: clientLang(rc.id),
         batches: rbs.map(function (x) {
-          return { id: x.id, title: x.title, note: x.note || null, created_at: x.created_at,
+          return { id: x.id, title: x.title, note: x.note || null, created_at: x.created_at, period: x.period || null,
             posts: (DB.posts || []).filter(function (q) { return q.batch_id === x.id; })
               .sort(function (a, b2) { return (a.position || 0) - (b2.position || 0); })
               .map(function (q) {
