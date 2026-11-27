@@ -129,7 +129,10 @@
       /* How ad spend works (2026-11-27): an explainer, no choice; the
          figures are Settings' (`ad_prepay_pct`, `ad_credit_fee_pct`). */
       ads: {
-        lead: 'The advertising budget is paid in one of the following ways.',
+        lead: 'Choose one of the two options below to pay the advertising budget.', opt: 'Option {n}', or: 'or',
+        /* The two options side by side (the user, 2026-11-27: either one, never both). */
+        cmp: { paid: 'Paid to', paidA: 'Meta, by your credit card', paidB: 'ADspace', when: 'When', whenA: 'As the ads run', whenB: 'Before each month',
+          fee: 'Agency Credit Term Fee', feeA: 'None', feeB: 'None when prepaid; {fee}% if billed with the invoice' },
         own: 'Your own ad account',
         ownPts: ['Meta charges the ads directly to your own credit card.',
           'The account is linked to the ADspace Meta business portfolio, so ADspace runs and manages the campaigns.'],
@@ -304,7 +307,9 @@
       download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
       adHow: '广告费用如何支付',
       ads: {
-        lead: '广告预算可通过以下方式之一支付。',
+        lead: '请从以下两种方式中选择一种支付广告预算。', opt: '方式 {n}', or: '或',
+        cmp: { paid: '付款对象', paidA: 'Meta（您的信用卡）', paidB: 'ADspace', when: '付款时间', whenA: '广告投放时扣款', whenB: '每月投放前',
+          fee: '账期服务费', feeA: '无', feeB: '预付则无；随发票结算加收{fee}%' },
         own: '您自己的广告账户',
         ownPts: ['Meta 直接从您自己的信用卡扣除广告费用。',
           '该账户将关联至 ADspace 的 Meta 商务资产组合，由 ADspace 投放并管理广告活动。'],
@@ -707,13 +712,21 @@
     $('adHeading').textContent = adw('adHow');
     $('adClose').setAttribute('aria-label', w.close);
     $('adClose').innerHTML = ic('close');
-    $('adBody').innerHTML = '<p class="adways-lead">' + esc(w.lead) + '</p><ol class="stepcards adways">' +
-      '<li class="stepcard"><span class="stepcard-mark">' + ic('adaccount') + '</span><div class="adway-text">' +
-        '<p class="adway-name"><b>' + esc(w.own) + '</b><span class="qs-rec">' + esc(t().recommended) + '</span></p>' + pts(w.ownPts) + '</div></li>' +
-      '<li class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
+    var C = w.cmp, row = function (h, a, b) { return '<tr><th scope="row">' + esc(h) + '</th><td>' + esc(a) + '</td><td>' + esc(b) + '</td></tr>'; };
+    /* Two options, either one: each numbered, an "or" between, then the two
+       compared row by row (the user, 2026-11-27). */
+    $('adBody').innerHTML = '<p class="adways-lead">' + esc(w.lead) + '</p><div class="stepcards adways">' +
+      '<div class="stepcard is-rec"><span class="qs-rec">' + esc(t().recommended) + '</span><span class="stepcard-mark">' + ic('adaccount') + '</span><div class="adway-text">' +
+        '<span class="adway-n">' + esc(f(w.opt, { n: 1 })) + '</span>' +
+        '<p class="adway-name"><b>' + esc(w.own) + '</b></p>' + pts(w.ownPts) + '</div></div>' +
+      '<p class="adways-or" aria-hidden="true"><span>' + esc(w.or) + '</span></p>' +
+      '<div class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
+        '<span class="adway-n">' + esc(f(w.opt, { n: 2 })) + '</span>' +
         '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(w.prePts) +
         '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(f(w.term, { fee: pctWord(fee) })) + '</p>' +
-          '<p>' + esc(f(w.eg, { c: c, b: n0(AD_EG), x: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></li></ol>';
+          '<p>' + esc(f(w.eg, { c: c, b: n0(AD_EG), x: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
+      '<div class="adcmp-wrap"><table class="adcmp"><thead><tr><td></td><th scope="col">' + esc(f(w.opt, { n: 1 })) + '</th><th scope="col">' + esc(f(w.opt, { n: 2 })) + '</th></tr></thead><tbody>' +
+        row(C.paid, C.paidA, C.paidB) + row(C.when, C.whenA, C.whenB) + row(C.fee, C.feeA, f(C.feeB, { fee: pctWord(fee) })) + '</tbody></table></div>';
   }
   /* js/sheet.js is fetched on the first press, from the address the page
      names on the sheet (its stamp kept with the page's), never on load. */

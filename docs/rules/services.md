@@ -271,9 +271,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   quotation." (`ADspaceWords.line.adNotIncluded`, 中文 in `js/quote.js`)
   with How ad spend works under it (`.linkbtn.qs-adhow`), opening an
   explainer sheet (`#adSheet`, `js/sheet.js` fetched on the first press
-  from the sheet's `data-script`): Your own ad account (Recommended) and
-  Prepaid through ADspace, each a step card with its glyph (`adaccount`,
-  `prepaid`), no choice and no price. Build quote says the same sentence;
+  from the sheet's `data-script`): two alternatives, either one, never
+  both (the user, 2026-11-27): Option 1 Your own ad account, Recommended in
+  its card's top-right corner, "or", Option 2 Prepaid through ADspace, each
+  a step card with its glyph (`adaccount`, `prepaid`), side by side from
+  720px and stacked below, then a comparison (`.adcmp`: Paid to, When,
+  Agency Credit Term Fee); no choice and no price. Build quote says the same sentence;
   the PDF's TERMS say it and one clause naming both ways. The next month's
   request point and the Agency Credit Term Fee (账期服务费) are
   `ad_prepay_pct` and `ad_credit_fee_pct` (Settings, Tax and terms,

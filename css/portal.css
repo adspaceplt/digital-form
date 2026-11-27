@@ -9831,7 +9831,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
    cards with no number, each its name (Recommended at its right edge, as a
    plan card's) over its points; the prepaid card's billed-on-terms part
    under a hairline. Explainer only: nothing here is a choice. */
-.sheet-card.adsheet { width: min(560px, 100%); }
+.sheet-card.adsheet { width: min(760px, 100%); }
 .adways-lead { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
 .adway-text { display: grid; gap: 6px; min-width: 0; padding-top: 2px; }
 .adway-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; min-height: 22px; }
@@ -9839,6 +9839,26 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .adway-pts { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
 .adway-pts li { position: relative; padding-left: 12px; overflow-wrap: anywhere; }
 .adway-pts li::before { content: '\2022'; position: absolute; left: 1px; top: 0; }
+.adway-n { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+/* The recommended option's tag in its top-right corner (the user, 2026-11-27). */
+.adways > .stepcard.is-rec { position: relative; }
+.adways > .stepcard.is-rec > .qs-rec { position: absolute; top: 14px; right: 16px; }
+/* Either one: an "or" on a hairline between the two options (2026-11-27). */
+.adways-or { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.adways-or::before, .adways-or::after { content: ''; flex: 1 1 0; height: 1px; background: var(--line); }
+.adcmp-wrap { margin-top: 16px; overflow-x: auto; }
+/* At a desk the two options stand side by side, the "or" upright between them. */
+@media (min-width: 720px) {
+  .adways { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; }
+  .adways > .stepcard { grid-template-columns: 1fr; align-content: start; row-gap: 10px; }
+  .adways-or { flex-direction: column; }
+  .adways-or::before, .adways-or::after { width: 1px; height: auto; }
+}
+.adcmp { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; }
+.adcmp th, .adcmp td { padding: 8px 8px 8px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-soft); }
+.adcmp thead th { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.adcmp tbody th { width: 34%; font-weight: 500; color: var(--ink-mute); }
+.adcmp td { color: var(--ink); }
 .adway-sub { display: grid; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
 .adway-sub h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .adway-sub p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
