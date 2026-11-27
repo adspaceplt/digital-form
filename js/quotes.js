@@ -1169,7 +1169,7 @@
   function pickHtml(k, label, signedV, recV, chosen) {
     var nm = 'qsgPick-' + k;
     return '<small class="qsg-was"><span class="chip-state is-warn">Differs from the client record</span></small>' +
-      '<span class="qsg-pick" role="radiogroup" aria-label="' + esc(label) + ' for the client record">' +
+      '<span class="qsg-pick" role="radiogroup" aria-label="Choose a value for ' + esc(label) + '">' +
       '<label class="tickline"><input type="radio" name="' + nm + '" value="keep" data-pick="' + k + '"' + (chosen === 'keep' ? ' checked' : '') + '> <span>Keep ' + esc(recV) + '</span></label>' +
       '<label class="tickline"><input type="radio" name="' + nm + '" value="use" data-pick="' + k + '"' + (chosen === 'use' ? ' checked' : '') + '> <span>Use ' + esc(signedV) + '</span></label></span>';
   }
@@ -1186,7 +1186,7 @@
       else if (k in was) note = '<small class="qsg-was">Signed as ' + esc(was[k] || 'Not set') + '</small>';
       if (edit && held === false && recCo && coDiffers(k, v, recCo[k])) note += pickHtml(k, f[1], v, recCo[k], picks && picks[k]);
       else if (!edit && kept[k] && kept[k].record) {
-        note += '<small class="qsg-was">' + esc(kept[k].pick === 'use' ? 'Client record changes from ' + kept[k].record + ' on approval' : 'Client record keeps ' + kept[k].record) + '</small>';
+        note += '<small class="qsg-was">' + esc(kept[k].pick === 'use' ? 'Client record will change from ' + kept[k].record + ' on approval' : 'Client record keeps ' + kept[k].record) + '</small>';
       }
       return '<div><dt>' + esc(f[1]) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + (k === 'billing_address' ? ' is-pre' : '') + '">' +
         '<span class="mval" data-k="' + k + '">' + esc(v || 'Not set') + '</span>' +

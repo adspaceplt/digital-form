@@ -166096,8 +166096,14 @@ revoke all on function public.quote_extras(jsonb) from public, anon, authenticat
 -- client's record, refusing `pick-company` until each is chosen, kept in
 -- signed.record_pick; `quotation_review` applies a use (Billing Work,
 -- `updated`), never where Bukku holds the billing or it bills another.
+-- A signed quotation is never deleted: `delete_client` refuses
+-- `has-signed`, and `quotations_signed_kept` refuses the row's delete
+-- on any path, a client's cascade included.
 -- ROLLBACK: drop trigger quotations_brand_follows on public.quotations;
--- drop function public.quotations_brand_follows(); drop function
+-- drop function public.quotations_brand_follows(); drop trigger
+-- quotations_signed_kept on public.quotations; drop function
+-- public.quotations_signed_kept(); re-run `delete_client` from
+-- 2026-10-17-delete-client-at-manage.sql; drop function
 -- public.quotation_submit(uuid, uuid, jsonb, jsonb); re-run
 -- `quotation_submit` from 2026-11-10-official-terms-capitalised.sql and
 -- `quotation_review` from 2026-11-25-one-time-never-one-off.sql. The
@@ -166202,7 +166208,7 @@ begin
         end if;
         v_picks := v_picks || jsonb_build_object(v_k, jsonb_build_object('pick', v_pick, 'record', v_rec));
         v_words := v_words || '; ' || case v_k when 'legal_name' then 'Registered Company Name' else 'Business Registration No.' end ||
-                   case v_pick when 'keep' then ': client record kept as ' || v_rec else ': client record to change from ' || v_rec || ' on approval' end;
+                   case v_pick when 'keep' then ': client record kept as ' || v_rec else ': client record will change from ' || v_rec || ' on approval' end;
       end if;
     end loop;
   end if;
@@ -166345,6 +166351,76 @@ begin
 end $$;
 revoke all on function public.quotation_review(uuid, boolean, text) from public, anon;
 grant execute on function public.quotation_review(uuid, boolean, text) to authenticated;
+
+-- A signed quotation is the contract (the user, through the coordinator:
+-- "YES"): `delete_client` refuses `has-signed` before anything goes, and
+-- no path deletes a signed row, a client's cascade included
+-- (`quotations_signed_kept`).
+create or replace function public.delete_client(p_client uuid, p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  want text;
+  who  text := auth.jwt() ->> 'email';
+  cl   public.clients%rowtype;
+  me   public.team_members%rowtype;
+begin
+  if who is null then
+    raise exception 'Not signed in';
+  end if;
+  /* The team's alone, at Clients Full Access: a client's login holds no team
+     row, and hiding the menu item is not access control. */
+  if not public.is_team() or not public.allowed('clients', 'manage') then
+    raise exception 'Not allowed';
+  end if;
+
+  select value into want from public.app_secrets where key = 'delete_code';
+
+  -- No code set: the interface asks for the client's name instead, and has
+  -- already checked it. Nothing more to enforce here.
+  if want is not null and want <> '' then
+    if p_code is null or p_code <> want then
+      return 'wrong-code';
+    end if;
+  end if;
+
+  select * into cl from public.clients where id = p_client;
+  if cl.id is null then
+    return 'not-found';
+  end if;
+  if exists (select 1 from public.quotations q where q.client_id = p_client and q.signed_at is not null) then
+    return 'has-signed';
+  end if;
+  delete from public.clients where id = p_client;
+  if not found then
+    return 'not-found';
+  end if;
+  /* Filed here, in the same transaction, never by the page after the answer
+     (audit R1, 2026-10-10): a reply lost on the way left no record. */
+  select * into me from public.team_members where lower(email) = lower(who) and active limit 1;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, who), 'client.deleted', cl.name, coalesce(cl.client_code, ''));
+  return 'deleted';
+end $$;
+revoke all on function public.delete_client(uuid, text) from public, anon;
+grant execute on function public.delete_client(uuid, text) to authenticated;
+
+create or replace function public.quotations_signed_kept()
+returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if old.signed_at is not null then
+    raise exception 'A signed quotation cannot be deleted.' using errcode = '42501', hint = 'has-signed';
+  end if;
+  return old;
+end $$;
+revoke all on function public.quotations_signed_kept() from public, anon, authenticated;
+drop trigger if exists quotations_signed_kept on public.quotations;
+create trigger quotations_signed_kept before delete on public.quotations
+  for each row execute function public.quotations_signed_kept();
 
 -- END OF QUOTATION BRAND AND COMPANY PICK ---------------------------------
 
