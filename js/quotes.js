@@ -1753,7 +1753,7 @@
       }
       $('qbFor').textContent += ' · priced from v.' + c.version;
       termOptions();
-      $('qbTerm').value = String(sel.term || 6);
+      $('qbTerm').value = String(Number(sel.term) > 1 ? sel.term : 6);
       $('qbTermDisc').checked = sel.term_disc !== false;
       discShow();
       /* A new quotation starts with no add-on rate ticked; a reopened one keeps
@@ -2267,8 +2267,10 @@
     return Number((own != null ? own : set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : 0) || 0);
   }
   function discShow() {
-    var pct = termPctOf(Number($('qbTerm').value) || 6);
-    $('qbDiscBox').hidden = !(pct < 0);
+    var pct = termPctOf(Number($('qbTerm').value) || 6), once = Boolean(B && B.monthly === false);
+    /* The term and its discount are asked only where a line is monthly. */
+    $('qbTerm').parentNode.hidden = once;
+    $('qbDiscBox').hidden = once || !(pct < 0);
     $('qbDiscPct').textContent = pct < 0 ? '(' + Math.abs(pct) + '% for ' + (Number($('qbTerm').value) || 6) + ' months)' : '';
   }
   /* The advertising budget (2026-11-12, the user): a tick, then a row a
@@ -2612,7 +2614,10 @@
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
   }
   function selection() {
-    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6, date: qbDay(), card: B.card ? B.card.version : null,
+    /* One-time only (2026-11-27): no brand holds a monthly line, so the
+       term is 1, as /quote/'s selection() sends it, and the row and the
+       PDF read One-time. */
+    var sel = { plan: B.plan, term: B.monthly === false ? 1 : Number($('qbTerm').value) || 6, date: qbDay(), card: B.card ? B.card.version : null,
       platforms: [], langs: [], translate: $('qbTranslate').checked, budget: Number($('qbBudget').value) || 0, once: [] };
     if (sel.plan) sel.mix = Number($('qbMix').value) || 0;
     Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) { if (i.checked) sel.platforms.push(i.value); });
@@ -2716,6 +2721,9 @@
         if (!B || seq !== B.seq) return;
         var d = r.data || {};
         hints(d);
+        /* A monthly line added to a one-time quotation: priced again on
+           the term asked (2026-11-27). */
+        if ((d.error || (r.error && r.error.message)) === 'bad-term' && B.monthly === false) { B.monthly = true; discShow(); preview(true); return; }
         if (r.error || d.error) {
           /* Create stays pressable: it names the card's own fault first, else this. */
           B.err = (d.brand != null && B.sent ? brandWord(B.brands[B.sent[d.brand]]) + ': ' : '') + said(r.error || d.error);
@@ -2725,6 +2733,10 @@
           viewSay();
           return;
         }
+        /* The term is asked while any brand holds a monthly line; a flip
+           prices again with the term it now sends (2026-11-27). */
+        var monthly = (d.lines || []).some(function (l) { return l.basis === 'month'; });
+        if (monthly !== (B.monthly !== false)) { B.monthly = monthly; discShow(); preview(true); return; }
         B.priced = d; B.err = '';
         /* What was typed for a line the selection no longer holds is let go. */
         (B.sent ? B.sent.map(function (bi, k) { return k; }).concat(boardAt() < 0 ? [boardAt()] : []) : [null]).forEach(function (k) {
@@ -2776,8 +2788,21 @@
     var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
     if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
     if (!(codes.length + (own ? 1 : 0)) || ownLine(l)) return null;
-    return { cur: cur, opts: [['', own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE]]
-      .concat(codes.map(function (c) { return [c.code, MON.taxCodeWord(c)]; })) };
+    /* Each option its full word and its short one: the closed select
+       reads the code (SV8), the open list the rate (2026-11-27). */
+    var mine = MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE;
+    return { cur: cur, opts: [['', own ? own.code + ' · ' + t.sst_pct + '%' : mine, own ? own.code : mine]]
+      .concat(codes.map(function (c) { return [c.code, MON.taxCodeWord(c), c.code]; })) };
+  }
+  /* On a phone the tax select ends the line's Rename row; at a desk it is
+     the Tax column (2026-11-27). The line is drawn again where the width
+     crosses. */
+  var NARROW = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null;
+  if (NARROW && NARROW.addEventListener) NARROW.addEventListener('change', function () {
+    if (B && B.priced && !B.descKey && !B.nameKey && $('qbLines')) $('qbLines').innerHTML = table(B.priced);
+  });
+  function taxWord(sel, full) {
+    Array.prototype.forEach.call(sel.options, function (o) { o.textContent = o.getAttribute(full ? 'data-full' : 'data-short'); });
   }
   /* The totals as the quotation reads them, [label, figure, is total, key]
      (ADspaceMoney.quoteRows, one copy, QT-4). */
@@ -2803,7 +2828,7 @@
        every brand's changed here at once (2026-11-26). */
     var names = (B && B.sent ? B.sent.map(function (i) { return B.brands[i]; }) : null) || t.brands || null, many = Boolean(names && names.length > 1 && rows.some(function (l) { return l.brand != null; }));
     var lastBrand = null;
-    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Item</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
+    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Item</span>' + (hasTax ? '<span class="qb-taxc">Tax</span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
       '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
         var bk = l.brand == null ? '' : String(l.brand), id = lineId(l.brand, l.key);
@@ -2823,8 +2848,9 @@
            Months (2026-10-31). */
         var tx = taxOpts(l, t);
         var tax = tx ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
-          tx.opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] && o[0] === tx.cur ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
+          tx.opts.map(function (o) { return '<option value="' + esc(o[0]) + '" data-full="' + esc(o[1]) + '" data-short="' + esc(o[2]) + '"' + (o[0] && o[0] === tx.cur ? ' selected' : '') + '>' + esc(o[2]) + '</option>'; }).join('') +
           '</select>' : '';
+        var inActs = Boolean(tax && NARROW && NARROW.matches && B && B.descKey !== id);
         /* A Rate Card one-time item takes Months too (2026-11-12, the user):
            a number bills it monthly, empty or 0 keeps it one-time. */
         var flex = !ownLine(l) && (l.basis === 'once' || l.was_once);
@@ -2865,7 +2891,7 @@
               '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Changed</span>' : '') +
                 '<button type="button" class="btn btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
                 '<button type="button" class="btn btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
-                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
+                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + (inActs ? tax : '') + '<span class="qb-moves">' + move + '</span></div>') +
             '</div>';
         } else {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
@@ -2887,7 +2913,7 @@
           /* The head names Tax while any code is offered, so every line
              holds the cell, empty where no select applies (a custom line):
              a column on every row (2026-11-25). */
-          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : hasTax ? '<span class="qb-taxc"></span>' : '') +
+          (tax && !inActs ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : hasTax ? '<span class="qb-taxc"></span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' || flex ? 'Months' : '&nbsp;') + '</span>' +
@@ -2903,7 +2929,8 @@
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
     var notes = [];
-    if (t.budget > 0) notes.push('Advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is billed separately.');
+    /* Said as the quotation says it (2026-11-27, How ad spend works). */
+    if (t.budget > 0) notes.push('The advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is not included in this quotation.');
     if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + CUR + ' ' + whole(topBudget()) : x; }).join(', ') + '.');
     if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
     return out;
@@ -3128,7 +3155,7 @@
       return '<div class="qb-sidegroup"><p class="qb-sidegh">' + esc(name) + '</p>' + list.map(row).join('') + '</div>';
     };
     var month = lines.filter(function (l) { return l.basis === 'month'; }), once = lines.filter(function (l) { return l.basis !== 'month'; });
-    var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, billed separately</span>' +
+    var ads = Number(t.budget) > 0 ? '<div class="qb-sidegroup"><p class="qb-sidegh">Advertising budget</p><div class="qb-sideline"><span class="qb-sidename">Per month, not included</span>' +
       '<span class="qb-fig">' + esc('Up to ' + CUR + ' ' + whole(t.budget)) + '</span><span class="qb-sideact"></span></div></div>' : '';
     var n = B ? aoAll().filter(function (k) { return (B.aoOn || []).indexOf(k) >= 0; }).length : 0;
     /* Several brands (BUILD QUOTE ON ONE SHEET): a group a brand, its name
@@ -3415,6 +3442,11 @@
     /* A figure typed: Create waits for the figures it will keep; Enter or
        leaving the field prices it again. Empty, or the card's own figure,
        puts back the card's. */
+    /* The tax select reads its code closed and the rate in its list. */
+    ['mousedown', 'focusin'].forEach(function (ev) {
+      $('qbLines').addEventListener(ev, function (e) { var t = e.target.closest && e.target.closest('.qb-tax'); if (t) taxWord(t, true); });
+    });
+    $('qbLines').addEventListener('focusout', function (e) { var t = e.target.closest && e.target.closest('.qb-tax'); if (t) taxWord(t, false); });
     $('qbLines').addEventListener('input', function (e) {
       if (B && e.target.closest('.qb-val')) { $('qbSave').disabled = true; $('qbPreview').disabled = true; }
     });

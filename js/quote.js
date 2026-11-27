@@ -58,7 +58,7 @@
       reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform',
-      ratesLater: 'The rates will be shown on the quotation.', budgetSep: 'The advertising budget is billed separately.',
+      ratesLater: 'The rates will be shown on the quotation.', adNot: null,
       recommended: 'Recommended', piecesN: '{n} content pieces', platsN: '{n} platforms', adUpTo: 'Advertising budget up to RM\u00a0{b}',
       piecesHead: '{n} content pieces per month', piecesPick: '{n} content pieces per month. Please choose one combination.',
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
@@ -125,11 +125,29 @@
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
       download: 'Download', pdfFail: 'The PDF could not be prepared. Please try again.', chat: 'Chat on WhatsApp',
-      billSep: 'The advertising budget is billed separately.',
+      adHow: null,
+      /* How ad spend works (2026-11-27): an explainer, no choice; the
+         figures are Settings' (`ad_prepay_pct`, `ad_credit_fee_pct`). */
+      ads: {
+        lead: 'Choose one of the two options below to pay the advertising budget.', opt: 'Option {n}', or: 'or',
+        /* The two options side by side (the user, 2026-11-27: either one, never both). */
+        cmp: { paid: 'Paid to', paidA: 'Meta, by your credit card', paidB: 'ADspace', when: 'When', whenA: 'As the ads run', whenB: 'Before each month',
+          fee: 'Agency Credit Term Fee', feeA: 'None', feeB: 'None when prepaid; {fee}% if billed with the invoice' },
+        own: 'Your own ad account',
+        ownPts: ['Meta charges the ads directly to your own credit card.',
+          'The account is linked to the ADspace Meta business portfolio, so ADspace runs and manages the campaigns.'],
+        pre: 'Prepaid through ADspace',
+        prePts: ['The first month\'s advertising budget is paid to ADspace before the ads start.',
+          'Each following month is requested when about {pct}% of the current budget is spent.',
+          'If payment is not received, the ads will be paused until payment is received.'],
+        termH: 'Billed with the invoice',
+        term: 'Where the advertising budget is billed with the invoice on the quotation\'s payment terms instead of prepaid, an Agency Credit Term Fee of {fee}% will be added to the advertising budget.',
+        eg: 'For example, a budget of {c}\u00a0{b} carries a fee of {c}\u00a0{x}.', close: 'Close'
+      },
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
       adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
       payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
-      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
+      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
       rcvSent: 'Request sent', rcvSend: 'Quotation sent on WhatsApp',
@@ -223,7 +241,7 @@
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台',
-      ratesLater: '价格将在报价单中列明。', budgetSep: '广告预算另行收费。',
+      ratesLater: '价格将在报价单中列明。', adNot: '本报价不包括广告预算。',
       recommended: '推荐', piecesN: '{n}条内容', platsN: '{n}个平台', adUpTo: '广告预算最高 RM\u00a0{b}',
       piecesHead: '每月{n}条内容', piecesPick: '每月{n}条内容，请选择一种组合',
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
@@ -287,11 +305,26 @@
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
       download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
-      billSep: '广告预算另行收费。',
+      adHow: '广告费用如何支付',
+      ads: {
+        lead: '请从以下两种方式中选择一种支付广告预算。', opt: '方式 {n}', or: '或',
+        cmp: { paid: '付款对象', paidA: 'Meta（您的信用卡）', paidB: 'ADspace', when: '付款时间', whenA: '广告投放时扣款', whenB: '每月投放前',
+          fee: '账期服务费', feeA: '无', feeB: '预付则无；随发票结算加收{fee}%' },
+        own: '您自己的广告账户',
+        ownPts: ['Meta 直接从您自己的信用卡扣除广告费用。',
+          '该账户将关联至 ADspace 的 Meta 商务资产组合，由 ADspace 投放并管理广告活动。'],
+        pre: '通过 ADspace 预付',
+        prePts: ['首月广告预算须于广告开始投放前支付予 ADspace。',
+          '当月预算消耗约{pct}%时，ADspace 将请款下月预算。',
+          '如未收到款项，广告将暂停投放，直至收款为止。'],
+        termH: '随发票结算',
+        term: '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee}%的账期服务费（Agency Credit Term Fee）。',
+        eg: '例如：广告预算 {c}\u00a0{b}，账期服务费为 {c}\u00a0{x}。', close: '关闭'
+      },
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
       adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
       payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
-      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
+      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       rcvSent: '已提交请求', rcvSend: '通过 WhatsApp 发送报价',
@@ -656,6 +689,66 @@
   }
 
   function ic(name, cls) { return window.ADspaceIcons ? window.ADspaceIcons.svg(name, cls) : ''; }
+
+  /* HOW AD SPEND WORKS (2026-11-27, the user): the advertising budget is
+     not included in a quotation, and a press under that line opens the two
+     ways it is paid, an explainer with no choice and no price. The English
+     line and the button's words are ADspaceWords.line's (the PDF says the
+     line too). The figures are Settings' (`ad_prepay_pct`,
+     `ad_credit_fee_pct`, js/money.js), as they stood on a sent
+     quotation's day, else today. */
+  function adw(k) { return t()[k] || window.ADspaceWords.line[{ adNot: 'adNotIncluded', adHow: 'adHow' }[k]]; }
+  function adHowBtn() {
+    return '<button class="linkbtn qs-adhow" type="button" data-a="adhow" aria-haspopup="dialog">' + esc(adw('adHow')) + ic('go', 'ovgo-chev') + '</button>';
+  }
+  /* The user's own example (2026-11-27): a budget of 6,000 and its fee. */
+  var AD_EG = 6000;
+  function pctWord(v) { return String(Math.round(Number(v) * 100) / 100); }
+  function adSheetFill() {
+    var w = t().ads, at = Q && Q.issued_at ? Q.issued_at : undefined, c = Q ? qc() : 'RM';
+    var pct = MON.setting('ad_prepay_pct', at), fee = MON.setting('ad_credit_fee_pct', at);
+    var x = Math.round(AD_EG * Number(fee)) / 100;
+    var pts = function (list) { return '<ul class="adway-pts">' + list.map(function (p) { return '<li>' + esc(f(p, { pct: pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
+    $('adHeading').textContent = adw('adHow');
+    $('adClose').setAttribute('aria-label', w.close);
+    $('adClose').innerHTML = ic('close');
+    var C = w.cmp, row = function (h, a, b) { return '<tr><th scope="row">' + esc(h) + '</th><td>' + esc(a) + '</td><td>' + esc(b) + '</td></tr>'; };
+    /* Two options, either one: each numbered, an "or" between, then the two
+       compared row by row (the user, 2026-11-27). */
+    $('adBody').innerHTML = '<p class="adways-lead">' + esc(w.lead) + '</p><div class="stepcards adways">' +
+      '<div class="stepcard is-rec"><span class="qs-rec">' + esc(t().recommended) + '</span><span class="stepcard-mark">' + ic('adaccount') + '</span><div class="adway-text">' +
+        '<span class="adway-n">' + esc(f(w.opt, { n: 1 })) + '</span>' +
+        '<p class="adway-name"><b>' + esc(w.own) + '</b></p>' + pts(w.ownPts) + '</div></div>' +
+      '<p class="adways-or" aria-hidden="true"><span>' + esc(w.or) + '</span></p>' +
+      '<div class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
+        '<span class="adway-n">' + esc(f(w.opt, { n: 2 })) + '</span>' +
+        '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(w.prePts) +
+        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(f(w.term, { fee: pctWord(fee) })) + '</p>' +
+          '<p>' + esc(f(w.eg, { c: c, b: n0(AD_EG), x: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></div></div>' +
+      '<div class="adcmp-wrap"><table class="adcmp"><thead><tr><td></td><th scope="col">' + esc(f(w.opt, { n: 1 })) + '</th><th scope="col">' + esc(f(w.opt, { n: 2 })) + '</th></tr></thead><tbody>' +
+        row(C.paid, C.paidA, C.paidB) + row(C.when, C.whenA, C.whenB) + row(C.fee, C.feeA, f(C.feeB, { fee: pctWord(fee) })) + '</tbody></table></div>';
+  }
+  /* js/sheet.js is fetched on the first press, from the address the page
+     names on the sheet (its stamp kept with the page's), never on load. */
+  function adSheet(opener) {
+    var box = $('adSheet'), src = box && box.getAttribute('data-script');
+    if (!box) return;
+    if (window.ADspaceSheet) { adShow(box, opener); return; }
+    if (!src || adSheet.asked) return;
+    adSheet.asked = true;
+    var tag = document.createElement('script');
+    tag.src = src;
+    tag.onload = function () { if (window.ADspaceSheet) adShow(box, opener); };
+    tag.onerror = function () { adSheet.asked = false; tag.remove(); };
+    document.head.appendChild(tag);
+  }
+  function adShow(box, opener) {
+    adSheetFill();
+    window.ADspaceSheet.show(box, { opener: opener });
+    /* The figures read afresh, the sheet filled again once they answer. */
+    if (MON.load) MON.load().then(function () { if (window.ADspaceSheet.isOpen(box)) adSheetFill(); }).catch(function () {});
+  }
+  if ($('adClose')) $('adClose').addEventListener('click', function () { if (window.ADspaceSheet) window.ADspaceSheet.close(); });
   /* A plan's content as the boards write it: "3 graphics, 4 reels". */
   function mixShort(m) {
     var K = t().kindS;
@@ -690,7 +783,7 @@
       sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
         '<div class="qs-plans">' + plans.map(function (x, i) { return planCard(x, i, plans.length); }).join('') + '</div>' +
         '<div class="qs-xbox" id="qsPlanBox">' + planBox() + '</div>' +
-        '<p class="qs-note">' + noteH((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
+        '<p class="qs-note">' + noteH((S.withAds ? adw('adNot') + ' ' : '') + t().ratesLater) + '</p>' + (S.withAds ? adHowBtn() : '')) +
       '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div>' +
       sec(t().platsH, (p ? '<p class="qs-note">' + noteH(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
       '</div>', navFoot());
@@ -748,7 +841,7 @@
       S.budget = Number(cur);
       h += sec(t().budget, '<select class="select" id="qsBudget">' +
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-        '<p class="qs-note">' + noteH(t().budgetSep) + '</p>', 'qsBudget');
+        '<p class="qs-note">' + noteH(adw('adNot')) + '</p>' + adHowBtn(), 'qsBudget');
     }
     // 6, 12 or 24 months: a segment of three (DESIGN.md §4, a choice of two to four).
     if (monthly()) {
@@ -947,6 +1040,20 @@
      (2026-10-15). */
   function qc() { return Q && Q.totals && Q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
   function qb(n) { var fx = Q && Q.totals && Number(Q.totals.fx); return fx ? Math.round(Number(n) / fx) : Number(n); }
+  /* A Singapore client billed in RM reads each total with the S$ it comes
+     to (2026-11-27), at the rate the read carries (the quotation's, else
+     the setting on its day of issue); billed in S$, or in Malaysia,
+     nothing. ADspaceMoney.approx is the one copy. */
+  function qCli() { return Q ? { market: Q.market, bill_market: qc() === 'S$' ? 'SG' : 'MY' } : null; }
+  function qDay() { return Q && Q.issued_at ? (window.ADspaceClock ? window.ADspaceClock.day(Q.issued_at) : String(Q.issued_at).slice(0, 10)) : undefined; }
+  function near(v) { return Q ? window.ADspaceMoney.approx(v, qCli(), qDay(), Q.fx_sgd, lang === 'zh') : ''; }
+  /* The totals as a list: label, figure, a total in bold with its S$ under it. */
+  function totHtml(rows, cls) {
+    return rows.length ? '<dl class="qs-tot' + (cls ? ' ' + cls : '') + '">' + rows.map(function (x) {
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) +
+        (x[3] ? '<small class="qs-near">' + esc(x[3].trim()) + '</small>' : '') + '</dd></div>';
+    }).join('') + '</dl>' : '';
+  }
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */
@@ -978,9 +1085,9 @@
          the PDF's words: a row whose lines run different months names
          none (2026-11-24) */
       var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
-      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
+      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1, near(x[1])] : [label, n2(x[1])];
     });
-    if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
+    if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1, near(tt.ads_total)]);
     return r;
   }
   /* Where the prospect stands, one word from the database (2026-10-26):
@@ -1028,10 +1135,13 @@
       return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? budgetOnRequest() : x) + '</span>' +
         '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
-    var notes = [], managed = managedBudget(q);
+    var notes = [], managed = managedBudget(q), adAt = -1;
     if (adsOf(tt).length) notes.push(t().adsNote);
-    else if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
-    else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
+    else if (managed || Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
+      /* Not included, then How ad spend works under it (2026-11-27). */
+      if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
+      adAt = notes.push(adw('adNot')) - 1;
+    }
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
     if (tt.layout === 2) {
@@ -1048,10 +1158,10 @@
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
-      '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      totHtml(totalsRows(tt)) +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
-      '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + noteH(n) + '</span>'; }).join('') + '</div>' +
+      '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +
       addonsHtml(tt) + '</section>' + aside + '</div>';
   }
   /* Add-on Rates (QUOTATION ADD-ON RATES, 2026-11-25): the rates the team
@@ -1394,7 +1504,7 @@
     }).join('');
     return '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(w.line) + '</span><span class="qs-num qs-q">' + esc(w.qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(w.rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(w.sub, { c: qc() })) + '</span></div>' + rows + '</div>' +
-      '<dl class="qs-tot">' + chTotals(tt, P.lines).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>';
+      totHtml(chTotals(tt, P.lines));
   }
   /* The shared refused-send line (`js/words.js`), in the page's language. */
   function chNotSent() { var A = window.ADspaceWords; var w = A && A.of ? A.of({ en: {}, zh: {} })[lang === 'zh' ? 'zh' : 'en'] : null; return (w && w.notSentAdspace) || t().err.any; }
@@ -1403,7 +1513,7 @@
     var w = t(), changed = chChanged(), tt = CH.P && CH.P.totals;
     /* The totals the changes come to, beside the acts (the page's title is not said again). */
     var tot = tt ? chTotals(tt, CH.P.lines).filter(function (x) { return x[2]; }) : [];
-    return (tot.length ? '<dl class="qs-tot">' + tot.map(function (x) { return '<div class="is-total"><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
+    return totHtml(tot) +
       (changed ? '' : '<p>' + esc(w.chgNone) + '</p>') +
       (CH.pf && CH.pf.length && CH.pfKey === chKey(chSel()) ? '<ul class="qs-pflist">' + CH.pf.map(function (k) { return '<li><span class="qs-pftext">' + esc(w.pf[k]) + '</span></li>'; }).join('') + '</ul>' : '') +
       '<div class="qs-sfoot is-stack"><button class="btn" type="button" data-a="chcancel">' + esc(w.chgCancel) + '</button>' +
@@ -1528,11 +1638,11 @@
     var tt = q.totals || {}, w = t(), out = [], first = true;
     totalsRows(tt).forEach(function (x) {
       if (!x[2]) return;
-      out.push([x[0], x[1], 1]);
+      out.push([x[0], x[1], 1, x[3]]);
       if (first && tt.month) out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
       first = false;
     });
-    if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment)]);
+    if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment), 0, near(tt.commitment)]);
     return out;
   }
   function signHtml(q) {
@@ -1562,7 +1672,7 @@
           '<span class="qs-pad-hint" aria-hidden="true"' + (SG.path ? ' hidden' : '') + '>' + esc(s.padHint) + '</span>' +
           window.ADspaceIcons.drawing('0 0 300 100', '<path d="' + esc(SG.path) + '"/>', 'preserveAspectRatio="none" aria-hidden="true"') + '</div>';
       return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
-        '<dl class="qs-tot qs-agreed">' + agreedRows(q).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+        totHtml(agreedRows(q), 'qs-agreed') +
         '<div class="qs-pair">' + sgField('sgSigner', s.signer, true, sgInput('sgSigner', SG.signer.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
           sgField('sgDesig', s.desig, true, sgInput('sgDesig', SG.signer.designation, ' autocomplete="organization-title" aria-required="true"')) + '</div>' +
         '<div class="field"><div class="qs-sig-head"><span class="field-label is-req" id="sgSigL">' + esc(s.sig) + '</span><span class="qs-sig-acts">' +
@@ -2146,12 +2256,16 @@
     /* Who prepared and reviewed it, and once accepted who signed for the
        company with the signing record (2026-10-31). */
     var sg = Q.signed, C = window.ADspaceClock;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market }, key: qKey(),
+    /* No rate in the read (a page before its migration): the figures read
+       first, so the PDF's S$ is the setting on its day of issue. */
+    (Q.fx_sgd != null || !MON.load ? Promise.resolve() : MON.load()).then(function () {
+    return window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: qCli(), fx: Q.fx_sgd, key: qKey(),
       preparedBy: Q.prepared ? { name: Q.prepared.name, designation: Q.prepared.title || '' } : null,
       reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
       signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
         via: sg.via, company: sg.company } : null,
-      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null }).then(function (blob) {
+      to: sg ? { name: (sg.company || {}).legal_name, address: (sg.company || {}).billing_address } : null });
+    }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {}
@@ -2222,6 +2336,7 @@
       if (CH && (g === 'chx' || g === 'chf')) chPrice();
       return;
     }
+    if (a === 'adhow') { adSheet(b); return; }
     if (a === 'askSend') { askSend(b); return; }
     if (a === 'svc') {
       var k = b.getAttribute('data-k'), on = !S.need[k];
