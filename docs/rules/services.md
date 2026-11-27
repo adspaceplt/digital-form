@@ -490,6 +490,10 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   sends back with a note. Signed on paper is kept by hand
   (`quotation_paper`: the day and a link to the scan); Request signature
   again (`quotation_resign`) keeps the earlier one in `sign_history`.
+  A signed quotation is never deleted on any path (`quotations_signed_kept`,
+  before delete, a client's cascade included): `delete_client` refuses
+  `has-signed` and the client's ⋯ draws no Delete while one stands
+  (`2026-11-27-quote-brand-company-pick.sql`).
   A signed quotation is the contract (`2026-11-04-quotation-audit-fixes.sql`):
   never revised (`quotation_replace` `signed`, no Adjust and send),
   cancelled or removed (`quotation_set` `signed`, the row held; Request
