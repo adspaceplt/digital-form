@@ -90,16 +90,8 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   as on the branch; the PDF libraries, untouched by that release. Still
   failing in the full gate of 2026-11-27 on main 7c85e8b. Held here
   until it ships.
-- 2026-11-27, `words` (the copy review since 863dddc): `js/quote.js:352`'s
-  中文 period totals put a space between `{n}` and 个月 (three lines), the
-  same on `main` (7c85e8b); a client page's words, so the fix waits for
-  the user's go on branch `claude/quote-words-863dddc`. Held here until it ships.
 - 2026-11-27, the day's full gate on main 7c85e8b (tests 1d34edb, 5,365 s,
   263 suites passed; `taxcodes` passed, its entry removed; `sql` 600 s):
-  - `words`: `js/quote.js:352` puts no space between a figure and its
-    Chinese unit (`{n} 个月总额（含 SST）`, `{n} 个月总额`,
-    `{n} 个月月费加一次性费用，不含广告预算。`); added by #1556 (period
-    total on the /quote/ link).
   - `adsreport`: at 390 the Ad IDs card docks 54px from the right edge,
     not 16 (`{"left":16,"right":54,"bottom":92}`); likely a stylesheet
     change of 26 to 27 Nov (#1530, #1538 or #1544), not pinned.
