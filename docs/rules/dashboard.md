@@ -29,7 +29,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   reads; a colleague without My Work who may see leads reads My leads,
   Follow-ups late, Contacted and Won this month of the leads they sell),
   the Assistant as one field (`#ovwAsk`, Ctrl + J, two suggested questions
-  from their figures; drawn where Ask is; where the tab bar shows, it docks as one `--raised` card on the bar, the question over the field, the pane keeping its height clear and the dock riding the keyboard's top, 2026-11-27, `tests/overview.js`), then Today (`#ovwToday`: one
+  from their figures; drawn where Ask is; where the tab bar shows, it moves to the pane's end, after Next 5 days, in the page's flow, never floating, 2026-11-27, `tests/overview.js`), then Today (`#ovwToday`: one
   list, Late, Waiting on you, Due today, each row its act, Decline and
   Approve on an extension, else Open; chips by kind where there are two
   or more; their leads past follow-up and their published reports not

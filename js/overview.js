@@ -2296,29 +2296,6 @@
         if (b) AG.ask(b.textContent);
       });
     }
-    /* On a phone the field docks above the tab bar (console.css): the pane
-       keeps its height clear, and while the keyboard is up the dock rides
-       the keyboard's top, read from the visual viewport. */
-    function dock(box, wrap) {
-      var room = function () { box.style.setProperty('--ask-dock', (wrap.isConnected ? wrap.offsetHeight + 12 : 0) + 'px'); };
-      room();
-      if (window.ResizeObserver) new ResizeObserver(room).observe(wrap);
-      var vv = window.visualViewport, field = $('ovwAskQ');
-      if (!vv || !field) return;
-      var kb = function () {
-        wrap.style.setProperty('--ask-kb', Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) + 'px');
-      };
-      field.addEventListener('focus', function () {
-        kb();
-        vv.addEventListener('resize', kb);
-        vv.addEventListener('scroll', kb);
-      });
-      field.addEventListener('blur', function () {
-        vv.removeEventListener('resize', kb);
-        vv.removeEventListener('scroll', kb);
-        wrap.style.removeProperty('--ask-kb');
-      });
-    }
     /* Today: one list of what needs the colleague, late first, then what
        waits on their decision, then what is due today; each row its act. */
     function today(col, d, extra) {
@@ -2511,7 +2488,6 @@
         var d = { tasks: r[0].tasks, waiting: r[0].waiting, failed: r[0].failed.concat(lost) };
         ask(wrap, d);
         if (!wrap.children.length) wrap.remove();
-        else dock(box, wrap);
         todayHost.innerHTML = '';
         today(todayHost, d, r[1].concat(r[2]));
         if (may('ops', 'view')) week(right, d);
