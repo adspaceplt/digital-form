@@ -18,5 +18,6 @@ exclude:
   - DESIGN.md
   - STANDARD.md
   - README.md
+  - HANDOVER.md
   - .gitignore
   - skills-lock.json
