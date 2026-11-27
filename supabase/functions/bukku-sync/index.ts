@@ -104,6 +104,14 @@
  *                                             (2026-11-25): the contacts
  *                                             `portal_invoice_contacts` answers
  *                                             as the caller, read, never kept.
+ *   POST { action: 'invoicelink', quotation, cycle, kind, number }
+ *                                             a quotation's cycle takes an
+ *                                             invoice already made in Bukku
+ *                                             (2026-11-27): found by its number
+ *                                             on the contact the cycle bills,
+ *                                             filed by `quotation_invoice_link`
+ *                                             (`taken` where another cycle,
+ *                                             quotation or campaign holds it).
  *   POST { action: 'campaigninvoice', campaign, op, number? }
  *                                             a campaign's invoice (2026-11-25):
  *                                             `create` a Bukku draft of one line
@@ -1879,6 +1887,34 @@ Deno.serve(async (req) => {
         else return json({ error: 'not-confirmed' }, 200, origin);
         throw e;
       }
+    }
+    /* A quotation's cycle linked to an invoice made in Bukku by hand
+       (QUOTATION INVOICE LINKED FROM BUKKU, 2026-11-27): asked of
+       quotation_invoice_link_prep as the caller for the contact the cycle
+       bills; the number found on that contact alone, never void; filed by
+       quotation_invoice_link, which refuses one another cycle, quotation or
+       campaign holds. Its state is answered as Bukku holds it now. */
+    if (action === 'invoicelink') {
+      const qid = String(body.quotation || ''), cyc = Number(body.cycle), kind = String(body.kind || 'service');
+      if (!/^[0-9a-f-]{36}$/i.test(qid) || !Number.isInteger(cyc) || cyc < 1 || cyc > 36 || !/^(service|budget)$/.test(kind))
+        return json({ error: 'bad-request' }, 400, origin);
+      const num = String(body.number || '').trim().toUpperCase();
+      if (!/^[A-Z0-9._/-]{3,40}$/.test(num)) return json({ error: 'bad-number' }, 200, origin);
+      const prep = await db.rpc('quotation_invoice_link_prep', { p_id: qid, p_cycle: cyc, p_kind: kind });
+      if (prep.error) return json({ error: 'needs-update' }, 200, origin);
+      const p = prep.data || {};
+      if (p.error) return json({ error: p.error, number: p.number }, 200, origin);
+      const contact = Number(p.contact_id);
+      const r = await bukku('GET', `/sales/invoices?search=${encodeURIComponent(num)}&contact_id=${contact}&page=1&page_size=100`);
+      const hit = ((r && r.transactions) || []).find((x: any) => x && String(x.number || '').toUpperCase() === num &&
+        Number(x.contact_id) === contact && !['void', 'voided'].includes(String(x.status || '')));
+      if (!hit) return json({ error: 'no-invoice', number: num }, 200, origin);
+      const amount = hit.amount == null || hit.amount === '' || !Number.isFinite(Number(hit.amount)) ? null : cents(hit.amount);
+      const t = await db.rpc('quotation_invoice_link', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: Number(hit.id),
+        p_number: String(hit.number), p_amount: amount });
+      if (t.error) return json({ error: 'needs-update' }, 200, origin);
+      if (t.data && t.data.error) return json({ error: t.data.error, number: t.data.number, on: t.data.on }, 200, origin);
+      return json(Object.assign({ ok: true, linked: true }, campaignInvoiceOf(hit, todayMY(), secret('BUKKU_SUBDOMAIN'))), 200, origin);
     }
     /* A campaign's invoice in Bukku (CAMPAIGN INVOICE FROM BUKKU,
        2026-11-25): `create` makes a draft of one line a booked creator, each
