@@ -83,6 +83,7 @@
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months'], ['date', 'On a specific date']],
       startOn: 'Preferred start date',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
+      fullBrand: 'Your quotation is prepared for your brand. Please give its full name and accurate details; incomplete requests may not receive a quotation.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Choose when you plan to commence.', startOn: 'Choose a preferred start date from today onwards.', consent: window.ADspaceWords.en.tickToContinue },
@@ -231,6 +232,7 @@
       commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后'], ['date', '指定日期']],
       startOn: '期望开始日期',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
+      fullBrand: '报价将按您的品牌拟定。请填写完整的品牌名称及准确资料；资料不完整的申请可能无法获得报价。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', startOn: '请选择今天或之后的期望开始日期。', consent: window.ADspaceWords.zh.tickToContinue },
@@ -770,7 +772,9 @@
       '<div id="qsStartOnBox"' + (c.commence_on || c.commence === 'date' ? '' : ' hidden') + '>' +
       field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>' +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
-      '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
+      '<span class="msg" id="qsConsentMsg"></span>' +
+      /* Full, accurate brand details asked for, above View quotation (the user, 2026-11-27). */
+      '<p class="qs-note">' + noteH(t().fullBrand) + '</p><div class="qs-cf" data-cf></div></form>', navFoot());
   }
 
   /* A Singapore lead's quotation is in S$: its totals say so and carry the
