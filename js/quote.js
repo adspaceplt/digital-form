@@ -773,7 +773,6 @@
       field('qsStartOn', t().startOn, true, '<input class="input" id="qsStartOn" type="date" min="' + todayMY() + '" max="2099-12-31" aria-required="true" value="' + esc(c.commence_on || '') + '">') + '</div>' +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span>' +
-      /* Full, accurate brand details asked for, above View quotation (the user, 2026-11-27). */
       '<p class="qs-note">' + noteH(t().fullBrand) + '</p><div class="qs-cf" data-cf></div></form>', navFoot());
   }
 
@@ -1663,8 +1662,7 @@
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP, false, 'alert'); return; }
     /* A quotation the team never sent holds back its price at every stage
        (audit 2026-10-30): closed, it reads its stage alone. */
-    /* The budget is the current selection's, derived on every paint: none
-       while ads are not asked, never left from an earlier plan. */
+    // The budget follows the selection on every paint.
     if (CAT && !adsAsked()) S.budget = null;
     if (Q && CH) { root().innerHTML = paintChange(); decorate(); return; }
     if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
@@ -2201,8 +2199,7 @@
 
   /* A quotation's own selection, to change and make again. */
   function adopt(sel) {
-    /* Advertising was asked on its own only where a budget stands beside no
-       plan with ads: a plan with ads carries its budget (0, its cover). */
+    // A plan with ads carries its own budget: not Advertising asked.
     var sp = CAT && sel.plan ? CAT.plans.filter(function (x) { return x.slug === sel.plan; })[0] : null;
     S.need = { social: Boolean(sel.plan), ads: sel.budget != null && !(sp && sp.ads), content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
