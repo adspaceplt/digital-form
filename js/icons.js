@@ -177,7 +177,7 @@
     request: 'note', account: 'user', person: 'user', contact: 'user', creator: 'people',
     brand: 'tag', plan: 'plancontent', planads: 'planads', pieces: 'picture', item: 'picture',
     platform: 'device', budget: 'bars', shoot: 'camera', parcel: 'box', draft: 'upload', posted: 'check',
-    payment: 'wallet', health: 'pulse', vic: 'crown', ai: 'sparkle', call: 'phone', wa: 'whatsapp', place: 'pin',
+    payment: 'wallet', adaccount: 'card', prepaid: 'wallet', health: 'pulse', vic: 'crown', ai: 'sparkle', call: 'phone', wa: 'whatsapp', place: 'pin',
     trip: 'route', office: 'building', time: 'clock', engagements: 'heart', views: 'eye', reach: 'layers',
     /* Acts */
     add: 'plus', edit: 'pen', remove: 'trash', delete: 'trash', send: 'plane', publish: 'plane',

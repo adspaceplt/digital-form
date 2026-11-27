@@ -411,6 +411,11 @@
     /* A quotation's add-on rates (QUOTATION ADD-ON RATES, 2026-11-25): the
        PDF and the quotation link say them alike; Build quote's ticks read
        the group words. */
+    /* The advertising budget on a quotation (2026-11-27, the user): /quote/,
+       the quotation link and the PDF say it alike; How ad spend works
+       opens its explainer on /quote/ and the link. */
+    adNotIncluded: 'The advertising budget is not included in this quotation.',
+    adHow: 'How ad spend works',
     addonRates: 'Add-on Rates',
     addons: 'Add-ons',
     addonExtra: 'Additional content',

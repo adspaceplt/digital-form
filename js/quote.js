@@ -58,7 +58,7 @@
       reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform',
-      ratesLater: 'The rates will be shown on the quotation.', budgetSep: 'The advertising budget is billed separately.',
+      ratesLater: 'The rates will be shown on the quotation.', adNot: null,
       recommended: 'Recommended', piecesN: '{n} content pieces', platsN: '{n} platforms', adUpTo: 'Advertising budget up to RM\u00a0{b}',
       piecesHead: '{n} content pieces per month', piecesPick: '{n} content pieces per month. Please choose one combination.',
       kindS: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel', '{n} reels'] }, mixSep: ', ',
@@ -108,11 +108,26 @@
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
       download: 'Download', pdfFail: 'The PDF could not be prepared. Please try again.', chat: 'Chat on WhatsApp',
-      billSep: 'The advertising budget is billed separately.',
+      adHow: null,
+      /* How ad spend works (2026-11-27): an explainer, no choice; the
+         figures are Settings' (`ad_prepay_pct`, `ad_credit_fee_pct`). */
+      ads: {
+        lead: 'The advertising budget is paid in one of two ways.',
+        own: 'Your own ad account',
+        ownPts: ['The ad account is paid by your own credit card.', 'Meta charges the card directly for the ad spend.',
+          'The account is linked to the ADspace Meta business portfolio, so ADspace runs and manages the campaigns.'],
+        pre: 'Prepaid through ADspace',
+        prePts: ['Each month\'s advertising budget is paid to ADspace before the ads run.', 'The first month is paid before the ads start.',
+          'Each following month is requested when about {pct}% of the current budget is spent, and is paid before the next month\'s ads start.',
+          'If payment is not received, the ads are paused until it is.'],
+        termH: 'Billed with the invoice',
+        term: 'Where the advertising budget is billed with the invoice on the quotation\'s payment terms instead of prepaid, an Agency Credit Term Fee of {fee}% is added to the advertising budget.',
+        eg: 'For example, a budget of {c}\u00a0{b} carries a fee of {c}\u00a0{x}.', close: 'Close'
+      },
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
       adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
       payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
-      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
+      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
       rcvSent: 'Request sent', rcvSend: 'Quotation sent on WhatsApp',
@@ -206,7 +221,7 @@
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台',
-      ratesLater: '价格将在报价单中列明。', budgetSep: '广告预算另行收费。',
+      ratesLater: '价格将在报价单中列明。', adNot: '本报价不包括广告预算。',
       recommended: '推荐', piecesN: '{n}条内容', platsN: '{n}个平台', adUpTo: '广告预算最高 RM\u00a0{b}',
       piecesHead: '每月{n}条内容', piecesPick: '每月{n}条内容，请选择一种组合',
       kindS: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频', '{n}条短视频'] }, mixSep: '、',
@@ -255,11 +270,24 @@
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
       download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
-      billSep: '广告预算另行收费。',
+      adHow: '广告费用如何支付',
+      ads: {
+        lead: '广告预算可通过以下两种方式支付。',
+        own: '您自己的广告账户',
+        ownPts: ['广告账户以您自己的信用卡付款。', 'Meta 直接从该信用卡扣除广告费用。',
+          '该账户将关联至 ADspace 的 Meta 商务资产组合，由 ADspace 投放并管理广告活动。'],
+        pre: '通过 ADspace 预付',
+        prePts: ['每月广告预算须于广告投放前支付予 ADspace。', '首月预算须于广告开始投放前支付。',
+          '当月预算消耗约{pct}%时，ADspace 将请款下月预算，须于下月广告投放前付清。',
+          '如未收到款项，广告将暂停投放，直至收款为止。'],
+        termH: '随发票结算',
+        term: '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee}%的账期服务费（Agency Credit Term Fee）。',
+        eg: '例如：广告预算 {c}\u00a0{b}，账期服务费为 {c}\u00a0{x}。', close: '关闭'
+      },
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
       adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
       payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
-      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
+      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       rcvSent: '已提交请求', rcvSend: '通过 WhatsApp 发送报价',
@@ -620,6 +648,58 @@
   }
 
   function ic(name, cls) { return window.ADspaceIcons ? window.ADspaceIcons.svg(name, cls) : ''; }
+
+  /* HOW AD SPEND WORKS (2026-11-27, the user): the advertising budget is
+     not included in a quotation, and a press under that line opens the two
+     ways it is paid, an explainer with no choice and no price. The English
+     line and the button's words are ADspaceWords.line's (the PDF says the
+     line too). The figures are Settings' (`ad_prepay_pct`,
+     `ad_credit_fee_pct`, js/money.js), as they stood on a sent
+     quotation's day, else today. */
+  function adw(k) { return t()[k] || window.ADspaceWords.line[{ adNot: 'adNotIncluded', adHow: 'adHow' }[k]]; }
+  function adHowBtn() {
+    return '<button class="linkbtn qs-adhow" type="button" data-a="adhow" aria-haspopup="dialog">' + esc(adw('adHow')) + ic('go', 'ovgo-chev') + '</button>';
+  }
+  /* The user's own example (2026-11-27): a budget of 6,000 and its fee. */
+  var AD_EG = 6000;
+  function pctWord(v) { return String(Math.round(Number(v) * 100) / 100); }
+  function adSheetFill() {
+    var w = t().ads, at = Q && Q.issued_at ? Q.issued_at : undefined, c = Q ? qc() : 'RM';
+    var pct = MON.setting('ad_prepay_pct', at), fee = MON.setting('ad_credit_fee_pct', at);
+    var x = Math.round(AD_EG * Number(fee)) / 100;
+    var pts = function (list) { return '<ul class="adway-pts">' + list.map(function (p) { return '<li>' + esc(f(p, { pct: pctWord(pct) })) + '</li>'; }).join('') + '</ul>'; };
+    $('adHeading').textContent = adw('adHow');
+    $('adClose').setAttribute('aria-label', w.close);
+    $('adClose').innerHTML = ic('close');
+    $('adBody').innerHTML = '<p class="adways-lead">' + esc(w.lead) + '</p><ol class="stepcards adways">' +
+      '<li class="stepcard"><span class="stepcard-mark">' + ic('adaccount') + '</span><div class="adway-text">' +
+        '<p class="adway-name"><b>' + esc(w.own) + '</b><span class="qs-rec">' + esc(t().recommended) + '</span></p>' + pts(w.ownPts) + '</div></li>' +
+      '<li class="stepcard"><span class="stepcard-mark">' + ic('prepaid') + '</span><div class="adway-text">' +
+        '<p class="adway-name"><b>' + esc(w.pre) + '</b></p>' + pts(w.prePts) +
+        '<div class="adway-sub"><h4>' + esc(w.termH) + '</h4><p>' + esc(f(w.term, { fee: pctWord(fee) })) + '</p>' +
+          '<p>' + esc(f(w.eg, { c: c, b: n0(AD_EG), x: x % 1 ? n2(x) : n0(x) })) + '</p></div></div></li></ol>';
+  }
+  /* js/sheet.js is fetched on the first press, from the address the page
+     names on the sheet (its stamp kept with the page's), never on load. */
+  function adSheet(opener) {
+    var box = $('adSheet'), src = box && box.getAttribute('data-script');
+    if (!box) return;
+    if (window.ADspaceSheet) { adShow(box, opener); return; }
+    if (!src || adSheet.asked) return;
+    adSheet.asked = true;
+    var tag = document.createElement('script');
+    tag.src = src;
+    tag.onload = function () { if (window.ADspaceSheet) adShow(box, opener); };
+    tag.onerror = function () { adSheet.asked = false; tag.remove(); };
+    document.head.appendChild(tag);
+  }
+  function adShow(box, opener) {
+    adSheetFill();
+    window.ADspaceSheet.show(box, { opener: opener });
+    /* The figures read afresh, the sheet filled again once they answer. */
+    if (MON.load) MON.load().then(function () { if (window.ADspaceSheet.isOpen(box)) adSheetFill(); }).catch(function () {});
+  }
+  if ($('adClose')) $('adClose').addEventListener('click', function () { if (window.ADspaceSheet) window.ADspaceSheet.close(); });
   /* A plan's content as the boards write it: "3 graphics, 4 reels". */
   function mixShort(m) {
     var K = t().kindS;
@@ -654,7 +734,7 @@
       sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
         '<div class="qs-plans">' + plans.map(function (x, i) { return planCard(x, i, plans.length); }).join('') + '</div>' +
         '<div class="qs-xbox" id="qsPlanBox">' + planBox() + '</div>' +
-        '<p class="qs-note">' + noteH((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
+        '<p class="qs-note">' + noteH((S.withAds ? adw('adNot') + ' ' : '') + t().ratesLater) + '</p>' + (S.withAds ? adHowBtn() : '')) +
       '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div>' +
       sec(t().platsH, (p ? '<p class="qs-note">' + noteH(f(p.platforms === 1 ? t().platHead1 : t().platHeadN, { p: p.plan, n: p.platforms })) + '</p>' : '') + platsHtml()) +
       '</div>', navFoot());
@@ -712,7 +792,7 @@
       S.budget = Number(cur);
       h += sec(t().budget, '<select class="select" id="qsBudget">' +
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
-        '<p class="qs-note">' + noteH(t().budgetSep) + '</p>', 'qsBudget');
+        '<p class="qs-note">' + noteH(adw('adNot')) + '</p>' + adHowBtn(), 'qsBudget');
     }
     // 6, 12 or 24 months: a segment of three (DESIGN.md §4, a choice of two to four).
     if (monthly()) {
@@ -860,10 +940,13 @@
       return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? budgetOnRequest() : x) + '</span>' +
         '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
-    var notes = [], managed = managedBudget(q);
+    var notes = [], managed = managedBudget(q), adAt = -1;
     if (adsOf(tt).length) notes.push(t().adsNote);
-    else if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
-    else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
+    else if (managed || Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
+      /* Not included, then How ad spend works under it (2026-11-27). */
+      if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
+      adAt = notes.push(adw('adNot')) - 1;
+    }
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
     if (tt.layout === 2) {
@@ -883,7 +966,7 @@
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
-      '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + noteH(n) + '</span>'; }).join('') + '</div>' +
+      '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +
       addonsHtml(tt) + '</section>' + aside + '</div>';
   }
   /* Add-on Rates (QUOTATION ADD-ON RATES, 2026-11-25): the rates the team
@@ -2026,6 +2109,7 @@
       if (CH && (g === 'chx' || g === 'chf')) chPrice();
       return;
     }
+    if (a === 'adhow') { adSheet(b); return; }
     if (a === 'svc') {
       var k = b.getAttribute('data-k'), on = !S.need[k];
       S.need[k] = on; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); keep();

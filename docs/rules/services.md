@@ -238,7 +238,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   Build quote's alike, `ul.incl`), each
   amount in its currency with per month, one-time or its months under it,
   the totals at the right ending at the one bold figure, TERMS: validity,
-  SST, budget billed separately, the whole term's commitment, binding once
+  SST, the advertising budget not included and how it is paid, the whole term's commitment, binding once
   accepted and signed with the Service Terms, the rate card line); and
   Acceptance of quotation on a page of its own (the figures agreed, every
   bold total among them, the monthly and the one-time alike, Issued
@@ -260,6 +260,21 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   asked only where its budget stands beside no plan with ads (`adopt`); a
   sent link's change from a plan with ads to one without takes the
   quotation's budget out (`quote_change_sel`; hotfix 2026-11-27).
+- How ad spend works (the user, 2026-11-27): where a quotation holds no
+  advertising budget of ours, /quote/'s plan and budget steps and the
+  quotation link say "The advertising budget is not included in this
+  quotation." (`ADspaceWords.line.adNotIncluded`, 中文 in `js/quote.js`)
+  with How ad spend works under it (`.linkbtn.qs-adhow`), opening an
+  explainer sheet (`#adSheet`, `js/sheet.js` fetched on the first press
+  from the sheet's `data-script`): Your own ad account (Recommended) and
+  Prepaid through ADspace, each a step card with its glyph (`adaccount`,
+  `prepaid`), no choice and no price. Build quote says the same sentence;
+  the PDF's TERMS say it and one clause naming both ways. The next month's
+  request point and the Agency Credit Term Fee (账期服务费) are
+  `ad_prepay_pct` and `ad_credit_fee_pct` (Settings, Tax and terms,
+  Advertising budget), read through `ADspaceMoney.setting` at a sent
+  quotation's day (today before one), so a copy redrawn later reads as
+  issued; the example is the user's RM 6,000.
 - A quote link's Change selection draws no discount sentence under the
   commitment; the totals carry the term discount (the user, 2026-11-27).
 - Several brands on one quotation (`2026-11-24-quotation-brands.sql`; the

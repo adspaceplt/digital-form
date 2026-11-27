@@ -6753,7 +6753,7 @@
     /* The ranges app_settings_set holds (2026-11-25: months, orad and remh
        were missing, so their sheets refused nothing and threw at Save). */
     months: [1, 24, true], keepc: [1, 36, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
-    sback: [0, 30, true] };
+    sback: [0, 30, true], adreq: [1, 100, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
      demand"): a weekday's start and end as HHMM (1000, 1900), the lunch in
@@ -6831,7 +6831,12 @@
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
        days (2026-10-26). */
-    ['quote_reply_days', 'Contact a prospect ready to proceed within', 'reply', 'Quotation portal']];
+    ['quote_reply_days', 'Contact a prospect ready to proceed within', 'reply', 'Quotation portal'],
+    /* How ad spend works (2026-11-27): when the next month's prepaid budget
+       is requested, and the fee on a budget billed on the quotation's
+       payment terms; /quote/ and the PDF print both. */
+    ['ad_prepay_pct', 'Next month requested at', 'adreq', 'Advertising budget'],
+    ['ad_credit_fee_pct', 'Agency Credit Term Fee', 'pct', 'Advertising budget']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
      Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a
@@ -6846,7 +6851,8 @@
   var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
     term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 to 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
     term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
-    fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
+    fx_sgd: ['S$1', function (v) { return 'RM ' + v; }],
+    ad_prepay_pct: ['Next month requested at', function (v) { return v + '% spent'; }], ad_credit_fee_pct: ['Agency Credit Term Fee', pctOf] };
   /* A figure's field as the sheet asks it (2026-11-25, the user: units and
      ranges in the labels wrapped and broke the columns): the label a noun
      alone (its key's own, one copy), the unit inside the box (`unit`, or a
@@ -6859,6 +6865,7 @@
     term_1_3: [null, '', '%'], term_4_5: [null, '', '%'], term_6_11: [null, '', '%'],
     term_12_23: [null, '', '%'], term_18_23: [null, '', '%'], term_24: [null, '', '%'],
     quote_reply_days: [null, '', 'working days'],
+    ad_prepay_pct: [null, '', '% spent'], ad_credit_fee_pct: [null, '', '%'],
     details_form_days: [null, '', 'days'],
     feedback_quiet_months: [null, '', 'months'],
     lead_followup_hours: [null, '', 'hours'], proposal_followup_days: [null, '', 'days'],

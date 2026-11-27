@@ -9820,6 +9820,23 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .stepcard-text span { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
 /* A step said in one sentence (the quotation's opening page) stands on the disc's middle. */
 .stepcard-text.is-one { padding-top: 9px; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+/* How ad spend works (js/quote.js, 2026-11-27): the two ways as step
+   cards with no number, each its name (Recommended at its right edge, as a
+   plan card's) over its points; the prepaid card's billed-on-terms part
+   under a hairline. Explainer only: nothing here is a choice. */
+.sheet-card.adsheet { width: min(560px, 100%); }
+.adways-lead { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.adway-text { display: grid; gap: 6px; min-width: 0; padding-top: 2px; }
+.adway-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; min-height: 22px; }
+.adway-name b { font-size: 15px; font-weight: 600; color: var(--ink); }
+.adway-pts { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.adway-pts li { position: relative; padding-left: 12px; overflow-wrap: anywhere; }
+.adway-pts li::before { content: '\2022'; position: absolute; left: 1px; top: 0; }
+.adway-sub { display: grid; gap: 4px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.adway-sub h4 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.adway-sub p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+/* The press under the note: its words on the note's edge, its height given back. */
+.qs-adhow { justify-self: start; margin-inline-start: -8px; }
 .stephead { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; align-items: center; }
 .stephead-mark {
   display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
