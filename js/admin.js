@@ -6835,7 +6835,7 @@
     /* How ad spend works (2026-11-27): when the next month's prepaid budget
        is requested, and the fee on a budget billed on the quotation's
        payment terms; /quote/ and the PDF print both. */
-    ['ad_prepay_pct', 'Next month requested at', 'adreq', 'Advertising budget'],
+    ['ad_prepay_pct', 'Next month\'s budget requested at', 'adreq', 'Advertising budget'],
     ['ad_credit_fee_pct', 'Agency Credit Term Fee', 'pct', 'Advertising budget']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
@@ -6852,7 +6852,7 @@
     term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 to 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
     term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }],
-    ad_prepay_pct: ['Next month requested at', function (v) { return v + '% spent'; }], ad_credit_fee_pct: ['Agency Credit Term Fee', pctOf] };
+    ad_prepay_pct: ['Next month\'s budget requested at', function (v) { return v + '% spent'; }], ad_credit_fee_pct: ['Agency Credit Term Fee', pctOf] };
   /* A figure's field as the sheet asks it (2026-11-25, the user: units and
      ranges in the labels wrapped and broke the columns): the label a noun
      alone (its key's own, one copy), the unit inside the box (`unit`, or a

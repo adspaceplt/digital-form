@@ -2732,7 +2732,7 @@
     }).join('') + '</dl>';
     var notes = [];
     /* Said as the quotation says it (2026-11-27, How ad spend works). */
-    if (t.budget > 0) notes.push('Advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month. ' + window.ADspaceWords.line.adNotIncluded);
+    if (t.budget > 0) notes.push('The advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is not included in this quotation.');
     if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + CUR + ' ' + whole(topBudget()) : x; }).join(', ') + '.');
     if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
     return out;

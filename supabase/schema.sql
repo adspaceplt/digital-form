@@ -162623,7 +162623,7 @@ begin
         when 'work_start' then 'Working hours start' when 'work_end' then 'Working hours end'
         when 'work_lunch_min' then 'Lunch' when 'work_weekend' then 'Saturday and Sunday'
         when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
-        when 'ad_prepay_pct' then 'Next month''s advertising budget requested at' when 'ad_credit_fee_pct' then 'Agency Credit Term Fee'
+        when 'ad_prepay_pct' then 'Next month''s budget requested at' when 'ad_credit_fee_pct' then 'Agency Credit Term Fee'
         else 'Report due' end;
       v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
       v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours', 'health_cap_default', 'health_task_hours') or v_k like 'priority_%_hours' then ' hours'

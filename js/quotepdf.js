@@ -61,10 +61,10 @@
     var pct = pctOf(M && M.setting ? M.setting('ad_prepay_pct', at) : 80), fee = pctOf(M && M.setting ? M.setting('ad_credit_fee_pct', at) : 20);
     return formal
       ? 'The Advertising Budget is paid either by the Client\'s own credit card through the Client\'s own ad account, or in advance to ' + agency() +
-        ' each month before the ads run, each following month being requested when about ' + pct + ' of the current budget is spent; where it is ' +
+        ' each month before the ads run. Each following month is requested when about ' + pct + ' of the current budget is spent. Where it is ' +
         'instead invoiced on the payment terms of this Quotation, an Agency Credit Term Fee of ' + fee + ' of the Advertising Budget applies.'
-      : 'It is paid through the client\'s own ad account by the client\'s own credit card, or prepaid to ' + agency() + ' each month before the ads run, ' +
-        'each following month requested at about ' + pct + ' of the current budget spent; invoiced on this quotation\'s payment terms instead, an Agency Credit Term Fee of ' +
+      : 'It is paid by the client\'s own credit card through the client\'s own ad account, or prepaid to ' + agency() + ' each month before the ads run. ' +
+        'Each following month is requested when about ' + pct + ' of the current budget is spent. Where the advertising budget is invoiced on this quotation\'s payment terms instead, an Agency Credit Term Fee of ' +
         fee + ' of the advertising budget applies.';
   }
   function longDay(iso) {
