@@ -1755,6 +1755,7 @@
       termOptions();
       $('qbTerm').value = String(Number(sel.term) > 1 ? sel.term : 6);
       $('qbTermDisc').checked = sel.term_disc !== false;
+      $('qbPeriod').checked = sel.period_total === true;
       discShow();
       /* A new quotation starts with no add-on rate ticked; a reopened one keeps
          what it saved (the user, 2026-11-25). */
@@ -2643,6 +2644,7 @@
     if (B.kind === 'package' && B.pkg) sel.packages = [pkgOut()];
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     if (!$('qbDiscBox').hidden && !$('qbTermDisc').checked) sel.term_disc = false;
+    if ($('qbPeriod').checked) sel.period_total = true;
     /* The add-on rates ticked (QUOTATION ADD-ON RATES): only those the
        colleague ticked, each still on the card; the database keeps those it
        prices. */
@@ -2745,6 +2747,8 @@
         var monthly = (d.lines || []).some(function (l) { return l.basis === 'month'; });
         if (monthly !== (B.monthly !== false)) { B.monthly = monthly; discShow(); preview(true); return; }
         B.priced = d; B.err = '';
+        /* No monthly line, no period to total: the tick is not drawn. */
+        $('qbPeriodBox').hidden = !(d.totals && d.totals.month);
         /* What was typed for a line the selection no longer holds is let go. */
         (B.sent ? B.sent.map(function (bi, k) { return k; }).concat(boardAt() < 0 ? [boardAt()] : []) : [null]).forEach(function (k) {
           var keys = linesAt(k).map(function (l) { return l.key; }), all = editsAt(k);
@@ -3359,6 +3363,7 @@
     $('qbCard').addEventListener('change', function () { if (B && B.card && this.value !== B.card.version) rebuildOn(this.value, true); });
     $('qbPay').addEventListener('change', on);
     $('qbTermDisc').addEventListener('change', on);
+    $('qbPeriod').addEventListener('change', on);
     $('qbAddons').addEventListener('change', function (e) {
       var k = e.target && e.target.getAttribute('data-ao');
       if (!B || !k) return;
