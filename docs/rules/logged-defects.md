@@ -100,8 +100,3 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
     the walk stops in Clients and nothing after it is measured; likely
     #1560 (history kept by client id) or #1525, not pinned.
   Held here until each ships.
-- 2026-11-27, `quotepicksql` (SHORT LINK CLICKS' affected run): "the
-  made-by-id migration is the schema's band, byte for byte" fails the same
-  on main (af8b7b5): `2026-11-27-quotation-made-by-id.sql` is not found
-  whole in `schema.sql`; that release's files, untouched here. Held here
-  until it ships.
