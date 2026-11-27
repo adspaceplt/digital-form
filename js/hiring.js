@@ -1535,7 +1535,7 @@
     var before = state.interviews.filter(function (x) { return x.state === 'missed'; }).length;
     var f = [{ name: 'next', label: 'Next step', choices: [['times', 'Offer a new time'], ['close', 'Close application']], seg: true, value: 'times' }]
       .concat(mailFields('missed', true));
-    window.ADspaceConfirm.ask({ title: 'What next?', go: 'Continue', wait: true, fields: f,
+    window.ADspaceConfirm.ask({ title: 'Interview missed', go: 'Continue', wait: true, fields: f,
       body: c.name + ' did not attend the interview on ' + when(i.slots[i.picked - 1]) + '.' + (before ? ' Interviews missed before: ' + before + '.' : ''),
       /* The Email tick belongs to Close application alone. */
       change: function (name) { if (name === 'next') showTick(); } },
