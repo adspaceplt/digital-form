@@ -201,7 +201,7 @@
       items += d.archived_at
         ? '<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>'
         : '<button class="kmenu-item" data-g="5" data-a="archive" type="button" role="menuitem">Archive</button>';
-      items += '<button class="kmenu-item is-danger" data-g="6" data-a="del" type="button" role="menuitem">Delete</button>';
+      items += '<button class="kmenu-item is-danger" data-g="6" data-a="del" data-need="team.handbook:manage" type="button" role="menuitem">Delete</button>';
     }
     var canOpen = Boolean(d.link_url || v);
     row.innerHTML =
