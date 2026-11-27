@@ -7112,7 +7112,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'ops_template_delete') {
-      if (!opsGranted('ops.workflows', 'work')) return { error: 'denied' };
+      if (!opsGranted('ops.workflows', 'manage')) return { error: 'denied' };
       var dtp = DB.ops_task_templates.filter(function (x) { return x.id === args.p_id; })[0];
       if (!dtp) return { error: 'not-found' };
       var nTask = (DB.ops_tasks || []).filter(function (x) { return x.template_id === dtp.id; }).length;
@@ -8952,6 +8952,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return anRow(v);
     }
     if (name === 'analytics_read_delete') {
+
+      if (!opsGranted('team.analytics', 'manage')) return { error: 'denied' };
       var x = list.filter(function (y) { return y.id === a.p_id; })[0];
       if (!x) return { error: 'not-found' };
       list.splice(list.indexOf(x), 1);
@@ -11308,6 +11310,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
 
       if (name === 'tax_codes_delete') {
+        if (!opsGranted('team.settings', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
         var dc = (args.p_codes || []).map(function (c) { return String(c || '').trim(); }).filter(function (c, i, a) { return c && a.indexOf(c) === i; });
         if (!dc.length || dc.length > 100) return Promise.resolve({ data: { error: 'bad-row' }, error: null });
         var uses = function (c) {
@@ -11436,6 +11439,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       } else {
         var iOne = iOf(ia.p_name), iU = iOne ? iUse(iOne.name) : 0;
         if (!iOne) iOut = { error: 'not-found' };
+        else if (!opsGranted('team.settings', 'manage')) iOut = { error: 'denied' };
         else if (iOne.name === 'Other') iOut = { error: 'fixed' };
         else if (iU) iOut = { error: 'in-use', clients: iU };
         else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
@@ -11507,7 +11511,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           }
           dOut = { ok: true };
         }
-      } else if (name === 'department_delete') {
+      } else if (name === 'department_delete' && !opsGranted('team.settings', 'manage')) dOut = { error: 'denied' };
+      else if (name === 'department_delete') {
         var ddl = dByKey(da.p_key);
         var dIn = DB.team_members.filter(function (t) { return t.department === da.p_key; }).length;
         if (!ddl) dOut = { error: 'not-found' };
@@ -11567,6 +11572,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         hOut = !f || !t || !(span >= 0) || span > 800 ? [] : hList.filter(function (h) { return h.day >= f && h.day <= t; })
           .sort(function (a, b) { return a.day < b.day ? -1 : 1; }).map(function (h) { return { day: h.day, name: h.name }; });
       } else if (!opsGranted('team.settings', 'work')) hOut = { error: 'denied' };
+      else if (name === 'public_holiday_delete' && !opsGranted('team.settings', 'manage')) hOut = { error: 'denied' };
       else if (name === 'public_holiday_delete') {
         var hd = hList.filter(function (h) { return h.day === ha.p_day; })[0];
         if (!hd) hOut = { error: 'not-found' };
@@ -11874,7 +11880,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'issue_document')     return Promise.resolve({ data: issueDocument(args), error: null });
 
     if (name === 'doc_type_delete') {
-      if (!opsGranted('register.types', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (!opsGranted('register.types', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
       var ddt = docType(args.p_id);
       if (!ddt) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       if (['quote_cover', 'supplier_letter', 'supplier_sca'].indexOf(ddt.id) > -1) return Promise.resolve({ data: { error: 'built-in' }, error: null });
@@ -12780,7 +12786,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'campaign_file_hide' || name === 'campaign_file_delete') {
       var fme = opsMe();
       var del = name === 'campaign_file_delete';
-      if (!fme || !(del ? opsGranted('campaigns.files_delete', 'work') : opsAllowed('campaigns.campaigns', 'work'))) {
+      if (!fme || !(del ? opsGranted('campaigns.files_delete', 'manage') : opsAllowed('campaigns.campaigns', 'work'))) {
         return Promise.resolve({ data: { error: 'denied' }, error: null });
       }
       var fd = DB.campaign_deliverables.filter(function (d) { return d.id === args.p_file && (del || !d.removed_at); })[0];
@@ -13397,6 +13403,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return anOk({ ok: true, item: Object.assign({}, anR) });
       }
       if (name === 'announcement_delete') {
+        if (!opsGranted('team.announce', 'manage')) return anOk({ error: 'denied' });
         var anD = DB.announcements.filter(function (x) { return x.id === args.p_id; })[0];
         if (!anD) return anOk({ error: 'not-found' });
         if (!anD.ended_at && (!anD.ends_at || Date.parse(anD.ends_at) > anNow)) return anOk({ error: 'live' });
@@ -15377,7 +15384,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
-        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qq.source === 'console' ? qeSel : Object.assign({}, qeSel, { edits: undefined }), qq.source === 'console'), qeFx);
+        var qe = qtFxOut(qtCompose(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, true), qeFx);
         if (qe.error) return qtOk(qe);
         var qex = qtExtras(qq.source === 'console' ? qeSel : {});
         if (qex.error) return qtOk(qex);
@@ -15387,10 +15394,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
         qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
         qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
-        if (qq.source === 'console') {
-          var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
-          qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
-        }
+
+        if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
+        var qeFrom = qq.source !== 'console' && qq.released_at ? new Date(qq.released_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }) : qtToday;
+        var qev = new Date(qeFrom + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
+        qq.valid_until = qev.toISOString().slice(0, 10);
+        if (qq.source === 'console') qq.issued_at = qtNow.toISOString();
 
         var qeOld = qq.ref;
         if (qq.source === 'console' && qq.ref.indexOf('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-') !== 0) {
@@ -15455,7 +15464,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qsSend && qq.no_contact_at) return qtOk({ error: 'no-contact' });
 
         if (qsSend && !qtWaAllowed()) return qtOk({ error: 'wa-limit', cap: Number(appSet('quote_wa_day', qtToday)) });
-        var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
+        var qsOwn = Number((qq.selection || {}).valid);
+        var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + ([14, 30, 45, 60, 90].indexOf(qsOwn) > -1 ? qsOwn : Number(appSet('quote_valid_days', qtToday) || 30)));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
 
         if (!qtIssued(qq)) { qq.ref = qtNextRef('ADP/QT' + qtYm() + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase()); qq.confirmed_at = qtNow.toISOString(); qq.confirmed_by = qtMe.name; }
@@ -15680,6 +15690,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
 
       if (name === 'team_notice_delete') {
+        if (!opsGranted('team.notice', 'manage')) return ntOk({ error: 'denied' });
         var ntD = DB.team_notices.filter(function (x) { return x.id === args.p_id; })[0];
         if (!ntD) return ntOk({ error: 'not-found' });
         if (!ntD.withdrawn_at) return ntOk({ error: 'live' });
@@ -17393,6 +17404,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
         'rpc:supplier_delete': ['suppliers', 'p_id', 'Supplier', 'suppliers', 'id', 'name'],
         'rpc:video_script_delete': ['scripts', 'p_id', 'Video script', 'video_scripts', 'id', 'code'],
         'rpc:outstation_trip_delete': ['ops', 'p_trip', 'Outstation trip'],
+
+        'rpc:analytics_read_delete': ['team.analytics', 'p_id', 'AI analysis', 'analytics_reads', 'id', 'period'],
+        'rpc:announcement_delete': ['team.announce', 'p_id', 'Announcement', 'announcements', 'id', 'body_en'],
+        'rpc:campaign_file_delete': ['campaigns.files_delete', 'p_file', 'Approved file'],
+        'rpc:department_delete': ['team.settings', 'p_key', 'Department', 'departments', 'key', 'name'],
+        'rpc:industry_delete': ['team.settings', 'p_name', 'Industry', 'industries', 'name', 'name'],
+        'rpc:public_holiday_delete': ['team.settings', 'p_day', 'Public holiday', 'public_holidays', 'day', 'name'],
+        'rpc:tax_codes_delete': ['team.settings', 'p_codes', 'Tax code'],
+        'rpc:doc_type_delete': ['register.types', 'p_id', 'Document type', 'doc_types', 'id', 'name'],
+        'rpc:handbook_delete': ['team.handbook', 'p_id', 'Handbook file', 'handbook_docs', 'id', 'title'],
+        'rpc:hiring_delete': ['team.hiring', 'p_id', 'Candidate', 'hiring_candidates', 'id', 'name'],
+        'rpc:hiring_scorecard_delete': ['team.hiring', 'p_id', 'Interview scorecard', 'hiring_scorecards', 'id', 'position'],
+        'rpc:ops_template_delete': ['ops.workflows', 'p_id', 'Task template', 'ops_task_templates', 'id', 'name'],
+        'rpc:team_notice_delete': ['team.notice', 'p_id', 'Notice', 'team_notices', 'id', 'title'],
         'table:batches': ['review.sets', 'id', 'Content set', 'batches', 'id', 'title'],
         'table:posts': ['review.sets', 'id', 'Post', 'posts', 'id', 'title'],
         'table:campaigns': ['campaigns.campaigns', 'id', 'Campaign', 'campaigns', 'id', 'title'],
@@ -17416,8 +17441,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'delete_request_file') {
         var k = DK[args.p_kind];
         if (!k) return drNo('bad-kind');
-        if (!opsAllowed(k[0], 'work')) return drNo('denied');
-        if (opsAllowed(k[0], 'manage')) return drNo('may-delete');
+
+        var drMay = GRANTED_KEYS[k[0]] ? opsGranted : opsAllowed;
+        if (!drMay(k[0], 'work')) return drNo('denied');
+        if (drMay(k[0], 'manage')) return drNo('may-delete');
         var a = args.p_args;
         if (!a || typeof a !== 'object' || Array.isArray(a)) return drNo('bad-request');
         var why = String(args.p_reason || '').replace(/\s+/g, ' ').trim();
@@ -17425,12 +17452,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var rec = null, label;
         if (Array.isArray(a[k[1]])) {
 
-          if (args.p_kind !== 'rpc:ops_delete_tasks' || !a[k[1]].length || a[k[1]].length > 200) return drNo('bad-request');
+          if (!a[k[1]].length || a[k[1]].length > 200) return drNo('bad-request');
+          if (args.p_kind === 'rpc:tax_codes_delete') {
+
+            var drCs = a[k[1]].map(function (c) { return String(c || '').trim(); }).filter(function (c, i, all) { return c && all.indexOf(c) === i; }).sort();
+            if (!drCs.length || drCs.length > 100) return drNo('bad-request');
+            if (drCs.some(function (c) { return !(DB.tax_codes || []).some(function (t) { return t.code === c; }); })) return drNo('not-found');
+            label = drCs.length + ' ' + k[2].toLowerCase() + (drCs.length === 1 ? '' : 's') + ' · ' + drCs.slice(0, 3).join(', ') + (drCs.length > 3 ? ' and ' + (drCs.length - 3) + ' more' : '');
+          } else {
+          if (args.p_kind !== 'rpc:ops_delete_tasks') return drNo('bad-request');
           var drIds = a[k[1]].map(String).filter(function (v, i, all) { return all.indexOf(v) === i; });
           var drTs = drIds.map(function (id) { return (DB.ops_tasks || []).filter(function (t) { return String(t.id) === id; })[0]; });
           if (drTs.some(function (t) { return !t; })) return drNo('not-found');
           var drNames = drTs.map(function (t) { return t.title || ''; }).sort();
           label = drTs.length + ' ' + k[2].toLowerCase() + ' · ' + drNames.slice(0, 3).join(', ') + (drTs.length > 3 ? ' and ' + (drTs.length - 3) + ' more' : '');
+          }
         } else {
           rec = a[k[1]] == null ? '' : String(a[k[1]]);
           if (!rec) return drNo('bad-request');
@@ -17448,6 +17484,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var drR = drV && (DB.sm_reports || []).filter(function (x) { return x.id === drV.report_id; })[0];
             if (!drV || !drR) return drNo('not-found');
             label = (drR.title || 'Report') + ' · version ' + drV.version_no;
+          } else if (args.p_kind === 'rpc:campaign_file_delete') {
+
+            var drF = (DB.campaign_deliverables || []).filter(function (x) { return String(x.id) === rec; })[0];
+            var drFo = drF && (DB.campaign_options || []).filter(function (x) { return x.id === drF.option_id; })[0];
+            if (!drF) return drNo('not-found');
+            var drFc = drFo && (DB.creators || []).filter(function (x) { return x.id === drFo.creator_id; })[0];
+            label = ((drFc && drFc.name) || 'Creator') + ' · ' + (drF.name || 'File');
           } else if (args.p_kind === 'table:campaign_options') {
             var drO = (DB.campaign_options || []).filter(function (x) { return String(x.id) === rec; })[0];
             var drG = drO && (DB.campaigns || []).filter(function (x) { return x.id === drO.campaign_id; })[0];
@@ -18345,7 +18388,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk({ id: ex.id });
       }
       if (name === 'hiring_scorecard_delete') {
-        if (!hAdmin) return hNo('denied');
+        if (!opsGranted('team.hiring', 'manage')) return hNo('denied');
         var dx = DB.hiring_scorecards.filter(function (x) { return x.id === args.p_id; })[0];
         if (!dx) return hNo('not-found');
         if (dx.standard) return hNo('standard');
@@ -18851,6 +18894,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk();
       }
       if (name === 'hiring_delete') {
+        if (!opsGranted('team.hiring', 'manage')) return hNo('denied');
         if (!hc.removed_at) return hNo('not-removed');
         if (String(args.p_name || '').trim().toLowerCase() !== hc.name.toLowerCase()) return hNo('bad-name');
         if (hc.stage === 'hired' || hc.member_id || (DB.hiring_docs || []).some(function (d) {
@@ -19582,6 +19626,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return Promise.resolve({ data: { ok: true }, error: null });
       }
       if (name === 'handbook_delete') {
+        if (!opsGranted('team.handbook', 'manage')) return hbNo('denied');
         if (String(args.p_title || '').trim().toLowerCase() !== hbDoc.title.trim().toLowerCase()) return hbNo('mismatch');
         var hvs = DB.handbook_versions.filter(function (v) { return v.doc_id === hbDoc.id; });
         DB.handbook_versions = DB.handbook_versions.filter(function (v) { return v.doc_id !== hbDoc.id; });

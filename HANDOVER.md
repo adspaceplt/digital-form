@@ -96,8 +96,9 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | #1540 Build quote: a line's figures on its name's first line | 261127.daa5 |
 | #1546 Feedback from Past clients (Active, Paused or Past asked, a lead never; a sent link stays open whatever the portal's access); Request feedback drawn only where it can be sent; a Past client's ⋯ reads Allow portal sign-in / Stop portal sign-in (migration `2026-11-27-feedback-from-past-clients.sql`, applied and read back); tests 55add78 | 261127.e56e |
 | #1550 Period total on a quotation, release 1: Build quote's Show totals for the whole period (off by default) and the PDF's Total for {n} months incl. SST and Total incl. SST, from the database's term total; no migration; tests b3cbb80 | 261127.f663 |
-| Build quote on a phone: tax back on the Qty row | (this PR) |
+| Build quote on a phone: tax back on the Qty row | 261127.2820 |
 | Deletes at Full control (access fix, "go all 13"): 13 admin tools' deletes ask Full control and join `delete_kinds`, Edit files Request delete; a request against a granted part asks `ops_granted`; guard in `tests/sql.js`; migration `2026-11-27-deletes-at-full-control.sql` live | see the coordinator's report |
+| Hotfix: a quotation is valid for its own Valid for, website requests included, from the day it is published; the PDF's TERMS states the same days (migration `2026-11-27-quote-valid-own-days.sql`, applied and read back). ADP/QT2611-B02 (REQ2611-SBD) was published at 08:58, before it, and still reads valid until 27 Dec: correcting it to 11 Dec waits on the coordinator | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
