@@ -44,11 +44,6 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   reading `stops` at line 302; it passed alone at once. Its cause (the
   answer under load, or a refusal the suite does not name) is to be
   found; held here until it ships.
-- 2026-11-26, `pdfreal` (the Build quote and TERMS fit train, which
-  touches no letter): the Letter of Offer and the client letter (sign,
-  nosign) fail "its head and foot at the template's places on every
-  page" (the foot's reference at 6pt, 794.5 down); the same three fail
-  on main 8e9224f. Held here until it ships.
 - 2026-11-27 (05:50 MYT), `sql` (the interview missed release, which
   touches neither `quote_wa_allowed` nor its migration): "the day's
   Quotation ready messages to website quotations are held to the setting"
