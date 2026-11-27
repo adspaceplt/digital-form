@@ -6934,7 +6934,7 @@
     if (!k) { line.hidden = true; line.textContent = ''; return; }
     var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
     var d = String($('ntDesc').value || '').trim();
-    line.textContent = 'Code ' + code + (d ? ' ' + d : '') + '. The task number will be assigned when it is saved.';
+    line.textContent = 'Task number ' + code + (d ? ' ' + d : '') + ', assigned when the task is saved.';
     line.hidden = false;
   }
   // ---- Pieces --------------------------------------------------------------

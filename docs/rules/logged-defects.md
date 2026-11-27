@@ -93,8 +93,7 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   wait for `ADspaceDocs.lib` times out at 10s, the same on `main` (230ae41)
   as on the branch; the PDF libraries, untouched by that release. Held
   here until it ships.
-- 2026-11-27, `words` (LINKED SECTIONS release 1's copy check): three
-  Chinese lines in `js/quote.js:352` (the period total, `{n} 个月…`) read
-  with no space between the figure and its unit, the same on `main`
-  (54c4118); the quotation link, untouched by that release. Held here
-  until it ships.
+- 2026-11-27, `words` (the copy review since 863dddc): `js/quote.js:352`'s
+  中文 period totals put a space between `{n}` and 个月 (three lines), the
+  same on `main` (7c85e8b); a client page's words, so the fix waits for
+  the user's go on branch `claude/quote-words-863dddc`. Held here until it ships.
