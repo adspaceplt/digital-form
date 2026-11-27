@@ -167440,6 +167440,8 @@ update public.quotations q set made_by_id = o.id
 
 -- END OF QUOTATION MADE BY ID -------------------------------------------------
 
+select public.functions_tidy();
+
 -- ===========================================================================
 -- QUOTATION REVIEW HOLDS (2026-11-27)
 -- ===========================================================================
@@ -167697,6 +167699,8 @@ revoke all on function public.quote_preflight(jsonb, jsonb, text) from public;
 grant execute on function public.quote_preflight(jsonb, jsonb, text) to anon, authenticated;
 
 -- END OF QUOTATION REVIEW HOLDS ---------------------------------------------
+
+select public.functions_tidy();
 
 -- ===========================================================================
 -- PERSONNEL NUMBERS MASKED (2026-11-27)

@@ -66,6 +66,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   writes and refuses (2026-11-24: candidate and creator emails, Reply-to
   mailboxes, a performance query and scripts published stood half saved;
   `tests/wholesql.js` reads every function's last definition).
+- A new band joins `schema.sql` after its last line, its own `select public.functions_tidy();` after it, never inside the band before it: a suite holds each migration's whole text in the schema (2026-11-27: the quotation holds band split the made-by-id band's ending).
 - A seed is a first run, not a running list.
   - Catalogue rows (the rate card, `detail`, Marketing and Sales) seed only
     into an empty table.
