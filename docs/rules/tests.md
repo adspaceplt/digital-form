@@ -129,6 +129,11 @@ Moved from `CLAUDE.md` §1 on 2026-11-23. Read whole before changing a suite or 
     Meet or Meta being set up: the stand-in lets go of the refusal the
     console learned from them (SWITCHED-OFF ACTS, release B), so a press
     after it is not held disabled.
+  - A suite reading a script a client page fetches on demand
+    (`#lazyScripts`) asks for it as the page does
+    (`ADspaceChrome.need`), never waits for it to arrive at boot; a seed's
+    row carries every key the page reads it by (`activity_log.client_id`)
+    (2026-11-27: `pdflibhash` and uxaudit's Clients).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it

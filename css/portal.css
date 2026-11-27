@@ -531,7 +531,6 @@ a { color: inherit; }
 .setline-filter svg { width: 15px; height: 15px; }
 .kmenu.filterpop { display: grid; gap: 12px; padding: 14px 16px 16px; width: 280px; }
 .kmenu.filterpop[hidden] { display: none; }
-.popcard.is-dock.filterpop { width: auto; }
 .filterpop-name { font-size: 15px; font-weight: 600; }
 .filterpop .safetoggle { justify-content: space-between; }
 /* A video's own safe area switch, under its preview. */
@@ -5346,6 +5345,10 @@ body.is-canvas { overflow: hidden; }
   transform-origin: bottom center; animation: popcard-up var(--t-slow) var(--ease);
 }
 .popcard.is-dock::before { display: none; }
+/* Docked, a card runs gutter to gutter whatever width its section gives it
+   at a desk: a section's own width rule in console.css, read after this
+   sheet, held the Ad IDs card 54px off the right edge (2026-11-27). */
+:root .popcard.is-dock { width: auto; max-width: none; }
 @keyframes popcard-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .popcard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 /* The close mark gives its padding back so the title keeps the card's top. */
