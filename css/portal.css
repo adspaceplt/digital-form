@@ -2835,6 +2835,8 @@ body.is-plain .topbar { background: var(--chrome); }
   .sheet-wide .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
 .sheet-card.askcard { width: min(440px, 100%); }
+/* A second answer (`alt`) keeps Cancel, it and the primary on one row. */
+.sheet-card.askcard.has-alt { width: min(480px, 100%); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; white-space: pre-line; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
 .askentry + .askentry { margin-top: 12px; }

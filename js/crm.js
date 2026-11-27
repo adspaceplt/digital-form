@@ -1377,8 +1377,11 @@
        requested feedback (via email) to main pic"): a client, never a lead,
        at Clients Work, where this colleague may send email by hand; the
        database refuses the same (`feedback_mail_begin`). */
+    /* FEEDBACK COPIED FOR WHATSAPP (2026-11-27): or copied for the
+       client's WhatsApp group, where this colleague may send WhatsApp by
+       hand (`feedback_wa_copy`). */
     state.fbMay = bandKey(c.stage) !== 'clients.leads' && canWork && mayPart('clients', 'work') &&
-      (!bridge.may || bridge.may('send.email'));
+      (!bridge.may || bridge.may('send.email') || bridge.may('send.whatsapp'));
     paintFbAct();
     if (state.fbMay) $('crmClientMenuWrap').hidden = false;
     /* Introduce representative (2026-11-11): a lead whose Sales by is set is
@@ -2889,7 +2892,15 @@
     'no-contact': 'The primary contact has no email address. Add one under Account first.',
     'not-found': 'This client no longer exists.', 'mail-not-set-up': ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Please try again.', 'not-confirmed': 'Sent, but delivery was not confirmed.',
-    'needs-update': ADspaceWords.line.notYet, sending: ADspaceWords.line.mailSending };
+    'needs-update': ADspaceWords.line.notYet, sending: ADspaceWords.line.mailSending,
+    'no-primary': 'The client has no primary contact. Add one under Account first.',
+    'not-copied': 'Not copied. Please press Copy for WhatsApp again.' };
+  /* A request made within the repeat hours, either way it went. */
+  function fbRecentLine(rc) {
+    var when = (rc.at ? ' on ' + ADspaceClock.date(rc.at) : '') + (rc.by ? ' by ' + rc.by : '') + '.';
+    return rc.channel === 'whatsapp' ? 'This request was copied for WhatsApp' + when
+      : 'This request went to ' + (rc.to || 'the primary contact') + when;
+  }
   /* Sends the request; answers the refusal's words, or '' once sent or
      once a request sent within the repeat hours has asked first
      (RETENTION AND JOBS HELD, 2026-11-25: when, by whom and to whom, then
@@ -2901,8 +2912,8 @@
       if (d.error === 'recent' && !again) {
         var rc = d.recent || {};
         setTimeout(function () {
-          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Send again', wait: true,
-            body: 'This request went to ' + (rc.to || 'the primary contact') + (rc.at ? ' on ' + ADspaceClock.date(rc.at) : '') + (rc.by ? ' by ' + rc.by : '') + '.' },
+          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Send again', wait: true, gate: 'email',
+            body: fbRecentLine(rc) },
             function () { return sendFeedback(c, kind, true); });
         }, 0);
         return '';
@@ -2913,13 +2924,55 @@
       return '';
     }).catch(function () { return FB_SAID['not-sent']; });
   }
+  /* Copy for WhatsApp (FEEDBACK COPIED FOR WHATSAPP, 2026-11-27): the
+     request made as Send makes it, then its words and link copied for the
+     client's group, pasted by hand; the copy is begun inside the press
+     (`ADspaceCopy.later`). A copy that failed is asked again as Copy again,
+     so the request just made is replaced, never left beside another. */
+  var fbAgain = {};
+  function copyFeedback(c, kind, again, btn) {
+    var why = '';
+    var words = db.rpc('feedback_wa_copy', { p_client: c.id, p_kind: kind, p_again: again === true }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) { why = /function|schema cache/i.test(r.error.message || '') ? FB_SAID['needs-update'] : FB_SAID['not-copied']; return null; }
+      if (d.error === 'recent' && !again) { why = 'recent'; fbAgain = d.recent || {}; return null; }
+      if (d.error) { why = d.error === 'send-off' ? ADspaceWords.line.whatsappSendOff : (FB_SAID[d.error] || FB_SAID['not-copied']); return null; }
+      return d.text || null;
+    }).catch(function () { why = FB_SAID['not-copied']; return null; });
+    return ADspaceCopy.later(btn, words).then(function (copied) {
+      if (why === 'recent') {
+        setTimeout(function () {
+          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Copy again', wait: true, gate: 'whatsapp',
+            body: fbRecentLine(fbAgain) },
+            function (v, b) { return copyFeedback(c, kind, true, b); });
+        }, 0);
+        return '';
+      }
+      if (why) return why;
+      if (TABS[groupOf(pane)].indexOf('feedback') > -1) loadFeedback();
+      if (!copied) {
+        setTimeout(function () {
+          window.ADspaceConfirm.ask({ title: 'Request feedback', go: 'Copy again', wait: true, gate: 'whatsapp',
+            body: FB_SAID['not-copied'] },
+            function (v, b) { return copyFeedback(c, kind, true, b); });
+        }, 0);
+        return '';
+      }
+      msg('crmWorkMsg', 'Copied. Paste it into the client\'s WhatsApp group.', 'ok');
+      return '';
+    });
+  }
   function askFeedback(c) {
     var primary = (state.contacts || []).filter(function (k) { return k.client_id === c.id && k.is_primary && !k.archived_at; })[0];
+    var byMail = !bridge.may || bridge.may('send.email'), byWa = !bridge.may || bridge.may('send.whatsapp');
+    var copy = { label: 'Copy for WhatsApp', gate: 'whatsapp',
+      run: function (v, b) { return copyFeedback(c, (v && v.k) || 'quick', false, b); } };
     window.ADspaceConfirm.ask({
-      title: 'Request feedback', go: 'Send', wait: true,
-      body: primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
+      title: 'Request feedback', go: byMail ? 'Send' : copy.label, wait: true, gate: byMail ? 'email' : 'whatsapp',
+      body: byMail && primary && primary.email ? 'Emailed to ' + primary.name + ', ' + primary.email + '.' : '',
+      alt: byMail && byWa ? copy : null,
       fields: [{ name: 'k', label: 'Form', seg: true, choices: [['quick', 'Service rating'], ['review', 'Performance review']], value: 'quick' }]
-    }, function (v) { return sendFeedback(c, (v && v.k) || 'quick', false); });
+    }, function (v, b) { return byMail ? sendFeedback(c, (v && v.k) || 'quick', false) : copy.run(v, b); });
   }
 
   /* The record's Feedback pane: every request, newest first, its answer
@@ -2949,6 +3002,17 @@
     var here = TABS[groupOf(pane)].indexOf('feedback') > -1;
     if ($('crmFbAsk')) $('crmFbAsk').hidden = !state.fbMay;
     if ($('crmFeedback')) $('crmFeedback').hidden = !state.fbMay || here;
+    /* Where only one way is this colleague's, the act opening the sheet
+       is that way's send (`data-gate`); with both, each answer in the
+       sheet carries its own, so one switched off leaves the other. */
+    var byMail = !bridge.may || bridge.may('send.email'), byWa = !bridge.may || bridge.may('send.whatsapp');
+    var gate = byMail && byWa ? '' : byMail ? 'email' : 'whatsapp';
+    ['crmFbAsk', 'crmFeedback'].forEach(function (id) {
+      var b = $(id);
+      if (!b) return;
+      if (gate) b.setAttribute('data-gate', gate);
+      else ['data-gate', 'data-gate-off', 'aria-disabled', 'aria-description'].forEach(function (x) { b.removeAttribute(x); });
+    });
   }
   function loadFeedback() {
     var c = state.client, box = $('crmFbBox');
@@ -2973,7 +3037,8 @@
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
         return '<details class="fbc-item" data-id="' + esc(q.id) + '"><summary class="fbc-row prow">' +
-          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc((s && s.request_ref ? s.request_ref + ' · ' : '') + 'Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : '')) + '</small></span>' +
+          '<span class="pr-main"><b>' + esc(FB_KIND[q.kind] || '') + '</b><small>' + esc((s && s.request_ref ? s.request_ref + ' · ' : '') + (q.channel === 'whatsapp'
+            ? 'Copied for WhatsApp ' + niceDate(q.created_at) : 'Sent ' + niceDate(q.created_at) + (q.to_name ? ' to ' + q.to_name : ''))) + '</small></span>' +
           '<span>' + esc(niceDate(q.created_at)) + '</span><span>' + (s ? esc(niceDate(s.submitted_at)) : '<span class="mute">\u2014</span>') + '</span>' +
           '<span class="pr-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span>' +
           '<span class="pr-end fbc-score' + (s && s.band === 'low' ? ' is-late' : '') + '">' + (s ? esc(fbScore(s)) : '<span class="mute">\u2014</span>') + '</span>' +
@@ -2989,7 +3054,7 @@
       if (a.type === 'scale') return '<div>' + head + '<p class="fbread-a"><b>' + esc(a.value) + '</b><span>of ' + esc(a.max) + '</span></p></div>';
       return '<div>' + head + '<p class="fbread-t">' + esc(a.value) + '</p></div>';
     }).join('');
-    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
+    var by = [s.by ? 'Submitted by ' + s.by + ' (signed in)' : q.channel === 'whatsapp' ? 'Submitted through the link shared on WhatsApp' : 'Submitted through the emailed link', q.manager ? 'Account manager when sent: ' + q.manager : ''].filter(Boolean).join(' · ');
     var act = s.band === 'low' && !s.task_id && mayPart('ops', 'work')
       ? '<div class="fbc-acts"><button class="btn btn-sm btn-primary" type="button" data-fb="task" data-r="' + esc(s.id) + '">Create follow-up task</button></div>' : '';
     return '<div class="fbread fbc-read">' + body + '<p class="fbc-by">' + esc(by) + '</p>' + act + '</div>';

@@ -30,6 +30,7 @@
  *   ADspaceConfirm.ask({ …, field: { …, choices: [['a','A'], …] } }, onYes)
  *   ADspaceConfirm.ask({ …, fields: […], check: function (values) { return 'Why not' or '' } }, onYes)
  *   ADspaceConfirm.ask({ …, wait: true }, function (v) { return promiseOf('' or 'Why not') })
+ *   ADspaceConfirm.ask({ …, alt: { label, run: function (v, btn) { return promiseOf('' or 'Why not') } } }, onYes)
  *
  * A field may be `tick: true` (a checkbox with its label, answering 'on' or
  * '', never required), and a field of two to four `choices` may be
@@ -42,7 +43,7 @@
   'use strict';
 
   var sheet = null, card = null, elTitle, elBody, elFields,
-      elGo, elCancel, elClose, elMsg;
+      elGo, elAlt, elCancel, elClose, elMsg;
   var open = false, cb = null, opts = null, lastFocus = null;
   /* One row a field: { spec, input }. A question asks for nothing, for one
      value, or — where the act needs two things stated together, as setting a
@@ -95,10 +96,18 @@
     elGo = el('button', 'btn btn-primary');
     elGo.type = 'button';
     elGo.id = 'askGo';
+    /* `alt`: a second answer beside the primary, tonal (Copy for WhatsApp
+       beside Send, FEEDBACK COPIED FOR WHATSAPP, 2026-11-27): the same
+       fields, checked the same way, answered as `wait` is. */
+    elAlt = el('button', 'btn');
+    elAlt.type = 'button';
+    elAlt.id = 'askAlt';
+    elAlt.hidden = true;
     elCancel = el('button', 'btn btn-quiet', 'Cancel');
     elCancel.type = 'button';
     elCancel.id = 'askCancel';
     foot.appendChild(elGo);
+    foot.appendChild(elAlt);
     foot.appendChild(elCancel);
 
     elMsg = el('div', 'msg');
@@ -112,7 +121,8 @@
 
     elCancel.addEventListener('click', cancel);
     elClose.addEventListener('click', cancel);
-    elGo.addEventListener('click', go);
+    elGo.addEventListener('click', function () { go(false); });
+    elAlt.addEventListener('click', function () { go(true); });
     /* The scrim cancels; a press inside the card does not. */
     sheet.addEventListener('mousedown', function (e) { if (e.target === sheet) cancel(); });
     document.addEventListener('keydown', key, true);
@@ -143,7 +153,7 @@
     if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229
         && e.target !== elCancel && e.target !== elClose
         && (e.target.tagName !== 'TEXTAREA' || e.target.hasAttribute('data-oneline'))) {
-      e.preventDefault(); go(); return;
+      e.preventDefault(); go(false); return;
     }
     if (e.key !== 'Tab') return;
     var list = focusables();
@@ -173,8 +183,9 @@
     return r.input.tagName === 'SELECT' ? raw : raw.trim();
   }
 
-  function go() {
+  function go(useAlt) {
     if (!open) return;
+    if (useAlt && !(opts && opts.alt)) return;
     var i, r, v;
     for (i = 0; i < rows.length; i++) {
       r = rows[i]; v = valueOf(r);
@@ -200,7 +211,7 @@
         return;
       }
     }
-    var fn = cb, arg;
+    var fn = useAlt ? opts.alt.run : cb, arg;
     /* A Delete pressed at Edit (js/delreq.js): the reason for the request
        is the request's, never handed to the screen's own answer. */
     var DR = window.ADspaceDelReq;
@@ -229,14 +240,19 @@
        server refuses, a wrong delete code): `onYes` returns a promise of ''
        when done or the refusal's words, said in place with what was typed
        kept; meanwhile the answer is out and cannot be pressed twice. */
-    if (opts && opts.wait && fn) {
-      elGo.disabled = true;
-      Promise.resolve().then(function () { return fn(arg); }).then(function (why) {
-        elGo.disabled = false;
+    /* The act is called within the press itself, so what it does needs
+       the press (a copy to the clipboard) is still allowed to. */
+    if (opts && (opts.wait || useAlt) && fn) {
+      var btn = useAlt ? elAlt : elGo;
+      elGo.disabled = true; elAlt.disabled = true;
+      var said;
+      try { said = Promise.resolve(fn(arg, btn)); } catch (e) { said = Promise.reject(e); }
+      said.then(function (why) {
+        elGo.disabled = false; elAlt.disabled = false;
         if (why) { say(String(why)); return; }
         shut();
       }).catch(function (e) {
-        elGo.disabled = false;
+        elGo.disabled = false; elAlt.disabled = false;
         say((e && e.message) || String(e));
       });
       return;
@@ -265,6 +281,11 @@
     lastFocus = null;
   }
 
+  function gateOn(b, key) {
+    if (key) { b.setAttribute('data-gate', key); return; }
+    ['data-gate', 'data-gate-off', 'aria-disabled', 'aria-description'].forEach(function (a) { b.removeAttribute(a); });
+  }
+
   function ask(o, onYes) {
     build();
     o = o || {};
@@ -286,6 +307,14 @@
     elGo.className = 'btn ' + (o.tone === 'danger' ? 'btn-danger'
                              : o.tone === 'warn' ? 'btn-warn' : 'btn-primary');
     elGo.id = 'askGo';
+    /* `gate` (and `alt.gate`): a send Settings can stop is drawn disabled
+       with its reason, as every such act (`data-gate`, js/admin.js). */
+    gateOn(elGo, o.gate);
+    elAlt.hidden = !o.alt;
+    card.classList.toggle('has-alt', !!o.alt);
+    elAlt.disabled = false;
+    elAlt.textContent = o.alt ? (o.alt.label || '') : '';
+    gateOn(elAlt, o.alt && o.alt.gate);
     /* `cancel: false` is a refusal being reported rather than a question being
        asked: there is only one thing to do with it, and a Cancel beside Close
        would be two words for that one thing. */

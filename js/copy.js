@@ -87,5 +87,37 @@
     }
   }
 
-  window.ADspaceCopy = { to: copy };
+  /* Text that only exists once the server answers (a request made at the
+     press, FEEDBACK COPIED FOR WHATSAPP, 2026-11-27). The clipboard takes a
+     write only inside the press, so the write is begun there with the text
+     still on its way (a ClipboardItem holding a promise); a browser without
+     that writes once the text arrives. `text` is a promise of the words, or
+     of null where there is nothing to copy (a refusal). Answers a promise of
+     true once copied, false where nothing was. */
+  function later(btn, text, word) {
+    var said = function () { say(btn, word || 'Copied'); return true; };
+    var plain = function (t) {
+      if (t == null) return false;
+      return new Promise(function (res) {
+        var fell = function () { res(legacy(t) ? said() : false); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { res(said()); }).catch(fell);
+        else fell();
+      });
+    };
+    var after = function () { return Promise.resolve(text).then(plain).catch(function () { return false; }); };
+    var cb = navigator.clipboard;
+    if (cb && cb.write && typeof window.ClipboardItem === 'function') {
+      var blob = Promise.resolve(text).then(function (t) {
+        if (t == null) throw new Error('nothing');
+        return new Blob([t], { type: 'text/plain' });
+      });
+      blob.catch(function () {});
+      var item;
+      try { item = new window.ClipboardItem({ 'text/plain': blob }); } catch (e) { return after(); }
+      return cb.write([item]).then(said).catch(after);
+    }
+    return after();
+  }
+
+  window.ADspaceCopy = { to: copy, later: later };
 })();
