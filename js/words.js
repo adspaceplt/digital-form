@@ -505,6 +505,8 @@
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',
+    /* A client never asked for feedback: its Feedback part and its Overview (2026-11-27). */
+    noFeedback: 'No feedback requested.',
     /* Bukku's refusals, said alike on every screen that asks it (2026-11-22). */
     bukkuNotSetUp: 'Bukku is not set up yet. Please contact an admin.',
     bukkuNoAnswer: 'Bukku did not respond. Please try again in a few minutes.',

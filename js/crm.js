@@ -1847,11 +1847,11 @@
      what the section would have held. */
   function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
 
-  /* The client's last rating (the linked sections, 2026-11-27): the lead
-     score's band of the newest answer and its day, and when the client was
-     last asked, Not asked in {n} months past the Business setting. Read with
-     the record from the Feedback part's own function, once a client. */
-  var FB_BAND = { high: 'High', mid: 'Mid', low: 'Low' };
+  /* The client's standing (the linked sections, 2026-11-27): the newest
+     answer's score in the Feedback part's own words, its form and day, red
+     in the low band, and when a request was last sent, {n} months ago in red
+     past the Business setting. Read with the record from the Feedback
+     part's own function, once a client. */
   function ovFeedback(c) {
     if (!partOk('feedback')) return '';
     if (state.fbOvFor !== c.id) {
@@ -1867,7 +1867,7 @@
     }
     var rows = state.fbOv;
     if (!rows) return '';
-    if (!rows.length) return ovSection('Client feedback', 'feedback', 'View all', ovNone('No feedback requested.'));
+    if (!rows.length) return ovSection('Client feedback', 'feedback', 'View all', ovNone(window.ADspaceWords.line.noFeedback));
     var by = function (k) { return function (a, b) { return String(b[k] || '') < String(a[k] || '') ? -1 : 1; }; };
     var asked = rows.slice().sort(by('created_at'))[0];
     var answered = rows.filter(function (r) { return r.response; }).map(function (r) { return Object.assign({ kind: r.kind }, r.response); })
@@ -1878,10 +1878,10 @@
     var t0 = String(window.ADspaceClock.today()).split('-').map(Number);
     var since = (t0[0] - a0[0]) * 12 + t0[1] - a0[1] - (t0[2] < a0[2] ? 1 : 0);
     var pairs = [];
-    pairs.push(['Last rating', answered
-      ? '<span' + (answered.band === 'low' ? ' class="is-late"' : '') + '>' + esc([FB_BAND[answered.band], FB_KIND[answered.kind], niceDate(answered.submitted_at)].filter(Boolean).join(' · ')) + '</span>'
+    pairs.push(['Latest score', answered
+      ? '<span' + (answered.band === 'low' ? ' class="is-late"' : '') + '>' + esc([fbScore(answered), FB_KIND[answered.kind], niceDate(answered.submitted_at)].filter(Boolean).join(' · ')) + '</span>'
       : '<span class="mute">Not answered</span>']);
-    pairs.push(['Last asked', esc(niceDate(asked.created_at)) + (months && since >= months ? ' <span class="is-late">· Not asked in ' + esc(String(since)) + ' months</span>' : '')]);
+    pairs.push(['Last sent', esc(niceDate(asked.created_at)) + (months && since >= months ? ' <span class="is-late">· ' + esc(since + (since === 1 ? ' month ago' : ' months ago')) + '</span>' : '')]);
     return ovSection('Client feedback', 'feedback', 'View all', ovRows(pairs));
   }
 
@@ -3086,7 +3086,7 @@
     var box = $('crmFbBox'), rows = fbRows || [];
     var n = $('crmFbN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
-    if (!rows.length) { ADspaceState.emptyLine(box, 'No feedback requested.'); return; }
+    if (!rows.length) { ADspaceState.emptyLine(box, window.ADspaceWords.line.noFeedback); return; }
     box.innerHTML = '<div class="crm-table fbc-table"><div class="fbc-row crm-head prow"><span class="pr-main">Request</span><span>Sent</span><span>Answered</span>' +
       '<span class="pr-state">State</span><span class="pr-end">Score</span></div>' + rows.map(function (q) {
         var st = fbState(q), s = q.response;
