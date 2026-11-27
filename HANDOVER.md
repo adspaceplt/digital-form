@@ -16,7 +16,7 @@ item it takes.
 | A `session_01RVzkaPG9yZ8jep5cyPdzJv` | Campaign and creator activity keyed by a system id, not name (as #1560 did for clients); quotation salesperson designation read by member id, not name; tests/sql.js split under its 900 s limit; a list of other name-keyed lookups in supabase/ | Nothing |
 | J `session_01RVzkaRQqvJgqAzQmNrcu77` | J's #1507 review findings: R2 console (4,9,10,11,12,16,17,18,19), R3 client pages (8,13; user "go" given), R4 migration (5,6,14,15) `2026-11-27-quotation-review-holds.sql`, R5 bukku-sync (7), R6 finding 3 option A (personnel IC and bank numbers masked; Show in Edit recorded; branch claude/personnel-masked). Merges in that order. | Nothing |
 | TS `session_01RVzkaMbprQAtTmbzFaydv7` | Tone sweep since 863dddc (includes every 27 Nov build); the user's approved words are kept | "go" if a client page's words change |
-| LK `session_01RVzkaMKCUxnGsrPFDHT7wm` | Linked sections (user: "proceed"), one release each, from the flows https://claude.ai/artifact/FGEaGHupbvsRAeApy4c86Y: 1 the client's change note on the My Work task; 2 Completed booking makes a draft Bukku bill; 3 feedback feeds r_satisfaction and the client's band; 4 Short Links daily click counts on the client or campaign (a Worker deploy) | "go" if a client page changes |
+| LK `session_01RVzkaMKCUxnGsrPFDHT7wm` | Linked sections: all four merged (#1566, #1575, #1578, #1581). Open: the `adspace-links` Worker deploy (`workers/links/worker.js`, sent to the coordinator for its Cloudflare connector); until then no visit is counted | Ends once the Worker is confirmed |
 | V2 `session_01RVzkaQaHg2BNhbgxqs2w82` | Automatic ?v= stamps: `?v=dev` placeholder, `.github/workflows/pages.yml`, per-file content hash (user "go"). Builds and opens a PR but does NOT merge. | **The user's click** at merge: GitHub → Settings → Pages → Source → "GitHub Actions". The coordinator tells the user when, then merges. |
 
 Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
@@ -40,7 +40,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 2. **Surface tokens and `data-layout`**: merged, #1502 (the user, 26 Nov, "ok proceed"): `:root` tokens `--ground`, `--section-bg`, `--section-edge`, `--section-radius`, `--section-pad`, `--section-gap`, set by `<html data-layout="v3|cards|shaded">`; every card family reads them through one `:where()` base, keeping only its arrangement. Console `v3`, client portal `cards` until the user chooses, every other client page `shaded`. No visible change. Branch `claude/surface-tokens`.
 3. **Style comparison** (session H) on an Artifact: the console's Clients list, a client record, Settings, the client portal, `/creators/`, `/quote/` × v3, cards, shaded, at 1280 and 390, by flipping the attribute. Send the user the link.
 4. **Client pages**: merged, #1507 (J): the portal at six tabs, `/creators/` and `/creator/` in sections, `data-layout="v3"` on every client page, the 404 and the page template (the front door stays `shaded`); the selection page's view strip full width on a phone. J's review of main since 25 Nov (19 findings, 2 must fix: the health retention trigger, Build quote's key on a tab switch) is with the coordinator.
-5. **Linked sections** (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
+5. **Linked sections**: DONE (27 Nov, LK): Content Review → My Work note #1566 (261127.edbc); creator bill on Completed #1575 (261127.4242, `bukku-sync` v72); client feedback → Performance and the Overview #1578 (261127.b7b5); Short Links clicks #1581 (261127.07b9, Worker deploy open). Was: (the user, 26 Nov: "3 4 5 7 yes"), each its own release, major where it needs a migration; read each area's rules and DECISIONS first, and show the user a short flow before building any that changes a workflow:
    - Content Review → My Work: a client's approval or request for changes on a set moves its task's stage (derived on load where the rules prefer it).
    - Creator campaign → Bukku bills: a completed booking creates the creator's payable bill in Bukku (check `creator_bill_made` first).
    - Client feedback → Performance and the Dashboard: a client's ratings feed the account manager's month and the client's standing.
@@ -66,6 +66,10 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 
 | Release | Build |
 |---|---|
+| #1566 The client's changes on its My Work task | 261127.edbc |
+| #1575 Creator draft bill on Completed (bukku-sync v72) | 261127.4242 |
+| #1578 Client satisfaction from feedback; the Overview's Client feedback | 261127.b7b5 |
+| #1581 Short links' owner and visits (Worker pending) | 261127.07b9 |
 | Copy review since 863dddc, console (#1565) | 261127.940d |
 | #1478 Build quote copy | 261126.2136 |
 | #1479 Settings sheets | 261126.2fe0 |
