@@ -398,6 +398,7 @@
       var monthly = folded.filter(function (l) { return l.basis !== 'once'; });
       var onceL = folded.filter(function (l) { return l.basis === 'once'; });
       var bolds = 0;
+      var pt = MONY.periodTotals(t, q.selection), WD = window.ADspaceWords.line;
       if (t.month) bolds++;
       if (t.once) bolds++;
       var mWord = own ? 'First month' + incl : sstOn ? 'Monthly incl. SST' : 'Monthly total';
@@ -414,6 +415,7 @@
         mr.push([taxed.word, amt(t.month.sst, q)], [mWord, amt(t.month.incl, q), 1]);
         sums(mr);
         nearOf(mWord, Number(t.month.incl), bolds > 1);
+        if (pt) sums([[WD.periodTotal(pt.months, sstOn), amt(pt.period, q)]]);
         agreed.push([mWord, amt(t.month.incl, q)], ['Minimum term', t.term + ' months']);
         y -= 20;
       }
@@ -425,6 +427,14 @@
         sums([[sstOn ? 'One-time excl. SST' : 'Subtotal', amt(t.once.subtotal, q)], [taxed.word, amt(t.once.sst, q)], [oWord, amt(t.once.incl, q), 1]]);
         nearOf(oWord, Number(t.once.incl), bolds > 1);
         agreed.push([oWord, amt(t.once.incl, q)]);
+        y -= 20;
+      }
+      /* The whole period with the one-time fees, a block of its own under
+         the One-time section, never read as its total (2026-11-27). */
+      if (pt && pt.total != null && onceL.length) {
+        y -= 8;
+        sums([[WD.periodAll(sstOn), amt(pt.total, q), 1]]);
+        y -= 13; right(WD.periodNote(pt.months), R, y + 3, SM, book, mute);
         y -= 20;
       }
       var ads = Array.isArray(t.ads) ? t.ads : [];

@@ -429,6 +429,11 @@
     addonExtraHead: 'Additional Content',
     addonLead: 'The following services may be requested in any month of the term, at the rates below. All rates are exclusive of SST.',
     addonTerm: 'Add-ons are not included in the fees above. Each is confirmed in writing before it begins and invoiced in the month following its confirmation.',
+    /* A quotation's whole-period totals (2026-11-27): the PDF, the
+       quotation link and Build quote alike. */
+    periodTotal: function (n, incl) { return 'Total for ' + n + ' months' + (incl ? ' incl. SST' : ''); },
+    periodAll: function (incl) { return incl ? 'Total incl. SST' : 'Total'; },
+    periodNote: function (n) { return n + ' months of the monthly fee, plus one-time fees. Advertising budget not included.'; },
     stageFrom: function (stage, day) { return stage + ' from ' + day; },
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
