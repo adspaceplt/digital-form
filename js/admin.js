@@ -108,12 +108,18 @@
      the action itself, and this is not a click tracker. */
   var actor = '';
   function logAction(action, subject, detail, ref) {
+    /* A line about a client names it by its record ({ name, id }): the
+       client's id is kept with the line, so its history follows the record
+       through a rename (`activity_log.client_id`, 2026-11-27). */
+    var cid = null;
+    if (subject && typeof subject === 'object') { cid = subject.id || null; subject = subject.name; }
     var row = {
       actor: actor || 'unknown',
       action: action,
       subject: subject || null,
       detail: detail || null
     };
+    if (cid) row.client_id = cid;
     /* The record the line is about, where one is named (a report's id,
        2026-11-03), so that record reads its own lines. */
     if (ref) row.ref = ref;
@@ -4270,7 +4276,7 @@
           return;
         }
         if (!(r.data || []).length) { msg('profileMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
-        logAction('client.profile', state.client.name,
+        logAction('client.profile', state.client,
           !had && pass ? 'access code added' : had && !pass ? 'access code removed' : 'access code updated');
         state.client.passcode = pass || null;
         paintLock();
@@ -4292,7 +4298,7 @@
         .select('id').then(function (r) {
           if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }
           if (!(r.data || []).length) { msg('wsMsg', 'Not saved. The database refused the request.', 'err'); return; }
-          logAction('link.reset', state.client.name, 'Previous link no longer opens');
+          logAction('link.reset', state.client, 'Previous link no longer opens');
           state.client.access_token = next;
           $('clientLink').value = shareUrl(state.client);
           $('openLink').href = reviewUrl(state.client);
@@ -6055,7 +6061,7 @@
       db.from('clients').update({ drive_folder: url }).eq('id', state.client.id).select('id')
         .then(function (r) {
           if (r.error || !(r.data || []).length) return;
-          if (state.client.drive_folder !== url) logAction('client.drive', state.client.name, url);
+          if (state.client.drive_folder !== url) logAction('client.drive', state.client, url);
           state.client.drive_folder = url;
         });
 

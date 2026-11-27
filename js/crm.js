@@ -894,7 +894,7 @@
           var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
           if (mine) mine.owner = to || null;
           c.owner = to || null;
-          log('client.edited', c.name, 'Person in charge: ' + (was || 'not set') + ' → ' + (to || 'not set'));
+          log('client.edited', c, 'Person in charge: ' + (was || 'not set') + ' → ' + (to || 'not set'));
           out.ok.push({ c: c, was: was });
         }).catch(function (e) { out.bad.push({ c: c, err: (e && e.message) || 'refused' }); });
       });
@@ -1202,7 +1202,7 @@
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
           ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
           ['deal_note', 'Enquiry']]);
-        if (moved) log('client.edited', name, moved);
+        if (moved) log('client.edited', { name: name, id: id }, moved);
         shutForm();
         /* The one row read back, never the whole list with its billing
            (2026-10-22, CLI-9). */
@@ -1236,7 +1236,7 @@
         msg('crmMsg', saveWord(r.error.message), 'err'); return;
       }
       var salW = ($('crmContactSal') && $('crmContactSal').value) || '';
-      log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + (salW ? salW + ' ' : '') + contactName : ''));
+      log('client.added', { name: name, id: r.data.id }, sourceWord(patch.source) + (contactName ? ' · ' + (salW ? salW + ' ' : '') + contactName : ''));
       var phone = val('crmContactPhone'), email = val('crmContactEmail');
       var ct = {
         client_id: r.data.id, salutation: salW || null, name: contactName, phone: phone || null,
@@ -1611,16 +1611,14 @@
     showPane(paneFromUrl(), true);
   });
 
-  /* What the portal recorded about this client. `activity_log` carries no
-     client id, only the subject it was written with, which is the client's
-     name at the time; a rename therefore leaves the older entries behind, and
-     that is stated rather than papered over. */
+  /* What the portal recorded about this client, read by its id
+     (`activity_log.client_id`), so a rename keeps every line. */
   function loadClientLog() {
     var box = $('crmLogList');
     var c = state.client;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    db.from('activity_log').select('*').eq('subject', c.name)
+    db.from('activity_log').select('*').eq('client_id', c.id)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
         if (r.error) { UI.failLine(box, 'Activity', r.error.message, loadClientLog); return; }
@@ -2129,7 +2127,7 @@
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
-      log('client.edited', c.name, words(was));
+      log('client.edited', c, words(was));
       paintRestrict(c);
       if (after) after(was);
     }).catch(function (e) { msg('crmWorkMsg', String((e && e.message) || e), 'err'); });
@@ -2525,7 +2523,7 @@
       if (extra) { Object.assign(c, extra); if (mine) Object.assign(mine, extra); }
       railDates(c);
       if (then) then(); else msg('crmSinceMsg', 'Saved.', 'ok');
-      log('client.edited', c.name, what);
+      log('client.edited', c, what);
     });
     };
     send(false);
@@ -2568,7 +2566,7 @@
             if (mine) { mine.stage_log = list; if (current) { mine.stage_reason = v.reason; mine.stage_note = note; } }
             railDates(c);
             msg('crmSinceMsg', 'Saved.', 'ok');
-            log('client.edited', c.name, window.ADspaceRecords.changes(
+            log('client.edited', c, window.ADspaceRecords.changes(
               { reason: leaveWord(was.reason), note: was.note || '' },
               { reason: leaveWord(v.reason), note: note || '' },
               [['reason', 'Reason for ' + word], ['note', word + ' note']]));
@@ -3104,7 +3102,7 @@
       c.sales_by = me.id;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.sales_by = me.id;
-      log('client.edited', c.name, 'Sales by: not set → ' + me.name);
+      log('client.edited', c, 'Sales by: not set → ' + me.name);
       msg('crmWorkMsg', 'Taken.', 'ok');
       openClient(c);
     }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });
@@ -3236,7 +3234,7 @@
       Object.keys(row).forEach(function (k2) { c[k2] = row[k2]; });
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine && mine !== c) Object.keys(row).forEach(function (k2) { mine[k2] = row[k2]; });
-      log('client.stage', c.name, 'Scheduled: ' + (was && was !== aheadLine(c) ? was + ' → ' : '') + aheadLine(c));
+      log('client.stage', c, 'Scheduled: ' + (was && was !== aheadLine(c) ? was + ' → ' : '') + aheadLine(c));
       msg('crmWorkMsg', 'Saved.', 'ok');
       openClient(c);
       return '';
@@ -3252,7 +3250,7 @@
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
         AHEAD_COLS.forEach(function (k) { c[k] = null; if (mine) mine[k] = null; });
-        log('client.stage', c.name, 'Scheduled change withdrawn: ' + said);
+        log('client.stage', c, 'Scheduled change withdrawn: ' + said);
         openClient(c);
         var host = $('crmWorkMsg');
         /* Undo where it happened, while the day is still ahead. */
@@ -3295,9 +3293,9 @@
       if (row.client_code) {
         c.client_code = row.client_code;
         if (mine) mine.client_code = row.client_code;
-        log('client.edited', c.name, 'Client ID: not set → ' + row.client_code);
+        log('client.edited', c, 'Client ID: not set → ' + row.client_code);
       }
-      log('client.stage', c.name, stageWord(to)[1] + ' ' + spent +
+      log('client.stage', c, stageWord(to)[1] + ' ' + spent +
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
@@ -4460,7 +4458,7 @@
       if (r.error) { msg('crmSocialMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error.message, 'err'); paintSocial(c); return; }
       if (!(r.data || []).length) { msg('crmSocialMsg', 'Not saved. The database refused the request.', 'err'); paintSocial(c); return; }
       c[k] = patch[k];
-      log('client.brand', c.name, changed(was, patch, [[k, h[1]]]));
+      log('client.brand', c, changed(was, patch, [[k, h[1]]]));
       if (state.client !== c) return;
       paintSocial(c); paintLinks(c); railDone(c);
       msg('crmSocialMsg', 'Saved.', 'ok');
@@ -4537,7 +4535,7 @@
         return false;
       }
       c.white_label = on;
-      log('client.brand', c.name, 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On'));
+      log('client.brand', c, 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On'));
       if (state.client === c) paintWlPart(c);
       return true;
     }).catch(function (e) { paintWlPart(c); msg('crmWlMsg', 'Not saved. ' + ADspaceWords.en.offline, 'err'); return false; });
@@ -5189,7 +5187,7 @@
     writeClient(c.id, patch).then(function (r) {
       if (r.error || !(r.data || []).length) return;
       Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
-      log('client.brand', c.name, 'Filled from Meta: ' + changed(was, patch, HANDLES));
+      log('client.brand', c, 'Filled from Meta: ' + changed(was, patch, HANDLES));
       if (state.client !== c) return;
       paintSocial(c); paintLinks(c); railDone(c);
     }).catch(function () {});
@@ -5395,10 +5393,10 @@
         what = [what, 'Bill in: ' + (was.bill_sgd ? 'S$' : 'RM') + ' → ' + (patch.bill_sgd ? 'S$' : 'RM')].filter(Boolean).join(' · ');
       }
       /* A save to Bukku is filed by Bukku's own take; SST on quotes and Bill in by the page. */
-      if (!toBukku) log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
+      if (!toBukku) log('client.billing', state.client, [what, still.length ? still.length + ' fields still needed' : 'complete']
         .filter(Boolean).join(' · '));
       else if ('sst_applies' in patch && patch.sst_applies !== was.sst_applies || 'bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd) {
-        log('client.billing', state.client.name, [changed(was, patch, [['sst_applies', 'SST applies']], { names: true }),
+        log('client.billing', state.client, [changed(was, patch, [['sst_applies', 'SST applies']], { names: true }),
           'bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd ? 'Bill in: ' + (was.bill_sgd ? 'S$' : 'RM') + ' → ' + (patch.bill_sgd ? 'S$' : 'RM') : '']
           .filter(Boolean).join(' · '));
       }
@@ -5522,7 +5520,7 @@
           return;
         }
         Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
-        log('client.brand', c.name, [changed(was, patch, [
+        log('client.brand', c, [changed(was, patch, [
           ['website', 'Website'], ['phone', 'Office phone'], ['logo_url', 'Logo'], ['brand_notes', 'Other notes']]),
           briefMoved.length ? 'Content brief: ' + briefMoved.join(', ') + ' changed' : '',
           'white_label' in patch ? 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On') : '',
@@ -5547,7 +5545,7 @@
     writeClient(c.id, { bill_contact_id: id }).then(function (r) {
       if (!r.error && (r.data || []).length) {
         c.bill_contact_id = id;
-        log('client.billing', c.name, 'Billing contact · from the details form');
+        log('client.billing', c, 'Billing contact · from the details form');
       } else {
         /* A refused or failed write was silent, the contact read as the
            billing contact when it was not (audit 2026-11-15). */
@@ -5842,7 +5840,7 @@
       .then(function (res) {
         if (res.error) { msg('crmWorkMsg', res.why, 'err'); return; }
         stampLogin(ct);
-        if (notify) log('contact.portal_invite', state.client.name + ' · ' + ct.name, ct.email);
+        if (notify) log('contact.portal_invite', { name: state.client.name + ' · ' + ct.name, id: state.client.id }, ct.email);
         /* An address that already has a login is sent the invitation by
            the portal itself (invite-member, 2026-11-11), so `sent` says
            what happened, never `already`. */
@@ -5994,7 +5992,7 @@
           : 'Not saved. The database refused the request.', 'err');
         loadContacts(); return;
       }
-      log('contact.primary', state.client.name + ' · ' + ct.name, '');
+      log('contact.primary', { name: state.client.name + ' · ' + ct.name, id: state.client.id }, '');
       loadContacts();
     }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });
   }
@@ -6033,7 +6031,7 @@
       db.from('client_contacts').delete().eq('id', ct.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
-        log('contact.deleted', state.client.name + ' · ' + ct.name, ct.email || '');
+        log('contact.deleted', { name: state.client.name + ' · ' + ct.name, id: state.client.id }, ct.email || '');
         msg('crmWorkMsg', 'Deleted.', 'ok');
         loadContacts();
         loadRequests();
@@ -6239,7 +6237,7 @@
       db.from('client_touches').delete().eq('id', tc.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
-        log('client.touch_deleted', state.client.name, (KIND_WORD[tc.kind] || '') + ' · ' + niceDate(tc.happened_at));
+        log('client.touch_deleted', state.client, (KIND_WORD[tc.kind] || '') + ' · ' + niceDate(tc.happened_at));
         msg('crmWorkMsg', 'Deleted.', 'ok');
         loadTouches();
       }).catch(function (e) { msg('crmWorkMsg', (e && e.message) || 'Not deleted.', 'err'); });
@@ -6304,7 +6302,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
     meetAsk(tc, action, function (d) {
       if (d.link || d.deleted) {
-        log('client.touch_edited', state.client.name, 'Meeting · ' + (d.link ? 'Google Meet created' : 'Google Meet removed'));
+        log('client.touch_edited', state.client, 'Meeting · ' + (d.link ? 'Google Meet created' : 'Google Meet removed'));
         loadTouches();
         return;
       }
@@ -6421,7 +6419,7 @@
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
           if (mine) mine.stage = 'contacted';
-          log('client.stage', state.client.name, 'Contacted ' + spent);
+          log('client.stage', state.client, 'Contacted ' + spent);
           refreshClient(state.client, function () { openClient(state.client); });
         });
       }
@@ -6512,7 +6510,7 @@
           return;
         }
         c.review_hidden = false;
-        log('client.review_on', c.name, '');
+        log('client.review_on', c, '');
         goTo('/admin/?s=review&client=' + encodeURIComponent(keyOf(c)), 'review');
       }).catch(function (e) { on.disabled = false; msg('crmEngageMsg', (e && e.message) || String(e), 'err'); });
     });
@@ -6716,7 +6714,7 @@
           return;
         }
         if (!(r.data || []).length) { msg('crmServiceMsg', 'Not deleted. The database refused the request.', 'err'); return; }
-        log('client.service_deleted', state.client.name, l.label);
+        log('client.service_deleted', state.client, l.label);
         msg('crmServiceMsg', 'Deleted.', 'ok');
         loadServices();
       }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not deleted.', 'err'); });
@@ -7119,7 +7117,7 @@
       go.disabled = false;
       if (r.error) { msg('svMsg', svSaid(r.error), 'err'); return; }
       if (!(r.data || []).length) { msg('svMsg', 'Not saved. The database refused the request.', 'err'); return; }
-      log('client.service', state.client.name, label + ' · ' + SV_STATE[row.state][0]);
+      log('client.service', state.client, label + ' · ' + SV_STATE[row.state][0]);
       shutService();
       syncValue();
     }).catch(function () { go.disabled = false; msg('svMsg', 'Not saved. Please try again.', 'err'); });
@@ -8995,7 +8993,7 @@
         db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id).select('id')
           .then(function (r) {
             if (r.error || !(r.data || []).length) { loadDue(); return; }
-            log('client.action_done', c ? c.name : '', t.next_action);
+            log('client.action_done', c || '', t.next_action);
             undoBar('Marked done: ' + t.next_action, function () {
               db.from('client_touches').update({ done_at: null }).eq('id', t.id).select('id').then(function (u) {
                 if (u.error || !(u.data || []).length) msg('crmListMsg', 'Not restored. The database refused the request.', 'warn');

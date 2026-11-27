@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at ref',
+    activity_log: 'id actor action subject detail created_at ref client_id',
     agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
@@ -901,7 +901,7 @@
     var at = new Date().toISOString(), patch = { stage: 'proposal' };
     stageClock('clients', c, patch);
     Object.assign(c, patch, { updated_at: at });
-    (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name,
+    (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name, client_id: c.id,
       detail: 'Proposal sent · ' + detail, created_at: at });
   }
   function persist() {
@@ -983,7 +983,7 @@
       city: window.__city || null, country: window.__country === null ? null : (window.__country || 'MY'),
       session: ('000000' + h.toString(16).toUpperCase()).slice(-6) };
     Object.keys(meta).forEach(function (x) { if (meta[x] == null || meta[x] === '') delete meta[x]; });
-    DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: action, subject: cl ? cl.name : q.brand,
+    DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: action, subject: cl ? cl.name : q.brand, client_id: cl ? cl.id : null,
       detail: detail, meta: meta, created_at: new Date().toISOString() });
   }
 
@@ -1031,7 +1031,7 @@
         Object.assign(c, patch);
         var d = on.split('-');
         DB.activity_log = DB.activity_log || [];
-        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name,
+        DB.activity_log.push({ id: nid('al'), actor: 'system', action: 'client.stage', subject: c.name, client_id: c.id,
           detail: (to === 'paused' ? 'Paused' : 'Past') + ' from ' + Number(d[2]) + ' ' + SHORT_MON_STUB[Number(d[1]) - 1] + ' ' + d[0] +
             ', as scheduled · ' + (STAGE_NEXT_WORD[why] || 'Other') + (note ? ': ' + note : ''),
           created_at: new Date().toISOString() });
@@ -1955,7 +1955,7 @@
                   x.owner = rnNew;
                   if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
-                    subject: x.name || x.title, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
+                    subject: x.name || x.title, client_id: tb === 'clients' ? x.id : null, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
               });
             }
@@ -2293,9 +2293,9 @@ function cardSlugFree(name, self, email) {
   var RESERVED = ['superadmin', 'admin', 'administrator', 'team member', 'marketing',
                   'sales', 'account', 'user', 'root', 'owner', 'staff', 'system',
                   'support', 'test'];
-  function logAct(action, subject, detail) {
+  function logAct(action, subject, detail, clientId) {
     DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: action,
-      subject: subject || '', detail: detail || '', created_at: new Date().toISOString() });
+      subject: subject || '', detail: detail || '', created_at: new Date().toISOString(), client_id: clientId || null });
   }
   function regMay(family, level) {
 
@@ -2977,7 +2977,7 @@ function cardSlugFree(name, self, email) {
       DB.client_document_services.push({ document_id: doc.id, service_id: id, created_at: new Date().toISOString() });
     });
     if (prior) prior.superseded_by = doc.id;
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name, client_id: cl.id,
       detail: num + ' · ' + ids.length + ' line' + (ids.length === 1 ? '' : 's'), created_at: new Date().toISOString() });
     if (doc.kind === 'offer') proposalSent(cl.id, num + ' issued');
     persist();
@@ -3061,7 +3061,7 @@ function cardSlugFree(name, self, email) {
       if (l) l.state = 'quoted';
     });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name, client_id: cl.id,
       detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
@@ -3098,7 +3098,7 @@ function cardSlugFree(name, self, email) {
       .filter(function (m) { return m.document_id !== d.id; });
     DB.client_documents = DB.client_documents.filter(function (x) { return x.id !== d.id; });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name, client_id: cl.id,
       detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
@@ -3115,7 +3115,7 @@ function cardSlugFree(name, self, email) {
     var was = l.state;
     l.state = a.p_state;
     var cl = DB.clients.filter(function (c) { return c.id === l.client_id; })[0] || {};
-    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'service.override', subject: cl.name,
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'service.override', subject: cl.name, client_id: cl.id,
       detail: l.label + ' · ' + was + ' to ' + a.p_state + ' · ' + String(a.p_reason).trim(),
       created_at: new Date().toISOString() });
     persist();
@@ -3854,11 +3854,11 @@ function cardSlugFree(name, self, email) {
       if (k === 'entity') {
         (DB.client_entities || []).filter(function (x) { return x.entity_id === id; }).forEach(function (x) {
           var fc = DB.clients.filter(function (c) { return c.id === x.client_id; })[0];
-          if (fc) DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: fc.name, detail: (e.legal_name || 'Billing entity') + ' · ' + detail, created_at: now });
+          if (fc) DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: fc.name, client_id: fc.id, detail: (e.legal_name || 'Billing entity') + ' · ' + detail, created_at: now });
         });
       } else {
         var cc = DB.clients.filter(function (c) { return c.id === id; })[0];
-        DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: cc ? cc.name : 'Bukku', detail: detail, created_at: now });
+        DB.activity_log.unshift({ id: nid('al'), actor: who, action: 'client.billing', subject: cc ? cc.name : 'Bukku', client_id: cc ? cc.id : null, detail: detail, created_at: now });
       }
     }
     persist();
@@ -4086,7 +4086,7 @@ function cardSlugFree(name, self, email) {
     e.status = status; e.provider_id = provider; e.error = error; e.sent_at = status === 'sent' ? new Date().toISOString() : null;
     var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
     var co = e.client_id ? DB.clients.filter(function (x) { return x.id === e.client_id; })[0] : null;
-    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name,
+    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name, client_id: co ? co.id : null,
       detail: (e.purpose === 'invoice' ? 'Invoice ' : 'Overdue reminder ') + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed (not confirmed) to ' : 'not emailed to ') +
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }
@@ -7341,7 +7341,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
            (vc.vic_note || null) !== vnote ? 'VIC note: ' + (vc.vic_note || 'not set') + ' → ' + (vnote || 'not set') : ''].filter(Boolean).join(' · ');
       vc.vic_by = von ? (vc.vic_at ? vc.vic_by : vm.id) : null;
       vc.vic_at = vat; vc.vic_note = vnote;
-      logAct('client.edited', vc.name, vdet);
+      logAct('client.edited', vc.name, vdet, vc.id);
       persist();
       return { ok: true, since: vc.vic_at, by_name: vname(vc.vic_by), note: vc.vic_note };
     }
@@ -7358,7 +7358,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (pkKept === pkOn && (pkKept || !pkc.portal_kept_at)) return { ok: true, on: pkKept, at: pkc.portal_kept_at || null, by_name: pkName(pkc.portal_kept_by) };
       pkc.portal_kept_at = pkOn ? new Date().toISOString() : null;
       pkc.portal_kept_by = pkOn ? pkm.id : null;
-      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off');
+      if (pkKept !== pkOn) logAct('client.edited', pkc.name, pkOn ? 'Client portal: off → on' : 'Client portal: on → off', pkc.id);
       persist();
       return { ok: true, on: pkOn, at: pkc.portal_kept_at, by_name: pkOn ? pkm.name : null };
     }
