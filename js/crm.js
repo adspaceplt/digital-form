@@ -1809,11 +1809,11 @@
   /* The glyphs the record's rows carry. One per kind of thing, neutral, drawn
      at 16px with the stroke every other mark in the console uses, so a list
      can be scanned by shape before it is read. */
-  var RICON = { whatsapp: 'whatsapp', calendar: 'calendar', phone: 'phone', pin: 'pin', person: 'user', chat: 'chat', mail: 'mail', file: 'doc',
+  var RICON = { whatsapp: 'whatsapp', calendar: 'calendar', phone: 'phone', pin: 'pin', person: 'user', meeting: 'meeting', chat: 'chat', mail: 'mail', file: 'doc',
     tag: 'tag', image: 'image', speaker: 'megaphone', link: 'link', pencil: 'pen', dot: 'more' };
   function ico(name, cls) { return window.ADspaceIcons.glyph(RICON[name] || RICON.dot, cls || 'railico'); }
   /* A call's glyph is its kind. */
-  var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'person', whatsapp: 'whatsapp', email: 'mail', note: 'chat' };
+  var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'meeting', whatsapp: 'whatsapp', email: 'mail', note: 'chat' };
 
   /* A section is a heading and the one control that opens what it summarises,
      which is this portal's section head drawn flat rather than as a card. An

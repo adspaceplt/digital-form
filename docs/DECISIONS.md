@@ -12128,3 +12128,7 @@ The full gate on main 7158470 failed `priority`, `caption`, `analysis`, `hiringh
 ### 2026-11-27 · A client-facing change is approved from screenshots before it merges
 
 The user, 26 Nov: a change any client page shows (the client portal, /creators/, /creator/, /review/, /script/, /quote/, /details/, /feedback/, /verify/, /supplier/, /careers/, /card/, the covers) is shown to them as screenshots and approved before its merge; a console change merges once tested. Written into `CLAUDE.md` §3 Guardrails. First held: session O's Content Review top redesign waits on the user's OK.
+
+### 2026-11-27 · A meeting has its own glyph
+
+The user, 27 Nov: a meeting is no longer drawn with the calendar a date carries. `js/icons.js` draws `meet` (two people at one table, outline, 24 grid, stroke 1.8), and `MEANS.meetings` / `meeting` answer it: the client portal's Meetings tile and strip, a client record's meeting row (`crm.js` `KIND_ICON`, before the single person) and an outstation trip for a meeting (`outstation.js`, before the group glyph). The careers page's Interview step and every date keep the calendar. `tests/glyphs.js` holds it.

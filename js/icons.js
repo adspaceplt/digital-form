@@ -16,6 +16,9 @@
     camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
     box: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    /* A meeting: two people at one table (the user, 2026-11-27: a meeting
+       is its own glyph, never the calendar a date carries). */
+    meet: '<circle cx="7" cy="6.5" r="2.5"/><circle cx="17" cy="6.5" r="2.5"/><path d="M3 14a4 4 0 0 1 8 0M13 14a4 4 0 0 1 8 0M2 14h20M6 14v7M18 14v7"/>',
     calplus: '<path d="M8 2v4M16 2v4M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8M3 10h18M16 19h6M19 16v6"/>',
     clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
     pin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
@@ -169,7 +172,7 @@
     creators: 'people', suppliers: 'store', register: 'doccheck', services: 'grid', links: 'link',
     team: 'team', hiring: 'team', handbook: 'book', settings: 'gear', activity: 'history', mine: 'perf',
     /* Records and their parts */
-    meetings: 'calendar', meeting: 'calendar', day: 'calendar', invoices: 'doc', invoice: 'doc',
+    meetings: 'meet', meeting: 'meet', day: 'calendar', invoices: 'doc', invoice: 'doc',
     letters: 'doccheck', letter: 'doccheck', quotation: 'doc', feedback: 'star', requests: 'note',
     request: 'note', account: 'user', person: 'user', contact: 'user', creator: 'people',
     brand: 'tag', plan: 'plancontent', planads: 'planads', pieces: 'picture', item: 'picture',
