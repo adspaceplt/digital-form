@@ -129,6 +129,8 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 | #1560 A client's history kept by its id: `activity_log.client_id` (migration `2026-11-27-activity-client-id.sql`, applied and read back; 2,834 of 4,568 lines backfilled, 1,734 null, Bizgrowth 24 of 24); a campaign's and a creator's panes still read by name (next) | 261127.d45e |
 | A quotation's brand follows its one named brand (1 row backfilled: ADP/QT2611-B02 → Lemmermeyer Malaysia); a signed company that differs from the client record is kept or taken at the check and applied on approval; a signed quotation is never deleted, with its client or alone (same migration) | (this PR) |
 | Rate Card PDF: a term discount reads −10% (true minus, no space), PDF item 13 | (this PR) |
+| Console fixes from J's review (4, 9, 10, 11, 12, 16, 17, 18, 19): One per brand partway, failed reads named (creators, email templates), view-only billing to its tab, old check-in photos retaken, Bukku PDF link, `.then(ok).catch`, migrations' apply order; `sql` stops a leftover server | (this PR) |
+| Client pages from J's review (8, 13): a failed read keeps Content Review and Video Scripts drawn with Try again; a quotation's TERMS never split onto an extra page; demo engine rebuilt | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
