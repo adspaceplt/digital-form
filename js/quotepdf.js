@@ -617,8 +617,10 @@
       var all = [];
       groups.forEach(function (g) { all = all.concat(g.list); });
       var termsL = all.map(function (n) { return wrap(n, FULL - 14, 8.5, book); });
-      /* As drawn below: 8 over the label, 6 under it, 12 a line. */
-      var termsH = 14 + termsL.reduce(function (n, ls) { return n + ls.length * 12; }, 0);
+      /* As drawn below: 8 over the label, 6 under it, 12 a line, and the
+         2 each item's room() asks beyond its lines (review J13: counted
+         short, the last item turned onto a page of its own). */
+      var termsH = 16 + termsL.reduce(function (n, ls) { return n + ls.length * 12; }, 0);
       var drawTerms = function () {
         y -= 8;
         text('TERMS', M, y, SM, book, mute);

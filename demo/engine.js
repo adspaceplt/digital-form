@@ -10532,6 +10532,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
   function rpcCall(name, args) {
     (window.__rpcLog = window.__rpcLog || []).push({ name: name, args: JSON.parse(JSON.stringify(args || {})) });
 
+    if (window.__failFn && window.__failFn[name]) {
+      return Promise.resolve({ data: null, error: { code: '57014', message: window.__failFn[name] } });
+    }
     if (window.__missingFn && window.__missingFn[name]) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202',
         message: 'Could not find the function public.' + name + ' in the schema cache' } });
