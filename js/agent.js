@@ -1099,7 +1099,7 @@
           created_by: (bridge.actor && bridge.actor()) || null
         }).select('id').then(function (r) {
           if (!madeOnce(r)) after(function () {
-            if (bridge.log) bridge.log('campaign.created', a._title, a._slots + ' creators');
+            if (bridge.log) bridge.log('campaign.created', { name: a._title, campaign: cid }, a._slots + ' creators');
             file('assistant.campaign', a._title, 'Campaign created for ' + a._client.name);
           });
           return { said: 'Created.', open: { kind: 'campaign', id: cid, label: 'Open campaign' } };

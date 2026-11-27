@@ -111,8 +111,14 @@
     /* A line about a client names it by its record ({ name, id }): the
        client's id is kept with the line, so its history follows the record
        through a rename (`activity_log.client_id`, 2026-11-27). */
-    var cid = null;
-    if (subject && typeof subject === 'object') { cid = subject.id || null; subject = subject.name; }
+    /* A campaign's or a creator's line names it the same way, by
+       { name, campaign } or { name, creator } (`activity_log.campaign_id`,
+       `creator_id`). */
+    var cid = null, camp = null, cr = null;
+    if (subject && typeof subject === 'object') {
+      cid = subject.id || null; camp = subject.campaign || null; cr = subject.creator || null;
+      subject = subject.name;
+    }
     var row = {
       actor: actor || 'unknown',
       action: action,
@@ -120,6 +126,8 @@
       detail: detail || null
     };
     if (cid) row.client_id = cid;
+    if (camp) row.campaign_id = camp;
+    if (cr) row.creator_id = cr;
     /* The record the line is about, where one is named (a report's id,
        2026-11-03), so that record reads its own lines. */
     if (ref) row.ref = ref;

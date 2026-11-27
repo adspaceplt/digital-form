@@ -468,6 +468,17 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `2026-11-13-creator-bills-by-bukku-id.sql`), whatever its reference reads
   later, until Bukku no longer lists it (voided or deleted), which frees the
   booking for Create bill again.
+- A booking marked Completed on its card makes its creator's draft bill at
+  once (CREATOR BILL ON COMPLETED, `2026-11-27-creator-bill-on-completed.sql`;
+  the linked sections, the user, 2026-11-27): the same `createbill`, one
+  booking, `auto`, asked of `creator_bill_auto_ok` as the caller first
+  (`auto-off`, `not-completed`), then every rule of Create bill; never
+  Posted, never on the nightly run. Only a colleague at `campaigns.pay`
+  View reads its line on the card (Draft bill {n} created in Bukku., No bill
+  created in Bukku. with the reason; at View alone, the refused permission's
+  line); a booking without a fee keeps Create bill. Business setting
+  `creator_bill_on_completed` (seeded On; Settings › Accounting, Bill
+  creators on Completed, `creator_bill_auto_set`, team.settings) (`tests/billdone.js`).
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
@@ -521,7 +532,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (Creators List View: the payment details with Approve and Decline, the
     Bukku band, the payments; its tab counts details to review), Bookings
     (every campaign they were booked on, its step, opening the campaign) and
-    Activity (`activity.campaigns` View: the record filed under their name);
+    Activity (`activity.campaigns` View: the record filed under their id, `creator_id`);
     the rail's Next action (Review payment details), Record (campaigns,
     last shoot) and Totals (`creator_totals`, read once a visit and again
     after Read from Bukku; 2026-11-12): Billed to clients, each booking's

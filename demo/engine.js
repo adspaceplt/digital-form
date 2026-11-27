@@ -595,7 +595,7 @@
     sm_report_snapshot: 'p_id p_final',
     sm_report_gate: 'p_id',
     sm_report_post_delay: 'p_report p_task p_reason p_note p_on',
-    sm_report_post_link: 'p_post p_task', sm_report_post_tasks: 'p_report', ops_task_report_post: 'p_task', report_links_set: 'p_on',
+    sm_report_post_link: 'p_post p_task', sm_report_post_tasks: 'p_report', ops_task_report_post: 'p_task', report_links_set: 'p_on', creator_bill_auto_set: 'p_on', creator_bill_auto_ok: 'p_option',
     sm_report_history: 'p_id',
     sm_reports_owed: 'p_period',
     sm_report_submit: 'p_id p_reviewer p_reason',
@@ -3608,6 +3608,8 @@ function cardSlugFree(name, self, email) {
     client_wa_on: 1,
 
     report_post_links: 1,
+
+    creator_bill_on_completed: 1,
 
     creator_pay_days_myr: 10, creator_pay_days_other: 21,
 
@@ -10532,6 +10534,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
   function rpcCall(name, args) {
     (window.__rpcLog = window.__rpcLog || []).push({ name: name, args: JSON.parse(JSON.stringify(args || {})) });
 
+    if (window.__failFn && window.__failFn[name]) {
+      return Promise.resolve({ data: null, error: { code: '57014', message: window.__failFn[name] } });
+    }
     if (window.__missingFn && window.__missingFn[name]) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202',
         message: 'Could not find the function public.' + name + ' in the schema cache' } });
@@ -17631,7 +17636,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return drOk({ state: 'approved' });
       }
     }
-    if (/^client_email|^auto_send_set$|^manual_send_set$|^portal_switch_set$/.test(name)) {
+    if (/^client_email|^auto_send_set$|^manual_send_set$|^portal_switch_set$|^creator_bill_auto_(set|ok)$/.test(name)) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
@@ -17684,6 +17689,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.app_settings.push({ key: 'report_post_links', from_date: rlDay, value: rlTo, set_by: cmMe.id, set_at: new Date().toISOString() });
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
           detail: 'Posts linked to tasks: ' + (rlWas === 1 ? 'On' : 'Off') + ' → ' + (rlTo ? 'On' : 'Off') + ' · from ' + rlDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
+
+      if (name === 'creator_bill_auto_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var caDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), caTo = args.p_on ? 1 : 0;
+        var caWas = Number(appSet('creator_bill_on_completed', caDay));
+        if (caWas === caTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === 'creator_bill_on_completed' && x.from_date === caDay); });
+        DB.app_settings.push({ key: 'creator_bill_on_completed', from_date: caDay, value: caTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: 'Bill creators on Completed: ' + (caWas === 1 ? 'On' : 'Off') + ' → ' + (caTo ? 'On' : 'Off') + ' · from ' + caDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
+      if (name === 'creator_bill_auto_ok') {
+        if (!cmMe || !cmMe.id) return spNo('denied');
+        var caOn = Number(appSet('creator_bill_on_completed', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) === 1;
+        if (!caOn) return spNo('auto-off');
+        var caO = (DB.campaign_options || []).filter(function (o) { return o.id === args.p_option; })[0];
+        if (!caO) return spNo('not-found');
+        if (caO.state !== 'completed') return spNo('not-completed');
         return spOk();
       }
 
@@ -21031,8 +21057,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           if (bkb.action === 'createbill' && Array.isArray(bkb.options)) {
             var runOut = [], runList = null;
+
+            if (bkb.auto === true && bkb.options.length !== 1) return bkR({ error: 'bad-request' });
             return bkb.options.reduce(function (pr, opt) {
               return pr.then(function () {
+                if (bkb.auto !== true) return null;
+                return rpc('creator_bill_auto_ok', { p_option: opt }).then(function (a) {
+                  var code = a.error ? 'needs-update' : ((a.data || {}).error || '');
+                  return code || null;
+                });
+              }).then(function (refused) {
+                if (refused) { runOut.push({ option: opt, error: refused }); return; }
                 return fnInvoke('bukku-sync', { body: { action: 'createbill', option: opt } }).then(function (x) {
                   var d = (x && x.data) || {};
                   if (d.jobs) runList = d;

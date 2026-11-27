@@ -1,0 +1,55 @@
+# Publishes digital.adspace.me (2026-11-27). It replaces the branch build
+# ("Deploy from a branch"): the same Jekyll build, then every ?v= placeholder
+# is written as its file's own content stamp (.github/stamp.js), then the site
+# is deployed. Live only once Settings, Pages, Build and deployment, Source
+# reads "GitHub Actions". A failed step deploys nothing; the site stays as it
+# was.
+name: Deploy the site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push waits rather than cancelling one in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
+        env:
+          # version.json's commit (site.github.build_revision): the commit deployed.
+          JEKYLL_BUILD_REVISION: ${{ github.sha }}
+        with:
+          source: ./
+          destination: ./_site
+      - name: Write each file's stamp
+        # The Jekyll action writes _site as root from its container; the runner's user takes it back first.
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" _site
+          node .github/stamp.js _site
+      - name: Check the build line
+        run: |
+          grep -q "\"commit\":\"${GITHUB_SHA}\"" _site/version.json || { echo "version.json does not name ${GITHUB_SHA}"; cat _site/version.json; exit 1; }
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
