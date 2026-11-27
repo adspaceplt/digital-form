@@ -1007,6 +1007,13 @@
       return;
     }
     if (!stopKit.shots.list.length) { stopMsg('Take a photo on site.', 'err'); return; }
+    /* The database takes a photo from ten minutes before the trip begins:
+       one older at Check in is retaken here, never sent to be refused and
+       left in S3 (review J12). */
+    if (!trip && stopKit.shots.list.some(function (p) { return Date.now() - Date.parse(p.at) > STALE_MS; })) {
+      stopMsg('Photos must be taken within 10 minutes of ' + go.textContent + '. Remove the older photos and take them again.', 'err');
+      return;
+    }
     var args = { p_client: cv === 'other' ? null : cv, p_venue: atVenue ? venue : null,
       p_lat: spot.lat, p_lng: spot.lng, p_accuracy: spot.acc, p_read_at: spot.at };
     var call;

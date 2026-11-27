@@ -3173,6 +3173,11 @@
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         return new Promise(function (res) { readJobPattern(function () { res(r); }); });
       }).then(function (r) {
+        /* A failed read is never drawn as no creators (review J9). */
+        if (r.error) {
+          if ($('pickList')) UI.failLine($('pickList'), 'The creators offered', r.error.message, loadOptions);
+          return;
+        }
         state.options = (r.data) || [];
         state.optionsFor = state.campaign.id;
         syncCampState();
@@ -6620,8 +6625,8 @@
             (r.amount != null ? '<b class="invamt">' + esc(billMoney(r.amount, r.currency)) + '</b>' : '') +
             '<span class="invend">' + (st ? '<span class="chip-state ' + st[0] + '">' + st[1] + '</span>' : '') + menu + '</span></div>' +
           (r.error ? '<p class="msg err">' + esc(invSaid(r)) + '</p>' : '') +
-          (r.error || r.pdf ? '<div class="row acts invacts">' +
-            (r.pdf ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
+          (r.error || absUrl(r.pdf) ? '<div class="row acts invacts">' +
+            (absUrl(r.pdf) ? '<a class="btn btn-sm" href="' + esc(absUrl(r.pdf)) + '" target="_blank" rel="noopener">Download PDF</a>' : '') +
             (r.error ? '<button class="btn btn-sm" type="button" data-a="invagain">Try again</button>' : '') +
           '</div>' : '');
         if (r.web) invWeb = r.web;

@@ -48,7 +48,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
    On hold ("1 2 6 8 on hold until further notice"; STANDARD.md §24): the closed loop from quotation to report, quotation → Bukku invoices, Outstation → My Work and claims, Meta reports → Analytics.
 6. **One glyph set**: merged, #1517 (N), 261127.67f8; tests #308.
 7. **Automatic `?v=` stamps** from the commit at the Pages build; `admin/sw.js` never caches an unstamped file.
-8. **Tone sweep** since `863dddc` (`node tests/copyscan.js 863dddc`, fresh readers, one release), folding in `claude/tone-sweep-9-fixes`.
+8. **DONE #1565 (261127.940d), tests #328.** Tone sweep since `863dddc` with tone sweep 9 folded in: 26 findings, 14 fixed, 8 answered (`docs/DECISIONS.md`). Client lines held on draft #1567 (tests branch `quote-words-863dddc`) for the user's go, screenshots https://claude.ai/artifact/MLcHq1QChJMyQpv5ARebZ3; on go: merge main in, `affected --run` (quotesite, pdfreal, pdfcases), merge both. **Next, one migration release (SQL-held words):** candidate email subject Missed interview for {position}; the morning alert's the nightly Bukku update did not run / failed and the S3 storage report failed; the quotation's activity lines entered by, n prices adjusted, n service lines; Quotation requested on the Quotation portal; Analytics analyses → a clearer AI usage name; the three Quotation portal settings labels as nouns (Prospect contact time, Details reply time, Close after Reply by) in `js/admin.js` and the activity names together.
 9. **Full gate on main**: run 27 Nov on 7158470 (P, #1519); its findings shipped as #1520 and #1521 (Q). Next full gate after the next day's merges.
 10. J's other 17 review findings (J's handover on #1507).
 11. **Ad-spend explainer**: merged, #1529 (Z), 261127.e9a3. Was: (now Z, #1529, with approximate S$ added) (fresh session after U; brief in U's handover comment on #1526): "billed separately" replaced on /quote/, the quote link, Build quote and the quotation PDF by "The advertising budget is not included in this quotation." + How ad spend works (sheet: Option 1 own ad account, recommended; Option 2 prepaid through us: month 1 before start, later months at {80}% spent, ads pause unpaid; on the quotation's payment terms an Agency Credit Term Fee of {20}%, e.g. RM 6,000 → RM 1,200). Explainer only, no choice; 80 and 20 are app_settings. Client-facing: screenshots first.
@@ -65,6 +65,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 
 | Release | Build |
 |---|---|
+| Copy review since 863dddc, console (#1565) | 261127.940d |
 | #1478 Build quote copy | 261126.2136 |
 | #1479 Settings sheets | 261126.2fe0 |
 | #1481 F1, trip facts | 261126.1fe7 |
@@ -128,6 +129,7 @@ Scheduled: the coordinator's check at 21:41 MYT (13:41 UTC).
 | #1560 A client's history kept by its id: `activity_log.client_id` (migration `2026-11-27-activity-client-id.sql`, applied and read back; 2,834 of 4,568 lines backfilled, 1,734 null, Bizgrowth 24 of 24); a campaign's and a creator's panes still read by name (next) | 261127.d45e |
 | A quotation's brand follows its one named brand (1 row backfilled: ADP/QT2611-B02 → Lemmermeyer Malaysia); a signed company that differs from the client record is kept or taken at the check and applied on approval; a signed quotation is never deleted, with its client or alone (same migration) | (this PR) |
 | Rate Card PDF: a term discount reads −10% (true minus, no space), PDF item 13 | (this PR) |
+| Console fixes from J's review (4, 9, 10, 11, 12, 16, 17, 18, 19): One per brand partway, failed reads named (creators, email templates), view-only billing to its tab, old check-in photos retaken, Bukku PDF link, `.then(ok).catch`, migrations' apply order; `sql` stops a leftover server | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
@@ -135,6 +137,8 @@ Also done:
 - go.adspace.me is being phased out, and its DNS stays until the user removes it.
 
 ## Waiting on the user
+
+- The quote page's reviewed words (#1567): reply go, or name a line to keep. https://claude.ai/artifact/MLcHq1QChJMyQpv5ARebZ3
 
 Done by the user on 26 Nov: the expectations in #1476, #1482, #1489 and #1493 approved; AINV2609023 confirmed; the Bukku token rotated and `BUKKU_TOKEN` updated; the iPhone checks; the four retired edge functions deleted (24 remain, verified live).
 
