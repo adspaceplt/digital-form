@@ -397,7 +397,8 @@
      `quote_totals`), never added up on the page. */
   function periodTotals(t, sel) {
     t = t || {};
-    if (!sel || sel.period_total !== true || !t.month || t.commitment == null) return null;
+    /* the tick kept with the totals (since 2026-11-27's band), else the selection */
+    if (!(t.period_total === true || (sel && sel.period_total === true)) || !t.month || t.commitment == null) return null;
     var once = t.once ? Number(t.once.incl || 0) : 0;
     return { months: Number(t.term) || 1, period: cents(Number(t.commitment) - once), total: t.once ? cents(Number(t.commitment)) : null };
   }

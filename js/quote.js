@@ -349,6 +349,7 @@
       aoTerm: '附加服务不包括在上述费用内。每项附加服务须于开始前以书面确认，并于确认后次月开具发票。', aoExtra: '追加内容', pack: { not: function (list) { return '本套餐不包括' + list.map(function (x) { return String(x || '').trim().replace(/[.;。；]+$/, ''); }).join('、') + '。'; } },
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
+      ptMonths: '{n} 个月总额（含 SST）', ptMonthsNone: '{n} 个月总额', ptAll: '总额（含 SST）', ptAllNone: '总额', ptNote: '{n} 个月月费加一次性费用，不含广告预算。',
       newQuote: '申请新报价',
       chgT: '修改您的选择', chgReq: '提交修改请求', chgCancel: '取消', chgTotal: '修改后的报价',
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
@@ -1050,7 +1051,7 @@
   /* The totals as a list: label, figure, a total in bold with its S$ under it. */
   function totHtml(rows, cls) {
     return rows.length ? '<dl class="qs-tot' + (cls ? ' ' + cls : '') + '">' + rows.map(function (x) {
-      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) +
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + (x[4] ? '<small class="qs-near">' + esc(x[4]) + '</small>' : '') + '</dt><dd>' + esc(x[1]) +
         (x[3] ? '<small class="qs-near">' + esc(x[3].trim()) + '</small>' : '') + '</dd></div>';
     }).join('') + '</dl>' : '';
   }
@@ -1080,15 +1081,34 @@
     /* A quotation in sections (layout 2, 2026-11-12) never adds the one-time
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
-    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : curLines(), on).map(function (x) {
+    /* The whole period's totals where the team ticked them (PERIOD TOTAL ON
+       A QUOTATION, 2026-11-27): the period under the monthly total, and the
+       total with the one-time fees (`r.all`) a block of its own. */
+    var pt = periodOf(tt), r = [];
+    window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : curLines(), on).forEach(function (x) {
       /* a row a term percentage where the lines differ (2026-11-15), in
          the PDF's words: a row whose lines run different months names
          none (2026-11-24) */
       var label = x[0] === 'term' ? termWords(x[4] ? x[4].months : tt.term, x[4] ? x[4].pct : tt.term_pct) : WORD[x[0]];
-      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1, near(x[1])] : [label, n2(x[1])];
+      r.push(x[2] ? [label, qc() + ' ' + n2(x[1]), 1, near(x[1])] : [label, n2(x[1])]);
+      if (pt && (x[0] === 'monthly' || x[0] === 'first')) {
+        var row = [ptWord('ptMonths', pt.months, on), qc() + ' ' + n2(pt.period), 0, near(pt.period)];
+        row.period = true;
+        r.push(row);
+      }
     });
+    if (pt && pt.total != null && tt.once) r.all = [ptWord('ptAll', pt.months, on), qc() + ' ' + n2(pt.total), 1, near(pt.total), ptWord('ptNote', pt.months, on)];
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1, near(tt.ads_total)]);
     return r;
+  }
+  /* The tick kept with the quotation's own totals; one made before it reads
+     its selection (the link's is the first quotation's). */
+  function periodOf(tt) { return window.ADspaceMoney.periodTotals(tt, Q && tt === Q.totals && !Q.revised ? Q.selection : null); }
+  /* English from ADspaceWords.line, one copy with the PDF; Chinese its own. */
+  function ptWord(k, n, on) {
+    if (lang === 'zh') return f(t()[k + (on || k === 'ptNote' ? '' : 'None')], { n: n });
+    var L = window.ADspaceWords.line;
+    return k === 'ptMonths' ? L.periodTotal(n, on) : k === 'ptAll' ? L.periodAll(on) : L.periodNote(n);
   }
   /* Where the prospect stands, one word from the database (2026-10-26):
      quote, ready, billing, billing_sent, letter, signed, welcome, expired.
@@ -1158,7 +1178,7 @@
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
-      totHtml(totalsRows(tt)) +
+      (function (rows) { return totHtml(rows) + (rows.all ? totHtml([rows.all], 'qs-tot-all') : ''); })(totalsRows(tt)) +
       /* Once sealed, the signed copy beside it is the one download. */
       (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n, i) { return '<span>' + noteH(n) + '</span>' + (i === adAt ? adHowBtn() : ''); }).join('') + '</div>' +
@@ -1636,11 +1656,15 @@
      as its acceptance page prints them (2026-11-12, review finding 1). */
   function agreedRows(q) {
     var tt = q.totals || {}, w = t(), out = [], first = true;
-    totalsRows(tt).forEach(function (x) {
+    var rows = totalsRows(tt);
+    rows.forEach(function (x) {
+      /* the whole period's figures as the PDF's acceptance page names them */
+      if (x.period) { out.push([x[0], x[1], 0, x[3]]); return; }
       if (!x[2]) return;
       out.push([x[0], x[1], 1, x[3]]);
       if (first && tt.month) out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
       first = false;
+      if (rows.all && x[0] === word(tt, 'oneOff')) out.push(rows.all.slice(0, 4));
     });
     if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment), 0, near(tt.commitment)]);
     return out;

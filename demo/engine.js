@@ -15328,6 +15328,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ext = { layout: 2, pay_days: Number(pay) };
         if (sel.title && sel.title.trim()) ext.title = sel.title.trim();
         if (sel.valid != null && sel.valid !== '') ext.valid_days = Number(sel.valid);
+
+        if (sel.period_total != null && typeof sel.period_total !== 'boolean') return { error: 'bad-period' };
+        if (sel.period_total === true) ext.period_total = true;
         return Object.assign(ext, { ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms });
       };
       if (name === 'quotation_create') {
