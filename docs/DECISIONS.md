@@ -12124,3 +12124,7 @@ The full gate on main 7158470 failed `priority`, `caption`, `analysis`, `hiringh
 ### 2026-11-27 · The letters' foot: the suite read the old verify address
 
 `pdfreal` failed "its head and foot at the template's places on every page" on the Letter of Offer and both client letters since #1493. The head and foot stood at the template's places; the check's last test read the verify line as `go.adspace.me/verify`, which #1493 retired for `digital.adspace.me/verify` (`ADSPACE_ORG.verifyUrl`). #1493 changed the Document ID check and missed this one. The suite now asks the new address; no letter moved. How it reached the gate: the address was changed without grepping every suite that reads it (`CLAUDE.md` §1 already requires it).
+
+### 2026-11-27 · A client-facing change is approved from screenshots before it merges
+
+The user, 26 Nov: a change any client page shows (the client portal, /creators/, /creator/, /review/, /script/, /quote/, /details/, /feedback/, /verify/, /supplier/, /careers/, /card/, the covers) is shown to them as screenshots and approved before its merge; a console change merges once tested. Written into `CLAUDE.md` §3 Guardrails. First held: session O's Content Review top redesign waits on the user's OK.

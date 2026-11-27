@@ -606,7 +606,7 @@ work is shaped to spend it on the fix, not on overhead.
   its screenshots are read for runs of text a component would carry.
 - "Do not state the obvious." "Be concise and direct." No explanatory copy.
 - "Every action needs a way back." "Same status throughout." "Prefilled, not
-  fixed." "A phone screenshot is reviewed, not just taken." "Intake asks for
+  fixed." "A phone screenshot is reviewed, not just taken." "A change a client-facing page shows is shown to the user as screenshots and approved before it merges; a console change merges once tested." "Intake asks for
   what is known on day one." "Not AI SaaS."
 - **Replies to the user are corporate, short and instructions first**: what
   changed, what it means for them, what they must do. No narration, no essays.
