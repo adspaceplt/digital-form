@@ -7254,7 +7254,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* A line's tax code, a column of its own reading the code (2026-11-27). */
 .qb-taxc .qb-tax { display: block; width: 100%; min-width: 0; margin-block: -6px; }
 @media (pointer: coarse) { .qb-taxc .qb-tax { margin-block: -9px; } }
-.qb-desc-acts .qb-tax { width: auto; margin-left: auto; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 /* The totals end on the lines' own right edge, inside the rows' padding
    (2026-11-07). */
@@ -7264,7 +7263,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    (2026-10-15): each field keeps a row of words' height, its target
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
-.qb-row { grid-template-columns: minmax(0, 1fr) 84px 64px 112px 84px 112px; grid-template-areas: "name tax qty rate mo amt"; align-items: center; }
+.qb-row { grid-template-columns: minmax(0, 1fr) 84px 64px 112px 84px 112px; grid-template-areas: "name tax qty rate mo amt"; align-items: start; }
 /* A line's inclusions run under its name, the figures staying on the
    name's line (2026-11-04). */
 .qb-row:has(> .qb-incl) { grid-template-areas: "name tax qty rate mo amt" "incl incl incl incl incl incl"; }
@@ -10038,3 +10037,43 @@ body.is-plain .topbar, :root[data-boot="out"] .topbar {
 .askpreview-main { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
 .askpreview-token { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .askpreview > .asknote { margin-top: 2px; }
+
+/* =========================================================================
+   THE CONFIDENTIALITY LINE (2026-11-27, the user's design): the console's
+   alone, above the rail and the sheet, signed in and out. No bar, no
+   ground, no hairline: the words on the page's own ground (the frame
+   signed in, the sign-in's white signed out), centred, the lock 5px before
+   them. It scrolls away with the page; every sticky offset and --head-h
+   are left as they were.
+   ========================================================================= */
+:root { --confline-band: 24px; --confline-h: var(--confline-band); }
+.confline {
+  margin: 0; padding: 0 16px; height: var(--confline-h);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 12px; line-height: var(--confline-h); color: var(--ink-mute);
+  white-space: nowrap; overflow: hidden;
+}
+.confline-ic { width: 11px; height: 11px; flex: 0 0 auto; }
+.confline-long, .confline-short { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.confline-short { display: none; }
+@media (max-width: 640px) {
+  .confline-long { display: none; }
+  .confline-short { display: inline; }
+}
+/* The page stays one screen tall where the section is short: the line
+   takes its height from the console's floor, never adds a scroll. */
+.confline:not([hidden]) ~ .console { min-height: calc(100vh - var(--confline-h)); }
+@supports (height: 100dvh) { .confline:not([hidden]) ~ .console { min-height: calc(100dvh - var(--confline-h)); } }
+@media (min-width: 861px) {
+  /* At a desk the rail keeps the window's whole height from the top (it
+     never scrolls from 720px tall, `tests/rail.js`): it rises beside the
+     line, and the line centres over the sheet, from the rail's edge to the
+     sheet's. */
+  /* Signed in, the line is the whole band over the sheet (24px line and
+     the sheet's 12px margin as one 36px band, the sheet's margin taken
+     off), so its words stand with 12px above and 12px below. */
+  :root:not(.has-tabbar):has(> body > .confline:not([hidden]) ~ .console:not([hidden])) { --confline-h: calc(var(--confline-band) + 12px); }
+  :root:not(.has-tabbar) .confline:not([hidden]):has(~ .console:not([hidden])) { padding: 0 12px 0 212px; }
+  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .sidebar { margin-top: calc(-1 * var(--confline-h)); }
+  :root:not(.has-tabbar) .confline:not([hidden]) ~ .console .console-main { margin-top: 0; min-height: calc(100dvh - 12px - var(--confline-h)); }
+}

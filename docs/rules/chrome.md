@@ -94,6 +94,14 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
   (`body.is-plain`); the grey frame is the signed-in console's alone (the
   user, 2026-11-13: "fully white would be ok"). Client pages stay as they
   are, never v3 (the user, 2026-11-13).
+- The confidentiality line (`#confLine`, `.confline`, the console's alone,
+  never a client page): the first thing in `admin/index.html`'s body,
+  signed in and out, 12px mute words after the lock on the page's own
+  ground, no bar, scrolling away; at a desk the rail rises beside it and it
+  centres over the sheet, signed in the whole 36px band over the sheet (its
+  words 12px from the top and from the sheet) (the rail keeps the window's height, `tests/rail.js`);
+  words `ADspaceWords.line.confidential(agencyName)` / `confidentialShort`
+  under 640px, English in every language setting (the user, 2026-11-27).
 - Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
   portal should follow the timezone of malaysia"): a device whose clock is
   not GMT+8 (Malaysia and Singapore share it) is told on every page that
@@ -121,7 +129,9 @@ Moved whole from `CLAUDE.md` §2, which keeps a one-line pointer here; read whol
 - A plain console page (sign-in, its code step, every cover, the
   whole-screen Upgrade, `admin/offline.html`) is one ground from the
   browser's toolbar down: its bar, its root and the `theme-color` meta take
-  `--card` in both themes, the signed-in console `--chrome-solid`, set from
+  `--card` in both themes; the signed-in console's meta is the frame
+  (`--frame`) in light and `--chrome-solid` in dark (the user, 2026-11-27),
+  the head script and `wearToolbar()` alike, set from
   the tokens by `wearToolbar()` on every `is-plain` or `is-maint` change,
   both ways (2026-11-25, `tests/covers.js`).
 - The bar is two families: the console's `.console-head` (`css/console.css`)

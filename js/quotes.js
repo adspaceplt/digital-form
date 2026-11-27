@@ -2794,13 +2794,6 @@
     return { cur: cur, opts: [['', own ? own.code + ' · ' + t.sst_pct + '%' : mine, own ? own.code : mine]]
       .concat(codes.map(function (c) { return [c.code, MON.taxCodeWord(c), c.code]; })) };
   }
-  /* On a phone the tax select ends the line's Rename row; at a desk it is
-     the Tax column (2026-11-27). The line is drawn again where the width
-     crosses. */
-  var NARROW = window.matchMedia ? window.matchMedia('(max-width: 560px)') : null;
-  if (NARROW && NARROW.addEventListener) NARROW.addEventListener('change', function () {
-    if (B && B.priced && !B.descKey && !B.nameKey && $('qbLines')) $('qbLines').innerHTML = table(B.priced);
-  });
   function taxWord(sel, full) {
     Array.prototype.forEach.call(sel.options, function (o) { o.textContent = o.getAttribute(full ? 'data-full' : 'data-short'); });
   }
@@ -2850,7 +2843,6 @@
         var tax = tx ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
           tx.opts.map(function (o) { return '<option value="' + esc(o[0]) + '" data-full="' + esc(o[1]) + '" data-short="' + esc(o[2]) + '"' + (o[0] && o[0] === tx.cur ? ' selected' : '') + '>' + esc(o[2]) + '</option>'; }).join('') +
           '</select>' : '';
-        var inActs = Boolean(tax && NARROW && NARROW.matches && B && B.descKey !== id);
         /* A Rate Card one-time item takes Months too (2026-11-12, the user):
            a number bills it monthly, empty or 0 keeps it one-time. */
         var flex = !ownLine(l) && (l.basis === 'once' || l.was_once);
@@ -2891,7 +2883,7 @@
               '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Changed</span>' : '') +
                 '<button type="button" class="btn btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
                 '<button type="button" class="btn btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
-                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + (inActs ? tax : '') + '<span class="qb-moves">' + move + '</span></div>') +
+                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
             '</div>';
         } else {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
@@ -2913,7 +2905,7 @@
           /* The head names Tax while any code is offered, so every line
              holds the cell, empty where no select applies (a custom line):
              a column on every row (2026-11-25). */
-          (tax && !inActs ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : hasTax ? '<span class="qb-taxc"></span>' : '') +
+          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : hasTax ? '<span class="qb-taxc"></span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' || flex ? 'Months' : '&nbsp;') + '</span>' +
