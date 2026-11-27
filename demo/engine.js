@@ -666,6 +666,9 @@
     public_holiday_save: 'p_day p_name p_was',
     public_holiday_delete: 'p_day',
     quote_website_read: 'p_key',
+    quotation_details_ask: 'p_id p_fields p_note', quote_details_mail_begin: 'p_id', quotation_not_quote: 'p_id p_reason',
+    quotation_match_take: 'p_id p_take', quote_details_submit: 'p_key p_answers',
+    quote_email_templates_get: '', quote_email_template_save: 'p_kind p_lang p_subject p_body p_button',
     quote_sign_code: 'p_key p_payload',
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
@@ -5972,10 +5975,28 @@ function cardSlugFree(name, self, email) {
     meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
     code: ['name', 'code', 'minutes', 'purpose'],
     feedback: ['contact name', 'client name', 'link'],
+    quote: ['contact name', 'brand', 'reference', 'details', 'reply by', 'link'],
     candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'previous time', 'new time', 'place', 'google meet notice',
       'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
 
+  function clientRep(c, purpose) {
+    if (!c) return null;
+    var ok = function (m) { return m && m.active !== false && !m.system && !m.removed_at; };
+    var m = purpose === 'sales' ? (DB.team_members || []).filter(function (x) { return x.id === c.sales_by; })[0]
+      : c.owner_id ? (DB.team_members || []).filter(function (x) { return x.id === c.owner_id; })[0]
+      : (DB.team_members || []).filter(function (x) { return ok(x) && String(c.owner || '').trim() && x.name === String(c.owner).trim(); })[0];
+    return ok(m) ? m : null;
+  }
+
+  function qdTpls() {
+    if (!DB.quote_email_templates) DB.quote_email_templates = [
+      { kind: 'details', lang: 'en', subject: 'Details needed for your quotation {reference}',
+        body: 'Dear {contact name},\n\nThank you for your quotation request for {brand}. To prepare your quotation, ADspace requires the following details:\n\n{details}\n\nPlease provide them by {reply by}.', button: 'Provide details' },
+      { kind: 'details', lang: 'zh', subject: '您的报价 {reference} 需补充资料',
+        body: '尊敬的{contact name}：\n\n感谢您为{brand}申请报价。为拟定报价，ADspace需要以下资料：\n\n{details}\n\n请于{reply by}前提供。', button: '提供资料' }];
+    return DB.quote_email_templates;
+  }
   function fbTpls() {
     if (!DB.feedback_email_templates) {
       var en = function (m) { return 'Dear {contact name},\n\nADspace would be grateful for your feedback on the services provided to {client name}. The form takes about ' + m + ' to complete.\n\nThis link is intended for {client name} only.'; };
@@ -13200,7 +13221,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         clients: DB.clients.filter(function (c) { return ids.indexOf(c.id) > -1; }).map(function (c) { return { id: c.id, name: c.name }; }),
         client: { id: pc.id, name: pc.name, legal_name: pc.legal_name || null, company_no: pc.company_no || null,
           billing_address: pc.billing_address || null, market: pc.market || 'MY',
-          sst_applies: pc.sst_applies === undefined ? true : pc.sst_applies, bill_market: billMarket(pc), stage: pc.stage, owner: pc.owner || null,
+          sst_applies: pc.sst_applies === undefined ? true : pc.sst_applies, bill_market: billMarket(pc), stage: pc.stage, owner: (clientRep(pc, 'service') || {}).name || null,
           industry: pc.industry || null, website: pc.website || null, logo_url: pc.logo_url || null },
         me: { id: meRow.id, name: meRow.name, email: meRow.email, lang: meRow.lang === 'zh' ? 'zh' : 'en' },
         contacts: mine.map(function (c) { return pick(c, ['id', 'name', 'role', 'phone', 'email', 'is_primary', 'portal_access']); }),
@@ -13546,7 +13567,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_(invoice|draft_)/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$|change_request$|preflight$)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_(invoice|draft_)/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$|change_request$|preflight$|details_submit$|details_mail_begin$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -13618,6 +13639,119 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (dd.getUTCDay() !== 0 && dd.getUTCDay() !== 6 && hol.indexOf(dd.toISOString().slice(0, 10)) < 0) days--;
         }
         return due;
+      };
+
+      var qtLinkLike = /(https?:|www\.|[a-z0-9-]+\.(com|net|org|info|biz|me|io|co|xyz|top|link|click|ly|my|sg|app|site|online|shop)(\b|\/))/i;
+      var qtIntakeCheck = function (p, fields) {
+        var has = function (g) { return fields.indexOf(g) >= 0; }, out = {};
+        if (has('registration')) {
+          var kind = String(p.kind || '').trim(), brn = String(p.brn || '').replace(/[\s-]+/g, ''), legal = String(p.legal || '').replace(/\s+/g, ' ').trim().toUpperCase();
+          if (['company', 'soleprop'].indexOf(kind) < 0) return { error: 'bad-kind' };
+          var yr = Number(brn.slice(0, 4));
+          if (!/^\d{12}$/.test(brn) || yr < 1900 || yr > Number(qtToday.slice(0, 4))) return { error: 'bad-brn' };
+          var code = brn.slice(4, 6);
+          if (kind === 'company' && ['01', '02', '04'].indexOf(code) < 0) return { error: code === '03' ? 'brn-kind' : 'bad-brn', kind: 'soleprop' };
+          if (kind === 'soleprop' && code !== '03') return { error: ['01', '02', '04'].indexOf(code) >= 0 ? 'brn-kind' : 'bad-brn', kind: 'company' };
+          if (legal.length < 2 || legal.length > 150 || qtLinkLike.test(legal)) return { error: 'bad-legal' };
+          out.kind = kind; out.brn = brn; out.legal = legal;
+        }
+        if (has('industry')) {
+          var ind = String(p.industry || '').trim();
+          if (!ind) return { error: 'need-industry' };
+          if (!(DB.industries || []).some(function (x) { return x.name === ind; })) return { error: 'bad-industry' };
+          out.industry = ind;
+        }
+        if (has('online')) {
+          var site = String(p.website || '').trim(), none = p.no_site === true || p.no_site === 'true';
+          var plat = String(p.platform || '').trim(), hdl = String(p.handle || '').trim().replace(/^@+/, '');
+          if (site) {
+            if (!/^https?:\/\//i.test(site)) site = 'https://' + site;
+            if (site.length > 200 || !/^https?:\/\/[^\s"'<>`\\\/]+\.[^\s"'<>`\\]{2,}$/i.test(site)) return { error: 'bad-site' };
+            none = false;
+          } else if (!none) return { error: 'need-site' };
+          if (hdl) {
+            if (['instagram', 'facebook', 'tiktok', 'xhs'].indexOf(plat) < 0) return { error: 'bad-platform' };
+            if (!/^[A-Za-z0-9._-]{1,60}$/.test(hdl)) return { error: 'bad-handle' };
+          } else if (none) return { error: 'need-handle' };
+          if (site) out.website = site;
+          out.no_site = none;
+          if (hdl) { out.platform = plat; out.handle = '@' + hdl; }
+        }
+        if (has('commence')) {
+          var st = String(p.commence || '').trim(), on = String(p.commence_on || '').trim();
+          if (['1_3', '3_6', '6_plus'].indexOf(st) < 0) return { error: 'bad-commence' };
+          if (on) {
+            var onD = /^\d{4}-\d{2}-\d{2}$/.test(on) ? new Date(on + 'T00:00:00Z') : null;
+            if (!onD || isNaN(onD) || onD.toISOString().slice(0, 10) !== on || on < qtToday || on > '2099-12-31') return { error: 'bad-start-date' };
+            out.commence_on = on;
+          }
+          out.commence = st;
+        }
+        return out;
+      };
+      var qtBrandKey = function (s) { return String(s || '').toLowerCase().replace(/[\s!-\/:-@\[-`{-~]+/g, ''); };
+      var qtWorkDays = function (n) {
+        var due = new Date(qtNow.getTime()), hol = (DB.public_holidays || []).map(function (h) { return h.day; });
+        while (n > 0) {
+          due = new Date(due.getTime() + 864e5);
+          var dd = new Date(due.getTime() + 8 * 3600e3);
+          if (dd.getUTCDay() !== 0 && dd.getUTCDay() !== 6 && hol.indexOf(dd.toISOString().slice(0, 10)) < 0) n--;
+        }
+        return due;
+      };
+      var qdState = function (q) {
+        if (!q.details_asked_at) return 'none';
+        if (q.details_at) return 'received';
+        var due = Date.parse(q.details_due), close = Number(appSet('quote_details_close_days', String(q.details_due).slice(0, 10)) || 7);
+        if (Date.now() > due + close * 864e5) return 'closed';
+        return Date.now() > due ? 'late' : 'asked';
+      };
+      var qdDay = function (d, zh) {
+        var my = new Date(d.getTime() + 8 * 3600e3), wd = my.getUTCDay();
+        return zh ? my.getUTCFullYear() + '年' + (my.getUTCMonth() + 1) + '月' + my.getUTCDate() + '日（星期' + '日一二三四五六'.charAt(wd) + '）'
+          : my.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][my.getUTCMonth()] + ' ' + my.getUTCFullYear() +
+            ' (' + ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][wd] + ')';
+      };
+      var qdLines = function (f, note, zh) {
+        var W = { registration: zh ? '商业注册号码（BRN）及注册名称' : 'Business Registration No. (BRN) and Registered Name', industry: zh ? '行业' : 'Industry',
+          online: zh ? '网站或社交媒体账号' : 'Website or social media account', commence: zh ? '计划开始时间' : 'Planned commencement' };
+        return f.map(function (k) { return W[k]; }).concat(note ? [note] : []).map(function (x) { return '• ' + x; }).join('\n');
+      };
+      var qdNamed = function (q) { var k = q.contact || {}; return ((k.salutation ? k.salutation + ' ' : '') + (k.name || '')).trim() || 'the prospect'; };
+      var qdTpl = function (q) { var zh = (q.contact || {}).lang === 'zh'; return qdTpls().filter(function (t) { return t.lang === (zh ? 'zh' : 'en'); })[0]; };
+      var qdFill = function (q, s) {
+        var zh = (q.contact || {}).lang === 'zh', a = q.details_ask || {};
+        var v = { 'contact name': qdNamed(q), brand: (q.contact || {}).brand || q.brand, reference: q.ref, details: qdLines(a.fields || [], a.note, zh),
+          'reply by': q.details_due ? qdDay(new Date(q.details_due), zh) : '', link: 'https://digital.adspace.me/quote/?q=' + q.access_key };
+        return String(s || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase(); return v[k] != null ? v[k] : m; });
+      };
+
+      var qdHold = function (cl, q, reg) {
+        if (!reg || !reg.brn) return;
+        if (String(cl.company_no || '').replace(/\D/g, '') === reg.brn && String(cl.legal_name || '').trim().toUpperCase() === reg.legal) return;
+        DB.client_detail_forms = DB.client_detail_forms || [];
+        if (DB.client_detail_forms.some(function (f) { return f.client_id === cl.id && !f.voided_at && !f.submitted_at && new Date(f.expires_at) > qtNow; })) return;
+        DB.client_detail_forms.push({ id: nid('df'), client_id: cl.id, access_key: Math.random().toString(36).slice(2, 10), created_at: qtNow.toISOString(),
+          expires_at: qtNow.toISOString(), submitted_at: qtNow.toISOString(), answers: { legal_name: reg.legal, company_no: reg.brn },
+          request_ref: q.request_ref || q.ref, quotation_id: q.id, used_at: null, voided_at: null });
+      };
+      var qdApply = function (q, v) {
+        var cl = DB.clients.filter(function (c) { return c.id === q.client_id; })[0];
+        if (!cl) return;
+        var own = ['lead', 'contacted', 'proposal'].indexOf(cl.stage) >= 0 && !q.match && new Date(cl.created_at) >= new Date(Date.parse(q.issued_at) - 60000) &&
+          !DB.quotations.some(function (o) { return o.client_id === cl.id && o.id !== q.id && o.issued_at < q.issued_at; });
+        if (!own) { qdHold(cl, q, v); return; }
+        if (v.industry && !String(cl.industry || '').trim()) cl.industry = v.industry;
+        if (v.website && !String(cl.website || '').trim()) cl.website = v.website;
+        if (v.commence) cl.commence = v.commence;
+        var col = { instagram: 'handle_ig', facebook: 'handle_fb', tiktok: 'handle_tiktok', xhs: 'handle_xhs' }[v.platform];
+        if (col && !String(cl[col] || '').trim()) cl[col] = v.handle;
+        if (v.brn) {
+          entSeed();
+          var taken = (DB.billing_entities || []).some(function (e) { return String(e.company_no || '').replace(/\D/g, '') === v.brn; });
+          if (!String(cl.company_no || '').replace(/\D/g, '') && !taken) { cl.legal_name = v.legal; cl.company_no = v.brn; entSeed(); }
+          else qdHold(cl, q, v);
+        }
       };
       var qtLog = function (subject, d) { DB.activity_log.unshift({ id: nid('al'), actor: qtMe.name, action: 'client.quotation', subject: subject, detail: d, created_at: new Date().toISOString() }); };
 
@@ -14156,6 +14290,102 @@ function opsCodeRange(cid, period, ty, src, seq) {
           kol: (cs.filter(function (x) { return x.spec.role === 'kol'; })[0] || {}).slug || null,
           translation: on('language').length > 0 })));
       }
+
+      if (/^quotation_details_ask$|^quote_details_mail_begin$|^quotation_not_quote$|^quotation_match_take$/.test(name)) {
+        if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
+        var dq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        if (!dq) return qtOk({ error: 'not-found' });
+        if (name !== 'quotation_match_take' && (dq.source !== 'website' || dq.removed_at)) return qtOk({ error: 'not-found' });
+        var dLog = function (d) { qtLog(dq.brand, dq.ref + d); };
+        if (name === 'quotation_details_ask') {
+          if (dq.released_at) return qtOk({ error: 'sent' });
+          if (dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+          var dAll = ['registration', 'industry', 'online', 'commence'], dF = args.p_fields || [];
+          if (dF.some(function (k) { return dAll.indexOf(k) < 0; })) return qtOk({ error: 'bad-fields' });
+          dF = dAll.filter(function (k) { return dF.indexOf(k) >= 0; });
+          var dNote = String(args.p_note || '').replace(/[ \t]+/g, ' ').trim() || null;
+          if (dNote && (dNote.length > 500 || qtLinkLike.test(dNote))) return qtOk({ error: 'bad-note' });
+          if (!dF.length && !dNote) return qtOk({ error: 'bad-fields' });
+          var dDue = qtWorkDays(Number(appSet('quote_details_days', qtToday) || 3));
+          Object.assign(dq, { details_ask: { fields: dF, note: dNote }, details_asked_at: qtNow.toISOString(), details_asked_by: qtMe.name,
+            details_due: dDue.toISOString(), details_at: null, details: null });
+          dLog(' · Details asked: ' + qdLines(dF, dNote, false).replace(/^• /, '').replace(/\n• /g, ', ') + ' · Reply by ' + qdDay(dDue, false).replace(/ \(.*$/, ''));
+          return qtOk({ ok: true, due: dq.details_due, key: dq.access_key, text: qdFill(dq, qdTpl(dq).body) + '\n\nhttps://digital.adspace.me/quote/?q=' + dq.access_key });
+        }
+        if (name === 'quote_details_mail_begin') {
+          if (window.__mailOff) return qtOk({ error: 'email-off' });
+          if (dq.released_at) return qtOk({ error: 'sent' });
+          var dS = qdState(dq);
+          if ((dS !== 'asked' && dS !== 'late') || dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+          if (dq.no_contact_at) return qtOk({ error: 'no-contact' });
+          var dTo = String((dq.contact || {}).email || '').trim().toLowerCase();
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dTo)) return qtOk({ error: 'no-email' });
+          var dT = qdTpl(dq);
+          var dRow = { id: nid('ce'), client_id: dq.client_id, kind: 'details', ref_id: dq.id, reference: dq.ref, contact_id: null, to_email: dTo,
+            subject: qdFill(dq, dT.subject), body: qdFill(dq, dT.body), sent_by: qtMe.id, created_at: qtNow.toISOString(), status: 'sending' };
+          (DB.client_emails = DB.client_emails || []).push(dRow);
+          return qtOk({ ok: true, id: dRow.id, to_email: dTo, to_name: qdNamed(dq), subject: dRow.subject, body: dRow.body, button: qdFill(dq, dT.button), key: dq.access_key });
+        }
+        if (name === 'quotation_not_quote') {
+          if (dq.released_at || dq.signed_at) return qtOk({ error: 'sent' });
+          if (args.p_reason != null) {
+            if (['incomplete', 'fit', 'duplicate', 'spam'].indexOf(args.p_reason) < 0) return qtOk({ error: 'bad-reason' });
+            if (dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+            dq.status = 'not_proceeding'; dq.not_quoted = args.p_reason;
+            dLog(' not quoted: ' + { incomplete: 'Incomplete details', fit: 'Not a fit', duplicate: 'Duplicate', spam: 'Spam' }[args.p_reason]);
+            return qtOk({ ok: true });
+          }
+          var dClosed = qdState(dq) === 'closed';
+          if (dq.status !== 'not_proceeding' && !dClosed) return qtOk({ error: 'open' });
+          if (dq.status === 'not_proceeding') dq.status = dq.requested_at ? 'requested' : 'sent';
+          dq.not_quoted = null;
+          if (dClosed) { dq.details_ask = null; dq.details_asked_at = null; dq.details_due = null; }
+          if (dq.reply_due && Date.parse(dq.reply_due) < Date.now()) dq.reply_due = qtReplyBy().toISOString();
+          dLog(' reopened');
+          return qtOk({ ok: true });
+        }
+        if (!dq.match) return qtOk({ error: 'no-match' });
+        if (args.p_take === 'brand' || args.p_take === 'lead') {
+          if (dq.match_taken) return qtOk({ error: 'taken' });
+          if (args.p_take === 'brand') {
+            entSeed();
+            var dEnt = dq.match.entity || ((DB.client_entities || []).filter(function (l) { return l.client_id === dq.match.client && l.is_main; })[0] || {}).entity_id;
+            if (!dEnt) return qtOk({ error: 'no-entity' });
+            return rpc('client_entity_add', { p_client: dq.client_id, p_entity: dEnt, p_values: null }).then(function (r) {
+              var d = (r && r.data) || {};
+              if (d.error && d.error !== 'taken') return { data: d, error: null };
+              dq.match_taken = 'brand'; dLog(' · Added as a new brand of ' + (dq.match.name || 'the client'));
+              return qtOk({ ok: true });
+            });
+          }
+          dq.match_taken = 'lead'; dLog(' · Kept as a new lead');
+          return qtOk({ ok: true });
+        }
+        if (args.p_take == null) {
+          if (dq.match_taken !== 'lead') return qtOk({ error: 'taken' });
+          dq.match_taken = null; dLog(' · Matches existing client again');
+          return qtOk({ ok: true });
+        }
+        return qtOk({ error: 'bad-take' });
+      }
+      if (name === 'quote_details_submit') {
+        if (!/^[a-z0-9]{8}$/.test(String(args.p_key || ''))) return qtOk({ error: 'not-found' });
+        var sw = DB.quotations.filter(function (q) { return q.access_key === args.p_key && !q.removed_at; })[0];
+        if (!sw) return qtOk({ error: 'not-found' });
+        if (sw.released_at) return qtOk({ error: 'sent' });
+        var sS = qdState(sw);
+        if (sS === 'received') return qtOk({ error: 'received' });
+        if (sw.status === 'not_proceeding' || (sS !== 'asked' && sS !== 'late')) return qtOk({ error: 'closed' });
+        var sv = qtIntakeCheck(args.p_answers || {}, (sw.details_ask || {}).fields || []);
+        if (sv.error) return qtOk(sv);
+        sw.details = sv; sw.details_at = qtNow.toISOString(); sw.contact = Object.assign({}, sw.contact || {}, sv); sw.reply_due = qtReplyBy().toISOString();
+        qdApply(sw, sv);
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation portal', action: 'client.quotation', subject: sw.brand,
+          detail: sw.ref + ' · Details received from ' + qdNamed(sw), created_at: new Date().toISOString() });
+        qtTell(sw.client_id, 'quote.details', 'Details received · ' + ((sw.contact || {}).brand || sw.brand),
+          sw.ref + ' · ' + ((sw.contact || {}).name || '') + ' · Send by ' + qdDay(new Date(sw.reply_due), false), sw.id + ':' + Date.parse(sw.details_at));
+        return qtOk({ ok: true });
+      }
       if (name === 'quote_website_create') {
         if (!window.__quoteFn) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_website_create' } });
         var wc = args.p_contact || {}, widem = String(args.p_idem || '').trim();
@@ -14194,6 +14424,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!wonD || isNaN(wonD) || wonD.toISOString().slice(0, 10) !== won || won < wNowMY || won > '2099-12-31') return qtOk({ error: 'bad-start-date' });
         }
         var wonWord = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
+
+        var wreg = qtIntakeCheck(wc, ['registration', 'industry', 'online', 'commence']);
+        if (wreg.error) return qtOk(wreg);
+        wi = wreg.industry; wstart = wreg.commence; won = wreg.commence_on || null;
+        var wcm = String(wc.comments || '').replace(/\r/g, '').trim() || null;
+        if (wcm && wcm.length > 1000) return qtOk({ error: 'bad-comments' });
         if (wc.consent !== true) return qtOk({ error: 'consent' });
 
         var wchk = qtWebCheck(args.p_sel, args.p_sel && typeof args.p_sel === 'object' ? args.p_sel.seen : null);
@@ -14208,25 +14444,47 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wp = qtPrice(qtTax(qtCard.snapshot, null), wsel);
         if (wp.error) return qtOk(wp);
         if (!(wp.lines || []).length) return qtOk({ error: 'nothing-priced' });
-        var wcl = DB.clients.filter(function (c) {
-          return ['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0 && (DB.client_contacts || []).some(function (k) {
-            return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
-        })[0];
 
-        var wknown = false;
-        if (!wcl) {
-          var whits = DB.clients.filter(function (c) {
-            return ['lead', 'contacted', 'proposal'].indexOf(c.stage) < 0 && (DB.client_contacts || []).some(function (k) {
+        entSeed();
+        var wkey2 = qtBrandKey(wb), wmatch = null, wcl = null;
+        var wbrn = DB.clients.filter(function (c) {
+          return (DB.client_entities || []).some(function (l) { return l.client_id === c.id && (DB.billing_entities || []).some(function (e) {
+            return e.id === l.entity_id && String(e.company_no || '').replace(/\D/g, '') === wreg.brn; }); });
+        });
+        wcl = wbrn.filter(function (c) { return qtBrandKey(c.name) === wkey2; })
+          .sort(function (a, b) { return (['lead', 'contacted', 'proposal'].indexOf(b.stage) >= 0) - (['lead', 'contacted', 'proposal'].indexOf(a.stage) >= 0); })[0] || null;
+        if (!wcl && wbrn.length) {
+          var wm = wbrn.slice().sort(function (a, b) { return (b.stage === 'active') - (a.stage === 'active'); })[0];
+          var wml = (DB.client_entities || []).filter(function (l) { return l.client_id === wm.id && (DB.billing_entities || []).some(function (e) {
+            return e.id === l.entity_id && String(e.company_no || '').replace(/\D/g, '') === wreg.brn; }); })[0];
+          wmatch = { client: wm.id, name: wm.name, entity: wml ? wml.entity_id : null, by: 'brn' };
+        }
+        var whold = !!wcl || !!wmatch || (DB.billing_entities || []).some(function (e) { return String(e.company_no || '').replace(/\D/g, '') === wreg.brn; });
+        var wByContact = function (lead) {
+          return DB.clients.filter(function (c) {
+            return (['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0) === lead && (DB.client_contacts || []).some(function (k) {
               return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
           });
-          if (whits.length === 1) { wcl = whits[0]; wknown = true; }
+        };
+        if (!wcl && !wmatch) {
+          var wl = wByContact(true)[0];
+          if (wl) { if (qtBrandKey(wl.name) === wkey2) wcl = wl; else wmatch = { client: wl.id, name: wl.name, by: 'contact' }; }
         }
+
+        if (!wcl && !wmatch) {
+          var whits = wByContact(false);
+          if (whits.length === 1) { if (qtBrandKey(whits[0].name) === wkey2) wcl = whits[0]; else wmatch = { client: whits[0].id, name: whits[0].name, by: 'contact' }; }
+        }
+        var wknown = !!wcl && ['lead', 'contacted', 'proposal'].indexOf(wcl.stage) < 0;
         var wnew = false;
         if (!wcl) {
           var wbase = wb.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'client', wslug = wbase, wk = 1;
           while (DB.clients.some(function (c) { return String(c.slug || '').toLowerCase() === wslug; })) { wk++; wslug = wbase + '-' + wk; }
           wcl = { id: nid('cl'), name: wb, stage: 'lead', industry: wi, source: 'website', market: /^65/.test(ww) ? 'SG' : 'MY', slug: wslug,
-            deal_note: 'Quotation requested on the website.', commence: wstart, owner: null, access_token: Math.random().toString(36).slice(2, 10),
+            deal_note: wcm || 'Quotation requested on the website.', commence: wstart, owner: null, website: wreg.website || null,
+            handle_ig: wreg.platform === 'instagram' ? wreg.handle : null, handle_fb: wreg.platform === 'facebook' ? wreg.handle : null,
+            handle_tiktok: wreg.platform === 'tiktok' ? wreg.handle : null, handle_xhs: wreg.platform === 'xhs' ? wreg.handle : null,
+            legal_name: whold ? null : wreg.legal, company_no: whold ? null : wreg.brn, access_token: Math.random().toString(36).slice(2, 10),
             created_at: new Date().toISOString(), stage_since: new Date().toISOString(), stage_log: [] };
           DB.clients.unshift(wcl); wnew = true;
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
@@ -14246,13 +14504,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wrow = { id: nid('qt'), ref: wreq, request_ref: wreq, confirmed_at: null, confirmed_by: null, revises: null, client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
           selection: wsel, lines: wp.lines, totals: Object.assign({ layout: 2, pay_days: 7, ads: [], ads_total: 0 }, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
-          contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
+          contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }, wreg, wcm ? { comments: wcm } : {}),
+          access_key: wkey, billing: null, requested_at: null, match: wmatch, match_taken: null,
           idem: widem, removed_at: null, removed_by: null,
 
           released_at: null, released_by: null, reply_due: qtReplyBy().toISOString(),
 
           commence_on: won };
         DB.quotations.push(wrow);
+        if (wnew && !whold) entSeed();
+        if (whold) qdHold(wcl, wrow, wreg);
         quoteActivity(wrow, 'quotation.requested', wrow.ref + ' \u00b7 ' + (wnew ? 'New lead' :
           ['lead', 'contacted', 'proposal'].indexOf(wcl.stage) >= 0 ? 'Existing lead' : 'Existing client') +
           (wrow.version ? ' \u00b7 Rate Card v.' + wrow.version : ''), wrow.contact);
@@ -14261,7 +14522,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wbody =
           wrow.ref + ' · ' + (wp.totals.month ? 'RM ' + wp.totals.month.incl.toFixed(2) + ' per month incl. SST' : 'one-time') + ' · ' + wn +
           (won ? ' · Preferred start date ' + wonWord(won)
-            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · Send by';
+            : wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') +
+          (wmatch ? ' · Matches existing client ' + wmatch.name : '') + ' · Send by';
         if (wknown) {
 
           var wpic = (DB.team_members || []).filter(function (m) {
@@ -14363,7 +14625,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if ('plan' in p) {
           var ps = svc(p.plan);
           if (typeof p.plan !== 'string' || !ps || !ps.spec || ps.spec.role !== 'plan' || ps.rate == null) return { error: 'bad-plan' };
-          if (p.plan !== v.plan) { delete v.mix; delete v.extra; }
+          if (p.plan !== v.plan) {
+
+            var was = svc(v.plan);
+            if (was && was.spec && was.spec.ads && !ps.spec.ads) delete v.budget;
+            delete v.mix; delete v.extra;
+          }
           v.plan = p.plan;
         }
         if ('mix' in p) { if (!/^[0-9]$/.test(String(p.mix))) return { error: 'bad-selection' }; v.mix = String(p.mix); }
@@ -14871,11 +15138,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var wsh = wq, wn2 = 0, wnx;
           while (wn2++ < 20 && (wnx = DB.quotations.filter(function (q) { return q.replaces === wsh.id && !q.removed_at; })
             .sort(function (a, b) { return a.issued_at < b.issued_at ? 1 : -1; })[0])) wsh = wnx;
-          var wrep = wqc && String(wqc.owner || '').trim() && DB.team_members.filter(function (m) {
-            return m.active && !m.system && !m.removed_at && m.name === wqc.owner; })[0];
 
-          if (!wrep && wqc && wqc.sales_by) wrep = DB.team_members.filter(function (m) {
-            return m.active && !m.system && !m.removed_at && m.id === wqc.sales_by; })[0];
+          var wrep = clientRep(wqc, 'sales');
 
           var wUnsent = wsh.source === 'website' && !wsh.released_at;
 
@@ -14896,6 +15160,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 String(k.email || '').trim().toLowerCase() === String((wq.contact || {}).email || '').trim().toLowerCase(); });
             } else wstage = wdoc.signed_at ? 'signed' : 'letter';
           } else if (wq.status === 'not_proceeding' || wsh.status === 'not_proceeding') wstage = 'closed';
+
+          else if (wsh.source === 'website' && !wsh.released_at && qdState(wsh) === 'closed') wstage = 'closed';
+          else if (wsh.source === 'website' && !wsh.released_at && (qdState(wsh) === 'asked' || qdState(wsh) === 'late')) wstage = 'details';
           else if (wsh.source === 'website' && !wsh.released_at) wstage = 'review';
 
           else if (wsh.signed_at) {
@@ -14917,6 +15184,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
             version: wUnsent ? null : wsh.version, issued_at: wsh.issued_at,
             valid_until: wUnsent ? null : wsh.valid_until, lines: wUnsent ? null : wsh.lines,
             totals: wUnsent ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
+            details_at: wstage === 'review' ? wsh.details_at || null : null,
+            ask: wstage === 'details' ? (function () {
+              var fl = (wsh.details_ask || {}).fields || [], k = wsh.contact || {}, kn = {}, put = function (g, keys) { if (fl.indexOf(g) >= 0) keys.forEach(function (x) { if (k[x] != null) kn[x] = k[x]; }); };
+              put('registration', ['kind', 'brn', 'legal']); put('industry', ['industry']); put('online', ['website', 'no_site', 'platform', 'handle']); put('commence', ['commence', 'commence_on']);
+              return { fields: fl, note: (wsh.details_ask || {}).note || null, due: wsh.details_due, known: kn };
+            })() : null,
             attention: wq.contact && wq.contact.name, status: woffer ? 'offer' : wsh.status, stage: wstage,
             details_key: wstage === 'billing' ? wform.access_key : null, portal: wportal,
             proceed_at: wq.proceed_at || null, proceed_due: wq.proceed_due || null,
@@ -15770,7 +16043,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         mlItems.push(Object.assign(mlBase(e), { source: 'supplier', kind: e.purpose, supplier_id: e.supplier_id || null,
           supplier: sp ? sp.name : null, supplier_code: sp ? sp.code : null, reference: dc ? dc.serial : null }));
       });
-      var mlMay = function (k) { return k === 'quotation' ? opsAllowed('clients.quotes', 'view') : k === 'offer' ? opsAllowed('clients.documents', 'view')
+      var mlMay = function (k) { return k === 'quotation' || k === 'details' ? opsAllowed('clients.quotes', 'view') : k === 'offer' ? opsAllowed('clients.documents', 'view')
         : k === 'letter' ? (opsAllowed('register.documents', 'view') || opsAllowed('clients.documents', 'view')) : false; };
       (DB.client_emails || []).filter(function (e) { return mlIn(e) && mlMay(e.kind) && mlSeen(e.client_id); }).forEach(function (e) {
         var ck = (DB.client_contacts || []).filter(function (x) { return x.id === e.contact_id; })[0];
@@ -16181,8 +16454,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (dcl.stage === 'past') return dfNo('not_found');
         if (name === 'client_details_read') {
 
-          var drep = String(dcl.owner || '').trim() && DB.team_members.filter(function (m) {
-            return m.active && !m.system && !m.removed_at && m.name === dcl.owner; })[0];
+          var drep = clientRep(dcl, 'sales');
           return dfOk({ brand: dcl.name, expires_at: df.expires_at,
             rep: drep ? { name: drep.name, title: drep.designation || null, whatsapp: drep.card_on !== false && drep.card_mobile !== false && drep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(drep.mobile) : null } : null });
         }
@@ -16308,6 +16580,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: JSON.parse(JSON.stringify(heOut)), error: null });
     }
 
+    if (name === 'quote_email_templates_get' || name === 'quote_email_template_save') {
+      var qeNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return qeNo(window.__refuseRpc[name]);
+      if (!opsMe() || !opsGranted('team.settings', 'work')) return qeNo('denied');
+      var qeRows = qdTpls();
+      if (name === 'quote_email_templates_get') return Promise.resolve({ data: { ok: true, rows: JSON.parse(JSON.stringify(qeRows)) }, error: null });
+      var qeS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), qeB = String(args.p_body || '').replace(/\r/g, '').trim(),
+        qeN = String(args.p_button || '').replace(/\s+/g, ' ').trim();
+      if (qeS.length < 2 || qeS.length > 200) return qeNo('bad-subject');
+      if (qeB.length < 2 || qeB.length > 5000) return qeNo('bad-body');
+      if (qeN.length < 2 || qeN.length > 40) return qeNo('bad-button');
+      var qeBad = tplCheck(qeS + '\n' + qeB + '\n' + qeN, 'quote');
+      if (qeBad) return tplNo(qeBad);
+      var qe = qeRows.filter(function (x) { return x.kind === args.p_kind && x.lang === args.p_lang; })[0];
+      if (!qe) return qeNo('not-found');
+      if (qe.subject !== qeS || qe.body !== qeB || qe.button !== qeN) {
+        DB.activity_log.unshift({ id: nid('al'), actor: opsMe().name, action: 'team.changed', subject: 'Email templates',
+          detail: 'Ask for details (' + (qe.lang === 'zh' ? '中文' : 'English') + ') · ' + [qe.subject !== qeS ? 'Subject: ' + qe.subject + ' → ' + qeS : '',
+            qe.body !== qeB ? 'Message' : '', qe.button !== qeN ? 'Button: ' + qe.button + ' → ' + qeN : ''].filter(Boolean).join(' · '), created_at: new Date().toISOString() });
+        qe.subject = qeS; qe.body = qeB; qe.button = qeN; qe.updated_at = new Date().toISOString(); qe.updated_by = opsMe().name;
+      }
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'feedback_email_templates_get' || name === 'feedback_email_template_save') {
       var feNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return feNo(window.__refuseRpc[name]);
@@ -17395,7 +17691,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         cdr.status = args.p_status;
         var cdc = (DB.clients || []).filter(function (x) { return x.id === cdr.client_id; })[0];
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'client.edited', subject: cdc ? cdc.name : 'Client',
-          detail: ({ quotation: 'Quotation ', offer: 'Letter of Offer ' }[cdr.kind] || '') + cdr.reference +
+          detail: ({ quotation: 'Quotation ', offer: 'Letter of Offer ', details: 'Details request for ' }[cdr.kind] || '') + cdr.reference +
             (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed (not confirmed) to ' : ' not emailed to ') +
             ((function () { var k = (DB.client_contacts || []).filter(function (x) { return x.client_id === cdr.client_id && String(x.email || '').trim().toLowerCase() === String(cdr.to_email || '').trim().toLowerCase(); })[0]; return k ? cmNamed(k) : 'the client'; })()) +
             (cdr.cc_email ? ' with a copy to the finance email' : ''), created_at: new Date().toISOString() });
@@ -21018,6 +21314,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'supplier-mail' && opts && opts.body && opts.body.quoteAsk === true) {
+          window.__quoteAskMail = { quotation: opts.body.quotation };
+          if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          return rpc('quote_details_mail_begin', { p_id: opts.body.quotation }).then(function (r) {
+            var b = r.data || {};
+            if (b.error) return { data: b, error: null };
+            window.__quoteAskSent = b;
+            var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
+            return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
+              return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
+            });
+          });
+        }
         if (name === 'supplier-mail' && opts && opts.body && opts.body.feedback === true) {
           var fmb = opts.body;
           window.__fbMailAsked = { client: fmb.client, kind: fmb.kind };

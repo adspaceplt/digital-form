@@ -62,3 +62,12 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
 - 2026-11-27, `copyscan` (the same release): a word-table line holding a
   semicolon (`fullBrand` in `js/quote.js`) is not listed, so the copy
   review never reads it. Held here until it ships.
+- 2026-11-27, `crm` (QUOTE INTAKE's affected run, 112 suites at once):
+  "a written next action still wins" failed once under the full run's load
+  and passes alone on the same commit; the check reads the next step before
+  the record repaints from the seeded touch. Held here until its wait is
+  fixed at the cause.
+- 2026-11-27, `settings` (the same release's re-run): "Sign-in and codes:
+  its Settings row counts its templates" read an empty count once (its
+  5-second wait for the row's line) and passes alone on the same commit.
+  Held here until its wait is fixed at the cause.

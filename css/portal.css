@@ -9544,6 +9544,11 @@ body.is-maint { overflow: hidden; }
    figure. A stepper's − and + are the small control inside it. */
 .qs-chip .qs-text, .qs-pick:not(:has(small)) .qs-text, .qs-stepper > span:first-child { font-size: var(--ctl-text); }
 .qs-step, .qs-foot { max-width: 560px; margin: 0 auto; }
+/* /quote/ at 760, fields paired; one column on a phone (QUOTE INTAKE). */
+.qs-step.qs-wide, .qs-foot.qs-wide { max-width: 760px; }
+.qs-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.qs-duo > [hidden] { display: none; }
+@media (max-width: 640px) { .qs-duo { grid-template-columns: minmax(0, 1fr); } }
 .qs-step { display: grid; gap: 16px; }
 .qs-progress { display: grid; gap: 6px; font-size: 13px; color: var(--ink-mute); }
 .qs-track { height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }

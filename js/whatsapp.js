@@ -343,7 +343,7 @@
      Every email the portal sent in the month, from the logs its senders
      keep, each row at its own record's access. Resend's word on each, and a
      signing code's own state (its delivery is not reported back). */
-  var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
+  var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter', details: 'Details request',
     approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
     creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved',
     hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_held: 'Decision date', hiring_moved: 'Decision date changed',

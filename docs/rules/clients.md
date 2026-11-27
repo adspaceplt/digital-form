@@ -381,7 +381,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     ⋯ Reset link and Close link, each asked; `client_details_close` ends the
     open form now, `no-link`, filed, `2026-10-31-client-details-link-closed.sql`)
     to `/details/?k=` with no sign-in, open
-    `details_form_days` (14, Settings: Clients, Details form). The client's page (in steps since 2026-11-25: Company, Billing, Billing contact, then Review and submit, and once sent the received page with the client's account manager, `rep` of `client_details_read`, as `quote_website_read` reads it; DESIGN.md §4) reads the
+    `details_form_days` (14, Settings: Clients, Details form). The client's page (in steps since 2026-11-25: Company, Billing, Billing contact, then Review and submit, and once sent the received page with the client's Sales by as Your representative, `rep` of `client_details_read`, `client_rep(…, 'sales')` as `quote_website_read` reads it, none where unassigned; DESIGN.md §4) reads the
     brand and closing day alone (`client_details_read`) and sends the
     answers once (`client_details_submit`: registered name in capitals, BRN,
     old BRN, TIN, SST no., billing address, finance email, the billing
