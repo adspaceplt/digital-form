@@ -77,7 +77,7 @@
   var STAGE = { lead: 'Lead', contacted: 'Contacted', proposal: 'Proposal sent', active: 'Active', paused: 'Paused', past: 'Past' };
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var REPORT_KIND = { social: 'Accounts Report', ads: 'Advertising Report' };
-  var CHANNEL = { google_meet: 'Google Meet', onsite: 'On site', zoom: 'Zoom', other: 'Other' };
+  var CHANNEL = window.ADspaceWords.line.meetChannel;
   var CAMP_STATE = { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' };
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function monthName(p) {

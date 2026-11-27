@@ -762,6 +762,15 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the team's Meeting message filled from it (`ADspaceOps.meetingMessage`,
   the one builder the month's card uses too; no content month, so no
   agenda line), copied to paste into the client's WhatsApp group.
+- A client's content meetings (2026-11-27, the user): each month's meeting
+  set in My Work is a Meeting row of Calls and visits, read with the
+  entries on every load (`ops_engagements` under its own policy, never
+  written into `client_touches`), so a moved, cleared or cancelled one
+  follows; the latest day first among the entries; Content meeting · its
+  month, My Work · led by, its time, length and place (`W.line.meetChannel`),
+  the link while ahead and online, no ⋯ and Open month (the client's
+  months, `view=months&wc=`, at My Work View); the part's count and the
+  Overview's three (the meeting glyph) hold them (`tests/callsmeet.js`).
 - Automatic emails and Automatic WhatsApp (`2026-11-10-automatic-sends-switch.sql`;
   the user, 2026-11-10: "automatic only"): two switches in Settings,
   Messages (`auto_email_on`, `auto_whatsapp_on`, seeded On; `auto_send_set`,

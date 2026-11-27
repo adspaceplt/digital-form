@@ -7352,7 +7352,7 @@
       done: mine.filter(function (t) { return t.completed_at; }).length
     };
   }
-  var CHANNEL_WORD = { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Other' };
+  var CHANNEL_WORD = window.ADspaceWords.line.meetChannel;
   function wordOf(list, key) {
     var hit = list.filter(function (x) { return x[0] === key; })[0];
     return hit ? hit[1] : sentence(key);
