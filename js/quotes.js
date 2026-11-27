@@ -1030,8 +1030,8 @@
      the ⋯ later. */
   function notQuote(q, ctx) {
     window.ADspaceConfirm.ask({
-      title: 'Cancel quote', tone: 'warn', go: 'Cancel quote', wait: true,
-      body: q.ref + ' will close, and the prospect\'s link will read that the request has been closed.',
+      title: 'Cancel quote', tone: 'warn', go: 'Cancel quote', cancel: 'Keep quote', wait: true,
+      body: q.ref + ' will close, and the prospect\'s link will show the request as closed.',
       fields: [{ name: 'why', label: 'Reason', choices: [['incomplete', NOT_QUOTED.incomplete], ['fit', NOT_QUOTED.fit],
         ['duplicate', NOT_QUOTED.duplicate], ['spam', NOT_QUOTED.spam]], value: 'incomplete' }]
     }, function (v) {
@@ -1039,7 +1039,7 @@
         var d = r.data || {};
         if (r.error || d.error) return ASK_SAID[d.error] || said(r.error || d.error);
         ctx.reload(function () {
-          ctx.undo(q.ref + ' cancelled.', function () { reopen(q, ctx, true); }, $('qtMsg'));
+          ctx.undo(q.ref + ' not quoted.', function () { reopen(q, ctx, true); }, $('qtMsg'));
         });
         return '';
       }).catch(function (e) { return said(e); });
