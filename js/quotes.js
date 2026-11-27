@@ -829,7 +829,7 @@
       var who = (q.contact && q.contact.name) || q.brand;
       window.ADspaceConfirm.ask({ title: 'Send quotation?',
         body: q.ref + ' will be shown to ' + who + ' on the quotation link and sent on WhatsApp. It is valid for ' +
-          (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
+          validFor(q) + ' days from today.',
         go: 'Send' }, function () {
         if (btn) btn.disabled = true;
         ctx.db.rpc('quotation_send', { p_id: q.id }).then(function (r) {
@@ -848,7 +848,7 @@
       var whom = (q.contact && q.contact.name) || q.brand;
       window.ADspaceConfirm.ask({ title: 'Publish quotation?',
         body: q.ref + ' will be shown to ' + whom + ' on the quotation link. No WhatsApp message will be sent. It is valid for ' +
-          (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
+          validFor(q) + ' days from today.',
         go: 'Publish' }, function () {
         if (btn) btn.disabled = true;
         ctx.db.rpc('quotation_publish', { p_id: q.id }).then(function (r) {
@@ -2507,6 +2507,13 @@
   /* Valid for (2026-11-12): the days a quotation stands, chosen in Build
      quote; it opens on the Business setting where that is one of them. */
   var VALID_DAYS = [14, 30, 45, 60, 90];
+  /* The days a quotation stands once sent or published: its own Valid
+     for, else the Business setting (quotation_release reads the same). */
+  function validFor(q) {
+    var v = Number(q && q.selection && q.selection.valid);
+    if (VALID_DAYS.indexOf(v) > -1) return v;
+    return Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30;
+  }
   function validDefault(at) {
     var d = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days', at) : 30) || 30;
     return VALID_DAYS.indexOf(d) > -1 ? d : 30;

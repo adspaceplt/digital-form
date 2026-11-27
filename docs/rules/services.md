@@ -145,7 +145,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
   `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines
-  and totals, valid for the days Build quote chose (`valid_days`: 14, 30, 45, 60 or 90, `bad-valid`), else `quote_valid_days` (30, Tax and terms), from its Date;
+  and totals, valid for the days Build quote chose (`valid_days`: 14, 30, 45, 60 or 90, `bad-valid`), else `quote_valid_days` (30, Tax and terms), from its Date; a website request, the same days from the day it is sent or published (`quotation_release`; a later Save dates it from that day), and the Send and Publish questions name that figure;
   never edited. The Services pane lists them above the lines
   (`#crmQuotes`; the Overview opens on them while any stand): the state
   worked out on read (Valid until, Expired, Ready to proceed, Revised, Letter of Offer requested, Not
