@@ -2815,7 +2815,7 @@
   function totDl(tot, cls, noteCls) {
     var note = tot.filter(function (x) { return x[3] === 'periodNote'; })[0];
     return '<dl class="' + cls + '">' + tot.filter(function (x) { return x !== note; }).map(function (x) {
-      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+      return '<div' + (x[2] ? ' class="is-total' + (x[3] === 'periodAll' ? ' is-all' : '') + '"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>' + (note ? '<p class="' + noteCls + '">' + esc(note[0]) + '</p>' : '');
   }
   function totRows(d) {
