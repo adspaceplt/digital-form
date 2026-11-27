@@ -470,7 +470,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   the person in charge (`quote.signed`). The link then reads Accepted
   (`accepted`), Welcome once reviewed and Active. The colleague who
   prepared it checks the entries (each company field correctable, kept
-  from and to) and submits to a reviewer they pick
+  from and to; none where Bukku holds the client's billing, as
+  `bukku_link_get` `held` reads it: the company drawn as words, no pen,
+  its head reading Kept in Bukku., nothing sent) and submits to a reviewer they pick
   (`quotation_reviewers`: Clients: Quotations Full Access or an admin,
   never themselves; `quotation_submit`); the reviewer, or an admin in
   their place after asking, approves (`quotation_review`: Billing filled

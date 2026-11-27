@@ -355,6 +355,12 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  /* An address (an email, a web address) drawn as words, escaped: a line
+     that must wrap it breaks after its @ or a dot, never inside a word
+     (2026-11-27; the value's column is `overflow-wrap: break-word`). */
+  W.addr = function (s) {
+    return W.esc(s).replace(/([@.\/])(?=[^\s])/g, '$1<wbr>');
+  };
   /* A note, escaped, one sentence a line (2026-11-25); never split after a short form (No., Dr.). */
   var SHORT = /(?:^|[\s(])(?:No|Dr|Mr|Mrs|Ms|Mdm|Prof|Sdn|Bhd|e\.g|i\.e)\.$/i;
   W.note = function (s) {

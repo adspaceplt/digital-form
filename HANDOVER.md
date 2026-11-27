@@ -103,6 +103,7 @@ G finished (#1499 261126.f4e8, #1501 261126.3a98) and is archived. Open from G: 
 | Hotfix: a quotation is valid for its own Valid for, website requests included, from the day it is published; the PDF's TERMS states the same days (migration `2026-11-27-quote-valid-own-days.sql`, applied and read back). ADP/QT2611-B02 (REQ2611-SBD) was published at 08:58, before it, and still reads valid until 27 Dec: correcting it to 11 Dec waits on the coordinator | 261127.e415 |
 | Email templates: each two-language email (Service rating, Performance review, Ask for details) is one row with an English · 中文 strip in its editor; a missing 中文 reads 中文 not written; no database change | (this PR) |
 | A website request's ⋯ in three groups (Download PDF, Show quotation link, Ask for details · Edit, Cancel quote · Delete), Delete under the delete rule (migration `2026-11-27-quote-request-deleted.sql`, applied and read back); every quotation reference pressed to copy (`ADspaceCopy.ref`, the Register's too); Preview keeps its leaving mark in a sheet's foot | (this PR) |
+| Facts: an address keeps its line (two facts, the value the rest; it breaks only after @ or a dot); a quotation's check reads a Bukku-held company as words under Kept in Bukku. | (this PR) |
 
 Also done:
 - all 19 S1 edge functions deployed and read back;
