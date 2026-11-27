@@ -188,7 +188,7 @@ begin
         when 'hiring_decision_days' then 'Decision time'
         when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
         when 'wa_repeat_hours' then 'WhatsApp sent again'
-        when 'quote_wa_day' then 'Website quotations on WhatsApp'
+        when 'quote_wa_day' then 'Quotation portal on WhatsApp'
         when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
         when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
         when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'

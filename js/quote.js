@@ -129,14 +129,14 @@
       /* How ad spend works (2026-11-27): an explainer, no choice; the
          figures are Settings' (`ad_prepay_pct`, `ad_credit_fee_pct`). */
       ads: {
-        lead: 'The advertising budget is paid in one of two ways.',
+        lead: 'The advertising budget is paid in one of the following ways.',
         own: 'Your own ad account',
         ownPts: ['Meta charges the ads directly to your own credit card.',
           'The account is linked to the ADspace Meta business portfolio, so ADspace runs and manages the campaigns.'],
         pre: 'Prepaid through ADspace',
-        prePts: ['Each month\'s advertising budget is paid to ADspace before the ads run.', 'The first month is paid before the ads start.',
+        prePts: ['The first month\'s advertising budget is paid to ADspace before the ads start.',
           'Each following month is requested when about {pct}% of the current budget is spent.',
-          'If payment is not received, the ads will be paused until it is.'],
+          'If payment is not received, the ads will be paused until payment is received.'],
         termH: 'Billed with the invoice',
         term: 'Where the advertising budget is billed with the invoice on the quotation\'s payment terms instead of prepaid, an Agency Credit Term Fee of {fee}% will be added to the advertising budget.',
         eg: 'For example, a budget of {c}\u00a0{b} carries a fee of {c}\u00a0{x}.', close: 'Close'
@@ -304,12 +304,12 @@
       download: '下载', pdfFail: 'PDF 未能生成，请重试。', chat: 'WhatsApp 咨询',
       adHow: '广告费用如何支付',
       ads: {
-        lead: '广告预算可通过以下两种方式支付。',
+        lead: '广告预算可通过以下方式之一支付。',
         own: '您自己的广告账户',
         ownPts: ['Meta 直接从您自己的信用卡扣除广告费用。',
           '该账户将关联至 ADspace 的 Meta 商务资产组合，由 ADspace 投放并管理广告活动。'],
         pre: '通过 ADspace 预付',
-        prePts: ['每月广告预算须于广告投放前支付予 ADspace。', '首月预算须于广告开始投放前支付。',
+        prePts: ['首月广告预算须于广告开始投放前支付予 ADspace。',
           '当月预算消耗约{pct}%时，ADspace 将请款下月预算。',
           '如未收到款项，广告将暂停投放，直至收款为止。'],
         termH: '随发票结算',
