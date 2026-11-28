@@ -3096,12 +3096,12 @@
       if (!state.client || state.client.id !== forId) return;
       state.links = state.links && state.links.length ? state.links : [{ failed: true }];
       showPane(pane, false);
-      var box = $('crmLinks');
+      var box = $('crmShortLinks');
       if (box) ADspaceState.failLine(box, 'Short links', e && e.message, loadShortLinks);
     });
   }
   function paintShortLinks() {
-    var box = $('crmLinks'), rows = (state.links || []).filter(function (l) { return !l.failed; });
+    var box = $('crmShortLinks'), rows = (state.links || []).filter(function (l) { return !l.failed; });
     var n = $('crmLinkN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
     if (!box || !rows.length) return;
