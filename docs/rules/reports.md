@@ -215,7 +215,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     (`report_partners`, `report_partner_clients` and `sm_reports.partner_id`
     were dropped on 2026-10-24, `2026-10-24-unused-tables-dropped.sql`, with
     `activity_viewers`, `ops_kpi_targets` and `video_script_reviews`). Each brand says whose mark heads
-    its reports (`client_brands.logo`, `partner` by default or `adspace`;
+    its reports (`client_brands.logo`, `partner` by default or `agency`, the agency's own mark, never its name (2026-11-28; a page reads any key but `partner` as the agency's);
     `client_brand_logo`, the brand's ⋯ Use ADspace logo / Use {client} logo,
     never asks, filed from and to; the row's `ADspace logo` chip;
     `2026-10-07-white-label-brand-logo.sql`). `sm_report_snapshot` sends that client (its name and wide

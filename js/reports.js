@@ -631,7 +631,7 @@
       var c = x[0] && !x[0].error && x[0].data;
       var bs = (x[1] && x[1].data && x[1].data.brands) || [];
       var b = bs.filter(function (y) { return y.id === brand; })[0];
-      return c && c.white_label && !(b && b.logo === 'adspace') ? c : null;
+      return c && c.white_label && !(b && b.logo && b.logo !== 'partner') ? c : null;
     }).catch(function () { return null; });
   }
   /* Meta checks (2026-10-10; the user: Meta's figures "not really tally",

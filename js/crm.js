@@ -4726,7 +4726,9 @@
       bs.forEach(function (b) {
         var row = document.createElement('div');
         row.className = 'wl-brand' + (b.active ? '' : ' is-off');
-        var own = b.logo === 'adspace';
+        /* The agency's own mark: any key but the partner's (the one stored
+           before 2026-11-28 too). */
+        var own = !!b.logo && b.logo !== 'partner';
         row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">' + AGENCY.trading_name + ' logo</span>' : '') +
           (b.active ? '' : '<span class="chip is-off">Inactive</span>') + '</span>' +
           (can || canMeta ? '<span class="team-act">' +
@@ -4747,7 +4749,7 @@
         /* Whose mark heads the brand's reports (2026-10-07); reversible, so
            it never asks. A published version keeps the mark it went out with. */
         row.querySelector('[data-a="logo"]').addEventListener('click', function () {
-          db.rpc('client_brand_logo', { p_id: b.id, p_logo: own ? 'partner' : 'adspace' }).then(function (q) {
+          db.rpc('client_brand_logo', { p_id: b.id, p_logo: own ? 'partner' : 'agency' }).then(function (q) {
             var d = (q && q.data) || {};
             if ((q && q.error) || d.error) {
               msg('crmBrandNote', d.error === 'denied' ? 'You do not have permission to change white label settings. Please ask an admin.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');

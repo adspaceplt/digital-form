@@ -154,6 +154,7 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_cancel: 'p_source p_id',
     mail_senders_read: '',
     agency_profile_read: '',
     mail_boxes_set: 'p_values',
@@ -5978,6 +5979,32 @@ function cardSlugFree(name, self, email) {
     return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
       { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
   }
+
+  function undoQueue(src, table, key, logId, close) {
+    var secs = Number(window.__undoSeconds) || 0;
+    if (!(secs > 0)) return null;
+    var row = (DB[table] || []).filter(function (x) { return x.id === logId; })[0];
+    if (!row) return null;
+    row[key] = 'queued';
+    DB.mail_queue = DB.mail_queue || [];
+    var me = opsMe() || {};
+    var q = { id: nid('mq'), source: src, table: table, key: key, log_id: logId, status: 'queued', queued_by: me.id || null,
+      send_at: new Date(Date.now() + secs * 1000).toISOString(), created_at: new Date().toISOString() };
+    DB.mail_queue.push(q);
+    persist();
+    setTimeout(function () {
+      var x = (DB.mail_queue || []).filter(function (y) { return y.id === q.id; })[0];
+      var r = x && (DB[table] || []).filter(function (y) { return y.id === logId; })[0];
+      if (!x || x.status !== 'queued' || !r) return;
+      x.status = 'sending'; r[key] = 'sending';
+      persist();
+      window.__undoSent = (window.__undoSent || []).concat([{ source: src, id: logId }]);
+      Promise.resolve(close(window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent')).then(function () {
+        x.status = r[key] === 'sending' ? 'unknown' : r[key]; persist();
+      });
+    }, secs * 1000);
+    return { source: src, id: logId, seconds: secs, send_at: q.send_at };
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -8871,7 +8898,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         partner: (function () {
           var lc = r.label_client && DB.clients.filter(function (x) { return x.id === r.label_client && x.white_label; })[0];
           var lb = r.brand_id && (DB.client_brands || []).filter(function (x) { return x.id === r.brand_id; })[0];
-          if (lb && lb.logo === 'adspace') return null;
+          if (lb && lb.logo && lb.logo !== 'partner') return null;
           return lc ? { name: lc.name, logo: lc.report_logo || null } : null;
         }()),
 
@@ -9906,16 +9933,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
     if (name === 'client_brand_logo') {
       if (!me || !opsGranted('reports.whitelabel', 'work')) return { error: 'denied' };
-      if (['partner', 'adspace'].indexOf(a.p_logo) < 0) return { error: 'bad-logo' };
+      var blTo = a.p_logo;
+      if (['partner', 'agency'].indexOf(blTo) < 0) return { error: 'bad-logo' };
       var blB = (DB.client_brands || []).filter(function (x) { return x.id === a.p_id; })[0];
       if (!blB) return { error: 'not-found' };
       var blWas = blB.logo || 'partner';
-      if (blWas === a.p_logo) return { ok: true };
+      if (blWas !== 'partner') blWas = 'agency';
+      if (blWas === blTo) return { ok: true };
       var blC = (DB.clients || []).filter(function (c) { return c.id === blB.client_id; })[0] || {};
-      var blW = function (k) { return k === 'adspace' ? 'ADspace' : blC.name; };
-      blB.logo = a.p_logo; blB.updated_at = now;
+      var blW = function (k) { return k === 'agency' ? ((window.ADspaceAgency || {}).trading_name || '') : blC.name; };
+      blB.logo = blTo; blB.updated_at = now;
       DB.activity_log.unshift({ id: nid('al'), actor: me.name || me.email, action: 'client.brand', subject: blC.name,
-        detail: 'White label brand ' + blB.name + ' logo: ' + blW(blWas) + ' \u2192 ' + blW(a.p_logo), created_at: now });
+        detail: 'White label brand ' + blB.name + ' logo: ' + blW(blWas) + ' \u2192 ' + blW(blTo), created_at: now });
       return { ok: true };
     }
 
@@ -16117,7 +16146,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
               subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
               created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
-              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, sent_by_id: e.sent_by || null, client_id: e.client_id };
           }) });
       }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
@@ -16231,6 +16260,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }
+    if (name === 'mail_cancel') {
+      var mcMe = opsMe();
+      if (!mcMe) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mq = (DB.mail_queue || []).filter(function (x) { return x.source === args.p_source && x.log_id === args.p_id; })[0];
+
+      var mqc = !mq && args.p_source === 'system' && (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+      if (mqc) {
+        if (mqc.outcome_mail === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+        if (mqc.outcome_mail !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+        mqc.outcome_mail = 'cancelled'; mqc.outcome_mail_due = null; persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!mq) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (mq.queued_by !== mcMe.id && !opsAllowed('whatsapp', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (mq.status === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+      if (mq.status !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+      mq.status = 'cancelled'; mq.cancelled_by = mcMe.id;
+      var mr = (DB[mq.table] || []).filter(function (x) { return x.id === mq.log_id; })[0];
+      if (mr) { mr[mq.key] = 'cancelled'; if (mq.table === 'feedback_requests' && !mr.closed_at) { mr.closed_at = new Date().toISOString(); mr.closed_reason = 'withdrawn'; } }
+      DB.activity_log.unshift({ id: nid('al'), actor: mcMe.name, action: 'email.sent', subject: 'Email', detail: 'Email · email to the recipient cancelled before it was sent', created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -16245,7 +16297,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
       var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
       var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
-        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        sent_by: mlWho(e.sent_by, e.by), sent_by_id: e.sent_by || null, created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
         delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
         client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null,
         ref_id: e.ref_id || null, again_of: e.again_of || null }; };
@@ -19469,10 +19521,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, by_id: e.sent_by || null, source: 'supplier', document: e.document }; })
             .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
               var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
-              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, by_id: e.sent_by || null, source: 'manual', document: e.attachment };
             }))
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
@@ -20946,6 +20998,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome' && !opts.body.byHand && !opts.body.againOf) {
+
+          var hq0 = opts.body;
+          return rpc('hiring_outcome_mail_queue', { p_id: hq0.candidateId }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: { error: d.error || 'denied' }, error: null };
+            return { data: { ok: true, queued: { source: 'system', id: hq0.candidateId, seconds: d.seconds || 60, send_at: d.due } }, error: null };
+          });
+        }
         if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
           var ho = opts.body;
           return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
@@ -21596,6 +21657,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
                 typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var iq = undoQueue('invoice', 'invoice_emails', 'status', b.id, function (st) { invDone(b.id, st, st === 'sent' ? 're_' + b.id : null, window.__mailFail || null); });
+              if (iq) { persist(); return bkR({ ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid, queued: iq }); }
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
               window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
@@ -21783,6 +21846,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_to: nb.to, p_ccs: nb.ccs || [], p_subject: nb.subject, p_body: nb.body, p_attachment: nb.file ? nb.file.name : null, p_idem: nb.key }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var nq = undoQueue('manual', 'team_emails', 'status', b.id, function (st) { return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (nq) return { data: { ok: true, id: b.id, to: b.to, to_name: b.to_name || null, cc: b.cc, queued: nq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
@@ -21797,6 +21862,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__quoteAskSent = b;
+            var aq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (aq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: aq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21811,6 +21878,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
+            var fq = undoQueue('feedback', 'feedback_requests', 'mail_status', b.id, function (st) { return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (fq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: fq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21827,6 +21896,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var cq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (cq) return { data: { ok: true, id: b.id, queued: cq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
@@ -21843,6 +21914,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: mb.subject, p_body: mb.body, p_again: mb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var sq = undoQueue('supplier', 'supplier_emails', 'status', b.id, function (st) { return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (sq) return { data: { ok: true, id: b.id, queued: sq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
