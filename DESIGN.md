@@ -255,6 +255,24 @@ Moved to `docs/rules/copy.md` (Copy and How copy is drafted), printed on the fir
     under them at a desk's 212px rail (`.sidebar-foot`, each a `.railrow`,
     not a section).
   - A group whose every route is withheld hides its label.
+- Five layers, each with one job (the user, 2026-11-28; `docs/MAP.md`):
+  every new table, column, function, screen or document is placed in one
+  before it is built, and the PR's Test plan names it.
+  1. Identity: a record links to another by its uuid with a foreign key and
+     a stated `on delete`; a name, email, code or number is display only,
+     never a key. A person is found by their account (`auth.uid()`), a
+     colleague by `team_members.id`; a "by whom" field keeps the id beside
+     the name it shows.
+  2. Agency: every agency value (name, legal details, domains, mailboxes,
+     numbering, tax, country) is read from the agency profile through its
+     one read path, never typed.
+  3. Content: agency wording a person reads (letters, terms, emails,
+     WhatsApp, HR documents, consent lines, guides, AI prompts; English and
+     中文) is a template, never a literal in code.
+  4. Business chain: a section states what feeds it and what it feeds
+     (`docs/MAP.md` §B), linked by id, never by a copied value or a date
+     match.
+  5. Presentation: tokens and components only (global > parent > child).
 - Everything hangs off a client. Only active clients appear in Content Review,
   campaigns and reports.
 - The sale:
