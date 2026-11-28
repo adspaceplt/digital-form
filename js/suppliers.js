@@ -1029,9 +1029,14 @@
 
   /* Emails sent to the supplier (supplier_emails_of), newest first, with
      what Resend last said of each. */
-  var MAIL_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
+  var MAIL_STATE = { queued: ['Queued', 'is-warn'], cancelled: ['Cancelled', 'is-off'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], failed: ['Failed', 'is-danger'], bounced: ['Bounced', 'is-danger'],
     complained: ['Marked as spam', 'is-danger'], unknown: ['Not confirmed', 'is-warn'] };
+  function mayCancel(e) {
+    if (e.status !== 'queued') return false;
+    var me = window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null;
+    return Boolean((me && e.by_id && me.id === e.by_id) || may('whatsapp', 'manage'));
+  }
   function emails(id) {
     var box = $('supEmailList');
     if (!box) return;
@@ -1045,8 +1050,21 @@
         var st = MAIL_STATE[e.status] || [e.status, ''];
         return '<div><dt>' + esc(day(e.created_at)) + '</dt><dd>' + esc(e.subject) +
           ' <span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-          '<span class="sup-mail-meta">' + (e.to ? esc(window.ADspaceWords.line.sendTo(e.to, e.cc)) : window.ADspaceWords.line.addrGone) + (e.document && e.purpose === 'message' ? ' · ' + esc(e.document) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
+          '<span class="sup-mail-meta">' + (e.to ? esc(window.ADspaceWords.line.sendTo(e.to, e.cc)) : window.ADspaceWords.line.addrGone) + (e.document && e.purpose === 'message' ? ' · ' + esc(e.document) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span>' +
+          (mayCancel(e) ? ' <button class="btn btn-sm" type="button" data-cancel="' + esc(e.id) + '" data-src="' + esc(e.source || 'supplier') + '">' + esc(window.ADspaceWords.line.mailCancel) + '</button>' : '') + '</dd></div>';
       }).join('') + '</dl>';
+      /* Undo send (2026-11-28): a queued email is cancelled on its row until it goes. */
+      Array.prototype.forEach.call(box.querySelectorAll('[data-cancel]'), function (b) {
+        b.addEventListener('click', function () {
+          b.disabled = true;
+          rpc('mail_cancel', { p_source: b.getAttribute('data-src'), p_id: b.getAttribute('data-cancel') }).then(function (x) {
+            var dd = x.data || {};
+            if (x.error || dd.error) { b.disabled = false; msg('supRecMsg', dd.error === 'sent' ? window.ADspaceWords.line.mailTooLate : said(x), 'err'); emails(id); return; }
+            msg('supRecMsg', window.ADspaceWords.line.mailCancelled, 'ok');
+            emails(id);
+          });
+        });
+      });
     });
   }
   function offerMail(s) {
@@ -1135,8 +1153,10 @@
       return window.ADspaceAPI.fnRefusal(r).then(function (code) {
         go.disabled = false;
         if (!code && r.data && r.data.ok) {
+          var q = r.data.queued, rec = state.rec.id, who = (p.to && (p.to.name || p.to.email)) || '';
           shutMail();
-          msg('supRecMsg', 'Email sent.', 'ok');
+          msg('supRecMsg', q ? '' : 'Email sent.', 'ok');
+          if (q) window.ADspaceAdmin.mailUndo(q, who, $('supRecMsg'), function () { emails(rec); });
           emails(state.rec.id);
           return;
         }

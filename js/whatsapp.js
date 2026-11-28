@@ -352,7 +352,7 @@
     hiring_doc: 'Employment document', hiring_code: 'Verification code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };
   var ML_STATE = { queued: ['Queued', 'is-warn'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
-    failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
+    failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'], cancelled: ['Cancelled', 'is-off'],
     requested: ['Code sent', 'is-live'], used: ['Signed', 'is-ok'], expired: ['Expired', 'is-off'] };
   /* Who each email is from: the sender of its section (EVERY EMAIL IN
      MESSAGES, 2026-11-17), as mail_log answers them (`senders`). */
@@ -521,11 +521,16 @@
       (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
         : mlNoWords(x) ? '<p class="emptyline">The message is not kept, as it contained ' + (/^invite/.test(x.kind) ? 'a sign-in link' : x.source === 'signing' ? 'a signing code' : 'a code') + '.</p>'
         : '<p class="emptyline">' + window.ADspaceWords.line.bodyGone + '</p>') +
-      /* A New email sent again opens filled, its file to attach again. */
-      (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
+      /* Undo send (2026-11-28): a queued email is cancelled here until it
+         goes, by its sender or at Messages Full Access. */
+      (mlCanCancel(x) ? '<div class="row acts"><button class="btn" type="button" data-a="cancel">' + esc(window.ADspaceWords.line.mailCancel) + '</button></div>' +
+          '<p class="msg" id="emlMsg" role="status" hidden></p>'
+      : x.source === 'manual' && x.to_email && may('whatsapp', 'work')
         ? '<div class="row acts"><button class="btn" type="button" data-a="again" data-gate="email">Send again</button></div>'
         : mlCanAgain(x) ? '<div class="row acts"><button class="btn" type="button" data-a="resend" data-gate="email">Send again</button></div>' +
             '<p class="msg" id="emlMsg" role="status" hidden></p>' : '');
+    var cn = $('emlSheetBody').querySelector('[data-a="cancel"]');
+    if (cn) cn.addEventListener('click', function () { mlCancel(x, cn); });
     var rs = $('emlSheetBody').querySelector('[data-a="resend"]');
     if (rs) rs.addEventListener('click', function () { mlResend(x, rs); });
     var ag = $('emlSheetBody').querySelector('[data-a="again"]');
@@ -551,6 +556,28 @@
     });
     emlSheetWire();
     window.ADspaceSheet.show($('emlSheet'), { opener: opener || null });
+  }
+  function mlCanCancel(x) {
+    if (x.status !== 'queued') return false;
+    var me = bridge().me ? bridge().me() : null;
+    return Boolean((me && x.sent_by_id && me.id === x.sent_by_id) || may('whatsapp', 'manage'));
+  }
+  var CANCEL_SAID = { sent: window.ADspaceWords.line.mailTooLate, denied: 'You do not have permission to cancel this email. Please ask an admin.',
+    'not-found': 'This email no longer exists.' };
+  function mlCancel(x, btn) {
+    var msg = $('emlMsg');
+    var say = function (t, tone) { msg.hidden = !t; msg.className = 'msg' + (tone ? ' ' + tone : ''); msg.textContent = t || ''; };
+    btn.disabled = true;
+    rpc('mail_cancel', { p_source: x.source === 'manual' ? 'manual' : x.source, p_id: x.id }).then(function () {
+      btn.hidden = true;
+      say(window.ADspaceWords.line.mailCancelled, 'ok');
+      mlLoad();
+      try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { cancelled: true } })); } catch (z) {}
+    }).catch(function (e) {
+      btn.disabled = false;
+      say(CANCEL_SAID[e && (e.code || e.message)] || (e && e.message && /function|schema cache|does not exist/i.test(e.message) ? SAID['needs-update'] : CANCEL_SAID.sent), 'err');
+      mlLoad();
+    });
   }
   /* Send again (2026-11-18, the user: "maybe a resend button? so failed
      email could be resent"): an email that did not arrive goes again
@@ -614,10 +641,12 @@
       var go = x.source === 'creator' ? rpc('creator_email_again', { p_id: x.id })
         : hk ? fn('hiring-mail', body)
         : fn('invite-member', { email: x.to_email, name: x.to_name || '', kind: x.kind === 'invite_client' ? 'client' : 'team', againOf: x.id });
-      go.then(function () {
+      go.then(function (d) {
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(btn, false);
         btn.hidden = true;
-        say('Sent again.', 'ok');
+        /* Undo send (2026-11-28): a hiring email sent again waits its window. */
+        say(d && d.queued ? '' : 'Sent again.', 'ok');
+        if (d && d.queued && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) window.ADspaceAdmin.mailUndo(d.queued, x.to_name || x.to_email, msg, mlLoad);
         mlLoad();
       }).catch(function (e) {
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(btn, false);
@@ -1601,7 +1630,13 @@
         done();
         window.ADspaceSheet.close();
         mlLoad();
-        try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party } })); } catch (x) {}
+        /* Undo send (2026-11-28): the bar under the Email tab's line where
+           the email was written there; else the record that opened it draws
+           it (`adspace:email-sent`). */
+        var who = d.to_name || $('nemTo').selectedOptions && $('nemTo').selectedOptions[0] && $('nemTo').selectedOptions[0].textContent || to;
+        var here = d.queued && $('emlLine') && $('emlPane') && !$('emlPane').hidden && $('emlPane').offsetParent ? $('emlLine') : null;
+        if (here && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) window.ADspaceAdmin.mailUndo(d.queued, who, here, mlLoad);
+        try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party, queued: here ? null : d.queued || null, to: who } })); } catch (x) {}
       }).catch(function (e) { done(); neMsg(neSaid(e), 'err'); });
     });
   }
