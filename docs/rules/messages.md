@@ -379,6 +379,31 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   service role's alone) before touching a queue, else 401; `wa_kick` and
   `push_kick` send it, once a transaction, so a statement queueing forty
   rows wakes each sender once (`2026-10-19-wake-calls-carry-a-secret.sql`).
+- Undo send (`2026-11-28-undo-send.sql`; the user, 2026-11-28: "Clients
+  too… a nice gesture of could revert or cancel within a minute"): every
+  email a colleague sends, by hand or by a step (supplier-mail's supplier,
+  client document, New email, feedback request and Ask for details;
+  bukku-sync's invoice email and overdue reminder; hiring-mail's step
+  emails, by hand and sent again, a decision's included), is built whole
+  and queued (`_shared/mail.ts` `queue`, `mail_queue_put`, the service
+  role's) for `send_undo_seconds` (Business setting, 60), its own row
+  reading Queued; supplier-mail's drain (`mail_queue_claim`,
+  `mail_queue_close` through the sender's own close as the colleague who
+  queued it; pg_cron `mail-queue` every minute wakes it only while one is
+  due: the delay is the window to the window and a minute) sends it.
+  The screen that sent it draws `ADspaceAdmin.mailUndo` under its line the
+  whole window (Email to {name} sends in 1 minute. · Undo; several at once
+  one bar); the Email log's sheet and a supplier's Emails offer Cancel email
+  to its sender or at Messages Full Access (`mail_cancel`, `sent` once the
+  drain took it: Not cancelled. The email has already been sent.); the
+  row, the Email log and the Activity record read Queued, Cancelled and
+  Sent. A cancelled email is never Sent recently, a feedback request's is
+  withdrawn, a decision reopened cancels its email. Immediate, never
+  queued: codes, sign-in links and invitations, what a client or visitor
+  sends themselves, and what the portal sends by itself (reminders it
+  sends on its schedule, expiry emails, creator emails, alerts). A queue
+  that cannot take an email sends it at once (`tests/undosend.js`,
+  `tests/undosendsql.js`).
 - Every email goes with a plain-text copy beside its HTML, and the sending
   domain (`sc.adspace.me`) has Resend's click tracking off: an email of HTML
   alone, or links rewritten through a tracker, reads to Gmail as bulk mail

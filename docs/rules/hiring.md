@@ -396,16 +396,14 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     refusal's too; `mail_sender('careers')`, never typed), and every
     candidate email replies to it: the HR mailbox (hr@adspacestudios.com,
     Settings, Messages: Reply-to mailboxes; the user, 2026-11-20);
-  - Keep in talent pool and Not proceed email the candidate only once their
-    Undo's 30 seconds pass with no Undo (the user; this act's own window,
-    `ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8): the email
-    is queued in the database, never timed in the tab (2026-11-24, the
-    review: a tab shut in those seconds sent nothing;
-    `hiring_outcome_mail_queue`, due 30 seconds on, read Queued; sent by
-    hiring-mail's drain, woken every minute while one is due,
-    `hiring_outcome_mail_claim` and `_close`); Reopen (Undo, filed only
-    once the database holds it) cancels it, and a decision reopened is
-    refused the email (`no-email`); the decision is asked first, and the
+  - Keep in talent pool and Not proceed email the candidate only once the
+    Undo window passes (`send_undo_seconds`, the one queue every email a
+    colleague sends waits in, `docs/rules/messages.md` Undo send; the
+    page asks hiring-mail `outcome`, which queues it, never timed in the
+    tab; read Queued); Reopen (Undo, filed only once the database holds it)
+    cancels it, the drain never sending a decision reopened meanwhile, and a
+    decision reopened is refused the email (`no-email`); the decision is
+    asked first, and the
     Google Meets of the interviews it cancelled (`hiring_decide` `meets`)
     are removed after it, never before;
   - Proceed promises no offer: the page reads ADspace will contact you
