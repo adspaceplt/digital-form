@@ -287,13 +287,13 @@
               });
             });
         }));
-      if (may('reports')) jobs.push(db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)')
+      if (may('reports')) jobs.push(db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients!sm_reports_client_id_fkey(name)')
         .eq('reviewer_id', m.id).eq('status', 'review').limit(20).then(function (r) { out.reports_to_review = (r.data || []).map(reportRow); }));
       return Promise.all(jobs).then(function () { return out; });
     },
     list_reports: function (a) {
       if (!may('reports')) return Promise.resolve(noAccess('reports', 'Reports'));
-      var q = db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)');
+      var q = db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients!sm_reports_client_id_fkey(name)');
       if (a.client_id) q = q.eq('client_id', a.client_id);
       if (a.status && a.status !== 'any') q = q.eq('status', a.status);
       if (a.period && /^\d{4}-\d{2}$/.test(a.period)) {
@@ -964,7 +964,7 @@
       card: function (a) {
         if (!may('reports', 'work')) return Promise.reject(new Error('You do not have permission to mark reports as sent. Please ask an admin.'));
         if (!validDay(a.sent_on)) return Promise.reject(new Error('Enter a valid date.'));
-        return db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)').eq('id', a.report_id).maybeSingle()
+        return db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name, clients!sm_reports_client_id_fkey(name)').eq('id', a.report_id).maybeSingle()
           .then(function (r) {
             if (!r.data) throw new Error('That report could not be found.');
             if (r.data.status !== 'published') throw new Error('Only a published report can be marked as sent.');

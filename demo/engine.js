@@ -1121,9 +1121,17 @@
 
   var ENG_CHECKS = ['onboarding', 'pre_ads'];
   var TWO_WAYS = [
-    ['ops_task_assignees', 'team_members'],
-    ['ops_work_sessions', 'team_members']
+    ['ops_task_assignees', 'team_members', ['ops_task_assignees_team_member_id_fkey', 'ops_task_assignees_assigned_by_fkey']],
+    ['ops_work_sessions', 'team_members', ['ops_work_sessions_team_member_id_fkey', 'ops_work_sessions_corrected_by_fkey']],
+
+    ['sm_reports', 'clients', ['sm_reports_client_id_fkey', 'sm_reports_label_client_fkey']],
+    ['client_contacts', 'clients', ['client_contacts_client_id_fkey', 'clients_bill_contact_id_fkey']]
   ];
+
+  function embedCols(sel, t) {
+    var m = new RegExp('(^|[\\s,])' + t + '(?:![a-z0-9_]+)?\\s*\\(([^)]*)\\)').exec(sel);
+    return m ? m[2] : null;
+  }
 
   var REVIEW_COLS = ['handle_ig', 'handle_fb', 'handle_tiktok', 'handle_xhs', 'logo_url', 'passcode',
     'access_token', 'review_hidden', 'drive_folder', 'updated_at'];
@@ -1245,9 +1253,9 @@
 
       if ((table === 'client_contacts' || table === 'batches' || table === 'documents' || table === 'client_documents' ||
            table === 'client_requests' || table === 'sm_reports' || table === 'video_scripts' || table === 'client_touches' || table === 'ops_engagements') &&
-          /(^|[\s,])clients\s*\(/.test(sel)) {
+          embedCols(sel, 'clients') != null) {
         var sc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
-        o.clients = sc ? pick(sc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
+        o.clients = sc ? pick(sc, embedCols(sel, 'clients')) : null;
       }
 
       if (table === 'links' && /(^|[\s,])clients\s*\(/.test(sel)) {
@@ -1529,13 +1537,13 @@
 
     api.select = function (s) {
       sel = s || '*';
-      var embedC = sel.match(/(^|[\s,])clients\s*\(([^)]*)\)/);
+      var embedC = embedCols(sel, 'clients');
 
       if (table === 'team_members' && (/^\s*\*\s*$/.test(sel) ||
           /(^|[\s,])(access|mobile|access_until|access_until_time|expired_at|removed_at|erased_at|card_email|last_seen_at)\s*(,|$)/.test(sel))) {
         api.__err = { code: '42501', message: 'permission denied for table team_members' };
       }
-      if ((table === 'clients' && (billAsked(sel) || /(^|[\s,])script_key\s*(,|$)/.test(sel))) || (embedC && billAsked(embedC[2]))) {
+      if ((table === 'clients' && (billAsked(sel) || /(^|[\s,])script_key\s*(,|$)/.test(sel))) || (embedC != null && billAsked(embedC))) {
         api.__err = { code: '42501', message: 'permission denied for table clients' };
       }
 
@@ -1550,6 +1558,14 @@
             code: 'PGRST201',
             message: "Could not embed because more than one relationship was found for '" +
               t[0] + "' and '" + t[1] + "'"
+          };
+        }
+
+        var hint = new RegExp('(^|[\\s,])' + t[1] + '!([a-z0-9_]+)\\s*\\(').exec(sel);
+        if (hint && hint[2] !== 'inner' && hint[2] !== 'left' && t[2].indexOf(hint[2]) < 0) {
+          api.__err = {
+            code: 'PGRST200',
+            message: "Could not find a relationship between '" + t[0] + "' and '" + t[1] + "' in the schema cache"
           };
         }
       });
