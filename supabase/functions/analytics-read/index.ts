@@ -29,6 +29,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import Anthropic from 'npm:@anthropic-ai/sdk@1.10.0';
 import { cors, json } from '../_shared/cors.ts';
+import { prompts, promptRefusal } from '../_shared/prompts.ts';
 
 /* The answer once ready, the connection held open by a space every few
    seconds meanwhile (JSON allows leading whitespace). */
@@ -52,31 +53,7 @@ const scrub = (s: string) => s
   .replace(/\+?\(?\d[\d\s().-]{6,}\d/g, (m) => (m.replace(/\D/g, '').length >= 9 ? '[number]' : m));
 
 /* ---- What Claude is told ------------------------------------------------- */
-const SYSTEM = `You are a senior commercial analyst writing for the management of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. You read the company's own sales and client figures from its portal and say plainly whether the business is heading the right way, what is going wrong, what is working, and what to do next.
-
-THE FIGURES
-You are given JSON the portal worked out for one period and the same span before it: new leads, leads won and lost, win rate, days from lead to client, clients joined and left (churned), active clients, churn as a share of active clients a quarter, leads by source with their wins, why leads were lost, why clients paused or left, active clients by industry and market, how long active clients have stayed, monthly figures, and a forecast where one is drawn. Each comparison carries the portal's own verdict (better, worse or steady, judged against the change threshold given) and churn carries whether it is above the alert set by management. Never contradict a verdict the portal gives; explain it.
-
-WHAT THE DATA CAN AND CANNOT SAY
-Before the month named in leads_complete_from, the team entered only the clients it won, never the leads that came to nothing. Win rate, lost leads, lead sources and lead volume before that month are therefore not reliable; never draw a conclusion from them and say so in caveats where it matters. Client figures (joined, left, active, tenure) are reliable for the whole history. A small count (fewer than about five) is a signal to watch, never a trend; say so instead of overstating it.
-
-QUOTING FIGURES
-Quote only figures that appear in the data, written as they appear (a share as a whole percentage where the data gives a percentage). Never work out a new figure: no new percentages, differences, averages or projections. Refer to months and periods by name. Every number you write is checked against the data and a point quoting a number it does not hold is removed.
-
-WHAT TO WRITE
-health: good, mixed or poor, judged on churn first (above the alert is never good), then active clients, then new clients won, then leads.
-headline: one sentence a director reads first, naming the most important movement.
-summary: two to four sentences: where the business stands and why.
-risks: the problems, most serious first, each with its figures (churn above the alert, more clients leaving than joining, a falling trend, a source drying up, one industry or market carrying too much, a recurring reason clients leave). severity high where it costs revenue now, medium where it will if left, low to watch.
-working: what is going well and should be kept, with its figures.
-forecast: whether the forecast is credible given the history held (credible, partly or not credible; not drawn where none is given) and why, in two sentences at most.
-actions: three to five concrete steps an agency's management can take this month (retention calls with clients in an industry that is leaving, faster follow-up where days to win are long, more effort on the source that wins, a review of the reason clients leave), each with why, tied to a figure.
-caveats: what the reader must keep in mind about the data, one sentence each, two at most.
-
-STYLE
-British English, formal and plain, short sentences, as a management report here is written. No dashes as punctuation. Never name a client or a person; none are given. ADspace is written exactly so.
-
-Call submit_analysis once. Do not write the answer as text.`;
+const SYSTEM = 'ai.analytics-read.system';
 
 const SCHEMA = {
   type: 'object', additionalProperties: false,
@@ -170,6 +147,10 @@ Deno.serve(async (req) => {
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  /* Its prompts from the template store, before a press is counted. */
+  let P: Record<string, string>;
+  try { P = await prompts(db, [SYSTEM]); }
+  catch (e) { const no = promptRefusal(e); if (no) return json(no, 200, origin); throw e; }
   const claim = await db.rpc('ai_analytics_claim');
   if (claim.error) return json({ error: 'needs-update' }, 200, origin);
   const got = (claim.data || {}) as Record<string, unknown>;
@@ -186,7 +167,7 @@ Deno.serve(async (req) => {
     let answer: any = null;
     try {
       const res = await client.messages.create({
-        model, max_tokens: 6000, system: SYSTEM, tools: [SUBMIT], tool_choice: { type: 'auto' },
+        model, max_tokens: 6000, system: P[SYSTEM], tools: [SUBMIT], tool_choice: { type: 'auto' },
         output_config: { effort: 'medium' },
         messages: [{ role: 'user', content: 'Analyse the figures for ' + period + '.' +
           (notes ? '\n\nManagement\'s notes: ' + notes : '') + '\n\nThe figures follow as JSON.\n\n' + JSON.stringify(figures) }]
