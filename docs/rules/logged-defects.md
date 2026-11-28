@@ -78,8 +78,3 @@ demo quotation's ADspace lines (2026-11-20) fixed 2026-11-21.
   repository's main (f69f372) does not yet, so a rebuild from today's
   stand-in would take that behaviour out of the demo. Not rebuilt here.
   Held until the stand-in and the engine agree.
-- 2026-11-28, `gateself` (the day's full gate on main 60bb95c, tests
-  405b093): `FAIL every Postgres suite (51) stops a leftover server before
-  its initdb  colleagueidsql.js`. Pinned: `tests/colleagueidsql.js`, new in
-  tests #339 (405b093) with portal #1592, does not stop a leftover server
-  before its initdb. Held here until it ships.
