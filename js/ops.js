@@ -1298,7 +1298,7 @@
     return bridge.need(want).catch(function () {}).then(function () { return waitingNow(me); });
   }
   function waitingNow(me) {
-    var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
+    var seq = ++WAIT_SEQ, rows = [];
     var jobs = [];
     /* A refused or failed read is said, never drawn as nothing waiting
        (2026-10-22, WRK-5). */
@@ -1378,8 +1378,10 @@
       });
     }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
-    if (name) {
-      if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creators')
+    /* Whose they are is the colleague's id, never the name a record holds
+       (restructure release 2, 2026-11-28). */
+    if (me.id) {
+      if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner_id', me.id), 'Creators')
         .then(function (camps) {
           if (!camps || !camps.length) return;
           var title = {}, campById = {};
@@ -1415,7 +1417,7 @@
                 });
             });
         }));
-      if (may('clients', 'view')) jobs.push(got(db.from('clients').select('id, name, slug, access_token').eq('owner', name), 'Clients')
+      if (may('clients', 'view')) jobs.push(got(db.from('clients').select('id, name, slug, access_token').eq('owner_id', me.id), 'Clients')
         .then(function (mine) {
           if (!mine || !mine.length) return;
           var byId = {}, ids = mine.map(function (c0) { byId[c0.id] = c0; return c0.id; });

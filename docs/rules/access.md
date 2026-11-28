@@ -179,10 +179,10 @@ Moved from `CLAUDE.md` §2, Access, on 2026-11-23.
   `2026-10-23-sales-by.sql`; the user, 2026-10-23: a sales executive keeps
   sight of a client handed to operations, at their group's own level).
   One rule, `client_row_seen_by(stage, owner, owner_id, sales_by, level)`,
-  the Person in charge matched by `clients.owner_id` (stamped by trigger
-  `client_owner_id_stamp` from the name, kept while that colleague holds it;
-  never the name alone: a newcomer sharing a removed colleague's name sees
-  none of theirs; `2026-11-17-access-security-fixes.sql`), held by a restrictive
+  the Person in charge matched by `clients.owner_id` (written by id, the
+  name its snapshot, `owner_id_stamp`; never the name alone: a newcomer
+  sharing a removed colleague's name sees none of theirs;
+  `2026-11-28-owners-by-id.sql`), held by a restrictive
   `client_scope` read policy and a `client_scope_guard` trigger (writes at
   Manage, `client-scope`) on the client and every table under it, by
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
