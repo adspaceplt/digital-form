@@ -557,6 +557,8 @@
     emlSheetWire();
     window.ADspaceSheet.show($('emlSheet'), { opener: opener || null });
   }
+  /* An email sent or cancelled, told to the record that drew it. */
+  function emailSent(detail) { try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: detail })); } catch (x) {} }
   function mlCanCancel(x) {
     if (x.status !== 'queued') return false;
     var me = bridge().me ? bridge().me() : null;
@@ -576,7 +578,7 @@
       if (bridge().mailUndoShut) bridge().mailUndoShut(x.source, x.id);
       say(window.ADspaceWords.line.mailCancelled, 'ok');
       mlLoad();
-      try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { cancelled: true } })); } catch (z) {}
+      emailSent({ cancelled: true });
     }).catch(function (e) {
       btn.disabled = false;
       say(CANCEL_SAID[e && (e.code || e.message)] || (e && e.message && /function|schema cache|does not exist/i.test(e.message) ? SAID['needs-update'] : CANCEL_SAID.sent), 'err');
@@ -1636,11 +1638,11 @@
         mlLoad();
         /* Undo send (2026-11-28): the bar under the Email tab's line where
            the email was written there; else the record that opened it draws
-           it (`adspace:email-sent`). */
+           it (`emailSent`). */
         var who = d.to_name || to;
         var here = d.queued && $('emlLine') && $('emlPane') && !$('emlPane').hidden && $('emlPane').offsetParent ? $('emlLine') : null;
         if (here && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) window.ADspaceAdmin.mailUndo(d.queued, who, here, mlLoad);
-        try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party, queued: here ? null : d.queued || null, to: who } })); } catch (x) {}
+        emailSent({ audience: aud, party: party, queued: here ? null : d.queued || null, to: who });
       }).catch(function (e) { done(); neMsg(neSaid(e), 'err'); });
     });
   }

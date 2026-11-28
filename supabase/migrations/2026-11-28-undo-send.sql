@@ -157,7 +157,7 @@ begin
       left join public.hiring_candidates c on q.close->>'fn' = 'outcome' and c.id = (q.close->>'ref')::uuid;
     if v_cand is not null then
       insert into public.hiring_events (candidate_id, actor, action, detail)
-      values (v_cand, coalesce(p_actor, 'ADspace'), 'candidate.email', coalesce(q.what, 'Email') || ' ' || p_word || '.');
+      values (v_cand, coalesce(p_actor, 'system'), 'candidate.email', coalesce(q.what, 'Email') || ' ' || p_word || '.');
     end if;
     return;
   end if;
@@ -323,8 +323,9 @@ begin
                   where n.nspname = 'net' and p.proname = 'http_post') then
     return;
   end if;
+  -- The project's address from Vault (`project_url`, as s3-sweep reads it).
   execute 'select net.http_post(url := $1, body := $2, headers := $3)'
-    using 'https://hwwuigvdfubuymchsvyx.supabase.co/functions/v1/supplier-mail', '{"action":"drain"}'::jsonb,
+    using (select v.decrypted_secret from vault.decrypted_secrets v where v.name = 'project_url') || '/functions/v1/supplier-mail', '{"action":"drain"}'::jsonb,
           jsonb_build_object('Content-Type', 'application/json', 'x-adspace-wake',
             coalesce((select s.value from public.app_secrets s where s.key = 'wake_secret'), ''));
 exception when others then
@@ -778,7 +779,7 @@ begin
                        when e.kind = 'invite_client' then v_con and e.client_id is not null and public.client_seen(e.client_id, 'view')
                        else false end)
           union all
-          select 'signing', g.id, 'signing', g.email, null, 'Your ADspace signing code for quotation ' || q.ref, null,
+          select 'signing', g.id, 'signing', g.email, null, 'Your ' || public.agency('trading_name') || ' signing code for quotation ' || q.ref, null,
                  null, g.created_at,
                  case when g.used_at is not null then 'used' when g.expires_at < now() then 'expired' else 'requested' end,
                  null, g.created_at, null, null, null,
@@ -890,7 +891,7 @@ begin
   foreach v_k in array array['contact name', 'client name', 'link'] loop
     v_v := case v_k when 'contact name' then public.contact_named(v_ct.salutation, v_ct.name)
       when 'client name' then v_cl.name
-      else 'https://digital.adspace.me/feedback/?k=' || (r->>'key') end;
+      else 'https://' || public.agency('portal_domain') || '/feedback/?k=' || (r->>'key') end;
     v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
     v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
     v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
@@ -945,7 +946,7 @@ begin
       when 'brand' then coalesce(q.contact->>'brand', q.brand) when 'reference' then q.ref
       when 'details' then public.quote_details_lines(v_f, q.details_ask->>'note', v_zh)
       when 'reply by' then public.quote_day_word((q.details_due at time zone 'Asia/Kuala_Lumpur')::date, v_zh)
-      else 'https://digital.adspace.me/quote/?q=' || q.access_key end;
+      else 'https://' || public.agency('portal_domain') || '/quote/?q=' || q.access_key end;
     v_s := regexp_replace(v_s, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
     v_b := regexp_replace(v_b, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
     v_btn := regexp_replace(v_btn, '\{\s*' || v_k || '\s*\}', replace(coalesce(v_v, ''), '\', '\\'), 'gi');
