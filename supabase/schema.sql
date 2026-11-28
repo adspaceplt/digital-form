@@ -167990,6 +167990,1295 @@ grant execute on function public.personnel_save_mine(jsonb, boolean, text, times
 select public.functions_tidy();
 
 -- ===========================================================================
+-- COLLEAGUES BY ID (2026-11-28)
+-- ===========================================================================
+-- WHY: six functions still found a colleague by the name a record holds
+-- (`team_members.name` against `quotations.made_by`, `submitted_by` or
+-- `clients.owner`): a renamed colleague, or two colleagues of one name,
+-- lost a notification, a reviewer's reach or a client's person in charge.
+-- A colleague is traced by their id, never by their name (as QUOTATION
+-- MADE BY ITS COLLEAGUE'S ID, 2026-11-27).
+-- WHAT IT CHANGES
+--   * `quotations.submitted_by_id` (uuid, nullable, on delete set null),
+--     read by a signed-in colleague as the list's other columns are.
+--     `submitted_by` stays as written, a snapshot never rewritten.
+--   * `quotations_submitted_by_id()` (before insert or update): the id
+--     follows the name. Set to the caller's own id where the caller is the
+--     colleague named, cleared with the name, never resolved from a name.
+--   * Backfill: a `submitted_by` held by exactly one colleague takes that
+--     colleague's id; a name two hold is left unfilled.
+--   * `quote_sign_member(uuid)` replaces `quote_sign_member(text)`: the
+--     colleague by id, while they work here. Its callers pass
+--     `made_by_id`, `submitted_by_id` and `clients.owner_id`
+--     (`quote_sign_finish`, `quotation_review`, `quote_decline`,
+--     `quote_change_request`, `quote_website_read`).
+--   * `quote_sign_member_sees`, `client_rep`, `client_details_submit`,
+--     `sm_reports_published_notice` and `feedback_request` read the
+--     client's person in charge by `clients.owner_id`.
+-- ORDER: this file first, then the pages (no page changes: no page calls a
+-- function whose signature moves). An open tab meets the same answers.
+-- ROLLBACK: run the previous definitions again (QUOTATION SIGNING's
+-- `quote_sign_member(text)`; QUOTATION REVIEW FIXES' `quote_sign_member_sees`;
+-- the latest earlier band of each other function); drop trigger
+-- quotations_submitted_by_id on public.quotations; drop function
+-- public.quotations_submitted_by_id(); drop function
+-- public.quote_sign_member(uuid). The column stays. Safe to run twice.
+
+-- COLLEAGUES BY ID ----------------------------------------------------------
+
+alter table public.quotations add column if not exists submitted_by_id uuid
+  references public.team_members(id) on delete set null;
+grant select (submitted_by_id) on table public.quotations to authenticated;
+
+create or replace function public.quotations_submitted_by_id()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members;
+begin
+  if nullif(btrim(coalesce(new.submitted_by, '')), '') is null then
+    new.submitted_by_id := null;
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and new.submitted_by is not distinct from old.submitted_by then
+    new.submitted_by_id := old.submitted_by_id;
+    return new;
+  end if;
+  me := public.ops_me();
+  new.submitted_by_id := case when me.id is not null and me.name = btrim(new.submitted_by) then me.id end;
+  return new;
+end $$;
+revoke all on function public.quotations_submitted_by_id() from public, anon, authenticated;
+
+/* The backfill runs with the trigger off: the trigger keeps the id an
+   update leaves its name on. */
+drop trigger if exists quotations_submitted_by_id on public.quotations;
+with one as (
+  select m.name, min(m.id::text)::uuid id from public.team_members m
+   where nullif(btrim(m.name), '') is not null group by m.name having count(*) = 1
+)
+update public.quotations q set submitted_by_id = o.id
+  from one o
+ where q.submitted_by_id is null and btrim(q.submitted_by) = o.name;
+create trigger quotations_submitted_by_id before insert or update on public.quotations
+  for each row execute function public.quotations_submitted_by_id();
+
+/* A colleague, by id, while they work here. */
+create or replace function public.quote_sign_member(p_id uuid)
+returns uuid
+language sql stable security definer set search_path = public as $$
+  select m.id from public.team_members m
+   where m.id = p_id and m.active and not coalesce(m.system, false) and m.removed_at is null
+$$;
+revoke all on function public.quote_sign_member(uuid) from public, anon, authenticated;
+
+create or replace function public.quote_sign_member_sees(p_member uuid, p_client uuid)
+returns boolean
+language plpgsql stable security definer set search_path = public as $$
+declare
+  t public.team_members;
+  c public.clients;
+  band text;
+begin
+  select * into t from public.team_members m where m.id = p_member;
+  if t.id is null then return false; end if;
+  if coalesce(t.is_admin, false) or coalesce(t.role, '') = 'admin' then return true; end if;
+  select * into c from public.clients x where x.id = p_client;
+  if c.id is null then return false; end if;
+  band := case when c.stage in ('lead', 'contacted', 'proposal') then 'clients.leads'
+               when c.stage = 'past' then 'clients.past' end;
+  if band is not null and public.level_rank(coalesce(t.access ->> band, t.access ->> 'clients')) < public.level_rank('work') then
+    return false;
+  end if;
+  if coalesce(t.client_scope, 'all') = 'own' then
+    if c.sales_by is not null and c.sales_by = t.id then return true; end if;
+    if nullif(btrim(coalesce(c.owner, '')), '') is null then return coalesce(band = 'clients.leads', false); end if;
+    return c.owner_id is not null and c.owner_id = t.id;
+  end if;
+  return true;
+end $$;
+revoke all on function public.quote_sign_member_sees(uuid, uuid) from public, anon, authenticated;
+
+create or replace function public.quote_sign_finish(p_key text, p_code text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public, extensions as $$
+declare
+  o   jsonb := public.quote_sign_open(p_key);
+  q   public.quotations;
+  s   public.quote_sign_codes;
+  c   public.clients;
+  h   json := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
+  v_at timestamptz := now();
+begin
+  if o ? 'error' then return o; end if;
+  select * into q from public.quotations where id = (o->>'id')::uuid for update;
+  -- Read again once the row is held: a colleague's Mark signed, Cancel or
+  -- revision meanwhile is seen (audit 2026-11-04).
+  o := public.quote_sign_open(p_key);
+  if o ? 'error' then return o; end if;
+  if (o->>'id')::uuid is distinct from q.id then return jsonb_build_object('error', 'not-found'); end if;
+  select * into s from public.quote_sign_codes x
+   where x.quotation_id = q.id and x.used_at is null
+   order by x.created_at desc limit 1 for update;
+  if s.id is null then return jsonb_build_object('error', 'no-code'); end if;
+  if s.expires_at <= now() then return jsonb_build_object('error', 'code-expired'); end if;
+  if s.tries >= 5 then return jsonb_build_object('error', 'locked'); end if;
+  if regexp_replace(coalesce(p_code, ''), '\s+', '', 'g') !~ '^[0-9]{6}$'
+     or crypt(regexp_replace(p_code, '\s+', '', 'g'), s.code_hash) <> s.code_hash then
+    update public.quote_sign_codes set tries = tries + 1 where id = s.id;
+    return jsonb_build_object('error', 'wrong', 'left', greatest(0, 4 - s.tries));
+  end if;
+  update public.quote_sign_codes set used_at = v_at where id = s.id;
+  update public.quotations
+     set signed_at = v_at,
+         signed = jsonb_build_object('via', 'online') || (s.payload - 'device') || jsonb_build_object('record', jsonb_build_object(
+           'at', v_at, 'email', s.email,
+           'in_contacts', exists (select 1 from public.client_contacts k
+                                   where k.client_id = q.client_id and k.archived_at is null
+                                     and lower(btrim(coalesce(k.email, ''))) = lower(btrim(coalesce(s.email, ''))))
+                          or lower(btrim(coalesce(q.contact->>'email', ''))) = lower(btrim(coalesce(s.email, ''))),
+           'ip', nullif(public.request_ip(), ''), 'country', nullif(public.request_country(), ''),
+           'agent', left(coalesce(h ->> 'user-agent', ''), 300),
+           -- The device as the signer's browser reported it with the code.
+           'device', s.payload->>'device',
+           'fingerprint', upper(left(encode(digest(q.ref || q.lines::text || q.totals::text || s.payload::text || v_at::text, 'sha256'), 'hex'), 16)))),
+         returned_at = null, return_note = null, returned_by = null
+   where id = q.id;
+  select * into c from public.clients where id = q.client_id;
+  perform public.quote_activity(q, 'quotation.signed',
+    q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name'),
+    jsonb_build_object('name', s.payload->'signer'->>'name', 'email', s.email));
+  -- Who prepared it and the person in charge are told; where neither is
+  -- here (a website lead nobody has taken), the team who work leads.
+  if public.quote_sign_member(q.made_by_id) is null and public.quote_sign_member(c.owner_id) is null then
+    perform public.quote_tell(q.client_id, 'quote.signed', 'Quotation signed · ' || q.brand,
+      q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name') || ' · check and submit',
+      q.id::text || ':' || v_at::text);
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by_id), public.quote_sign_member(c.owner_id)],
+      'quote.signed', 'Quotation signed · ' || q.brand,
+      q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name') || ' · check and submit',
+      q.client_id, q.id::text || ':' || v_at::text);
+  end if;
+  return jsonb_build_object('ok', true, 'at', v_at);
+end $$;
+revoke all on function public.quote_sign_finish(text, text) from public;
+grant execute on function public.quote_sign_finish(text, text) to anon, authenticated;
+
+create or replace function public.quotation_review(p_id uuid, p_ok boolean, p_note text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  c  public.clients;
+  co jsonb;
+  v_note text := btrim(coalesce(p_note, ''));
+  v_billing text := 'kept';
+  v_lines int := 0;
+  v_l jsonb;
+  v_admin boolean;
+  v_renewed int := 0;
+  v_sid uuid;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.signed_at is null then return jsonb_build_object('error', 'not-signed'); end if;
+  if q.reviewed_at is not null then return jsonb_build_object('error', 'reviewed'); end if;
+  if q.submitted_at is null or q.returned_at is not null then return jsonb_build_object('error', 'not-submitted'); end if;
+  -- A colleague with no role is no admin: a null here would let anyone through.
+  v_admin := coalesce(me.is_admin, false) or coalesce(me.role, '') = 'admin';
+  if q.reviewer_id is distinct from me.id and not v_admin then return jsonb_build_object('error', 'not-reviewer'); end if;
+
+  if not coalesce(p_ok, false) then
+    if length(v_note) < 2 or length(v_note) > 1000 then return jsonb_build_object('error', 'note-required'); end if;
+    update public.quotations set returned_at = now(), return_note = v_note, returned_by = me.name where id = q.id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'client.quotation', q.brand, q.ref || ' · sent back by ' || me.name || ': ' || v_note);
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.submitted_by_id)], 'quote.returned',
+      'Quotation sent back · ' || q.brand, q.ref || ' · ' || v_note, q.client_id, q.id::text || ':' || now()::text);
+    return jsonb_build_object('ok', true, 'returned', true);
+  end if;
+
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if exists (select 1 from public.quotations x where x.replaces = q.id and x.removed_at is null) then
+    return jsonb_build_object('error', 'revised');
+  end if;
+  select * into c from public.clients where id = q.client_id for update;
+  v_lines := 0;
+  co := q.signed->'company';
+  if exists (select 1 from public.bukku_links b where b.kind = 'client' and b.record_id = c.id and b.held_at is not null) then
+    v_billing := 'held';
+  elsif q.totals ? 'bill_to' then
+    v_billing := 'kept';
+  elsif coalesce(btrim(c.legal_name), '') = '' and coalesce(btrim(c.company_no), '') = '' and coalesce(btrim(c.billing_address), '') = '' then
+    if not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'billing-access'); end if;
+    update public.clients
+       set legal_name = co->>'legal_name', company_no = co->>'company_no',
+           company_no_old = coalesce(co->>'company_no_old', company_no_old), tin = coalesce(co->>'tin', tin),
+           sst_no = coalesce(co->>'sst_no', sst_no), billing_address = co->>'billing_address',
+           finance_email = coalesce(co->>'finance_email', finance_email)
+     where id = c.id;
+    v_billing := 'filled';
+  elsif exists (select 1 from jsonb_each(coalesce(q.signed->'record_pick', '{}'::jsonb)) p where p.value->>'pick' = 'use') then
+    -- The signed name or number the colleague chose over the record's
+    -- (QUOTATION BRAND AND COMPANY PICK).
+    if not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'billing-access'); end if;
+    update public.clients
+       set legal_name = case when q.signed->'record_pick'->'legal_name'->>'pick' = 'use' then co->>'legal_name' else legal_name end,
+           company_no = case when q.signed->'record_pick'->'company_no'->>'pick' = 'use' then co->>'company_no' else company_no end
+     where id = c.id;
+    v_billing := 'updated';
+  end if;
+
+  update public.client_services set state = 'confirmed'
+   where quotation_id = q.id and archived_at is null and state <> 'confirmed';
+  select count(*) into v_lines from public.client_services where quotation_id = q.id and archived_at is null;
+  /* A renewal (2026-11-12) confirms the client's own line for its new
+     term, rate and start, never a second line beside it. */
+  for v_l in select * from jsonb_array_elements(q.lines) loop
+    if coalesce(v_l->>'renews', '') <> '' then
+      update public.client_services
+         set qty = (v_l->>'qty')::numeric, rate = (v_l->>'rate')::numeric, state = 'confirmed',
+             tenure = case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (q.totals->>'term')::int) else 1 end,
+             term_adjust = v_l->>'basis' = 'month', term_pct = case when v_l->>'basis' = 'month' then coalesce((v_l->>'pct')::numeric, (q.totals->>'term_pct')::numeric) else 0 end,
+             start_on = coalesce(nullif(v_l->>'start', '')::date, start_on), quotation_id = q.id, note = 'Renewed by quotation ' || q.ref,
+             detail = coalesce(nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))),
+                                                      E'\n'), ''), detail)
+       where id = (v_l->>'renews')::uuid and client_id = q.client_id and archived_at is null;
+      if found then v_renewed := v_renewed + 1; end if;
+    end if;
+  end loop;
+  if v_lines = 0 then
+    for v_l in select * from jsonb_array_elements(q.lines) loop
+      if coalesce(v_l->>'renews', '') <> '' then continue; end if;
+      insert into public.client_services (client_id, service_slug, label, qty, rate, unit, state, note,
+                                          tenure, term_adjust, term_pct, detail, quotation_id, tax_code)
+      values (q.client_id,
+              case when exists (select 1 from public.services s where s.slug = v_l->>'slug') then v_l->>'slug' end,
+              public.quote_line_label(q.totals, v_l), (v_l->>'qty')::numeric, (v_l->>'rate')::numeric,
+              case when v_l->>'basis' = 'month' then 'Per month' else 'One-time' end, 'confirmed',
+              'Quotation ' || q.ref,
+              case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (q.totals->>'term')::int) else 1 end,
+              v_l->>'basis' = 'month', case when v_l->>'basis' = 'month' then coalesce((v_l->>'pct')::numeric, (q.totals->>'term_pct')::numeric) else 0 end,
+              nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))), E'\n'), ''),
+              q.id, nullif(v_l->>'tax_code', ''))
+      returning id into v_sid;
+      if coalesce(v_l->>'start', '') <> '' then
+        update public.client_services set start_on = (v_l->>'start')::date where id = v_sid;
+      end if;
+      v_lines := v_lines + 1;
+    end loop;
+  end if;
+
+  update public.quotations set reviewed_at = now(), reviewed_by = me.name, reviewed_role = nullif(btrim(coalesce(me.designation, '')), '')
+   where id = q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand,
+          q.ref || ' · reviewed and approved by ' || me.name ||
+          case when q.reviewer_id is distinct from me.id then ' in place of ' || coalesce(q.reviewer_name, 'the reviewer') else '' end ||
+          ' · ' || (v_lines + v_renewed) || case when v_lines + v_renewed = 1 then ' service line confirmed · ' else ' service lines confirmed · ' end ||
+          case v_renewed when 0 then '' when 1 then '1 renewed · ' else v_renewed || ' renewed · ' end ||
+          case v_billing when 'filled' then 'Billing filled from the signed quotation' when 'updated' then 'Billing updated from the signed quotation' when 'held' then 'Billing not changed, as Bukku keeps this client''s billing details'
+               else 'Billing not changed' end);
+  perform public.quote_sign_tell(array_remove(array[public.quote_sign_member(q.submitted_by_id), public.quote_sign_member(c.owner_id)], me.id),
+    'quote.reviewed', 'Quotation approved · ' || q.brand, q.ref || ' · by ' || me.name, q.client_id, q.id::text);
+  return jsonb_build_object('ok', true, 'billing', v_billing, 'lines', v_lines + v_renewed);
+end $$;
+revoke all on function public.quotation_review(uuid, boolean, text) from public, anon;
+grant execute on function public.quotation_review(uuid, boolean, text) to authenticated;
+
+create or replace function public.quote_decline(p_key text, p_reason text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+  c public.clients;
+  v_reason text := nullif(btrim(coalesce(p_reason, '')), '');
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  if char_length(coalesce(v_reason, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id) for update;
+  if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if q.declined_at is not null then return jsonb_build_object('ok', true, 'again', true); end if;
+  if q.signed_at is not null then return jsonb_build_object('error', 'signed'); end if;
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'unsent'); end if;
+  if q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  update public.quotations set status = 'not_proceeding', declined_at = now(), decline_reason = v_reason where id = q.id;
+  insert into public.signing_steps (doc_kind, doc_id, step, ip, country)
+  values ('quotation', q.id, 'declined', nullif(public.request_ip(), ''), nullif(public.request_country(), ''));
+  perform public.quote_activity(q, 'quotation.declined', q.ref || coalesce(' · ' || v_reason, ''), q.contact);
+  select * into c from public.clients where id = q.client_id;
+  if public.quote_sign_member(q.made_by_id) is null and public.quote_sign_member(c.owner_id) is null then
+    perform public.quote_tell(q.client_id, 'quote.declined', 'Quotation declined · ' || q.brand,
+      q.ref || coalesce(' · ' || v_reason, ''), q.id::text || ':declined');
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by_id), public.quote_sign_member(c.owner_id)],
+      'quote.declined', 'Quotation declined · ' || q.brand, q.ref || coalesce(' · ' || v_reason, ''),
+      q.client_id, q.id::text || ':declined');
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quote_decline(text, text) from public;
+grant execute on function public.quote_decline(text, text) to anon, authenticated;
+
+create or replace function public.quote_change_request(p_key text, p_sel jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  o jsonb := public.quote_change_open(p_key);
+  q public.quotations;
+  cl public.clients;
+  c jsonb;
+  v_fx numeric;
+  v_sel jsonb;
+  v_p jsonb;
+  v_now timestamptz := now();
+  v_body text;
+begin
+  if o ? 'error' then return o; end if;
+  select * into q from public.quotations where id = (o->>'id')::uuid for update;
+  -- Asked again under the row's lock, as signing is: a quotation signed a
+  -- moment before takes no change request (review J14).
+  o := public.quote_change_open(p_key);
+  if o ? 'error' then return o; end if;
+  select * into cl from public.clients where id = q.client_id;
+  -- Ten requests or withdrawals a link an hour (MINOR ABUSE PATHS HELD):
+  -- each tells the team, and a withdrawal clears the minute's wait.
+  if (select count(*) from public.activity_log a
+       where a.action in ('quotation.changes', 'quotation.withdrawn') and a.meta->>'ref' = q.ref
+         and a.created_at > v_now - interval '1 hour') >= 10 then
+    return jsonb_build_object('error', 'busy');
+  end if;
+  if p_sel is null then
+    if q.change_requested_at is null then return jsonb_build_object('ok', true, 'again', true); end if;
+    update public.quotations set change_request = null, change_requested_at = null where id = q.id;
+    perform public.quote_activity(q, 'quotation.withdrawn', q.ref, q.contact);
+    return jsonb_build_object('ok', true);
+  end if;
+  if q.selection ? 'brands' then return jsonb_build_object('error', 'brands'); end if;
+  if q.change_requested_at > v_now - interval '1 minute' then return jsonb_build_object('error', 'recent'); end if;
+  c := public.quote_change_snap(q);
+  if c is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_fx := (c->>'fx')::numeric;
+  if v_fx = 0 then return jsonb_build_object('error', 'no-fx'); end if;
+  v_sel := public.quote_change_sel(q.selection, p_sel, c->'snap');
+  if v_sel ? 'error' then return v_sel; end if;
+  -- Unchanged whatever order the platforms were held in.
+  if (v_sel - 'platforms') = (q.selection - 'platforms')
+     and (select coalesce(jsonb_agg(x order by x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(v_sel->'platforms', '[]'::jsonb)) x)
+       = (select coalesce(jsonb_agg(x order by x), '[]'::jsonb) from jsonb_array_elements_text(coalesce(q.selection->'platforms', '[]'::jsonb)) x) then
+    return jsonb_build_object('error', 'unchanged');
+  end if;
+  v_p := public.quote_fx_out(public.quote_compose(c->'snap', v_sel, q.source <> 'website'), v_fx);
+  if v_p ? 'error' then return jsonb_build_object('error', v_p->>'error'); end if;
+  update public.quotations
+     set change_request = jsonb_build_object('selection', v_sel,
+           'month', v_p->'totals'->'month'->'incl', 'once', v_p->'totals'->'once'->'incl', 'version', c->>'version'),
+         change_requested_at = v_now, reply_due = public.quote_reply_by(v_now)
+   where id = q.id
+   returning * into q;
+  perform public.quote_activity(q, 'quotation.changes', q.ref || coalesce(' · ' || coalesce(q.totals->>'currency', 'RM') || ' ' ||
+    to_char((v_p->'totals'->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', ''), q.contact);
+  v_body := q.ref || coalesce(' · ' || coalesce(q.totals->>'currency', 'RM') || ' ' ||
+              to_char((v_p->'totals'->'month'->>'incl')::numeric, 'FM999,999,990.00') || ' per month incl. SST', '')
+            || ' · Send by ' || public.register_day((q.reply_due at time zone 'Asia/Kuala_Lumpur')::date)
+            || ' (' || trim(to_char(q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMDay')) || '), ' ||
+            lower(to_char(q.reply_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam'));
+  -- Who prepared it and the person in charge are told; where neither is
+  -- here, the team who work leads.
+  if public.quote_sign_member(q.made_by_id) is null and public.quote_sign_member(cl.owner_id) is null then
+    perform public.quote_tell(q.client_id, 'quote.changes', 'Changes requested · ' || q.brand, v_body,
+      q.id::text || ':' || v_now::text);
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by_id), public.quote_sign_member(cl.owner_id)],
+      'quote.changes', 'Changes requested · ' || q.brand, v_body, q.client_id, q.id::text || ':' || v_now::text);
+  end if;
+  return jsonb_build_object('ok', true, 'reply_due', q.reply_due);
+end $$;
+revoke all on function public.quote_change_request(text, jsonb) from public;
+grant execute on function public.quote_change_request(text, jsonb) to anon, authenticated;
+
+create or replace function public.quote_website_read(p_key text)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  w  public.quotations;
+  q  public.quotations;
+  c  public.clients;
+  m  public.team_members;
+  pm public.team_members;
+  pc public.client_contacts;
+  d  public.client_documents;
+  f  public.client_detail_forms;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_stage text;
+  v_portal boolean := false;
+  v_billed boolean;
+  v_own boolean;
+  v_unsent boolean;
+  v_held boolean;
+  v_ds   text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  -- Any quotation with a link: a website quotation, or a team's once
+  -- `quotation_link` made one (QUOTATION SIGNING).
+  select * into w from public.quotations x
+   where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  -- Details asked of the prospect (QUOTE DETAILS ASKED, 2026-11-27).
+  v_ds := public.quote_details_state(q);
+  -- A website quotation the team has not sent holds back its price at every
+  -- stage, Not proceeding included (audit 2026-10-30).
+  v_unsent := q.source = 'website' and q.released_at is null;
+  select * into c from public.clients x where x.id = w.client_id;
+  -- The representative a quotation names: the client's Sales by alone, never
+  -- a stand-in (CLIENT REPRESENTATIVE, 2026-11-27).
+  select * into m from public.team_members x where x.id = public.client_rep(c.id, 'sales');
+  -- Prepared by: the colleague who made the revision shown; a website
+  -- quotation's, the person in charge.
+  select * into pm from public.team_members x where x.id = public.quote_sign_member(q.made_by_id);
+  if pm.id is null and q.source = 'website' then pm := m; end if;
+  -- The letter that stands on the quotation's lines, the latest first.
+  select dd.* into d from public.client_documents dd
+   where dd.kind = 'offer' and dd.voided_at is null and dd.superseded_by is null
+     and exists (select 1 from public.client_document_services ds
+                   join public.client_services s on s.id = ds.service_id
+                  where ds.document_id = dd.id and s.quotation_id = q.id)
+   order by dd.created_at desc limit 1;
+  -- The client's details form is offered only on the website quotation
+  -- that made the lead: a later website quotation that matched an existing
+  -- lead's email and number never opens that lead's form (2026-10-26, audit).
+  v_own := w.source = 'website' and c.created_at >= w.issued_at - interval '1 minute'
+           and not exists (select 1 from public.quotations o
+                            where o.client_id = c.id and o.issued_at < w.issued_at and o.id <> w.id);
+  -- A website quotation that found a client the team already serves
+  -- (WEBSITE QUOTATION FINDS ITS CLIENT, 2026-11-25) says nothing of that
+  -- client while the team has not sent it: no representative, no
+  -- preparer, the market read from the number typed.
+  v_held := v_unsent and not v_own and coalesce(c.stage, '') not in ('lead', 'contacted', 'proposal');
+  if v_held then m := null; pm := null; end if;
+  v_billed := coalesce(btrim(c.legal_name), '') <> '' and coalesce(btrim(c.company_no), '') <> ''
+              and coalesce(btrim(c.billing_address), '') <> '';
+
+  if d.id is not null then
+    if d.verified_at is not null and c.stage = 'active' then
+      v_stage := 'welcome';
+      select exists (select 1 from public.client_contacts k
+                      where k.client_id = c.id and k.archived_at is null and k.portal_access
+                        and lower(btrim(k.email)) = lower(btrim(coalesce(w.contact->>'email', '')))) into v_portal;
+    elsif d.signed_at is not null then v_stage := 'signed';
+    else v_stage := 'letter';
+    end if;
+  elsif w.status = 'not_proceeding' or q.status = 'not_proceeding' then
+    v_stage := 'closed';
+  elsif q.source = 'website' and q.released_at is null and v_ds = 'closed' then
+    -- Not answered past the close days: closed as Not quoted, worked out.
+    v_stage := 'closed';
+  elsif q.source = 'website' and q.released_at is null and v_ds in ('asked', 'late') then
+    -- The team asked for details: the link opens the fields asked alone.
+    v_stage := 'details';
+  elsif q.source = 'website' and q.released_at is null then
+    -- Being reviewed: nothing priced leaves the database (2026-10-29).
+    v_stage := 'review';
+  elsif q.signed_at is not null then
+    -- Signed on the link or on paper: accepted, then welcome once reviewed
+    -- and Active (QUOTATION SIGNING).
+    if q.reviewed_at is not null and c.stage = 'active' then
+      v_stage := 'welcome';
+      select exists (select 1 from public.client_contacts k
+                      where k.client_id = c.id and k.archived_at is null and k.portal_access
+                        and lower(btrim(k.email)) = lower(btrim(coalesce(q.signed->'contact'->>'email', w.contact->>'email', '')))) into v_portal;
+    else v_stage := 'accepted';
+    end if;
+  elsif q.valid_until < v_today then
+    v_stage := 'expired';
+  elsif not v_billed and v_own then
+    select * into f from public.client_detail_forms x
+     where x.client_id = c.id and x.voided_at is null
+     order by x.created_at desc limit 1;
+    if f.id is not null and f.submitted_at is not null and f.used_at is null then v_stage := 'billing_sent';
+    elsif f.id is not null and f.submitted_at is null and f.expires_at > now() then v_stage := 'billing';
+    end if;
+  elsif v_billed and w.proceed_at is not null and w.source = 'website' then
+    v_stage := 'billing_sent';
+  end if;
+  if v_stage is null then
+    v_stage := case when w.proceed_at is not null then 'ready' else 'quote' end;
+  end if;
+  -- The record's details prefill only its own link: a website quotation
+  -- that matched an existing lead never reads that lead's billing or
+  -- primary contact, and a closed or expired link prefills nothing
+  -- (audit 2026-11-04).
+  if q.signed_at is null and (w.source <> 'website' or v_own) then
+    select * into pc from public.client_contacts x
+     where x.client_id = c.id and x.archived_at is null and x.is_primary
+     order by x.created_at limit 1;
+  end if;
+
+  return jsonb_build_object(
+    'ref', q.ref, 'first_ref', w.ref, 'revised', q.id <> w.id,
+    'brand', coalesce(w.contact->>'brand', w.brand), 'version', case when q.source <> 'website' or q.released_at is not null then q.version end,
+    'issued_at', q.issued_at,
+    'valid_until', case when not v_unsent then q.valid_until end,
+    'lines', case when not v_unsent then q.lines end,
+    'totals', case when not v_unsent then q.totals end,
+    'reply_due', case when v_stage = 'review' then q.reply_due end,
+    'details_at', case when v_stage = 'review' then q.details_at end,
+    'ask', case when v_stage = 'details' then jsonb_build_object(
+      'fields', q.details_ask->'fields', 'note', q.details_ask->>'note', 'due', q.details_due,
+      'known', public.quote_details_known(q.contact, array(select jsonb_array_elements_text(q.details_ask->'fields')))) end,
+    'selection', w.selection, 'attention', coalesce(w.contact->>'name', pc.name),
+    'stage', v_stage,
+    'status', case when d.id is not null then 'offer' else q.status end,
+    'details_key', case when v_stage = 'billing' then f.access_key end,
+    'portal', v_portal,
+    'proceed_at', w.proceed_at, 'proceed_due', w.proceed_due,
+    'rep', case when m.id is null then null else jsonb_build_object('name', m.name, 'title', nullif(btrim(coalesce(m.designation, '')), ''),
+             'whatsapp', case when coalesce(m.card_on, true) and coalesce(m.card_mobile, true) then nullif(public.wa_number(m.mobile), '') end) end,
+    'market', case when v_held then case when w.contact->>'whatsapp' like '+65%' then 'SG' else 'MY' end
+                   when c.market = 'SG' then 'SG' else 'MY' end,
+    'today', v_today,
+    -- A Singapore client billed in RM: the S$ rate on its day of issue, so
+    -- each total reads its S$ beside it (AD SPEND FIGURES, 2026-11-27).
+    'fx_sgd', case when not v_unsent and not v_held and c.market = 'SG' and coalesce(q.totals->>'currency', '') <> 'SGD'
+                   then nullif(public.app_setting('fx_sgd', (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date), 0) end,
+    'signed', case when q.signed_at is not null then jsonb_build_object('at', q.signed_at, 'via', q.signed->>'via',
+                'signer', q.signed->'signer', 'signature', q.signed->'signature', 'company', q.signed->'company',
+                'contact', q.signed->'contact', 'record', case when q.signed->>'via' = 'online' then q.signed->'record' end) end,
+    'prepared', case when pm.id is not null then jsonb_build_object('name', pm.name, 'title', nullif(btrim(coalesce(pm.designation, '')), ''))
+                     when not v_held and nullif(btrim(coalesce(q.made_by, '')), '') is not null then jsonb_build_object('name', q.made_by, 'title', null) end,
+    'reviewed', case when q.reviewed_at is not null then jsonb_build_object('name', q.reviewed_by, 'title', q.reviewed_role, 'at', q.reviewed_at) end,
+    'prefill', case when q.signed_at is null and not v_unsent and v_stage not in ('closed', 'expired') then jsonb_build_object(
+      'company', case when w.source <> 'website' or v_own then
+                   jsonb_build_object('legal_name', coalesce(c.legal_name, ''), 'company_no', coalesce(c.company_no, ''),
+                                      'billing_address', coalesce(c.billing_address, ''), 'sst_no', coalesce(c.sst_no, ''), 'tin', coalesce(c.tin, ''))
+                 else jsonb_build_object('legal_name', '', 'company_no', '', 'billing_address', '', 'sst_no', '', 'tin', '') end,
+      'contact', case when pc.id is not null then jsonb_build_object('salutation', coalesce(pc.salutation, ''), 'name', coalesce(pc.name, ''),
+                                                                    'phone', coalesce(nullif(btrim(pc.phone), ''), case when btrim(coalesce(pc.whatsapp, '')) !~ '^@' then btrim(pc.whatsapp) end, ''),
+                                                                     'email', coalesce(pc.email, ''))
+                      else jsonb_build_object('salutation', coalesce(w.contact->>'salutation', ''), 'name', coalesce(w.contact->>'name', ''),
+                                              'phone', coalesce(w.contact->>'whatsapp', ''), 'email', coalesce(w.contact->>'email', '')) end) end);
+end $$;
+revoke all on function public.quote_website_read(text) from public;
+grant execute on function public.quote_website_read(text) to anon, authenticated;
+
+create or replace function public.client_rep(p_client uuid, p_purpose text)
+returns uuid
+language sql stable security definer set search_path = public as $$
+  select m.id from public.clients c
+    join public.team_members m on m.id = case p_purpose
+      when 'sales' then c.sales_by
+      when 'service' then c.owner_id end
+   where c.id = p_client and m.active and not coalesce(m.system, false) and m.removed_at is null
+$$;
+revoke all on function public.client_rep(uuid, text) from public, anon, authenticated;
+
+create or replace function public.client_details_submit(p_key text, p_answers jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_f    public.client_detail_forms;
+  v_cl   public.clients;
+  a      jsonb := coalesce(p_answers, '{}'::jsonb);
+  t      text;
+  v_name text := upper(btrim(regexp_replace(coalesce(a->>'legal_name', ''), '\s+', ' ', 'g')));
+  v_brn  text := upper(regexp_replace(coalesce(a->>'company_no', ''), '\s+', '', 'g'));
+  v_old  text := nullif(upper(regexp_replace(coalesce(a->>'company_no_old', ''), '\s+', '', 'g')), '');
+  v_tin  text := nullif(upper(regexp_replace(coalesce(a->>'tin', ''), '\s+', '', 'g')), '');
+  v_sst  text := nullif(upper(regexp_replace(coalesce(a->>'sst_no', ''), '\s+', '', 'g')), '');
+  v_addr text := btrim(coalesce(a->>'billing_address', ''));
+  v_fin  text := nullif(lower(btrim(coalesce(a->>'finance_email', ''))), '');
+  v_sal  text := nullif(btrim(coalesce(a->>'contact_salutation', '')), '');
+  v_cn   text := btrim(regexp_replace(coalesce(a->>'contact_name', ''), '\s+', ' ', 'g'));
+  v_cp   text := btrim(coalesce(a->>'contact_phone', ''));
+  v_ce   text := lower(btrim(coalesce(a->>'contact_email', '')));
+  v_ref  text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_f from public.client_detail_forms f where f.access_key = p_key and f.voided_at is null for update;
+  if v_f.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if v_f.submitted_at is not null then return jsonb_build_object('error', 'submitted'); end if;
+  if v_f.expires_at <= now() then return jsonb_build_object('error', 'expired'); end if;
+  if exists (select 1 from public.clients c where c.id = v_f.client_id and c.stage = 'past') then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  if length(v_name) < 2 or length(v_name) > 160 then return jsonb_build_object('error', 'bad-legal_name'); end if;
+  if v_brn !~ '^[A-Z0-9-]{6,20}$' then return jsonb_build_object('error', 'bad-company_no'); end if;
+  if v_old is not null and v_old !~ '^[A-Z0-9-]{4,20}$' then return jsonb_build_object('error', 'bad-company_no_old'); end if;
+  if v_tin is not null and v_tin !~ '^[A-Z0-9-]{6,20}$' then return jsonb_build_object('error', 'bad-tin'); end if;
+  if v_sst is not null and v_sst !~ '^[A-Z0-9-]{6,25}$' then return jsonb_build_object('error', 'bad-sst_no'); end if;
+  if length(v_addr) < 10 or length(v_addr) > 400 then return jsonb_build_object('error', 'bad-billing_address'); end if;
+  if v_fin is not null and (v_fin !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_fin) > 160) then
+    return jsonb_build_object('error', 'bad-finance_email');
+  end if;
+  if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
+      'Dato'' Sri', 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik') then
+    return jsonb_build_object('error', 'bad-contact_salutation');
+  end if;
+  if length(v_cn) < 2 or length(v_cn) > 80 then return jsonb_build_object('error', 'bad-contact_name'); end if;
+  t := regexp_replace(v_cp, '[^0-9]', '', 'g');
+  if length(t) < 8 or length(t) > 15 or length(v_cp) > 30 then return jsonb_build_object('error', 'bad-contact_phone'); end if;
+  if v_ce !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_ce) > 160 then return jsonb_build_object('error', 'bad-contact_email'); end if;
+
+  update public.client_detail_forms f
+     set submitted_at = now(),
+         answers = jsonb_strip_nulls(jsonb_build_object(
+           'legal_name', v_name, 'company_no', v_brn, 'company_no_old', v_old, 'tin', v_tin, 'sst_no', v_sst,
+           'billing_address', v_addr, 'finance_email', v_fin, 'contact_salutation', v_sal,
+           'contact_name', v_cn, 'contact_phone', v_cp, 'contact_email', v_ce))
+   where f.id = v_f.id
+  returning f.request_ref into v_ref;
+  select * into v_cl from public.clients c where c.id = v_f.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Details form', 'client.edited', v_cl.name,
+          'Billing details received on the details form from ' || coalesce(v_sal || ' ', '') || v_cn || coalesce(' · ' || v_ref, ''));
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, 'client.details', 'Billing details received · ' || v_cl.name,
+         'From ' || coalesce(v_sal || ' ', '') || v_cn || '. Review them on the client''s Billing.',
+         v_cl.id, 'client.details:' || v_f.id || ':' || m.id
+    from public.team_members m
+   where m.active and m.removed_at is null
+     and (m.is_admin or m.role = 'admin'
+          or (public.allowed_of(m.id, 'clients.billing', 'work')
+              -- held to the colleague's own client scope, as client_row_seen holds a reader (audit S7)
+              and (v_cl.stage not in ('lead', 'contacted', 'proposal', 'past')
+                   or public.level_rank(coalesce(m.access ->> case when v_cl.stage = 'past' then 'clients.past' else 'clients.leads' end,
+                                                 m.access ->> 'clients')) >= 1)
+              and (coalesce(m.client_scope, 'all') <> 'own'
+                   or (nullif(btrim(coalesce(v_cl.owner, '')), '') is null and v_cl.stage in ('lead', 'contacted', 'proposal'))
+                   or v_cl.owner_id = m.id
+                   or v_cl.sales_by = m.id)))
+  on conflict (dedupe_key) do nothing;
+  return jsonb_build_object('ok', true, 'request_ref', v_ref);
+end $$;
+revoke all on function public.client_details_submit(text, jsonb) from public;
+grant execute on function public.client_details_submit(text, jsonb) to anon, authenticated;
+
+create or replace function public.sm_reports_published_notice()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  c public.clients;
+  v_to uuid;
+  v_by text;
+begin
+  if new.status is distinct from 'published' or old.status is not distinct from 'published' then return null; end if;
+  select * into c from public.clients x where x.id = new.client_id;
+  if c.id is null or c.owner_id is null then return null; end if;
+  select t.id into v_to from public.team_members t
+   where t.id = c.owner_id and t.active and t.removed_at is null;
+  if v_to is null then return null; end if;
+  v_by := (public.ops_me()).name;
+  perform public.sm_report_notify(v_to, new.id, 'report.published', 'Report published',
+    coalesce(nullif(btrim(new.brand_name), ''), c.name) || ' · ' || public.sm_period_word(new.period_start, new.period_end) ||
+    case when v_by is not null then ' · Published by ' || v_by else '' end);
+  return null;
+exception when others then
+  return null;
+end $$;
+revoke all on function public.sm_reports_published_notice() from public, anon, authenticated;
+
+create or replace function public.feedback_request(p_client uuid, p_kind text, p_again boolean default false,
+  p_channel text default 'email')
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_cl   public.clients;
+  v_ct   public.client_contacts;
+  v_mgr  public.team_members;
+  v_key  text;
+  v_req  public.feedback_requests;
+begin
+  if me.id is null or not public.allowed('clients', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('quick', 'review') then return jsonb_build_object('error', 'bad-kind'); end if;
+  if p_channel is null or p_channel not in ('email', 'whatsapp') then return jsonb_build_object('error', 'bad-channel'); end if;
+  select * into v_cl from public.clients c where c.id = p_client;
+  if v_cl.id is null or not public.client_seen(v_cl.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_cl.stage in ('lead', 'contacted', 'proposal') then return jsonb_build_object('error', 'not-active'); end if;
+  -- An email needs the primary contact's address; a copy for WhatsApp
+  -- needs the contact alone (their name and language).
+  select * into v_ct from public.client_contacts k
+   where k.client_id = p_client and k.is_primary and k.archived_at is null
+     and (p_channel = 'whatsapp' or nullif(btrim(coalesce(k.email, '')), '') is not null)
+   limit 1;
+  if v_ct.id is null then
+    return jsonb_build_object('error', case when p_channel = 'whatsapp' then 'no-primary' else 'no-contact' end);
+  end if;
+  perform pg_advisory_xact_lock(hashtext('feedback_request:' || p_client::text || ':' || p_kind));
+  -- None while one is still going out, and none again within the repeat
+  -- hours unless asked again, whichever way either went.
+  if exists (select 1 from public.feedback_requests r where r.client_id = p_client and r.kind = p_kind
+              and r.mail_status = 'sending' and r.created_at > now() - interval '10 minutes') then
+    return jsonb_build_object('error', 'sending');
+  end if;
+  select * into v_req from public.feedback_requests r
+   where r.client_id = p_client and r.kind = p_kind and coalesce(r.mail_status, 'sent') not in ('failed', 'sending')
+     and r.closed_reason is distinct from 'withdrawn'
+     and r.created_at > now() - make_interval(hours => coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24)::int)
+   order by r.created_at desc limit 1;
+  if v_req.id is not null and not coalesce(p_again, false) then
+    return jsonb_build_object('error', 'recent', 'recent',
+      jsonb_build_object('at', v_req.created_at, 'by', v_req.sent_by_name, 'to', v_req.sent_to_name,
+        'channel', v_req.channel));
+  end if;
+  v_req := null;
+  select * into v_mgr from public.team_members m
+   where m.id = v_cl.owner_id and m.active and m.removed_at is null;
+  update public.feedback_requests r set closed_at = now(), closed_reason = 'replaced'
+   where r.client_id = p_client and r.kind = p_kind and r.closed_at is null;
+  loop
+    v_key := public.new_link_key() || public.new_link_key();
+    exit when not exists (select 1 from public.feedback_requests r where r.access_key = v_key);
+  end loop;
+  insert into public.feedback_requests (client_id, kind, access_key, sent_by, sent_by_name, contact_id,
+    sent_to_name, sent_to_email, manager_id, manager_name, channel)
+  values (p_client, p_kind, v_key, me.id, me.name, v_ct.id, v_ct.name, nullif(lower(btrim(coalesce(v_ct.email, ''))), ''),
+    v_mgr.id, coalesce(v_mgr.name, nullif(btrim(coalesce(v_cl.owner, '')), '')), p_channel)
+  returning * into v_req;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.edited', v_cl.name,
+          (case p_kind when 'quick' then 'Service rating' else 'Performance review' end)
+          || ' requested from ' || v_ct.name
+          || case when p_channel = 'whatsapp' then ', copied for WhatsApp' else '' end);
+  return jsonb_build_object('ok', true, 'id', v_req.id, 'key', v_req.access_key, 'kind', v_req.kind,
+    'to_name', v_req.sent_to_name, 'to_email', v_req.sent_to_email, 'lang', coalesce(v_ct.lang, 'en'),
+    'manager', v_req.manager_name, 'created_at', v_req.created_at, 'channel', v_req.channel);
+end $$;
+revoke all on function public.feedback_request(uuid, text, boolean, text) from public, anon;
+grant execute on function public.feedback_request(uuid, text, boolean, text) to authenticated;
+
+/* Last, once no function calls it: the name lookup goes. */
+drop function if exists public.quote_sign_member(text);
+
+-- END OF COLLEAGUES BY ID -----------------------------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- FOREIGN KEYS ON SINGLE-TARGET IDS (2026-11-28)
+-- ===========================================================================
+-- WHY: the restructure's release 4 (docs/MAP.md §G, risk 4; the user, 28 Nov:
+-- "go for release 4 too"). 89 uuid columns held no foreign key, so a delete
+-- left rows pointing at nothing; 47 keys stated no `on delete`. Each key now
+-- says what a delete of its parent does, from the record's meaning: cascade
+-- only where the child cannot stand without its parent, set null where the
+-- history must survive (a soft remove comes before a hard delete; a
+-- contact's keys are set null), restrict where the delete should be refused.
+--
+-- WHAT IT CHANGES
+--   * 62 new keys, each added `not valid` and then validated where no live
+--     row points at nothing. One holds orphans and stays `not valid` until
+--     the user decides (new rows are still checked): `wa_outbox.client_id`,
+--     2 rows of 29 Oct 2026 naming a client since deleted.
+--   * 37 keys that stated no `on delete` restated with one. A restrict
+--     behaves as before; a set null or cascade on `team_members` does what
+--     `team_member_purge` already did by hand (it clears only keys with no
+--     action or restrict).
+--   One line a key, `table.column -> parent: on delete … · why`:
+--     bukku_links_gone.sent_by -> team_members: set null · who sent a Bukku unlink; the record of it stays
+--     bukku_send_claims.claimed_by -> team_members: set null · a send claim outlives the colleague who held it
+--     campaigns.invoice_claimed_by -> team_members: set null · the campaign stays; only who claimed its invoice clears
+--     code_email_template.updated_by -> team_members: set null · a template stays; who last edited it clears
+--     creator_email_templates.updated_by -> team_members: set null · as above
+--     creator_emails.sent_by -> team_members: set null · the record of an email sent stays
+--     creator_pay_requests.decided_by -> team_members: set null · a payment request's decision stays
+--     creator_sheet_settings.updated_by -> team_members: set null · a setting stays; who edited it clears
+--     departments.updated_by -> team_members: set null · as above
+--     email_templates.updated_by -> team_members: set null · as above
+--     hiring_email_templates.updated_by -> team_members: set null · as above
+--     id_formats.updated_by -> team_members: set null · as above
+--     ops_tasks.delayed_by -> team_members: set null · a task stays; who moved its date clears
+--     outstation_photos.removed_by -> team_members: set null · a removed photo stays removed; who removed it clears
+--     perf_events.actor_id -> team_members: set null · a performance event is history
+--     personnel_records.requested_by -> team_members: set null · a colleague's record stays
+--     personnel_records.superior_id -> team_members: set null · a record outlives its superior
+--     personnel_records.updated_by -> team_members: set null · as above
+--     personnel_salaries.updated_by -> team_members: set null · a salary row stays
+--     personnel_settings.updated_by -> team_members: set null · a setting stays
+--     sm_report_post_links.linked_by -> team_members: set null · a link stays; who made it clears
+--     sm_report_post_links.unlinked_by -> team_members: set null · as above
+--     system_emails.sent_by -> team_members: set null · the record of an email sent stays
+--     team_emails.sent_by -> team_members: set null · as above
+--     team_invites.caller_id -> team_members: cascade · the colleague's own invitation count, read only against their next invitation
+--     team_notices.sent_by -> team_members: set null · a notice stays (its sender's name is kept as written)
+--     video_scripts.created_by -> team_members: set null · a script stays (its author's name is kept as written)
+--     ai_drafts.client_id -> clients: set null · an AI use is counted against the month's limit after its client goes
+--     client_brands.client_id -> clients: cascade · a brand is the client's and cannot stand alone
+--     client_document_deletions.client_id -> clients: set null · the record of a deleted document stays
+--     delete_requests.client_id -> clients: set null · a delete request is history once decided
+--     ops_month_invoices.client_id -> clients: cascade · a month's invoice check is the client's own (its month already cascades)
+--     sm_reports.label_client -> clients: set null · a report keeps its own client; the white label clears (a published report's guard refuses it)
+--     system_emails.client_id -> clients: set null · the record of an email sent stays
+--     team_emails.client_id -> clients: set null · as above (DECISIONS: removing a client never removes what was sent to it)
+--     wa_outbox.client_id -> clients: set null · a WhatsApp message sent stays
+--     creator_emails.again_of -> creator_emails: set null · a resend stands alone once its first is gone
+--     creator_pay_requests.prior_id -> creator_pay_requests: set null · a later request stands alone
+--     hiring_docs.replaces -> hiring_docs: set null · a replacement stands alone
+--     system_emails.again_of -> system_emails: set null · a resend stands alone
+--     ai_drafts.script_id -> video_scripts: set null · an AI use stays counted
+--     ops_notifications.script_id -> video_scripts: cascade · a notification about a script goes with it, as one about a task does
+--     supplier_emails.document_id -> documents: set null · the record of an email sent stays
+--     ops_recurring_made.source_task_id -> ops_tasks: set null · the date made stays, so a repeat does not make it again
+--     sm_report_post_links.task_id -> ops_tasks: cascade · a post's link to a task cannot stand without the task
+--     ops_tasks.delayed_report -> sm_reports: set null · a task stays; the report that delayed it clears
+--     sm_report_post_links.report_id -> sm_reports: cascade · a link cannot stand without its report
+--     ai_drafts.batch_id -> batches: set null · an AI use stays counted
+--     billing_entities.orphan_of -> billing_entities: set null · an entity stands alone once the one it split from goes
+--     brand_analyses.press_id -> ai_drafts: set null · an analysis stays; its use record clears
+--     client_entities.bill_contact_id -> client_contacts: set null · a contact's keys are set null (DESIGN §7); the main contact is then billed
+--     creator_emails.creator_id -> creators: set null · the record of an email sent stays
+--     creator_emails.request_id -> creator_pay_requests: set null · as above
+--     creator_emails.option_id -> campaign_options: set null · as above
+--     ops_notifications.notice_id -> team_notices: cascade · a notice's notifications go with it (notice delete already removes them)
+--     ops_revisions.source_review_id -> reviews: set null · a revision stays; the review that asked for it clears
+--     quotation_link_copies.quotation_id -> quotations: cascade · a copy's visit log is the quotation's own
+--     quotations.version_id -> rate_card_versions: restrict · a rate card a quotation was priced from is never deleted under it
+--     sm_report_post_links.post_id -> sm_report_posts: cascade · a link cannot stand without its post
+--     system_emails.candidate_id -> hiring_candidates: set null · the record of an email sent stays
+--     team_emails.supplier_id -> suppliers: set null · as above
+--     team_emails.template_id -> email_templates: set null · as above
+--   Restated:
+--     delete_requests.kind -> delete_kinds: restrict · a kind in use is never deleted
+--     perf_dept_scores.department -> departments: restrict · department_delete already refuses one in use
+--     perf_people.department -> departments: restrict · as above
+--     mail_senders.box -> mail_boxes: restrict · a mailbox a sender replies to is never deleted
+--     ops_recurring_rules.template_id -> ops_task_templates: restrict · ops_template_delete already refuses one in use
+--     ops_tasks.template_id -> ops_task_templates: restrict · as above
+--     ops_task_templates.workflow_id -> ops_workflows: restrict · a workflow in use is never deleted
+--     ops_tasks.workflow_id -> ops_workflows: restrict · as above
+--     client_services.quotation_id -> quotations: restrict · a quotation that made a service line is kept (as before)
+--     clients.vic_by -> team_members: set null · the client stays; who marked it clears
+--     creator_pay_requests.entered_by -> team_members: set null · the request stays
+--     delete_requests.decided_by -> team_members: set null · the decision stays
+--     delete_requests.requested_by -> team_members: cascade · the colleague's own requests (team_member_purge already deleted them)
+--     guide_seen.team_member_id -> team_members: cascade · the colleague's own guide marks
+--     invoice_send_template.updated_by -> team_members: set null · a template stays
+--     ops_due_requests.asked_by -> team_members: cascade · the colleague's own date requests (purge already deleted them)
+--     ops_due_requests.decided_by -> team_members: set null · the decision stays
+--     ops_due_requests.decider_id -> team_members: set null · as above
+--     ops_engagement_checks.updated_by -> team_members: set null · a month's check stays
+--     ops_engagement_events.actor_id -> team_members: set null · a month's history stays
+--     ops_engagements.created_by -> team_members: set null · a month stays
+--     ops_engagements.manager_id -> team_members: set null · a month outlives its manager
+--     ops_recurring_rules.created_by -> team_members: set null · a repeat stays
+--     ops_revisions.requested_by -> team_members: set null · a revision stays
+--     ops_task_checklist_items.completed_by -> team_members: set null · a ticked item stays ticked
+--     ops_task_events.actor_id -> team_members: set null · a task's history stays
+--     ops_task_links.created_by -> team_members: set null · a link stays
+--     ops_tasks.created_by -> team_members: set null · a task stays
+--     ops_tasks.manager_id -> team_members: set null · a task outlives its manager
+--     ops_tasks.rated_by -> team_members: set null · a rating stays
+--     ops_work_sessions.corrected_by -> team_members: set null · a session stays
+--     ops_work_sessions.team_member_id -> team_members: cascade · the colleague's own time (purge already deleted it)
+--     option_reviews.undone_by -> team_members: set null · a review stays
+--     outstation_trips.driver_id -> team_members: cascade · the colleague's own trips (purge refuses first where another colleague joined)
+--     personnel_records.team_member_id -> team_members: cascade · a personnel record is the colleague's own (purge already deleted it)
+--     personnel_salaries.team_member_id -> team_members: cascade · as above
+--     rail_orders.member_id -> team_members: cascade · the colleague's own rail order
+--
+-- LEFT ALONE
+--   * The 16 polymorphic columns (MAP-INVENTORY A.2.3: bukku_links,
+--     bukku_links_gone and bukku_send_claims.record_id, activity_log.ref,
+--     ops_tasks.source_id, ops_task_links.ref_id, wa_outbox.ref_id and
+--     to_id, system_emails.ref_id, client_emails.ref_id,
+--     signing_steps.doc_id, verify_checks.doc_id, verify_check_totals.doc_id,
+--     agent_schedules.condition_ref, push_subscriptions.target,
+--     push_outbox.target): no single parent, so no key is possible.
+--   * uuid arrays, which a key cannot hold: client_document_deletions
+--     .service_ids, outstation_trips.companions, team_notices.recipients.
+--   * Not links: video_scripts.series_id (a series' own group id) and
+--     posts.cover_for (no key by design).
+--   * Recorded decisions that the id outlives its parent unchanged:
+--     perf_breaches.client_id ("removing a client never touches a
+--     review"), campaign_confirmations.client_id and campaign_id (rows
+--     outlive the campaign) and client_document_deletions.document_id (the
+--     record of a document already deleted).
+--   * Columns other releases change today: ai_drafts.brand_id and
+--     sm_reports.brand_id (lookups by id), industries.updated_by
+--     (industries rekeyed), and the owner, assigned, sales-by and
+--     team_members keys among the 47 (clients.sales_by,
+--     ops_engagement_checks.owner_id, ops_engagements.meeting_owner_id,
+--     ops_recurring_rules.owner_id, ops_task_templates.default_owner_id,
+--     ops_revisions.assigned_to, ops_task_assignees.team_member_id and
+--     assigned_by, team_members.department and role).
+--
+-- ORDER: this file alone; no page or function changes. An open tab meets
+-- the same answers; a delete of a parent now clears or removes what its
+-- key says instead of failing or leaving an orphan.
+-- Safe to run twice: each key is dropped and added again `not valid`, then
+-- validated where its rows allow. Holds no delete of data.
+-- ROLLBACK: drop each key this file adds (`alter table public.{table} drop
+-- constraint if exists {table}_{column}_fkey`), and for the 37 restated
+-- run their earlier bands' definitions again (`foreign key ({column})
+-- references public.{parent}(…)` with no `on delete`).
+-- ===========================================================================
+
+-- FOREIGN KEYS ON SINGLE-TARGET IDS ----------------------------------------
+
+alter table public.bukku_links_gone drop constraint if exists bukku_links_gone_sent_by_fkey;
+alter table public.bukku_links_gone add constraint bukku_links_gone_sent_by_fkey
+  foreign key (sent_by) references public.team_members(id) on delete set null not valid;
+alter table public.bukku_send_claims drop constraint if exists bukku_send_claims_claimed_by_fkey;
+alter table public.bukku_send_claims add constraint bukku_send_claims_claimed_by_fkey
+  foreign key (claimed_by) references public.team_members(id) on delete set null not valid;
+alter table public.campaigns drop constraint if exists campaigns_invoice_claimed_by_fkey;
+alter table public.campaigns add constraint campaigns_invoice_claimed_by_fkey
+  foreign key (invoice_claimed_by) references public.team_members(id) on delete set null not valid;
+alter table public.code_email_template drop constraint if exists code_email_template_updated_by_fkey;
+alter table public.code_email_template add constraint code_email_template_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.creator_email_templates drop constraint if exists creator_email_templates_updated_by_fkey;
+alter table public.creator_email_templates add constraint creator_email_templates_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.creator_emails drop constraint if exists creator_emails_sent_by_fkey;
+alter table public.creator_emails add constraint creator_emails_sent_by_fkey
+  foreign key (sent_by) references public.team_members(id) on delete set null not valid;
+alter table public.creator_pay_requests drop constraint if exists creator_pay_requests_decided_by_fkey;
+alter table public.creator_pay_requests add constraint creator_pay_requests_decided_by_fkey
+  foreign key (decided_by) references public.team_members(id) on delete set null not valid;
+alter table public.creator_sheet_settings drop constraint if exists creator_sheet_settings_updated_by_fkey;
+alter table public.creator_sheet_settings add constraint creator_sheet_settings_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.departments drop constraint if exists departments_updated_by_fkey;
+alter table public.departments add constraint departments_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.email_templates drop constraint if exists email_templates_updated_by_fkey;
+alter table public.email_templates add constraint email_templates_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.hiring_email_templates drop constraint if exists hiring_email_templates_updated_by_fkey;
+alter table public.hiring_email_templates add constraint hiring_email_templates_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.id_formats drop constraint if exists id_formats_updated_by_fkey;
+alter table public.id_formats add constraint id_formats_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_delayed_by_fkey;
+alter table public.ops_tasks add constraint ops_tasks_delayed_by_fkey
+  foreign key (delayed_by) references public.team_members(id) on delete set null not valid;
+alter table public.outstation_photos drop constraint if exists outstation_photos_removed_by_fkey;
+alter table public.outstation_photos add constraint outstation_photos_removed_by_fkey
+  foreign key (removed_by) references public.team_members(id) on delete set null not valid;
+alter table public.perf_events drop constraint if exists perf_events_actor_id_fkey;
+alter table public.perf_events add constraint perf_events_actor_id_fkey
+  foreign key (actor_id) references public.team_members(id) on delete set null not valid;
+alter table public.personnel_records drop constraint if exists personnel_records_requested_by_fkey;
+alter table public.personnel_records add constraint personnel_records_requested_by_fkey
+  foreign key (requested_by) references public.team_members(id) on delete set null not valid;
+alter table public.personnel_records drop constraint if exists personnel_records_superior_id_fkey;
+alter table public.personnel_records add constraint personnel_records_superior_id_fkey
+  foreign key (superior_id) references public.team_members(id) on delete set null not valid;
+alter table public.personnel_records drop constraint if exists personnel_records_updated_by_fkey;
+alter table public.personnel_records add constraint personnel_records_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.personnel_salaries drop constraint if exists personnel_salaries_updated_by_fkey;
+alter table public.personnel_salaries add constraint personnel_salaries_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.personnel_settings drop constraint if exists personnel_settings_updated_by_fkey;
+alter table public.personnel_settings add constraint personnel_settings_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.sm_report_post_links drop constraint if exists sm_report_post_links_linked_by_fkey;
+alter table public.sm_report_post_links add constraint sm_report_post_links_linked_by_fkey
+  foreign key (linked_by) references public.team_members(id) on delete set null not valid;
+alter table public.sm_report_post_links drop constraint if exists sm_report_post_links_unlinked_by_fkey;
+alter table public.sm_report_post_links add constraint sm_report_post_links_unlinked_by_fkey
+  foreign key (unlinked_by) references public.team_members(id) on delete set null not valid;
+alter table public.system_emails drop constraint if exists system_emails_sent_by_fkey;
+alter table public.system_emails add constraint system_emails_sent_by_fkey
+  foreign key (sent_by) references public.team_members(id) on delete set null not valid;
+alter table public.team_emails drop constraint if exists team_emails_sent_by_fkey;
+alter table public.team_emails add constraint team_emails_sent_by_fkey
+  foreign key (sent_by) references public.team_members(id) on delete set null not valid;
+alter table public.team_invites drop constraint if exists team_invites_caller_id_fkey;
+alter table public.team_invites add constraint team_invites_caller_id_fkey
+  foreign key (caller_id) references public.team_members(id) on delete cascade not valid;
+alter table public.team_notices drop constraint if exists team_notices_sent_by_fkey;
+alter table public.team_notices add constraint team_notices_sent_by_fkey
+  foreign key (sent_by) references public.team_members(id) on delete set null not valid;
+alter table public.video_scripts drop constraint if exists video_scripts_created_by_fkey;
+alter table public.video_scripts add constraint video_scripts_created_by_fkey
+  foreign key (created_by) references public.team_members(id) on delete set null not valid;
+alter table public.ai_drafts drop constraint if exists ai_drafts_client_id_fkey;
+alter table public.ai_drafts add constraint ai_drafts_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.client_brands drop constraint if exists client_brands_client_id_fkey;
+alter table public.client_brands add constraint client_brands_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete cascade not valid;
+alter table public.client_document_deletions drop constraint if exists client_document_deletions_client_id_fkey;
+alter table public.client_document_deletions add constraint client_document_deletions_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.delete_requests drop constraint if exists delete_requests_client_id_fkey;
+alter table public.delete_requests add constraint delete_requests_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.ops_month_invoices drop constraint if exists ops_month_invoices_client_id_fkey;
+alter table public.ops_month_invoices add constraint ops_month_invoices_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete cascade not valid;
+alter table public.sm_reports drop constraint if exists sm_reports_label_client_fkey;
+alter table public.sm_reports add constraint sm_reports_label_client_fkey
+  foreign key (label_client) references public.clients(id) on delete set null not valid;
+alter table public.system_emails drop constraint if exists system_emails_client_id_fkey;
+alter table public.system_emails add constraint system_emails_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.team_emails drop constraint if exists team_emails_client_id_fkey;
+alter table public.team_emails add constraint team_emails_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.wa_outbox drop constraint if exists wa_outbox_client_id_fkey;
+alter table public.wa_outbox add constraint wa_outbox_client_id_fkey
+  foreign key (client_id) references public.clients(id) on delete set null not valid;
+alter table public.creator_emails drop constraint if exists creator_emails_again_of_fkey;
+alter table public.creator_emails add constraint creator_emails_again_of_fkey
+  foreign key (again_of) references public.creator_emails(id) on delete set null not valid;
+alter table public.creator_pay_requests drop constraint if exists creator_pay_requests_prior_id_fkey;
+alter table public.creator_pay_requests add constraint creator_pay_requests_prior_id_fkey
+  foreign key (prior_id) references public.creator_pay_requests(id) on delete set null not valid;
+alter table public.hiring_docs drop constraint if exists hiring_docs_replaces_fkey;
+alter table public.hiring_docs add constraint hiring_docs_replaces_fkey
+  foreign key (replaces) references public.hiring_docs(id) on delete set null not valid;
+alter table public.system_emails drop constraint if exists system_emails_again_of_fkey;
+alter table public.system_emails add constraint system_emails_again_of_fkey
+  foreign key (again_of) references public.system_emails(id) on delete set null not valid;
+alter table public.ai_drafts drop constraint if exists ai_drafts_script_id_fkey;
+alter table public.ai_drafts add constraint ai_drafts_script_id_fkey
+  foreign key (script_id) references public.video_scripts(id) on delete set null not valid;
+alter table public.ops_notifications drop constraint if exists ops_notifications_script_id_fkey;
+alter table public.ops_notifications add constraint ops_notifications_script_id_fkey
+  foreign key (script_id) references public.video_scripts(id) on delete cascade not valid;
+alter table public.supplier_emails drop constraint if exists supplier_emails_document_id_fkey;
+alter table public.supplier_emails add constraint supplier_emails_document_id_fkey
+  foreign key (document_id) references public.documents(id) on delete set null not valid;
+alter table public.ops_recurring_made drop constraint if exists ops_recurring_made_source_task_id_fkey;
+alter table public.ops_recurring_made add constraint ops_recurring_made_source_task_id_fkey
+  foreign key (source_task_id) references public.ops_tasks(id) on delete set null not valid;
+alter table public.sm_report_post_links drop constraint if exists sm_report_post_links_task_id_fkey;
+alter table public.sm_report_post_links add constraint sm_report_post_links_task_id_fkey
+  foreign key (task_id) references public.ops_tasks(id) on delete cascade not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_delayed_report_fkey;
+alter table public.ops_tasks add constraint ops_tasks_delayed_report_fkey
+  foreign key (delayed_report) references public.sm_reports(id) on delete set null not valid;
+alter table public.sm_report_post_links drop constraint if exists sm_report_post_links_report_id_fkey;
+alter table public.sm_report_post_links add constraint sm_report_post_links_report_id_fkey
+  foreign key (report_id) references public.sm_reports(id) on delete cascade not valid;
+alter table public.ai_drafts drop constraint if exists ai_drafts_batch_id_fkey;
+alter table public.ai_drafts add constraint ai_drafts_batch_id_fkey
+  foreign key (batch_id) references public.batches(id) on delete set null not valid;
+alter table public.billing_entities drop constraint if exists billing_entities_orphan_of_fkey;
+alter table public.billing_entities add constraint billing_entities_orphan_of_fkey
+  foreign key (orphan_of) references public.billing_entities(id) on delete set null not valid;
+alter table public.brand_analyses drop constraint if exists brand_analyses_press_id_fkey;
+alter table public.brand_analyses add constraint brand_analyses_press_id_fkey
+  foreign key (press_id) references public.ai_drafts(id) on delete set null not valid;
+alter table public.client_entities drop constraint if exists client_entities_bill_contact_id_fkey;
+alter table public.client_entities add constraint client_entities_bill_contact_id_fkey
+  foreign key (bill_contact_id) references public.client_contacts(id) on delete set null not valid;
+alter table public.creator_emails drop constraint if exists creator_emails_creator_id_fkey;
+alter table public.creator_emails add constraint creator_emails_creator_id_fkey
+  foreign key (creator_id) references public.creators(id) on delete set null not valid;
+alter table public.creator_emails drop constraint if exists creator_emails_request_id_fkey;
+alter table public.creator_emails add constraint creator_emails_request_id_fkey
+  foreign key (request_id) references public.creator_pay_requests(id) on delete set null not valid;
+alter table public.creator_emails drop constraint if exists creator_emails_option_id_fkey;
+alter table public.creator_emails add constraint creator_emails_option_id_fkey
+  foreign key (option_id) references public.campaign_options(id) on delete set null not valid;
+alter table public.ops_notifications drop constraint if exists ops_notifications_notice_id_fkey;
+alter table public.ops_notifications add constraint ops_notifications_notice_id_fkey
+  foreign key (notice_id) references public.team_notices(id) on delete cascade not valid;
+alter table public.ops_revisions drop constraint if exists ops_revisions_source_review_id_fkey;
+alter table public.ops_revisions add constraint ops_revisions_source_review_id_fkey
+  foreign key (source_review_id) references public.reviews(id) on delete set null not valid;
+alter table public.quotation_link_copies drop constraint if exists quotation_link_copies_quotation_id_fkey;
+alter table public.quotation_link_copies add constraint quotation_link_copies_quotation_id_fkey
+  foreign key (quotation_id) references public.quotations(id) on delete cascade not valid;
+alter table public.quotations drop constraint if exists quotations_version_id_fkey;
+alter table public.quotations add constraint quotations_version_id_fkey
+  foreign key (version_id) references public.rate_card_versions(id) on delete restrict not valid;
+alter table public.sm_report_post_links drop constraint if exists sm_report_post_links_post_id_fkey;
+alter table public.sm_report_post_links add constraint sm_report_post_links_post_id_fkey
+  foreign key (post_id) references public.sm_report_posts(id) on delete cascade not valid;
+alter table public.system_emails drop constraint if exists system_emails_candidate_id_fkey;
+alter table public.system_emails add constraint system_emails_candidate_id_fkey
+  foreign key (candidate_id) references public.hiring_candidates(id) on delete set null not valid;
+alter table public.team_emails drop constraint if exists team_emails_supplier_id_fkey;
+alter table public.team_emails add constraint team_emails_supplier_id_fkey
+  foreign key (supplier_id) references public.suppliers(id) on delete set null not valid;
+alter table public.team_emails drop constraint if exists team_emails_template_id_fkey;
+alter table public.team_emails add constraint team_emails_template_id_fkey
+  foreign key (template_id) references public.email_templates(id) on delete set null not valid;
+alter table public.delete_requests drop constraint if exists delete_requests_kind_fkey;
+alter table public.delete_requests add constraint delete_requests_kind_fkey
+  foreign key (kind) references public.delete_kinds(kind) on delete restrict not valid;
+alter table public.perf_dept_scores drop constraint if exists perf_dept_scores_department_fkey;
+alter table public.perf_dept_scores add constraint perf_dept_scores_department_fkey
+  foreign key (department) references public.departments(key) on delete restrict not valid;
+alter table public.perf_people drop constraint if exists perf_people_department_fkey;
+alter table public.perf_people add constraint perf_people_department_fkey
+  foreign key (department) references public.departments(key) on delete restrict not valid;
+alter table public.mail_senders drop constraint if exists mail_senders_box_fkey;
+alter table public.mail_senders add constraint mail_senders_box_fkey
+  foreign key (box) references public.mail_boxes(key) on delete restrict not valid;
+alter table public.ops_recurring_rules drop constraint if exists ops_recurring_rules_template_id_fkey;
+alter table public.ops_recurring_rules add constraint ops_recurring_rules_template_id_fkey
+  foreign key (template_id) references public.ops_task_templates(id) on delete restrict not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_template_id_fkey;
+alter table public.ops_tasks add constraint ops_tasks_template_id_fkey
+  foreign key (template_id) references public.ops_task_templates(id) on delete restrict not valid;
+alter table public.ops_task_templates drop constraint if exists ops_task_templates_workflow_id_fkey;
+alter table public.ops_task_templates add constraint ops_task_templates_workflow_id_fkey
+  foreign key (workflow_id) references public.ops_workflows(id) on delete restrict not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_workflow_id_fkey;
+alter table public.ops_tasks add constraint ops_tasks_workflow_id_fkey
+  foreign key (workflow_id) references public.ops_workflows(id) on delete restrict not valid;
+alter table public.client_services drop constraint if exists client_services_quotation_id_fkey;
+alter table public.client_services add constraint client_services_quotation_id_fkey
+  foreign key (quotation_id) references public.quotations(id) on delete restrict not valid;
+alter table public.clients drop constraint if exists clients_vic_by_fkey;
+alter table public.clients add constraint clients_vic_by_fkey
+  foreign key (vic_by) references public.team_members(id) on delete set null not valid;
+alter table public.creator_pay_requests drop constraint if exists creator_pay_requests_entered_by_fkey;
+alter table public.creator_pay_requests add constraint creator_pay_requests_entered_by_fkey
+  foreign key (entered_by) references public.team_members(id) on delete set null not valid;
+alter table public.delete_requests drop constraint if exists delete_requests_decided_by_fkey;
+alter table public.delete_requests add constraint delete_requests_decided_by_fkey
+  foreign key (decided_by) references public.team_members(id) on delete set null not valid;
+alter table public.delete_requests drop constraint if exists delete_requests_requested_by_fkey;
+alter table public.delete_requests add constraint delete_requests_requested_by_fkey
+  foreign key (requested_by) references public.team_members(id) on delete cascade not valid;
+alter table public.guide_seen drop constraint if exists guide_seen_team_member_id_fkey;
+alter table public.guide_seen add constraint guide_seen_team_member_id_fkey
+  foreign key (team_member_id) references public.team_members(id) on delete cascade not valid;
+alter table public.invoice_send_template drop constraint if exists invoice_send_template_updated_by_fkey;
+alter table public.invoice_send_template add constraint invoice_send_template_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_due_requests drop constraint if exists ops_due_requests_asked_by_fkey;
+alter table public.ops_due_requests add constraint ops_due_requests_asked_by_fkey
+  foreign key (asked_by) references public.team_members(id) on delete cascade not valid;
+alter table public.ops_due_requests drop constraint if exists ops_due_requests_decided_by_fkey;
+alter table public.ops_due_requests add constraint ops_due_requests_decided_by_fkey
+  foreign key (decided_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_due_requests drop constraint if exists ops_due_requests_decider_id_fkey;
+alter table public.ops_due_requests add constraint ops_due_requests_decider_id_fkey
+  foreign key (decider_id) references public.team_members(id) on delete set null not valid;
+alter table public.ops_engagement_checks drop constraint if exists ops_engagement_checks_updated_by_fkey;
+alter table public.ops_engagement_checks add constraint ops_engagement_checks_updated_by_fkey
+  foreign key (updated_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_engagement_events drop constraint if exists ops_engagement_events_actor_id_fkey;
+alter table public.ops_engagement_events add constraint ops_engagement_events_actor_id_fkey
+  foreign key (actor_id) references public.team_members(id) on delete set null not valid;
+alter table public.ops_engagements drop constraint if exists ops_engagements_created_by_fkey;
+alter table public.ops_engagements add constraint ops_engagements_created_by_fkey
+  foreign key (created_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_engagements drop constraint if exists ops_engagements_manager_id_fkey;
+alter table public.ops_engagements add constraint ops_engagements_manager_id_fkey
+  foreign key (manager_id) references public.team_members(id) on delete set null not valid;
+alter table public.ops_recurring_rules drop constraint if exists ops_recurring_rules_created_by_fkey;
+alter table public.ops_recurring_rules add constraint ops_recurring_rules_created_by_fkey
+  foreign key (created_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_revisions drop constraint if exists ops_revisions_requested_by_fkey;
+alter table public.ops_revisions add constraint ops_revisions_requested_by_fkey
+  foreign key (requested_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_task_checklist_items drop constraint if exists ops_task_checklist_items_completed_by_fkey;
+alter table public.ops_task_checklist_items add constraint ops_task_checklist_items_completed_by_fkey
+  foreign key (completed_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_task_events drop constraint if exists ops_task_events_actor_id_fkey;
+alter table public.ops_task_events add constraint ops_task_events_actor_id_fkey
+  foreign key (actor_id) references public.team_members(id) on delete set null not valid;
+alter table public.ops_task_links drop constraint if exists ops_task_links_created_by_fkey;
+alter table public.ops_task_links add constraint ops_task_links_created_by_fkey
+  foreign key (created_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_created_by_fkey;
+alter table public.ops_tasks add constraint ops_tasks_created_by_fkey
+  foreign key (created_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_manager_id_fkey;
+alter table public.ops_tasks add constraint ops_tasks_manager_id_fkey
+  foreign key (manager_id) references public.team_members(id) on delete set null not valid;
+alter table public.ops_tasks drop constraint if exists ops_tasks_rated_by_fkey;
+alter table public.ops_tasks add constraint ops_tasks_rated_by_fkey
+  foreign key (rated_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_work_sessions drop constraint if exists ops_work_sessions_corrected_by_fkey;
+alter table public.ops_work_sessions add constraint ops_work_sessions_corrected_by_fkey
+  foreign key (corrected_by) references public.team_members(id) on delete set null not valid;
+alter table public.ops_work_sessions drop constraint if exists ops_work_sessions_team_member_id_fkey;
+alter table public.ops_work_sessions add constraint ops_work_sessions_team_member_id_fkey
+  foreign key (team_member_id) references public.team_members(id) on delete cascade not valid;
+alter table public.option_reviews drop constraint if exists option_reviews_undone_by_fkey;
+alter table public.option_reviews add constraint option_reviews_undone_by_fkey
+  foreign key (undone_by) references public.team_members(id) on delete set null not valid;
+alter table public.outstation_trips drop constraint if exists outstation_trips_driver_id_fkey;
+alter table public.outstation_trips add constraint outstation_trips_driver_id_fkey
+  foreign key (driver_id) references public.team_members(id) on delete cascade not valid;
+alter table public.personnel_records drop constraint if exists personnel_records_team_member_id_fkey;
+alter table public.personnel_records add constraint personnel_records_team_member_id_fkey
+  foreign key (team_member_id) references public.team_members(id) on delete cascade not valid;
+alter table public.personnel_salaries drop constraint if exists personnel_salaries_team_member_id_fkey;
+alter table public.personnel_salaries add constraint personnel_salaries_team_member_id_fkey
+  foreign key (team_member_id) references public.team_members(id) on delete cascade not valid;
+alter table public.rail_orders drop constraint if exists rail_orders_member_id_fkey;
+alter table public.rail_orders add constraint rail_orders_member_id_fkey
+  foreign key (member_id) references public.team_members(id) on delete cascade not valid;
+
+/* Validated where no row points at nothing; one that does stays `not valid`
+   and still checks every new row. */
+do $$
+declare k record;
+begin
+  for k in
+    select c.conrelid::regclass as tbl, c.conname
+      from pg_constraint c
+     where c.connamespace = 'public'::regnamespace and c.contype = 'f' and not c.convalidated
+       and c.conname = any (array[
+    'bukku_links_gone_sent_by_fkey', 'bukku_send_claims_claimed_by_fkey', 'campaigns_invoice_claimed_by_fkey',
+    'code_email_template_updated_by_fkey', 'creator_email_templates_updated_by_fkey', 'creator_emails_sent_by_fkey',
+    'creator_pay_requests_decided_by_fkey', 'creator_sheet_settings_updated_by_fkey', 'departments_updated_by_fkey',
+    'email_templates_updated_by_fkey', 'hiring_email_templates_updated_by_fkey', 'id_formats_updated_by_fkey',
+    'ops_tasks_delayed_by_fkey', 'outstation_photos_removed_by_fkey', 'perf_events_actor_id_fkey',
+    'personnel_records_requested_by_fkey', 'personnel_records_superior_id_fkey', 'personnel_records_updated_by_fkey',
+    'personnel_salaries_updated_by_fkey', 'personnel_settings_updated_by_fkey', 'sm_report_post_links_linked_by_fkey',
+    'sm_report_post_links_unlinked_by_fkey', 'system_emails_sent_by_fkey', 'team_emails_sent_by_fkey',
+    'team_invites_caller_id_fkey', 'team_notices_sent_by_fkey', 'video_scripts_created_by_fkey',
+    'ai_drafts_client_id_fkey', 'client_brands_client_id_fkey', 'client_document_deletions_client_id_fkey',
+    'delete_requests_client_id_fkey', 'ops_month_invoices_client_id_fkey', 'sm_reports_label_client_fkey',
+    'system_emails_client_id_fkey', 'team_emails_client_id_fkey', 'wa_outbox_client_id_fkey',
+    'creator_emails_again_of_fkey', 'creator_pay_requests_prior_id_fkey', 'hiring_docs_replaces_fkey',
+    'system_emails_again_of_fkey', 'ai_drafts_script_id_fkey', 'ops_notifications_script_id_fkey',
+    'supplier_emails_document_id_fkey', 'ops_recurring_made_source_task_id_fkey', 'sm_report_post_links_task_id_fkey',
+    'ops_tasks_delayed_report_fkey', 'sm_report_post_links_report_id_fkey', 'ai_drafts_batch_id_fkey',
+    'billing_entities_orphan_of_fkey', 'brand_analyses_press_id_fkey', 'client_entities_bill_contact_id_fkey',
+    'creator_emails_creator_id_fkey', 'creator_emails_request_id_fkey', 'creator_emails_option_id_fkey',
+    'ops_notifications_notice_id_fkey', 'ops_revisions_source_review_id_fkey', 'quotation_link_copies_quotation_id_fkey',
+    'quotations_version_id_fkey', 'sm_report_post_links_post_id_fkey', 'system_emails_candidate_id_fkey',
+    'team_emails_supplier_id_fkey', 'team_emails_template_id_fkey', 'delete_requests_kind_fkey',
+    'perf_dept_scores_department_fkey', 'perf_people_department_fkey', 'mail_senders_box_fkey',
+    'ops_recurring_rules_template_id_fkey', 'ops_tasks_template_id_fkey', 'ops_task_templates_workflow_id_fkey',
+    'ops_tasks_workflow_id_fkey', 'client_services_quotation_id_fkey', 'clients_vic_by_fkey',
+    'creator_pay_requests_entered_by_fkey', 'delete_requests_decided_by_fkey', 'delete_requests_requested_by_fkey',
+    'guide_seen_team_member_id_fkey', 'invoice_send_template_updated_by_fkey', 'ops_due_requests_asked_by_fkey',
+    'ops_due_requests_decided_by_fkey', 'ops_due_requests_decider_id_fkey', 'ops_engagement_checks_updated_by_fkey',
+    'ops_engagement_events_actor_id_fkey', 'ops_engagements_created_by_fkey', 'ops_engagements_manager_id_fkey',
+    'ops_recurring_rules_created_by_fkey', 'ops_revisions_requested_by_fkey', 'ops_task_checklist_items_completed_by_fkey',
+    'ops_task_events_actor_id_fkey', 'ops_task_links_created_by_fkey', 'ops_tasks_created_by_fkey',
+    'ops_tasks_manager_id_fkey', 'ops_tasks_rated_by_fkey', 'ops_work_sessions_corrected_by_fkey',
+    'ops_work_sessions_team_member_id_fkey', 'option_reviews_undone_by_fkey', 'outstation_trips_driver_id_fkey',
+    'personnel_records_team_member_id_fkey', 'personnel_salaries_team_member_id_fkey', 'rail_orders_member_id_fkey'])
+  loop
+    begin
+      execute format('alter table %s validate constraint %I', k.tbl, k.conname);
+    exception when foreign_key_violation then
+      raise notice '% stays not valid: rows point at nothing', k.conname;
+    end;
+  end loop;
+end $$;
+
+-- END OF FOREIGN KEYS ON SINGLE-TARGET IDS ---------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
 -- OWNERS BY ID (2026-11-28)
 -- ===========================================================================
 -- WHY: restructure release 2 (docs/MAP.md §G). A campaign's Person in

@@ -29,6 +29,19 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   of each sender's fields, refusing `unknown-field` with the field and the
   list, said as `ADspaceWords.line.unknownField` (Unknown field {x}. Use …);
   `template_fields_all()` answers the lists to the team (`tests/tplfieldsql.js`).
+- A colleague is found by their id (`clients.owner_id`, `campaigns.owner_id`,
+  `quotations.made_by_id`, `submitted_by_id`, `activity_log.actor_id`,
+  `member_id`), never by the name a record holds: the name is a snapshot,
+  written from the id where a page picks a colleague (`owner_id_stamp`), else
+  stamped from the caller's own; a name written alone links only the one
+  colleague holding it; backfilled only where one colleague holds the name
+  (2026-11-28, `colleagueidsql`, `owneridsql`).
+- A uuid column naming one record holds a foreign key stating its `on delete`:
+  cascade only where the row cannot stand without its parent, set null where
+  the history must survive, restrict where the delete is refused; added `not
+  valid`, validated where no row points at nothing (2026-11-28, release 4;
+  `idguard` counts the columns without one). A polymorphic id, a uuid array
+  and an id a recorded decision keeps past its parent hold none.
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
 - Two releases restating one function merge in turn: the later one's
