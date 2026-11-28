@@ -154,6 +154,7 @@
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
+    mail_cancel: 'p_source p_id',
     mail_senders_read: '',
     agency_profile_read: '',
     mail_boxes_set: 'p_values',
@@ -3816,8 +3817,8 @@ function cardSlugFree(name, self, email) {
       updated_at: '2026-10-28T00:00:00Z', updated_by: null };
   }
   function invSendSeed() {
-    return { id: 1, subject_one: 'Invoice {invoice no} · ADspace', subject_many: '{count} invoices · ADspace',
-      body: 'Dear {contact name},\n\nPlease find below invoice {invoice no} for {client}, amounting to {total}.\n\n{invoices}\n\nTo view or download the invoice, please select View PDF above. Kindly arrange payment by the due date.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
+    return { id: 1, subject_one: 'Invoice {invoice no} · {agency}', subject_many: '{count} invoices · {agency}',
+      body: 'Dear {contact name},\n\nPlease find below invoice {invoice no} for {client}, amounting to {total}.\n\n{invoices}\n\nTo view or download the invoice, please select View PDF above. Kindly arrange payment by the due date.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\n{agency} Finance',
       legal: '', disclaimer: invTemplateSeed().disclaimer, updated_at: '2026-11-04T00:00:00Z', updated_by: null };
   }
   function invRecipient(cid) {
@@ -4199,6 +4200,7 @@ function cardSlugFree(name, self, email) {
     invoices.forEach(function (x) { by[x.currency] = (by[x.currency] || 0) + Number(x.amount); });
     var vals = { 'contact name': who, client: co, 'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1], count: String(n),
       total: Object.keys(by).sort().map(function (c) { return invMoney(by[c], c); }).join(' and '), 'sign off': named ? 'Yours sincerely' : 'Yours faithfully' };
+    vals = agencyVals(vals);
     var fill = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
     var t = purpose === 'invoice' ? DB.invoice_send_template[0] : DB.invoice_email_template[0];
     var s = fill(String(subject || '').trim() || (n === 1 ? t.subject_one : t.subject_many)).replace(/\s+/g, ' ').trim();
@@ -5978,6 +5980,32 @@ function cardSlugFree(name, self, email) {
     return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
       { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
   }
+
+  function undoQueue(src, table, key, logId, close) {
+    var secs = Number(window.__undoSeconds) || 0;
+    if (!(secs > 0)) return null;
+    var row = (DB[table] || []).filter(function (x) { return x.id === logId; })[0];
+    if (!row) return null;
+    row[key] = 'queued';
+    DB.mail_queue = DB.mail_queue || [];
+    var me = opsMe() || {};
+    var q = { id: nid('mq'), source: src, table: table, key: key, log_id: logId, status: 'queued', queued_by: me.id || null,
+      send_at: new Date(Date.now() + secs * 1000).toISOString(), created_at: new Date().toISOString() };
+    DB.mail_queue.push(q);
+    persist();
+    setTimeout(function () {
+      var x = (DB.mail_queue || []).filter(function (y) { return y.id === q.id; })[0];
+      var r = x && (DB[table] || []).filter(function (y) { return y.id === logId; })[0];
+      if (!x || x.status !== 'queued' || !r) return;
+      x.status = 'sending'; r[key] = 'sending';
+      persist();
+      window.__undoSent = (window.__undoSent || []).concat([{ source: src, id: logId }]);
+      Promise.resolve(close(window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent')).then(function () {
+        x.status = r[key] === 'sending' ? 'unknown' : r[key]; persist();
+      });
+    }, secs * 1000);
+    return { source: src, id: logId, seconds: secs, send_at: q.send_at };
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -6127,12 +6155,12 @@ function cardSlugFree(name, self, email) {
   }
 
   var TPL_FIELDS = {
-    supplier: ['contact name', 'supplier name', 'supplier id', 'payment term', 'currency', 'document title', 'document reference', 'document date', 'sender name'],
-    client: ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name'],
-    free: ['contact name', 'company name', 'client name', 'supplier name', 'sender name'],
-    invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices'],
-    'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
-    'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
+    supplier: ['contact name', 'supplier name', 'supplier id', 'payment term', 'currency', 'document title', 'document reference', 'document date', 'sender name', 'agency', 'agency legal name'],
+    client: ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name', 'agency', 'agency legal name'],
+    free: ['contact name', 'company name', 'client name', 'supplier name', 'sender name', 'agency', 'agency legal name'],
+    invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices', 'agency', 'agency legal name'],
+    'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link', 'agency', 'agency legal name'],
+    'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link', 'agency', 'agency legal name'],
     meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
     code: ['name', 'code', 'minutes', 'purpose'],
     feedback: ['contact name', 'client name', 'link'],
@@ -6140,6 +6168,33 @@ function cardSlugFree(name, self, email) {
     candidate: ['candidate name', 'position', 'interview length', 'where', 'times', 'reply by', 'note', 'time', 'previous time', 'new time', 'place', 'google meet notice',
       'decision date', 'months', 'document', 'reference', 'requested action', 'purpose', 'reason', 'document date', 'contact', 'sign-off', 'button']
   };
+
+  function agencyVals(v) {
+    var A = window.ADspaceAgency || {};
+    return Object.assign({ agency: A.trading_name, 'agency legal name': A.legal_name }, v || {});
+  }
+
+  function tplSeed() {
+    if (!DB.templates) DB.templates = [
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
+        body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
+      { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
+        body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+    [{ kind: 'quotation', subject: 'Quotation {document reference} · {agency}', body: 'Dear {contact name},\n\nThank you for your interest in {agency}. Please find attached our Quotation {document reference} for {client name}, dated {document date} and valid until {valid until}.\n\nShould you have any questions, please reply to this email.\n\nYours sincerely,\n{sender name}\n{agency legal name}' },
+      { kind: 'offer', subject: 'Letter of Offer {document reference} · {agency}', body: 'Dear {contact name},\n\nPlease find attached our Letter of Offer {document reference} for {client name}, dated {document date}.\n\nKindly sign the acceptance page and return it to us to confirm.\n\nYours sincerely,\n{sender name}\n{agency legal name}' },
+      { kind: 'letter', subject: '{document title} {document reference} · {agency}', body: 'Dear {contact name},\n\nPlease find attached our {document title} {document reference} for {client name}, dated {document date}.\n\nYours sincerely,\n{sender name}\n{agency legal name}' }
+    ].forEach(function (t) {
+      if (DB.templates.some(function (x) { return x.key === 'client.' + t.kind; })) return;
+      DB.templates.push({ id: nid('tp'), key: 'client.' + t.kind, kind: 'client', language: 'en', version: 1, subject: t.subject, body: t.body,
+        status: 'live', effective_from: '2026-01-01', sample: false });
+    });
+  }
+
+  function tplInForce(key, lang, at) {
+    tplSeed();
+    return DB.templates.filter(function (x) { return x.key === key && x.language === lang && x.status === 'live' && x.effective_from <= at; })
+      .sort(function (a, b) { return a.effective_from < b.effective_from ? 1 : a.effective_from > b.effective_from ? -1 : b.version - a.version; })[0] || null;
+  }
 
   function clientRep(c, purpose) {
     if (!c) return null;
@@ -12240,14 +12295,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
     function cpTpl() {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
-        { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\n{agency} will review them and inform you by email once they are approved.\n\nYours sincerely,\n{agency}', to_email: null },
         { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\n{changes}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
-        { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\n{agency}', to_email: null },
 
-        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If you did not make this change, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'changed', on_send: true, subject: 'Payment details changed: {reference}', body: 'Dear {creator name},\n\nYour payment details were changed on {date}. If you did not make this change, please contact ap@adspacestudios.com.\n\n{changes}\n\n您的收款资料已于{chinese date}更改。如非本人操作，请联系 ap@adspacestudios.com。\n\nYours sincerely,\n{agency}', to_email: null },
         { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
-        { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
-        { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
+        { purpose: 'posted', on_send: true, subject: 'Post recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\n{agency}', to_email: null },
+        { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\n{agency}', to_email: null }];
       return DB.creator_email_templates;
     }
     function cpMethod(m, b) { return m === 'bank' ? 'Bank transfer' + (b ? ' · ' + b : '') : ({ duitnow: 'DuitNow', paynow: 'PayNow', tng: "Touch 'n Go eWallet" })[m] || m; }
@@ -12303,6 +12358,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id,
         date: (function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); })(String(r.created_at).slice(0, 10)), 'chinese date': String(r.created_at).slice(0, 10).replace(/^(\d+)-0?(\d+)-0?(\d+)$/, '$1年$2月$3日'),
         changes: (r.changes || []).join('\n') };
+      vals = agencyVals(vals);
       var fill = function (x) { Object.keys(vals).forEach(function (k) { x = x.replace(new RegExp('\\{\\s*' + k + '\\s*\\}', 'gi'), vals[k]); }); return x; };
       DB.creator_emails = DB.creator_emails || [];
       DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
@@ -16117,7 +16173,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
               subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
               created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
-              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, sent_by_id: e.sent_by || null, client_id: e.client_id };
           }) });
       }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
@@ -16168,6 +16224,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         var vals0 = { 'contact name': who0, 'client name': cl0 ? cl0.name : '', 'company name': cl0 ? ((opsAllowed('clients.billing', 'view') && cl0.legal_name) || cl0.name) : sp0 ? sp0.name : '',
           'supplier name': sp0 ? sp0.name : '', 'sender name': emMe.name };
+        vals0 = agencyVals(vals0);
         var fill0 = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals0[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
         var sj0 = fill0(args.p_subject).replace(/\s+/g, ' ').trim(), bd0 = fill0(args.p_body).replace(/\r/g, '').trim();
         if (sj0.length < 2 || sj0.length > 200) return emNo('bad-subject');
@@ -16231,6 +16288,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: caId }, error: null });
     }
+    if (name === 'mail_cancel') {
+      var mcMe = opsMe();
+      if (!mcMe) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mq = (DB.mail_queue || []).filter(function (x) { return x.source === args.p_source && x.log_id === args.p_id; })[0];
+
+      var mqc = !mq && args.p_source === 'system' && (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+      if (mqc) {
+        if (mqc.outcome_mail === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+        if (mqc.outcome_mail !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+        mqc.outcome_mail = 'cancelled'; mqc.outcome_mail_due = null; persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!mq) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (mq.queued_by !== mcMe.id && !opsAllowed('whatsapp', 'manage')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      if (mq.status === 'cancelled') return Promise.resolve({ data: { ok: true, same: true }, error: null });
+      if (mq.status !== 'queued') return Promise.resolve({ data: { error: 'sent' }, error: null });
+      mq.status = 'cancelled'; mq.cancelled_by = mcMe.id;
+      var mr = (DB[mq.table] || []).filter(function (x) { return x.id === mq.log_id; })[0];
+      if (mr) { mr[mq.key] = 'cancelled'; if (mq.table === 'feedback_requests' && !mr.closed_at) { mr.closed_at = new Date().toISOString(); mr.closed_reason = 'withdrawn'; } }
+      DB.activity_log.unshift({ id: nid('al'), actor: mcMe.name, action: 'email.sent', subject: 'Email', detail: 'Email · email to the recipient cancelled before it was sent', created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'mail_log') {
       if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
       if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -16245,7 +16325,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
       var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
       var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
-        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        sent_by: mlWho(e.sent_by, e.by), sent_by_id: e.sent_by || null, created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
         delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
         client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null,
         ref_id: e.ref_id || null, again_of: e.again_of || null }; };
@@ -16774,20 +16854,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var tsNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       var tsOk = function (d) { persist(); return Promise.resolve({ data: JSON.parse(JSON.stringify(Object.assign({ ok: true }, d || {}))), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return tsNo(window.__refuseRpc[name]);
-      if (!DB.templates) DB.templates = [
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'en', version: 1, subject: 'Sample for {client name}',
-          body: 'Dear {contact name},\n\nThis is a sample template for {client name}.\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true },
-        { id: nid('tp'), key: 'sample.greeting', kind: 'client', language: 'zh', version: 1, subject: '{client name}示例',
-          body: '{contact name}您好：\n\n这是{client name}的示例模板。\n\n{sender name}', status: 'live', effective_from: '2026-01-01', sample: true }];
+      tplSeed();
       var tsMe = opsMe(), tsToday = appToday();
       var tsNorm = function (x) { return String(x == null ? '' : x).toLowerCase().replace(/\s+/g, ' ').trim(); };
       var tsEsc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
       var tsNames = function (x) { var o = []; String(x || '').replace(/\{([^{}]*)\}/g, function (m, k) { k = tsNorm(k); if (o.indexOf(k) < 0) o.push(k); return m; }); return o; };
       var tsLang = function (l) { return l === 'zh' ? '中文' : 'English'; };
-      var tsInForce = function (key, lang, at) {
-        return DB.templates.filter(function (x) { return x.key === key && x.language === lang && x.status === 'live' && x.effective_from <= at; })
-          .sort(function (a, b) { return a.effective_from < b.effective_from ? 1 : a.effective_from > b.effective_from ? -1 : b.version - a.version; })[0] || null;
-      };
+      var tsInForce = tplInForce;
       var tsFill = function (text, vals) {
         var t2 = '', h = '', miss = [], last = 0, re = /\{([^{}]*)\}/g, m, src = String(text || '');
         while ((m = re.exec(src))) {
@@ -16811,6 +16884,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!tp) return tsNo('not-found');
         var list = TPL_FIELDS[tp.kind] || [], vals = {};
         if (list.indexOf('sender name') >= 0) vals['sender name'] = tsMe.name;
+        if (list.indexOf('agency') >= 0) vals = agencyVals(vals);
         if (args.p_record) {
           if (tp.kind === 'client') {
             if (!opsAllowed('clients', 'view')) return tsNo('denied');
@@ -17934,14 +18008,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
-      DB.client_email_templates = DB.client_email_templates || [
-        { kind: 'quotation', subject: 'Quotation {document reference} · ADspace', body: 'Dear {contact name},\n\nThank you for your interest in ADspace. Please find attached our Quotation {document reference} for {client name}, dated {document date} and valid until {valid until}.\n\nShould you have any questions, please reply to this email.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' },
-        { kind: 'offer', subject: 'Letter of Offer {document reference} · ADspace', body: 'Dear {contact name},\n\nPlease find attached our Letter of Offer {document reference} for {client name}, dated {document date}.\n\nKindly sign the acceptance page and return it to us to confirm.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' },
-        { kind: 'letter', subject: '{document title} {document reference} · ADspace', body: 'Dear {contact name},\n\nPlease find attached our {document title} {document reference} for {client name}, dated {document date}.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' }];
+      var cmToday = appToday();
+      var cmTpl = function (k) { return tplInForce('client.' + k, 'en', cmToday); };
       DB.client_emails = DB.client_emails || [];
       var cmMe = opsMe();
       if (!cmMe) return spNo('denied');
-      var cmFill = function (t, v) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase(); return v[k] ? v[k] : m; }); };
+      var cmFill = function (t, v) { v = agencyVals(v); return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase().replace(/\s+/g, ' '); return v[k] ? v[k] : m; }); };
       var cmMay = function (k, lv) {
         return k === 'quotation' ? opsAllowed('clients.quotes', lv) : k === 'offer' ? opsAllowed('clients.documents', lv)
           : k === 'letter' ? (opsAllowed('register.documents', lv) || opsAllowed('clients.documents', lv)) : false;
@@ -17953,11 +18025,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var cmKindWord = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
       if (name === 'client_email_templates_list') {
         if (!opsGranted('team.settings', 'view')) return spNo('denied');
-        return spOk({ rows: DB.client_email_templates.map(function (t) { return { kind: t.kind, subject: t.subject, body: t.body }; }) });
+        return spOk({ rows: ['quotation', 'offer', 'letter'].map(cmTpl).filter(Boolean).map(function (t) { return { kind: t.key.slice(7), subject: t.subject, body: t.body, version: t.version }; }) });
       }
       if (name === 'client_email_template_save') {
         if (!opsGranted('team.settings', 'work')) return spNo('denied');
-        var ct = DB.client_email_templates.filter(function (t) { return t.kind === args.p_kind; })[0];
+        var ct = ['quotation', 'offer', 'letter'].indexOf(args.p_kind) >= 0 ? cmTpl(args.p_kind) : null;
         if (!ct) return spNo('bad-kind');
         var cs = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), cb = String(args.p_body || '').replace(/\r/g, '').trim();
         if (cs.length < 2 || cs.length > 200) return spNo('bad-subject');
@@ -17967,7 +18039,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (ct.subject !== cs) moved.push('Subject: ' + ct.subject + ' → ' + cs);
         if (ct.body !== cb) moved.push('Message');
         if (!moved.length) return spOk();
-        ct.subject = cs; ct.body = cb;
+        var cv = DB.templates.filter(function (x) { return x.key === ct.key && x.language === 'en'; }).reduce(function (m4, x) { return Math.max(m4, x.version); }, 0) + 1;
+        DB.templates.push({ id: nid('tp'), key: ct.key, kind: 'client', language: 'en', version: cv, subject: cs, body: cb, status: 'live',
+          effective_from: cmToday, sample: false, created_by_id: cmMe.id, published_by_id: cmMe.id, created_at: new Date().toISOString() });
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Client emails',
           detail: cmKindWord[args.p_kind] + ' · ' + moved.join(' · '), created_at: new Date().toISOString() });
         persist();
@@ -18102,7 +18176,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         var cc = opsAllowed('clients.billing', 'view') ? String(c.finance_email || '').trim() || null : null;
         if (cc && (cc.toLowerCase() === String(k.email).trim().toLowerCase() || !cmMail.test(cc))) cc = null;
-        var tp = DB.client_email_templates.filter(function (t) { return t.kind === kind; })[0];
+        var tp = cmTpl(kind);
+        if (!tp) return { error: 'needs-update' };
         var v = { 'contact name': cmNamed(k), 'client name': c.name, 'company name': (opsAllowed('clients.billing', 'view') && c.legal_name) || c.name, 'document title': title,
           'document reference': sref, 'document date': cmLong(dday), 'valid until': cmLong(valid), 'sender name': cmMe.name };
         var rec = DB.client_emails.filter(function (e) { return e.kind === kind && e.ref_id === ref && e.status !== 'failed' && Date.parse(e.created_at) > Date.now() - 24 * 3600e3; })
@@ -19445,10 +19520,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       if (/^supplier_email/.test(name)) {
         DB.supplier_email_templates = DB.supplier_email_templates || [
-          { purpose: 'approved', subject: 'Supplier registration approved · ADspace', body: 'Dear {contact name},\n\n{supplier name} ({supplier id}) is approved as a supplier to ADspace, on {payment term} in {currency}.\n\nRegards,\n{sender name}\nADSPACE PLT' },
-          { purpose: 'document', subject: '{document title} {document reference} · ADspace', body: 'Dear {contact name},\n\nPlease find attached {document title} {document reference} dated {document date} for {supplier name} ({supplier id}).\n\nRegards,\n{sender name}\nADSPACE PLT' }];
+          { purpose: 'approved', subject: 'Supplier registration approved · {agency}', body: 'Dear {contact name},\n\n{supplier name} ({supplier id}) is approved as a supplier to {agency}, on {payment term} in {currency}.\n\nRegards,\n{sender name}\n{agency legal name}' },
+          { purpose: 'document', subject: '{document title} {document reference} · {agency}', body: 'Dear {contact name},\n\nPlease find attached {document title} {document reference} dated {document date} for {supplier name} ({supplier id}).\n\nRegards,\n{sender name}\n{agency legal name}' }];
         DB.supplier_emails = DB.supplier_emails || [];
-        var emFill = function (t, v) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase(); return Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m; }); };
+        var emFill = function (t, v) { v = agencyVals(v); return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase().replace(/\s+/g, ' '); return Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m; }); };
         var emMe = opsMe();
         if (name === 'supplier_email_templates_list') {
           if (!(opsAllowed('suppliers', 'view') || opsAllowed('suppliers', 'manage') || opsGranted('team.settings', 'work'))) return spNo('denied');
@@ -19469,10 +19544,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, by_id: e.sent_by || null, source: 'supplier', document: e.document }; })
             .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
               var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
-              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, by_id: e.sent_by || null, source: 'manual', document: e.attachment };
             }))
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
@@ -20946,6 +21021,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome' && !opts.body.byHand && !opts.body.againOf) {
+
+          var hq0 = opts.body;
+          return rpc('hiring_outcome_mail_queue', { p_id: hq0.candidateId }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return { data: { error: d.error || 'denied' }, error: null };
+            return { data: { ok: true, queued: { source: 'system', id: hq0.candidateId, seconds: d.seconds || 60, send_at: d.due } }, error: null };
+          });
+        }
         if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
           var ho = opts.body;
           return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
@@ -21596,6 +21680,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
                 typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var iq = undoQueue('invoice', 'invoice_emails', 'status', b.id, function (st) { invDone(b.id, st, st === 'sent' ? 're_' + b.id : null, window.__mailFail || null); });
+              if (iq) { persist(); return bkR({ ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid, queued: iq }); }
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
               window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
@@ -21783,6 +21869,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_to: nb.to, p_ccs: nb.ccs || [], p_subject: nb.subject, p_body: nb.body, p_attachment: nb.file ? nb.file.name : null, p_idem: nb.key }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var nq = undoQueue('manual', 'team_emails', 'status', b.id, function (st) { return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (nq) return { data: { ok: true, id: b.id, to: b.to, to_name: b.to_name || null, cc: b.cc, queued: nq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('email_new_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc } : { error: window.__mailFail }, error: null };
@@ -21797,6 +21885,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__quoteAskSent = b;
+            var aq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (aq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: aq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21811,6 +21901,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
             window.__fbMailSent = b;
+            var fq = undoQueue('feedback', 'feedback_requests', 'mail_status', b.id, function (st) { return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (fq) return { data: { ok: true, id: b.id, to: b.to_email, to_name: b.to_name, queued: fq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('feedback_mail_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id, to: b.to_email, to_name: b.to_name } : { error: window.__mailFail }, error: null };
@@ -21827,6 +21919,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var cq = undoQueue('client', 'client_emails', 'status', b.id, function (st) { return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (cq) return { data: { ok: true, id: b.id, queued: cq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
@@ -21843,6 +21937,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             p_subject: mb.subject, p_body: mb.body, p_again: mb.again === true }).then(function (r) {
             var b = r.data || {};
             if (b.error) return { data: b, error: null };
+            var sq = undoQueue('supplier', 'supplier_emails', 'status', b.id, function (st) { return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }); });
+            if (sq) return { data: { ok: true, id: b.id, queued: sq }, error: null };
             var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
             return rpc('supplier_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
               return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
