@@ -23,6 +23,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -353,7 +354,7 @@
     box.hidden = false;
     box.innerHTML = due.length
       ? '<div class="hbo-hero"><span class="hbo-mark">' + BOOK + '</span>' +
-          '<h2 class="hbo-title">' + esc(name ? 'Welcome to ADspace, ' + name : 'Welcome to ADspace') + '</h2>' +
+          '<h2 class="hbo-title">' + esc(name ? 'Welcome to ' + AGENCY.trading_name + ', ' + name : 'Welcome to ' + AGENCY.trading_name) + '</h2>' +
           '<p class="hbo-line">Before you start, please read the files below and acknowledge each one. The portal will open once each file is acknowledged.</p></div>' +
         '<div class="hbo-progress"><span class="hbo-count">' + done + ' of ' + total + ' acknowledged</span>' +
           '<span class="hbo-track" aria-hidden="true"><span style="width:' + Math.round(done / total * 100) + '%"></span></span></div>' +

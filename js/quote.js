@@ -30,6 +30,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI, db = API && API.client;
   var cfg = window.ADSPACE_CONFIG || {};
   var KEEP = 'adspace-quote', LANG_KEY = 'adspace.quote.lang';
@@ -44,7 +45,7 @@
       introT: 'Get your quotation',
       introP: 'Select the services your brand requires and request your quotation.',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
-        'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ADspace will then confirm your start date.'],
+        'Provide your contact details. ' + AGENCY.trading_name + ' will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ' + AGENCY.trading_name + ' will then confirm your start date.'],
       introNote: 'This takes approximately three minutes.',
       needT: 'Choose your services',
       need: {
@@ -55,7 +56,7 @@
         verify: ['Account verification', 'Meta Verified and rednote Professional']
       },
       needNone: 'Select at least one service.',
-      reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.',
+      reqOnly: 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ' + AGENCY.trading_name + ' on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Choose your platforms', planH: 'Choose your plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform',
       ratesLater: 'The rates will be shown on the quotation.', adNot: null,
@@ -94,12 +95,12 @@
           toSole: 'This number is registered to a sole proprietorship or partnership. Choose Sole / Partnership above.',
           toCo: 'This number is registered to a company. Choose Company above.', legal: 'Enter the Registered Name.',
           industry: 'Choose your industry.', site: 'Enter your website, or tick No website.', siteBad: 'Enter a web address.',
-          handle: 'Enter a social media account.', handleBad: 'Enter the account name only, such as @adspace.',
+          handle: 'Enter a social media account.', handleBad: 'Enter the account name only, such as @' + AGENCY.trading_name.toLowerCase() + '.',
           comments: 'Enter no more than 1,000 characters.' },
         askT: 'Complete your details', askP: 'Please provide the following details by {d} to prepare your quotation.',
-        askNote: 'Note from ADspace', submit: 'Submit', rcvDetails: 'Details received', reqClosedT: 'This quotation request has been closed'
+        askNote: 'Note from ' + AGENCY.trading_name, submit: 'Submit', rcvDetails: 'Details received', reqClosedT: 'This quotation request has been closed'
       },
-      consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
+      consent: 'I consent to ' + AGENCY.trading_name + ' keeping these details to prepare my quotation and to contact me about it.',
       fullBrand: 'Your quotation will be prepared for your brand. Incomplete requests may not receive a quotation.',
       freeMail: 'A work email address is recommended.',
       waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
@@ -131,13 +132,13 @@
       ads: {
         lead: 'Choose one of the two options below to pay the advertising budget.', opt: 'Option {n}', or: 'or',
         /* The two options side by side (the user, 2026-11-27: either one, never both). */
-        cmp: { paid: 'Paid to', paidA: 'Meta, charged to your credit card', paidB: 'ADspace', when: 'Payment timing', whenA: 'As the ads run', whenB: 'Before each month',
+        cmp: { paid: 'Paid to', paidA: 'Meta, charged to your credit card', paidB: AGENCY.trading_name, when: 'Payment timing', whenA: 'As the ads run', whenB: 'Before each month',
           fee: 'Agency Credit Term Fee', feeA: 'None', feeB: 'None when prepaid; {fee}% if billed with the invoice' },
         own: 'Your own ad account',
         ownPts: ['Meta charges the ads directly to your own credit card.',
-          'The account is linked to the ADspace Meta business portfolio, so ADspace runs and manages the campaigns.'],
-        pre: 'Prepaid through ADspace',
-        prePts: ['The first month\'s advertising budget is paid to ADspace before the ads start.',
+          'The account is linked to the ' + AGENCY.trading_name + ' Meta business portfolio, so ' + AGENCY.trading_name + ' runs and manages the campaigns.'],
+        pre: 'Prepaid through ' + AGENCY.trading_name,
+        prePts: ['The first month\'s advertising budget is paid to ' + AGENCY.trading_name + ' before the ads start.',
           'Each following month is requested when about {pct}% of the current budget is spent.',
           'If payment is not received, the ads will be paused until payment is received.'],
         termH: 'Billed with the invoice',
@@ -146,22 +147,22 @@
       },
       adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
       adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
-      payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
+      payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ' + AGENCY.trading_name + '\'s approval.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month.',
-      basis: 'Rates are based on the ADspace Rate Card v.{v}.',
-      reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
+      basis: 'Rates are based on the ' + AGENCY.trading_name + ' Rate Card v.{v}.',
+      reviewT: 'Request received', reviewP: AGENCY.trading_name + ' will review your quotation and send it to you on WhatsApp by {d}.',
       rcvSent: 'Request sent', rcvSend: 'Quotation sent on WhatsApp',
       rcvBy: 'By {d}', rcvSign: 'Accept and sign on this page', rcvYours: 'Your request',
       repT: window.ADspaceWords.en.representative, repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
-      billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
-      billSentT: 'Billing details received', billSentP: 'ADspace will send your quotation for signing shortly.',
-      letterP: 'Please review and sign the Letter of Offer, then return the signed copy to ADspace.',
-      signedT: 'Signed copy received', signedP: 'ADspace will confirm your services shortly.', confirmed: 'Confirmed',
-      welcomeT: 'Welcome to ADspace', welcomeP: 'Your services, letters, reports and meetings are available in your Client Portal.',
+      billT: 'Billing details', billP: 'Please provide your company\'s billing details. ' + AGENCY.trading_name + ' will then prepare your quotation for signing.', billBtn: 'Provide billing details',
+      billSentT: 'Billing details received', billSentP: AGENCY.trading_name + ' will send your quotation for signing shortly.',
+      letterP: 'Please review and sign the Letter of Offer, then return the signed copy to ' + AGENCY.trading_name + '.',
+      signedT: 'Signed copy received', signedP: AGENCY.trading_name + ' will confirm your services shortly.', confirmed: 'Confirmed',
+      welcomeT: 'Welcome to ' + AGENCY.trading_name, welcomeP: 'Your services, letters, reports and meetings are available in your Client Portal.',
       portalBtn: 'Sign in to your Client Portal', portalLater: 'Your account manager will set up your Client Portal access.',
-      goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ADspace on WhatsApp.',
-      goneAsked: 'Request received. ADspace will contact you shortly.',
+      goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ' + AGENCY.trading_name + ' on WhatsApp.',
+      goneAsked: 'Request received. ' + AGENCY.trading_name + ' will contact you shortly.',
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
       decline: 'Decline', declineT: 'Decline this quotation', declineWhy: 'Reason', declineHint: 'Optional',
       declined: 'Declined', declinedT: 'You have declined this quotation',
@@ -173,22 +174,22 @@
       newQuote: 'New quotation',
       chgT: 'Change your selection', chgReq: 'Request these changes', chgCancel: 'Cancel', chgTotal: 'Your quotation with these changes',
       chgNone: 'Change a choice to see the revised price.', chgPendT: 'Changes requested',
-      chgPend: 'Your changes were requested on {d}. ADspace will send the revised quotation by {r}.', chgWithdraw: 'Withdraw request',
+      chgPend: 'Your changes were requested on {d}. ' + AGENCY.trading_name + ' will send the revised quotation by {r}.', chgWithdraw: 'Withdraw request',
       perMonth: '{a} per month', plusMonth: '+{a} per month', incl: 'Included', each: '{a} each', eachMonth: '{a} each per month',
       err: {
-        captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
+        captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ' + AGENCY.trading_name + ' on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Choose when you plan to commence.', 'bad-start-date': 'Choose a preferred start date from today onwards.',
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
-        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'ADspace will review this quotation and send it to you on WhatsApp.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
+        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': AGENCY.trading_name + ' will review this quotation and send it to you on WhatsApp.', unavailable: 'Online quotations are not available at the moment. Please contact ' + AGENCY.trading_name + ' on WhatsApp.',
         'not-found': 'This quotation could not be found. Please check the link, or request a new quotation.', 'bad-answer': 'Answer both questions to proceed.',
-        signed: 'This quotation has already been signed. Please contact ADspace on WhatsApp.',
-        empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
+        signed: 'This quotation has already been signed. Please contact ' + AGENCY.trading_name + ' on WhatsApp.',
+        empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ' + AGENCY.trading_name + ' on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ' + AGENCY.trading_name + ' on WhatsApp.',
         any: 'Not sent. Please try again.',
         changes: 'This quotation cannot be signed while your changes are being reviewed. Withdraw the request to sign it as it stands.',
-        brands: 'Changes to this quotation cannot be requested online. Please contact ADspace on WhatsApp.',
+        brands: 'Changes to this quotation cannot be requested online. Please contact ' + AGENCY.trading_name + ' on WhatsApp.',
         recent: 'Your changes were submitted recently. Please try again in a minute.',
-        busy: 'Too many requests have been made on this quotation in the past hour. Please try again later, or contact ADspace on WhatsApp.'
+        busy: 'Too many requests have been made on this quotation in the past hour. Please try again later, or contact ' + AGENCY.trading_name + ' on WhatsApp.'
       },
       /* Accepting the quotation on its link (2026-10-31). */
       sg: {
@@ -199,14 +200,14 @@
         mobile: 'Mobile', email: 'Email', minTerm: 'Minimum term', termTotal: 'Total for the term', termTotalIncl: 'Total for the term incl. SST',
         signer: 'Full name', desig: 'Designation', sig: 'Signature', clear: 'Clear', typeIn: 'Type instead', drawIn: 'Draw instead',
         pad: 'Signature area', padHint: 'Sign here', typedPh: 'Type your full name',
-        agree: 'I am authorised to sign on behalf of {c} and accept this quotation and the ADspace Service Terms.',
+        agree: 'I am authorised to sign on behalf of {c} and accept this quotation and the ' + AGENCY.trading_name + ' Service Terms.',
         terms: 'Read the Service Terms', sending: 'Sending…',
         codeL: 'Enter the code sent to {e}', digit: 'Digit {n} of 6', resendQ: 'Did not receive it?', resend: 'Send again',
         resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Accept and sign', finishing: 'Signing…',
         rec: 'The time, IP address and device will be recorded with your signature.',
         waitT: 'Accepted', waitP: 'Signed by {n} on {d} at {t} (GMT+8).',
-        confT: 'Confirmed', confP: 'Confirmed by ADspace on {d}.', docId: 'Document ID {id}', sealDl: 'Download signed copy',
-        doneP: 'ADspace will review your details and confirm your start date within two working days.',
+        confT: 'Confirmed', confP: 'Confirmed by ' + AGENCY.trading_name + ' on {d}.', docId: 'Document ID {id}', sealDl: 'Download signed copy',
+        doneP: AGENCY.trading_name + ' will review your details and confirm your start date within two working days.',
         say: {
           legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Business Registration Number.', regOld: 'Enter a valid Old Registration Number.',
           tin: 'Enter a valid Tax Identification Number (TIN).', sst: 'Enter a valid SST Registration Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
@@ -219,7 +220,7 @@
         }
       },
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
-      offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
+      offT: 'Unable to load', offP: 'Please refresh the page, or contact ' + AGENCY.trading_name + ' on WhatsApp.',
       plat: { meta: 'Facebook and Instagram', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: 'Bahasa Melayu' }
     },
@@ -227,7 +228,7 @@
       lang: 'EN',
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可申请报价。',
-      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，' + AGENCY.trading_name + ' 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，' + AGENCY.trading_name + ' 随后将与您确认开始日期。'],
       introNote: '整个流程约需三分钟。',
       needT: '请选择您的服务',
       need: {
@@ -238,7 +239,7 @@
         verify: ['账号认证', 'Meta 认证与小红书专业号']
       },
       needNone: '请至少选择一项服务。',
-      reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
+      reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
       planT: '平台与方案', platsH: '选择平台', planH: '选择方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台',
       ratesLater: '价格将在报价单中列明。', adNot: '本报价不包括广告预算。',
@@ -275,12 +276,12 @@
           toSole: '此号码属于独资或合伙企业，请在上方选择“独资 / 合伙”。',
           toCo: '此号码属于公司，请在上方选择“公司”。', legal: '请填写注册名称。',
           industry: '请选择行业。', site: '请填写网站，或勾选“没有网站”。', siteBad: '请填写有效的网址。',
-          handle: '请填写社交媒体账号。', handleBad: '请只填写账号名称，例如 @adspace。',
+          handle: '请填写社交媒体账号。', handleBad: '请只填写账号名称，例如 @' + AGENCY.trading_name.toLowerCase() + '。',
           comments: '请勿超过1,000个字符。' },
         askT: '补充您的资料', askP: '请于{d}前提供以下资料，以便拟定报价。',
-        askNote: 'ADspace 备注', submit: '提交', rcvDetails: '资料已收到', reqClosedT: '本报价申请已关闭'
+        askNote: AGENCY.trading_name + ' 备注', submit: '提交', rcvDetails: '资料已收到', reqClosedT: '本报价申请已关闭'
       },
-      consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
+      consent: '本人同意 ' + AGENCY.trading_name + ' 保存以上资料，以便准备报价并就此与本人联系。',
       fullBrand: '报价将按您的品牌拟定。资料不完整的申请可能无法获得报价。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
@@ -308,37 +309,37 @@
       adHow: '广告费用如何支付',
       ads: {
         lead: '请从以下两种方式中选择一种支付广告预算。', opt: '方式 {n}', or: '或',
-        cmp: { paid: '付款对象', paidA: 'Meta（您的信用卡）', paidB: 'ADspace', when: '付款时间', whenA: '广告投放时扣款', whenB: '每月投放前',
+        cmp: { paid: '付款对象', paidA: 'Meta（您的信用卡）', paidB: AGENCY.trading_name, when: '付款时间', whenA: '广告投放时扣款', whenB: '每月投放前',
           fee: '账期服务费', feeA: '无', feeB: '预付则无；随发票结算加收{fee}%' },
         own: '您自己的广告账户',
         ownPts: ['Meta 直接从您自己的信用卡扣除广告费用。',
-          '该账户将关联至 ADspace 的 Meta 商务资产组合，由 ADspace 投放并管理广告活动。'],
-        pre: '通过 ADspace 预付',
-        prePts: ['首月广告预算须于广告开始投放前支付予 ADspace。',
-          '当月预算消耗约{pct}%时，ADspace 将请款下月预算。',
+          '该账户将关联至 ' + AGENCY.trading_name + ' 的 Meta 商务资产组合，由 ' + AGENCY.trading_name + ' 投放并管理广告活动。'],
+        pre: '通过 ' + AGENCY.trading_name + ' 预付',
+        prePts: ['首月广告预算须于广告开始投放前支付予 ' + AGENCY.trading_name + '。',
+          '当月预算消耗约{pct}%时，' + AGENCY.trading_name + ' 将请款下月预算。',
           '如未收到款项，广告将暂停投放，直至收款为止。'],
         termH: '随发票结算',
         term: '如广告预算按报价单的付款期限随发票结算而非预付，将按广告预算另加收{fee}%的账期服务费（Agency Credit Term Fee）。',
         eg: '例如：广告预算 {c}\u00a0{b}，账期服务费为 {c}\u00a0{x}。', close: '关闭'
       },
       adLine: '{p} 广告预算', adsT: '合约期广告预算',
-      adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
-      payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
+      adsNote: '广告预算由 ' + AGENCY.trading_name + ' 代客户支付予广告平台，须于服务开始前支付。',
+      payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ' + AGENCY.trading_name + ' 批准。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。',
-      basis: '价格依据 ADspace 价目表 v.{v}。',
-      reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
+      basis: '价格依据 ' + AGENCY.trading_name + ' 价目表 v.{v}。',
+      reviewT: '已收到您的请求', reviewP: AGENCY.trading_name + ' 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       rcvSent: '已提交请求', rcvSend: '通过 WhatsApp 发送报价',
       rcvBy: '{d}前', rcvSign: '在此页面接受并签署', rcvYours: '您的请求',
       repT: window.ADspaceWords.zh.representative, repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
-      billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
-      billSentT: '已收到账单资料', billSentP: 'ADspace 将尽快向您发送报价单供您签署。',
-      letterP: '请审阅并签署服务确认函，然后将签署副本交回 ADspace。',
-      signedT: '已收到签署副本', signedP: 'ADspace 将尽快确认您的服务。', confirmed: '已确认',
-      welcomeT: '欢迎加入 ADspace', welcomeP: '您的服务、函件、报告及会议均可在客户平台查看。',
+      billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ' + AGENCY.trading_name + ' 准备报价单供您签署。', billBtn: '填写账单资料',
+      billSentT: '已收到账单资料', billSentP: AGENCY.trading_name + ' 将尽快向您发送报价单供您签署。',
+      letterP: '请审阅并签署服务确认函，然后将签署副本交回 ' + AGENCY.trading_name + '。',
+      signedT: '已收到签署副本', signedP: AGENCY.trading_name + ' 将尽快确认您的服务。', confirmed: '已确认',
+      welcomeT: '欢迎加入 ' + AGENCY.trading_name, welcomeP: '您的服务、函件、报告及会议均可在客户平台查看。',
       portalBtn: '登录客户平台', portalLater: '您的客户经理将为您开通客户平台。',
-      goneT: '本报价已过期', goneP: '您可按最新价格申请新的报价，或通过 WhatsApp 咨询 ADspace。',
-      goneAsked: '已收到您的请求，ADspace 将尽快与您联系。',
+      goneT: '本报价已过期', goneP: '您可按最新价格申请新的报价，或通过 WhatsApp 咨询 ' + AGENCY.trading_name + '。',
+      goneAsked: '已收到您的请求，' + AGENCY.trading_name + ' 将尽快与您联系。',
       closed: '已取消', closedT: '本报价已取消',
       decline: '拒绝', declineT: '拒绝此报价', declineWhy: '原因', declineHint: '选填',
       declined: '已拒绝', declinedT: '您已拒绝此报价',
@@ -353,22 +354,22 @@
       newQuote: '申请新报价',
       chgT: '修改您的选择', chgReq: '提交修改请求', chgCancel: '取消', chgTotal: '修改后的报价',
       chgNone: '修改任何选项即可查看调整后的价格。', chgPendT: '已提交修改请求',
-      chgPend: '您已于{d}提交修改请求，ADspace 将于{r}前发送修订后的报价。', chgWithdraw: '撤回请求',
+      chgPend: '您已于{d}提交修改请求，' + AGENCY.trading_name + ' 将于{r}前发送修订后的报价。', chgWithdraw: '撤回请求',
       perMonth: '每月 {a}', plusMonth: '每月另加 {a}', incl: '已包含', each: '每项 {a}', eachMonth: '每项每月 {a}',
       err: {
-        captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
+        captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。', 'bad-start-date': '请选择今天或之后的期望开始日期。',
         'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
-        expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 将审核本报价，并通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
+        expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': AGENCY.trading_name + ' 将审核本报价，并通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
         'not-found': '找不到此报价，请检查链接，或申请新的报价。', 'bad-answer': '请回答以上两个问题。',
-        signed: '本报价已签署，请通过 WhatsApp 联系 ADspace。',
-        empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
+        signed: '本报价已签署，请通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
+        empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ' + AGENCY.trading_name + '。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
         any: '未能提交，请重试。',
         changes: '您的修改请求正在审核中，暂时无法签署此报价。如需按原报价签署，请先撤回请求。',
-        brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ADspace。',
+        brands: '此报价无法在线提交修改，请通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
         recent: '您的修改请求刚已提交，请一分钟后再试。',
-        busy: '过去一小时内此报价的请求次数过多，请稍后再试，或通过 WhatsApp 联系 ADspace。'
+        busy: '过去一小时内此报价的请求次数过多，请稍后再试，或通过 WhatsApp 联系 ' + AGENCY.trading_name + '。'
       },
       sg: {
         title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',
@@ -378,14 +379,14 @@
         mobile: '手机号码', email: '邮箱', minTerm: '最低合约期', termTotal: '合约期总额', termTotalIncl: '合约期总额（含 SST）',
         signer: '全名', desig: '职位', sig: '签名', clear: '清除', typeIn: '改为输入', drawIn: '改为手写',
         pad: '签名区', padHint: '请在此签名', typedPh: '请输入您的全名',
-        agree: '本人获授权代表 {c} 签署，并接受本报价及 ADspace 服务条款。',
+        agree: '本人获授权代表 {c} 签署，并接受本报价及 ' + AGENCY.trading_name + ' 服务条款。',
         terms: '阅读服务条款', sending: '发送中…',
         codeL: '请输入发送至 {e} 的验证码', digit: '第{n}位，共6位', resendQ: '没有收到？', resend: '重新发送',
         resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '接受并签署', finishing: '签署中…',
         rec: '签署时间、IP 地址及设备将与您的签名一并记录。',
         waitT: '已接受', waitP: '由{n}于{d} {t}（GMT+8）签署。',
-        confT: '已确认', confP: 'ADspace 已于{d}确认。', docId: '文件识别码 {id}', sealDl: '下载已签署副本',
-        doneP: 'ADspace 将审核您的资料，并于2个工作日内确认开始日期。',
+        confT: '已确认', confP: AGENCY.trading_name + ' 已于{d}确认。', docId: '文件识别码 {id}', sealDl: '下载已签署副本',
+        doneP: AGENCY.trading_name + ' 将审核您的资料，并于2个工作日内确认开始日期。',
         say: {
           legal: '请填写公司注册名称。', reg: '请填写有效的商业注册号码。', regOld: '请填写有效的旧注册号码。',
           tin: '请填写有效的税务识别号码（TIN）。', sst: '请填写有效的 SST 注册号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
@@ -398,7 +399,7 @@
         }
       },
       lostT: '找不到报价', lostP: '请检查链接，或申请新的报价。',
-      offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
+      offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ' + AGENCY.trading_name + '。',
       plat: { meta: 'Facebook 与 Instagram', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: '马来文' }
     }
@@ -893,7 +894,7 @@
     var k = t().ik;
     return seg('qsKind', k.kind, k.kinds, c.kind || 'company') +
       pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="202301012345" aria-required="true" value="' + esc(c.brn) + '">'),
-        field('qsLegal', k.legal, true, '<input class="input qs-caps" id="qsLegal" autocomplete="organization" placeholder="ADSPACE ADVERTISING SDN BHD" aria-required="true" value="' + esc(c.legal) + '">'));
+        field('qsLegal', k.legal, true, '<input class="input qs-caps" id="qsLegal" autocomplete="organization" placeholder="' + AGENCY.trading_name.toUpperCase() + ' ADVERTISING SDN BHD" aria-required="true" value="' + esc(c.legal) + '">'));
   }
   function industryHtml(c) {
     return field('qsInd', t().industry, true, '<select class="select" id="qsInd" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
@@ -902,10 +903,10 @@
   function onlineHtml(c) {
     var k = t().ik;
     return '<div id="qsSiteBox"' + (c.no_site ? ' hidden' : '') + '>' +
-      field('qsSite', k.site, false, '<input class="input" id="qsSite" type="url" inputmode="url" autocomplete="url" placeholder="adspace.me" value="' + esc(c.website) + '">') + '</div>' +
+      field('qsSite', k.site, false, '<input class="input" id="qsSite" type="url" inputmode="url" autocomplete="url" placeholder="' + window.ADSPACE_CONFIG.examples.domain + '" value="' + esc(c.website) + '">') + '</div>' +
       '<label class="qs-consent"><input type="checkbox" id="qsNoSite"' + (c.no_site ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(k.noSite) + '</span></label>' +
       pair(field('qsPlat', k.plat, false, '<select class="select" id="qsPlat">' + opts(k.plats, c.platform || 'instagram') + '</select>'),
-        field('qsHandle', k.handle, false, '<input class="input" id="qsHandle" autocomplete="off" autocapitalize="none" placeholder="@adspace" value="' + esc(c.handle) + '">'));
+        field('qsHandle', k.handle, false, '<input class="input" id="qsHandle" autocomplete="off" autocapitalize="none" placeholder="@' + AGENCY.trading_name.toLowerCase() + '" value="' + esc(c.handle) + '">'));
   }
   function commenceHtml(c) {
     /* One question for the start (ONE START QUESTION, 2026-11-21; the user:
@@ -925,11 +926,11 @@
         pair(field('qsSal', t().salutation, false, '<select class="select" id="qsSal"><option value="">' + esc(t().optional) + '</option>' +
             SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>'),
           field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">')) +
-        pair(field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">'),
+        pair(field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '" aria-required="true" value="' + esc(c.email) + '">'),
           field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="012-345 6789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint))) +
       sec(k.secBiz, regHtml(c)) +
       sec(k.secBrand,
-        pair(field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="off" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">'),
+        pair(field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="off" placeholder="' + AGENCY.trading_name + ' Advertising" aria-required="true" value="' + esc(c.brand) + '">'),
           industryHtml(c)) + onlineHtml(c)) +
       sec(k.secStart, commenceHtml(c)) +
       field('qsCm', k.comments, false, '<textarea class="textarea" id="qsCm" rows="3" maxlength="1000" placeholder="' + esc(t().optional) + '">' + esc(c.comments) + '</textarea>') +
@@ -1291,8 +1292,8 @@
     return top ? f(t().budgetOver, { c: qc(), b: n0(qb(top)) }) : t().budgetReq;
   }
   function waLink(q) {
-    var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
-    return who + '?text=' + encodeURIComponent(q && q.ref ? 'Hello ADspace, I would like to enquire about my quotation ' + q.ref + '.' : 'Hello ADspace, I would like to enquire about a quotation.');
+    var who = cfg.quoteWhatsApp;
+    return who + '?text=' + encodeURIComponent(q && q.ref ? 'Hello ' + AGENCY.trading_name + ', I would like to enquire about my quotation ' + q.ref + '.' : 'Hello ' + AGENCY.trading_name + ', I would like to enquire about a quotation.');
   }
   /* Beside the quotation (under it on a phone): the colleague who took the
      lead, once one has, with their own WhatsApp where their namecard shows
@@ -1686,7 +1687,7 @@
           SG_SAL.map(function (x) { return '<option value="' + esc(x) + '"' + (k.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
         sgField('sgName', w.name, true, sgInput('sgName', k.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
         sgField('sgMobile', s.mobile, true, sgInput('sgMobile', k.phone, ' type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789" aria-required="true"')) +
-        sgField('sgEmail', s.email, true, sgInput('sgEmail', k.email, ' type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true"')) +
+        sgField('sgEmail', s.email, true, sgInput('sgEmail', k.email, ' type="email" autocomplete="email" placeholder="email@' + window.ADSPACE_CONFIG.examples.domain + '" aria-required="true"')) +
         '<p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signnext') + '</form>';
     }
     if (SG.step === 2) {

@@ -24,6 +24,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var PEN = window.ADspaceIcons.glyph('pen');
   var FILE = window.ADspaceIcons.glyph('doc');
@@ -35,12 +36,12 @@
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
     creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
-    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.'],
+    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://' + AGENCY.portal_domain + '/{{1}}) opens the page to approve it.'],
     quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
     offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.'],
-    representative: ['Representative to lead', 'Sent from a lead\'s ⋯ (Introduce representative), or chosen in New message, to a lead whose Sales by is set. Variables: the greeting (salutation and name), the brand, the Sales by colleague\'s name. Its link button (https://hi.adspace.me/{{1}}) opens their namecard.'],
+    representative: ['Representative to lead', 'Sent from a lead\'s ⋯ (Introduce representative), or chosen in New message, to a lead whose Sales by is set. Variables: the greeting (salutation and name), the brand, the Sales by colleague\'s name. Its link button (https://' + AGENCY.link_domain + '/{{1}}) opens their namecard.'],
     creator_changed: ['Payment details changed', 'Sent by the portal when a creator\'s payment details are changed on the creator page, to the creator\'s previous WhatsApp number. Variables: the creator\'s name, the date of the change.'],
-    quote_ready: ['Quotation ready', 'Sent by the portal when a colleague sends a website quotation (Send quotation), to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
+    quote_ready: ['Quotation ready', 'Sent by the portal when a colleague sends a website quotation (Send quotation), to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://' + AGENCY.portal_domain + '/quote/?q={{1}}) opens the quotation.']
   };
   /* A purpose whose message carries a record's PDF as its Document header. */
   var DOC = { report: 1, quotation: 1, offer: 1 };
@@ -107,7 +108,7 @@
     '131026': 'The number is not on WhatsApp, or cannot receive this message.',
     '131030': 'The number is not on WhatsApp, or cannot receive this message.',
     '131049': 'Meta held it back to keep marketing messages to this person within its limits.',
-    '131050': 'The person has stopped marketing messages from ADspace.',
+    '131050': 'The person has stopped marketing messages from ' + AGENCY.trading_name + '.',
     '130472': 'Meta held it back as part of an experiment.',
     '131047': 'The person has not written in the last 24 hours.',
     '131051': 'WhatsApp does not support this message.',
@@ -1601,7 +1602,7 @@
         done();
         window.ADspaceSheet.close();
         mlLoad();
-        try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party } })); } catch (x) {}
+        try { window.dispatchEvent(new CustomEvent('portal:email-sent', { detail: { audience: aud, party: party } })); } catch (x) {}
       }).catch(function (e) { done(); neMsg(neSaid(e), 'err'); });
     });
   }

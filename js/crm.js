@@ -9,6 +9,7 @@
  * from this list; neither creates a company.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -3118,7 +3119,7 @@
     var n = $('crmLinkN');
     if (n) { n.textContent = rows.length; n.hidden = !rows.length; }
     if (!box || !rows.length) return;
-    var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+    var host = AGENCY.link_domain;
     box.innerHTML = '<div class="crm-table lkc-table"><div class="lkc-row crm-head prow"><span class="pr-main">Short link</span>' +
       '<span class="pr-end">Visits in 30 days</span></div>' + rows.map(function (l) {
         return '<div class="lkc-row prow' + (l.active === false ? ' is-off' : '') + '">' +
@@ -4706,14 +4707,14 @@
         var row = document.createElement('div');
         row.className = 'wl-brand' + (b.active ? '' : ' is-off');
         var own = b.logo === 'adspace';
-        row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">ADspace logo</span>' : '') +
+        row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">' + AGENCY.trading_name + ' logo</span>' : '') +
           (b.active ? '' : '<span class="chip is-off">Inactive</span>') + '</span>' +
           (can || canMeta ? '<span class="team-act">' +
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
               (can ? '<button class="kmenu-item" data-g="2" data-a="rename" type="button" role="menuitem">Rename</button>' : '') +
               (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" data-gate="meta" type="button" role="menuitem">Edit Meta accounts</button>' : '') +
-              (can ? '<button class="kmenu-item" data-g="2" data-a="logo" type="button" role="menuitem">' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</button>' +
+              (can ? '<button class="kmenu-item" data-g="2" data-a="logo" type="button" role="menuitem">' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ' + AGENCY.trading_name + ' logo') + '</button>' +
               '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' + (b.active ? 'Set inactive' : 'Set active') + '</button>' : '') +
             '</div></span>' : '');
         list.appendChild(row);
@@ -4880,7 +4881,7 @@
         [baN((a.works || []).length, 'strength'), baN((a.weak || []).length, 'weakness', 'weaknesses')].filter(Boolean).join(' · '));
     }
     if ((f.channels || []).length || f.angle) {
-      out += baSec('Where ADspace fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
+      out += baSec('Where ' + AGENCY.trading_name + ' fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
           return '<li><span class="ba-name">' + esc(x.channel) + ' <span class="chip">' + esc(BA_WHEN[x.priority] || x.priority) + '</span></span>' + esc(x.why || '') + '</li>';
         }).join('') + '</ul>' : ''],
         ['Fixes before paid advertising', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
@@ -5298,7 +5299,7 @@
   var PLUS_ICON = window.ADspaceIcons.glyph('plus');
   function brandAsk(c, b) {
     window.ADspaceConfirm.ask({ title: b ? 'Rename brand' : 'Add brand', go: b ? 'Save' : 'Add',
-      field: { label: 'Brand name', need: 'Enter the brand name.', value: b ? b.name : '', placeholder: 'ADspace Advertising' } },
+      field: { label: 'Brand name', need: 'Enter the brand name.', value: b ? b.name : '', placeholder: AGENCY.trading_name + ' Advertising' } },
       function (name) { saveBrand(c, b, name, b ? b.active : true); });
   }
   function saveBrand(c, b, name, active) {
@@ -5701,7 +5702,7 @@
       box.appendChild(table);
     });
   }
-  window.addEventListener('adspace:email-sent', function (e) {
+  window.addEventListener('portal:email-sent', function (e) {
     var d = e.detail || {};
     if (state.client && d.audience === 'client' && d.party === state.client.id) loadEmails(true);
   });
@@ -8029,7 +8030,7 @@
       return window.ADspaceRateCardPdf.draw(card);
     }).then(function (blob) {
       btn.disabled = false;
-      docs.save(blob, 'ADspace Rate Card ' + window.ADspaceRateCardPdf.tag(card) + '.pdf', tab);
+      docs.save(blob, AGENCY.trading_name + ' Rate Card ' + window.ADspaceRateCardPdf.tag(card) + '.pdf', tab);
     }).catch(function (e) {
       btn.disabled = false;
       if (docs && docs.shut) docs.shut(tab);

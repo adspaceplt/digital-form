@@ -1,5 +1,6 @@
 /* Client review page. Runs at /review/<token> and at /review/?k=<token>. */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var MK  = window.ADspaceMockups;
   var feed = null;
@@ -1400,7 +1401,7 @@
         paintHead(feed);
         // The name goes in front, here and on the tags a crawler would have read
         // had it run this. Written in one place so the two cannot drift apart.
-        setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
+        setPageTitle(feed.client.name + ' Content Review Portal by ' + AGENCY.trading_name);
         if (!feed.batches.length) {
           showState(W.nothing, W.nothingText);
           return;

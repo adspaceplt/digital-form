@@ -23,6 +23,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   /* An edit carries its pen, as every Edit in the console does. */
   var PEN_MARK = window.ADspaceIcons.glyph('pen');
   var API = window.ADspaceAPI;
@@ -4582,7 +4583,7 @@
     }).join('');
     var shown = items.filter(function (it) { return it.added; });
     var paper = items.length && r.next_batch_print !== false ? '<aside class="nb-side" aria-label="Client PDF page"><p class="nb-paper-h">Client PDF page</p>' +
-      '<div class="nb-paper"><span class="nb-paper-mark">ADspace</span><span class="nb-paper-t">Next Batch</span>' +
+      '<div class="nb-paper"><span class="nb-paper-mark">' + AGENCY.trading_name + '</span><span class="nb-paper-t">Next Batch</span>' +
       '<p class="nb-paper-l">' + esc(NB_LEAD) + '</p>' +
       (shown.length ? '<table><thead><tr><th>Creative</th><th>Plan</th><th>Reason</th></tr></thead><tbody>' + shown.map(function (it) {
         return '<tr><td>' + esc(it.ad || it.title) + '</td><td>' + esc(it.plan || it.title) + '</td><td>' + esc(it.why || '') + '</td></tr>';

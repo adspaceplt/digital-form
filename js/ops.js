@@ -19,6 +19,7 @@
  * change nothing the database does.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var UI  = window.ADspaceState;
@@ -193,7 +194,7 @@
     'bad-period': 'Choose a valid content month.',
     'bad-week': 'Choose a week from 1 to 5.',
     'skip-reason-required': 'Enter a reason to skip this step.',
-    'client-posts': 'The client posts this content, so it has no Live stage. Mark it as posted by ADspace first.',
+    'client-posts': 'The client posts this content, so it has no Live stage. Mark it as posted by ' + AGENCY.trading_name + ' first.',
     'already-live': 'Content that is already live cannot be marked as posted by the client. Move the task back from Live first.',
     'no-live-stage': 'This workflow has no Live stage, so the content cannot be marked as posted by the client. Choose a workflow with a Live stage first.',
     'back-reason-required': 'Enter a reason to go back.',
@@ -3693,7 +3694,7 @@
       var hasLive = Boolean(state.stages[t.workflow_id + '|live']);
       cpi.hidden = !hasLive || !mayMove(t) || Boolean(t.live_at) || t.cancelled_at ||
         ['live', 'performance_review', 'taken_down', 'completed'].indexOf(t.stage_key) > -1;
-      cpi.textContent = t.client_posts ? 'Mark as posted by ADspace' : 'Mark as posted by client';
+      cpi.textContent = t.client_posts ? 'Mark as posted by ' + AGENCY.trading_name : 'Mark as posted by client';
     }
     offerItems(menu, t);
     /* A ⋯ whose every item is withheld is not drawn (2026-10-20, OPS-1). */
@@ -5909,7 +5910,7 @@
       if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
       if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
       if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
-      if ('client_posts' in to) bits.push((to.client_posts ? 'Marked as posted by client' : 'Marked as posted by ADspace'));
+      if ('client_posts' in to) bits.push((to.client_posts ? 'Marked as posted by client' : 'Marked as posted by ' + AGENCY.trading_name));
       if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
@@ -6508,7 +6509,7 @@
       state.drawerDirty = true;
       readTask(t.id, function () {
         if (undoing) { msg('dwMsg', 'Undone.', 'ok'); return; }
-        undoBar(on ? 'Marked as posted by client.' : 'Marked as posted by ADspace.', function () {
+        undoBar(on ? 'Marked as posted by client.' : 'Marked as posted by ' + AGENCY.trading_name + '.', function () {
           if (state.task && state.task.id === t.id) setClientPosts(state.task, !on, true);
         }, $('dwMsg'));
       });

@@ -17,6 +17,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var D = function () { return window.ADspaceDocs; };
   /* A card drawn by the portal carries `.dp` after its version (v.2.0.6.dp;
      the user, 2026-10-13), so a file downloaded here is told apart from one
@@ -45,7 +46,7 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        docs.meta(pdf, 'ADspace Rate Card ' + tagOf(card), 'Rate Card & Packages');
+        docs.meta(pdf, AGENCY.trading_name + ' Rate Card ' + tagOf(card), 'Rate Card & Packages');
         return docs.embedFonts(pdf, PDF);
       }).then(function (fonts) {
         layout(pdf, PDF, fonts, card);

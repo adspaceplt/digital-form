@@ -43,7 +43,7 @@
      where it has one (the user, 2026-10-07), else its own. The QR itself
      keeps the card's own address, which never changes, so a printed code
      survives an edited short link. */
-  function linkHost() { return (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me'; }
+  function linkHost() { return window.ADspaceAgency.link_domain; }
   function named(card, key) {
     return card && card.slug ? linkHost() + '/' + card.slug : link(key).replace(/^https?:\/\//, '');
   }
@@ -238,7 +238,7 @@
       var handle = mount($('mycPreview'), cardOf(), d.key);
       /* The card's short link on the links host, where it has one; the QR on
          the card keeps the card's own address, which never changes. */
-      var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+      var host = window.ADspaceAgency.link_domain;
       $('mycSlugPre').textContent = host + '/';
       var share = d.slug ? 'https://' + host + '/' + d.slug : handle.link;
       $('mycUrl').textContent = share.replace(/^https?:\/\//, '');

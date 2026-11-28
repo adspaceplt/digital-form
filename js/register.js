@@ -19,6 +19,7 @@
  * the database builds unless one is typed over it.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var LET = window.ADspaceLetters;
@@ -385,7 +386,7 @@
       db.functions.invoke('sign-download', { body: { quotation: q.id } }).then(function (r) {
         var b = r && r.data;
         if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('unread');
-        window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
+        window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), AGENCY.trading_name + ' Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
         say(SIGNED_FAIL, 'err');

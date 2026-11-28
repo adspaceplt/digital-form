@@ -12,6 +12,7 @@
  * may see on every call.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
@@ -61,14 +62,14 @@
   var T = window.ADspaceWords.of({
     en: {
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
-      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Continue',
+      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ' + AGENCY.trading_name + '.', sendLink: 'Continue',
       sentTitle: 'Check your email', sentText: function (e) { return window.ADspaceWords.line.codeSent.replace('{email}', e); },
       code: 'Sign-in code', signIn: 'Sign in', otherEmail: 'Use another email',
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
       emailNeeded: 'Please enter your email address.',
       emailBad: 'Enter a valid email address.',
-      signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
+      signFail: 'The email could not be sent. Please try again in a minute, or contact your ' + AGENCY.trading_name + ' account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
       addCal: 'Add to calendar', monthOf: function (a, b) { return 'Month ' + a + ' of ' + b; }, endsOn: function (d) { return 'Ends ' + d; },
@@ -106,21 +107,21 @@
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved', toReviewWord: 'To review',
       noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
       scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
-      viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager', contactUs: 'Contact ADspace',
+      viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager', contactUs: 'Contact ' + AGENCY.trading_name,
       lines: function (n) { return n === 1 ? '1 service' : n + ' services'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp',
       invoices: 'Invoices', invoice: 'Invoice', dueOn: function (d) { return 'Due ' + d; }, balanceOf: function (v) { return 'Balance ' + v; },
       invState: { paid: 'Paid', outstanding: 'Outstanding', overdue: 'Overdue' }, downloadPdf: 'Download PDF'
     },
     zh: {
       kicker: '客户门户', lang: 'EN', signOut: '退出登录',
-      signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '继续',
+      signTitle: '客户登录', signText: '请输入在 ' + AGENCY.trading_name + ' 登记的电子邮箱。', sendLink: '继续',
       sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。'; },
       code: '登录验证码', signIn: '登录', otherEmail: '使用其他邮箱',
       codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
       codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
       emailNeeded: '请输入电子邮箱。',
       emailBad: '请输入有效的电子邮箱。',
-      signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
+      signFail: '邮件发送失败，请稍后重试，或联系您的 ' + AGENCY.trading_name + ' 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '合作项目', payment: '付款', account: '门户访问权限',
       addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + '结束'; },
@@ -156,7 +157,7 @@
       toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准', toReviewWord: '待审阅',
       noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
       scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
-      viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理', contactUs: '联系 ADspace',
+      viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理', contactUs: '联系 ' + AGENCY.trading_name,
       lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp',
       invoices: '发票', invoice: '发票', dueOn: function (d) { return '到期日：' + d; }, balanceOf: function (v) { return '余额：' + v; },
       invState: { paid: '已付款', outstanding: '未付款', overdue: '已逾期' }, downloadPdf: '下载PDF'
@@ -1020,7 +1021,7 @@
     var z = function (d) { return new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
     var a = new Date(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
     var clean = function (x) { return String(x || '').replace(/[\\;,]/g, function (m) { return '\\' + m; }).replace(/\n/g, ' '); };
-    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ADspace//Client Portal//EN', 'BEGIN:VEVENT',
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//' + AGENCY.trading_name + '//Client Portal//EN', 'BEGIN:VEVENT',
       'UID:' + (v.id || z(a)) + '@digital.adspace.me', 'DTSTAMP:' + z(Date.now()), 'DTSTART:' + z(a), 'DTEND:' + z(b),
       'SUMMARY:' + clean(title)];
     if (v.link) { lines.push('URL:' + v.link); lines.push('LOCATION:' + clean(v.link)); }

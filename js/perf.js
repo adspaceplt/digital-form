@@ -2187,7 +2187,7 @@
       ['Step', 'Name', 'Email', 'Date and time'], rows);
     y -= SP.line;
     para('Download reference ' + stamp.id + '. All times are in Malaysia time (GMT+8). ' +
-      (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'digital.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
+      (r.serial ? 'Verify the reference ' + r.serial + ' at ' + window.ADspaceAgency.verify_url + '.' : ''), TY.small, book, SOFT);
   }
 
   // ---- Performance rewards (2026-09-28) ------------------------------------------------

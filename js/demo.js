@@ -79,6 +79,8 @@
   }
 
   var NAME = 'Sample Studio';
+  /* The real agency's name, read before the sample's replaces it. */
+  var REAL = window.ADspaceAgency.trading_name;
   var SAID = 'Demo: changes are not saved.';
 
   /* The mark: the name set on a canvas, a PNG the letterhead can embed. */
@@ -296,7 +298,7 @@
 
   function words() {
     if (CONSOLE) document.title = NAME + ' · Demo';
-    else if (/ADspace/.test(document.title)) document.title = document.title.replace(/ADspace/g, NAME);
+    else if (document.title.indexOf(REAL) >= 0) document.title = document.title.split(REAL).join(NAME);
     var foot = document.querySelector('.portalfoot-copy');
     if (foot) foot.textContent = '© ' + new Date().getFullYear() + ' ' + NAME + '. Sample data for demonstration.';
     var link = document.querySelector('.portalfoot-link');

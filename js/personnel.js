@@ -22,6 +22,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -156,9 +157,9 @@
     ["f","job_3_from","Employment 3: from","mo",0],
     ["f","job_3_to","Employment 3: to","mo",0],
     ["f","job_3_notes","Employment 3: notes and reason for leaving","t:500",0],
-    ["g","heard","How they learned about ADspace","e:Newspaper ads|Friends or relatives|Websites|Career fair",0],
-    ["g","applied_before","Applied to ADspace before","b",0],
-    ["g","relative","Relative or friend at ADspace","b",0],
+    ["g","heard","How they learned about " + AGENCY.trading_name,"e:Newspaper ads|Friends or relatives|Websites|Career fair",0],
+    ["g","applied_before","Applied to " + AGENCY.trading_name + " before","b",0],
+    ["g","relative","Relative or friend at " + AGENCY.trading_name,"b",0],
     ["g","relative_name","Relative or friend: name and relationship","t:100",0],
     ["g","convicted","Convicted of a criminal offence","b",0],
     ["g","conviction_note","Conviction details","t:500",0],
@@ -570,7 +571,7 @@
     }).join('') + (form.own ? '<section class="fsec"><h4 class="fsec-h">Declaration</h4>' +
       '<p class="prs-declare">I hereby certify that all information contained in this form is true, correct and complete to the best of my knowledge. ' +
       'I understand that any misrepresentation or omission of facts may be grounds for dismissal.</p>' +
-      '<p class="prs-declare">I consent to the collection and processing of my personal data by ADSPACE PLT for the purposes of my employment, and I authorise the verification of any of the information above.</p>' +
+      '<p class="prs-declare">I consent to the collection and processing of my personal data by ' + AGENCY.legal_name + ' for the purposes of my employment, and I authorise the verification of any of the information above.</p>' +
       '<div class="row"><label class="tickline"><input type="checkbox" id="prsConsent" data-nodraft> I agree to the declaration and consent above.</label></div>' +
       '<div class="row"><div class="field"><label class="field-label" for="prsSign">Full name as signature</label>' +
       '<input class="input" id="prsSign" aria-required="true" maxlength="100" autocomplete="name" data-nodraft></div></div></section>' : '');

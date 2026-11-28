@@ -18,6 +18,7 @@
  * ADSPACE_ORG; blanks fall back to Helvetica and the wordmark.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -492,7 +493,7 @@
   function refDate(s) { return (s && ADspaceClock.date(dayOf(s))) || String(s || ''); }
   function verifyLine(signed) {
     return 'This is a computer-generated document. ' + (signed ? '' : 'No signature required. ') +
-      'Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
+      'Verify document authenticity: ' + ORG.verifyUrl;
   }
   /* A document's Document ID as printed (XXXX-XXXX; VERIFY DETAILS,
      2026-11-20), asked of the database by the id the page already holds:
@@ -660,7 +661,7 @@
       /* An AL document /verify/ answers: one row (DESIGN.md, Print). */
       if (tpl !== 'ALP' && id) {
         p.right(count, R, at(G.countAt), G.count, font, faint);
-        p.text('Document ID ' + id + ' · Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify'), M, at(G.countAt), G.ref, font, faint);
+        p.text('Document ID ' + id + ' · Verify document authenticity: ' + ORG.verifyUrl, M, at(G.countAt), G.ref, font, faint);
         return;
       }
       p.text(count, G.countX, at(G.countAt), G.count, font, faint);
@@ -885,7 +886,7 @@
           s.remove();
           whyNot(l).then(function (changed) {
             bad(new Error(changed
-              ? 'The PDF could not be generated. Please contact ADspace.'
+              ? 'The PDF could not be generated. Please contact ' + AGENCY.trading_name + '.'
               : window.ADspaceWords.line.pdfLib));
           });
         };
@@ -1342,10 +1343,10 @@
      the agency's legal name as author, the portal's name as creator and producer. */
   function meta(pdf, title, subject) {
     pdf.setTitle(String(title || '').replace(/\.pdf$/i, ''));
-    pdf.setAuthor('ADSPACE PLT');
+    pdf.setAuthor(AGENCY.legal_name);
     if (subject) pdf.setSubject(subject);
-    pdf.setCreator('ADspace Digital Portal');
-    pdf.setProducer('ADspace Digital Portal');
+    pdf.setCreator(AGENCY.trading_name + ' Digital Portal');
+    pdf.setProducer(AGENCY.trading_name + ' Digital Portal');
   }
   function formFields(pdf, PDF, page, boxes) {
     if (!boxes || !boxes.length) return Promise.resolve();

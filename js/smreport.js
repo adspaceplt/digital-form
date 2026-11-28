@@ -179,7 +179,6 @@
       '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
     'hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. a high hold rate indicates engaging content; a low one shows where viewers stop watching.':
       '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
-    'every ad term is explained at hi.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 hi.adspace.me/fb-ad-terms。',
     'amount spent is the total spent on ads, excluding the 10% wht and 8% sst, which are charged separately.':
       '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
     'amount spent is the total spent on ads, excluding the 5% dcc and 9% gst, which are charged separately.':
@@ -187,6 +186,7 @@
     'amount spent is the total spent on ads, excluding the 10% wht and 8% sst on a malaysian ad account and the 5% dcc and 9% gst on a singapore ad account, which are charged separately.':
       '广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。'
   };
+  ZH_WORDS[('every ad term is explained at ' + window.ADspaceAgency.link_domain + '/fb-ad-terms.').toLowerCase()] = '各项广告术语的说明，请参阅 ' + window.ADspaceAgency.link_domain + '/fb-ad-terms。';
   /* A count reads as Chinese does: the figure, then its measure word. */
   var ZH_COUNT = {
     'leads': '个潜在客户', 'lead': '个潜在客户', 'messages': '次私信对话', 'message': '次私信对话',
@@ -1883,7 +1883,7 @@
         });
         y -= h + BLOCK;
       };
-      var GLOSSARY = 'Every ad term is explained at hi.adspace.me/fb-ad-terms.';
+      var GLOSSARY = 'Every ad term is explained at ' + window.ADspaceAgency.link_domain + '/fb-ad-terms.';
       /* A row is one creative with every variation of it added together,
          so a weak row reads as the creative tried several ways (the user,
          2026-10-02, their option B). */

@@ -10,7 +10,9 @@
  */
 (function () {
   'use strict';
-  var CDN = /^https:\/\/mycdn\.adspace\.me\/content\/.+\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$/i;
+  /* The CDN's own address (the agency profile's cdn_base), as a pattern. */
+  var CDN_AT = String(window.ADspaceAgency.cdn_base).replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+  var CDN = new RegExp('^' + CDN_AT + '\\/content\\/.+\\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$', 'i');
 
   /* The converted copy of a video on the CDN, else null. A copy is never
      asked for a copy. */
@@ -59,7 +61,7 @@
      2026-10-10): `passes` is one policy a folder, set on that folder's own
      path so the browser sends it there alone; a colleague's is content/ on
      the root. A pass is fresh only for the proof it was asked with. */
-  var CONTENT = /^https:\/\/mycdn\.adspace\.me\/content\//i;
+  var CONTENT = new RegExp('^' + CDN_AT + '\\/content\\/', 'i');
   var UNTIL = 'adspace-media-until';
   var FOR = 'adspace-media-for';
   var HOUR = 3600 * 1000;
@@ -109,7 +111,7 @@
   /* The folder a file sits in, as a cookie path: /content/{id}/ or
      /content/creator/{id}/. */
   function folderOf(src) {
-    var m = /^https:\/\/mycdn\.adspace\.me(\/content\/(?:creator\/)?[A-Za-z0-9-]{1,64}\/)/i.exec(String(src || ''));
+    var m = new RegExp('^' + CDN_AT + '(\\/content\\/(?:creator\\/)?[A-Za-z0-9-]{1,64}\\/)', 'i').exec(String(src || ''));
     return m ? m[1] : '';
   }
   /* A colleague's pass covers the whole of content/ (2026-10-15, the user:

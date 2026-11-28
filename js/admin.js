@@ -3,6 +3,7 @@
  * drop files, we work out the placement, you write the caption, you send the link.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var cfg = window.ADSPACE_CONFIG;
   var API = window.ADspaceAPI;
   var MK  = window.ADspaceMockups;
@@ -2358,9 +2359,9 @@
     review:    'Content sets prepared for client approval.',
     scripts:   'Video scripts by content month, published to the client and used by the crew on the shoot.',
     campaigns: 'Creator campaigns, from selection through to posting.',
-    links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
+    links:     'Short links for slides, print and QR codes, served from ' + AGENCY.link_domain + '.',
     register:  'Every document issued through the portal, and its reference.',
-    suppliers: 'The suppliers ADspace pays, and the details each one submitted.',
+    suppliers: 'The suppliers ' + AGENCY.trading_name + ' pays, and the details each one submitted.',
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
@@ -2411,7 +2412,7 @@
       { at: '#campCards .camp-row', text: 'Open a campaign to book creators, check drafts and release them to the client.' }] },
     register: { name: 'Documents', steps: [
       { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference number is assigned automatically.' },
-      { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at digital.adspace.me/verify.' }] },
+      { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at ' + AGENCY.verify_url + '.' }] },
     suppliers: { name: 'Suppliers', steps: [
       { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
       { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
@@ -2825,7 +2826,7 @@
        changed on the record since then are read again on the way in. */
     if (name === 'review' && meLoaded && !state.client && state.reviewClients) loadClients();
     // The tab said Content Review Internal whichever section you were in.
-    document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';
+    document.title = SECTION_TITLE[name] + ' · ' + AGENCY.trading_name + ' Digital Portal';
     navItems().forEach(function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
@@ -8334,7 +8335,7 @@
      The host is one value in js/config.js, read here and written into the
      field's prefix, because it was typed into this file and into the console's
      markup and the two could disagree. The old link host is retired (2026-11-26). This value decides what the next link is built with. */
-  var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+  var LINK_HOST = AGENCY.link_domain;
   if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
   /* The host a link redirects from is a standing fact about the route, so it
      is the quiet line under the register: the team asked where these links

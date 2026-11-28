@@ -177,7 +177,17 @@ window.ADSPACE_CONFIG = {
     { name: 'LinkedIn', url: 'https://www.linkedin.com/company/adspacestudios' }
   ],
   // The quotation website's Chat on WhatsApp (2026-10-14), the front door's own.
-  quoteWhatsApp: 'https://wa.me/adspace'
+  quoteWhatsApp: 'https://wa.me/adspace',
+  /* The agency's own domain and accounts, named as a field's example (a
+     placeholder: an email, a website, a profile link). */
+  examples: {
+    domain: 'adspace.me',
+    instagram: 'https://www.instagram.com/adspace.advertising',
+    tiktok: 'https://www.tiktok.com/@adspace.advertising',
+    facebook: 'https://www.facebook.com/adspace.advertising'
+  },
+  // Directions to a place: the map's search, the place's words after it.
+  mapSearch: 'https://www.google.com/maps/search/?api=1&query='
 
   /* No secret belongs in this file. It is served to the browser on a public
      site, so anything here can be read by anyone who opens the page. The

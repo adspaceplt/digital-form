@@ -6,6 +6,7 @@
  * back to rather than filled in once.
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
@@ -166,15 +167,15 @@
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
       proceededBy: function (who, when) { return 'Confirmed by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
-      reviewThanks: 'Thank you. Your response has been received. ADspace will follow up shortly.',
+      reviewThanks: 'Thank you. Your response has been received. ' + AGENCY.trading_name + ' will follow up shortly.',
       draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
-      selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
+      selectionClosed: 'Selection is closed. Please contact your ' + AGENCY.trading_name + ' account manager.',
       ratesChanged: 'The rates have been updated. Please review them and submit your selection again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and submit it again.',
       overSlots: function (n) {
         return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove the extra creators and submit your selection again.'
-          : 'Every creator for this campaign has been booked. Please contact your ADspace account manager.';
+          : 'Every creator for this campaign has been booked. Please contact your ' + AGENCY.trading_name + ' account manager.';
       },
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
@@ -273,15 +274,15 @@
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
       proceededBy: function (who, when) { return '已由' + who + '确认' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
-      reviewThanks: '谢谢，您的回复已收到，ADspace 团队将尽快跟进。',
+      reviewThanks: '谢谢，您的回复已收到，' + AGENCY.trading_name + ' 团队将尽快跟进。',
       draftMoved: '页面打开后此初稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
-      selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
+      selectionClosed: '选择已截止，请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
       ratesChanged: '报价已更新，请查看后重新提交。',
       selectionChanged: '部分创作者已无法选择，请重新查看后再次提交。',
       overSlots: function (n) {
         return n > 0 ? '目前只能再选' + n + '位创作者，请取消多选的创作者后重新提交。'
-          : '本次合作的创作者名额已全部预订，请联系您的 ADspace 客户经理。';
+          : '本次合作的创作者名额已全部预订，请联系您的 ' + AGENCY.trading_name + ' 客户经理。';
       },
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
@@ -474,7 +475,7 @@
     var client = feed.client || {};
     var options = feed.options || [];
 
-    document.title = (client.name ? client.name + ' · ' : '') + 'ADspace ' + t().kicker;
+    document.title = (client.name ? client.name + ' · ' : '') + AGENCY.trading_name + ' ' + t().kicker;
     $('clientName').textContent = client.name || '';
     paintPreparedFor(client.name);
 

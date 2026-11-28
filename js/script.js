@@ -15,6 +15,7 @@
  */
 (function () {
   'use strict';
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI;
   var W = window.ADspaceWords.en;
   var $ = function (id) { return document.getElementById(id); };
@@ -309,7 +310,7 @@
       if (data.error) { cover(W.notFound, W.notFoundText); return; }
       feed = data;
       feed.scripts = feed.scripts || [];
-      document.title = (feed.client && feed.client.name ? feed.client.name + ' ' : '') + 'Video Scripts by ADspace';
+      document.title = (feed.client && feed.client.name ? feed.client.name + ' ' : '') + 'Video Scripts by ' + AGENCY.trading_name;
       if ($('clientName') && feed.client) $('clientName').textContent = feed.client.name;
       if (!feed.scripts.length) { cover(W.noScripts, W.noScriptsText); return; }
       $('cover').hidden = true;

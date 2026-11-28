@@ -23,6 +23,7 @@
  *                                  — joins the page's one check a minute (`page_pulse`)
  */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   /* The one set's glyph where the page holds it (js/icons.js); the front
      door and the 404 hold none, and draw their words alone. */
   function icGlyph(n, c, a) { return window.ADspaceIcons ? window.ADspaceIcons.glyph(n, c, a) : ''; }
@@ -128,14 +129,14 @@
     var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
     /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
     var CHAT_MARK = icGlyph('whatsapp', '', 'width="15" height="15"');
-    var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
+    var chat = paused && shown.whatsapp ? window.ADSPACE_CONFIG.quoteWhatsApp : '';
     /* The console's cover is the whole screen, its bar under it: the
        wordmark leads it, as every page's bar would (2026-11-20). */
     var logo = shown.out && window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.brandLogo;
     var panel = box.querySelector('.cover-panel');
     panel.setAttribute('data-glyph', paused ? 'pause' : 'tool');
     panel.innerHTML =
-      (shown.out ? (logo ? '<img class="cover-mark" src="' + esc(logo) + '" alt="ADspace">' : '<b class="cover-mark">ADspace</b>') : '') +
+      (shown.out ? (logo ? '<img class="cover-mark" src="' + esc(logo) + '" alt="' + AGENCY.trading_name + '">' : '<b class="cover-mark">' + AGENCY.trading_name + '</b>') : '') +
       '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
       (back ? '<p class="maint-back">' + back + '</p>'
         : '<p>' + esc(paused ? set.pausedText || 'Please check again later.' : set.maintText || 'The portal will be available again shortly.') + '</p>') +

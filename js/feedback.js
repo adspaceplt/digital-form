@@ -10,6 +10,7 @@
  * fields: the link is the client. English and 中文, opening in the primary
  * contact's own language until the 中文 switch is pressed. */
 (function () {
+  var AGENCY = window.ADspaceAgency || {};
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
   var W = window.ADspaceWords, esc = W.esc, F = window.ADspaceFeedback;
@@ -20,17 +21,17 @@
   var WORDS = W.of({
     en: {
       lang: '中文', preparedFor: 'Prepared for', requested: 'Requested {d}', submit: 'Submit',
-      doneTitle: 'Feedback received', doneText: 'ADspace appreciates the time you have taken to share your feedback.',
+      doneTitle: 'Feedback received', doneText: AGENCY.trading_name + ' appreciates the time you have taken to share your feedback.',
       usedTitle: 'Already submitted', usedText: 'This feedback was submitted on {d}.',
-      closedTitle: 'Request closed', closedText: 'Please contact your ADspace account manager.',
-      website: 'Visit website', fbSent: 'Feedback submitted', yourFeedback: 'Your feedback', follow: 'Follow ADspace'
+      closedTitle: 'Request closed', closedText: 'Please contact your ' + AGENCY.trading_name + ' account manager.',
+      website: 'Visit website', fbSent: 'Feedback submitted', yourFeedback: 'Your feedback', follow: 'Follow ' + AGENCY.trading_name
     },
     zh: {
       lang: 'EN', preparedFor: '客户', requested: '请求日期：{d}', submit: '提交',
       doneTitle: '已收到您的反馈', doneText: '感谢您抽出宝贵时间提供反馈。',
       usedTitle: '已提交', usedText: '此反馈已于{d}提交。',
-      closedTitle: '请求已关闭', closedText: '请联系您的 ADspace 客户经理。',
-      website: '访问网站', fbSent: '反馈已提交', yourFeedback: '您的反馈', follow: '关注 ADspace'
+      closedTitle: '请求已关闭', closedText: '请联系您的 ' + AGENCY.trading_name + ' 客户经理。',
+      website: '访问网站', fbSent: '反馈已提交', yourFeedback: '您的反馈', follow: '关注 ' + AGENCY.trading_name
     }
   });
   var t = function () { return WORDS[lang]; };
