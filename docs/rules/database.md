@@ -179,3 +179,10 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   old with new itself, never `update of {column}`: another trigger may set
   the column (`team_access_guard` sets `active`), and a stamp is set afresh,
   never kept with `coalesce` (`team_members_inactive_stamp`).
+- A template version is never edited or deleted once live: a new version
+  replaces it from a date, today (Malaysia) or later and never before the
+  version in force or planned, and the one before stays for the days before
+  it (`templates_guard` refuses the table's own update or delete of a live
+  row, a colleague deleted clearing the id alone; `template_draft_save`,
+  `template_publish`, `template_draft_delete` at Business settings Manage,
+  filed `team.changed` under Templates; `templatesql`).
