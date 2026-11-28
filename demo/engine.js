@@ -19132,7 +19132,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
         if (hc.outcome_mail === 'sent' || hc.outcome_mail === 'sending') return hOk({ same: true });
-        hc.outcome_mail = 'queued'; hc.outcome_mail_at = null; hc.outcome_mail_due = new Date(Date.now() + 30000).toISOString();
+        var hqSecs = Math.max(10, Number(appSet('send_undo_seconds', appToday())) || 60);
+        hc.outcome_mail = 'queued'; hc.outcome_mail_at = null; hc.outcome_mail_due = new Date(Date.now() + hqSecs * 1000).toISOString();
         persist();
         var hqId = hc.id;
         setTimeout(function () {
@@ -19150,8 +19151,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           }
           q.outcome_mail_due = null;
           persist();
-        }, 30000);
-        return hOk({ due: hc.outcome_mail_due });
+        }, hqSecs * 1000);
+        return hOk({ due: hc.outcome_mail_due, seconds: hqSecs });
       }
       if (name === 'hiring_outcome_mail_prepare') {
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
