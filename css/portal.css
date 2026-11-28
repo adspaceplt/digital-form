@@ -1,4 +1,4 @@
-/* ADspace Content Review Portal
+/* Content Review Portal
    Shell + platform mockups. No build step, no framework. */
 
 /* Neutrals are warm, not cool. A grey at low saturation with a blue-green cast
@@ -42,7 +42,7 @@
      the edge, and the 1px stays so nothing is re-measured. */
   --card-line:  transparent;
   --line-soft:  #ececec;
-  --page:       #f5f5f5;   /* ADspace's own off white, as on the website */
+  --page:       #f5f5f5;   /* The brand's own off white, as on the website */
   --card:       #ffffff;
   --sunk:       #f9f9f9;
   /* The solid ink surface (primary button, selected tab, progress, undo bar)
@@ -5412,7 +5412,7 @@ body.lp { --lp-col: 980px; --lp-gut: 24px; }
 /* The bar and the foot keep every page's edge (the user, 2026-10-03: the
    front door's mark sat in the column while every other page's sat at the
    left edge); the column holds the page's own content only. */
-/* The header's label says what ADspace is, in the body face at the weight
+/* The header's label says what the agency is, in the body face at the weight
    of a line of text rather than a section's name, on this page alone. */
 body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--ink-soft); }
 /* The name in the brand's face, and what we do under it in Slate Regular
@@ -5475,7 +5475,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
 }
 @media (hover: hover) { .lp-go:hover::before { background: var(--line-soft); } }
-/* Each opens adspacestudios.com or Maps in a new tab, so it ends in the
+/* Each opens the agency website or Maps in a new tab, so it ends in the
    leaving mark, never the chevron (FRONT-2). */
 .lp-go svg { width: 14px; height: 14px; flex: 0 0 auto; }
 /* The hours on the left; the address and WhatsApp on the right, on the
@@ -7105,7 +7105,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
   .rate[style*="--rate-n: 11"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .rate[style*="--rate-n: 5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
-/* ADspace's pages to follow, in the received page's card (2026-11-25): equal widths on a phone. */
+/* The agency's pages to follow, in the received page's card (2026-11-25): equal widths on a phone. */
 .fb-social { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 640px) { .fb-social > .plink { flex: 1 1 0; justify-content: center; } }
 /* On the client portal: the open request's card (its form under its meta
