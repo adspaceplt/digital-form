@@ -151,6 +151,7 @@
     wa_messages: 'p_month',
     mail_log: 'p_month',
     mail_senders_read: '',
+    agency_profile_read: '',
     mail_boxes_set: 'p_values',
     wa_recipients: '',
     wa_compose_prepare: 'p_to_kind p_to p_purpose p_ref',
@@ -16269,6 +16270,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       });
       mlItems.sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
       return Promise.resolve({ data: JSON.parse(JSON.stringify({ month: mlFrom, senders: mailSenders(), items: mlItems.slice(0, 2000) })), error: null });
+    }
+
+    if (name === 'agency_profile_read') {
+      if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var agp = {}, AG = window.ADspaceAgency || {};
+      Object.keys(AG).forEach(function (k) { if (typeof AG[k] !== 'function' && k !== 'email') agp[k] = AG[k]; });
+      agp.email = (mailBoxes().filter(function (b) { return b.key === 'general'; })[0] || {}).address || null;
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(agp)), error: null });
     }
     if (name === 'mail_senders_read') {
       if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });

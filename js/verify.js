@@ -80,7 +80,7 @@
   /* The issuer's own names, as the page's settings hold them: the demo
      (js/demo.js) answers for its sample agency, never as ADspace. */
   (function names() {
-    var cfg = window.ADSPACE_CONFIG || {}, org = ORG.name || 'ADSPACE PLT', brand = cfg.agencyName || 'ADspace';
+    var cfg = window.ADSPACE_CONFIG || {}, org = ORG.name, brand = cfg.agencyName;
     if (org === 'ADSPACE PLT' && brand === 'ADspace') return;
     var walk = function (o) {
       Object.keys(o).forEach(function (k) {
@@ -126,7 +126,7 @@
     var m = t().kind;
     return (m && m[String(k || '').trim().toLowerCase()]) || k || '';
   }
-  function issuer() { return (ORG.name || 'ADSPACE PLT') + (ORG.regno ? ' (' + ORG.regno + ')' : ''); }
+  function issuer() { return ORG.name + (ORG.regno ? ' (' + ORG.regno + ')' : ''); }
   function stateTone(s) { return s === 'valid' ? 'is-ok' : s === 'voided' ? 'is-danger' : 'is-off'; }
   function ic(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   /* A step's glyph on the History's line (2026-11-25, the approved boards);

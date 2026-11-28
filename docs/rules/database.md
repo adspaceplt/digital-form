@@ -52,6 +52,7 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   valid`, validated where no row points at nothing (2026-11-28, release 4;
   `idguard` counts the columns without one). A polymorphic id, a uuid array
   and an id a recorded decision keeps past its parent hold none.
+- A value that names the agency (its names, registration, address, domains, files) is read by `agency(key)` (`agency_profile`; the General mailbox as `email`), never typed in a function or its seed (`docs/rules/mechanisms.md`; release 6, 2026-11-28).
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
 - Two releases restating one function merge in turn: the later one's

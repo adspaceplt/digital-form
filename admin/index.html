@@ -172,7 +172,7 @@
      rail and the sheet, signed in and out, on the page's own ground; it
      scrolls away with the page. The words are js/words.js's. -->
 <p class="confline" id="confLine" role="note"><span class="confline-long"></span><span class="confline-short"></span></p>
-<script>(function(){var e=document.getElementById('confLine'),W=window.ADspaceWords,I=window.ADspaceIcons,a=(window.ADSPACE_CONFIG||{}).agencyName||'ADspace';if(!e||!W||!W.line.confidential){if(e)e.hidden=true;return;}e.children[0].textContent=W.line.confidential(a);e.children[1].textContent=W.line.confidentialShort;if(I)e.insertAdjacentHTML('afterbegin',I.glyph('lock','confline-ic'));})();</script>
+<script>(function(){var e=document.getElementById('confLine'),W=window.ADspaceWords,I=window.ADspaceIcons,a=window.ADspaceAgency.trading_name;if(!e||!W||!W.line.confidential){if(e)e.hidden=true;return;}e.children[0].textContent=W.line.confidential(a);e.children[1].textContent=W.line.confidentialShort;if(I)e.insertAdjacentHTML('afterbegin',I.glyph('lock','confline-ic'));})();</script>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
