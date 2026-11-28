@@ -3932,6 +3932,16 @@
     if (on) $('crmBillInRow').hidden = true;
     if (!on) $('crmBillTitle').textContent = 'Billing details';
   }
+  /* The registration no. typed on Billing, read by the one rule
+     (`ADspaceWords.brnCheck`, the client's market picking BRN or UEN); a
+     number held before and left as it was is not judged again. */
+  function brnRefused(v, held) {
+    if (!v || ADspaceWords.brnDigits(v) === ADspaceWords.brnDigits(held)) return false;
+    var sg = state.client && state.client.market === 'SG';
+    if (!ADspaceWords.brnCheck(v, sg ? 'SG' : 'MY')) return false;
+    msg('crmBillMsg', ADspaceWords.en[sg ? 'uenBad' : 'brnBad'], 'err'); $('crmCompanyNo').focus();
+    return true;
+  }
   function entSave() {
     var ed = state.entEdit, cid = state.client.id, vals = {};
     BILLING.forEach(function (f) { vals[f[1]] = val(f[0]) || null; });
@@ -3941,6 +3951,7 @@
     if (state.billPick0) vals.bill_contact_id = (entOf(ed.id) || {}).bill_contact_id || null;
     if (vals.legal_name) vals.legal_name = vals.legal_name.toUpperCase();
     if (!vals.legal_name) { msg('crmBillMsg', 'Enter the Registered Company Name.', 'err'); $('crmLegalName').focus(); return; }
+    if (brnRefused(vals.company_no, ed.id ? (entOf(ed.id) || {}).company_no : '')) return;
     if (vals.finance_email && !ADspaceWords.emailOk(vals.finance_email)) {
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
     }
@@ -5414,6 +5425,7 @@
     var pick = billPickChange();
     if (state.billPick0) delete patch.bill_contact_id;
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
+    if (brnRefused(patch.company_no, was.company_no)) return;
     if (patch.finance_email && !ADspaceWords.emailOk(patch.finance_email)) {
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
     }

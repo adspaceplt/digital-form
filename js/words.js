@@ -52,6 +52,9 @@
     linkExpired: 'Link expired', formEnds: 'This form is open until {d}.', formReceived: 'Details received',
     formSubmitted: 'This form has already been submitted.', tickToContinue: 'Tick the box to continue.',
     badMobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.',
+    // A registration number refused by `brnCheck`: Malaysia's BRN, Singapore's UEN.
+    brnBad: 'Enter the 12-digit Business Registration No.',
+    uenBad: 'Enter the 9 or 10 character Unique Entity Number (UEN).',
     /* A form in steps, the quotation's and the details forms' alike
        (2026-11-25, js/icons.js stepTrack). */
     stepOf: 'Step {n} of {m}', stepStart: 'Start', stepBack: 'Back', stepNext: 'Continue', stepExpect: 'What to expect',
@@ -195,6 +198,8 @@
     yourDetails: '您的资料', stepEdit: '编辑', stepReview: '检查并提交',
     rcvNow: '进行中', rcvByAdspace: 'ADspace 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', representative: '您的专属顾问', detailsSent: '资料已提交',
     badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
+    brnBad: '请填写12位数的商业注册号码。',
+    uenBad: '请填写9或10位的唯一实体编号（UEN）。',
     stillLoading: '仍在加载…',
     offline: '网络连接中断或过慢，请重试。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
@@ -395,6 +400,25 @@
      two letters or more, with no space, comma, quote, bracket or second @. */
   W.emailOk = function (v) {
     return /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i.test(String(v == null ? '' : v).trim());
+  };
+  /* The one reading of a business registration number (the user's rule of
+     27 Nov; `brn_check` in SQL is its twin, ONE BRN RULE, 2026-11-28).
+     Spaces and dashes dropped. Malaysia: 12 digits, the first four a year
+     from 1900 to this year, the next two the entity code, a company 01, 02
+     or 04, a sole proprietorship or partnership 03. `kind` 'company' or
+     'soleprop' holds the code to the choice; none takes any of the four.
+     Singapore ('SG'): a UEN. Answers '' where it holds, 'bad', or 'kind'
+     where the number is the other kind's. */
+  W.brnDigits = function (v) { return String(v == null ? '' : v).replace(/[\s-]+/g, '').toUpperCase(); };
+  W.brnCheck = function (v, market, kind) {
+    var d = W.brnDigits(v), C = window.ADspaceClock;
+    if (market === 'SG') return /^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(d) ? '' : 'bad';
+    var now = C && C.today ? Number(C.today().slice(0, 4)) : new Date().getFullYear();
+    var y = Number(d.slice(0, 4)), code = d.slice(4, 6);
+    if (!/^\d{12}$/.test(d) || y < 1900 || y > now || !/^0[1-4]$/.test(code)) return 'bad';
+    if (kind === 'soleprop' && code !== '03') return 'kind';
+    if (kind === 'company' && code === '03') return 'kind';
+    return '';
   };
   /* The console's standard lines (2026-11-04, the user: "every new build
      didnt follow your tone"): a line two screens say is written once here

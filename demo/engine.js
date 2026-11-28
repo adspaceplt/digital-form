@@ -770,6 +770,17 @@
       en: 'Additional comments or suggestions', zh: '其他意见或建议', low_en: null, low_zh: null, high_en: null, high_zh: null }
   ];
 
+  function brnCheck(no, market, kind) {
+    var v = String(no == null ? '' : no).replace(/[\s-]+/g, '').toUpperCase();
+    var uen = /^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(v);
+    if (market === 'SG') return uen ? null : 'bad-brn';
+    if (market == null && uen) return null;
+    var now = Number(new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 4)), y = Number(v.slice(0, 4)), code = v.slice(4, 6);
+    if (!/^\d{12}$/.test(v) || y < 1900 || y > now || ['01', '02', '03', '04'].indexOf(code) < 0) return 'bad-brn';
+    if (kind === 'soleprop' && code !== '03') return 'brn-kind';
+    if (kind === 'company' && code === '03') return 'brn-kind';
+    return null;
+  }
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
   function schemaRefusal(table, obj) {
     var have = LIVE_COLS[table];
@@ -12235,7 +12246,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var bk = String(p.bank || '').trim(), ac = String(p.account || '').replace(/[\s-]/g, '').toUpperCase();
       var py = String(p.payee || '').replace(/\s+/g, ' ').trim(), em = String(p.email || '').trim().toLowerCase(), wa = String(p.whatsapp || '').replace(/\D/g, '');
       if (['nric', 'passport', 'brn'].indexOf(k) < 0) return { field: 'bill_kind' };
-      if ((k === 'nric' || k === 'brn') && !/^\d{12}$/.test(id)) return { field: 'id_no' };
+      if (k === 'nric' && !/^\d{12}$/.test(id)) return { field: 'id_no' };
+      if (k === 'brn' && brnCheck(id, 'MY')) return { field: 'id_no' };
       if (k === 'passport' && !/^[A-Z0-9]{5,20}$/.test(id)) return { field: 'id_no' };
       if (k === 'nric') id = id.slice(0, 6) + '-' + id.slice(6, 8) + '-' + id.slice(8);
       if (nm.length < 2 || nm.length > 120) return { field: 'legal_name' };
@@ -13790,11 +13802,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (has('registration')) {
           var kind = String(p.kind || '').trim(), brn = String(p.brn || '').replace(/[\s-]+/g, ''), legal = String(p.legal || '').replace(/\s+/g, ' ').trim().toUpperCase();
           if (['company', 'soleprop'].indexOf(kind) < 0) return { error: 'bad-kind' };
-          var yr = Number(brn.slice(0, 4));
-          if (!/^\d{12}$/.test(brn) || yr < 1900 || yr > Number(qtToday.slice(0, 4))) return { error: 'bad-brn' };
-          var code = brn.slice(4, 6);
-          if (kind === 'company' && ['01', '02', '04'].indexOf(code) < 0) return { error: code === '03' ? 'brn-kind' : 'bad-brn', kind: 'soleprop' };
-          if (kind === 'soleprop' && code !== '03') return { error: ['01', '02', '04'].indexOf(code) >= 0 ? 'brn-kind' : 'bad-brn', kind: 'company' };
+          var brnBad = brnCheck(brn, 'MY', kind);
+          if (brnBad === 'bad-brn') return { error: 'bad-brn' };
+          if (brnBad) return { error: 'brn-kind', kind: kind === 'company' ? 'soleprop' : 'company' };
           if (legal.length < 2 || legal.length > 150 || qtLinkLike.test(legal)) return { error: 'bad-legal' };
           out.kind = kind; out.brn = brn; out.legal = legal;
         }
@@ -14714,7 +14724,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           company_no_old: up(a.company_no_old) || null, tin: up(a.tin) || null, sst_no: up(a.sst_no) || null,
           billing_address: String(a.billing_address || '').trim(), finance_email: String(a.finance_email || '').trim().toLowerCase() || null };
         if (o.legal_name.length < 2 || o.legal_name.length > 160) return { error: 'bad-legal_name' };
-        if (!/^[A-Z0-9-]{6,20}$/.test(o.company_no)) return { error: 'bad-company_no' };
+        if (brnCheck(o.company_no, null)) return { error: 'bad-company_no' };
         if (o.company_no_old && !/^[A-Z0-9-]{4,20}$/.test(o.company_no_old)) return { error: 'bad-company_no_old' };
         if (o.tin && !/^[A-Z0-9-]{6,20}$/.test(o.tin)) return { error: 'bad-tin' };
         if (o.sst_no && !/^[A-Z0-9-]{6,25}$/.test(o.sst_no)) return { error: 'bad-sst_no' };
@@ -16637,7 +16647,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'client_details_read') {
 
           var drep = clientRep(dcl, 'sales');
-          return dfOk({ brand: dcl.name, expires_at: df.expires_at,
+          return dfOk({ brand: dcl.name, expires_at: df.expires_at, market: dcl.market === 'SG' ? 'SG' : 'MY',
             rep: drep ? { name: drep.name, title: drep.designation || null, whatsapp: drep.card_on !== false && drep.card_mobile !== false && drep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(drep.mobile) : null } : null });
         }
         var a = args.p_answers || {}, tr = function (v) { return String(v == null ? '' : v).trim(); };
@@ -16648,7 +16658,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           contact_email: tr(a.contact_email).toLowerCase() };
         var mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
         if (an.legal_name.length < 2 || an.legal_name.length > 160) return dfNo('bad-legal_name');
-        if (!/^[A-Z0-9-]{6,20}$/.test(an.company_no)) return dfNo('bad-company_no');
+        if (brnCheck(an.company_no, dcl.market === 'SG' ? 'SG' : 'MY')) return dfNo('bad-company_no');
         if (an.company_no_old && !/^[A-Z0-9-]{4,20}$/.test(an.company_no_old)) return dfNo('bad-company_no_old');
         if (an.tin && !/^[A-Z0-9-]{6,20}$/.test(an.tin)) return dfNo('bad-tin');
         if (an.sst_no && !/^[A-Z0-9-]{6,25}$/.test(an.sst_no)) return dfNo('bad-sst_no');
@@ -19148,7 +19158,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var digits = function (v) { return tr(v).replace(/[^0-9]/g, ''); };
         o.kind = tr(p.kind); if (['company', 'individual'].indexOf(o.kind) < 0) return { error: 'bad-kind' };
         o.name = tr(p.name).replace(/\s+/g, ' '); if (o.name.length < 2 || o.name.length > 160) return { error: 'bad-name' };
-        var brn = digits(p.brn); if ((o.kind === 'company' || brn) && !/^\d{12}$/.test(brn)) return { error: 'bad-brn' }; o.brn = brn || null;
+        var brn = digits(p.brn); if ((o.kind === 'company' || brn) && brnCheck(brn, 'MY')) return { error: 'bad-brn' }; o.brn = brn || null;
         o.tin = tr(p.tin).replace(/\s+/g, '').toUpperCase(); if (!/^[A-Z0-9]{5,20}$/.test(o.tin)) return { error: 'bad-tin' };
         var sst = tr(p.sst_no).replace(/\s+/g, '').toUpperCase(); if (sst && !/^[A-Z]\d{2}-\d{4}-\d{8}$/.test(sst)) return { error: 'bad-sst_no' }; o.sst_no = sst || null;
         var bad = null;
