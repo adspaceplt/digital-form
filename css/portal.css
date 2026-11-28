@@ -198,10 +198,14 @@
   --ease-out: cubic-bezier(.22,.61,.36,1);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
           "PingFang SC", "Microsoft YaHei", sans-serif;
-  /* Headings only. Chinese has no Slate, so the stack falls through to the
-     system face and a zh heading is simply the system face at the same size. */
-  --font-head: "ADspace Slate", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  /* Headings only, in the install's heading face (css/fonts/bold.*). It
+     carries no Chinese, so the stack falls through to the system face and a
+     zh heading is simply the system face at the same size. */
+  --font-head: "Agency Head", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* The wordmark's face (css/fonts/mark.ttf), after the system's own copy
+     of it; each rule adds its own last fallback. */
+  --font-mark: "Agency Mark", Optima, Candara;
 }
 /* Surface is one attribute on <html> (the user, 2026-11-26: pages built
    "like Lego… css global, parent, child then only adjust the details"):
@@ -352,17 +356,19 @@
   .btn::after { content: ''; position: absolute; left: 0; right: 0; top: min(0px, calc(50% - var(--tap) / 2)); bottom: min(0px, calc(50% - var(--tap) / 2)); }
 }
 
-/* The one brand face on screen. Slate is already in the repo for the letter,
+/* The one brand face on screen. It is already in the repo for the letter,
    so the portal and the paper it prints share a voice without a second asset
    or a webfont service. It is used on headings only: body text stays on the
    system stack, where it is tuned for the reader's own screen and needs no
    download to be legible. swap keeps the heading readable while it loads. */
 @font-face {
-  font-family: "ADspace Slate";
+  font-family: "Agency Head";
   /* WOFF2 first at 38KB against the TTF's 110KB; the TTF stays in the repo
-     because the letter's pdf-lib fetches it, and doubles as the fallback. */
-  src: url("/css/SlateRg.woff2") format("woff2"),
-       url("/css/SlateRg.TTF") format("truetype");
+     because the letter's pdf-lib fetches it, and doubles as the fallback.
+     The files are the install's (css/fonts/, the agency profile's font_bold):
+     an install without them draws the system face. */
+  src: url("/css/fonts/bold.woff2") format("woff2"),
+       url("/css/fonts/bold.ttf") format("truetype");
   font-weight: 400 700;
   /* `optional`, not `swap`, and preloaded in every page head. Swap paints the
      heading in the system face and then flips it, which is the page visibly
@@ -373,13 +379,13 @@
   font-display: optional;
 }
 
-/* Slate Medium, the cover's title mark alone (2026-11-20); fetched only
+/* The medium face, the cover's title mark alone (2026-11-20); fetched only
    where a cover is drawn, the system face standing in until it arrives. */
 @font-face {
-  font-family: "ADspace Slate Medium";
+  font-family: "Agency Medium";
   /* WOFF2, Latin alone (the title, uppercase alone, is never Chinese in this face), 8KB
      against the TTF's 110KB; the TTF stays for the letter's pdf-lib. */
-  src: url("/css/SlateMedium.woff2") format("woff2");
+  src: url("/css/fonts/medium.woff2") format("woff2");
   font-weight: 500;
   font-display: optional;
 }
@@ -1897,7 +1903,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 .cover-panel { padding: 0; }
 .cover-panel > .lockcard-mark { margin: 0 auto 20px; }
 .cover-mark { display: block; height: 28px; width: auto; max-width: 60vw; margin: 0 auto 24px;
-  object-fit: contain; font: 400 28px/1 "ADspace Optima", Optima, var(--font-head); color: var(--ink); }
+  object-fit: contain; font: 400 28px/1 var(--font-mark), var(--font-head); color: var(--ink); }
 /* One flat colour on transparent, inverted on the dark console as its bar's is. */
 :root[data-theme="dark"] img.cover-mark { filter: invert(1) brightness(1.15); }
 .cover-panel h1, .cover-panel h2 {
@@ -5404,8 +5410,8 @@ body.is-canvas { overflow: hidden; }
    editorial page, so its content takes the larger steps (32 to 56).
    ========================================================================= */
 @font-face {
-  font-family: 'ADspace Optima';
-  src: local('Optima'), local('Optima-Regular'), url('/css/OPTIMA.TTF') format('truetype');
+  font-family: 'Agency Mark';
+  src: local('Optima'), local('Optima-Regular'), url('/css/fonts/mark.ttf') format('truetype');
   font-display: swap;
 }
 body.lp { --lp-col: 980px; --lp-gut: 24px; }
@@ -5415,7 +5421,7 @@ body.lp { --lp-col: 980px; --lp-gut: 24px; }
 /* The header's label says what the agency is, in the body face at the weight
    of a line of text rather than a section's name, on this page alone. */
 body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--ink-soft); }
-/* The name in the brand's face, and what we do under it in Slate Regular
+/* The name in the brand's face, and what we do under it in the heading face
    (the user, 2026-09-28), centred on the page. */
 /* Even to the ink, not the boxes: the name's leading sits above its capitals
    and the tagline's descenders below it, so equal padding left 62px of air
@@ -5424,7 +5430,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
 .lp-intro-act { margin: 24px 0 0; }
 .lp-title {
-  margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
+  margin: 0; font-family: var(--font-mark), 'Segoe UI', sans-serif;
   font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
 }
 .lp-tagline { margin: 12px 0 0; font-family: var(--font-head); font-size: 19px; font-weight: 400; line-height: 1.4; color: var(--ink-soft); }
@@ -5457,7 +5463,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-tick circle { fill: var(--fill); }
 .lp-tick path { fill: none; stroke: var(--on-fill); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 /* One hierarchy down the page: headings in the body face at 600, what they
-   hold in Slate Regular, figures and links lighter again (the user,
+   hold in the heading face, figures and links lighter again (the user,
    2026-09-28: "Bold hierarchy is slightly inverted now"). */
 .lp-way-name { margin: 0; font-family: var(--font-head); font-size: 15px; font-weight: 400; line-height: 1.35; color: var(--ink); }
 /* A link at the control floor, giving its height back so the text keeps its
@@ -5518,7 +5524,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .lp-tick { width: 18px; height: 18px; margin-top: 1px; }
   .lp-way-name { font-size: 14px; }
   .lp-go { font-size: 13px; }
-  /* The days in Slate Regular 14 on a phone, as the names are; the
+  /* The days in the heading face 14 on a phone, as the names are; the
      figures 14, as the address beside them (FRONT-3). */
   .lp-hours th { font-size: 14px; }
   /* The bar on the content's 24px edge, so a phone reads one left edge
@@ -5743,7 +5749,7 @@ body.ncpage { background: var(--nc-ground); }
 .nc-qr { padding: 34px 28px 30px; opacity: 0; pointer-events: none; }
 .nc.is-qr .nc-lock { opacity: 0; pointer-events: none; }
 .nc.is-qr .nc-qr { opacity: 1; pointer-events: auto; }
-.nc-word { display: block; font-family: 'ADspace Optima', Optima, Candara, serif; font-size: var(--nc-sw, 32px); line-height: 1; color: var(--nc-word); }
+.nc-word { display: block; font-family: var(--font-mark), serif; font-size: var(--nc-sw, 32px); line-height: 1; color: var(--nc-word); }
 .nc-tag { display: block; margin-top: calc(var(--nc-sw, 32px) * .2); font-family: var(--font-head); font-size: calc(var(--nc-sw, 32px) * .46);
   line-height: 1; white-space: nowrap; color: var(--nc-word); }
 .nc-word-sm { font-size: 19px; }

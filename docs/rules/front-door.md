@@ -14,8 +14,8 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-22 and read before the 
   - the chrome header and footer, the kicker reading Creative Advertising
     Agency on `/` alone (16px/400, 14 on a phone, kept on a phone); no menu,
     no sign-in, no list of rooms;
-  - the name centred: `h1.lp-title` ADspace in Optima (`ADspace Optima`,
-    `css/OPTIMA.TTF` after `local('Optima')`, never preloaded: it swaps in), over the tagline
+  - the name centred: `h1.lp-title` ADspace in Optima (`--font-mark`,
+    `css/fonts/mark.ttf` after `local('Optima')`, never preloaded: it swaps in), over the tagline
     `advertising | marketing | branding` in Slate Regular (`.lp-tagline`);
     never an opening status (a studio, not a shop). ADspace alone, never
     "ADspace Studio";
