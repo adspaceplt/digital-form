@@ -207,7 +207,7 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    brn: 'Enter the 12-digit Business Registration Number, digits only.',
+    brn: ADspaceWords.en.brnBad,
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
     sst_no: 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     mobile: W.badMobile, address: 'Enter the full billing address.',
@@ -229,7 +229,7 @@
     var digits = function (k) { return v(k).replace(/\D/g, ''); };
     var bad = function (k) { out.push([k, fault(k)]); };
     if (v('name').length < 2) bad('name');
-    if ((!ind || digits('brn')) && !/^\d{12}$/.test(digits('brn'))) bad('brn');
+    if ((!ind || digits('brn')) && ADspaceWords.brnCheck(digits('brn'), 'MY')) bad('brn');
     if (ind && !(update && nricHeld && !digits('nric')) && !/^\d{12}$/.test(digits('nric'))) bad('nric');
     if (!/^[A-Za-z0-9]{5,20}$/.test(v('tin').replace(/\s+/g, ''))) bad('tin');
     if (v('sst_no') && !/^[A-Za-z]\d{2}-\d{4}-\d{8}$/.test(v('sst_no').replace(/\s+/g, ''))) bad('sst_no');

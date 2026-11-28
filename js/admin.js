@@ -3653,6 +3653,32 @@
     'campaign.file_deleted': ['Approved file deleted', '', 'campaigns'],
     'campaign.qc':           ['Quality checked', '', 'campaigns']
   };
+  /* ROUTINE ENTRIES (ACTIVITY KEPT BY KIND, 2026-11-28; the user: "keep 7
+     only"): the everyday steps the Activity record keeps for the routine
+     months (Settings, Records kept, 3), every other tag the key months
+     (36). `activity_routine()` in SQL restates this list and
+     `tests/actkeepsql.js` holds the two equal; a tag on neither is key,
+     the safe side. Saves and drafts, stage moves, messages and notices
+     sent, links opened, schedules and everyday edits to a set or a
+     booking; never money, a document, a delete, access, Settings, a
+     client's or a creator's decision. */
+  var ACTION_ROUTINE = [
+    'assistant.call', 'assistant.campaign', 'assistant.meeting', 'assistant.report', 'assistant.schedule',
+    'assistant.set', 'assistant.task', 'assistant.whatsapp',
+    'campaign.bulk', 'campaign.closed', 'campaign.dates', 'campaign.file_added', 'campaign.file_hidden',
+    'campaign.file_shown', 'campaign.keyed', 'campaign.offered', 'campaign.opened', 'campaign.qc',
+    'campaign.rated', 'campaign.results', 'campaign.stage', 'campaign.task_linked', 'campaign.task_unlinked',
+    'campaign.unkeyed', 'campaign.unoffered', 'campaign.whatsapp',
+    'client.action_done', 'client.action_reopened', 'client.drive', 'client.handles', 'client.review_on',
+    'client.stage', 'client.touch', 'client.touch_edited', 'client.touch_restored',
+    'creator.links', 'creator.links_restored', 'creator.links_self',
+    'document.verified', 'drive.imported', 'email.sent', 'ops.trip_closed',
+    'post.added', 'post.edited', 'quotation.opened', 'reapproval.requested',
+    'report.ai_drafted', 'report.ai_failed', 'report.audited', 'report.confirmed', 'report.created',
+    'report.reassigned', 'report.returned', 'report.revised', 'report.saved', 'report.submitted',
+    'script.created', 'script.saved', 'script.shot',
+    'set.created', 'set.month', 'set.published', 'set.renamed', 'set.task_linked', 'set.task_unlinked', 'set.withdrawn',
+    'wa.sent'];
   /* The same order as the rail, because they are the same sections and a
      person who has learned one sequence should not have to learn a second.
      All sections leads, being the view somebody lands on (never Everything). */
@@ -3904,25 +3930,27 @@
 
   function paintActivity() {
     var box = $('activityList');
+    /* Performance's steps stand beside the log only as far back as the log
+       is read (the last days first, then each earlier page). */
     var rows = actRows.filter(function (a) {
-      return actFilter === 'all' || sectionOfRow(a) === actFilter;
+      return (actFilter === 'all' || sectionOfRow(a) === actFilter) &&
+        (a._section !== 'performance' || !actFloor || String(a.created_at) >= actFloor);
     });
     if ($('activitySection').value !== actFilter) $('activitySection').value = actFilter;
+    var R = window.ADspaceRecords;
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">Nothing recorded' +
-        (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.</div>';
-      return;
+      box.innerHTML = '<div class="empty">' + esc(actMore() ? R.none(actPage && actPage.days) :
+        'Nothing recorded' + (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.') + '</div>';
+    } else {
+      /* One line an entry, a heading a day, runs folded (js/records.js). */
+      R.paint(box, rows.map(recordOf));
     }
-    /* One line an entry, a heading a day, runs folded (js/records.js). */
-    window.ADspaceRecords.paint(box, rows.map(recordOf));
-    /* A section's page ends where its read did: Show older reads the next
-       page of the same section (ACT-1, 2026-10-22). */
-    if (actMore) {
-      var more = document.createElement('div');
-      more.className = 'act-more';
-      more.innerHTML = '<button class="btn btn-sm" type="button" id="activityOlder">Show older</button>';
-      box.appendChild(more);
-      more.firstChild.addEventListener('click', readOlder);
+    /* The list ends where its read did: Show more reads the next page of
+       the same section (ACT-1, 2026-10-22; the last days first,
+       2026-11-28). */
+    if (actMore()) {
+      var b = R.earlier(box, readOlder);
+      if (b) b.id = 'activityOlder';
     }
   }
   /* A tag that is read on its own is never folded into the entry beside it:
@@ -4030,18 +4058,21 @@
      a page at a time: the newest 200 of every section filtered in the page
      left a quiet section (Handbook, Documents) reading Nothing recorded
      while its rows stood older than the 200th of the busy ones (ACT-1,
-     2026-10-22). */
-  var ACT_PAGE = 200, actMore = false, actSeq = 0;
+     2026-10-22). It opens on the last days (`ADspaceRecords.pager`). */
+  var ACT_PAGE = 200, actSeq = 0, actPage = null, actFloor = null;
   function actionsOf(k) {
     return Object.keys(ACTION_LABEL).filter(function (a) { return ACTION_LABEL[a][2] === k; });
   }
-  function actRead(before) {
-    if (actFilter === 'performance') return Promise.resolve({ data: [] });
+  function actQuery() {
     var q = db.from('activity_log').select('*');
     if (actFilter === 'hr') q = q.in('action', actionsOf('register')).eq('subject', 'HR');
     else if (actFilter !== 'all') q = q.in('action', actionsOf(actFilter));
-    if (before) q = q.lt('created_at', before);
-    return q.order('created_at', { ascending: false }).limit(ACT_PAGE);
+    return q;
+  }
+  /* Performance alone reads no log: its own steps, the last days first. */
+  function actMore() {
+    var older = actRows.some(function (a) { return a._section === 'performance' && actFloor && String(a.created_at) < actFloor; });
+    return !!(actPage && actPage.more) || older;
   }
   /* Performance's steps come from their own function, read only where the
      part is held and the view takes them, and join the rest by time. A
@@ -4061,33 +4092,32 @@
   /* A read that fails is said with Try again, never Access denied in an
      empty line, never a page left on Loading (ACT-2, 2026-10-22). */
   function actFailed(why) {
-    actMore = false;
+    actPage = null; actRows = [];
     window.ADspaceState.failLine($('activityList'), 'The Activity record', why, readActivity);
   }
   function readActivity() {
     var seq = ++actSeq;
     window.ADspaceState.skeleton($('activityList'), 6);
-    Promise.all([actRead(), perfRead()]).then(function (both) {
+    var pg = actPage = actFilter === 'performance' ? null : window.ADspaceRecords.pager(actQuery, ACT_PAGE);
+    actFloor = pg ? pg.floor : new Date(Date.now() - window.ADspaceRecords.days() * 864e5).toISOString();
+    Promise.all([pg ? pg.first() : Promise.resolve({ data: [] }), perfRead()]).then(function (both) {
       if (seq !== actSeq) return;
       var r = both[0] || {};
       if (r.error) { actFailed(r.error.message); return; }
-      actMore = (r.data || []).length >= ACT_PAGE;
+      if (pg) actFloor = pg.floor;
       actRows = (r.data || []).concat(both[1] || []).sort(byTime);
       paintActivity();
     }).catch(function (e) {
       if (seq === actSeq) actFailed(e && e.message);
     });
   }
-  function readOlder() {
-    var btn = this, seq = actSeq;
-    var logged = actRows.filter(function (a) { return a._section !== 'performance'; });
-    var last = logged.length ? logged[logged.length - 1].created_at : null;
-    if (!last) return;
-    btn.disabled = true;
-    actRead(last).then(function (r) {
+  function readOlder(btn) {
+    var seq = actSeq, pg = actPage;
+    if (!pg) { actFloor = null; paintActivity(); return; }
+    pg.next().then(function (r) {
       if (seq !== actSeq) return;
       if (r.error) { btn.disabled = false; actFailed(r.error.message); return; }
-      actMore = (r.data || []).length >= ACT_PAGE;
+      actFloor = pg.floor;
       actRows = actRows.concat(r.data || []).sort(byTime);
       paintActivity();
     }).catch(function (e) { if (seq === actSeq) actFailed(e && e.message); });
@@ -6728,7 +6758,7 @@
     lat: [-90, 90, false, 6], lng: [-180, 180, false, 6], accm: [5, 500, true],
     /* The ranges app_settings_set holds (2026-11-25: months, orad and remh
        were missing, so their sheets refused nothing and threw at Save). */
-    months: [1, 24, true], keepc: [1, 36, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
+    months: [1, 24, true], keepc: [1, 36, true], actw: [1, 90, true], actr: [1, 36, true], actk: [12, 120, true], jobk: [1, 90, true], undos: [10, 300, true], orad: [20, 1000, true], remh: [1, 12, true], inv: [1, 14, true], link: [7, 90, true],
     sback: [0, 30, true], adreq: [1, 100, true] };
   /* WORKING HOURS (2026-11-20, the user: "Give working hours a setting",
      "by default 10am to 7pm monday to friday, Saturday and sunday on
@@ -6882,6 +6912,8 @@
     health_task_hours: [null, '', 'hours', '', 'decimal'],
     health_remind_days: [null, '', 'days', '0 turns this off.'],
     health_keep_months: [null, '', 'months'], health_leaver_months: [null, '', 'months'],
+    activity_window_days: [null, '', 'days'], activity_routine_months: [null, '', 'months'], activity_keep_months: [null, '', 'months'], jobs_keep_days: [null, '', 'days'],
+    send_undo_seconds: [null, '', 'seconds'],
     creator_pay_days_myr: [null, '', 'working days'], creator_pay_days_other: [null, '', 'working days'],
     timely_pct: [null, '', '%'], timely_late_days: [null, '', 'days', '', 'decimal'],
     wa_repeat_hours: [null, '', 'hours', '0 turns this off.'],
@@ -6999,6 +7031,18 @@
       ['health_alert', 'Heavy workload notice', 'onoff', '', 'Heavy workload notice', function (v) { return Number(v) ? 'on' : 'off'; }]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for', 'leave', '', 'Leavers', per('month')]] },
+    /* The Activity record's lists and how long it keeps a routine entry and
+       an important one, and the automatic runs' history (ACTIVITY KEPT BY
+       KIND, 2026-11-28). */
+    actkeep: { title: 'Activity history', keys: [['activity_window_days', 'Activity lists show the last', 'actw', '', 'Lists show', per('day')],
+      ['activity_routine_months', 'Routine activity kept for', 'actr', '', 'Routine activity', per('month')],
+      ['activity_keep_months', 'Important activity kept for', 'actk', '', 'Important activity', per('month')],
+      ['jobs_keep_days', 'Automatic run history kept for', 'jobk', '', 'Automatic runs', per('day')]],
+      notes: { activity_routine_months: 'Saves, stage moves, messages sent, links opened and other everyday steps.',
+        activity_keep_months: 'Everything else, including money, documents, deletions, access, Settings and client decisions.' } },
+    /* How long an email a colleague's act queued waits for Undo
+       (2026-11-28; a decision's email to a candidate first). */
+    sendundo: { title: 'Undo before sending', keys: [['send_undo_seconds', 'Undo before sending', 'undos', '', 'Undo', per('second')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
     creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Payment time in MYR', 'pay', '', 'MYR', per('working day')],
       ['creator_pay_days_other', 'Payment time in other currencies', 'pay', '', 'Other currencies', per('working day')]] },
@@ -7338,6 +7382,7 @@
        Activity pane reads it rather than keeping a second copy that would
        drift from the activity record's own. */
     actionLabel: ACTION_LABEL,
+    actionRoutine: ACTION_ROUTINE,
     /* One activity row as one record line, the same words everywhere. */
     record: recordOf,
     log: logAction,

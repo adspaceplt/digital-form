@@ -194,6 +194,16 @@ Moved from `CLAUDE.md` §2, One copy of each mechanism, on 2026-11-23. Each is t
     `ADspaceWords.en`.
   - The console's `STAGES`, `SV_STATE`, `RQ_STATE`, `RQ_KIND`, `OPTION_WORD`
     and `STATE_WORD` are built from it, never typed again.
+  - `ADspaceWords.brnCheck(value, market, kind)` is the one reading of a
+    business registration number, and `brn_check` its one copy in SQL
+    (ONE BRN RULE, 2026-11-28): spaces and dashes dropped; Malaysia 12
+    digits, a year from 1900 to this year, the entity code 01, 02 or 04 a
+    company and 03 Sole / Partnership (`kind` holds the code to the choice);
+    a Singapore client (`market` SG) bills through either country's
+    company, so a UEN or a BRN; no market in SQL takes the same.
+    Its refusals are `brnBad` and `uenBad`. /quote/'s intake and signing,
+    the details form, Billing, the supplier form and a creator's payment
+    details read it; no form types its own pattern.
 - `js/captcha.js` is Turnstile (`interaction-only`, `flexible`, `theme` from
   `data-theme`).
   - One box per `[data-cf]` card; otherwise after the button's row (grid or row

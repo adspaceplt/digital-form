@@ -387,7 +387,9 @@
         (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + (out.mail_at ? ' · ' + esc(when(out.mail_at)) : ''), out.mail === 'sent' || out.mail === 'queued' ? '' : 'is-warn') : '') + '</dl>' +
         (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && ['sent', 'queued', 'sending'].indexOf(out.mail) < 0
             ? '<button class="btn btn-sm" type="button" data-h="outmail" data-gate="email">Email candidate</button>' : '') +
-          (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
+          /* While its email is queued, Reopen is the decision's Undo, and
+             says so (2026-11-28). */
+          (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">' + (out.mail === 'queued' ? 'Undo' : 'Reopen') + '</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
       decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Do not proceed</button>' +
         '<button class="btn btn-sm" type="button" data-h="decide" data-o="pool">Keep in talent pool</button>' +
@@ -601,8 +603,14 @@
       });
     });
   }
-  /* The window before a decision's email goes (the user, 2026-11-20: 30 seconds). */
-  var UNDO_MS = 30000;
+  /* The window before a decision's email goes: Settings, Undo before
+     sending (`send_undo_seconds`, 60; the user, 2026-11-28: one minute,
+     its Undo in sight the whole while). */
+  function undoMs() {
+    var M = window.ADspaceMoney, s = M && M.setting ? Number(M.setting('send_undo_seconds')) : NaN;
+    return (s > 0 ? s : 60) * 1000;
+  }
+  function mailBar(c) { return window.ADspaceWords.line.sendsIn('Outcome email to ' + c.name, undoMs() / 1000); }
   var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
   function outcomeMail(id, hand) {
     var c = { id: id || state.rec.id };
@@ -623,9 +631,11 @@
       /* The decision first, then the Google Meets of the interviews it
          cancelled (the review of 2026-11-24: removed first, a refused
          decision left an interview with no meeting). The decision's email
-         is queued in the database, which sends it once the 30 seconds of
-         Undo pass (`hiring_outcome_mail_queue`, sent by hiring-mail's
-         drain), so a tab shut meanwhile still sends it and Undo cancels it. */
+         is queued in the database, which sends it once Undo's minute
+         passes (`hiring_outcome_mail_queue`, sent by hiring-mail's drain
+         every five minutes), so a tab shut meanwhile still sends it and
+         Undo cancels it; the bar names the email for the whole minute and
+         the decision card keeps Undo while it is queued. */
       return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) return said(r);
@@ -639,18 +649,18 @@
               msg('hirRecMsg', (queued && !mailOff(o) ? 'Decided. The candidate will be emailed.' : 'Decided.') +
                 (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
                 kept || (wait && !queued) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.', function () {
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c) : 'Decided: ' + REC[o] + '.', function () {
                 return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (x) {
                   /* Undone only once the reopen is held: a refused one
                      says so, and the queued email still goes. */
                   if (x.error || (x.data && x.data.error)) { msg('hirRecMsg', said(x), 'err'); return; }
                   return openRec(c.id).then(function () { msg('hirRecMsg', 'Undone.', 'ok'); });
                 });
-              }, $('hirRecMsg'), queued ? UNDO_MS : 0);
-              /* The record is read again once the email is due, and a minute
-                 on (the drain is woken every minute), so an open tab shows it
-                 sent; nothing is sent from here. */
-              if (queued) [UNDO_MS + 3000, UNDO_MS + 65000].forEach(function (ms) {
+              }, $('hirRecMsg'), queued ? undoMs() : 0);
+              /* The record is read again once the email is due, and five
+                 minutes on (the drain is woken every five), so an open tab
+                 shows it sent; nothing is sent from here. */
+              if (queued) [undoMs() + 3000, undoMs() + 305000].forEach(function (ms) {
                 setTimeout(function () {
                   var r0 = state.rec;
                   if (r0 && r0.id === c.id && (((state.outcome || {}).outcome || {}).mail || 'queued') === 'queued') load();
@@ -1528,7 +1538,7 @@
   /* Did not attend (2026-11-26, the user: "interview flow ok"): one
      question, What next? Offer a new time keeps the candidate and opens the
      new times; Close application decides Do not proceed, the candidate
-     emailed once its Undo's 30 seconds pass (queued, as a decision). The
+     emailed once its Undo's minute passes (queued, as a decision). The
      miss stays in the history; Undo where it happened, two minutes at most. */
   function missedIv(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
@@ -1568,7 +1578,7 @@
               msg('hirRecMsg', (queued && !mailOff('missed') ? 'Application closed. The candidate will be emailed.' : 'Application closed.') +
                 (kept ? MEET_KEPT : '') + (wait && !queued ? ' The email was not queued. Use Email candidate to send it.' : ''),
                 kept || (wait && !queued) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere('Application closed.', undo, $('hirRecMsg'), queued ? UNDO_MS : 0);
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c) : 'Application closed.', undo, $('hirRecMsg'), queued ? undoMs() : 0);
             });
             return '';
           });

@@ -88,10 +88,10 @@
       ik: {
         secContact: 'Contact person', secBiz: 'Business registration', secBrand: 'Brand', secStart: 'Commencement',
         kind: 'Registering as', kinds: [['company', 'Company'], ['soleprop', 'Sole / Partnership']],
-        brn: 'Business Registration No. (BRN)', legal: 'Registered Name', site: 'Website', noSite: 'No website',
+        brn: 'Business Registration No. (BRN)', brnPh: '12 digits', legal: 'Registered Name', site: 'Website', noSite: 'No website',
         plat: 'Platform', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote']],
         handle: 'Social media account', comments: 'Comments',
-        say: { brn: 'Enter the 12-digit Business Registration No., such as 202301012345.',
+        say: { brn: window.ADspaceWords.en.brnBad,
           toSole: 'This number is registered to a sole proprietorship or partnership. Choose Sole / Partnership above.',
           toCo: 'This number is registered to a company. Choose Company above.', legal: 'Enter the Registered Name.',
           industry: 'Choose your industry.', site: 'Enter your website, or tick No website.', siteBad: 'Enter a web address.',
@@ -209,7 +209,7 @@
         confT: 'Confirmed', confP: 'Confirmed by ' + AGENCY.trading_name + ' on {d}.', docId: 'Document ID {id}', sealDl: 'Download signed copy',
         doneP: AGENCY.trading_name + ' will review your details and confirm your start date within two working days.',
         say: {
-          legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Business Registration Number.', regOld: 'Enter a valid Old Registration Number.',
+          legal: 'Enter the Registered Company Name.', regOld: 'Enter a valid Old Registration Number.',
           tin: 'Enter a valid Tax Identification Number (TIN).', sst: 'Enter a valid SST Registration Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
           sal: 'Select a salutation from the list.', name: 'Enter the name of the billing contact.', mobile: 'Enter a valid mobile number.',
           signer: 'Enter your full name.', desig: 'Enter your designation.', sig: 'Draw or type your signature.',
@@ -269,10 +269,10 @@
       ik: {
         secContact: '联系人', secBiz: '商业登记', secBrand: '品牌', secStart: '开始时间',
         kind: '登记类别', kinds: [['company', '公司'], ['soleprop', '独资 / 合伙']],
-        brn: '商业注册号码（BRN）', legal: '注册名称', site: '网站', noSite: '没有网站',
+        brn: '商业注册号码（BRN）', brnPh: '12位数字', legal: '注册名称', site: '网站', noSite: '没有网站',
         plat: '平台', plats: [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', '小红书']],
         handle: '社交媒体账号', comments: '备注',
-        say: { brn: '请填写12位数的商业注册号码，例如202301012345。',
+        say: { brn: window.ADspaceWords.zh.brnBad,
           toSole: '此号码属于独资或合伙企业，请在上方选择“独资 / 合伙”。',
           toCo: '此号码属于公司，请在上方选择“公司”。', legal: '请填写注册名称。',
           industry: '请选择行业。', site: '请填写网站，或勾选“没有网站”。', siteBad: '请填写有效的网址。',
@@ -388,7 +388,7 @@
         confT: '已确认', confP: AGENCY.trading_name + ' 已于{d}确认。', docId: '文件识别码 {id}', sealDl: '下载已签署副本',
         doneP: AGENCY.trading_name + ' 将审核您的资料，并于2个工作日内确认开始日期。',
         say: {
-          legal: '请填写公司注册名称。', reg: '请填写有效的商业注册号码。', regOld: '请填写有效的旧注册号码。',
+          legal: '请填写公司注册名称。', regOld: '请填写有效的旧注册号码。',
           tin: '请填写有效的税务识别号码（TIN）。', sst: '请填写有效的 SST 注册号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
           sal: '请从列表中选择称谓。', name: '请填写账单联系人姓名。', mobile: '请填写有效的手机号码。',
           signer: '请填写您的全名。', desig: '请填写您的职位。', sig: '请手写或输入您的签名。',
@@ -893,7 +893,7 @@
   function regHtml(c) {
     var k = t().ik;
     return seg('qsKind', k.kind, k.kinds, c.kind || 'company') +
-      pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="202301012345" aria-required="true" value="' + esc(c.brn) + '">'),
+      pair(field('qsBrn', k.brn, true, '<input class="input" id="qsBrn" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="' + esc(k.brnPh) + '" aria-required="true" value="' + esc(c.brn) + '">'),
         field('qsLegal', k.legal, true, '<input class="input qs-caps" id="qsLegal" autocomplete="organization" placeholder="' + AGENCY.trading_name.toUpperCase() + ' ADVERTISING SDN BHD" aria-required="true" value="' + esc(c.legal) + '">'));
   }
   function industryHtml(c) {
@@ -949,14 +949,12 @@
     }
     if ($('qsStart')) { c.commence = v('qsStart'); c.commence_on = c.commence === 'date' && $('qsStartOn') ? v('qsStartOn') : ''; }
   }
-  function brnDigits(s) { return String(s || '').replace(/[\s-]+/g, ''); }
-  /* The number's own refusal: 12 digits from a year, then the entity code
-     for what is chosen (a company 01, 02 or 04; Sole / Partnership 03). */
+  function brnDigits(s) { return window.ADspaceWords.brnDigits(s); }
+  /* The number's own refusal (`ADspaceWords.brnCheck`, the one rule): a
+     number of the other kind names the choice that fits it. */
   function brnSay(c) {
-    var d = brnDigits(c.brn), k = t().ik.say, y = Number(d.slice(0, 4)), code = d.slice(4, 6);
-    if (!/^\d{12}$/.test(d) || y < 1900 || y > Number(todayMY().slice(0, 4))) return k.brn;
-    if (c.kind === 'soleprop') return code === '03' ? '' : /^0[124]$/.test(code) ? k.toCo : k.brn;
-    return /^0[124]$/.test(code) ? '' : code === '03' ? k.toSole : k.brn;
+    var k = t().ik.say, r = window.ADspaceWords.brnCheck(c.brn, 'MY', c.kind);
+    return r === 'kind' ? (c.kind === 'soleprop' ? k.toCo : k.toSole) : r ? k.brn : '';
   }
   function siteOk(s) {
     var u = /^https?:\/\//i.test(s) ? s : 'https://' + s;
@@ -1742,6 +1740,9 @@
     var el = $(id); if (el) el.setAttribute('aria-invalid', 'true');
     return first || el;
   }
+  /* The registration's refusal in the client's market: a BRN, or a
+     Singapore client's UEN (`ADspaceWords.brnCheck`). */
+  function regWord() { return window.ADspaceWords[lang === 'zh' ? 'zh' : 'en'][Q && Q.market === 'SG' ? 'uenBad' : 'brnBad']; }
   function signCheck() {
     signRead();
     var w = t().sg.say, first = null, up = function (x) { return String(x || '').replace(/\s+/g, '').toUpperCase(); };
@@ -1749,7 +1750,7 @@
     if (SG.step === 1) {
       var c = SG.co, k = SG.ct;
       if (c.legal_name.length < 2) first = sgBad('sgLegal', w.legal, first);
-      if (!/^[A-Z0-9-]{6,20}$/.test(up(c.company_no))) first = sgBad('sgReg', w.reg, first);
+      if (window.ADspaceWords.brnCheck(c.company_no, Q && Q.market)) first = sgBad('sgReg', regWord(), first);
       if (c.company_no_old && !/^[A-Z0-9-]{4,20}$/.test(up(c.company_no_old))) first = sgBad('sgRegOld', w.regOld, first);
       if (c.billing_address.length < 10) first = sgBad('sgAddr', w.addr, first);
       if (c.sst_no && !/^[A-Z0-9-]{6,25}$/.test(up(c.sst_no))) first = sgBad('sgSst', w.sst, first);
@@ -1796,7 +1797,7 @@
     var at = SG_SAY[code];
     if (at) {
       if (SG.step !== at[0]) signShow(at[0]);
-      var el = sgBad(at[1], w[at[2]]);
+      var el = sgBad(at[1], at[2] === 'reg' ? regWord() : w[at[2]]);
       if (at[1] === 'sgPad') say('sgPadMsg', w.sig);
       if (el && el.focus && at[1] !== 'sgPad') el.focus();
       return;
