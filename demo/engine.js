@@ -1331,7 +1331,7 @@
     ['clients', 'campaigns'].forEach(function (tb) {
       (DB[tb] || []).forEach(function (r) {
         var nm = String(r.owner || '').trim().toLowerCase();
-        if (!nm) { if (r.owner_id === undefined) r.owner_id = null; return; }
+        if (!nm) { r.owner_id = null; return; }
         if (r.owner_id && String(memberName(r.owner_id) || '').trim().toLowerCase() === nm) return;
         r.owner_id = ownerIdOf(r.owner);
       });
