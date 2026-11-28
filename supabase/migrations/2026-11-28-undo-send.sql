@@ -21,8 +21,8 @@
 --     `mail_queue_close` (supplier-mail's drain), closing through each
 --     sender's own close as the colleague who queued it; `mail_cancel`
 --     (the sender, or Messages at Full Access; `sent` once the drain took
---     it); pg_cron `mail-queue` every minute wakes the drain only while an
---     email is due.
+--     it); pg_cron `mail-queue` every five minutes (as every drain's wake)
+--     wakes the drain only while an email is due: one to six minutes.
 --   * Sent recently leaves a cancelled email out (supplier_email_prepare,
 --     client_email_prepare, invoice_mail_begin; a feedback request's is
 --     withdrawn); mail_sweep reads a queued email's time from its claim;
@@ -72,11 +72,9 @@ alter table public.feedback_requests drop constraint if exists feedback_requests
 alter table public.feedback_requests add constraint feedback_requests_mail_status_check
   check (mail_status in ('queued', 'sending', 'sent', 'failed', 'unknown', 'cancelled'));
 
-/* The window, a Business setting (Settings, Business: Undo send), seeded
-   once; read in force on the Malaysian day. */
-insert into public.app_settings (key, from_date, value)
-select 'send_undo_seconds', date '2023-08-14', 60
- where not exists (select 1 from public.app_settings s where s.key = 'send_undo_seconds');
+/* The window is ACTIVITY KEPT BY KIND's Business setting `send_undo_seconds`
+   (60; Settings, Messages, Undo before sending), read in force on the
+   Malaysian day. */
 
 /* The queue: one row an email, holding what Resend is sent (attachments
    included) until it goes, then emptied. RLS on, no policy, no grant: the
@@ -334,8 +332,9 @@ exception when others then
 end $$;
 revoke all on function public.mail_queue_kick() from public, anon, authenticated;
 
-/* Every minute, the drain is woken only while an email is due: the delay
-   is the window to the window and a minute. */
+/* Every five minutes, as every drain's wake (the user, 2026-11-28: "keep
+   every 5 minutes"), the drain is woken only while an email is due: an
+   email goes one to six minutes after it was sent. */
 create or replace function public.mail_queue_due()
 returns void language plpgsql security definer set search_path = public as $$
 begin
@@ -352,7 +351,7 @@ begin
     return;
   end if;
   perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'mail-queue';
-  perform cron.schedule('mail-queue', '* * * * *', 'select public.mail_queue_due()');
+  perform cron.schedule('mail-queue', '*/5 * * * *', 'select public.mail_queue_due()');
 end $$;
 
 create or replace function public.supplier_email_prepare(p_supplier uuid, p_purpose text, p_document uuid default null)

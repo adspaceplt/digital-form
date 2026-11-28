@@ -400,7 +400,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     Undo window passes (`send_undo_seconds`, the one queue every email a
     colleague sends waits in, `docs/rules/messages.md` Undo send; the
     page asks hiring-mail `outcome`, which queues it, never timed in the
-    tab; read Queued); Reopen (Undo, filed only once the database holds it)
+    tab; read Queued, the Undo bar naming it the whole window,
+    `ADspaceWords.line.sendsIn`: Outcome email to {name} will be sent in
+    1 minute.); Reopen (Undo, filed only once the database holds it)
     cancels it, the drain never sending a decision reopened meanwhile, and a
     decision reopened is refused the email (`no-email`); the decision is
     asked first, and the

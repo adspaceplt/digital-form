@@ -1632,19 +1632,30 @@
     var c = state.client;
     if (!box || !c) return;
     UI.skeleton(box, 3);
-    db.from('activity_log').select('*').eq('client_id', c.id)
-      .order('created_at', { ascending: false }).limit(50)
-      .then(function (r) {
-        if (r.error) { UI.failLine(box, 'Activity', r.error.message, loadClientLog); return; }
-        var rows = r.data || [];
-        /* Kept so the rail can show the last three without a second read: the
-           record has already paid for this one. */
-        state.log = rows;
-        railLog();
-        /* One line an entry, the client named once by the record itself. */
-        box.innerHTML = '<div class="softpanel recpanel"></div>';
-        window.ADspaceRecords.paint(box.firstChild, rows.map(recordOf));
-      });
+    /* The last days first, Show more reading older pages
+       (`ADspaceRecords.pager`, 2026-11-28). */
+    var R = window.ADspaceRecords;
+    var pg = R.pager(function () { return db.from('activity_log').select('*').eq('client_id', c.id); }, 50);
+    var rows = [];
+    function draw() {
+      if (state.client !== c) return;
+      /* Kept so the rail can show the last three without a second read: the
+         record has already paid for this one. */
+      state.log = rows;
+      railLog();
+      /* One line an entry, the client named once by the record itself. */
+      box.innerHTML = '<div class="softpanel recpanel"></div>';
+      R.paint(box.firstChild, rows.map(recordOf), pg.more && !rows.length ? { empty: R.none(pg.days) } : null);
+      if (pg.more) R.earlier(box.firstChild, more);
+    }
+    function took(r, retry) {
+      if (r.error) { UI.failLine(box, 'Activity', r.error.message, retry); return; }
+      rows = rows.concat(r.data || []);
+      draw();
+    }
+    function more() { pg.next().then(function (r) { took(r, more); }).catch(function (e) { UI.failLine(box, 'Activity', e && e.message, more); }); }
+    pg.first().then(function (r) { took(r, loadClientLog); })
+      .catch(function (e) { UI.failLine(box, 'Activity', e && e.message, loadClientLog); });
   }
   function recordOf(x) {
     var A = window.ADspaceAdmin;

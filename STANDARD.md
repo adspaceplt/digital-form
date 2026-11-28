@@ -158,7 +158,9 @@ Found by a test in code a release did not touch: `docs/rules/logged-defects.md` 
   passcode 30 days after it was last used (audit 2026-10-18, item 14), and
   against /verify/ 30 days after its hour began; where a
   colleague copied a quotation's link 30 days after the copy;
-  the Activity record three years.
+  the Activity record by kind, a routine entry 3 months and an important
+  one 3 years, and the scheduled jobs' history 7 days, each a setting
+  (Activity history, 2026-11-28).
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);

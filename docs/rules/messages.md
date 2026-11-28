@@ -389,8 +389,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   role's) for `send_undo_seconds` (Business setting, 60), its own row
   reading Queued; supplier-mail's drain (`mail_queue_claim`,
   `mail_queue_close` through the sender's own close as the colleague who
-  queued it; pg_cron `mail-queue` every minute wakes it only while one is
-  due: the delay is the window to the window and a minute) sends it.
+  queued it; pg_cron `mail-queue` every five minutes, as every drain's wake,
+  wakes it only while one is due: an email goes one to six minutes after
+  it was sent) sends it.
   The screen that sent it draws `ADspaceAdmin.mailUndo` under its line the
   whole window (Email to {name} will be sent in 1 minute. · Undo; several at
   once one bar); the Email log's sheet and a supplier's Emails offer Cancel email

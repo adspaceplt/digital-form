@@ -401,7 +401,9 @@
         (out.mail ? fact('Email', esc(MAIL[out.mail] || out.mail) + (out.mail_at ? ' · ' + esc(when(out.mail_at)) : ''), out.mail === 'sent' || out.mail === 'queued' ? '' : 'is-warn') : '') + '</dl>' +
         (keeps ? '<div class="hir-iv-acts">' + ((out.outcome === 'pool' || out.outcome === 'not') && ['sent', 'queued', 'sending'].indexOf(out.mail) < 0
             ? '<button class="btn btn-sm" type="button" data-h="outmail" data-gate="email">Email candidate</button>' : '') +
-          (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">Reopen</button>' : '') + '</div>' : '');
+          /* While its email is queued, Reopen is the decision's Undo, and
+             says so (2026-11-28). */
+          (c.stage !== 'hired' ? '<button class="btn btn-sm btn-quiet" type="button" data-h="reopen">' + (out.mail === 'queued' ? 'Undo' : 'Reopen') + '</button>' : '') + '</div>' : '');
     } else if (keeps && open) {
       decide = '<div class="hir-decide"><button class="btn btn-sm" type="button" data-h="decide" data-o="not">Do not proceed</button>' +
         '<button class="btn btn-sm" type="button" data-h="decide" data-o="pool">Keep in talent pool</button>' +
@@ -615,6 +617,14 @@
       });
     });
   }
+  /* The window before a decision's email goes: Settings, Undo before
+     sending (`send_undo_seconds`, 60; the user, 2026-11-28: one minute,
+     its Undo in sight the whole while). */
+  function undoMs() {
+    var M = window.ADspaceMoney, s = M && M.setting ? Number(M.setting('send_undo_seconds')) : NaN;
+    return (s > 0 ? s : 60) * 1000;
+  }
+  function mailBar(c, secs) { return window.ADspaceWords.line.sendsIn('Outcome email to ' + c.name, secs || undoMs() / 1000); }
   var MEET_KEPT = ' The Google Meet could not be removed from the shared calendar. Remove it there.';
   function outcomeMail(id, hand) {
     var c = { id: id || state.rec.id };
@@ -635,9 +645,11 @@
       /* The decision first, then the Google Meets of the interviews it
          cancelled (the review of 2026-11-24: removed first, a refused
          decision left an interview with no meeting). The decision's email
-         is queued in the database, which sends it once the 30 seconds of
-         Undo pass (`hiring_outcome_mail_queue`, sent by hiring-mail's
-         drain), so a tab shut meanwhile still sends it and Undo cancels it. */
+         is queued in the database, which sends it once Undo's minute
+         passes (`hiring_outcome_mail_queue`, sent by hiring-mail's drain
+         every five minutes), so a tab shut meanwhile still sends it and
+         Undo cancels it; the bar names the email for the whole minute and
+         the decision card keeps Undo while it is queued. */
       return rpc('hiring_decide', { p_id: c.id, p_outcome: o, p_note: String(v.note || '').trim() || null }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) return said(r);
@@ -657,7 +669,7 @@
               msg('hirRecMsg', 'Decided.' +
                 (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere('Decided: ' + REC[o] + '.' + (queued ? ' ' + window.ADspaceWords.line.mailQueued(c.name, queued.seconds) : ''), function () {
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Decided: ' + REC[o] + '.', function () {
                 if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
                 return rpc('hiring_decide', { p_id: c.id, p_outcome: 'reopen', p_note: null }).then(function (x) {
                   /* Undone only once the reopen is held: a refused one
@@ -1546,7 +1558,7 @@
   /* Did not attend (2026-11-26, the user: "interview flow ok"): one
      question, What next? Offer a new time keeps the candidate and opens the
      new times; Close application decides Do not proceed, the candidate
-     emailed once its Undo's 30 seconds pass (queued, as a decision). The
+     emailed once its Undo's minute passes (queued, as a decision). The
      miss stays in the history; Undo where it happened, two minutes at most. */
   function missedIv(id) {
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
@@ -1586,7 +1598,7 @@
               msg('hirRecMsg', 'Application closed.' +
                 (kept ? MEET_KEPT : '') + (wait && !handled ? ' The email was not sent. Use Email candidate to send it.' : ''),
                 kept || (wait && !handled) ? 'warn' : 'ok');
-              if (bridge.undoHere) bridge.undoHere('Application closed.' + (queued ? ' ' + window.ADspaceWords.line.mailQueued(c.name, queued.seconds) : ''), function () {
+              if (bridge.undoHere) bridge.undoHere(queued ? mailBar(c, queued.seconds) : 'Application closed.', function () {
                 if (queued) rpc('mail_cancel', { p_source: queued.source, p_id: queued.id });
                 return undo();
               }, $('hirRecMsg'), queued ? (Number(queued.seconds) || 60) * 1000 : 0);

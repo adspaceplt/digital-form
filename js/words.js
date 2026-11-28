@@ -456,6 +456,20 @@
     /* A sign-in's code step, the console's and the client portal's alike
        (the cover family, 2026-11-22). */
     docNo: function (n, r) { n = String(n || ''); r = String(r || '').trim(); return r && r !== n ? n + ' / Reference: ' + r : n; },
+    /* Every history opens on its last days (ACTIVITY KEPT BY KIND,
+       2026-11-28): the press for older entries, and the line where the
+       days hold none (js/records.js). */
+    earlier: function (zh) { return zh ? '显示更多' : 'Show more'; },
+    recentNone: function (n, zh) { n = Math.floor(Number(n)); return zh ? '最近' + n + '天没有记录。' : 'Nothing recorded in the last ' + (n === 1 ? 'day.' : n + ' days.'); },
+    /* An email a colleague's act queued, while its Undo stands
+       (`send_undo_seconds`, 2026-11-28): Outcome email to Ali will be sent
+       in 1 minute. */
+    sendsIn: function (what, s, zh) {
+      s = Math.max(1, Math.round(Number(s) || 0));
+      var m = s % 60 === 0 ? s / 60 : 0;
+      if (zh) return what + '将在' + (m ? m + '分钟' : s + '秒') + '后发送。';
+      return what + ' will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : (s === 1 ? '1 second' : s + ' seconds')) + '.';
+    },
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',
     dateFloor: 'Choose a date from 14 Aug 2023.',
@@ -474,18 +488,8 @@
     emailSendOff: 'Sending email is turned off for you. Please ask an admin.',
     /* Undo send (2026-11-28): every email a colleague sends waits its
        window (`send_undo_seconds`) with a way to cancel it. */
-    mailQueued: function (name, secs, zh) {
-      secs = Math.max(0, Math.round(Number(secs) || 60));
-      var m = secs % 60 === 0 ? secs / 60 : 0;
-      if (zh) return '发给' + (name || '收件人') + '的邮件将在' + (m ? m + '分钟' : secs + '秒') + '后发出。';
-      return 'Email to ' + (name || 'the recipient') + ' will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
-    },
-    mailsQueued: function (n, secs, zh) {
-      secs = Math.max(0, Math.round(Number(secs) || 60));
-      var m = secs % 60 === 0 ? secs / 60 : 0;
-      if (zh) return n + '封邮件将在' + (m ? m + '分钟' : secs + '秒') + '后发出。';
-      return n + ' emails will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : secs + ' seconds') + '.';
-    },
+    mailQueued: function (name, secs, zh) { return W.line.sendsIn((zh ? '发给' + (name || '收件人') + '的邮件' : 'Email to ' + (name || 'the recipient')), secs || 60, zh); },
+    mailsQueued: function (n, secs, zh) { return W.line.sendsIn(zh ? n + '封邮件' : n + ' emails', secs || 60, zh); },
     mailCancel: 'Cancel email',
     mailCancelled: 'Email cancelled.',
     mailUndone: 'Undone. The email was not sent.',
