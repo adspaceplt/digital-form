@@ -52,6 +52,8 @@
     linkExpired: 'Link expired', formEnds: 'This form is open until {d}.', formReceived: 'Details received',
     formSubmitted: 'This form has already been submitted.', tickToContinue: 'Tick the box to continue.',
     badMobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.',
+    brnBad: 'Enter the 12-digit Business Registration Number (BRN).',
+    uenBad: 'Enter the 12-digit Business Registration Number (BRN) or the 9- or 10-character Unique Entity Number (UEN).',
     /* A form in steps, the quotation's and the details forms' alike
        (2026-11-25, js/icons.js stepTrack). */
     stepOf: 'Step {n} of {m}', stepStart: 'Start', stepBack: 'Back', stepNext: 'Continue', stepExpect: 'What to expect',
@@ -195,6 +197,8 @@
     yourDetails: '您的资料', stepEdit: '编辑', stepReview: '检查并提交',
     rcvNow: '进行中', rcvByAdspace: 'ADspace 审核', rcvByManager: '客户经理审核', accountManager: '您的客户经理', representative: '您的专属顾问', detailsSent: '资料已提交',
     badMobile: '请输入马来西亚或新加坡的手机号码，例如 012-345 6789。',
+    brnBad: '请输入12位商业注册号码（BRN）。',
+    uenBad: '请输入12位商业注册号码（BRN）或9或10位唯一实体编号（UEN）。',
     stillLoading: '仍在加载…',
     offline: '网络连接中断或过慢，请重试。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
@@ -395,6 +399,14 @@
      two letters or more, with no space, comma, quote, bracket or second @. */
   W.emailOk = function (v) {
     return /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i.test(String(v == null ? '' : v).trim());
+  };
+  /* One BRN rule, `brn_check`'s twin: '', 'bad' or 'kind'. */
+  W.brnDigits = function (v) { return String(v == null ? '' : v).replace(/[\s-]+/g, '').toUpperCase(); };
+  W.brnCheck = function (v, market, kind) {
+    var d = W.brnDigits(v), C = window.ADspaceClock, y = +d.slice(0, 4), c = d.slice(4, 6);
+    if (market === 'SG' && /^(\d{8,9}[A-Z]|[TSR]\d\d[A-Z]{2}\d{4}[A-Z])$/.test(d)) return '';
+    if (!/^\d{12}$/.test(d) || y < 1900 || y > (C ? +C.today().slice(0, 4) : new Date().getFullYear()) || !/^0[1-4]$/.test(c)) return 'bad';
+    return kind && (kind === 'soleprop') !== (c === '03') ? 'kind' : '';
   };
   /* The console's standard lines (2026-11-04, the user: "every new build
      didnt follow your tone"): a line two screens say is written once here

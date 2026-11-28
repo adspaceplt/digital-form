@@ -126,7 +126,7 @@
       payKeepAs: 'Leave blank to keep {v}.',
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
       paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
-      payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: 'Enter a valid 12-digit Business Registration Number.' },
+      payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: window.ADspaceWords.en.brnBad },
         legal_name: { nric: 'Enter your Full Name as per NRIC.', passport: 'Enter your Full Name as per Passport.', brn: 'Enter the Registered Company Name.' },
         tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
         method: 'Choose a payment method.', bank: 'Choose a bank.', account: 'Enter a valid account number.',
@@ -235,7 +235,7 @@
       payKeepAs: '留空即保留{v}。',
       payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
       paySent: '已提交。ADspace 审核通过后将以电邮通知您。',
-      payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: '请输入有效的12位公司注册号。' },
+      payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: window.ADspaceWords.zh.brnBad },
         legal_name: { nric: '请输入身份证上的全名。', passport: '请输入护照上的全名。', brn: '请输入公司注册名称。' },
         tin: '请输入有效的TIN，或留空。', address: '请输入账单地址。', currency: '请选择货币。',
         method: '请选择付款方式。', bank: '请选择银行。', account: '请输入有效账号。',
@@ -1316,6 +1316,7 @@
       }).catch(function () { btn.disabled = false; $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; });
       return;
     }
+    if (payTyped.bill_kind === 'brn' && window.ADspaceWords.brnCheck(payTyped.id_no, 'MY')) { wrong('id_no'); return; }
     if (!payTyped.confirm) { wrong('confirm'); return; }
     btn.disabled = true;
     var vals = {};
