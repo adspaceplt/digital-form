@@ -1633,7 +1633,7 @@
         /* Undo send (2026-11-28): the bar under the Email tab's line where
            the email was written there; else the record that opened it draws
            it (`adspace:email-sent`). */
-        var who = d.to_name || $('nemTo').selectedOptions && $('nemTo').selectedOptions[0] && $('nemTo').selectedOptions[0].textContent || to;
+        var who = d.to_name || to;
         var here = d.queued && $('emlLine') && $('emlPane') && !$('emlPane').hidden && $('emlPane').offsetParent ? $('emlLine') : null;
         if (here && window.ADspaceAdmin && window.ADspaceAdmin.mailUndo) window.ADspaceAdmin.mailUndo(d.queued, who, here, mlLoad);
         try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party, queued: here ? null : d.queued || null, to: who } })); } catch (x) {}

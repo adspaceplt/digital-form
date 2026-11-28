@@ -311,7 +311,7 @@ async function manualMail(req: Request, body: Record<string, any>, origin: strin
   if (cc.length) msg.cc = cc;
   if (file) msg.attachments = [file];
   const q = await queue({ source: 'manual', log_id: String(b.id), msg, idem: String(b.id), to_name: String(b.to_name || ''), what: String(b.subject || '') });
-  if (q) return json({ ok: true, id: b.id, queued: q, to: b.to, cc: b.cc || null }, 200, origin);
+  if (q) return json({ ok: true, id: b.id, queued: q, to: b.to, to_name: b.to_name || null, cc: b.cc || null }, 200, origin);
   const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await db.rpc('email_new_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
   if (done.error) console.error('supplier-mail: new email not closed', done.error.message);
