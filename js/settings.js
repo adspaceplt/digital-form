@@ -388,7 +388,7 @@
            Activity lists show first, how long routine and important
            entries are kept, and the automatic runs' history. */
         biz && { id: 'actkeep', name: 'Activity history', kind: 'edit',
-          meta: num('activity_window_days') == null ? '' : parts(['Shows ' + plural(num('activity_window_days'), 'day', 'days'),
+          meta: num('activity_window_days') == null ? '' : parts(['Lists show ' + plural(num('activity_window_days'), 'day', 'days'),
             'Routine ' + plural(num('activity_routine_months'), 'month', 'months'),
             'Important ' + plural(num('activity_keep_months'), 'month', 'months'),
             'Automatic runs ' + plural(num('jobs_keep_days'), 'day', 'days')]) },
@@ -482,7 +482,7 @@
         /* Undo before sending (2026-11-28): an email a colleague's act
            queued waits this long for Undo. */
         biz && { id: 'sendundo', name: 'Undo before sending', kind: 'edit',
-          meta: num('send_undo_seconds') == null ? '' : 'Emails wait ' + plural(num('send_undo_seconds'), 'second', 'seconds') }]],
+          meta: num('send_undo_seconds') == null ? '' : 'Emails sent after ' + plural(num('send_undo_seconds'), 'second', 'seconds') }]],
       ['Email', [
         /* Send by email (2026-10-31; widened 2026-11-21, SEND SWITCHES):
            every email a colleague sends by hand. Off, each send act stays

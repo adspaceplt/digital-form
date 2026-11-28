@@ -462,13 +462,13 @@
     earlier: function (zh) { return zh ? '显示更多' : 'Show more'; },
     recentNone: function (n, zh) { n = Math.floor(Number(n)); return zh ? '最近' + n + '天没有记录。' : 'Nothing recorded in the last ' + (n === 1 ? 'day.' : n + ' days.'); },
     /* An email a colleague's act queued, while its Undo stands
-       (`send_undo_seconds`, 2026-11-28): Outcome email to Ali sends in 1
-       minute. */
+       (`send_undo_seconds`, 2026-11-28): Outcome email to Ali will be sent
+       in 1 minute. */
     sendsIn: function (what, s, zh) {
       s = Math.max(1, Math.round(Number(s) || 0));
       var m = s % 60 === 0 ? s / 60 : 0;
       if (zh) return what + '将在' + (m ? m + '分钟' : s + '秒') + '后发送。';
-      return what + ' sends in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : (s === 1 ? '1 second' : s + ' seconds')) + '.';
+      return what + ' will be sent in ' + (m ? (m === 1 ? '1 minute' : m + ' minutes') : (s === 1 ? '1 second' : s + ' seconds')) + '.';
     },
     checked: function (n, zh) { n = Math.floor(Number(n)); return zh ? '已核验' + n + '次' : n === 1 ? 'Checked once' : 'Checked ' + n + ' times'; },
     codeSent: 'If {email} is registered, a sign-in code and link have been sent to it.',

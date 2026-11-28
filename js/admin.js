@@ -7041,7 +7041,7 @@
         activity_keep_months: 'Everything else, including money, documents, deletions, access, Settings and client decisions.' } },
     /* How long an email a colleague's act queued waits for Undo
        (2026-11-28; a decision's email to a candidate first). */
-    sendundo: { title: 'Undo before sending', keys: [['send_undo_seconds', 'Undo before an email sends', 'undos', '', 'Undo', per('second')]] },
+    sendundo: { title: 'Undo before sending', keys: [['send_undo_seconds', 'Undo before sending', 'undos', '', 'Undo', per('second')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
     creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Payment time in MYR', 'pay', '', 'MYR', per('working day')],
       ['creator_pay_days_other', 'Payment time in other currencies', 'pay', '', 'Other currencies', per('working day')]] },

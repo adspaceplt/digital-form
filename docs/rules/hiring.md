@@ -402,7 +402,7 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
     colleague's act queues; 2026-11-28): the Undo bar stands the whole
     window (`ADspaceAdmin.undoHere`'s `ms`, every other Undo keeping 8)
     naming the email (`ADspaceWords.line.sendsIn`: Outcome email to
-    {name} sends in 1 minute.), and the decision card reads Queued with
+    {name} will be sent in 1 minute.), and the decision card reads Queued with
     Reopen as Undo until it goes. The email is queued in the database,
     never timed in the tab (2026-11-24, the review: a tab shut in those
     seconds sent nothing; `hiring_outcome_mail_queue`, due the window on,

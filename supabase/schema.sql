@@ -175298,7 +175298,7 @@ begin
         when 'fx_sgd' then 'Singapore dollar rate'
         when 'activity_routine_months' then 'Routine activity kept' when 'activity_keep_months' then 'Important activity kept'
         when 'jobs_keep_days' then 'Automatic run history kept' when 'activity_window_days' then 'Activity lists show'
-        when 'send_undo_seconds' then 'Undo before an email sends'
+        when 'send_undo_seconds' then 'Undo before sending'
         when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
         when 'health_cap_default' then 'Health default weekly capacity' when 'health_near_pct' then 'Health near capacity'
         when 'health_task_hours' then 'Health default hours per task' when 'health_remind_days' then 'Health check-in reminder'
