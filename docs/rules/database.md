@@ -29,6 +29,11 @@ Moved from `CLAUDE.md` §2, Writes, refusals, reversibility, on 2026-11-23: the 
   of each sender's fields, refusing `unknown-field` with the field and the
   list, said as `ADspaceWords.line.unknownField` (Unknown field {x}. Use …);
   `template_fields_all()` answers the lists to the team (`tests/tplfieldsql.js`).
+- A colleague is found by their id (`clients.owner_id`, `quotations.made_by_id`,
+  `submitted_by_id`), never by the name a record holds: the name is a
+  snapshot, the id stamped before insert or update from the caller's own,
+  backfilled only where one colleague holds the name (2026-11-28,
+  `colleagueidsql`).
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
 - Two releases restating one function merge in turn: the later one's
